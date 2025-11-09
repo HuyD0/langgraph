@@ -166,24 +166,20 @@ class LangGraphResponsesAgent(ResponsesAgent):
 
 
 def create_agent(
-    llm_endpoint_name: Optional[str] = None,
+    model_endpoint_name: Optional[str] = None,
     system_prompt: Optional[str] = None,
     managed_mcp_urls: Optional[list] = None,
     custom_mcp_urls: Optional[list] = None,
-) -> LangGraphResponsesAgent:
-    """Create and return the agent (ML Application entry point).
+):
+    """Create and return the complete agent as a ResponsesAgent.
 
-    This function is referenced in mlflow.yaml and called by MLflow
-    when the model is loaded.
+    This function is the entry point called by MLflow during model serving.
 
     Args:
-        llm_endpoint_name: Name of the LLM serving endpoint
-        system_prompt: System prompt for the agent
-        managed_mcp_urls: List of managed MCP server URLs
-        custom_mcp_urls: List of custom MCP server URLs
-
-    Returns:
-        Initialized LangGraphResponsesAgent
+        model_endpoint_name: Optional override for LLM endpoint name.
+        system_prompt: Optional system prompt override.
+        managed_mcp_urls: Optional list of managed MCP server URLs.
+        custom_mcp_urls: Optional list of custom MCP server URLs.
     """
     logger.info("Initializing LangGraph MCP Agent...")
 
@@ -193,7 +189,7 @@ def create_agent(
 
     # Use environment variables with config fallbacks
     llm_endpoint_name = (
-        llm_endpoint_name or os.getenv("LLM_ENDPOINT_NAME") or get_config_value(_config, "model.endpoint_name")
+        model_endpoint_name or os.getenv("LLM_ENDPOINT_NAME") or get_config_value(_config, "model.endpoint_name")
     )
     system_prompt = system_prompt or os.getenv("SYSTEM_PROMPT") or get_config_value(_config, "model.system_prompt")
     logger.info(f"Using LLM endpoint: {llm_endpoint_name}")

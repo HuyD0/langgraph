@@ -46,7 +46,7 @@ def log_and_register_model(
 
     Args:
         config: Agent configuration
-        model_code_path: Path to project root containing mlflow.yaml (default: current directory)
+        model_code_path: Path to project root (default: current directory)
         validate: Whether to validate the model before registration
 
     Returns:
@@ -146,7 +146,7 @@ def full_deployment_pipeline(
 
     Args:
         config: Agent configuration
-        model_code_path: Path to project root containing mlflow.yaml (default: current directory)
+        model_code_path: Path to project root (default: current directory)
         validate: Whether to validate before deployment
 
     Returns:

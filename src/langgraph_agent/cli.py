@@ -138,7 +138,7 @@ def deploy(validate: bool, profile: Optional[str]):
 
 
 @cli.command()
-@click.option("--model-code", default=".", help="Path to project root containing mlflow.yaml")
+@click.option("--model-code", default=".", help="Path to project root")
 @click.option("--validate/--no-validate", default=True, help="Validate model after logging")
 @click.option("--profile", default=None, help="Databricks CLI profile")
 def register(model_code: str, validate: bool, profile: Optional[str]):
