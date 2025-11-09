@@ -4,12 +4,6 @@ bundle:
   name: langgraph
   uuid: c9f66a0c-a9d4-4351-9f3c-fcee8f8ce125
 
-python:
-  venv_path: .venv
-  # Functions called to load resources defined in Python. See resources/__init__.py
-  resources:
-    - "resources:load_resources"
-
 include:
   - resources/**/*.yml
 

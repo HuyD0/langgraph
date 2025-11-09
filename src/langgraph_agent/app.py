@@ -173,7 +173,9 @@ def create_agent(
 ):
     """Create and return the complete agent as a ResponsesAgent.
 
-    This function is the entry point called by MLflow during model serving.
+    This function is the entry point referenced in configs/default.yaml
+    (mlflow.ml_application.entry.function) and called by MLflow
+    when the model is loaded.
 
     Args:
         model_endpoint_name: Optional override for LLM endpoint name.

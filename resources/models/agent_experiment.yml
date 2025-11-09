@@ -1,0 +1,12 @@
+# MLflow experiment for agent tracking and evaluation
+resources:
+  experiments:
+    agent_experiment:
+      name: /Users/${var.user_email}/langgraph-mcp-agent-${bundle.target}
+      tags:
+        - key: project
+          value: langgraph-mcp-agent
+        - key: environment
+          value: ${bundle.target}
+        - key: managed_by
+          value: databricks-asset-bundle

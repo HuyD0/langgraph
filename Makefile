@@ -1,32 +1,40 @@
-.PHONY: help test lint format clean build test-imports test-cli pre-deploy
+.PHONY: help test lint format clean build test-imports test-cli validate-agent validate-agent-interactive pre-deploy verify bundle-validate
 
 help:
 	@echo "LangGraph MCP Agent - Development Commands"
 	@echo "=========================================="
 	@echo ""
 	@echo "Development Commands:"
-	@echo "  make test          Run all tests"
-	@echo "  make test-unit     Run unit tests only"
-	@echo "  make test-cov      Run tests with coverage"
-	@echo "  make test-imports  Test that all imports work"
-	@echo "  make test-cli      Test CLI commands locally"
-	@echo "  make pre-deploy    Run all pre-deployment checks"
-	@echo "  make lint          Check code style"
-	@echo "  make format        Auto-format code"
-	@echo "  make build         Build the wheel package"
-	@echo "  make clean         Clean build artifacts"
+	@echo "  make test               Run all tests"
+	@echo "  make test-unit          Run unit tests only"
+	@echo "  make test-cov           Run tests with coverage"
+	@echo "  make test-imports       Test that all imports work"
+	@echo "  make test-cli           Test CLI commands locally"
+	@echo "  make validate-agent     Validate agent with single query"
+	@echo "  make validate-agent-interactive  Validate agent in interactive mode"
+	@echo ""
+	@echo "Deployment Commands:"
+	@echo "  make verify             Run all pre-deployment checks (build + lint + test + bundle validate)"
+	@echo "  make pre-deploy         Run pre-deployment script checks"
+	@echo "  make bundle-validate    Validate Databricks bundle configuration"
+	@echo "  make build              Build the wheel package"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make lint               Check code style"
+	@echo "  make format             Auto-format code"
+	@echo "  make clean              Clean build artifacts"
 	@echo ""
 	@echo "Databricks Bundle Commands:"
 	@echo "  databricks bundle validate"
 	@echo "  databricks bundle deploy -t dev"
 	@echo "  databricks bundle deploy -t prod"
 	@echo "  databricks bundle run agent_evaluation -t dev"
-	@echo "  databricks bundle run agent_deployment -t dev"
+	@echo "  databricks bundle run agent_deployment_pipeline -t dev"
 	@echo "  databricks bundle destroy -t dev"
 	@echo ""
 	@echo "Quick Start:"
 	@echo "  1. uv sync --dev                    # Install dependencies"
-	@echo "  2. databricks bundle validate       # Validate config"
+	@echo "  2. make verify                      # Run all checks"
 	@echo "  3. databricks bundle deploy -t dev  # Deploy to dev"
 	@echo ""
 
@@ -54,9 +62,29 @@ test-cli:
 	uv run langgraph-agent --help
 	@echo "CLI is working!"
 
+validate-agent:
+	@echo "Validating agent with default query..."
+	uv run python scripts/validate_agent.py
+
+validate-agent-interactive:
+	@echo "Starting agent in interactive mode..."
+	uv run python scripts/validate_agent.py --interactive
+
 build:
 	uv build --wheel
 	@echo "Wheel built successfully in dist/"
+
+bundle-validate:
+	@echo "Validating Databricks bundle configuration..."
+	databricks bundle validate -t dev
+
+verify: clean build lint test bundle-validate
+	@echo ""
+	@echo "=========================================="
+	@echo "✅ All verification checks passed!"
+	@echo "=========================================="
+	@echo "Ready to deploy with: databricks bundle deploy -t dev"
+	@echo ""
 
 pre-deploy:
 	@./scripts/deployment/pre_deploy_check.sh

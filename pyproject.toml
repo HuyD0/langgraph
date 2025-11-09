@@ -43,10 +43,6 @@ dev = [
 [project.scripts]
 langgraph-agent = "langgraph_agent.cli:main"
 langgraph_mcp_agent = "langgraph_agent.cli:main"
-# Job-safe entry points (no SystemExit)
-langgraph_job_register = "langgraph_agent.jobs:job_register_model"
-langgraph_job_deploy = "langgraph_agent.jobs:job_deploy_model"
-langgraph_job_evaluate = "langgraph_agent.jobs:job_evaluate_model"
 
 [build-system]
 requires = ["hatchling"]

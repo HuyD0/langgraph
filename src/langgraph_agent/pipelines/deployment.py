@@ -45,7 +45,7 @@ def log_and_register_model(
     """Log model to MLflow and register to Unity Catalog.
 
     Args:
-        config: Agent configuration
+        config: Agent configuration (includes MLflow metadata from configs/default.yaml)
         model_code_path: Path to project root (default: current directory)
         validate: Whether to validate the model before registration
 
@@ -145,12 +145,10 @@ def full_deployment_pipeline(
     """Run the complete deployment pipeline.
 
     Args:
-        config: Agent configuration
+        config: Agent configuration (includes MLflow metadata)
         model_code_path: Path to project root (default: current directory)
-        validate: Whether to validate before deployment
-
-    Returns:
-        Dictionary with deployment information
+        validate: Whether to validate before deployment        Returns:
+            Dictionary with deployment information
     """
     print("=" * 60)
     print("Starting deployment pipeline...")

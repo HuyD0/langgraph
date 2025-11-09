@@ -19,6 +19,22 @@ mlflow:
   experiment_name: "/Shared/langgraph-mcp-agent"
   model_name: "langgraph_mcp_agent"
   run_name: "agent_run"
+  
+  # ML Application metadata (consolidated from mlflow.yaml)
+  ml_application:
+    name: "langgraph-mcp-agent"
+    description: "LangGraph agent with MCP tool calling capabilities"
+    entry:
+      file: "app.py"
+      function: "create_agent"
+    requirements:
+      - "databricks-mcp"
+      - "langgraph"
+      - "mcp"
+      - "databricks-langchain"
+      - "databricks-sdk"
+      - "nest-asyncio"
+      - "pydantic"
 
 # Unity Catalog Configuration
 unity_catalog:
