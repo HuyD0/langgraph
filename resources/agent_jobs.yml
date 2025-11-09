@@ -20,7 +20,7 @@ resources:
           spec:
             client: "1"
             dependencies:
-              - "/Workspace/Users/huy.d@hotmail.com/.bundle/langgraph/dev/artifacts/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
+              - "/Workspace/Users/huy.d@hotmail.com/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
       
       tags:
         project: langgraph-mcp-agent
@@ -60,7 +60,7 @@ resources:
           spec:
             client: "1"
             dependencies:
-              - "/Workspace/Users/huy.d@hotmail.com/.bundle/langgraph/dev/artifacts/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
+              - "/Workspace/Users/huy.d@hotmail.com/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
       
       tags:
         project: langgraph-mcp-agent
