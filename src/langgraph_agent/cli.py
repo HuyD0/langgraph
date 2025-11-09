@@ -1,7 +1,5 @@
 """Command-line interface for the LangGraph MCP agent."""
 
-import os
-from pathlib import Path
 from typing import Optional
 
 import click
@@ -169,22 +167,22 @@ def config_show():
 
     click.echo("Current Configuration:")
     click.echo("=" * 60)
-    click.echo(f"\n[Model]")
+    click.echo("\n[Model]")
     click.echo(f"  Endpoint: {config.model.endpoint_name}")
     click.echo(f"  System Prompt: {config.model.system_prompt[:50]}...")
 
-    click.echo(f"\n[Databricks]")
+    click.echo("\n[Databricks]")
     click.echo(f"  Profile: {config.databricks.profile}")
     click.echo(f"  Host: {config.databricks.host or 'auto-detected'}")
 
-    click.echo(f"\n[Unity Catalog]")
+    click.echo("\n[Unity Catalog]")
     click.echo(f"  Model: {config.uc.full_model_name}")
 
-    click.echo(f"\n[MLflow]")
+    click.echo("\n[MLflow]")
     click.echo(f"  Experiment: {config.mlflow.experiment_name or 'not set'}")
     click.echo(f"  Autolog: {config.mlflow.enable_autolog}")
 
-    click.echo(f"\n[MCP Servers]")
+    click.echo("\n[MCP Servers]")
     click.echo(f"  Managed URLs: {len(config.mcp.managed_urls)} configured")
     click.echo(f"  Custom URLs: {len(config.mcp.custom_urls)} configured")
 

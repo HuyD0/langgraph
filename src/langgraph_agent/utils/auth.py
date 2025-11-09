@@ -1,6 +1,5 @@
 """Authentication utilities for Databricks."""
 
-import os
 from typing import Optional
 
 from databricks.sdk import WorkspaceClient

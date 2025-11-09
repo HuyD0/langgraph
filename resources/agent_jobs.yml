@@ -7,8 +7,8 @@ resources:
       tasks:
         - task_key: run_evaluation
           python_wheel_task:
-            package_name: langgraph_agent
-            entry_point: cli:main
+            package_name: langgraph_mcp_agent
+            entry_point: langgraph_agent.cli:main
             parameters:
               - "evaluate"
               - "--dataset"
@@ -35,8 +35,8 @@ resources:
       tasks:
         - task_key: log_and_register_model
           python_wheel_task:
-            package_name: langgraph_agent
-            entry_point: cli:main
+            package_name: langgraph_mcp_agent
+            entry_point: langgraph_agent.cli:main
             parameters:
               - "register"
               - "--profile"
@@ -47,8 +47,8 @@ resources:
           depends_on:
             - task_key: log_and_register_model
           python_wheel_task:
-            package_name: langgraph_agent
-            entry_point: cli:main
+            package_name: langgraph_mcp_agent
+            entry_point: langgraph_agent.cli:main
             parameters:
               - "evaluate"
               - "--dataset"

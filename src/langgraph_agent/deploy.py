@@ -121,7 +121,7 @@ def deploy_to_serving_endpoint(
         tags=config.deployment.tags,
     )
 
-    print(f"✓ Agent deployed successfully!")
+    print("✓ Agent deployed successfully!")
     print(f"Endpoint: {deployment_info}")
 
     return deployment_info
