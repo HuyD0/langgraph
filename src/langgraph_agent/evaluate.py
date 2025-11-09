@@ -1,6 +1,6 @@
 """Evaluation pipeline for the LangGraph MCP agent."""
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import mlflow
 from mlflow.genai.scorers import RelevanceToQuery, Safety
@@ -37,7 +37,7 @@ def evaluate_agent(
     dataset: Optional[List[dict]] = None,
     dataset_path: Optional[str] = None,
     scorers: Optional[list] = None,
-) -> mlflow.genai.EvaluationResult:
+) -> Any:
     """Evaluate the agent using MLflow GenAI evaluation.
 
     Args:

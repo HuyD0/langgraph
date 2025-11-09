@@ -146,7 +146,7 @@ class LangGraphResponsesAgent(ResponsesAgent):
                         yield ResponsesAgentStreamEvent(
                             **self.create_text_delta(delta=content, item_id=chunk.id),
                         )
-                except:
+                except Exception:
                     pass
 
 

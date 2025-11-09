@@ -1,4 +1,4 @@
-.PHONY: help test lint format clean
+.PHONY: help test lint format clean build test-imports test-cli pre-deploy
 
 help:
 	@echo "LangGraph MCP Agent - Development Commands"
@@ -8,8 +8,12 @@ help:
 	@echo "  make test          Run all tests"
 	@echo "  make test-unit     Run unit tests only"
 	@echo "  make test-cov      Run tests with coverage"
+	@echo "  make test-imports  Test that all imports work"
+	@echo "  make test-cli      Test CLI commands locally"
+	@echo "  make pre-deploy    Run all pre-deployment checks"
 	@echo "  make lint          Check code style"
 	@echo "  make format        Auto-format code"
+	@echo "  make build         Build the wheel package"
 	@echo "  make clean         Clean build artifacts"
 	@echo ""
 	@echo "Databricks Bundle Commands:"
@@ -34,6 +38,28 @@ test-unit:
 
 test-cov:
 	uv run pytest tests/ --cov=langgraph_agent --cov-report=html --cov-report=term
+
+test-imports:
+	@echo "Testing all module imports..."
+	uv run python -c "from langgraph_agent import *; print('✓ Main package imports OK')"
+	uv run python -c "from langgraph_agent.core.agent import *; print('✓ Agent imports OK')"
+	uv run python -c "from langgraph_agent.evaluate import *; print('✓ Evaluate imports OK')"
+	uv run python -c "from langgraph_agent.deploy import *; print('✓ Deploy imports OK')"
+	uv run python -c "from langgraph_agent.cli import main; print('✓ CLI imports OK')"
+	@echo "All imports successful!"
+
+test-cli:
+	@echo "Testing CLI commands..."
+	uv run langgraph-agent --version
+	uv run langgraph-agent --help
+	@echo "CLI is working!"
+
+build:
+	uv build --wheel
+	@echo "Wheel built successfully in dist/"
+
+pre-deploy:
+	@./scripts/pre_deploy_check.sh
 
 lint:
 	uv run ruff check src/

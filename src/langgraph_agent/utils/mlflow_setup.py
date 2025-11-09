@@ -3,12 +3,14 @@
 import mlflow
 from typing import Optional
 
+from .auth import is_running_in_databricks
+
 
 def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, enable_autolog: bool = True) -> dict:
     """Configure MLflow tracking with Databricks.
 
     Args:
-        profile: Databricks CLI profile name
+        profile: Databricks CLI profile name (ignored when running in Databricks)
         experiment_name: MLflow experiment name (e.g., "/Users/user@example.com/experiment")
         enable_autolog: Enable MLflow autologging
 
@@ -18,8 +20,13 @@ def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, e
     config = {}
 
     try:
-        # Set tracking URI with profile
-        tracking_uri = f"databricks://{profile}"
+        # When running in Databricks, use 'databricks' (no profile)
+        # When running locally, use 'databricks://{profile}'
+        if is_running_in_databricks():
+            tracking_uri = "databricks"
+        else:
+            tracking_uri = f"databricks://{profile}"
+
         mlflow.set_tracking_uri(tracking_uri)
         config["tracking_uri"] = tracking_uri
 
@@ -49,12 +56,18 @@ def setup_mlflow_registry(profile: str) -> str:
     """Configure MLflow model registry with Unity Catalog.
 
     Args:
-        profile: Databricks CLI profile name
+        profile: Databricks CLI profile name (ignored when running in Databricks)
 
     Returns:
         Registry URI string
     """
-    registry_uri = f"databricks-uc://{profile}"
+    # When running in Databricks, use 'databricks-uc' (no profile)
+    # When running locally, use 'databricks-uc://{profile}'
+    if is_running_in_databricks():
+        registry_uri = "databricks-uc"
+    else:
+        registry_uri = f"databricks-uc://{profile}"
+
     mlflow.set_registry_uri(registry_uri)
     return registry_uri
 
@@ -63,17 +76,18 @@ def log_model_to_mlflow(
     model_code_path: str,
     model_endpoint_name: str,
     pip_requirements: list,
-) -> mlflow.models.model.ModelInfo:
-    """Log the agent model to MLflow.
+):
+    """Log agent model to MLflow.
 
     Args:
-        model_code_path: Path to the agent Python module
-        model_endpoint_name: Name of the LLM serving endpoint
+        model_code_path: Path to Python module containing the agent (can be module path like 'langgraph_agent.core.agent' or file path)
+        model_endpoint_name: Name of the model serving endpoint
         pip_requirements: List of Python package requirements
 
     Returns:
         MLflow ModelInfo object with run and model details
     """
+    import os
     from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
 
     resources = [
@@ -81,9 +95,17 @@ def log_model_to_mlflow(
         DatabricksFunction(function_name="system.ai.python_exec"),
     ]
 
+    # If the path doesn't exist as a file, try to import it as a module
+    # This handles both local development (file path) and Databricks execution (installed package)
+    python_model = model_code_path
+    if not os.path.exists(model_code_path):
+        # Convert file path to module path (e.g., "src/langgraph_agent/core/agent.py" -> "langgraph_agent.core.agent")
+        module_path = model_code_path.replace("src/", "").replace("/", ".").replace(".py", "")
+        python_model = module_path
+
     with mlflow.start_run():
         logged_agent_info = mlflow.pyfunc.log_model(
-            name="agent", python_model=model_code_path, resources=resources, pip_requirements=pip_requirements
+            name="agent", python_model=python_model, resources=resources, pip_requirements=pip_requirements
         )
 
     return logged_agent_info

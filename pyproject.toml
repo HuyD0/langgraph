@@ -41,6 +41,7 @@ dev = [
 
 [project.scripts]
 langgraph-agent = "langgraph_agent.cli:main"
+langgraph_mcp_agent = "langgraph_agent.cli:main"
 
 [build-system]
 requires = ["hatchling"]
