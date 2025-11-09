@@ -23,30 +23,20 @@ logger = get_logger(__name__)
 def get_config_path() -> Optional[Path]:
     """Get the path to the configs directory.
 
-    Looks for configs in:
-    1. Package directory: langgraph_agent/configs/ (in wheel)
-    2. Project root: /path/to/project/configs/ (local dev)
+    Looks for configs in project root: /path/to/project/configs/
 
     Returns:
         Path to configs directory or None if not found
     """
-    # First try: inside package (for wheel installation)
-    # langgraph_agent/utils/config_loader.py -> ../configs
-    package_config = Path(__file__).parent.parent / "configs"
-    if package_config.exists() and package_config.is_dir():
-        logger.debug(f"Found configs at: {package_config}")
-        return package_config
-
-    # Second try: project root (for local development)
+    # Project root configs directory
     # src/langgraph_agent/utils/config_loader.py -> ../../../configs
-    dev_config = Path(__file__).parent.parent.parent.parent / "configs"
-    if dev_config.exists() and dev_config.is_dir():
-        logger.debug(f"Found configs at: {dev_config}")
-        return dev_config
+    config_path = Path(__file__).parent.parent.parent.parent / "configs"
+    if config_path.exists() and config_path.is_dir():
+        logger.debug(f"Found configs at: {config_path}")
+        return config_path
 
     logger.warning("Config directory not found, will use hardcoded defaults only")
-    logger.warning(f"  Tried package path: {package_config}")
-    logger.warning(f"  Tried project path: {dev_config}")
+    logger.warning(f"  Tried path: {config_path}")
     return None
 
 
