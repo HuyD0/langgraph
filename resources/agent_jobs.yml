@@ -1,0 +1,70 @@
+# Agent evaluation job configuration - uses serverless compute
+resources:
+  jobs:
+    agent_evaluation:
+      name: ${bundle.target}_agent_evaluation
+      
+      tasks:
+        - task_key: run_evaluation
+          python_wheel_task:
+            package_name: langgraph_agent
+            entry_point: cli:main
+            parameters:
+              - "evaluate"
+              - "--dataset"
+              - "data/eval_dataset.json"
+          environment_key: default_env
+      
+      environments:
+        - environment_key: default_env
+          spec:
+            client: "1"
+            dependencies:
+              - "${workspace.file_path}/dist/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
+      
+      tags:
+        project: langgraph-mcp-agent
+        environment: ${bundle.target}
+        managed_by: databricks-asset-bundle
+      
+      max_concurrent_runs: 1
+
+    agent_deployment:
+      name: ${bundle.target}_agent_deployment
+      
+      tasks:
+        - task_key: log_and_register_model
+          python_wheel_task:
+            package_name: langgraph_agent
+            entry_point: cli:main
+            parameters:
+              - "register"
+              - "--profile"
+              - "${bundle.target}"
+          environment_key: default_env
+        
+        - task_key: validate_model
+          depends_on:
+            - task_key: log_and_register_model
+          python_wheel_task:
+            package_name: langgraph_agent
+            entry_point: cli:main
+            parameters:
+              - "evaluate"
+              - "--dataset"
+              - "data/eval_dataset.json"
+          environment_key: default_env
+      
+      environments:
+        - environment_key: default_env
+          spec:
+            client: "1"
+            dependencies:
+              - "${workspace.file_path}/dist/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
+      
+      tags:
+        project: langgraph-mcp-agent
+        environment: ${bundle.target}
+        managed_by: databricks-asset-bundle
+      
+      max_concurrent_runs: 1

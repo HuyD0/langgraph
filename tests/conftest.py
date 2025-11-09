@@ -62,15 +62,21 @@ def load_fixture(spark: SparkSession):
 
 def _enable_fallback_compute():
     """Enable serverless compute if no compute is specified."""
-    conf = WorkspaceClient().config
-    if conf.serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
-        return
+    try:
+        conf = WorkspaceClient().config
+        if conf.serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
+            return
 
-    url = "https://docs.databricks.com/dev-tools/databricks-connect/cluster-config"
-    print("☁️ no compute specified, falling back to serverless compute", file=sys.stderr)
-    print(f"  see {url} for manual configuration", file=sys.stdout)
+        url = "https://docs.databricks.com/dev-tools/databricks-connect/cluster-config"
+        print("☁️ no compute specified, falling back to serverless compute", file=sys.stderr)
+        print(f"  see {url} for manual configuration", file=sys.stdout)
 
-    os.environ["DATABRICKS_SERVERLESS_COMPUTE_ID"] = "auto"
+        os.environ["DATABRICKS_SERVERLESS_COMPUTE_ID"] = "auto"
+    except Exception as e:
+        # If we can't connect to Databricks, skip the fallback compute setup
+        # This allows unit tests to run without Databricks credentials
+        print(f"⚠️  Skipping Databricks connection (tests will run without Spark): {e}", file=sys.stderr)
+        pass
 
 
 @contextmanager
@@ -92,7 +98,13 @@ def pytest_configure(config: pytest.Config):
         # Initialize Spark session eagerly, so it is available even when
         # SparkSession.builder.getOrCreate() is used. For DB Connect 15+,
         # we validate version compatibility with the remote cluster.
-        if hasattr(DatabricksSession.builder, "validateSession"):
-            DatabricksSession.builder.validateSession().getOrCreate()
-        else:
-            DatabricksSession.builder.getOrCreate()
+        try:
+            if hasattr(DatabricksSession.builder, "validateSession"):
+                DatabricksSession.builder.validateSession().getOrCreate()
+            else:
+                DatabricksSession.builder.getOrCreate()
+        except Exception as e:
+            # If Spark initialization fails, skip it
+            # Tests that need Spark will fail, but others can run
+            print(f"⚠️  Skipping Spark initialization: {e}", file=sys.stderr)
+            pass

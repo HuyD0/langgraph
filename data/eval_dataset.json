@@ -1,0 +1,35 @@
+[
+  {
+    "inputs": {
+      "input": [
+        {
+          "role": "user",
+          "content": "Calculate the 15th Fibonacci number"
+        }
+      ]
+    },
+    "expected_response": "The 15th Fibonacci number is 610."
+  },
+  {
+    "inputs": {
+      "input": [
+        {
+          "role": "user",
+          "content": "What is 7*6 in Python?"
+        }
+      ]
+    },
+    "expected_response": "42"
+  },
+  {
+    "inputs": {
+      "input": [
+        {
+          "role": "user",
+          "content": "Write a Python function to check if a number is prime"
+        }
+      ]
+    },
+    "expected_response": "A prime checker function that returns True for prime numbers and False otherwise."
+  }
+]

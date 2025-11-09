@@ -18,13 +18,26 @@ artifacts:
   python_artifact:
     type: whl
     build: uv build --wheel
+    files:
+      - source: ./dist/*.whl
 
 # Variable declarations. These variables are assigned in the dev/prod targets below.
 variables:
   catalog:
-    description: The catalog to use
+    description: The catalog to use for Unity Catalog models
+    default: rag
   schema:
-    description: The schema to use
+    description: The schema to use for Unity Catalog models
+    default: development
+  model_name:
+    description: The model name in Unity Catalog
+    default: langgraph_mcp_agent
+  user_email:
+    description: User email for MLflow experiments
+    default: huy.d@hotmail.com
+  llm_endpoint:
+    description: LLM serving endpoint name
+    default: databricks-claude-3-7-sonnet
 
 targets:
   dev:
@@ -36,18 +49,27 @@ targets:
     default: true
     workspace:
       host: https://adb-3253299566947192.12.azuredatabricks.net
+      profile: development  # Use Databricks CLI profile
     variables:
       catalog: rag
       schema: development
+      model_name: langgraph_mcp_agent
+      user_email: huy.d@hotmail.com
+      llm_endpoint: databricks-claude-3-7-sonnet
+    
   prod:
     mode: production
     workspace:
       host: https://adb-3253299566947192.12.azuredatabricks.net
       # We explicitly deploy to /Workspace/Users/huy.d@hotmail.com to make sure we only have a single copy.
       root_path: /Workspace/Users/huy.d@hotmail.com/.bundle/${bundle.name}/${bundle.target}
+      profile: production  # Use production profile
     variables:
-      catalog: development
+      catalog: rag
       schema: prod
+      model_name: langgraph_mcp_agent
+      user_email: huy.d@hotmail.com
+      llm_endpoint: databricks-claude-3-7-sonnet
     permissions:
       - user_name: huy.d@hotmail.com
         level: CAN_MANAGE
