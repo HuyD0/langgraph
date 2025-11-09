@@ -1,13 +1,14 @@
-# Agent deployment pipeline - Direct Python scripts (RECOMMENDED)
+# Agent deployment pipeline - Register and validate model
 # 
-# This version uses direct Python entry points (cleaner and faster than CLI).
-# All tasks use serverless compute following Databricks best practices.
+# Uses direct Python entry points with serverless compute.
+# This job registers the model and runs validation/evaluation.
+# Use agent_deploy job to deploy the model to serving endpoint.
 # Reference: https://docs.databricks.com/aws/en/dev-tools/bundles/examples#job-that-uses-serverless-compute
 #
 resources:
   jobs:
-    agent_deployment_pipeline_v2:
-      name: ${bundle.target}_agent_deployment_v2
+    agent_deployment_pipeline:
+      name: ${bundle.target}_agent_log_register
       
       # Run as the user who has access to endpoints
       run_as:
@@ -29,18 +30,6 @@ resources:
             package_name: langgraph_mcp_agent
             entry_point: evaluate_model
           environment_key: serverless_env
-        
-        - task_key: deploy_to_serving
-          depends_on:
-            - task_key: validate_model
-          python_wheel_task:
-            package_name: langgraph_mcp_agent
-            entry_point: deploy_model
-            named_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              model_name: ${var.model_name}
-          environment_key: serverless_env
       
       # Environment spec for serverless compute
       environments:
@@ -54,5 +43,59 @@ resources:
         project: langgraph-mcp-agent
         environment: ${bundle.target}
         managed_by: databricks-asset-bundle
+        job_type: register_and_validate
+      
+      max_concurrent_runs: 1
+    
+    # Separate deployment job - Deploy model to serving endpoint
+    agent_deploy:
+      name: ${bundle.target}_agent_deploy
+      
+      # Run as the user who has access to endpoints
+      run_as:
+        user_name: ${var.user_email}
+      
+      # Job parameters for model deployment
+      parameters:
+        - name: model_name
+          default: ${var.catalog}.${var.schema}.${var.model_name}
+        - name: model_version
+          default: "latest"
+      
+      tasks:
+        - task_key: approval
+          notebook_task:
+            notebook_path: ../../notebooks/04_operations/approval_notebook.py
+            source: WORKSPACE
+            base_parameters:
+              model_name: "{{job.parameters.model_name}}"
+              model_version: "{{job.parameters.model_version}}"
+          environment_key: serverless_env
+        
+        - task_key: deploy_to_serving
+          depends_on:
+            - task_key: approval
+          python_wheel_task:
+            package_name: langgraph_mcp_agent
+            entry_point: deploy_model
+            named_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}
+          environment_key: serverless_env
+      
+      # Environment spec for serverless compute (all tasks)
+      environments:
+        - environment_key: serverless_env
+          spec:
+            environment_version: '2'
+            dependencies:
+              - /Workspace/Users/${var.user_email}/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl
+      
+      tags:
+        project: langgraph-mcp-agent
+        environment: ${bundle.target}
+        managed_by: databricks-asset-bundle
+        job_type: deploy
       
       max_concurrent_runs: 1

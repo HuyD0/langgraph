@@ -5,6 +5,11 @@ from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
+
+# Load config for defaults
+_config = get_cached_config()
+
 
 class MLApplicationEntry(BaseSettings):
     """ML Application entry point configuration."""
@@ -42,7 +47,12 @@ class MLApplicationConfig(BaseSettings):
 class MLflowConfig(BaseSettings):
     """MLflow tracking and registry configuration."""
 
-    experiment_name: str = Field(default="/Shared/langgraph-mcp-agent", description="MLflow experiment name")
+    experiment_name: str = Field(
+        default_factory=lambda: get_config_value(
+            _config, "mlflow.experiment_name", "MLFLOW_EXPERIMENT_NAME", "/Shared/langgraph-mcp-agent"
+        ),
+        description="MLflow experiment name",
+    )
     model_name: str = Field(default="langgraph_mcp_agent", description="Model name for registry")
     run_name: str = Field(default="agent_run", description="MLflow run name")
     enable_autolog: bool = Field(default=True, description="Enable MLflow autologging")

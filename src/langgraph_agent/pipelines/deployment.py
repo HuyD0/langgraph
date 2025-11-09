@@ -69,6 +69,7 @@ def log_and_register_model(
         model_code_path=model_code_path,
         model_endpoint_name=config.model.endpoint_name,
         pip_requirements=get_model_dependencies(),
+        config=config,
     )
     logger.info(f"✓ Model logged: {logged_model_info.model_uri}")
 

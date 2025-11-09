@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import mlflow
 from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
@@ -42,16 +42,19 @@ def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, e
         config["tracking_uri"] = tracking_uri
         logger.info(f"MLflow tracking URI set to: {tracking_uri}")
 
-        # Set experiment name if provided
-        if experiment_name:
-            mlflow.set_experiment(experiment_name)
-            config["experiment_name"] = experiment_name
-            logger.info(f"MLflow experiment set to: {experiment_name}")
-        else:
-            # If no experiment name provided, get or create a default
-            experiment = mlflow.set_experiment("/Shared/langgraph-mcp-agent")
-            config["experiment_name"] = experiment.name
-            logger.info(f"MLflow experiment set to default: {experiment.name}")
+        # Set experiment name - always required
+        if not experiment_name:
+            # Get from config if not provided
+            experiment_name = get_config_value(_config, "mlflow.experiment_name", "MLFLOW_EXPERIMENT_NAME")
+            if not experiment_name:
+                raise ValueError(
+                    "No MLflow experiment name provided. "
+                    "Set via parameter, MLFLOW_EXPERIMENT_NAME env var, or mlflow.experiment_name in config."
+                )
+
+        mlflow.set_experiment(experiment_name)
+        config["experiment_name"] = experiment_name
+        logger.info(f"MLflow experiment set to: {experiment_name}")
 
         # Enable autologging if requested
         if enable_autolog:
@@ -93,6 +96,7 @@ def log_model_to_mlflow(
     model_endpoint_name: Optional[str] = None,
     pip_requirements: list[str] | None = None,
     skip_validation: bool = True,
+    config: Optional[Any] = None,
 ):
     """Log the agent model to MLflow using code-based logging.
 
@@ -102,6 +106,7 @@ def log_model_to_mlflow(
                            If None, uses value from config.
         pip_requirements: List of pip dependencies
         skip_validation: Skip automatic validation during logging (avoids endpoint errors)
+        config: Optional AgentConfig object with runtime configuration values
 
     Returns:
         MLflow model info
@@ -155,9 +160,235 @@ def log_model_to_mlflow(
     try:
         with mlflow.start_run() as run:
             logger.info(f"Started MLflow run: {run.info.run_id}")
+
+            # Use passed config if available, otherwise use cached config
+            runtime_config = config if config is not None else None
+
+            # Log tags for organization
+            tags = {
+                "model_type": "langgraph_agent",
+                "deployment_type": "databricks_ml_applications",
+            }
+
+            # Add config-based tags if runtime_config is available
+            if runtime_config:
+                tags.update(
+                    {
+                        "catalog": runtime_config.uc.catalog,
+                        "schema": runtime_config.uc.schema_name,
+                        "endpoint": runtime_config.model.endpoint_name,
+                    }
+                )
+            else:
+                # Fall back to cached config
+                tags.update(
+                    {
+                        "catalog": get_config_value(_config, "uc.catalog"),
+                        "schema": get_config_value(_config, "uc.schema_name"),
+                        "endpoint": get_config_value(_config, "model.endpoint_name"),
+                    }
+                )
+
+            # Filter out None values
+            tags = {k: v for k, v in tags.items() if v is not None}
+            if tags:
+                mlflow.set_tags(tags)
+                logger.info(f"Set {len(tags)} MLflow tags")
+
+            # Log configuration parameters
+            params = {}
+
+            if runtime_config:
+                # Use runtime config object (has actual values from environment/args)
+                # Use getattr to safely access attributes that might not exist
+                params = {
+                    # Model configuration
+                    "model.endpoint_name": runtime_config.model.endpoint_name,
+                    "model.max_tokens": getattr(runtime_config.model, "max_tokens", None),
+                    "model.temperature": getattr(runtime_config.model, "temperature", None),
+                    "model.system_prompt": (
+                        runtime_config.model.system_prompt[:100] if runtime_config.model.system_prompt else None
+                    ),
+                    # Prompt Registry configuration
+                    "prompt.use_prompt_registry": runtime_config.model.use_prompt_registry,
+                    "prompt.prompt_name": runtime_config.model.prompt_name,
+                    "prompt.prompt_version": runtime_config.model.prompt_version,
+                    # MCP configuration
+                    "mcp.server_enabled": getattr(runtime_config.mcp, "server_enabled", None),
+                    "mcp.server_name": getattr(runtime_config.mcp, "server_name", None),
+                    "mcp.server_command": getattr(runtime_config.mcp, "server_command", None),
+                    # Databricks configuration
+                    "databricks.profile": getattr(runtime_config.databricks, "profile", None),
+                    "databricks.workspace_url": getattr(runtime_config.databricks, "workspace_url", None),
+                    # MLflow configuration
+                    "mlflow.experiment_name": getattr(runtime_config.mlflow, "experiment_name", None),
+                    "mlflow.enable_autolog": getattr(runtime_config.mlflow, "enable_autolog", None),
+                    # Unity Catalog configuration
+                    "uc.catalog": runtime_config.uc.catalog,
+                    "uc.schema_name": runtime_config.uc.schema_name,
+                    "uc.model_name": runtime_config.uc.model_name,
+                    "uc.full_model_name": runtime_config.uc.full_model_name,
+                    # Deployment configuration
+                    "deployment.skip_validation": skip_validation,
+                    "deployment.model_code_path": model_code_path,
+                }
+            else:
+                # Fall back to cached config dictionary
+                params = {
+                    # Model configuration
+                    "model.endpoint_name": get_config_value(_config, "model.endpoint_name"),
+                    "model.max_tokens": get_config_value(_config, "model.max_tokens"),
+                    "model.temperature": get_config_value(_config, "model.temperature"),
+                    "model.system_prompt": (
+                        (system_prompt := get_config_value(_config, "model.system_prompt")) and system_prompt[:100]
+                    ),  # Truncate long prompts
+                    # Prompt Registry configuration
+                    "prompt.use_prompt_registry": get_config_value(_config, "model.use_prompt_registry"),
+                    "prompt.prompt_name": get_config_value(_config, "model.prompt_name"),
+                    "prompt.prompt_version": get_config_value(_config, "model.prompt_version"),
+                    # MCP configuration
+                    "mcp.server_enabled": get_config_value(_config, "mcp.server_enabled"),
+                    "mcp.server_name": get_config_value(_config, "mcp.server_name"),
+                    "mcp.server_command": get_config_value(_config, "mcp.server_command"),
+                    # Databricks configuration
+                    "databricks.profile": get_config_value(_config, "databricks.profile"),
+                    "databricks.workspace_url": get_config_value(_config, "databricks.workspace_url"),
+                    # MLflow configuration
+                    "mlflow.experiment_name": get_config_value(_config, "mlflow.experiment_name"),
+                    "mlflow.enable_autolog": get_config_value(_config, "mlflow.enable_autolog"),
+                    # Unity Catalog configuration
+                    "uc.catalog": get_config_value(_config, "uc.catalog"),
+                    "uc.schema_name": get_config_value(_config, "uc.schema_name"),
+                    "uc.model_name": get_config_value(_config, "uc.model_name"),
+                    "uc.full_model_name": get_config_value(_config, "uc.full_model_name"),
+                    # Deployment configuration
+                    "deployment.skip_validation": skip_validation,
+                    "deployment.model_code_path": model_code_path,
+                }
+
+            # Filter out None values and log parameters
+            params = {k: v for k, v in params.items() if v is not None}
+            mlflow.log_params(params)
+            logger.info(f"Logged {len(params)} configuration parameters")
+
+            # Get system prompt for logging
+            if runtime_config:
+                use_prompt_registry = runtime_config.model.use_prompt_registry
+                prompt_name = runtime_config.model.prompt_name
+                prompt_version = runtime_config.model.prompt_version
+                system_prompt = runtime_config.model.system_prompt
+            else:
+                use_prompt_registry = get_config_value(_config, "model.use_prompt_registry", default=False)
+                prompt_name = get_config_value(_config, "model.prompt_name")
+                prompt_version = get_config_value(_config, "model.prompt_version")
+                system_prompt = get_config_value(_config, "model.system_prompt")
+
+            # Register and log the system prompt
+            if use_prompt_registry and prompt_name:
+                # If using prompt registry, load and log the actual prompt content
+                try:
+                    logger.info("Loading prompt from registry for logging to MLflow...")
+                    actual_prompt = load_prompt_from_registry(
+                        prompt_name=prompt_name,
+                        prompt_version=prompt_version,
+                    )
+                    # Log the prompt as a text artifact
+                    mlflow.log_text(actual_prompt, "prompt/system_prompt.txt")
+
+                    # Register the prompt as an MLflow input
+                    try:
+                        from mlflow.entities import Prompt
+
+                        prompt_obj = Prompt(
+                            template=actual_prompt,
+                            type="system",
+                            parameters={
+                                "registry_name": prompt_name,
+                                "registry_version": str(prompt_version) if prompt_version else "latest",
+                            },
+                        )
+                        mlflow.log_input(prompt_obj, context="system_prompt")
+                        logger.info("✓ Registered system prompt from registry as MLflow input")
+                    except Exception as e:
+                        logger.debug(f"Could not log prompt as MLflow input (API may not be available): {e}")
+
+                    # Also log prompt metadata
+                    prompt_metadata = {
+                        "prompt.content_length": len(actual_prompt),
+                        "prompt.registry_uri": (
+                            f"prompts:/{prompt_name}" + (f"/{prompt_version}" if prompt_version else "")
+                        ),
+                    }
+                    mlflow.log_params(prompt_metadata)
+                    logger.info("✓ Logged prompt content and metadata from registry")
+                except Exception as e:
+                    logger.warning(f"Could not load prompt from registry for logging: {e}")
+            elif system_prompt:
+                # If not using registry but have a system prompt, log it
+                try:
+                    # Log the system prompt as a text artifact
+                    mlflow.log_text(system_prompt, "prompt/system_prompt.txt")
+
+                    # Register the system prompt as an MLflow input
+                    try:
+                        from mlflow.entities import Prompt
+
+                        prompt_obj = Prompt(template=system_prompt, type="system", parameters={"source": "config"})
+                        mlflow.log_input(prompt_obj, context="system_prompt")
+                        logger.info("✓ Registered system prompt as MLflow input")
+                    except Exception as e:
+                        logger.debug(f"Could not log prompt as MLflow input (API may not be available): {e}")
+
+                    # Log prompt metadata
+                    mlflow.log_params(
+                        {
+                            "prompt.content_length": len(system_prompt),
+                            "prompt.source": "config",
+                        }
+                    )
+                    logger.info("✓ Logged system prompt content and metadata from config")
+                except Exception as e:
+                    logger.warning(f"Could not log system prompt: {e}")
+
+            # Log relevant metrics
+            metrics = {}
+
+            if runtime_config:
+                # Configuration metrics
+                if system_prompt:
+                    metrics["config.prompt_length"] = len(system_prompt)
+
+                # MCP metrics
+                if hasattr(runtime_config, "mcp"):
+                    metrics["mcp.servers_configured"] = 1 if getattr(runtime_config.mcp, "server_enabled", False) else 0
+
+                # Model metrics
+                if hasattr(runtime_config.model, "endpoint_name"):
+                    metrics["model.endpoint_configured"] = 1
+
+                # Unity Catalog metrics
+                if hasattr(runtime_config, "uc"):
+                    metrics["uc.catalog_configured"] = 1 if runtime_config.uc.catalog else 0
+                    metrics["uc.schema_configured"] = 1 if runtime_config.uc.schema_name else 0
+
+                # Deployment metrics
+                metrics["deployment.skip_validation"] = 1 if skip_validation else 0
+
+                # Prompt registry metrics
+                if use_prompt_registry and prompt_name:
+                    metrics["prompt.using_registry"] = 1
+                else:
+                    metrics["prompt.using_registry"] = 0
+
+            # Filter out None values and log metrics
+            metrics = {k: v for k, v in metrics.items() if v is not None}
+            if metrics:
+                mlflow.log_metrics(metrics)
+                logger.info(f"Logged {len(metrics)} metrics")
+
             # Log as code-based model using app.py
             logged_agent_info = mlflow.pyfunc.log_model(
-                artifact_path="agent",
+                name="agent",
                 python_model=app_py_path,
                 resources=resources,
                 pip_requirements=pip_requirements,

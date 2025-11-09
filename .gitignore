@@ -25,3 +25,4 @@ htmlcov/
 .ruff_cache/
 .tox/
 node_modules/
+mlruns/
