@@ -35,14 +35,23 @@ echo "2. Testing module imports..."
 uv run python -c "from langgraph_agent import *" 2>/dev/null
 print_status "Main package imports"
 
-uv run python -c "from langgraph_agent.core.agent import *" 2>/dev/null
+uv run python -c "from langgraph_agent.agents import *" 2>/dev/null
 print_status "Agent module imports"
 
-uv run python -c "from langgraph_agent.evaluate import *" 2>/dev/null
-print_status "Evaluate module imports"
+uv run python -c "from langgraph_agent.pipelines.evaluation import *" 2>/dev/null
+print_status "Evaluation pipeline imports"
 
-uv run python -c "from langgraph_agent.deploy import *" 2>/dev/null
-print_status "Deploy module imports"
+uv run python -c "from langgraph_agent.pipelines.deployment import *" 2>/dev/null
+print_status "Deployment pipeline imports"
+
+uv run python -c "from langgraph_agent.data import *" 2>/dev/null
+print_status "Data module imports"
+
+uv run python -c "from langgraph_agent.integrations import *" 2>/dev/null
+print_status "Integrations module imports"
+
+uv run python -c "from langgraph_agent.monitoring.logging import *" 2>/dev/null
+print_status "Monitoring module imports"
 
 uv run python -c "from langgraph_agent.cli import main" 2>/dev/null
 print_status "CLI module imports"

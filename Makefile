@@ -59,7 +59,7 @@ build:
 	@echo "Wheel built successfully in dist/"
 
 pre-deploy:
-	@./scripts/pre_deploy_check.sh
+	@./scripts/deployment/pre_deploy_check.sh
 
 lint:
 	uv run ruff check src/

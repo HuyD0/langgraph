@@ -5,10 +5,9 @@ from pathlib import Path
 from typing import Optional
 
 import mlflow
-from databricks.sdk import WorkspaceClient
 from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
 
-from langgraph_agent.utils.logging import get_logger
+from langgraph_agent.monitoring.logging import get_logger
 from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
 from langgraph_agent.utils.auth import is_running_in_databricks
 

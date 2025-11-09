@@ -26,9 +26,9 @@ from mlflow.types.responses import (
     to_chat_completions_input,
 )
 
-from langgraph_agent.core.mcp_client import create_mcp_tools
+from langgraph_agent.integrations.mcp import create_mcp_tools
 from langgraph_agent.models import AgentState
-from langgraph_agent.utils.logging import get_logger, configure_databricks_logging
+from langgraph_agent.monitoring.logging import get_logger, configure_databricks_logging
 from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
 
 # Configure logging for Databricks environment
@@ -234,16 +234,16 @@ def create_agent(
         logger.info(f"✓ ChatDatabricks initialized with endpoint: {llm_endpoint_name}")
 
         # Test endpoint accessibility
-        logger.debug(f"Testing endpoint accessibility...")
+        logger.debug("Testing endpoint accessibility...")
         try:
-            test_response = llm.invoke("test")
-            logger.info(f"✓ Endpoint test successful")
+            llm.invoke("test")
+            logger.info("✓ Endpoint test successful")
         except Exception as test_error:
             logger.warning(f"Endpoint test failed: {test_error}")
-            logger.warning(f"   This may cause issues during model validation")
+            logger.warning("   This may cause issues during model validation")
             if "404" in str(test_error) or "ENDPOINT_NOT_FOUND" in str(test_error):
                 logger.error(f"❌ Endpoint '{llm_endpoint_name}' not found!")
-                logger.error(f"   Available endpoints can be checked with: ws.serving_endpoints.list()")
+                logger.error("   Available endpoints can be checked with: ws.serving_endpoints.list()")
                 raise RuntimeError(f"Endpoint '{llm_endpoint_name}' does not exist") from test_error
 
     except Exception as e:

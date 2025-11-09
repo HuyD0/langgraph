@@ -5,11 +5,12 @@ from typing import Optional
 import click
 
 from .models import get_config
-from .core.agent import initialize_agent
-from .deploy import full_deployment_pipeline, log_and_register_model
-from .evaluate import run_evaluation_pipeline
+from .agents import initialize_agent
+from .pipelines.deployment import full_deployment_pipeline, log_and_register_model
+from .pipelines.evaluation import run_evaluation_pipeline
 from .utils.auth import get_workspace_client, verify_authentication
 from .utils.mlflow_setup import setup_mlflow_tracking
+from .data import register_eval_dataset_to_uc
 
 
 @click.group()
@@ -194,6 +195,33 @@ def config_show():
     click.echo(f"  Custom URLs: {len(config.mcp.custom_urls)} configured")
 
     click.echo("=" * 60)
+
+
+@cli.command()
+@click.option("--dataset", default="data/eval_dataset.json", help="Path to evaluation dataset JSON file")
+@click.option("--catalog", default=None, help="Unity Catalog catalog name")
+@click.option("--schema", default=None, help="Unity Catalog schema name")
+@click.option("--table", default="agent_eval_dataset", help="Table name for the dataset")
+def register_dataset(dataset: str, catalog: Optional[str], schema: Optional[str], table: str):
+    """Register evaluation dataset to Unity Catalog."""
+    click.echo("Registering dataset to Unity Catalog...")
+    click.echo(f"  Source: {dataset}")
+
+    try:
+        full_table_name = register_eval_dataset_to_uc(
+            dataset_path=dataset,
+            catalog=catalog,
+            schema=schema,
+            table_name=table,
+        )
+
+        click.echo(click.style("\n✓ Dataset registered successfully!", fg="green"))
+        click.echo(f"  Table: {full_table_name}")
+        click.echo("\nTo use in jobs, evaluation will automatically load from Unity Catalog.")
+
+    except Exception as e:
+        click.echo(click.style(f"\n✗ Error: {e}", fg="red"), err=True)
+        raise
 
 
 def main():

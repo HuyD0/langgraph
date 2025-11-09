@@ -6,30 +6,48 @@ import mlflow
 from mlflow.genai.scorers import RelevanceToQuery, Safety
 
 
-def load_evaluation_dataset(dataset_path: Optional[str] = None) -> List[dict]:
-    """Load evaluation dataset.
+def load_evaluation_dataset(
+    dataset_path: Optional[str] = None,
+    use_uc: bool = True,
+    catalog: Optional[str] = None,
+    schema: Optional[str] = None,
+) -> List[dict]:
+    """Load evaluation dataset from Unity Catalog or file.
 
     Args:
-        dataset_path: Path to dataset file (JSON, CSV, etc.)
+        dataset_path: Path to dataset file (JSON, CSV, etc.) - used if use_uc=False
+        use_uc: If True, load from Unity Catalog (default)
+        catalog: UC catalog name (uses config default if None)
+        schema: UC schema name (uses config default if None)
 
     Returns:
         List of evaluation examples
     """
+    # Try Unity Catalog first
+    if use_uc:
+        try:
+            from langgraph_agent.data import load_eval_dataset_from_uc
+
+            return load_eval_dataset_from_uc(catalog=catalog, schema=schema)
+        except Exception as e:
+            print(f"Could not load from Unity Catalog: {e}")
+            print("Falling back to file or default dataset...")
+
+    # Fall back to file
     if dataset_path:
-        # Load from file
         import json
 
         with open(dataset_path, "r") as f:
             return json.load(f)
-    else:
-        # Return default test dataset
-        return [
-            {
-                "inputs": {"input": [{"role": "user", "content": "Calculate the 15th Fibonacci number"}]},
-                "expected_response": "The 15th Fibonacci number is 610.",
-            },
-            {"inputs": {"input": [{"role": "user", "content": "What is 7*6 in Python?"}]}, "expected_response": "42"},
-        ]
+
+    # Default test dataset
+    return [
+        {
+            "inputs": {"input": [{"role": "user", "content": "Calculate the 15th Fibonacci number"}]},
+            "expected_response": "The 15th Fibonacci number is 610.",
+        },
+        {"inputs": {"input": [{"role": "user", "content": "What is 7*6 in Python?"}]}, "expected_response": "42"},
+    ]
 
 
 def evaluate_agent(

@@ -1,7 +1,7 @@
 """LangGraph MCP Agent package."""
 
 from .models import AgentConfig, get_config
-from .core.agent import LangGraphResponsesAgent, initialize_agent
+from .agents import LangGraphResponsesAgent, initialize_agent
 
 __all__ = [
     "AgentConfig",

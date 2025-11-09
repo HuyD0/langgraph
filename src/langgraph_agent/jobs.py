@@ -8,9 +8,9 @@ import sys
 from typing import Optional
 
 from langgraph_agent.models import get_config
-from langgraph_agent.deploy import log_and_register_model, full_deployment_pipeline
-from langgraph_agent.evaluate import run_evaluation_pipeline
-from langgraph_agent.utils.logging import get_logger
+from langgraph_agent.pipelines.deployment import log_and_register_model, full_deployment_pipeline
+from langgraph_agent.pipelines.evaluation import run_evaluation_pipeline
+from langgraph_agent.monitoring.logging import get_logger
 
 logger = get_logger(__name__)
 

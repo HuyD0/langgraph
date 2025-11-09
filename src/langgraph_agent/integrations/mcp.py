@@ -1,4 +1,4 @@
-"""MCP server client utilities."""
+"""MCP (Model Context Protocol) client integration."""
 
 from typing import List
 

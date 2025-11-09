@@ -18,7 +18,7 @@ def test_model_config_defaults():
     """Test ModelConfig default values."""
     config = ModelConfig()
     assert config.endpoint_name == "databricks-claude-3-7-sonnet"
-    assert config.system_prompt == "You are a helpful assistant that can run Python code."
+    assert config.system_prompt == "You are a helpful AI assistant with access to various tools."
 
 
 def test_databricks_config_defaults():

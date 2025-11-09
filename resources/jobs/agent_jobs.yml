@@ -15,8 +15,7 @@ resources:
             entry_point: langgraph_mcp_agent
             parameters:
               - "evaluate"
-              - "--dataset"
-              - "data/eval_dataset.json"
+              # Dataset will be loaded from Unity Catalog automatically
           environment_key: default_env
       
       environments:
@@ -59,8 +58,7 @@ resources:
             entry_point: langgraph_mcp_agent
             parameters:
               - "evaluate"
-              - "--dataset"
-              - "data/eval_dataset.json"
+              # Dataset will be loaded from Unity Catalog automatically
           environment_key: default_env
       
       environments:

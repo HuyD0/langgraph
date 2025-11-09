@@ -11,8 +11,7 @@ python:
     - "resources:load_resources"
 
 include:
-  - resources/*.yml
-  - resources/*/*.yml
+  - resources/**/*.yml
 
 artifacts:
   python_artifact:

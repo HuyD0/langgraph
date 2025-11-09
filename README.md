@@ -1,6 +1,16 @@
-# LangGraph MCP Agent
+# LangGraph MCP Agent - Databricks ML Lifecycle
 
-A production-ready LangGraph agent with Model Context Protocol (MCP) integration for Databricks, structured as an **MLflow ML Application**.
+A production-ready LangGraph agent with Model Context Protocol (MCP) integration, following Databricks ML lifecycle best practices with MLflow ML Applications and Unity Catalog.
+
+## 🎯 Overview
+
+This project demonstrates a complete ML lifecycle implementation on Databricks:
+- **Development**: Local development with VS Code and testing
+- **Experimentation**: Interactive notebooks and MLflow tracking
+- **Training/Registration**: Automated model logging to Unity Catalog
+- **Evaluation**: Automated quality checks with UC datasets
+- **Deployment**: Model serving with auto-scaling
+- **Monitoring**: MLflow tracking and observability
 
 ## 🚀 Quick Start
 
@@ -8,46 +18,124 @@ A production-ready LangGraph agent with Model Context Protocol (MCP) integration
 # 1. Install dependencies
 uv sync --dev
 
-# 2. Validate bundle
-databricks bundle validate
+# 2. Register evaluation dataset to Unity Catalog
+langgraph-agent register-dataset
 
-# 3. Deploy to dev
+# 3. Deploy to Databricks
 databricks bundle deploy -t dev
 
-# 4. Register and deploy the agent
-langgraph-mcp-agent deploy
+# 4. Run deployment pipeline (register + validate)
+databricks bundle run agent_deployment -t dev
 ```
 
-📚 **Documentation**:
-- **Start Here**: [`docs/START_HERE.md`](docs/START_HERE.md)
-- **ML Application**: [`docs/ML_APPLICATION.md`](docs/ML_APPLICATION.md) ⭐ NEW
-- **Getting Started**: [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)
+## 📊 ML Lifecycle Stages
 
-## 📂 Project Structure (ML Application)
+### 1️⃣ Development (Local)
+```bash
+# Install and test locally
+make install
+make test
+langgraph-agent serve  # Test agent locally
+```
+
+### 2️⃣ Experimentation (Notebooks)
+- Use `notebooks/quickstart.ipynb` for interactive development
+- MLflow automatically tracks experiments
+- Iterate on prompts, tools, and model selection
+
+### 3️⃣ Training/Registration (Automated)
+```bash
+# Deploy and register model to Unity Catalog
+databricks bundle run agent_deployment -t dev
+```
+- Logs model to MLflow
+- Registers to Unity Catalog: `rag.development.langgraph_mcp_agent`
+- Captures dependencies and configuration
+
+### 4️⃣ Evaluation (Automated)
+```bash
+# Run evaluation with UC dataset
+databricks bundle run agent_evaluation -t dev
+```
+- Loads dataset from Unity Catalog
+- Runs quality metrics (Relevance, Safety)
+- Tracks results in MLflow
+
+### 5️⃣ Deployment (Production)
+```bash
+# Deploy to production
+databricks bundle deploy -t prod
+databricks bundle run agent_deployment -t prod
+```
+- Creates Model Serving endpoint
+- Auto-scaling REST API
+- Production monitoring
+
+### 6️⃣ Monitoring (Production)
+- View metrics in MLflow UI
+- Monitor serving endpoint performance
+- Track quality over time
+
+## 📂 Project Structure
 
 ```
-lg-demo/
-├── src/langgraph_agent/          # Main package
-│   ├── mlflow.yaml               # ML Application definition ⭐
-│   ├── app.py                    # Application entry point ⭐
-│   ├── models/                   # Pydantic models & configs
-│   ├── core/                     # Agent logic
-│   ├── utils/                    # Utilities
-│   ├── cli.py                    # CLI tool
-│   ├── evaluate.py               # Evaluation
-│   └── deploy.py                 # Deployment
-├── resources/                     # DAB resources
-├── databricks.yml                # Bundle configuration
+langgraph-mcp-agent/
+├── configs/                      # Configuration (YAML)
+│   ├── default.yaml             # Base configuration
+│   ├── dev.yaml                 # Development overrides
+│   └── prod.yaml                # Production overrides
+│
+├── src/langgraph_agent/         # Source package (as wheel)
+│   ├── configs/                 # Packaged configs
+│   ├── core/                    # Agent implementation
+│   │   ├── agent.py            # LangGraph agent
+│   │   ├── mcp_client.py       # MCP tools
+│   │   └── tools.py            # Custom tools
+│   ├── models/                  # Pydantic models
+│   ├── utils/                   # Utilities
+│   │   ├── config_loader.py    # YAML config system
+│   │   ├── logging.py          # Logging setup
+│   │   └── mlflow_setup.py     # MLflow integration
+│   ├── app.py                   # ML Application entry ⭐
+│   ├── mlflow.yaml              # MLflow metadata ⭐
+│   ├── cli.py                   # CLI commands
+│   ├── deploy.py                # Deployment pipeline
+│   ├── evaluate.py              # Evaluation pipeline
+│   ├── data_utils.py           # UC dataset utilities
+│   └── jobs.py                  # Job-safe wrappers
+│
+├── notebooks/                    # Interactive development
+│   ├── quickstart.ipynb         # Getting started
+│   └── register_eval_dataset.py # Dataset to UC
+│
+├── data/                         # Data assets
+│   └── eval_dataset.json        # Evaluation data
+│
+├── resources/                    # Databricks Asset Bundle
+│   ├── agent_jobs.yml           # Job definitions
+│   └── agent_serving.py         # Serving config
+│
 ├── tests/                        # Test suite
-└── docs/                         # Documentation
+│   ├── unit/                    # Unit tests
+│   └── integration/             # Integration tests
+│
+├── databricks.yml               # Asset Bundle config
+├── pyproject.toml              # Package definition
+└── docs/                        # Documentation
+    ├── PROJECT_STRUCTURE.md    # Detailed structure ⭐
+    └── ...                      # Other guides
 ```
-
-**Note**: `mlflow.yaml` and `app.py` are inside the package so they're included in the wheel and available on Databricks.
 
 ## ✨ Key Features
 
-- 🚀 **Serverless Single-Node Compute** - 70% faster startup, 50% cost savings
-- 🏗️ **Infrastructure as Code** - Databricks Asset Bundles
+### ML Lifecycle
+- ✅ **Complete workflow**: Dev → Experiment → Train → Evaluate → Deploy → Monitor
+- ✅ **Unity Catalog integration**: Models and datasets governed and versioned
+- ✅ **MLflow tracking**: Automatic experiment and model logging
+- ✅ **Automated evaluation**: Quality metrics with UC datasets
+- ✅ **Asset Bundles**: Infrastructure as code (IaC)
+
+### Technical Excellence
 - 🤖 **LangGraph Agent** - MCP tool integration
 - 📊 **MLOps Ready** - MLflow + Unity Catalog
 - 🎯 **ML Application** - Structured deployment pattern ⭐ NEW

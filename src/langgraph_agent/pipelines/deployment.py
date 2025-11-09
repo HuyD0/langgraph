@@ -5,15 +5,15 @@ from typing import Optional
 from databricks import agents
 from pkg_resources import get_distribution
 
-from .models import AgentConfig
-from .utils.mlflow_setup import (
+from ..models import AgentConfig
+from ..utils.mlflow_setup import (
     log_model_to_mlflow,
     register_model_to_uc,
     setup_mlflow_registry,
     setup_mlflow_tracking,
     validate_model,
 )
-from .utils.logging import get_logger
+from ..monitoring.logging import get_logger
 
 logger = get_logger(__name__)
 

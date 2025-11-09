@@ -5,7 +5,6 @@ It follows the Databricks pattern for deploying LangGraph MCP agents.
 """
 
 import asyncio
-import os
 from typing import Generator, Optional, Sequence, Union
 
 import mlflow
@@ -27,7 +26,7 @@ from mlflow.types.responses import (
     to_chat_completions_input,
 )
 
-from langgraph_agent.core.mcp_client import create_mcp_tools
+from langgraph_agent.integrations.mcp import create_mcp_tools
 from langgraph_agent.models import AgentState
 from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
 
