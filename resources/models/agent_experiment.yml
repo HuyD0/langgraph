@@ -2,7 +2,7 @@
 resources:
   experiments:
     agent_experiment:
-      name: /Users/${var.user_email}/langgraph-mcp-agent-${bundle.target}
+      name: ${var.experiment_name}
       tags:
         - key: project
           value: langgraph-mcp-agent

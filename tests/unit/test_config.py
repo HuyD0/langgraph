@@ -19,6 +19,10 @@ def test_model_config_defaults():
     config = ModelConfig()
     assert config.endpoint_name == "databricks-claude-3-7-sonnet"
     assert config.system_prompt == "You are a helpful AI assistant with access to various tools."
+    # Verify prompt registry is disabled by default
+    assert config.use_prompt_registry is False
+    assert config.prompt_name is None
+    assert config.prompt_version is None
 
 
 def test_databricks_config_defaults():

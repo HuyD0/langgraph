@@ -1,9 +1,13 @@
-# Agent deployment pipeline - complete deployment workflow
-# Registers model, validates it, and deploys to serving endpoint
+# Agent deployment pipeline - Direct Python scripts (RECOMMENDED)
+# 
+# This version uses direct Python entry points (cleaner and faster than CLI).
+# All tasks use serverless compute following Databricks best practices.
+# Reference: https://docs.databricks.com/aws/en/dev-tools/bundles/examples#job-that-uses-serverless-compute
+#
 resources:
   jobs:
-    agent_deployment_pipeline:
-      name: ${bundle.target}_agent_deployment_pipeline
+    agent_deployment_pipeline_v2:
+      name: ${bundle.target}_agent_deployment_v2
       
       # Run as the user who has access to endpoints
       run_as:
@@ -13,47 +17,38 @@ resources:
         - task_key: register_model
           python_wheel_task:
             package_name: langgraph_mcp_agent
-            entry_point: langgraph_mcp_agent
-            parameters:
-              - "register"
-              - "--model-code"
-              - "."
-              - "--validate"
-          environment_key: default_env
+            entry_point: register_model
+            named_parameters:
+              experiment_name: ${var.experiment_name}
+          environment_key: serverless_env
         
         - task_key: validate_model
           depends_on:
             - task_key: register_model
           python_wheel_task:
             package_name: langgraph_mcp_agent
-            entry_point: langgraph_mcp_agent
-            parameters:
-              - "evaluate"
-              # Dataset will be loaded from Unity Catalog automatically
-          environment_key: default_env
+            entry_point: evaluate_model
+          environment_key: serverless_env
         
         - task_key: deploy_to_serving
           depends_on:
             - task_key: validate_model
           python_wheel_task:
             package_name: langgraph_mcp_agent
-            entry_point: langgraph_mcp_agent
-            parameters:
-              - "deploy"
-              - "--catalog"
-              - "${var.catalog}"
-              - "--schema"
-              - "${var.schema}"
-              - "--model-name"
-              - "${var.model_name}"
-          environment_key: default_env
+            entry_point: deploy_model
+            named_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_name: ${var.model_name}
+          environment_key: serverless_env
       
+      # Environment spec for serverless compute
       environments:
-        - environment_key: default_env
+        - environment_key: serverless_env
           spec:
-            client: "1"
+            environment_version: '2'
             dependencies:
-              - "/Workspace/Users/huy.d@hotmail.com/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
+              - /Workspace/Users/${var.user_email}/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl
       
       tags:
         project: langgraph-mcp-agent

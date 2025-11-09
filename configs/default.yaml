@@ -7,6 +7,12 @@ model:
   system_prompt: "You are a helpful AI assistant with access to various tools."
   temperature: 0.7
   max_tokens: 4096
+  
+  # MLflow Prompt Registry Configuration
+  # Set use_prompt_registry to true to load system prompt from MLflow Prompt Registry
+  use_prompt_registry: false
+  prompt_name: null  # e.g., "agent-system-prompt"
+  prompt_version: null  # e.g., 1, or use "latest" for @latest alias
 
 # MCP Server Configuration
 mcp:

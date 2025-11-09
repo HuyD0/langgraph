@@ -28,4 +28,18 @@ class ModelConfig(BaseSettings):
         description="System prompt for the agent",
     )
 
+    # MLflow Prompt Registry Configuration
+    use_prompt_registry: bool = Field(
+        default_factory=lambda: get_config_value(_config, "model.use_prompt_registry", "USE_PROMPT_REGISTRY", False),
+        description="Whether to load system prompt from MLflow Prompt Registry",
+    )
+    prompt_name: str | None = Field(
+        default_factory=lambda: get_config_value(_config, "model.prompt_name", "PROMPT_NAME", None),
+        description="Name of the prompt in MLflow Prompt Registry",
+    )
+    prompt_version: str | int | None = Field(
+        default_factory=lambda: get_config_value(_config, "model.prompt_version", "PROMPT_VERSION", None),
+        description="Version of the prompt (number, 'latest', or alias name)",
+    )
+
     model_config = SettingsConfigDict(env_prefix="MODEL_")

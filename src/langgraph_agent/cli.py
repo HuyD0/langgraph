@@ -80,75 +80,113 @@ def serve(host: str, port: int, profile: Optional[str]):
 @click.option("--profile", default=None, help="Databricks CLI profile")
 def evaluate(dataset: Optional[str], profile: Optional[str]):
     """Evaluate the agent using MLflow."""
-    config = get_config()
-    if profile:
-        config.databricks.profile = profile
+    try:
+        config = get_config()
+        if profile:
+            config.databricks.profile = profile
 
-    click.echo("Setting up MLflow tracking...")
-    setup_mlflow_tracking(
-        profile=config.databricks.profile,
-        experiment_name=config.mlflow.experiment_name,
-        enable_autolog=False,
-    )
+        click.echo("Setting up MLflow tracking...")
+        setup_mlflow_tracking(
+            profile=config.databricks.profile,
+            experiment_name=config.mlflow.experiment_name,
+            enable_autolog=False,
+        )
 
-    click.echo("Initializing agent...")
-    ws = get_workspace_client(config.databricks.profile)
-    ws_host = ws.config.host
-    managed_urls = config.mcp.managed_urls or [f"{ws_host}/api/2.0/mcp/functions/system/ai"]
+        click.echo("Initializing agent...")
+        ws = get_workspace_client(config.databricks.profile)
+        ws_host = ws.config.host
+        managed_urls = config.mcp.managed_urls or [f"{ws_host}/api/2.0/mcp/functions/system/ai"]
 
-    agent = initialize_agent(
-        workspace_client=ws,
-        llm_endpoint_name=config.model.endpoint_name,
-        system_prompt=config.model.system_prompt,
-        managed_mcp_urls=managed_urls,
-        custom_mcp_urls=config.mcp.custom_urls,
-    )
+        agent = initialize_agent(
+            workspace_client=ws,
+            llm_endpoint_name=config.model.endpoint_name,
+            system_prompt=config.model.system_prompt,
+            managed_mcp_urls=managed_urls,
+            custom_mcp_urls=config.mcp.custom_urls,
+        )
 
-    click.echo("Running evaluation...")
-    results = run_evaluation_pipeline(
-        agent=agent,
-        dataset_path=dataset,
-        experiment_name=config.mlflow.experiment_name,
-    )
+        click.echo("Running evaluation...")
+        results = run_evaluation_pipeline(
+            agent=agent,
+            dataset_path=dataset,
+            experiment_name=config.mlflow.experiment_name,
+        )
 
-    click.echo(click.style("✓ Evaluation complete!", fg="green"))
-    click.echo(f"Metrics: {results['metrics']}")
+        click.echo(click.style("✓ Evaluation complete!", fg="green"))
+        click.echo(f"Metrics: {results['metrics']}")
+
+        # Return success without calling sys.exit() for Databricks jobs
+        return 0
+    except Exception as e:
+        click.echo(click.style(f"\n✗ Error: {e}", fg="red"), err=True)
+        raise  # Re-raise to let Databricks handle it
 
 
 @cli.command()
 @click.option("--validate/--no-validate", default=True, help="Validate model before deployment")
 @click.option("--profile", default=None, help="Databricks CLI profile")
-def deploy(validate: bool, profile: Optional[str]):
+@click.option("--catalog", default=None, help="Unity Catalog catalog name (overrides config)")
+@click.option("--schema", default=None, help="Unity Catalog schema name (overrides config)")
+@click.option("--model-name", default=None, help="Model name (overrides config)")
+def deploy(
+    validate: bool,
+    profile: Optional[str],
+    catalog: Optional[str],
+    schema: Optional[str],
+    model_name: Optional[str],
+):
     """Deploy the agent to Databricks serving endpoint."""
-    config = get_config()
-    if profile:
-        config.databricks.profile = profile
+    try:
+        config = get_config()
+        if profile:
+            config.databricks.profile = profile
 
-    click.echo("Starting deployment pipeline...")
+        # Override Unity Catalog settings if provided
+        if catalog:
+            config.uc.catalog = catalog
+        if schema:
+            config.uc.schema_name = schema
+        if model_name:
+            config.uc.model_name = model_name
 
-    deployment_result = full_deployment_pipeline(
-        config=config,
-        validate=validate,
-    )
+        click.echo("Starting deployment pipeline...")
+        click.echo(f"  Model: {config.uc.full_model_name}")
 
-    click.echo(click.style("\n✓ Deployment successful!", fg="green"))
-    click.echo(f"Model: {deployment_result['registered_model']['name']}")
-    click.echo(f"Version: {deployment_result['registered_model']['version']}")
-    click.echo(f"Deployment: {deployment_result['deployment']}")
+        deployment_result = full_deployment_pipeline(
+            config=config,
+            validate=validate,
+        )
+
+        click.echo(click.style("\n✓ Deployment successful!", fg="green"))
+        click.echo(f"Model: {deployment_result['registered_model']['name']}")
+        click.echo(f"Version: {deployment_result['registered_model']['version']}")
+        click.echo(f"Deployment: {deployment_result['deployment']}")
+
+        # Return success without calling sys.exit() for Databricks jobs
+        return 0
+    except Exception as e:
+        click.echo(click.style(f"\n✗ Error: {e}", fg="red"), err=True)
+        raise  # Re-raise to let Databricks handle it
 
 
 @cli.command()
 @click.option("--model-code", default=".", help="Path to project root")
 @click.option("--validate/--no-validate", default=True, help="Validate model after logging")
 @click.option("--profile", default=None, help="Databricks CLI profile")
-def register(model_code: str, validate: bool, profile: Optional[str]):
+@click.option("--experiment-name", default=None, help="MLflow experiment name (overrides config)")
+def register(model_code: str, validate: bool, profile: Optional[str], experiment_name: Optional[str]):
     """Log and register model to Unity Catalog (without deployment)."""
     try:
         config = get_config()
         if profile:
             config.databricks.profile = profile
 
+        # Override experiment name if provided
+        if experiment_name:
+            config.mlflow.experiment_name = experiment_name
+
         click.echo("Logging and registering model as ML Application...")
+        click.echo(f"  Experiment: {config.mlflow.experiment_name}")
 
         logged_info, uc_info = log_and_register_model(
             config=config,

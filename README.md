@@ -24,8 +24,30 @@ langgraph-agent register-dataset
 # 3. Deploy to Databricks
 databricks bundle deploy -t dev
 
-# 4. Run deployment pipeline (register + validate)
-databricks bundle run agent_deployment -t dev
+# 4. Run deployment pipeline (register + validate + deploy)
+databricks bundle run agent_deployment_pipeline_v2 -t dev
+```
+
+### Deployment Approaches
+
+This project supports two approaches for running Databricks jobs:
+
+**Recommended: Direct Python Scripts** (`agent_deployment_pipeline_v2`)
+- ✅ Cleaner configuration with environment variables
+- ✅ Faster execution (no CLI parsing overhead)
+- ✅ Direct Python entry points
+- See [`docs/JOB_CONFIGURATION_COMPARISON.md`](docs/JOB_CONFIGURATION_COMPARISON.md) for details
+
+**Legacy: CLI-based** (`agent_deployment_pipeline`)
+- Uses CLI commands with parameters
+- Available for backwards compatibility
+
+```bash
+# Recommended approach
+databricks bundle run agent_deployment_pipeline_v2 -t dev
+
+# Legacy approach  
+databricks bundle run agent_deployment_pipeline -t dev
 ```
 
 ## 📊 ML Lifecycle Stages

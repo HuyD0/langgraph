@@ -92,7 +92,7 @@ def log_and_register_model(
         model_uri=logged_model_info.model_uri,
         uc_model_name=config.uc.full_model_name,
     )
-    print(f"✓ Model registered: {config.uc.full_model_name} (version {uc_model_info.version})")
+    logger.info(f"✓ Model registered: {config.uc.full_model_name} (version {uc_model_info.version})")
 
     return logged_model_info, uc_model_info
 
@@ -121,9 +121,9 @@ def deploy_to_serving_endpoint(
         if not latest_versions:
             raise ValueError(f"No versions found for model {uc_model_name}")
         model_version = latest_versions[0].version
-        print(f"Using latest model version: {model_version}")
+        logger.info(f"Using latest model version: {model_version}")
 
-    print(f"Deploying {uc_model_name} version {model_version}...")
+    logger.info(f"Deploying {uc_model_name} version {model_version}...")
     deployment_info = agents.deploy(
         uc_model_name,
         model_version,
@@ -131,8 +131,8 @@ def deploy_to_serving_endpoint(
         tags=config.deployment.tags,
     )
 
-    print("✓ Agent deployed successfully!")
-    print(f"Endpoint: {deployment_info}")
+    logger.info("✓ Agent deployed successfully!")
+    logger.info(f"Endpoint: {deployment_info}")
 
     return deployment_info
 
@@ -150,9 +150,9 @@ def full_deployment_pipeline(
         validate: Whether to validate before deployment        Returns:
             Dictionary with deployment information
     """
-    print("=" * 60)
-    print("Starting deployment pipeline...")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Starting deployment pipeline...")
+    logger.info("=" * 60)
 
     # Step 1: Log and register model
     logged_model_info, uc_model_info = log_and_register_model(
@@ -167,9 +167,9 @@ def full_deployment_pipeline(
         model_version=uc_model_info.version,
     )
 
-    print("=" * 60)
-    print("Deployment pipeline complete!")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Deployment pipeline complete!")
+    logger.info("=" * 60)
 
     return {
         "logged_model": {

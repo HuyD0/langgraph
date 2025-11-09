@@ -7,6 +7,7 @@
 ## Core Documentation
 - [PROJECT_README.md](PROJECT_README.md) - Complete project reference and API docs
 - [AUTHENTICATION.md](AUTHENTICATION.md) - Authentication setup guide
+- [PROMPT_REGISTRY.md](PROMPT_REGISTRY.md) - **NEW:** MLflow Prompt Registry integration
 
 ## Databricks Asset Bundles
 - [QUICKSTART_DAB.md](QUICKSTART_DAB.md) - Quick start for DAB deployment

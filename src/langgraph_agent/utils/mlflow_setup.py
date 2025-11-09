@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import mlflow
 from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
@@ -211,3 +211,85 @@ def validate_model(
         input_data=test_input,
         env_manager="uv",
     )
+
+
+def load_prompt_from_registry(
+    prompt_name: str,
+    prompt_version: Optional[Union[str, int]] = None,
+    fallback_prompt: Optional[str] = None,
+) -> str:
+    """Load a prompt from MLflow Prompt Registry.
+
+    This function loads prompts from the MLflow Prompt Registry, supporting:
+    - Specific version numbers (e.g., 1, 2, 3)
+    - Version aliases (e.g., "latest", "production", "champion")
+    - Fallback to a default prompt if loading fails
+
+    Args:
+        prompt_name: Name of the prompt in the registry (e.g., "agent-system-prompt")
+        prompt_version: Version number, "latest", or alias name. If None, loads latest version.
+        fallback_prompt: Optional fallback prompt to use if registry load fails
+
+    Returns:
+        The prompt text loaded from the registry or the fallback prompt
+
+    Examples:
+        # Load latest version
+        prompt = load_prompt_from_registry("agent-system-prompt")
+
+        # Load specific version
+        prompt = load_prompt_from_registry("agent-system-prompt", version=2)
+
+        # Load by alias
+        prompt = load_prompt_from_registry("agent-system-prompt", version="production")
+
+        # With fallback
+        prompt = load_prompt_from_registry(
+            "agent-system-prompt",
+            fallback_prompt="You are a helpful assistant."
+        )
+    """
+    try:
+        # Construct the prompt URI
+        if prompt_version is None or prompt_version == "latest":
+            # Load latest version - can use name only or @latest alias
+            prompt_uri = f"prompts:/{prompt_name}"
+            logger.info(f"Loading latest version of prompt: {prompt_name}")
+        elif isinstance(prompt_version, int):
+            # Load specific version number
+            prompt_uri = f"prompts:/{prompt_name}/{prompt_version}"
+            logger.info(f"Loading prompt: {prompt_name} version {prompt_version}")
+        else:
+            # Load by alias (e.g., "production", "champion")
+            prompt_uri = f"prompts:/{prompt_name}@{prompt_version}"
+            logger.info(f"Loading prompt: {prompt_name} with alias '{prompt_version}'")
+
+        # Load the prompt from the registry
+        prompt = mlflow.genai.load_prompt(prompt_uri)
+
+        # Get the prompt text - handle both text and chat prompts
+        if prompt.is_text_prompt:
+            prompt_text = prompt.template
+        else:
+            # For chat prompts, extract the system message content
+            system_messages = [msg for msg in prompt.template if msg.get("role") == "system"]
+            if system_messages:
+                prompt_text = system_messages[0].get("content", "")
+            else:
+                logger.warning("Chat prompt has no system message, using first message content")
+                prompt_text = prompt.template[0].get("content", "") if prompt.template else ""
+
+        logger.info(f"✓ Successfully loaded prompt from registry: {prompt_name}")
+        logger.debug(f"Prompt preview: {prompt_text[:100]}...")
+
+        return prompt_text
+
+    except Exception as e:
+        logger.warning(f"Failed to load prompt '{prompt_name}' from registry: {e}")
+
+        if fallback_prompt:
+            logger.info("Using fallback prompt")
+            return fallback_prompt
+        else:
+            logger.error("No fallback prompt provided, re-raising exception")
+            raise

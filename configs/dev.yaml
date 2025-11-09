@@ -10,10 +10,15 @@ deployment:
 model:
   endpoint_name: "databricks-claude-3-7-sonnet"
   temperature: 0.7
+  
+  # Example: Enable prompt registry in dev for testing
+  # use_prompt_registry: true
+  # prompt_name: "agent-system-prompt"
+  # prompt_version: "latest"  # or specific version like 1, 2, etc.
 
 # Dev MLflow settings
-# Note: In development mode, DAB adds a "[dev user]" prefix to experiment names
-# This matches the experiment created by resources/models/agent_experiment.yml
+# The experiment name should match the DAB definition in resources/models/agent_experiment.yml
+# DAB will automatically add the "[dev user]" prefix in development mode
 mlflow:
-  experiment_name: "/Users/huy.d@hotmail.com/[dev huy_d] langgraph-mcp-agent-dev"
+  experiment_name: "/Users/huy.d@hotmail.com/langgraph-mcp-agent-dev"
   run_name: "dev_agent_run"

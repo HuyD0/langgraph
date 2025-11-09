@@ -5,6 +5,10 @@ from typing import Any, List, Optional
 import mlflow
 from mlflow.genai.scorers import RelevanceToQuery, Safety
 
+from langgraph_agent.monitoring.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 def load_evaluation_dataset(
     dataset_path: Optional[str] = None,
@@ -30,8 +34,8 @@ def load_evaluation_dataset(
 
             return load_eval_dataset_from_uc(catalog=catalog, schema=schema)
         except Exception as e:
-            print(f"Could not load from Unity Catalog: {e}")
-            print("Falling back to file or default dataset...")
+            logger.warning(f"Could not load from Unity Catalog: {e}")
+            logger.info("Falling back to file or default dataset...")
 
     # Fall back to file
     if dataset_path:
@@ -108,14 +112,14 @@ def run_evaluation_pipeline(
     dataset = load_evaluation_dataset(dataset_path)
 
     # Run evaluation
-    print(f"Running evaluation on {len(dataset)} examples...")
+    logger.info(f"Running evaluation on {len(dataset)} examples...")
     eval_results = evaluate_agent(agent, dataset=dataset)
 
     # Extract metrics
     metrics = eval_results.metrics
 
-    print("Evaluation complete!")
-    print(f"Results: {metrics}")
+    logger.info("Evaluation complete!")
+    logger.info(f"Results: {metrics}")
 
     return {
         "results": eval_results,

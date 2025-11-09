@@ -30,6 +30,7 @@ from langgraph_agent.integrations.mcp import create_mcp_tools
 from langgraph_agent.models import AgentState
 from langgraph_agent.monitoring.logging import get_logger, configure_databricks_logging
 from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
+from langgraph_agent.utils.mlflow_setup import load_prompt_from_registry
 
 # Configure logging for Databricks environment
 configure_databricks_logging()
@@ -41,6 +42,24 @@ _config = get_cached_config()
 # Enable nested event loops for async operations
 nest_asyncio.apply()
 logger.debug("Nested event loops enabled")
+
+###############################################################################
+## Define module-level configuration
+## These can be overridden via environment variables
+###############################################################################
+
+# LLM endpoint configuration with fallback to common default
+# Priority: ENV VAR > config file > hardcoded default
+LLM_ENDPOINT_NAME = os.getenv("LLM_ENDPOINT_NAME") or get_config_value(
+    _config, "model.endpoint_name", default="databricks-claude-3-7-sonnet"
+)
+
+# System prompt configuration with fallback
+SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT") or get_config_value(
+    _config, "model.system_prompt", default="You are a helpful AI assistant with access to various tools."
+)
+
+logger.debug(f"Module configuration loaded: endpoint={LLM_ENDPOINT_NAME}")
 
 
 def create_tool_calling_agent(
@@ -189,13 +208,62 @@ def create_agent(
     mlflow.langchain.autolog()
     logger.debug("MLflow autologging enabled")
 
-    # Use environment variables with config fallbacks
+    # Use environment variables with config fallbacks and hardcoded defaults
     llm_endpoint_name = (
-        model_endpoint_name or os.getenv("LLM_ENDPOINT_NAME") or get_config_value(_config, "model.endpoint_name")
+        model_endpoint_name
+        or os.getenv("LLM_ENDPOINT_NAME")
+        or get_config_value(_config, "model.endpoint_name", default="databricks-claude-3-7-sonnet")
     )
-    system_prompt = system_prompt or os.getenv("SYSTEM_PROMPT") or get_config_value(_config, "model.system_prompt")
+
+    # Handle system prompt - check if using prompt registry
+    use_prompt_registry = get_config_value(_config, "model.use_prompt_registry", default=False)
+
+    if use_prompt_registry and not system_prompt:
+        # Load from MLflow Prompt Registry
+        prompt_name = get_config_value(_config, "model.prompt_name")
+        prompt_version = get_config_value(_config, "model.prompt_version")
+        fallback_prompt = get_config_value(
+            _config, "model.system_prompt", default="You are a helpful AI assistant with access to various tools."
+        )
+
+        if prompt_name:
+            logger.info(f"Loading system prompt from MLflow Prompt Registry: {prompt_name}")
+            try:
+                system_prompt = load_prompt_from_registry(
+                    prompt_name=prompt_name,
+                    prompt_version=prompt_version,
+                    fallback_prompt=fallback_prompt,
+                )
+            except Exception as e:
+                logger.error(f"Failed to load prompt from registry: {e}")
+                logger.info("Falling back to config/environment prompt")
+                system_prompt = fallback_prompt
+        else:
+            logger.warning("use_prompt_registry is true but prompt_name is not configured")
+            system_prompt = (
+                system_prompt
+                or os.getenv("SYSTEM_PROMPT")
+                or get_config_value(
+                    _config, "model.system_prompt", default="You are a helpful AI assistant with access to various tools."
+                )
+            )
+    else:
+        # Use traditional config/env approach with fallback
+        system_prompt = (
+            system_prompt
+            or os.getenv("SYSTEM_PROMPT")
+            or get_config_value(
+                _config, "model.system_prompt", default="You are a helpful AI assistant with access to various tools."
+            )
+        )
+
+    # Final safety check - ensure system_prompt is never None
+    if system_prompt is None:
+        system_prompt = "You are a helpful AI assistant with access to various tools."
+        logger.warning("System prompt was None, using default fallback prompt")
+
     logger.info(f"Using LLM endpoint: {llm_endpoint_name}")
-    logger.debug(f"System prompt: {system_prompt[:50]}...")
+    logger.debug(f"System prompt: {system_prompt[:50] if system_prompt else 'None'}...")
 
     # Create workspace client
     logger.debug("Creating Databricks workspace client...")
@@ -271,14 +339,51 @@ def create_agent(
 
 # Initialize the agent at module level for code-based logging
 logger.info("Starting module-level agent initialization...")
+
 # Enable MLflow autologging
 mlflow.langchain.autolog()
 
-# Initialize with default configuration
-# Configuration can be overridden via environment variables
-logger.info("Creating default agent instance...")
-AGENT = create_agent()
-logger.info("✓ Default agent instance created")
+
+# Initialize agent with configuration from environment/config
+# This allows the model to be loaded during MLflow operations
+def initialize_agent():
+    """Initialize the agent with MCP tools at module load time"""
+    # Get workspace client first
+    workspace_client = WorkspaceClient()
+    host = workspace_client.config.host
+
+    # Setup MCP server URLs
+    managed_mcp_urls = [f"{host}/api/2.0/mcp/functions/system/ai"]
+    custom_mcp_urls = []
+
+    logger.info(f"Managed MCP URLs: {len(managed_mcp_urls)}")
+    logger.info(f"Custom MCP URLs: {len(custom_mcp_urls)}")
+
+    # Initialize LLM - use module constant (guaranteed to have a value)
+    logger.info(f"Using LLM endpoint: {LLM_ENDPOINT_NAME}")
+    llm = ChatDatabricks(endpoint=LLM_ENDPOINT_NAME)
+    logger.info(f"✓ ChatDatabricks initialized with endpoint: {LLM_ENDPOINT_NAME}")
+
+    # Use module constant for system prompt (guaranteed to have a value)
+    system_prompt = SYSTEM_PROMPT
+
+    # Create MCP tools from the configured servers
+    mcp_tools = asyncio.run(
+        create_mcp_tools(
+            ws=workspace_client,
+            managed_server_urls=managed_mcp_urls,
+            custom_server_urls=custom_mcp_urls,
+        )
+    )
+    logger.info(f"✓ Created {len(mcp_tools)} MCP tools")
+
+    # Create the agent graph with LLM, tools, and system prompt
+    agent = create_tool_calling_agent(llm, mcp_tools, system_prompt)
+    return LangGraphResponsesAgent(agent)
+
+
+AGENT = initialize_agent()
+logger.info("✓ Agent instance created")
 
 # Register the agent with MLflow for code-based logging
 mlflow.models.set_model(AGENT)

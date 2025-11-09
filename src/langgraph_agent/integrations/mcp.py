@@ -8,7 +8,11 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client as connect
 from pydantic import create_model
 
+from langgraph_agent.monitoring.logging import get_logger
+
 from .tools import MCPTool
+
+logger = get_logger(__name__)
 
 
 async def get_custom_mcp_tools(ws: WorkspaceClient, server_url: str):
@@ -112,7 +116,7 @@ async def create_mcp_tools(
                     tool = create_langchain_tool_from_mcp(mcp_tool, server_url, ws, is_custom=False)
                     tools.append(tool)
             except Exception as e:
-                print(f"Error loading tools from managed server {server_url}: {e}")
+                logger.error(f"Error loading tools from managed server {server_url}: {e}")
 
     if custom_server_urls:
         # Load custom MCP tools (async)
@@ -123,6 +127,6 @@ async def create_mcp_tools(
                     tool = create_langchain_tool_from_mcp(mcp_tool, server_url, ws, is_custom=True)
                     tools.append(tool)
             except Exception as e:
-                print(f"Error loading tools from custom server {server_url}: {e}")
+                logger.error(f"Error loading tools from custom server {server_url}: {e}")
 
     return tools

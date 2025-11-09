@@ -31,6 +31,9 @@ variables:
   llm_endpoint:
     description: LLM serving endpoint name
     default: databricks-claude-3-7-sonnet
+  experiment_name:
+    description: MLflow experiment name for tracking
+    default: /Users/huy.d@hotmail.com/langgraph-mcp-agent
 
 targets:
   dev:
@@ -49,11 +52,12 @@ targets:
       model_name: langgraph_mcp_agent
       user_email: huy.d@hotmail.com
       llm_endpoint: databricks-claude-3-7-sonnet
+      experiment_name: /Users/huy.d@hotmail.com/langgraph-mcp-agent-dev
     
-  prod:
+  uat:
     mode: production
     workspace:
-      host: https://adb-3253299566947192.12.azuredatabricks.net
+      host: https://adb-3974608955864843.3.azuredatabricks.net
       # We explicitly deploy to /Workspace/Users/huy.d@hotmail.com to make sure we only have a single copy.
       root_path: /Workspace/Users/huy.d@hotmail.com/.bundle/${bundle.name}/${bundle.target}
       profile: production  # Use production profile
@@ -63,6 +67,7 @@ targets:
       model_name: langgraph_mcp_agent
       user_email: huy.d@hotmail.com
       llm_endpoint: databricks-claude-3-7-sonnet
+      experiment_name: /Users/huy.d@hotmail.com/langgraph-mcp-agent-uat
     permissions:
       - user_name: huy.d@hotmail.com
         level: CAN_MANAGE

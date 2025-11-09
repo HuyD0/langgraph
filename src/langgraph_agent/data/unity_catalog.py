@@ -168,7 +168,7 @@ if __name__ == "__main__":
         schema=schema,
     )
 
-    print(f"\n✓ Dataset registered: {table_name}")
-    print("\nTo use in evaluation:")
-    print("  from langgraph_agent.data import load_eval_dataset_from_uc")
-    print("  dataset = load_eval_dataset_from_uc()")
+    logger.info(f"\n✓ Dataset registered: {table_name}")
+    logger.info("\nTo use in evaluation:")
+    logger.info("  from langgraph_agent.data import load_eval_dataset_from_uc")
+    logger.info("  dataset = load_eval_dataset_from_uc()")
