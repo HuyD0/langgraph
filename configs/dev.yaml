@@ -12,6 +12,8 @@ model:
   temperature: 0.7
 
 # Dev MLflow settings
+# Note: In development mode, DAB adds a "[dev user]" prefix to experiment names
+# This matches the experiment created by resources/models/agent_experiment.yml
 mlflow:
-  experiment_name: "/Users/${user.email}/langgraph-mcp-agent-dev"
+  experiment_name: "/Users/huy.d@hotmail.com/[dev huy_d] langgraph-mcp-agent-dev"
   run_name: "dev_agent_run"
