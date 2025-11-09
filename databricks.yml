@@ -1,0 +1,53 @@
+# This is a Databricks asset bundle definition for langgraph.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: langgraph
+  uuid: c9f66a0c-a9d4-4351-9f3c-fcee8f8ce125
+
+python:
+  venv_path: .venv
+  # Functions called to load resources defined in Python. See resources/__init__.py
+  resources:
+    - "resources:load_resources"
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+# Variable declarations. These variables are assigned in the dev/prod targets below.
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-3253299566947192.12.azuredatabricks.net
+    variables:
+      catalog: rag
+      schema: development
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-3253299566947192.12.azuredatabricks.net
+      # We explicitly deploy to /Workspace/Users/huy.d@hotmail.com to make sure we only have a single copy.
+      root_path: /Workspace/Users/huy.d@hotmail.com/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: development
+      schema: prod
+    permissions:
+      - user_name: huy.d@hotmail.com
+        level: CAN_MANAGE
