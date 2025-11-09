@@ -49,6 +49,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/langgraph_agent"]
+include = ["src/langgraph_agent/*.yaml", "src/langgraph_agent/app.py"]
 
 [tool.black]
 line-length = 125

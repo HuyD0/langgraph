@@ -13,6 +13,9 @@ from .utils.mlflow_setup import (
     setup_mlflow_tracking,
     validate_model,
 )
+from .utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_model_dependencies() -> list:
@@ -21,7 +24,7 @@ def get_model_dependencies() -> list:
     Returns:
         List of pip requirements
     """
-    return [
+    deps = [
         "databricks-mcp",
         f"langgraph=={get_distribution('langgraph').version}",
         f"mcp=={get_distribution('mcp').version}",
@@ -30,24 +33,30 @@ def get_model_dependencies() -> list:
         f"nest-asyncio=={get_distribution('nest-asyncio').version}",
         f"pydantic=={get_distribution('pydantic').version}",
     ]
+    logger.debug(f"Model dependencies: {deps}")
+    return deps
 
 
 def log_and_register_model(
     config: AgentConfig,
-    model_code_path: str = "src/langgraph_agent/core/agent.py",
+    model_code_path: str = ".",
     validate: bool = True,
 ) -> tuple:
     """Log model to MLflow and register to Unity Catalog.
 
     Args:
         config: Agent configuration
-        model_code_path: Path to the agent Python module
+        model_code_path: Path to project root containing mlflow.yaml (default: current directory)
         validate: Whether to validate the model before registration
 
     Returns:
         Tuple of (logged_model_info, uc_model_info)
     """
+    logger.info("Starting model logging and registration process")
+    logger.debug(f"Configuration: profile={config.databricks.profile}, model={config.uc.full_model_name}")
+
     # Setup MLflow tracking
+    logger.info("Setting up MLflow tracking...")
     setup_mlflow_tracking(
         profile=config.databricks.profile,
         experiment_name=config.mlflow.experiment_name,
@@ -55,29 +64,30 @@ def log_and_register_model(
     )
 
     # Log model to MLflow
-    print("Logging model to MLflow...")
+    logger.info("Logging model to MLflow...")
     logged_model_info = log_model_to_mlflow(
         model_code_path=model_code_path,
         model_endpoint_name=config.model.endpoint_name,
         pip_requirements=get_model_dependencies(),
     )
-    print(f"✓ Model logged: {logged_model_info.model_uri}")
+    logger.info(f"✓ Model logged: {logged_model_info.model_uri}")
 
     # Validate model if requested
     if validate:
-        print("Validating model...")
+        logger.info("Validating model...")
         try:
             validation_result = validate_model(logged_model_info.run_id)
-            print(f"✓ Model validation successful: {validation_result}")
+            logger.info(f"✓ Model validation successful: {validation_result}")
         except Exception as e:
-            print(f"⚠ Model validation failed: {e}")
-            print("Continuing with registration anyway...")
+            logger.warning(f"Model validation failed: {e}")
+            logger.warning("Continuing with registration anyway...")
 
     # Setup Unity Catalog registry
+    logger.info("Setting up Unity Catalog registry...")
     setup_mlflow_registry(config.databricks.profile)
 
     # Register to Unity Catalog
-    print(f"Registering model to Unity Catalog: {config.uc.full_model_name}")
+    logger.info(f"Registering model to Unity Catalog: {config.uc.full_model_name}")
     uc_model_info = register_model_to_uc(
         model_uri=logged_model_info.model_uri,
         uc_model_name=config.uc.full_model_name,
@@ -129,14 +139,14 @@ def deploy_to_serving_endpoint(
 
 def full_deployment_pipeline(
     config: AgentConfig,
-    model_code_path: str = "src/langgraph_agent/core/agent.py",
+    model_code_path: str = ".",
     validate: bool = True,
 ) -> dict:
     """Run the complete deployment pipeline.
 
     Args:
         config: Agent configuration
-        model_code_path: Path to the agent Python module
+        model_code_path: Path to project root containing mlflow.yaml (default: current directory)
         validate: Whether to validate before deployment
 
     Returns:

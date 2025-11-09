@@ -137,7 +137,7 @@ def deploy(validate: bool, profile: Optional[str]):
 
 
 @cli.command()
-@click.option("--model-code", default="src/langgraph_agent/core/agent.py", help="Path to agent code")
+@click.option("--model-code", default=".", help="Path to project root containing mlflow.yaml")
 @click.option("--validate/--no-validate", default=True, help="Validate model after logging")
 @click.option("--profile", default=None, help="Databricks CLI profile")
 def register(model_code: str, validate: bool, profile: Optional[str]):
@@ -146,7 +146,7 @@ def register(model_code: str, validate: bool, profile: Optional[str]):
     if profile:
         config.databricks.profile = profile
 
-    click.echo("Logging and registering model...")
+    click.echo("Logging and registering model as ML Application...")
 
     logged_info, uc_info = log_and_register_model(
         config=config,

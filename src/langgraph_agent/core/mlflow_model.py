@@ -1,8 +1,13 @@
-"""Core agent implementation using LangGraph."""
+"""Agent code for MLflow code-based logging.
+
+This file defines the agent that will be logged to MLflow using code-based approach.
+It follows the Databricks pattern for deploying LangGraph MCP agents.
+"""
 
 import asyncio
 from typing import Generator, Optional, Sequence, Union
 
+import mlflow
 import nest_asyncio
 from databricks.sdk import WorkspaceClient
 from databricks_langchain import ChatDatabricks
@@ -21,14 +26,11 @@ from mlflow.types.responses import (
     to_chat_completions_input,
 )
 
-from .mcp_client import create_mcp_tools
-from ..models import AgentState
-from ..utils.logging import get_logger
+from langgraph_agent.core.mcp_client import create_mcp_tools
+from langgraph_agent.models import AgentState
 
 # Enable nested event loops for async operations
 nest_asyncio.apply()
-
-logger = get_logger(__name__)
 
 
 def create_tool_calling_agent(
@@ -54,15 +56,12 @@ def create_tool_calling_agent(
         last_message = messages[-1]
         # If function (tool) calls are present, continue; otherwise, end
         if isinstance(last_message, AIMessage) and last_message.tool_calls:
-            logger.debug(f"Agent continuing with {len(last_message.tool_calls)} tool calls")
             return "continue"
         else:
-            logger.debug("Agent workflow ending")
             return "end"
 
     # Preprocess: optionally prepend a system prompt to the conversation history
     if system_prompt:
-        logger.debug("Using system prompt preprocessing")
         preprocessor = RunnableLambda(lambda state: [{"role": "system", "content": system_prompt}] + state["messages"])
     else:
         preprocessor = RunnableLambda(lambda state: state["messages"])
@@ -71,11 +70,9 @@ def create_tool_calling_agent(
 
     def call_model(state: AgentState, config: RunnableConfig):
         """Invoke the model within the workflow."""
-        logger.debug(f"Calling model with {len(state['messages'])} messages")
         response = model_runnable.invoke(state, config)
         return {"messages": [response]}
 
-    logger.info("Building agent workflow graph")
     workflow = StateGraph(AgentState)  # Create the agent's state machine
 
     workflow.add_node("agent", RunnableLambda(call_model))  # Agent node (LLM)
@@ -92,7 +89,6 @@ def create_tool_calling_agent(
     )
     workflow.add_edge("tools", "agent")  # After tools are called, return to agent node
 
-    logger.info("✓ Agent workflow compiled successfully")
     # Compile and return the tool-calling agent workflow
     return workflow.compile()
 
@@ -160,7 +156,6 @@ class LangGraphResponsesAgent(ResponsesAgent):
 
 
 def initialize_agent(
-    workspace_client: WorkspaceClient,
     llm_endpoint_name: str,
     system_prompt: str,
     managed_mcp_urls: list = None,
@@ -169,7 +164,6 @@ def initialize_agent(
     """Initialize the complete agent with MCP tools.
 
     Args:
-        workspace_client: Authenticated WorkspaceClient
         llm_endpoint_name: Name of the LLM serving endpoint
         system_prompt: System prompt for the agent
         managed_mcp_urls: List of managed MCP server URLs
@@ -178,14 +172,13 @@ def initialize_agent(
     Returns:
         Initialized LangGraphResponsesAgent
     """
-    logger.info(f"Initializing agent with endpoint: {llm_endpoint_name}")
+    # Create workspace client
+    workspace_client = WorkspaceClient()
 
     # Create LLM
     llm = ChatDatabricks(endpoint=llm_endpoint_name)
-    logger.info("✓ LLM client created")
 
     # Create MCP tools from the configured servers
-    logger.info("Creating MCP tools...")
     mcp_tools = asyncio.run(
         create_mcp_tools(
             ws=workspace_client,
@@ -193,10 +186,30 @@ def initialize_agent(
             custom_server_urls=custom_mcp_urls or [],
         )
     )
-    logger.info(f"✓ Created {len(mcp_tools)} MCP tools")
 
     # Create the agent graph with an LLM, tool set, and system prompt
-    logger.info("Building agent graph...")
     agent = create_tool_calling_agent(llm, mcp_tools, system_prompt)
-    logger.info("✓ Agent initialization complete")
     return LangGraphResponsesAgent(agent)
+
+
+# Enable MLflow autologging
+mlflow.langchain.autolog()
+
+# Initialize the agent with default configuration
+# This will be executed when the model is loaded
+LLM_ENDPOINT_NAME = "databricks-meta-llama-3-1-70b-instruct"
+system_prompt = "You are a helpful AI assistant with access to various tools."
+workspace_client = WorkspaceClient()
+host = workspace_client.config.host
+MANAGED_MCP_SERVER_URLS = [f"{host}/api/2.0/mcp/functions/system/ai"]
+CUSTOM_MCP_SERVER_URLS = []
+
+AGENT = initialize_agent(
+    llm_endpoint_name=LLM_ENDPOINT_NAME,
+    system_prompt=system_prompt,
+    managed_mcp_urls=MANAGED_MCP_SERVER_URLS,
+    custom_mcp_urls=CUSTOM_MCP_SERVER_URLS,
+)
+
+# Register the agent with MLflow
+mlflow.models.set_model(AGENT)

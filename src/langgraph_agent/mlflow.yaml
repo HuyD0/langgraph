@@ -1,0 +1,14 @@
+ml_application:
+  name: langgraph-mcp-agent
+  description: LangGraph agent with MCP tool calling capabilities
+  entry:
+    file: app.py
+    function: create_agent
+  requirements:
+    - databricks-mcp
+    - langgraph
+    - mcp
+    - databricks-langchain
+    - databricks-sdk
+    - nest-asyncio
+    - pydantic

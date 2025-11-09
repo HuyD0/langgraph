@@ -1,9 +1,14 @@
 """MLflow setup and tracking utilities."""
 
 import mlflow
+import os
 from typing import Optional
+from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
 
 from .auth import is_running_in_databricks
+from .logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, enable_autolog: bool = True) -> dict:
@@ -29,26 +34,30 @@ def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, e
 
         mlflow.set_tracking_uri(tracking_uri)
         config["tracking_uri"] = tracking_uri
+        logger.info(f"MLflow tracking URI set to: {tracking_uri}")
 
         # Set experiment name if provided
         if experiment_name:
             mlflow.set_experiment(experiment_name)
             config["experiment_name"] = experiment_name
+            logger.info(f"MLflow experiment set to: {experiment_name}")
         else:
             # If no experiment name provided, get or create a default
             experiment = mlflow.set_experiment("/Shared/langgraph-mcp-agent")
             config["experiment_name"] = experiment.name
+            logger.info(f"MLflow experiment set to default: {experiment.name}")
 
         # Enable autologging if requested
         if enable_autolog:
             mlflow.langchain.autolog()
             config["autolog_enabled"] = True
+            logger.info("MLflow autologging enabled")
 
         return config
 
     except Exception as e:
-        print(f"Warning: MLflow tracking configuration failed: {e}")
-        print("Agent will work without MLflow tracking.")
+        logger.warning(f"MLflow tracking configuration failed: {e}")
+        logger.warning("Agent will work without MLflow tracking.")
         return {"error": str(e)}
 
 
@@ -69,46 +78,87 @@ def setup_mlflow_registry(profile: str) -> str:
         registry_uri = f"databricks-uc://{profile}"
 
     mlflow.set_registry_uri(registry_uri)
+    logger.info(f"MLflow registry URI set to: {registry_uri}")
     return registry_uri
 
 
 def log_model_to_mlflow(
-    model_code_path: str,
-    model_endpoint_name: str,
-    pip_requirements: list,
+    model_code_path: str = ".",
+    model_endpoint_name: str = "databricks-claude-3-7-sonnet",
+    pip_requirements: list[str] | None = None,
+    skip_validation: bool = True,
 ):
-    """Log agent model to MLflow.
+    """Log the agent model to MLflow using code-based logging.
 
     Args:
-        model_code_path: Path to Python module containing the agent (can be module path like 'langgraph_agent.core.agent' or file path)
-        model_endpoint_name: Name of the model serving endpoint
-        pip_requirements: List of Python package requirements
+        model_code_path: Path to app.py (or "." to use package location)
+        model_endpoint_name: Name of the LLM endpoint to use (for resource tracking)
+        pip_requirements: List of pip dependencies
+        skip_validation: Skip automatic validation during logging (avoids endpoint errors)
 
     Returns:
-        MLflow ModelInfo object with run and model details
+        MLflow model info
     """
-    import os
-    from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
+    from pathlib import Path
 
+    logger.info("Starting model logging to MLflow...")
+
+    # Check environment variable override
+    skip_validation = skip_validation or os.getenv("SKIP_MODEL_VALIDATION", "").lower() in ("true", "1", "yes")
+
+    # Define resources needed by the model
     resources = [
         DatabricksServingEndpoint(endpoint_name=model_endpoint_name),
         DatabricksFunction(function_name="system.ai.python_exec"),
     ]
+    logger.debug(f"Configured resources: {[r.to_dict() for r in resources]}")
 
-    # If the path doesn't exist as a file, try to import it as a module
-    # This handles both local development (file path) and Databricks execution (installed package)
-    python_model = model_code_path
-    if not os.path.exists(model_code_path):
-        # Convert file path to module path (e.g., "src/langgraph_agent/core/agent.py" -> "langgraph_agent.core.agent")
-        module_path = model_code_path.replace("src/", "").replace("/", ".").replace(".py", "")
-        python_model = module_path
+    if skip_validation:
+        logger.warning("⚠️  Skipping automatic model validation during logging")
+        logger.warning(f"   Make sure the endpoint '{model_endpoint_name}' exists before serving the model")
+        logger.info("   Setting MLFLOW_SKIP_VALIDATION=1 to bypass automatic prediction test")
+        os.environ["MLFLOW_SKIP_VALIDATION"] = "1"
+    # Determine the app.py path
+    if model_code_path and model_code_path != ".":
+        # Use provided path (should be app.py)
+        app_py_path = model_code_path
+        logger.info(f"Using provided model code path: {app_py_path}")
+    else:
+        # Use the package location (where app.py is now located)
+        import langgraph_agent
 
-    with mlflow.start_run():
-        logged_agent_info = mlflow.pyfunc.log_model(
-            name="agent", python_model=python_model, resources=resources, pip_requirements=pip_requirements
+        package_dir = Path(langgraph_agent.__file__).parent
+        app_py_path = str(package_dir / "app.py")
+        logger.info(f"Using package app.py: {app_py_path}")
+
+    # Verify app.py exists
+    if not Path(app_py_path).exists():
+        logger.error(f"app.py not found at {app_py_path}")
+        raise FileNotFoundError(
+            f"app.py not found at {app_py_path}. " f"Expected app.py to be in the package with create_agent() function."
         )
 
-    return logged_agent_info
+    logger.info(f"✓ Logging model using app.py from: {app_py_path}")
+    logger.debug(f"Pip requirements: {pip_requirements}")
+
+    try:
+        with mlflow.start_run() as run:
+            logger.info(f"Started MLflow run: {run.info.run_id}")
+            # Log as code-based model using app.py
+            logged_agent_info = mlflow.pyfunc.log_model(
+                artifact_path="agent",
+                python_model=app_py_path,
+                resources=resources,
+                pip_requirements=pip_requirements,
+            )
+            logger.info(f"✓ Model logged successfully: {logged_agent_info.model_uri}")
+
+        return logged_agent_info
+    finally:
+        # Clean up environment variable
+        if skip_validation and "MLFLOW_SKIP_VALIDATION" in os.environ:
+            del os.environ["MLFLOW_SKIP_VALIDATION"]
+            logger.debug("Cleaned up MLFLOW_SKIP_VALIDATION environment variable")
 
 
 def register_model_to_uc(
