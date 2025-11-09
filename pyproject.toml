@@ -9,6 +9,19 @@ dependencies = [
     #
     # LIMITATION: for pipelines, dependencies are cached during development;
     # add dependencies to the 'environment' section of your pipeline.yml file instead
+    
+    # LangGraph MCP Agent dependencies
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langchain>=0.3.0",
+    "databricks-mcp>=0.1.0",
+    "databricks-langchain>=0.1.0",
+    "databricks-agents>=0.1.0",
+    "mlflow-skinny[databricks]>=2.0.0",
+    "databricks-sdk>=0.29.0",
+    "nest-asyncio>=1.5.0",
+    "pydantic>=2.0.0",
+    "mcp>=1.0.0",
 ]
 
 [dependency-groups]
