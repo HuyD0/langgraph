@@ -142,22 +142,29 @@ def deploy(validate: bool, profile: Optional[str]):
 @click.option("--profile", default=None, help="Databricks CLI profile")
 def register(model_code: str, validate: bool, profile: Optional[str]):
     """Log and register model to Unity Catalog (without deployment)."""
-    config = get_config()
-    if profile:
-        config.databricks.profile = profile
+    try:
+        config = get_config()
+        if profile:
+            config.databricks.profile = profile
 
-    click.echo("Logging and registering model as ML Application...")
+        click.echo("Logging and registering model as ML Application...")
 
-    logged_info, uc_info = log_and_register_model(
-        config=config,
-        model_code_path=model_code,
-        validate=validate,
-    )
+        logged_info, uc_info = log_and_register_model(
+            config=config,
+            model_code_path=model_code,
+            validate=validate,
+        )
 
-    click.echo(click.style("\n✓ Model registered successfully!", fg="green"))
-    click.echo(f"Run ID: {logged_info.run_id}")
-    click.echo(f"Model: {config.uc.full_model_name}")
-    click.echo(f"Version: {uc_info.version}")
+        click.echo(click.style("\n✓ Model registered successfully!", fg="green"))
+        click.echo(f"Run ID: {logged_info.run_id}")
+        click.echo(f"Model: {config.uc.full_model_name}")
+        click.echo(f"Version: {uc_info.version}")
+
+        # Return success without calling sys.exit() for Databricks jobs
+        return 0
+    except Exception as e:
+        click.echo(click.style(f"\n✗ Error: {e}", fg="red"), err=True)
+        raise  # Re-raise to let Databricks handle it
 
 
 @cli.command()
@@ -191,7 +198,8 @@ def config_show():
 
 def main():
     """Main CLI entry point."""
-    cli()
+    # Use standalone_mode=False to prevent SystemExit in Databricks jobs
+    cli(standalone_mode=False)
 
 
 if __name__ == "__main__":

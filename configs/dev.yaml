@@ -1,0 +1,17 @@
+# Development environment configuration
+# Overrides default.yaml for dev environment
+
+deployment:
+  environment: "dev"
+  log_level: "DEBUG"
+  enable_tracing: true
+
+# Dev-specific model settings
+model:
+  endpoint_name: "databricks-claude-3-7-sonnet"
+  temperature: 0.7
+
+# Dev MLflow settings
+mlflow:
+  experiment_name: "/Users/${user.email}/langgraph-mcp-agent-dev"
+  run_name: "dev_agent_run"

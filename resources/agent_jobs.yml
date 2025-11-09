@@ -4,6 +4,10 @@ resources:
     agent_evaluation:
       name: ${bundle.target}_agent_evaluation
       
+      # Run as the user who has access to endpoints  
+      run_as:
+        user_name: ${var.user_email}
+      
       tasks:
         - task_key: run_evaluation
           python_wheel_task:
@@ -32,15 +36,19 @@ resources:
     agent_deployment:
       name: ${bundle.target}_agent_deployment
       
+      # Run as the user who has access to endpoints
+      run_as:
+        user_name: ${var.user_email}
+      
       tasks:
         - task_key: log_and_register_model
           python_wheel_task:
             package_name: langgraph_mcp_agent
-            entry_point: langgraph_mcp_agent
+            entry_point: langgraph_job_register
             parameters:
-              - "register"
-              - "--profile"
-              - "${bundle.target}"
+              - "."           # model_code_path
+              - "True"        # validate
+              - "${bundle.target}"  # profile
           environment_key: default_env
         
         - task_key: validate_model

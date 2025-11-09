@@ -29,10 +29,14 @@ from mlflow.types.responses import (
 from langgraph_agent.core.mcp_client import create_mcp_tools
 from langgraph_agent.models import AgentState
 from langgraph_agent.utils.logging import get_logger, configure_databricks_logging
+from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
 
 # Configure logging for Databricks environment
 configure_databricks_logging()
 logger = get_logger(__name__)
+
+# Load configuration
+_config = get_cached_config()
 
 # Enable nested event loops for async operations
 nest_asyncio.apply()
@@ -187,18 +191,24 @@ def create_agent(
     mlflow.langchain.autolog()
     logger.debug("MLflow autologging enabled")
 
-    # Use environment variables or defaults
-    llm_endpoint_name = llm_endpoint_name or os.getenv("LLM_ENDPOINT_NAME", "databricks-meta-llama-3-1-70b-instruct")
-    system_prompt = system_prompt or os.getenv(
-        "SYSTEM_PROMPT", "You are a helpful AI assistant with access to various tools."
+    # Use environment variables with config fallbacks
+    llm_endpoint_name = (
+        llm_endpoint_name or os.getenv("LLM_ENDPOINT_NAME") or get_config_value(_config, "model.endpoint_name")
     )
+    system_prompt = system_prompt or os.getenv("SYSTEM_PROMPT") or get_config_value(_config, "model.system_prompt")
     logger.info(f"Using LLM endpoint: {llm_endpoint_name}")
     logger.debug(f"System prompt: {system_prompt[:50]}...")
 
     # Create workspace client
     logger.debug("Creating Databricks workspace client...")
-    workspace_client = WorkspaceClient()
-    logger.info(f"Connected to workspace: {workspace_client.config.host}")
+    try:
+        workspace_client = WorkspaceClient()
+        logger.info(f"✓ Connected to workspace: {workspace_client.config.host}")
+        logger.debug(f"  Auth type: {workspace_client.config.auth_type}")
+    except Exception as e:
+        logger.error(f"Failed to create WorkspaceClient: {e}")
+        logger.warning("Attempting to continue without workspace client...")
+        raise
 
     # Setup MCP server URLs
     if managed_mcp_urls is None:
@@ -222,15 +232,25 @@ def create_agent(
     try:
         llm = ChatDatabricks(endpoint=llm_endpoint_name)
         logger.info(f"✓ ChatDatabricks initialized with endpoint: {llm_endpoint_name}")
+
+        # Test endpoint accessibility
+        logger.debug(f"Testing endpoint accessibility...")
+        try:
+            test_response = llm.invoke("test")
+            logger.info(f"✓ Endpoint test successful")
+        except Exception as test_error:
+            logger.warning(f"Endpoint test failed: {test_error}")
+            logger.warning(f"   This may cause issues during model validation")
+            if "404" in str(test_error) or "ENDPOINT_NOT_FOUND" in str(test_error):
+                logger.error(f"❌ Endpoint '{llm_endpoint_name}' not found!")
+                logger.error(f"   Available endpoints can be checked with: ws.serving_endpoints.list()")
+                raise RuntimeError(f"Endpoint '{llm_endpoint_name}' does not exist") from test_error
+
     except Exception as e:
-        if skip_validation:
-            logger.warning(f"Failed to initialize ChatDatabricks (expected in skip mode): {e}")
-            logger.info("Creating placeholder LLM for validation bypass")
-            # Create a basic placeholder that won't be called during validation
-            llm = ChatDatabricks(endpoint=llm_endpoint_name)
-        else:
-            logger.error(f"Failed to initialize ChatDatabricks: {e}")
-            raise
+        logger.error(f"Failed to initialize or test ChatDatabricks: {e}")
+        logger.error(f"  Endpoint: {llm_endpoint_name}")
+        logger.error(f"  Workspace: {workspace_client.config.host}")
+        raise
 
     # Create MCP tools from the configured servers
     logger.info("Creating MCP tools...")

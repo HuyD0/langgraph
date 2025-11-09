@@ -1,14 +1,21 @@
-"""MLflow setup and tracking utilities."""
+"""MLflow setup and configuration utilities."""
+
+import os
+from pathlib import Path
+from typing import Optional
 
 import mlflow
-import os
-from typing import Optional
+from databricks.sdk import WorkspaceClient
 from mlflow.models.resources import DatabricksServingEndpoint, DatabricksFunction
 
-from .auth import is_running_in_databricks
-from .logging import get_logger
+from langgraph_agent.utils.logging import get_logger
+from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
+from langgraph_agent.utils.auth import is_running_in_databricks
 
 logger = get_logger(__name__)
+
+# Load configuration
+_config = get_cached_config()
 
 
 def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, enable_autolog: bool = True) -> dict:
@@ -84,7 +91,7 @@ def setup_mlflow_registry(profile: str) -> str:
 
 def log_model_to_mlflow(
     model_code_path: str = ".",
-    model_endpoint_name: str = "databricks-claude-3-7-sonnet",
+    model_endpoint_name: Optional[str] = None,
     pip_requirements: list[str] | None = None,
     skip_validation: bool = True,
 ):
@@ -92,14 +99,19 @@ def log_model_to_mlflow(
 
     Args:
         model_code_path: Path to app.py (or "." to use package location)
-        model_endpoint_name: Name of the LLM endpoint to use (for resource tracking)
+        model_endpoint_name: Name of the LLM endpoint to use (for resource tracking).
+                           If None, uses value from config.
         pip_requirements: List of pip dependencies
         skip_validation: Skip automatic validation during logging (avoids endpoint errors)
 
     Returns:
         MLflow model info
     """
-    from pathlib import Path
+    # Use config value if not provided
+    if model_endpoint_name is None:
+        model_endpoint_name = get_config_value(_config, "model.endpoint_name", "MODEL_ENDPOINT_NAME")
+
+    logger.info(f"Logging model to MLflow with endpoint: {model_endpoint_name}")
 
     logger.info("Starting model logging to MLflow...")
 

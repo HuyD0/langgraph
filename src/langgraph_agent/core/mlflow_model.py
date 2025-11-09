@@ -5,6 +5,7 @@ It follows the Databricks pattern for deploying LangGraph MCP agents.
 """
 
 import asyncio
+import os
 from typing import Generator, Optional, Sequence, Union
 
 import mlflow
@@ -28,9 +29,13 @@ from mlflow.types.responses import (
 
 from langgraph_agent.core.mcp_client import create_mcp_tools
 from langgraph_agent.models import AgentState
+from langgraph_agent.utils.config_loader import get_cached_config, get_config_value
 
 # Enable nested event loops for async operations
 nest_asyncio.apply()
+
+# Load configuration
+_config = get_cached_config()
 
 
 def create_tool_calling_agent(
@@ -195,10 +200,10 @@ def initialize_agent(
 # Enable MLflow autologging
 mlflow.langchain.autolog()
 
-# Initialize the agent with default configuration
+# Initialize the agent with configuration from YAML
 # This will be executed when the model is loaded
-LLM_ENDPOINT_NAME = "databricks-meta-llama-3-1-70b-instruct"
-system_prompt = "You are a helpful AI assistant with access to various tools."
+LLM_ENDPOINT_NAME = get_config_value(_config, "model.endpoint_name", "LLM_ENDPOINT_NAME")
+system_prompt = get_config_value(_config, "model.system_prompt", "SYSTEM_PROMPT")
 workspace_client = WorkspaceClient()
 host = workspace_client.config.host
 MANAGED_MCP_SERVER_URLS = [f"{host}/api/2.0/mcp/functions/system/ai"]
