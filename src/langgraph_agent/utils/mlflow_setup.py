@@ -27,6 +27,10 @@ def setup_mlflow_tracking(profile: str, experiment_name: Optional[str] = None, e
         if experiment_name:
             mlflow.set_experiment(experiment_name)
             config["experiment_name"] = experiment_name
+        else:
+            # If no experiment name provided, get or create a default
+            experiment = mlflow.set_experiment("/Shared/langgraph-mcp-agent")
+            config["experiment_name"] = experiment.name
 
         # Enable autologging if requested
         if enable_autolog:
