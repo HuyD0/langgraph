@@ -35,7 +35,7 @@ def register_eval_dataset_to_uc(
     config = get_config()
 
     # Use config defaults if not provided
-    catalog = catalog or config.uc.catalog_name
+    catalog = catalog or config.uc.catalog
     schema = schema or config.uc.schema_name
     full_table_name = f"{catalog}.{schema}.{table_name}"
 
@@ -129,7 +129,7 @@ def load_eval_dataset_from_uc(
         List of evaluation examples in MLflow format
     """
     config = get_config()
-    catalog = catalog or config.uc.catalog_name
+    catalog = catalog or config.uc.catalog
     schema = schema or config.uc.schema_name
     full_table_name = f"{catalog}.{schema}.{table_name}"
 

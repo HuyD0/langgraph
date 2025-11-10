@@ -37,16 +37,16 @@ def get_evaluation_job() -> Dict[str, Any]:
                                 # Dataset will be loaded from Unity Catalog automatically
                             ],
                         },
-                        "environment_key": "default_env",
+                        "environment_key": "serverless_env",
                     }
                 ],
                 "environments": [
                     {
-                        "environment_key": "default_env",
+                        "environment_key": "serverless_env",
                         "spec": {
-                            "client": "1",
+                            "environment_version": "2",
                             "dependencies": [
-                                "/Workspace/Users/huy.d@hotmail.com/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
+                                "/Workspace/Users/${var.user_email}/.bundle/langgraph/dev/artifacts/.internal/langgraph_mcp_agent-0.1.0-py3-none-any.whl"
                             ],
                         },
                     }
