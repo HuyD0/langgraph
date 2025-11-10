@@ -1,5 +1,6 @@
 """ResponsesAgent wrapper for LangGraph agents."""
 
+import asyncio
 from typing import Generator
 
 import nest_asyncio
@@ -13,8 +14,31 @@ from mlflow.types.responses import (
     to_chat_completions_input,
 )
 
-# Enable nested event loops for async operations
-nest_asyncio.apply()
+
+def _safe_apply_nest_asyncio():
+    """Safely apply nest_asyncio, handling cases where there's no event loop.
+
+    This is needed because Model Serving loads the model in a ThreadPoolExecutor
+    thread that doesn't have an event loop by default.
+    """
+    try:
+        # Try to get the current event loop
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # No event loop in current thread, create one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Now apply nest_asyncio
+        nest_asyncio.apply(loop)
+    except Exception:
+        # If anything fails, it's okay - nest_asyncio will be applied later when needed
+        pass
+
+
+# Enable nested event loops for async operations (safe version)
+_safe_apply_nest_asyncio()
 
 
 class LangGraphResponsesAgent(ResponsesAgent):

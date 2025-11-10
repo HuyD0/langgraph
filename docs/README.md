@@ -13,6 +13,7 @@
 - [QUICKSTART_DAB.md](QUICKSTART_DAB.md) - Quick start for DAB deployment
 - [DATABRICKS_BUNDLES.md](DATABRICKS_BUNDLES.md) - Complete DAB guide (400+ lines)
 - [DAB_INTEGRATION.md](DAB_INTEGRATION.md) - DAB integration summary
+- [PYTHON_DABS_MIGRATION.md](PYTHON_DABS_MIGRATION.md) - **NEW:** Python for DABs migration guide
 
 ## Technical Guides
 - [SERVERLESS_UPDATE_SUMMARY.md](SERVERLESS_UPDATE_SUMMARY.md) - **Latest:** Serverless compute update

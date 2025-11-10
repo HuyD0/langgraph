@@ -39,9 +39,32 @@ logger = get_logger(__name__)
 # Load configuration
 _config = get_cached_config()
 
-# Enable nested event loops for async operations
-nest_asyncio.apply()
-logger.debug("Nested event loops enabled")
+
+def _safe_apply_nest_asyncio():
+    """Safely apply nest_asyncio, handling cases where there's no event loop.
+
+    This is needed because Model Serving loads the model in a ThreadPoolExecutor
+    thread that doesn't have an event loop by default.
+    """
+    try:
+        # Try to get the current event loop
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # No event loop in current thread, create one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Now apply nest_asyncio
+        nest_asyncio.apply(loop)
+        logger.debug("Nested event loops enabled")
+    except Exception as e:
+        # If anything fails, log it but don't crash
+        logger.warning(f"Could not apply nest_asyncio: {e}")
+
+
+# Enable nested event loops for async operations (safe version)
+_safe_apply_nest_asyncio()
 
 ###############################################################################
 ## Define module-level configuration

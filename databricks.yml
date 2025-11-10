@@ -4,6 +4,14 @@ bundle:
   name: langgraph
   uuid: c9f66a0c-a9d4-4351-9f3c-fcee8f8ce125
 
+# Python-based resource definitions (preferred)
+# See https://learn.microsoft.com/en-us/azure/databricks/dev-tools/bundles/python-dabs
+python:
+  venv_path: .venv
+  resources:
+    - resources:load_resources
+
+# Legacy YAML-based resources (can coexist with Python)
 include:
   - resources/**/*.yml
 
