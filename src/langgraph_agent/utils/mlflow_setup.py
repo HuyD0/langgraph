@@ -95,6 +95,7 @@ def log_model_to_mlflow(
     model_code_path: str = ".",
     model_endpoint_name: Optional[str] = None,
     pip_requirements: list[str] | None = None,
+    code_paths: list[str] | None = None,
     skip_validation: bool = True,
     config: Optional[Any] = None,
 ):
@@ -105,6 +106,7 @@ def log_model_to_mlflow(
         model_endpoint_name: Name of the LLM endpoint to use (for resource tracking).
                            If None, uses value from config.
         pip_requirements: List of pip dependencies
+        code_paths: List of paths to include as package code in the model artifact
         skip_validation: Skip automatic validation during logging (avoids endpoint errors)
         config: Optional AgentConfig object with runtime configuration values
 
@@ -387,12 +389,22 @@ def log_model_to_mlflow(
                 logger.info(f"Logged {len(metrics)} metrics")
 
             # Log as code-based model using app.py
-            logged_agent_info = mlflow.pyfunc.log_model(
-                name="agent",
-                python_model=app_py_path,
-                resources=resources,
-                pip_requirements=pip_requirements,
-            )
+            # Include code_paths to bundle the langgraph_agent package with the model
+            log_kwargs = {
+                "name": "agent",
+                "python_model": app_py_path,
+                "resources": resources,
+                "pip_requirements": pip_requirements,
+            }
+
+            # Add code_paths if provided (to include package source in model artifact)
+            if code_paths:
+                log_kwargs["code_paths"] = code_paths
+                logger.info(f"Including {len(code_paths)} code paths in model artifact")
+                for path in code_paths:
+                    logger.debug(f"  Code path: {path}")
+
+            logged_agent_info = mlflow.pyfunc.log_model(**log_kwargs)
             logger.info(f"✓ Model logged successfully: {logged_agent_info.model_uri}")
 
         return logged_agent_info

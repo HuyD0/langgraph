@@ -1,6 +1,5 @@
 """Deployment automation for the LangGraph MCP agent."""
 
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -24,34 +23,10 @@ def get_model_dependencies() -> list:
     """Get the list of Python dependencies for the model.
 
     Returns:
-        List of pip requirements
+        List of pip requirements (excludes langgraph-mcp-agent, which is included via code_paths)
     """
-    # Find the wheel file - priority order:
-    # 1. Databricks workspace path (when running in DAB job)
-    # 2. Local dist/ directory (when running locally)
-    # 3. Installed package version (fallback)
-
-    wheel_file = None
-
-    # Try to find wheel in workspace (when running in Databricks)
-    if os.getenv("DATABRICKS_RUNTIME_VERSION"):
-        # We're running in Databricks
-        # The wheel should already be installed via the job environment
-        # So we can just reference the installed package
-        logger.info("Running in Databricks - wheel should be pre-installed via job environment")
-        wheel_file = None  # Will use installed version below
-    else:
-        # Running locally - use local wheel file
-        project_root = Path(__file__).parent.parent.parent.parent
-        dist_dir = project_root / "dist"
-
-        if dist_dir.exists():
-            wheel_files = list(dist_dir.glob("langgraph_mcp_agent-*.whl"))
-            if wheel_files:
-                # Use the most recent wheel file
-                wheel_file = str(wheel_files[0].absolute())
-                logger.info(f"Found local wheel file: {wheel_file}")
-
+    # Only include external dependencies that are available on PyPI
+    # The langgraph-mcp-agent package itself will be included via code_paths in log_model
     deps = [
         "databricks-mcp",
         f"langgraph=={get_distribution('langgraph').version}",
@@ -62,28 +37,27 @@ def get_model_dependencies() -> list:
         f"pydantic=={get_distribution('pydantic').version}",
     ]
 
-    # Add the package itself
-    if wheel_file:
-        # Use local wheel file (for local testing)
-        deps.append(wheel_file)
-        logger.info("Using local wheel file for langgraph-mcp-agent")
-    else:
-        # Use installed version (for Databricks environment)
-        # The package is already installed via the job environment dependencies
-        try:
-            version = get_distribution("langgraph-mcp-agent").version
-            deps.append(f"langgraph-mcp-agent=={version}")
-            logger.info(f"Using installed langgraph-mcp-agent=={version}")
-        except Exception as e:
-            logger.error(f"Could not determine langgraph-mcp-agent version: {e}")
-            logger.error("Package may not be available in serving environment!")
-            logger.error("Make sure the wheel is included in the job environment dependencies")
-            raise RuntimeError(
-                "langgraph-mcp-agent package not found. " "Ensure the wheel file is built and included in job dependencies."
-            )
-
-    logger.debug(f"Model dependencies ({len(deps)} total): {deps}")
+    logger.info(f"Model will use {len(deps)} external dependencies from PyPI")
+    logger.info("langgraph-mcp-agent package will be included via code_paths")
+    logger.debug(f"Dependencies: {deps}")
     return deps
+
+
+def get_package_source_path() -> str:
+    """Get the path to the langgraph_agent package source code.
+
+    This path will be included in the MLflow model via code_paths parameter,
+    allowing the package to be bundled with the model artifact.
+
+    Returns:
+        Absolute path to the src/langgraph_agent directory
+    """
+    # Get the path to the langgraph_agent package
+    import langgraph_agent
+
+    package_path = Path(langgraph_agent.__file__).parent
+    logger.info(f"Package source path: {package_path}")
+    return str(package_path)
 
 
 def log_and_register_model(
@@ -114,10 +88,15 @@ def log_and_register_model(
 
     # Log model to MLflow
     logger.info("Logging model to MLflow...")
+
+    # Get the package source path to include in the model
+    code_paths = [get_package_source_path()]
+
     logged_model_info = log_model_to_mlflow(
         model_code_path=model_code_path,
         model_endpoint_name=config.model.endpoint_name,
         pip_requirements=get_model_dependencies(),
+        code_paths=code_paths,
         config=config,
     )
     logger.info(f"✓ Model logged: {logged_model_info.model_uri}")
