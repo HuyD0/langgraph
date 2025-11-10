@@ -10,9 +10,9 @@ model:
   
   # MLflow Prompt Registry Configuration
   # Set use_prompt_registry to true to load system prompt from MLflow Prompt Registry
-  use_prompt_registry: false
-  prompt_name: null  # e.g., "agent-system-prompt"
-  prompt_version: null  # e.g., 1, or use "latest" for @latest alias
+  use_prompt_registry: true
+  prompt_name: "agent-system-prompt"
+  prompt_version: "latest"  # e.g., 1, or use "latest" for @latest alias
 
 # MCP Server Configuration
 mcp:

@@ -1,5 +1,7 @@
 """Deployment automation for the LangGraph MCP agent."""
 
+import os
+from pathlib import Path
 from typing import Optional
 
 from databricks import agents
@@ -24,6 +26,32 @@ def get_model_dependencies() -> list:
     Returns:
         List of pip requirements
     """
+    # Find the wheel file - priority order:
+    # 1. Databricks workspace path (when running in DAB job)
+    # 2. Local dist/ directory (when running locally)
+    # 3. Installed package version (fallback)
+
+    wheel_file = None
+
+    # Try to find wheel in workspace (when running in Databricks)
+    if os.getenv("DATABRICKS_RUNTIME_VERSION"):
+        # We're running in Databricks
+        # The wheel should already be installed via the job environment
+        # So we can just reference the installed package
+        logger.info("Running in Databricks - wheel should be pre-installed via job environment")
+        wheel_file = None  # Will use installed version below
+    else:
+        # Running locally - use local wheel file
+        project_root = Path(__file__).parent.parent.parent.parent
+        dist_dir = project_root / "dist"
+
+        if dist_dir.exists():
+            wheel_files = list(dist_dir.glob("langgraph_mcp_agent-*.whl"))
+            if wheel_files:
+                # Use the most recent wheel file
+                wheel_file = str(wheel_files[0].absolute())
+                logger.info(f"Found local wheel file: {wheel_file}")
+
     deps = [
         "databricks-mcp",
         f"langgraph=={get_distribution('langgraph').version}",
@@ -33,7 +61,28 @@ def get_model_dependencies() -> list:
         f"nest-asyncio=={get_distribution('nest-asyncio').version}",
         f"pydantic=={get_distribution('pydantic').version}",
     ]
-    logger.debug(f"Model dependencies: {deps}")
+
+    # Add the package itself
+    if wheel_file:
+        # Use local wheel file (for local testing)
+        deps.append(wheel_file)
+        logger.info("Using local wheel file for langgraph-mcp-agent")
+    else:
+        # Use installed version (for Databricks environment)
+        # The package is already installed via the job environment dependencies
+        try:
+            version = get_distribution("langgraph-mcp-agent").version
+            deps.append(f"langgraph-mcp-agent=={version}")
+            logger.info(f"Using installed langgraph-mcp-agent=={version}")
+        except Exception as e:
+            logger.error(f"Could not determine langgraph-mcp-agent version: {e}")
+            logger.error("Package may not be available in serving environment!")
+            logger.error("Make sure the wheel is included in the job environment dependencies")
+            raise RuntimeError(
+                "langgraph-mcp-agent package not found. " "Ensure the wheel file is built and included in job dependencies."
+            )
+
+    logger.debug(f"Model dependencies ({len(deps)} total): {deps}")
     return deps
 
 

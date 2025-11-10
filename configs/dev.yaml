@@ -12,13 +12,13 @@ model:
   temperature: 0.7
   
   # Example: Enable prompt registry in dev for testing
-  # use_prompt_registry: true
-  # prompt_name: "agent-system-prompt"
-  # prompt_version: "latest"  # or specific version like 1, 2, etc.
+  use_prompt_registry: true
+  prompt_name: "agent-system-prompt"
+  prompt_version: "latest"  # or specific version like 1, 2, etc.
 
 # Dev MLflow settings
-# The experiment name should match the DAB definition in resources/models/agent_experiment.yml
-# DAB will automatically add the "[dev user]" prefix in development mode
+# The experiment name will be passed from the Databricks job via environment variable
+# or loaded from the DAB-created experiment. Leave empty to use the DAB experiment.
 mlflow:
-  experiment_name: "/Users/huy.d@hotmail.com/langgraph-mcp-agent-dev"
+  # experiment_name will be set by the job or default to DAB-created experiment
   run_name: "dev_agent_run"

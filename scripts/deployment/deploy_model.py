@@ -22,6 +22,12 @@ def main(argv=None):
     parser.add_argument("--catalog", help="Unity Catalog catalog name")
     parser.add_argument("--schema", help="Unity Catalog schema name")
     parser.add_argument("--model-name", "--model_name", dest="model_name", help="Model name")
+    parser.add_argument(
+        "--model-version",
+        "--model_version",
+        dest="model_version",
+        help="Model version (ignored, always uses latest registered)",
+    )
     args = parser.parse_args(argv)
 
     config = get_config()
@@ -30,6 +36,7 @@ def main(argv=None):
     catalog = args.catalog or os.getenv("CATALOG")
     schema = args.schema or os.getenv("SCHEMA")
     model_name = args.model_name or os.getenv("MODEL_NAME")
+    # model_version is accepted but ignored - we always deploy the version we just registered
 
     if catalog:
         config.uc.catalog = catalog

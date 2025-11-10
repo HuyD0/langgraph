@@ -13,11 +13,11 @@ class TestModelConfigPromptRegistry:
     """Test ModelConfig with prompt registry settings."""
 
     def test_model_config_prompt_registry_defaults(self):
-        """Test that prompt registry is disabled by default."""
+        """Test that prompt registry is enabled by default."""
         config = ModelConfig()
-        assert config.use_prompt_registry is False
-        assert config.prompt_name is None
-        assert config.prompt_version is None
+        assert config.use_prompt_registry is True
+        assert config.prompt_name == "agent-system-prompt"
+        assert config.prompt_version == "latest"
 
     def test_model_config_with_prompt_registry_enabled(self):
         """Test ModelConfig with prompt registry enabled via environment."""

@@ -3,6 +3,8 @@
 This script can be called directly from a Databricks job without CLI.
 """
 
+import argparse
+import os
 import sys
 
 from langgraph_agent.agents import initialize_agent
@@ -12,11 +14,28 @@ from langgraph_agent.utils.auth import get_workspace_client
 from langgraph_agent.utils.mlflow_setup import setup_mlflow_tracking
 
 
-def main():
-    """Evaluate the agent."""
+def main(argv=None):
+    """Evaluate the agent.
+
+    Args:
+        argv: Optional argument list. If None, uses sys.argv.
+    """
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Evaluate the agent")
+    parser.add_argument("--experiment-name", "--experiment_name", dest="experiment_name", help="MLflow experiment name")
+    args = parser.parse_args(argv)
+
+    # Get experiment name from args or environment
+    experiment_name = args.experiment_name or os.getenv("MLFLOW_EXPERIMENT_NAME")
+
     config = get_config()
 
+    # Override with provided experiment name
+    if experiment_name:
+        config.mlflow.experiment_name = experiment_name
+
     print("Setting up MLflow tracking...")
+    print(f"  Experiment: {config.mlflow.experiment_name}")
     setup_mlflow_tracking(
         profile=config.databricks.profile,
         experiment_name=config.mlflow.experiment_name,

@@ -29,6 +29,8 @@ resources:
           python_wheel_task:
             package_name: langgraph_mcp_agent
             entry_point: evaluate_model
+            named_parameters:
+              experiment_name: ${var.experiment_name}
           environment_key: serverless_env
       
       # Environment spec for serverless compute
@@ -55,26 +57,8 @@ resources:
       run_as:
         user_name: ${var.user_email}
       
-      # Job parameters for model deployment
-      parameters:
-        - name: model_name
-          default: ${var.catalog}.${var.schema}.${var.model_name}
-        - name: model_version
-          default: "latest"
-      
       tasks:
-        - task_key: approval
-          notebook_task:
-            notebook_path: ../../notebooks/04_operations/approval_notebook.py
-            source: WORKSPACE
-            base_parameters:
-              model_name: "{{job.parameters.model_name}}"
-              model_version: "{{job.parameters.model_version}}"
-          environment_key: serverless_env
-        
         - task_key: deploy_to_serving
-          depends_on:
-            - task_key: approval
           python_wheel_task:
             package_name: langgraph_mcp_agent
             entry_point: deploy_model
