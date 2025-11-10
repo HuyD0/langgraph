@@ -22,7 +22,9 @@ mcp:
 
 # MLflow Configuration
 mlflow:
-  experiment_name: "/Shared/langgraph-mcp-agent"
+  # Use MLFLOW_EXPERIMENT_NAME env var set by Databricks jobs
+  # Falls back to /Shared/langgraph-mcp-agent for local development
+  experiment_name: "/Shared/langgraph-mcp-agent"  # Default for local dev
   model_name: "langgraph_mcp_agent"
   run_name: "agent_run"
   

@@ -32,10 +32,7 @@ def get_evaluation_job() -> Dict[str, Any]:
                         "python_wheel_task": {
                             "package_name": "langgraph_mcp_agent",
                             "entry_point": "langgraph_mcp_agent",
-                            "parameters": [
-                                "evaluate"
-                                # Dataset will be loaded from Unity Catalog automatically
-                            ],
+                            "parameters": ["evaluate", "--experiment-name", "${var.experiment_name}"],
                         },
                         "environment_key": "serverless_env",
                     }
