@@ -76,6 +76,22 @@ CUSTOM_MCP_SERVER_URLS = [
 
 
 ###############################################################################
+## Azure AI Search Configuration (primary retriever for RAG workers)
+##
+## Values are read from environment variables — set them in your .env file
+## or in Databricks secrets. Do NOT hard-code credentials here.
+###############################################################################
+import os
+
+AZURE_SEARCH_ENDPOINT = os.getenv("VECTOR_ENDPOINT")          # e.g. https://<name>.search.windows.net
+AZURE_SEARCH_INDEX    = os.getenv("VECTOR_INDEX_NAME", "pdf_docs_ada2")
+VS_NUM_RESULTS        = int(os.getenv("VS_NUM_RESULTS", "5"))
+
+# Embedding endpoint used for vector queries (Databricks-hosted Ada-2)
+DATABRICKS_EMBEDDING_ENDPOINT = os.getenv("DATABRICKS_EMBEDDING_ENDPOINT_NAME", "azure-text-embedding-ada-002")
+
+
+###############################################################################
 ## OAuth Configuration (for Custom MCP Servers)
 ###############################################################################
 # TODO: ONLY UNCOMMENT AND EDIT THIS SECTION IF YOU ARE USING OAUTH/SERVICE

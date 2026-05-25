@@ -1,18 +1,24 @@
 """
 LangGraph MCP Agent Package
 
-A flexible, tool-using agent that integrates Databricks MCP servers
-with the Mosaic AI Agent Framework using LangGraph.
+Map-Reduce Partition Planner agent integrating Azure AI Search, Databricks MCP
+servers, and LangGraph's Send API for parallel RAG with human-in-the-loop review.
 """
 
 from .agent import (
-    LangGraphResponsesAgent,
+    PartitionPlannerModel,
     initialize_agent,
     AGENT,
+    OverallState,
+    WorkerState,
+    partition_graph,
 )
 
 __all__ = [
-    "LangGraphResponsesAgent",
+    "PartitionPlannerModel",
     "initialize_agent",
     "AGENT",
+    "OverallState",
+    "WorkerState",
+    "partition_graph",
 ]
