@@ -25,3 +25,8 @@ htmlcov/
 .ruff_cache/
 .tox/
 node_modules/
+# practice history and local MLflow runs
+.drill/
+mlruns/
+mlartifacts/
+mlflow.db
