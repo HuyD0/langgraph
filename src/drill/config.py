@@ -59,7 +59,7 @@ class LLMSettings:
     api_version: str = "2024-10-21"
     api_key: str | None = None
     flavour: str = "azure_openai"
-    temperature: float = 0.2
+    temperature: float | None = 0.2
 
     # Service-principal fields. Populated from the same three variables the old
     # agent used for Azure Search, so existing credentials carry straight over.
@@ -108,11 +108,19 @@ class LLMSettings:
         if flavour not in {"azure_openai", "azure_inference"}:
             flavour = inferred
 
+        # Reasoning models - the gpt-5 family and the o-series - reject every
+        # temperature but their own default, answering with an ``unsupported_value``
+        # error. Setting DRILL_TEMPERATURE to an empty value omits the parameter
+        # altogether; scripts/azure_up.sh writes that automatically when it detects
+        # the deployed model refuses one.
         temperature_raw = os.getenv("DRILL_TEMPERATURE", "0.2")
-        try:
-            temperature = float(temperature_raw)
-        except ValueError:
-            temperature = 0.2
+        if temperature_raw.strip() == "":
+            temperature = None
+        else:
+            try:
+                temperature = float(temperature_raw)
+            except ValueError:
+                temperature = 0.2
 
         return cls(
             endpoint=endpoint,

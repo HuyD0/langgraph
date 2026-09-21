@@ -55,6 +55,46 @@ The tutored session (`drill start`) needs a model — below.
 
 ## Connecting Azure AI Foundry
 
+### Provision it from scratch
+
+If you do not have a Foundry resource yet, `scripts/azure_up.sh` creates one and
+writes your `.env`. It needs the Azure CLI and `jq`, and it signs you in if you
+are not already.
+
+```bash
+scripts/azure_up.sh          # ~2 minutes, prompts before it creates anything
+uv run drill start
+```
+
+It makes a resource group, an `AIServices` resource, and one chat deployment
+named `drill-chat`. The model is whichever of `gpt-5.4-nano`, `gpt-5-nano`,
+`gpt-5.4-mini`, `gpt-5-mini`, `gpt-4.1-mini`, `gpt-4o-mini` your subscription can
+*actually* deploy in that region — it skips versions Azure lists but has marked
+`Deprecating`, which otherwise fail with `ServiceModelDeprecating`. It then asks
+the deployed model whether it accepts a custom temperature (reasoning models
+reject one) and writes `DRILL_TEMPERATURE` to match. Deployments are
+pay-per-token, so an idle resource costs nothing. Re-running the script is safe:
+it reuses whatever already exists.
+
+**Your subscription must be Pay-As-You-Go.** Azure allocates *zero* tokens/min of
+Azure OpenAI quota to Free Trial, Azure Pass and Lightweight Trial subscriptions,
+for every model and every region — deployment fails with `InsufficientQuota`. The
+script checks your offer type up front and says so before creating anything.
+Upgrading keeps any remaining free credit.
+
+Override the defaults with environment variables:
+
+```bash
+DRILL_LOCATION=swedencentral DRILL_MODEL=gpt-4o scripts/azure_up.sh
+```
+
+`DRILL_RG`, `DRILL_LOCATION`, `DRILL_ACCOUNT`, `DRILL_DEPLOYMENT`, `DRILL_MODEL`
+and `DRILL_CAPACITY` are all honoured. When you are done, `scripts/azure_down.sh`
+deletes the resource group and purges the soft-deleted resource so it stops
+holding your model quota.
+
+### Or point it at a resource you already have
+
 A Foundry resource exposes one of two chat surfaces. You do not have to work out
 which you have: the endpoint URL is inspected and the right client is used. Put
 the values in a `.env` at the repo root (it is gitignored) or export them.
@@ -90,6 +130,7 @@ not fail with an auth error from inside an SDK.
 
 | Variable | Default | What it does |
 |---|---|---|
+| `DRILL_TEMPERATURE` | `0.2` | Sampling temperature; **empty** omits it, which reasoning models require |
 | `DRILL_MAX_ATTEMPTS` | `3` | Tries before the tutor explains |
 | `DRILL_SANDBOX_TIMEOUT` | `10` | Seconds a submission may run |
 | `DRILL_PROGRESS_PATH` | `.drill/progress.json` | Where history is stored |

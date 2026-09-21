@@ -38,8 +38,12 @@ def _build_azure_openai(settings: LLMSettings) -> Any:
         "azure_endpoint": settings.endpoint,
         "azure_deployment": settings.deployment,
         "api_version": settings.api_version,
-        "temperature": settings.temperature,
     }
+
+    # Omitted entirely rather than passed as None: reasoning models reject the
+    # parameter, and the SDK would still serialise an explicit None.
+    if settings.temperature is not None:
+        kwargs["temperature"] = settings.temperature
 
     if settings.api_key:
         kwargs["api_key"] = settings.api_key
@@ -66,12 +70,15 @@ def _build_azure_inference(settings: LLMSettings) -> Any:
     else:
         credential = _credential(settings)
 
-    return AzureAIChatCompletionsModel(
-        endpoint=settings.endpoint,
-        credential=credential,
-        model_name=settings.deployment,
-        temperature=settings.temperature,
-    )
+    kwargs: dict[str, Any] = {
+        "endpoint": settings.endpoint,
+        "credential": credential,
+        "model_name": settings.deployment,
+    }
+    if settings.temperature is not None:
+        kwargs["temperature"] = settings.temperature
+
+    return AzureAIChatCompletionsModel(**kwargs)
 
 
 def build_chat_model(settings: LLMSettings | None = None) -> Any:
