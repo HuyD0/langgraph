@@ -66,22 +66,24 @@ reference solution against your own test cases automatically.
 ## Track B: building
 
 ```bash
-uv run pytest -m rebuild                      # every milestone
-uv run pytest tests/rebuild/test_m1_state.py  # just the first
+uv run jupyter lab notebooks/   # then open m1_state.ipynb
 ```
 
-Each milestone is a stub in `src/drill_rebuild/` and a test file in
-`tests/rebuild/`. **The tests are the specification.** Read them first — that is
-the habit worth building, and it is what TDD actually means.
+Each milestone is a notebook in `notebooks/`: the explanation, a cell per exercise
+for you to fill in, and a cell of tests right after it that runs inline (via
+`ipytest`). **The tests are the specification.** Run them before you write
+anything and read what they check — that is the habit worth building, and it is
+what TDD actually means. Each notebook ends with a "Try it" section that puts
+your code to work on something real.
 
 | # | Milestone | You learn | Hardest part |
 |---|---|---|---|
-| 1 | `m1_state` | Typed dicts, partial updates, not mutating shared state | Realising the update is *partial* |
-| 2 | `m2_problems` | Dataclasses, lookup tables, error messages as design | The KeyError that lists valid ids |
-| 3 | `m3_routing` | Pure functions, branching policy | Passing on the last attempt still counts |
-| 4 | `m4_progress` | Aggregation, ratios, tie-breaks | The tie-break rule |
-| 5 | `m5_sandbox` | Subprocess, serialisation, failure as data | Never raising on a bad submission |
-| 6 | `m6_graph` | LangGraph: nodes, conditional edges, cycles, checkpointers | Why the checkpointer is mandatory |
+| 1 | `m1_state.ipynb` | Typed dicts, partial updates, not mutating shared state | Realising the update is *partial* |
+| 2 | `m2_problems.ipynb` | Dataclasses, lookup tables, error messages as design | The KeyError that lists valid ids |
+| 3 | `m3_routing.ipynb` | Pure functions, branching policy | Passing on the last attempt still counts |
+| 4 | `m4_progress.ipynb` | Aggregation, ratios, tie-breaks | The tie-break rule |
+| 5 | `m5_sandbox.ipynb` | Subprocess, serialisation, failure as data | Never raising on a bad submission |
+| 6 | `m6_graph.ipynb` | LangGraph: nodes, conditional edges, cycles, checkpointers | Why the checkpointer is mandatory |
 
 Milestones 1–4 are ordinary Python and transfer directly to interviews.
 Milestone 5 is the one senior engineers will want to talk about — running code you

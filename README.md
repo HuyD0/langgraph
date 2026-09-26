@@ -9,7 +9,7 @@ Built on **LangGraph** for the control flow and **MLflow** for tracing, run
 tracking and evaluation, against **Azure AI Foundry** for the model.
 
 The point is to learn two things at once. Using it drills interview patterns;
-rebuilding it — there is a milestone track with failing tests waiting for you —
+rebuilding it — there is a track of milestone notebooks with failing tests waiting for you —
 teaches the engineering. See [docs/CURRICULUM.md](docs/CURRICULUM.md).
 
 A session looks like this (the hint text is illustrative — everything else is
@@ -214,8 +214,8 @@ list:". Edit a prompt, re-run the eval, and a regression shows up as a number.
 ## Tests
 
 ```bash
-uv run pytest              # 124 tests, ~8s, no credentials
-uv run pytest -m rebuild   # the milestone track (fails until you implement it)
+uv run pytest                      # 124 tests, ~8s, no credentials
+uv run jupyter lab notebooks/      # the milestone track (tests run inside each notebook)
 ```
 
 Everything runs offline. The graph tests use a fake chat model injected through

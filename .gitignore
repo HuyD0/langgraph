@@ -31,3 +31,4 @@ mlruns/
 mlartifacts/
 mlflow.db
 .env.bak.*
+.ipynb_checkpoints/

@@ -45,11 +45,27 @@ def setup_tracing(settings: DrillSettings | None = None) -> bool:
             mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
         mlflow.set_experiment(settings.mlflow_experiment)
         mlflow.langchain.autolog()
+        _patch_graph_lifecycle_hooks()
         _AUTOLOG_ENABLED = True
         return True
     except Exception:
         _AUTOLOG_ENABLED = False
         return False
+
+
+def _patch_graph_lifecycle_hooks() -> None:
+    """Give MLflow's tracer no-op ``on_interrupt`` / ``on_resume`` methods.
+
+    autolog patches ``BaseCallbackManager.__init__`` to inject its tracer into every
+    callback manager - including LangGraph's graph-lifecycle manager, which is meant
+    to hold only ``GraphCallbackHandler``s. Every ``interrupt()`` then logs an
+    ``AttributeError`` from the tracer. Harmless, but noisy mid-session.
+    """
+    from mlflow.langchain.langchain_tracer import MlflowLangchainTracer
+
+    for name in ("on_interrupt", "on_resume"):
+        if not hasattr(MlflowLangchainTracer, name):
+            setattr(MlflowLangchainTracer, name, lambda self, event: None)
 
 
 @contextlib.contextmanager
