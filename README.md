@@ -10,7 +10,8 @@ tracking and evaluation, against **Azure AI Foundry** for the model.
 
 The point is to learn two things at once. Using it drills interview patterns;
 rebuilding it — there is a track of milestone notebooks with failing tests waiting for you —
-teaches the engineering. See [docs/CURRICULUM.md](docs/CURRICULUM.md).
+teaches the engineering. See [docs/CURRICULUM.md](docs/CURRICULUM.md), and
+[docs/TEACHING.md](docs/TEACHING.md) if you are running a session for other people.
 
 A session looks like this (the hint text is illustrative — everything else is
 real output):
@@ -46,7 +47,7 @@ attempt 1 of 3
 
 ```bash
 uv sync --dev          # install
-uv run pytest          # 124 tests, no credentials needed
+uv run pytest          # 143 tests, no credentials needed
 uv run drill list      # see the problem bank
 ```
 
@@ -214,13 +215,22 @@ list:". Edit a prompt, re-run the eval, and a regression shows up as a number.
 ## Tests
 
 ```bash
-uv run pytest                      # 124 tests, ~8s, no credentials
+uv run pytest                      # 143 tests, ~35s, no credentials
+uv run pytest -m "not slow"        # skip the notebook executions, ~10s
 uv run jupyter lab notebooks/      # the milestone track (tests run inside each notebook)
 ```
 
-Everything runs offline. The graph tests use a fake chat model injected through
-the config, which is the entire reason the dependencies are passed around instead
-of being module globals.
+Everything runs offline. The graph tests use a fake chat model injected through the
+config, which is the entire reason the dependencies are passed around instead of
+being module globals.
+
+The notebooks are tested too, which matters if you teach from them.
+`tests/test_notebooks.py` substitutes the answer key in `notebooks/solutions/`
+into every exercise cell, executes each notebook in a real kernel, and requires
+all of its embedded tests to pass. That catches a spec that cannot be satisfied,
+and it catches drift — an exercise renamed without updating the key, or a stale
+solution left behind. A second CI job fails if a notebook is ever committed with
+its `TODO`s already filled in.
 
 ## History
 
