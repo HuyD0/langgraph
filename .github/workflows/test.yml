@@ -1,0 +1,64 @@
+name: tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch cancels the first, so a stack of queued runs
+# does not sit there testing commits nobody is waiting on any more.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor and ceiling of requires-python. The sandbox spawns
+        # sys.executable and the notebooks run a kernel, so version skew shows up
+        # here rather than on a learner's machine.
+        python-version: ["3.10", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --dev --python ${{ matrix.python-version }}
+
+      - name: Run tests
+        # No Azure credentials are set, deliberately: the whole suite must pass
+        # without them. If a test ever needs a live model it belongs behind the
+        # needs_llm marker.
+        env:
+          MLFLOW_DISABLE_AGENT_HINT: "1"
+        run: uv run --python ${{ matrix.python-version }} pytest -q
+
+  notebooks-ship-unsolved:
+    # Guards against committing a notebook with the exercises filled in, which
+    # would hand students the answers. Cheap enough to be its own job.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check every notebook still has its TODOs
+        run: |
+          missing=0
+          for nb in notebooks/m*.ipynb; do
+            if ! grep -q "NotImplementedError" "$nb"; then
+              echo "::error file=$nb::$nb has no unsolved exercises - it may have been committed with answers filled in"
+              missing=1
+            fi
+          done
+          exit $missing

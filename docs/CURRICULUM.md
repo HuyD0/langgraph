@@ -90,6 +90,8 @@ Milestone 5 is the one senior engineers will want to talk about — running code
 did not write, safely, is a real systems problem. Milestone 6 is the LangGraph one.
 
 `src/drill/` is the worked answer to all six. Looking is allowed. But write your
+
+`notebooks/solutions/` is the answer key for the notebook exercises specifically — including milestones 1-4, whose `merge_update`, `build_index` and friends are teaching constructs that do not exist in `src/drill/` at all.
 version first: reading a solution feels like understanding and usually is not —
 the same trap as reading someone else's accepted LeetCode answer and believing you
 could have produced it.
@@ -130,3 +132,11 @@ Then close the loop: edit a prompt in `src/drill/prompts.py`, re-run
 hints got better or just longer. That loop — change a prompt, measure it against
 real recorded data — is the thing most people building with LLMs have never
 actually done, and it is worth being able to describe in an interview.
+
+---
+
+## Teaching this to someone else
+
+See [TEACHING.md](TEACHING.md): per-milestone timings, where people get stuck, how to unstick them without solving it for them, and the three demo moments worth putting on a projector.
+
+The headline for anyone planning a session: **the whole notebook track needs no Azure credentials and no cloud spend.** Milestones 1-3 are pure Python; 4-6 import `drill` only for data structures and a fake chat model. Just `uv sync --dev`.
