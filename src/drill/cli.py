@@ -6,6 +6,7 @@
     uv run drill list
     uv run drill stats
     uv run drill check <file.py> --problem two_sum   # just run the tests, no tutor
+    uv run drill mine list                           # problems on your own money & health data
 """
 
 from __future__ import annotations
@@ -259,6 +260,12 @@ def start_cmd(
     console.print(f"\n{verb} [bold]{outcome.problem.title}[/bold] in {outcome.attempts} "
                   f"attempt(s) with {len(outcome.hints)} hint(s).")
     raise typer.Exit(0)
+
+
+# Problems about your own money and health data: `drill mine --help`.
+from drill.mine.cli import mine_app  # noqa: E402
+
+app.add_typer(mine_app, name="mine")
 
 
 if __name__ == "__main__":
