@@ -1,0 +1,6 @@
+{
+  "name": "daily-drill-tools",
+  "private": true,
+  "description": "Checks Daily Drill exercises in Skulpt, the browser Python the page runs.",
+  "dependencies": { "skulpt": "1.2.0" }
+}
