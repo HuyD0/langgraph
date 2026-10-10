@@ -1,4 +1,4 @@
-"""interview-drill: an agentic coding-interview tutor.
+"""daily-drill: an agentic coding-interview tutor.
 
 Built on LangGraph for the control flow and MLflow for tracing, run tracking and
 evaluation. See README.md to run it, and docs/CURRICULUM.md to rebuild it yourself.

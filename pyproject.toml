@@ -1,5 +1,5 @@
 [project]
-name = "interview-drill"
+name = "daily-drill"
 version = "0.1.0"
 description = "An agentic coding-interview tutor built on LangGraph, traced and evaluated with MLflow."
 authors = [{ name = "huy.d@hotmail.com" }]

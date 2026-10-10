@@ -1,4 +1,4 @@
-# interview-drill
+# daily-drill
 
 An agentic coding-interview tutor. It picks a problem from the topic you are
 weakest at, waits while you write a solution, runs it against held-back tests, and
@@ -136,7 +136,7 @@ not fail with an auth error from inside an SDK.
 | `DRILL_SANDBOX_TIMEOUT` | `10` | Seconds a submission may run |
 | `DRILL_PROGRESS_PATH` | `.drill/progress.json` | Where history is stored |
 | `MLFLOW_TRACKING_URI` | *(unset → `./mlruns`)* | Tracking server |
-| `MLFLOW_EXPERIMENT_NAME` | `interview-drill` | Experiment for traces and runs |
+| `MLFLOW_EXPERIMENT_NAME` | `daily-drill` | Experiment for traces and runs |
 | `AZURE_FOUNDRY_FLAVOUR` | *(inferred)* | Force `azure_openai` or `azure_inference` |
 
 ## Commands
