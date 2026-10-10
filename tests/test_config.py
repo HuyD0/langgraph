@@ -107,3 +107,71 @@ def test_importing_the_package_needs_no_credentials():
     for module in ("drill.config", "drill.llm", "drill.graph", "drill.nodes",
                    "drill.sandbox", "drill.session", "drill.tracking", "drill.evaluation"):
         importlib.import_module(module)
+
+
+def test_ollama_model_selects_local_flavour(monkeypatch):
+    monkeypatch.setenv("OLLAMA_MODEL", "gemma3:12b")
+    settings = LLMSettings.from_env()
+    assert settings.flavour == "ollama" and settings.is_local
+    assert settings.endpoint == "http://localhost:11434/v1"
+    assert settings.is_configured  # no key or service principal needed
+
+
+def test_ollama_wins_over_azure_settings(monkeypatch):
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://my-res.openai.azure.com/")
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "k")
+    monkeypatch.setenv("OLLAMA_MODEL", "gemma3:12b")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://other-host:11434/v1")
+    settings = LLMSettings.from_env()
+    assert settings.flavour == "ollama"
+    assert settings.endpoint == "http://other-host:11434/v1"
+
+
+def test_ollama_respects_empty_temperature(monkeypatch):
+    monkeypatch.setenv("OLLAMA_MODEL", "gemma3:12b")
+    monkeypatch.setenv("DRILL_TEMPERATURE", "")
+    assert LLMSettings.from_env().temperature is None
+
+
+def test_ollama_builds_a_chat_model_without_network(monkeypatch):
+    """Construction must not contact Ollama; only invoke() does."""
+    monkeypatch.setenv("OLLAMA_MODEL", "gemma3:12b")
+    model = build_chat_model(LLMSettings.from_env())
+    assert type(model).__name__ == "ChatOpenAI"
+    assert model.model_name == "gemma3:12b"
+
+
+def test_local_settings_without_a_model_name_explain_what_to_set():
+    with pytest.raises(MissingCredentials) as exc:
+        build_chat_model(LLMSettings(flavour="ollama", endpoint="http://localhost:11434/v1"))
+    assert "OLLAMA_MODEL" in str(exc.value)
+
+
+def test_gateway_endpoint_selects_gateway_flavour(monkeypatch):
+    monkeypatch.setenv("MLFLOW_GATEWAY_ENDPOINT", "drill-tutor")
+    settings = LLMSettings.from_env()
+    assert settings.flavour == "mlflow_gateway" and settings.is_configured
+    assert settings.endpoint == "http://localhost:5050/gateway/mlflow/v1"
+    assert settings.deployment == "drill-tutor"
+
+
+def test_gateway_wins_over_ollama_and_azure(monkeypatch):
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://my-res.openai.azure.com/")
+    monkeypatch.setenv("OLLAMA_MODEL", "gemma3:12b")
+    monkeypatch.setenv("MLFLOW_GATEWAY_ENDPOINT", "drill-tutor")
+    monkeypatch.setenv("MLFLOW_GATEWAY_URL", "http://other:5050/gateway/mlflow/v1")
+    settings = LLMSettings.from_env()
+    assert settings.flavour == "mlflow_gateway"
+    assert settings.endpoint == "http://other:5050/gateway/mlflow/v1"
+
+
+def test_gateway_builds_a_chat_model_without_network(monkeypatch):
+    monkeypatch.setenv("MLFLOW_GATEWAY_ENDPOINT", "drill-tutor")
+    model = build_chat_model(LLMSettings.from_env())
+    assert type(model).__name__ == "ChatOpenAI" and model.model_name == "drill-tutor"
+
+
+def test_gateway_without_endpoint_name_explains_what_to_set():
+    with pytest.raises(MissingCredentials) as exc:
+        build_chat_model(LLMSettings(flavour="mlflow_gateway", endpoint="http://localhost:5050"))
+    assert "MLFLOW_GATEWAY_ENDPOINT" in str(exc.value)

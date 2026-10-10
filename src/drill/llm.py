@@ -81,13 +81,36 @@ def _build_azure_inference(settings: LLMSettings) -> Any:
     return AzureAIChatCompletionsModel(**kwargs)
 
 
+def _build_openai_compatible(settings: LLMSettings) -> Any:
+    """Ollama or the MLflow AI Gateway: both speak the OpenAI chat API, keyless locally."""
+    from langchain_openai import ChatOpenAI
+
+    kwargs: dict[str, Any] = {
+        "base_url": settings.endpoint,
+        "model": settings.deployment,
+        # Neither checks the key here, but the OpenAI client refuses to start without one.
+        "api_key": "local",
+    }
+    if settings.temperature is not None:
+        kwargs["temperature"] = settings.temperature
+
+    return ChatOpenAI(**kwargs)
+
+
 def build_chat_model(settings: LLMSettings | None = None) -> Any:
-    """Return a LangChain chat model wired to your Foundry resource.
+    """Return a LangChain chat model wired to your Foundry resource, or to Ollama.
 
     Raises :class:`MissingCredentials` - naming the unset variables - rather than
     failing later with an opaque auth error from deep inside an SDK.
     """
     settings = settings or LLMSettings.from_env()
+
+    if settings.is_local:
+        if not settings.is_configured:
+            raise MissingCredentials(
+                "Local model is not configured. Set:\n  - " + "\n  - ".join(settings.missing())
+            )
+        return _build_openai_compatible(settings)
 
     if not settings.is_configured:
         raise MissingCredentials(

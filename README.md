@@ -1,4 +1,4 @@
-# interview-drill
+# daily-drill
 
 An agentic coding-interview tutor. It picks a problem from the topic you are
 weakest at, waits while you write a solution, runs it against held-back tests, and
@@ -22,7 +22,7 @@ $ uv run drill start
 ╭─ Two Sum · easy · hash-map ──────────────────────────────────────────────╮
 │ Given a list of integers `nums` and an integer `target`, return the      │
 │ indices of the two numbers that add up to `target`.                      │
-╰──────────────────────────────────── target: O(n) time, O(n) space ───────╯
+╰───────────── target: walk through the list once. Using extra memory is fine ╯
 
   example call            expected
   two_sum([2,7,11,15], 9) [0, 1]
@@ -54,90 +54,27 @@ uv run drill list      # see the problem bank
 `drill list`, `drill check` and `drill solution` work with no credentials at all.
 The tutored session (`drill start`) needs a model — below.
 
-## Connecting Azure AI Foundry
+## Connecting a model
 
-### Provision it from scratch
+Four ways, all in [docs/SETUP.md](docs/SETUP.md): a local model with Ollama (free, offline),
+an Azure AI Foundry resource `scripts/azure_up.sh` creates for you, one you already have, or
+an MLflow AI Gateway endpoint. Values go in a `.env` at the repo root; if something is
+missing, `drill start` names the variable.
 
-If you do not have a Foundry resource yet, `scripts/azure_up.sh` creates one and
-writes your `.env`. It needs the Azure CLI and `jq`, and it signs you in if you
-are not already.
+## The Daily Drill page, and the tutor as a local service
 
-```bash
-scripts/azure_up.sh          # ~2 minutes, prompts before it creates anything
-uv run drill start
-```
-
-It makes a resource group, an `AIServices` resource, and one chat deployment
-named `drill-chat`. The model is whichever of `gpt-5.4-nano`, `gpt-5-nano`,
-`gpt-5.4-mini`, `gpt-5-mini`, `gpt-4.1-mini`, `gpt-4o-mini` your subscription can
-*actually* deploy in that region — it skips versions Azure lists but has marked
-`Deprecating`, which otherwise fail with `ServiceModelDeprecating`. It then asks
-the deployed model whether it accepts a custom temperature (reasoning models
-reject one) and writes `DRILL_TEMPERATURE` to match. Deployments are
-pay-per-token, so an idle resource costs nothing. Re-running the script is safe:
-it reuses whatever already exists.
-
-**Your subscription must be Pay-As-You-Go.** Azure allocates *zero* tokens/min of
-Azure OpenAI quota to Free Trial, Azure Pass and Lightweight Trial subscriptions,
-for every model and every region — deployment fails with `InsufficientQuota`. The
-script checks your offer type up front and says so before creating anything.
-Upgrading keeps any remaining free credit.
-
-Override the defaults with environment variables:
+The repo also holds a second way to learn: the **Daily Drill** page, 69 lessons in 14
+modules on AI engineering (foundations, RAG, agents, security, production, the Azure
+Databricks platform), each going Learn, Check, Build, Interview. It is published on claude.ai
+and can be served from your own machine, with Ollama answering and your progress in SQLite:
 
 ```bash
-DRILL_LOCATION=swedencentral DRILL_MODEL=gpt-4o scripts/azure_up.sh
+uv run drill-server        # http://localhost:8787, plus MCP tools at /mcp for Claude Code
+uv run drill build-page    # the page as one HTML file, in dist/
 ```
 
-`DRILL_RG`, `DRILL_LOCATION`, `DRILL_ACCOUNT`, `DRILL_DEPLOYMENT`, `DRILL_MODEL`
-and `DRILL_CAPACITY` are all honoured. When you are done, `scripts/azure_down.sh`
-deletes the resource group and purges the soft-deleted resource so it stops
-holding your model quota.
-
-### Or point it at a resource you already have
-
-A Foundry resource exposes one of two chat surfaces. You do not have to work out
-which you have: the endpoint URL is inspected and the right client is used. Put
-the values in a `.env` at the repo root (it is gitignored) or export them.
-
-**Azure OpenAI deployments** — endpoint ends in `.openai.azure.com`:
-
-```bash
-AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=<your-deployment-name>
-AZURE_OPENAI_API_KEY=<key>
-# AZURE_OPENAI_API_VERSION=2024-10-21   # optional, this is the default
-```
-
-**Foundry models endpoint** — endpoint ends in `.services.ai.azure.com/models`:
-
-```bash
-AZURE_INFERENCE_ENDPOINT=https://<your-resource>.services.ai.azure.com/models
-AZURE_OPENAI_DEPLOYMENT=<your-model-name>
-AZURE_OPENAI_API_KEY=<key>
-```
-
-**Service principal instead of a key** — set these three and leave the key unset,
-and an AAD token is fetched and refreshed for you:
-
-```bash
-AZURE_TENANT_ID=...
-AZURE_CLIENT_ID=...
-AZURE_CLIENT_SECRET=...
-```
-
-If something is missing, `drill start` tells you exactly which variable — it does
-not fail with an auth error from inside an SDK.
-
-| Variable | Default | What it does |
-|---|---|---|
-| `DRILL_TEMPERATURE` | `0.2` | Sampling temperature; **empty** omits it, which reasoning models require |
-| `DRILL_MAX_ATTEMPTS` | `3` | Tries before the tutor explains |
-| `DRILL_SANDBOX_TIMEOUT` | `10` | Seconds a submission may run |
-| `DRILL_PROGRESS_PATH` | `.drill/progress.json` | Where history is stored |
-| `MLFLOW_TRACKING_URI` | *(unset → `./mlruns`)* | Tracking server |
-| `MLFLOW_EXPERIMENT_NAME` | `interview-drill` | Experiment for traces and runs |
-| `AZURE_FOUNDRY_FLAVOUR` | *(inferred)* | Force `azure_openai` or `azure_inference` |
+[docs/PAGE.md](docs/PAGE.md) is the content and how to add a lesson; [docs/SERVER.md](docs/SERVER.md)
+is the server, the phone, Claude Code and the cloud.
 
 ## Commands
 
@@ -186,6 +123,9 @@ not a pipeline.
 | `tracking.py` | MLflow traces and per-session runs. |
 | `evaluation.py` | Scores the tutor — mainly, does it leak answers. |
 | `cli.py` | The terminal. |
+| `mine/` | `drill mine`: the same drill on your own money and health data. |
+| `content/` | The Daily Drill page: one file per module, the classics' Learn text, the page template, the build. |
+| `server/` | The page and the MCP tools as a local service: model routing, SQLite store, tracing. |
 
 ### On the sandbox
 
@@ -223,6 +163,10 @@ uv run jupyter lab notebooks/      # the milestone track (tests run inside each 
 Everything runs offline. The graph tests use a fake chat model injected through the
 config, which is the entire reason the dependencies are passed around instead of
 being module globals.
+
+The page's content is tested too (`tests/test_content.py`): every exercise's solution and
+its fill-in-the-blanks scaffold run against the exercise's own cases, the classics on the page
+must be the CLI's bank word for word, and no learner-facing text may contain Big-O notation.
 
 The notebooks are tested too, which matters if you teach from them.
 `tests/test_notebooks.py` substitutes the answer key in `notebooks/solutions/`

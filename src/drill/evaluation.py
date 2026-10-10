@@ -238,7 +238,7 @@ def evaluate_hints(dataset: list[dict], include_judge: bool = False):
     return mlflow.genai.evaluate(data=dataset, scorers=build_scorers(include_judge))
 
 
-def dataset_from_traces(experiment_name: str = "interview-drill", limit: int = 100) -> list[dict]:
+def dataset_from_traces(experiment_name: str = "daily-drill", limit: int = 100) -> list[dict]:
     """Pull hints out of recorded MLflow traces into an evaluation dataset.
 
     This is the payoff for tracing every session: your eval set is your own

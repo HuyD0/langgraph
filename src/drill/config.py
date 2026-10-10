@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Mapping
 
 # Repository root, i.e. the directory holding pyproject.toml.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +51,21 @@ class LLMSettings:
         and you address a *model* by name. Served by
         ``langchain_azure_ai.chat_models.AzureAIChatCompletionsModel``.
 
+    ``ollama``
+        A model running locally under Ollama, no Azure and no credentials. Turned
+        on by setting ``OLLAMA_MODEL``, which takes precedence over any Azure
+        settings. Served by ``langchain_openai.ChatOpenAI`` against Ollama's
+        OpenAI-compatible endpoint (``OLLAMA_BASE_URL``, default
+        ``http://localhost:11434/v1``).
+
+    ``mlflow_gateway``
+        An endpoint on a local MLflow AI Gateway, which forwards to whichever model
+        the endpoint is pointed at and records every call. Turned on by setting
+        ``MLFLOW_GATEWAY_ENDPOINT`` (the endpoint name), which takes precedence over
+        everything else. Served by ``ChatOpenAI`` against the gateway's
+        OpenAI-compatible API (``MLFLOW_GATEWAY_URL``, default
+        ``http://localhost:5050/gateway/mlflow/v1``).
+
     You do not have to pick manually - :func:`from_env` infers it from the endpoint
     URL, and ``AZURE_FOUNDRY_FLAVOUR`` overrides the guess if it gets it wrong.
     """
@@ -73,14 +89,29 @@ class LLMSettings:
         return not self.api_key and all([self.tenant_id, self.client_id, self.client_secret])
 
     @property
+    def is_local(self) -> bool:
+        """True for Ollama or a local MLflow gateway: no credentials needed here."""
+        return self.flavour in {"ollama", "mlflow_gateway"}
+
+    @property
     def is_configured(self) -> bool:
         """True when there is enough here to attempt a real connection."""
+        if self.is_local:
+            return bool(self.endpoint) and bool(self.deployment)
         has_auth = bool(self.api_key) or self.uses_service_principal
         return bool(self.endpoint) and bool(self.deployment) and has_auth
 
     def missing(self) -> list[str]:
         """Human-readable list of what is still unset, for a useful error message."""
         gaps: list[str] = []
+        if self.is_local:
+            if not self.deployment:
+                gaps.append(
+                    "MLFLOW_GATEWAY_ENDPOINT (a gateway endpoint name)"
+                    if self.flavour == "mlflow_gateway"
+                    else "OLLAMA_MODEL (a model you have pulled, e.g. gemma3:12b)"
+                )
+            return gaps
         if not self.endpoint:
             gaps.append("AZURE_OPENAI_ENDPOINT (or AZURE_INFERENCE_ENDPOINT)")
         if not self.deployment:
@@ -93,27 +124,19 @@ class LLMSettings:
         return gaps
 
     @classmethod
-    def from_env(cls) -> "LLMSettings":
-        endpoint = (
-            os.getenv("AZURE_OPENAI_ENDPOINT")
-            or os.getenv("AZURE_INFERENCE_ENDPOINT")
-            or os.getenv("AZURE_AI_ENDPOINT")
-        )
+    def from_env(cls, env: Mapping[str, str] | None = None) -> "LLMSettings":
+        """Settings from the environment, or from ``env``: a mapping standing in for it.
 
-        # Infer the surface from the URL shape, then let an explicit override win.
-        inferred = "azure_openai"
-        if endpoint and ("services.ai.azure.com" in endpoint or endpoint.rstrip("/").endswith("/models")):
-            inferred = "azure_inference"
-        flavour = os.getenv("AZURE_FOUNDRY_FLAVOUR", inferred).strip().lower()
-        if flavour not in {"azure_openai", "azure_inference"}:
-            flavour = inferred
-
+        The local server passes a copy of the environment with the Ollama variables
+        removed, to get the *hosted* model as a fallback even when .env names a local one.
+        """
+        getenv = (env if env is not None else os.environ).get
         # Reasoning models - the gpt-5 family and the o-series - reject every
         # temperature but their own default, answering with an ``unsupported_value``
         # error. Setting DRILL_TEMPERATURE to an empty value omits the parameter
         # altogether; scripts/azure_up.sh writes that automatically when it detects
         # the deployed model refuses one.
-        temperature_raw = os.getenv("DRILL_TEMPERATURE", "0.2")
+        temperature_raw = getenv("DRILL_TEMPERATURE", "0.2")
         if temperature_raw.strip() == "":
             temperature = None
         else:
@@ -122,20 +145,55 @@ class LLMSettings:
             except ValueError:
                 temperature = 0.2
 
+        # A gateway endpoint wins over everything, then a local model, then Azure, so
+        # switching is one line in .env.
+        gateway_endpoint = getenv("MLFLOW_GATEWAY_ENDPOINT", "").strip()
+        if gateway_endpoint:
+            return cls(
+                endpoint=getenv("MLFLOW_GATEWAY_URL", "").strip()
+                or "http://localhost:5050/gateway/mlflow/v1",
+                deployment=gateway_endpoint,
+                flavour="mlflow_gateway",
+                temperature=temperature,
+            )
+
+        ollama_model = getenv("OLLAMA_MODEL", "").strip()
+        if ollama_model:
+            return cls(
+                endpoint=getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1",
+                deployment=ollama_model,
+                flavour="ollama",
+                temperature=temperature,
+            )
+
+        endpoint = (
+            getenv("AZURE_OPENAI_ENDPOINT")
+            or getenv("AZURE_INFERENCE_ENDPOINT")
+            or getenv("AZURE_AI_ENDPOINT")
+        )
+
+        # Infer the surface from the URL shape, then let an explicit override win.
+        inferred = "azure_openai"
+        if endpoint and ("services.ai.azure.com" in endpoint or endpoint.rstrip("/").endswith("/models")):
+            inferred = "azure_inference"
+        flavour = getenv("AZURE_FOUNDRY_FLAVOUR", inferred).strip().lower()
+        if flavour not in {"azure_openai", "azure_inference"}:
+            flavour = inferred
+
         return cls(
             endpoint=endpoint,
             deployment=(
-                os.getenv("AZURE_OPENAI_DEPLOYMENT")
-                or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-                or os.getenv("AZURE_INFERENCE_MODEL")
+                getenv("AZURE_OPENAI_DEPLOYMENT")
+                or getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+                or getenv("AZURE_INFERENCE_MODEL")
             ),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21"),
-            api_key=os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_INFERENCE_CREDENTIAL"),
+            api_version=getenv("AZURE_OPENAI_API_VERSION", "2024-10-21"),
+            api_key=getenv("AZURE_OPENAI_API_KEY") or getenv("AZURE_INFERENCE_CREDENTIAL"),
             flavour=flavour,
             temperature=temperature,
-            tenant_id=os.getenv("AZURE_TENANT_ID"),
-            client_id=os.getenv("AZURE_CLIENT_ID"),
-            client_secret=os.getenv("AZURE_CLIENT_SECRET"),
+            tenant_id=getenv("AZURE_TENANT_ID"),
+            client_id=getenv("AZURE_CLIENT_ID"),
+            client_secret=getenv("AZURE_CLIENT_SECRET"),
         )
 
 
@@ -156,7 +214,7 @@ class DrillSettings:
 
     progress_path: Path = DEFAULT_PROGRESS_PATH
     mlflow_tracking_uri: str | None = None
-    mlflow_experiment: str = "interview-drill"
+    mlflow_experiment: str = "daily-drill"
 
     @classmethod
     def from_env(cls) -> "DrillSettings":
@@ -168,5 +226,5 @@ class DrillSettings:
             progress_path=Path(progress) if progress else DEFAULT_PROGRESS_PATH,
             # Unset means MLflow writes to ./mlruns, which `mlflow ui` reads by default.
             mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI"),
-            mlflow_experiment=os.getenv("MLFLOW_EXPERIMENT_NAME", "interview-drill"),
+            mlflow_experiment=os.getenv("MLFLOW_EXPERIMENT_NAME", "daily-drill"),
         )
