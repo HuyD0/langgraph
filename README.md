@@ -22,7 +22,7 @@ $ uv run drill start
 ╭─ Two Sum · easy · hash-map ──────────────────────────────────────────────╮
 │ Given a list of integers `nums` and an integer `target`, return the      │
 │ indices of the two numbers that add up to `target`.                      │
-╰──────────────────────────────────── target: O(n) time, O(n) space ───────╯
+╰───────────── target: walk through the list once. Using extra memory is fine ╯
 
   example call            expected
   two_sum([2,7,11,15], 9) [0, 1]
@@ -54,202 +54,27 @@ uv run drill list      # see the problem bank
 `drill list`, `drill check` and `drill solution` work with no credentials at all.
 The tutored session (`drill start`) needs a model — below.
 
-## Connecting Azure AI Foundry
+## Connecting a model
 
-### Provision it from scratch
+Four ways, all in [docs/SETUP.md](docs/SETUP.md): a local model with Ollama (free, offline),
+an Azure AI Foundry resource `scripts/azure_up.sh` creates for you, one you already have, or
+an MLflow AI Gateway endpoint. Values go in a `.env` at the repo root; if something is
+missing, `drill start` names the variable.
 
-If you do not have a Foundry resource yet, `scripts/azure_up.sh` creates one and
-writes your `.env`. It needs the Azure CLI and `jq`, and it signs you in if you
-are not already.
+## The Daily Drill page, and the tutor as a local service
 
-```bash
-scripts/azure_up.sh          # ~2 minutes, prompts before it creates anything
-uv run drill start
-```
-
-It makes a resource group, an `AIServices` resource, and one chat deployment
-named `drill-chat`. The model is whichever of `gpt-5.4-nano`, `gpt-5-nano`,
-`gpt-5.4-mini`, `gpt-5-mini`, `gpt-4.1-mini`, `gpt-4o-mini` your subscription can
-*actually* deploy in that region — it skips versions Azure lists but has marked
-`Deprecating`, which otherwise fail with `ServiceModelDeprecating`. It then asks
-the deployed model whether it accepts a custom temperature (reasoning models
-reject one) and writes `DRILL_TEMPERATURE` to match. Deployments are
-pay-per-token, so an idle resource costs nothing. Re-running the script is safe:
-it reuses whatever already exists.
-
-**Your subscription must be Pay-As-You-Go.** Azure allocates *zero* tokens/min of
-Azure OpenAI quota to Free Trial, Azure Pass and Lightweight Trial subscriptions,
-for every model and every region — deployment fails with `InsufficientQuota`. The
-script checks your offer type up front and says so before creating anything.
-Upgrading keeps any remaining free credit.
-
-Override the defaults with environment variables:
+The repo also holds a second way to learn: the **Daily Drill** page, 69 lessons in 14
+modules on AI engineering (foundations, RAG, agents, security, production, the Azure
+Databricks platform), each going Learn, Check, Build, Interview. It is published on claude.ai
+and can be served from your own machine, with Ollama answering and your progress in SQLite:
 
 ```bash
-DRILL_LOCATION=swedencentral DRILL_MODEL=gpt-4o scripts/azure_up.sh
+uv run drill-server        # http://localhost:8787, plus MCP tools at /mcp for Claude Code
+uv run drill build-page    # the page as one HTML file, in dist/
 ```
 
-`DRILL_RG`, `DRILL_LOCATION`, `DRILL_ACCOUNT`, `DRILL_DEPLOYMENT`, `DRILL_MODEL`
-and `DRILL_CAPACITY` are all honoured. When you are done, `scripts/azure_down.sh`
-deletes the resource group and purges the soft-deleted resource so it stops
-holding your model quota.
-
-### Or point it at a resource you already have
-
-A Foundry resource exposes one of two chat surfaces. You do not have to work out
-which you have: the endpoint URL is inspected and the right client is used. Put
-the values in a `.env` at the repo root (it is gitignored) or export them.
-
-**Azure OpenAI deployments** — endpoint ends in `.openai.azure.com`:
-
-```bash
-AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=<your-deployment-name>
-AZURE_OPENAI_API_KEY=<key>
-# AZURE_OPENAI_API_VERSION=2024-10-21   # optional, this is the default
-```
-
-**Foundry models endpoint** — endpoint ends in `.services.ai.azure.com/models`:
-
-```bash
-AZURE_INFERENCE_ENDPOINT=https://<your-resource>.services.ai.azure.com/models
-AZURE_OPENAI_DEPLOYMENT=<your-model-name>
-AZURE_OPENAI_API_KEY=<key>
-```
-
-**Service principal instead of a key** — set these three and leave the key unset,
-and an AAD token is fetched and refreshed for you:
-
-```bash
-AZURE_TENANT_ID=...
-AZURE_CLIENT_ID=...
-AZURE_CLIENT_SECRET=...
-```
-
-### Or run a local model with Ollama
-
-No Azure, no keys, works offline. Install [Ollama](https://ollama.com), pull a
-model, and name it:
-
-```bash
-brew install ollama && brew services start ollama
-ollama pull gemma3:12b
-```
-
-```bash
-OLLAMA_MODEL=gemma3:12b
-# OLLAMA_BASE_URL=http://localhost:11434/v1   # optional, this is the default
-```
-
-`OLLAMA_MODEL` takes precedence over any Azure settings, so comment it out to go
-back to Foundry. The tutor only needs plain-text replies, no tool calling, so any
-instruction-tuned chat model works. Expect weaker hints than a hosted model.
-A 12B model needs about 8 GB of free memory.
-
-### Or route through an MLflow AI Gateway
-
-An MLflow server (3.x) has a built-in AI Gateway: you create named endpoints in its
-UI, each pointed at a model (Ollama, Azure, Databricks...), and every call through
-it is recorded. Point the tutor at an endpoint by name:
-
-```bash
-MLFLOW_GATEWAY_ENDPOINT=drill-tutor
-# MLFLOW_GATEWAY_URL=http://localhost:5050/gateway/mlflow/v1   # optional, this is the default
-MLFLOW_TRACKING_URI=http://localhost:5050                      # send the tutor's traces there too
-```
-
-`MLFLOW_GATEWAY_ENDPOINT` takes precedence over `OLLAMA_MODEL` and Azure. Switching
-the model behind the tutor is then done in the gateway, not in `.env`. The server
-must be running while you practise.
-
-If something is missing, `drill start` tells you exactly which variable — it does
-not fail with an auth error from inside an SDK.
-
-| Variable | Default | What it does |
-|---|---|---|
-| `DRILL_TEMPERATURE` | `0.2` | Sampling temperature; **empty** omits it, which reasoning models require |
-| `DRILL_MAX_ATTEMPTS` | `3` | Tries before the tutor explains |
-| `DRILL_SANDBOX_TIMEOUT` | `10` | Seconds a submission may run |
-| `DRILL_PROGRESS_PATH` | `.drill/progress.json` | Where history is stored |
-| `MLFLOW_TRACKING_URI` | *(unset → `./mlruns`)* | Tracking server |
-| `MLFLOW_EXPERIMENT_NAME` | `daily-drill` | Experiment for traces and runs |
-| `AZURE_FOUNDRY_FLAVOUR` | *(inferred)* | Force `azure_openai` or `azure_inference` |
-| `OLLAMA_MODEL` | *(unset)* | Use a local Ollama model instead of Azure |
-| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Where Ollama is listening |
-| `MLFLOW_GATEWAY_ENDPOINT` | *(unset)* | Use an MLflow AI Gateway endpoint; wins over everything |
-| `MLFLOW_GATEWAY_URL` | `http://localhost:5050/gateway/mlflow/v1` | Where the gateway is |
-
-## Run the tutor as a local service
-
-The Daily Drill page (`web/daily-drill`) can be served from your own machine instead of
-claude.ai, with Ollama answering for free and your progress in a SQLite file. One small
-server, two doors, one core (`src/drill/server`):
-
-```bash
-uv run drill-server
-# the page:  http://localhost:8787
-# the tools: http://localhost:8787/mcp   (MCP over HTTP, for Claude Code)
-```
-
-The first run builds the page and creates `.drill/drill.db`. macOS will ask once whether
-to allow incoming connections; say yes if you want the phone to reach it.
-
-**Which model answers.** Ollama on this Mac first (`OLLAMA_MODEL`, or whichever pulled
-model answers without "thinking" first, so hints take seconds). A hosted model is the
-fallback: the Azure settings above, or any OpenAI-compatible endpoint named with
-`DRILL_HOSTED_BASE_URL` / `DRILL_HOSTED_MODEL` / `DRILL_HOSTED_API_KEY`, such as a
-Databricks serving endpoint. Only "complex" jobs (reviews) start with the hosted model, and
-it stops being used past `DRILL_HOSTED_DAILY_TOKENS` a day. Every answer is cached by its
-exact prompt, so asking the same hint twice is free.
-
-**From your phone, at home.** Same Wi-Fi, nothing to install: open
-`http://<your-mac-name>.local:8787` in Safari (the Mac's name is under System Settings →
-General → Sharing) and use "Add to Home Screen". The Mac has to be awake; `caffeinate -s`
-keeps it so while plugged in.
-
-**From your phone, away from home.** Put a tunnel with a login in front of it, for example
-`ngrok http 8787 --basic-auth "you:<long password>"`, and open the `https://` address it
-prints. Never expose the port without a login.
-
-**In Claude Code.** Register the stdio door once and ask for drills in any session
-("give me my next drill", "check this attempt", "add MERGE to my study list"):
-
-```bash
-claude mcp add -s user drill -- /opt/homebrew/bin/uv run --directory /path/to/this/repo drill-mcp
-```
-
-The Claude desktop app takes the same command in its MCP settings. Tools: `next_drill`,
-`get_drill`, `list_lessons`, `run_tests`, `hint`, `review`, `ask_tutor`, `study_list`,
-`save_to_study`, `mark_done`. The web door's `/mcp` endpoint only accepts requests addressed
-to this machine (`localhost`, `127.0.0.1`), a defence against DNS rebinding; add hosts with
-`DRILL_ALLOWED_HOSTS` if you need to.
-
-**Later, in the cloud.** Everything is configuration: `DRILL_DATABASE_URL` for Postgres
-(Neon on Azure, Lakebase on Databricks), `DRILL_HOSTED_*` for a serving endpoint behind AI
-Gateway, and the same server in a container on Azure Container Apps or Databricks Apps,
-which forwards the signed-in user's identity in a header (`DRILL_USER_HEADER`, default
-`x-forwarded-email`) so each person gets their own progress.
-
-| Variable | Default | What it does |
-|---|---|---|
-| `DRILL_HOST` / `DRILL_PORT` | `0.0.0.0` / `8787` | Where the server listens; `127.0.0.1` keeps it to this machine |
-| `DRILL_DATABASE_URL` | `sqlite:///.drill/drill.db` | Where progress and the study list live |
-| `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset → Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
-| `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on hosted usage (about four characters per token) |
-| `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
-| `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
-| `DRILL_TRACING` | `1` | One MLflow trace per answer; `0` turns it off |
-| `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` values the `/mcp` endpoint accepts |
-| `DRILL_USER_HEADER` | `x-forwarded-email` | Header a login proxy uses to say who is asking |
-
-**What gets measured.** Every answer is one MLflow trace, in `.drill/mlflow.db` unless
-`MLFLOW_TRACKING_URI` points elsewhere (`uv run mlflow ui --backend-store-uri
-sqlite:///.drill/mlflow.db`, experiment `daily-drill`): which route and model answered, the tier, whether it was a cache hit,
-whether the model was allowed to think, token counts in MLflow's own format so the token
-and cost dashboards work, total time, and a `first_word` child span whose length is the
-**time to first token**, the wait the learner actually feels. Thinking costs time, not
-money, on your Mac (a hint takes 5–20 s with it, about 1 s without), so it is off for
-hints and on for reviews by default.
+[docs/PAGE.md](docs/PAGE.md) is the content and how to add a lesson; [docs/SERVER.md](docs/SERVER.md)
+is the server, the phone, Claude Code and the cloud.
 
 ## Commands
 
@@ -298,6 +123,9 @@ not a pipeline.
 | `tracking.py` | MLflow traces and per-session runs. |
 | `evaluation.py` | Scores the tutor — mainly, does it leak answers. |
 | `cli.py` | The terminal. |
+| `mine/` | `drill mine`: the same drill on your own money and health data. |
+| `content/` | The Daily Drill page: one file per module, the classics' Learn text, the page template, the build. |
+| `server/` | The page and the MCP tools as a local service: model routing, SQLite store, tracing. |
 
 ### On the sandbox
 
@@ -335,6 +163,10 @@ uv run jupyter lab notebooks/      # the milestone track (tests run inside each 
 Everything runs offline. The graph tests use a fake chat model injected through the
 config, which is the entire reason the dependencies are passed around instead of
 being module globals.
+
+The page's content is tested too (`tests/test_content.py`): every exercise's solution and
+its fill-in-the-blanks scaffold run against the exercise's own cases, the classics on the page
+must be the CLI's bank word for word, and no learner-facing text may contain Big-O notation.
 
 The notebooks are tested too, which matters if you teach from them.
 `tests/test_notebooks.py` substitutes the answer key in `notebooks/solutions/`
