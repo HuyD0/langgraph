@@ -78,6 +78,7 @@ your code to work on something real.
 
 | # | Milestone | You learn | Hardest part |
 |---|---|---|---|
+| 0 | `m0_python_basics.ipynb` | Loops, dicts, edge cases, what O(n) means | Starting `best` at a real item, not 0 |
 | 1 | `m1_state.ipynb` | Typed dicts, partial updates, not mutating shared state | Realising the update is *partial* |
 | 2 | `m2_problems.ipynb` | Dataclasses, lookup tables, error messages as design | The KeyError that lists valid ids |
 | 3 | `m3_routing.ipynb` | Pure functions, branching policy | Passing on the last attempt still counts |
@@ -98,6 +99,9 @@ could have produced it.
 
 ### A suggested order
 
+0. New to coding? Do milestone 0 first, and keep [CONCEPTS.md](CONCEPTS.md)
+   open: it explains every term the notebooks use, what Big-O means, and a
+   routine for starting when the cell is blank.
 1. Milestone 1 and 3 in one sitting. Both are short; they teach the shape.
 2. Drill for a few days. Let track A run.
 3. Milestone 2 and 4. Data modelling and aggregation.
