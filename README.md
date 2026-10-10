@@ -126,6 +126,42 @@ AZURE_CLIENT_ID=...
 AZURE_CLIENT_SECRET=...
 ```
 
+### Or run a local model with Ollama
+
+No Azure, no keys, works offline. Install [Ollama](https://ollama.com), pull a
+model, and name it:
+
+```bash
+brew install ollama && brew services start ollama
+ollama pull gemma3:12b
+```
+
+```bash
+OLLAMA_MODEL=gemma3:12b
+# OLLAMA_BASE_URL=http://localhost:11434/v1   # optional, this is the default
+```
+
+`OLLAMA_MODEL` takes precedence over any Azure settings, so comment it out to go
+back to Foundry. The tutor only needs plain-text replies, no tool calling, so any
+instruction-tuned chat model works. Expect weaker hints than a hosted model.
+A 12B model needs about 8 GB of free memory.
+
+### Or route through an MLflow AI Gateway
+
+An MLflow server (3.x) has a built-in AI Gateway: you create named endpoints in its
+UI, each pointed at a model (Ollama, Azure, Databricks...), and every call through
+it is recorded. Point the tutor at an endpoint by name:
+
+```bash
+MLFLOW_GATEWAY_ENDPOINT=drill-tutor
+# MLFLOW_GATEWAY_URL=http://localhost:5050/gateway/mlflow/v1   # optional, this is the default
+MLFLOW_TRACKING_URI=http://localhost:5050                      # send the tutor's traces there too
+```
+
+`MLFLOW_GATEWAY_ENDPOINT` takes precedence over `OLLAMA_MODEL` and Azure. Switching
+the model behind the tutor is then done in the gateway, not in `.env`. The server
+must be running while you practise.
+
 If something is missing, `drill start` tells you exactly which variable — it does
 not fail with an auth error from inside an SDK.
 
@@ -138,6 +174,10 @@ not fail with an auth error from inside an SDK.
 | `MLFLOW_TRACKING_URI` | *(unset → `./mlruns`)* | Tracking server |
 | `MLFLOW_EXPERIMENT_NAME` | `daily-drill` | Experiment for traces and runs |
 | `AZURE_FOUNDRY_FLAVOUR` | *(inferred)* | Force `azure_openai` or `azure_inference` |
+| `OLLAMA_MODEL` | *(unset)* | Use a local Ollama model instead of Azure |
+| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Where Ollama is listening |
+| `MLFLOW_GATEWAY_ENDPOINT` | *(unset)* | Use an MLflow AI Gateway endpoint; wins over everything |
+| `MLFLOW_GATEWAY_URL` | `http://localhost:5050/gateway/mlflow/v1` | Where the gateway is |
 
 ## Commands
 
