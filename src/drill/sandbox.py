@@ -40,11 +40,33 @@ def run_submission(
     because "your code is broken" is a normal outcome here, not an exception.
     """
     cases = problem.test_cases if include_samples else problem.hidden
+    return run_cases(
+        source,
+        problem.function_name,
+        [{"args": list(tc.args), "expected": tc.expected} for tc in cases],
+        unordered=problem.unordered,
+        timeout=timeout,
+    )
+
+
+def run_cases(
+    source: str,
+    function_name: str,
+    cases: list[dict],
+    *,
+    unordered: bool = False,
+    timeout: int = 10,
+) -> SubmissionResult:
+    """Like :func:`run_submission`, for cases given as plain ``{"args", "expected"}`` dicts.
+
+    This is the shape the Daily Drill page stores its exercises in, so the local
+    server can check an attempt without first turning it into a :class:`Problem`.
+    """
     payload = {
         "source": source,
-        "function_name": problem.function_name,
-        "unordered": problem.unordered,
-        "cases": [{"args": list(tc.args), "expected": tc.expected} for tc in cases],
+        "function_name": function_name,
+        "unordered": unordered,
+        "cases": [{"args": list(c["args"]), "expected": c["expected"]} for c in cases],
     }
 
     started = time.perf_counter()

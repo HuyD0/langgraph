@@ -17,7 +17,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1] / "web" / "daily-drill"
 CONTENT = ROOT / "content"
-PROBLEM_MODULES = ["new_problems", "new_problems2", "new_problems3", "new_problems4", "new_problems5", "new_problems6"]
+PROBLEM_MODULES = ["new_problems", "new_problems2", "new_problems3", "new_problems4", "new_problems5", "new_problems6", "new_problems7"]
 
 
 @pytest.fixture(scope="module", autouse=True)

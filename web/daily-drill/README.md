@@ -31,6 +31,21 @@ Ask Claude Code to publish `web/daily-drill/dist/daily-drill.html` to the URL ab
 Publishing to the same URL keeps learners' progress, which lives in the artifact's
 database, not in the HTML.
 
+## Run it from your own machine
+
+The same page can be served by the local tutor server in `src/drill/server`, which
+answers with Ollama (free, on your Mac) and keeps progress in a SQLite file:
+
+```bash
+uv run drill-server        # http://localhost:8787, and http://<your-mac>.local:8787 on your Wi-Fi
+```
+
+On claude.ai the page talks to the artifact's `sample` and `db`; served locally it talks
+to `/api/*` instead. The switch is `claudeBackend()` / `localBackend()` at the bottom of
+`app.html`; both hand the rest of the page the same three objects. The build also writes
+`dist/data.json`, which the server and its MCP tools read, so the page and the tools
+always agree on the content. See the root README for the phone and Claude Code setup.
+
 ## Where things are
 
 | File | What it holds |
@@ -38,8 +53,8 @@ database, not in the HTML.
 | `app.html` | The page: layout, styles and all the JavaScript. `/*DATA*/` is replaced with the content at build time. |
 | `build.py` | Merges everything, decides module order, writes `dist/`. |
 | `content/base_content.json` | Content carried over from the earlier version of the page: the 9 classic interview problems, the first 9 AI exercises, the 8 "My money & health" problems (made-up data from `drill.mine.export`), the 9 Azure Databricks Terraform exercises, and the glossary, gotchas and habits lists. |
-| `content/new_problems.py` … `new_problems6.py` | The exercises added since, in the order they were written: foundations/RAG/agents/LLMOps, experiment design, agents on Databricks, production patterns, security, then reliability/agents/data/evals/craft. Each file has a `check()` that runs the solution and the filled-in scaffold against the test cases. |
-| `content/curriculum.py` … `curriculum5.py` | Lessons: the Learn text, Check question, Interview angle and the "In your stack" snippet for each exercise, plus the module list (`curriculum3.MODULES` is the base order; `build.py` inserts later modules). |
+| `content/new_problems.py` … `new_problems7.py` | The exercises added since, in the order they were written: foundations/RAG/agents/LLMOps, experiment design, agents on Databricks, production patterns, security, then reliability/agents/data/evals/craft, then the MLflow Prompt Registry. Each file has a `check()` that runs the solution and the filled-in scaffold against the test cases. |
+| `content/curriculum.py` … `curriculum6.py` | Lessons: the Learn text, Check question, Interview angle and the "In your stack" snippet for each exercise, plus the module list (`curriculum3.MODULES` is the base order; `build.py` inserts later modules). |
 | `content/plain.py` | Plain-language rewrites of earlier interview-angle text, applied at build time. |
 
 ### Adding a lesson

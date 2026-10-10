@@ -6,19 +6,22 @@ import json, re, sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "content"))
-import new_problems, new_problems2, new_problems3, new_problems4, new_problems5, new_problems6, curriculum, curriculum2, curriculum3, curriculum4, curriculum5, plain
-new_problems.check(); new_problems2.check(); new_problems3.check(); new_problems4.check(); new_problems5.check(); new_problems6.check()
+import new_problems, new_problems2, new_problems3, new_problems4, new_problems5, new_problems6, new_problems7, curriculum, curriculum2, curriculum3, curriculum4, curriculum5, curriculum6, plain
+new_problems.check(); new_problems2.check(); new_problems3.check(); new_problems4.check(); new_problems5.check(); new_problems6.check(); new_problems7.check()
 MODULES = list(curriculum3.MODULES)
 MODULES.insert([m[0] for m in MODULES].index("shipping"), curriculum4.MODULE)
 MODULES.insert([m[0] for m in MODULES].index("agents") + 1, curriculum5.SECURITY)
 MODULES.insert([m[0] for m in MODULES].index("production") + 1, curriculum5.RELIABILITY)
 MODULES = [(i, t, b, ls + curriculum5.ADD.get(i, [])) for i, t, b, ls in MODULES]
+for new, after in curriculum6.AFTER.items():
+    ls = next(ls for *_, ls in MODULES if after in ls)
+    ls.insert(ls.index(after) + 1, new)
 LIFECYCLE = [(n, t, m + {"Build and trace": ["production", "security"], "Monitor": ["reliability"]}.get(n, [])) for n, t, m in curriculum3.LIFECYCLE]
 old = json.load(open(HERE / "content" / "base_content.json", encoding="utf-8"))
 
 bank = {p["id"]: p for p in old["BANK"]}
 learn = old["LEARN"]
-for p in new_problems.P + new_problems2.P + new_problems3.P + new_problems4.P + new_problems5.P + new_problems6.P:
+for p in new_problems.P + new_problems2.P + new_problems3.P + new_problems4.P + new_problems5.P + new_problems6.P + new_problems7.P:
     cases = []
     for c in p["cases"]:
         sample = c[-1] is True or c[-1] == "S"
@@ -53,9 +56,9 @@ for lid, l in curriculum2.L.items():
     lessons[lid] = dict(title=l["title"], learn=l["learn"], example=list(l["example"]), check=list(l["check"]), angle=list(l["angle"]))
 for lid, l in curriculum3.L.items():
     lessons[lid] = dict(title=l["title"], learn=l["learn"], example=list(l["example"]), check=list(l["check"]), angle=list(l["angle"]))
-for lid, l in list(curriculum4.L.items()) + list(curriculum5.L.items()):
+for lid, l in list(curriculum4.L.items()) + list(curriculum5.L.items()) + list(curriculum6.L.items()):
     lessons[lid] = dict(title=l["title"], learn=l["learn"], example=list(l["example"]), check=list(l["check"]), angle=list(l["angle"]))
-for lid, box in list(curriculum3.STACK.items()) + list(curriculum4.STACK.items()) + list(curriculum5.STACK.items()):
+for lid, box in list(curriculum3.STACK.items()) + list(curriculum4.STACK.items()) + list(curriculum5.STACK.items()) + list(curriculum6.STACK.items()):
     lessons[lid]["stack"] = list(box)
 for lid, l in lessons.items():
     assert lid in bank, lid
@@ -91,6 +94,8 @@ for b in bad: print("BIG-O:", b)
 html = open(HERE / "app.html", encoding="utf-8").read().replace("/*DATA*/", json.dumps(data, ensure_ascii=False))
 (HERE / "dist").mkdir(exist_ok=True)
 open(HERE / "dist" / "daily-drill.html", "w", encoding="utf-8").write(html)
+# The same content as plain data, for the local server and its MCP tools (src/drill/server).
+open(HERE / "dist" / "data.json", "w", encoding="utf-8").write(json.dumps(data, ensure_ascii=False))
 if bad:
     sys.exit("Big-O notation found in learner-facing text; see BIG-O lines above.")
 print("lessons", len(lessons), "bank", len(bank), "bytes", len(html), "bigO leftovers", len(bad))

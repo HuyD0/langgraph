@@ -9,26 +9,32 @@ dependencies = [
     # Graph orchestration
     "langgraph>=1.0,<2",
     "langchain-core>=1.0,<2",
-
     # Azure AI Foundry. Two endpoint flavours are supported, see src/drill/llm.py:
     #   - Azure OpenAI deployments  -> langchain-openai's AzureChatOpenAI
     #   - Foundry /models endpoint  -> langchain-azure-ai's AzureAIChatCompletionsModel
     "langchain-openai>=1.0,<2",
     "langchain-azure-ai>=1.0,<2",
     "azure-identity>=1.15",
-
     # Tracing, run tracking and evaluation
     "mlflow>=3.0,<4",
-
     # CLI
     "typer>=0.12",
     "rich>=13.0",
     "python-dotenv>=1.0",
     "pydantic>=2.0",
+    # The local tutor server (src/drill/server): the web door, the MCP door and the
+    # document store. See README.md > Run the tutor as a local service.
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30",
+    "mcp>=2.3,<3",
+    "sqlalchemy>=2.0,<3",
+    "httpx>=0.27",
 ]
 
 [project.scripts]
 drill = "drill.cli:app"
+drill-server = "drill.server.api:main"
+drill-mcp = "drill.server.mcp:main"
 
 [dependency-groups]
 dev = [
