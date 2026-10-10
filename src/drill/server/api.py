@@ -25,7 +25,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from drill.config import PROJECT_ROOT
-from drill.server.bank import PAGE, Bank, ensure_built
+from drill.server.bank import Bank
 from drill.server.router import ModelRouter, NoModelAvailable
 from drill.server.store import DocStore
 
@@ -104,8 +104,7 @@ def create_app(
 
     @app.get("/", response_class=HTMLResponse)
     def page() -> str:
-        ensure_built()  # a content edit shows up on the next refresh
-        return PAGE_HEAD + PAGE.read_text(encoding="utf-8") + PAGE_TAIL
+        return PAGE_HEAD + bank.page + PAGE_TAIL
 
     @app.get("/api/health")
     def health(request: Request) -> dict:
@@ -208,7 +207,7 @@ def create_app(
 
 
 def main() -> None:
-    """``uv run drill-server``: load .env, build the page if needed, serve."""
+    """``uv run drill-server``: load .env, build the page, serve."""
     import uvicorn
     from dotenv import load_dotenv
 
@@ -216,7 +215,6 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     host = os.getenv("DRILL_HOST", "0.0.0.0")
     port = int(os.getenv("DRILL_PORT", "8787"))
-    ensure_built()
     app = create_app(port=port)
     log.info("Daily Drill at http://localhost:%s  (MCP at http://localhost:%s/mcp)", port, port)
     uvicorn.run(app, host=host, port=port, log_level="warning")

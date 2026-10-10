@@ -1,5 +1,5 @@
 // Runs every exercise's reference solution through Skulpt (the in-browser Python the page uses),
-// with the page's own test harness. Usage (from web/daily-drill/tools):
+// with the page's own test harness. Usage (from scripts/skulpt-check, after `uv run drill build-page`):
 //   npm install && node check_in_browser_python.js
 const fs = require("fs"), path = require("path"), vm = require("vm");
 const ctx = { console, setTimeout, clearTimeout, Promise }; ctx.window = ctx; ctx.self = ctx; ctx.globalThis = ctx;
@@ -7,7 +7,7 @@ vm.createContext(ctx);
 const sk = path.join(__dirname, "node_modules/skulpt/dist");
 vm.runInContext(fs.readFileSync(path.join(sk, "skulpt.min.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(sk, "skulpt-stdlib.js"), "utf8"), ctx);
-const html = fs.readFileSync(path.join(__dirname, "../dist/daily-drill.html"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "../../dist/daily-drill.html"), "utf8");
 const data = html.slice(html.indexOf("const D = ") + 10, html.indexOf(";\nconst BANK = D.bank"));
 const pyFn = html.slice(html.indexOf("function py(v)"), html.indexOf("const short ="));
 const harnessFn = html.slice(html.indexOf("function harness(p, code)"), html.indexOf("async function runPython"));

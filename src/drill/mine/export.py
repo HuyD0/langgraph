@@ -1,8 +1,9 @@
-"""Builds the money & health track for the browser practice page.
+"""Builds the money & health track for the Daily Drill page.
 
 Only made-up data goes into the export (see :mod:`drill.mine.fake`). Each problem
 gets its hand-written test cases plus one larger look-alike case, with the
-expected answer worked out by the reference solution.
+expected answer worked out by the reference solution. :mod:`drill.content.build`
+calls :func:`page_track` when it assembles the page; to see the data on its own:
 
     uv run python -m drill.mine.export > mine.json
 """

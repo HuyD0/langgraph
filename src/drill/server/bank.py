@@ -1,57 +1,35 @@
 """The lessons and exercises the Daily Drill page shows, for the server and the MCP tools.
 
-The content lives in web/daily-drill/content and is assembled by web/daily-drill/build.py,
-which writes two files into web/daily-drill/dist: the page itself, and ``data.json`` with
-the same modules, lessons and exercises as plain data. The server reads that file, so the
-page and the tools can never disagree about what a lesson is. If the build is missing or
-older than the content, it is rebuilt on first use.
+The content is :func:`drill.content.build_data`, the same dict the page embeds, so the page
+and the tools can never disagree about what a lesson is.
 """
 
 from __future__ import annotations
 
-import json
-import subprocess
-import sys
-from pathlib import Path
-
-from drill.config import PROJECT_ROOT
-
-DRILL_DIR = PROJECT_ROOT / "web" / "daily-drill"
-DIST = DRILL_DIR / "dist"
-PAGE = DIST / "daily-drill.html"
-DATA = DIST / "data.json"
-
-
-def _sources() -> list[Path]:
-    files = [DRILL_DIR / "app.html", DRILL_DIR / "build.py"]
-    files += [p for p in (DRILL_DIR / "content").iterdir() if p.is_file()]
-    return files
-
-
-def ensure_built(force: bool = False) -> None:
-    """Run build.py when dist/ is missing or older than any source file."""
-    newest = max(p.stat().st_mtime for p in _sources())
-    fresh = PAGE.exists() and DATA.exists() and min(PAGE.stat().st_mtime, DATA.stat().st_mtime) >= newest
-    if fresh and not force:
-        return
-    result = subprocess.run([sys.executable, str(DRILL_DIR / "build.py")], capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError("Building the Daily Drill page failed:\n" + result.stdout + result.stderr)
+from drill.content import build_data, render_page
 
 
 class Bank:
     """Modules in path order, lessons by id, exercises by id."""
 
     def __init__(self, data: dict):
+        self.data = data
         self.modules: list[dict] = data["modules"]
         self.lessons: dict[str, dict] = data["lessons"]
         self.problems: dict[str, dict] = {p["id"]: p for p in data["bank"]}
         self.learn: dict[str, dict] = data.get("learn", {})
+        self._page: str | None = None
 
     @classmethod
     def load(cls) -> "Bank":
-        ensure_built()
-        return cls(json.loads(DATA.read_text(encoding="utf-8")))
+        return cls(build_data())
+
+    @property
+    def page(self) -> str:
+        """The page with this content embedded, rendered once."""
+        if self._page is None:
+            self._page = render_page(self.data)
+        return self._page
 
     def order(self) -> list[str]:
         """Every lesson id, in the order the path shows them."""

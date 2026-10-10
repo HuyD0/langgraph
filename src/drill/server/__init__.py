@@ -6,7 +6,7 @@
 
 Both doors share the same three pieces:
 
-- :mod:`drill.server.bank`   - the lessons and exercises, read from the page's build
+- :mod:`drill.server.bank`   - the lessons and exercises, from :mod:`drill.content`
 - :mod:`drill.server.router` - which model answers (Ollama on this Mac first, a hosted
   model as the fallback), with a cache and a daily budget
 - :mod:`drill.server.store`  - your progress and study list, in one SQLite file
