@@ -20,13 +20,17 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Two Sum",
         topic="hash-map",
         difficulty="easy",
-        pattern="Trade memory for time: a dict turns a nested scan into one pass.",
-        target_complexity="O(n) time, O(n) space",
+        pattern=(
+            'Remember what you\'ve already seen. A dictionary lets you ask "have I already '
+            'seen the number I need?" instantly, so you only walk through the list once.'
+        ),
+        target_complexity='walk through the list once. Using extra memory is fine',
         prompt=(
-            "Given a list of integers `nums` and an integer `target`, return the "
-            "indices of the two numbers that add up to `target`.\n\n"
-            "Exactly one valid answer exists, and you may not use the same element "
-            "twice. Return the indices in increasing order."
+            'You get a list of numbers, `nums`, and a number, `target`. Find the two '
+            'numbers in the list that add up to `target`, and return their positions in the'
+            ' list. Positions start at 0.\n\n'
+            "There is always exactly one right pair, and you can't use the same spot twice."
+            ' Put the smaller position first.'
         ),
         function_name="two_sum",
         starter_code="def two_sum(nums, target):\n    # your code here\n    pass\n",
@@ -53,13 +57,16 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Valid Parentheses",
         topic="stack",
         difficulty="easy",
-        pattern="A stack matches nested pairs: push openers, pop on the closer.",
-        target_complexity="O(n) time, O(n) space",
+        pattern=(
+            'Use a stack, like a pile of plates. Put each opening bracket on top. When a '
+            'closing bracket shows up, the plate on top must be its partner.'
+        ),
+        target_complexity='walk through the string once',
         prompt=(
-            "Given a string `s` containing only the characters `()[]{}`, return "
-            "`True` if every bracket is closed by the same type in the correct "
-            "order, and `False` otherwise.\n\n"
-            "An empty string is valid."
+            'You get a string `s` made only of brackets: `( ) [ ] { }`. Return `True` if '
+            'every bracket is closed by the same kind, in the right order. Otherwise return'
+            ' `False`.\n\n'
+            'An empty string counts as `True`.'
         ),
         function_name="is_valid",
         starter_code="def is_valid(s):\n    # your code here\n    pass\n",
@@ -92,12 +99,18 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Binary Search",
         topic="binary-search",
         difficulty="easy",
-        pattern="Halve the search space each step; the bug is always the boundary.",
-        target_complexity="O(log n) time, O(1) space",
+        pattern=(
+            'Like finding a word in a paper dictionary: open the middle, decide which half '
+            "it's in, ignore the other half, and repeat. Most mistakes happen at the very "
+            'ends.'
+        ),
+        target_complexity="cut the part you're searching in half each step",
         prompt=(
-            "Given a list `nums` sorted in ascending order and an integer "
-            "`target`, return the index of `target`, or `-1` if it is not "
-            "present.\n\nYour solution must run in O(log n) time."
+            'You get a list `nums` that is already sorted from smallest to largest, and a '
+            'number `target`. Return the position of `target` in the list, or `-1` if it '
+            "isn't there.\n\n"
+            "Don't check every item one by one. Use the fact that the list is sorted to "
+            'skip most of it.'
         ),
         function_name="search",
         starter_code="def search(nums, target):\n    # your code here\n    pass\n",
@@ -129,12 +142,16 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Climbing Stairs",
         topic="dynamic-programming",
         difficulty="easy",
-        pattern="Build the answer from smaller answers; keep only what you still need.",
-        target_complexity="O(n) time, O(1) space",
+        pattern=(
+            'Build the answer from smaller answers. The ways to reach step 5 come from the '
+            'ways to reach step 4 plus the ways to reach step 3. You only need to remember '
+            'the last two.'
+        ),
+        target_complexity='go up the stairs once, remembering just two counts',
         prompt=(
-            "You are climbing a staircase with `n` steps. Each move you may climb "
-            "either 1 or 2 steps. Return the number of distinct ways to reach the "
-            "top.\n\n`n` is at least 1."
+            'A staircase has `n` steps. Each move, you climb either 1 step or 2 steps. How '
+            'many different ways can you get to the top? Return that count.\n\n'
+            '`n` is always at least 1.'
         ),
         function_name="climb_stairs",
         starter_code="def climb_stairs(n):\n    # your code here\n    pass\n",
@@ -160,12 +177,16 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Longest Substring Without Repeating Characters",
         topic="sliding-window",
         difficulty="medium",
-        pattern="Grow a window from the right; shrink from the left when it breaks the rule.",
-        target_complexity="O(n) time, O(k) space",
+        pattern=(
+            'Slide a window along the string. Stretch it on the right. When a character '
+            'repeats, shrink it from the left until the repeat is gone.'
+        ),
+        target_complexity='walk through the string once',
         prompt=(
-            "Given a string `s`, return the length of the longest substring that "
-            "contains no repeated characters.\n\n"
-            "A substring is contiguous; a subsequence is not. You want the former."
+            'You get a string `s`. Find the longest run of characters, side by side, where '
+            'no character repeats. Return how long that run is.\n\n'
+            'The characters must be next to each other. For `"abcabcbb"` the answer is 3, '
+            'from `"abc"`.'
         ),
         function_name="length_of_longest_substring",
         starter_code=(
@@ -197,12 +218,18 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Maximum Subarray",
         topic="dynamic-programming",
         difficulty="medium",
-        pattern="At each element, decide: extend the run, or start a new one.",
-        target_complexity="O(n) time, O(1) space",
+        pattern=(
+            'Walk along the list keeping a running total. At each number, ask: am I better '
+            'off adding this to my running total, or starting fresh from here?'
+        ),
+        target_complexity=(
+            'walk through the list once, keeping just a couple of numbers in your head'
+        ),
         prompt=(
-            "Given a list of integers `nums`, find the contiguous subarray with the "
-            "largest sum and return that sum.\n\n"
-            "The list has at least one element, and may be entirely negative."
+            'You get a list of numbers, `nums`, which can include negative numbers. Find '
+            'the run of numbers, side by side, that adds up to the biggest total. Return '
+            'that total.\n\n'
+            'The list has at least one number, and all of them might be negative.'
         ),
         function_name="max_sub_array",
         starter_code="def max_sub_array(nums):\n    # your code here\n    pass\n",
@@ -229,12 +256,16 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Merge Intervals",
         topic="sorting",
         difficulty="medium",
-        pattern="Sort first, then a single sweep makes the overlap rule obvious.",
-        target_complexity="O(n log n) time, O(n) space",
+        pattern=(
+            'Sort the ranges by where they start. Then walk through once: each range either'
+            ' joins the one before it or starts a new one.'
+        ),
+        target_complexity='sorting first is fine; after that, walk through once',
         prompt=(
-            "Given a list of intervals `[start, end]`, merge all overlapping "
-            "intervals and return the result sorted by start.\n\n"
-            "Intervals that merely touch, such as `[1, 4]` and `[4, 5]`, do overlap."
+            'You get a list of ranges, each written as `[start, end]`. Combine any ranges '
+            'that overlap, and return the result ordered by where each range starts.\n\n'
+            'Ranges that only touch, like `[1, 4]` and `[4, 5]`, still count as overlapping'
+            ' and become `[1, 5]`.'
         ),
         function_name="merge",
         starter_code="def merge(intervals):\n    # your code here\n    pass\n",
@@ -269,12 +300,17 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Group Anagrams",
         topic="hash-map",
         difficulty="medium",
-        pattern="Design a key that collides exactly when two things should group.",
-        target_complexity="O(n k log k) time, O(n k) space",
+        pattern=(
+            "Give every word a label that's identical for words with the same letters, such"
+            ' as its letters in alphabetical order. Then group words by label in a '
+            'dictionary.'
+        ),
+        target_complexity='look at each word once',
         prompt=(
-            "Given a list of strings `strs`, group the anagrams together and "
-            "return the groups as a list of lists.\n\n"
-            "Neither the order of the groups nor the order within a group matters."
+            'You get a list of words, `strs`. Put words that use exactly the same letters '
+            'into the same group, like `"eat"`, `"tea"` and `"ate"`. Return the groups as a'
+            ' list of lists.\n\n'
+            "The order of the groups, and of the words inside each group, doesn't matter."
         ),
         function_name="group_anagrams",
         starter_code="def group_anagrams(strs):\n    # your code here\n    pass\n",
@@ -305,13 +341,16 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         title="Number of Islands",
         topic="graph",
         difficulty="medium",
-        pattern="A grid is a graph. Flood-fill from each unvisited start, count the starts.",
-        target_complexity="O(rows * cols) time",
+        pattern=(
+            "When you find land you haven't visited yet, that's a new island. Count it, "
+            "then mark all the land joined to it as visited so you don't count it twice."
+        ),
+        target_complexity='visit each square in the grid once',
         prompt=(
-            "Given a 2D grid of `'1'` (land) and `'0'` (water) characters, return "
-            "the number of islands.\n\n"
-            "An island is land connected horizontally or vertically - not "
-            "diagonally - and the grid is surrounded by water on all sides."
+            "You get a grid, written as a list of rows, where `'1'` is land and `'0'` is "
+            'water. Count the islands.\n\n'
+            "An island is land squares joined up, down, left or right. Diagonal doesn't "
+            'count. Everything outside the grid is water.'
         ),
         function_name="num_islands",
         starter_code="def num_islands(grid):\n    # your code here\n    pass\n",

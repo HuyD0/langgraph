@@ -7,6 +7,7 @@
     uv run drill stats
     uv run drill check <file.py> --problem two_sum   # just run the tests, no tutor
     uv run drill mine list                           # problems on your own money & health data
+    uv run drill build-page                          # the Daily Drill page -> dist/daily-drill.html
 """
 
 from __future__ import annotations
@@ -152,7 +153,8 @@ def list_cmd(
     for problem in list_problems(topic=topic, difficulty=difficulty):
         table.add_row(
             "[green]done[/green]" if problem.id in solved else "",
-            problem.id, problem.title, problem.topic, problem.difficulty, problem.pattern,
+            problem.id, problem.title, problem.topic, problem.difficulty,
+            problem.pattern.split(". ")[0].rstrip("."),  # the first sentence; `drill solution` has the rest
         )
     console.print(table)
     console.print(f"[dim]topics: {', '.join(TOPICS)}[/dim]")
@@ -260,6 +262,16 @@ def start_cmd(
     console.print(f"\n{verb} [bold]{outcome.problem.title}[/bold] in {outcome.attempts} "
                   f"attempt(s) with {len(outcome.hints)} hint(s).")
     raise typer.Exit(0)
+
+
+@app.command("build-page")
+def build_page_cmd(
+    out: Path = typer.Option(PROJECT_ROOT / "dist", "--out", "-o", help="Directory to write into."),
+) -> None:
+    """Build the Daily Drill page (web) from src/drill/content, checking every exercise first."""
+    from drill.content.build import main as build_main
+
+    raise typer.Exit(build_main(["--out", str(out)]))
 
 
 # Problems about your own money and health data: `drill mine --help`.
