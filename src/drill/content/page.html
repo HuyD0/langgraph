@@ -314,6 +314,18 @@ body.no-ai [data-explain] { display: none; }
 .ai pre { margin: 0; font: 13px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; white-space: pre; overflow-x: auto; }
 .ask { display: flex; gap: 6px; }
 .ask input { flex: 1 1 auto; min-width: 0; }
+body.no-ai .ai-only { display: none; }
+.asklesson { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.asklesson h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.asklesson .thread { display: grid; gap: 14px; }
+.asklesson .thread:empty { display: none; }
+.asklesson .turn { display: grid; gap: 6px; min-width: 0; }
+.asklesson .aq { margin: 0; font-weight: 600; }
+.asklesson .aa { background: var(--sunk); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.asklesson .aa p { margin: 0; max-width: 65ch; }
+.asklesson .aa pre { margin: 0; font: 13px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; white-space: pre; overflow-x: auto; }
+.asklesson .linkbtn { padding: 2px 0; font-size: 14px; }
+.aa ul, .aa ol, .ai ul, .ai ol { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
 .empty { color: var(--muted); margin: 0; }
 #selbar { position: absolute; z-index: 50; display: flex; gap: 4px; padding: 4px; background: var(--fg); border-radius: 10px; box-shadow: 0 6px 20px color-mix(in srgb, var(--fg) 25%, transparent); }
 #selbar button { font: 600 14px var(--body); background: none; color: var(--bg); border: 0; border-radius: 7px; padding: 8px 12px; cursor: pointer; min-height: 40px; }
@@ -680,7 +692,8 @@ function learnPane() {
   return `<p class="intro">${md(first)}</p>
     ${rest.map(p => `<div class="prose"><p>${md(p)}</p></div>`).join("")}
     <figure class="ex"><figcaption>${esc(cap)}</figcaption><pre class="code">${esc(code)}</pre></figure>
-    ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}`;
+    ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}
+    ${askPanel()}`;
 }
 function checkPane() {
   const L = LESSONS[cur.id], s = lp(cur.id);
@@ -703,7 +716,109 @@ function anglePane() {
   return `<section class="sec"><h3>The pattern you used</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p><p class="say">${md(say)}</p></section>
     ${p.realworld ? `<section class="sec"><h3>At work</h3><p>${md(p.realworld)}</p></section>` : ""}
     ${gotchas ? `<section class="sec"><h3>Gotchas</h3><ul class="gl">${gotchas}</ul></section>` : ""}
-    ${classic && byId[classic] ? `<button class="linkbtn" data-classic="${classic}">Practice the classic: ${esc(byId[classic].title)}${ic("arrowr")}</button>` : ""}`;
+    ${classic && byId[classic] ? `<button class="linkbtn" data-classic="${classic}">Practice the classic: ${esc(byId[classic].title)}${ic("arrowr")}</button>` : ""}
+    ${askPanel()}`;
+}
+
+// ---------- ask about this lesson ----------
+// A short conversation about the open lesson, kept per lesson while the page is open.
+// Answers stream into place without re-rendering the pane, so typing is never interrupted.
+const askThreads = {};   // lesson id -> [{ q, a, streaming, failed, saved }]
+let askBusy = false;
+const ASK_CHIPS = {
+  0: [["simpler", "Explain it more simply"], ["work", "Show me how this looks at work"], ["deeper", "Go deeper: how does it really work?"], ["quiz", "Quiz me"]],
+  3: [["interview", "What follow-ups could an interviewer ask?"], ["simpler", "Explain the pattern more simply"], ["where", "Where else is this pattern used?"], ["quiz", "Quiz me"]],
+};
+const ASK_INSTRUCTIONS = {
+  simpler: "Explain the main idea of this lesson again, more simply, with an everyday comparison and one tiny example that uses real values.",
+  work: "Show how this idea looks in real work on their stack (Azure Databricks, MLflow, LangGraph, Terraform): one concrete scenario, what they would actually do or check, and what goes wrong if they skip it.",
+  deeper: "Go one level deeper than the lesson: what is really happening underneath, one common misconception, and one limitation or trade-off.",
+  quiz: "Ask them ONE short question that checks real understanding of this lesson, not trivia. Do not give the answer. Tell them to reply in the box below and you will check it.",
+  interview: "Give 3 follow-up questions an interviewer might ask about this lesson's topic, each with a one-sentence hint at what a strong answer covers.",
+  where: "Name 3 other places this same pattern shows up, at work or in classic interview problems, one sentence each.",
+};
+function askPanel() {
+  if (!cur || cur.kind !== "lesson") return "";
+  const chips = (ASK_CHIPS[cur.step] || ASK_CHIPS[0])
+    .map(([k, label]) => `<button class="mini" data-askq="${k}"${askBusy ? " disabled" : ""}>${esc(label)}</button>`).join("");
+  return `<section class="asklesson ai-only" aria-label="Ask about this lesson"><h3>Ask about this lesson</h3>
+    <div class="minis" role="group" aria-label="Suggested questions">${chips}</div>
+    <div class="thread" id="askThread" aria-live="polite">${askThreadHtml()}</div>
+    <form class="ask" id="askForm"><input class="field" id="askInput" placeholder="Ask your own question" aria-label="Ask a question about this lesson" autocomplete="off"${askBusy ? " disabled" : ""}><button class="btn" type="submit"${askBusy ? " disabled" : ""}>Ask</button></form></section>`;
+}
+function askThreadHtml() {
+  return (askThreads[cur.id] || []).map((turn, i) => {
+    const save = turn.a && !turn.streaming && !turn.failed
+      ? `<button class="linkbtn" data-asksave="${i}"${turn.saved ? " disabled" : ""}>${turn.saved ? "Saved to your study list" : "Save to study list"}</button>` : "";
+    return `<div class="turn"><p class="aq">${esc(turn.q)}</p><div class="aa" id="aa-${i}">${turn.a ? fmt(turn.a) : "<p>Thinking…</p>"}</div>${save}</div>`;
+  }).join("");
+}
+function renderAskThread() { const el = $("askThread"); if (el) el.innerHTML = askThreadHtml(); }
+function setAskBusy(on) {
+  askBusy = on;
+  for (const el of document.querySelectorAll("[data-askq], #askForm button, #askInput")) el.disabled = on;
+}
+function askContext() {
+  const L = LESSONS[cur.id], p = cur.p;
+  return `Lesson: ${L.title}
+What the lesson says:
+${L.learn.join("\n")}
+Its example (${L.example[0]}):
+${L.example[1]}
+${L.stack ? "In their stack (" + L.stack[0] + "):\n" + L.stack[1] + "\n" : ""}Interview angle: ${L.angle[0]}. ${L.angle[1]}
+The lesson's coding exercise: ${p.title}, writing \`${p.fn}\`. ${p.prompt.split("\n")[0]}`;
+}
+// Two guards so no model, however small, hands out the exercise: questions asking for it are
+// answered as a hint, and an answer that starts defining the exercise function is hidden.
+const SOLUTION_ASK = /\b(solution|solve (it|this)|answer key|write (the|my|this) (code|function)|code for (the|this) exercise|do the exercise)\b/i;
+const LEAKED = "That answer started to include code for the exercise, so it's hidden here. Try the step-by-step hints in the Build step instead.";
+async function askLesson(question, instruction) {
+  if (!sample || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
+  const id = cur.id, fn = cur.p.fn, thread = askThreads[id] = askThreads[id] || [];
+  const leaks = text => new RegExp("def\\s+" + fn + "\\s*\\(").test(text);
+  if (!instruction && (question.includes(fn) || SOLUTION_ASK.test(question)))
+    instruction = "They are asking about the coding exercise. Do not write any code at all. In two or three plain sentences, describe only the first step to take, then ask one question that helps them work out the next step. Mention that the Build step has step-by-step hints.";
+  const history = thread.filter(t => !t.failed).slice(-4).map(t => "Q: " + t.q + "\nA: " + t.a).join("\n\n");
+  const turn = { q: question.trim().slice(0, 500), a: "", streaming: true };
+  thread.push(turn);
+  const i = thread.length - 1;
+  setAskBusy(true); renderAskThread();
+  const prompt = `You are a patient tutor helping with one lesson of an AI engineering course. ${LEARNER}
+
+${askContext()}
+
+They are on the ${STEPS[cur.step]} step of the lesson.
+${history ? "Earlier in this conversation:\n" + history + "\n" : ""}
+Their message: ${turn.q}
+${instruction ? "How to answer: " + instruction + "\n" : ""}
+Rules:
+- Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.
+- Never write code for the lesson's coding exercise (\`${cur.p.fn}\`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a \`\`\`python block.
+- Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.
+- Reply with the answer only.`;
+  try {
+    const { text } = await sample(prompt, { onText: ({ text }) => {
+      turn.a = leaks(text) ? LEAKED : text;
+      const el = document.getElementById("aa-" + i);
+      if (el && cur && cur.id === id) el.innerHTML = fmt(turn.a);
+    } });
+    turn.a = text;
+    if (leaks(text)) { turn.a = LEAKED; turn.failed = true; }
+  } catch (e) {
+    if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
+    turn.a = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : "The answer didn't come through. Try again in a moment.";
+    turn.failed = true;
+  }
+  turn.streaming = false;
+  setAskBusy(false);
+  if (cur && cur.id === id) renderAskThread();
+}
+async function saveAsk(i) {
+  const L = LESSONS[cur.id], turn = (askThreads[cur.id] || [])[i];
+  if (!turn || turn.saved || turn.failed || turn.streaming) return;
+  const it = await addItem(turn.q + " (" + L.title + ")", "Ask · " + L.title, "text");
+  await updateItem(it.id, { explanation: turn.a });
+  turn.saved = true; renderAskThread(); toast("Saved to your study list");
 }
 
 // ---------- build step ----------
@@ -1027,10 +1142,29 @@ async function removeItem(id) {
   if (studyCol) { try { await studyCol.doc(id).delete(); } catch {} }
 }
 function flashStudy(msg) { $("studySub").textContent = msg; }
+// Model replies: code blocks, paragraphs, bullet and numbered lists, headings, **bold**, *italics*, `code`.
+const emph = s => md(s).replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1<i>$2</i>");
+function blockHtml(block) {
+  const out = []; let list = null, para = [];
+  const flushPara = () => { if (para.length) { out.push("<p>" + para.map(emph).join("<br>") + "</p>"); para = []; } };
+  const flushList = () => { if (list) { out.push(`<${list.tag}>` + list.items.map(x => "<li>" + emph(x) + "</li>").join("") + `</${list.tag}>`); list = null; } };
+  for (const raw of block.split("\n")) {
+    const line = raw.trim(); if (!line) continue;
+    let m;
+    if ((m = line.match(/^[-*•]\s+(.*)/)) || (m = line.match(/^\d+[.)]\s+(.*)/))) {
+      const tag = /^\d/.test(line) ? "ol" : "ul";
+      flushPara(); if (!list || list.tag !== tag) { flushList(); list = { tag, items: [] }; }
+      list.items.push(m[1]);
+    } else if ((m = line.match(/^#{1,4}\s+(.*)/))) { flushList(); flushPara(); out.push("<p><b>" + emph(m[1]) + "</b></p>"); }
+    else { flushList(); para.push(line); }
+  }
+  flushList(); flushPara();
+  return out.join("");
+}
 function fmt(text) {
   return String(text).split(/```[a-z]*\n?/i).map((part, i) => i % 2
     ? `<pre>${esc(part.replace(/\n$/, ""))}</pre>`
-    : part.split(/\n{2,}/).filter(x => x.trim()).map(x => "<p>" + md(x.trim()).replace(/\n/g, "<br>") + "</p>").join("")
+    : part.split(/\n{2,}/).filter(x => x.trim()).map(blockHtml).join("")
   ).join("");
 }
 function renderStudy() {
@@ -1259,6 +1393,8 @@ document.addEventListener("click", async e => {
   const open = t.closest("[data-open]"); if (open) { openLesson(open.dataset.open); return; }
   const pr = t.closest("[data-practice]"); if (pr) { openPractice(pr.dataset.practice, null); return; }
   const cl = t.closest("[data-classic]"); if (cl) { openPractice(cl.dataset.classic, cur.id); return; }
+  const aq = t.closest("[data-askq]"); if (aq) { if (!aq.disabled) askLesson(aq.textContent, ASK_INSTRUCTIONS[aq.dataset.askq]); return; }
+  const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
   const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) { lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1); return; }
   if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1); return; }
@@ -1274,6 +1410,13 @@ $("items").addEventListener("click", e => {
   else if (b.dataset.act === "reveal") { revealed.add(id); renderStudy(); }
   else if (b.dataset.act === "toggle") updateItem(id, { status: it.status === "got" ? "open" : "got" });
   else if (b.dataset.act === "remove") removeItem(id);
+});
+$("paneText").addEventListener("submit", e => {
+  if (e.target.id !== "askForm") return;
+  e.preventDefault();
+  const input = $("askInput"), q = input.value;
+  if (!q.trim() || askBusy) return;
+  input.value = ""; askLesson(q);
 });
 $("items").addEventListener("change", e => { const id = e.target.dataset.note; if (id) updateItem(id, { note: e.target.value.slice(0, 500) }); });
 $("items").addEventListener("submit", e => { e.preventDefault(); const f = e.target.closest("[data-ask]"); if (!f) return; const input = f.querySelector("input"), q = input.value; input.value = ""; input.blur(); askItem(f.dataset.ask, q); });

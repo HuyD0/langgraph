@@ -437,6 +437,520 @@ Return the share of relevant ids that appear in the first `k` retrieved, rounded
     ),
 )
 
+lesson(MODULE, 'ndcg_at_k',
+    title='Ranking quality: nDCG',
+    learn=[
+        "Recall@k asks whether the right documents made the top k. It ignores the order inside the top k, and it treats every relevant document as equally good. When order matters, for example when comparing rerankers, use **nDCG@k**.",
+        "Give each document a **grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: it is divided by log₂(position + 1), so position 1 counts in full, position 2 about 63%, position 3 half. Add those up to get the **DCG**.",
+        'Then divide by the best possible DCG for those grades, the **ideal DCG**, where the best documents come first. So nDCG runs from 0 to 1, and 1 means perfectly ordered. Grades come from people or an LLM judge, on a sample of questions.',
+        'MRR, from the rank fusion lesson, only looks at where the first relevant document appears. nDCG uses every graded document.',
+    ],
+    example=example('nDCG@3, by hand', """position  doc  grade  discount                 counts
+   1      d3     1    1 ÷ log₂(2) = 1.00         1.00
+   2      d1     3    1 ÷ log₂(3) ≈ 0.63         1.89
+   3      d7     0                               0.00
+DCG = 2.89
+ideal order (3, 1, 0): 3.00 + 0.63 = 3.63
+nDCG@3 = 2.89 ÷ 3.63 ≈ 0.80"""),
+    check=question(
+        'Reranker A puts the best document 4th; reranker B puts it 1st. Both have the same recall@5. Which metric shows the difference?',
+        ['Recall@5', 'nDCG@5', 'Neither, they are equally good'],
+        answer=1,
+        why='Recall@5 only asks whether the document is in the top 5. nDCG gives it far more credit at position 1 than at position 4.',
+    ),
+    angle=angle(
+        pattern='Score, then divide by the best possible score',
+        text='Walk the top k once to add up discounted grades. Sort the grades once to find the best possible total. Dividing one by the other puts every question on the same 0-to-1 scale.',
+        say='"When I compare rerankers I report nDCG@k on graded relevance, because recall@k ignores the order inside the top k."',
+        classic=None,
+    ),
+    stack=stack('scikit-learn: nDCG on graded relevance', """from sklearn.metrics import ndcg_score
+
+# one row per question: true grades and the retriever's scores, in the same document order
+ndcg = ndcg_score([[3, 1, 0]], [[0.7, 0.9, 0.2]], k=3)
+mlflow.log_metric("ndcg_at_3", ndcg)"""),
+    exercise=exercise(
+        title='nDCG at k',
+        topic='rag',
+        difficulty='medium',
+        fn='ndcg_at_k',
+        prompt="""`ranked` is the list of document ids your retriever returned, best first. `grades` maps document ids to how useful they are (a missing id has grade 0).
+
+Return nDCG@k, rounded to 2 decimal places:
+
+- DCG: for each of the first `k` documents in `ranked`, at position 1, 2, 3..., add `grade / log2(position + 1)`
+- ideal DCG: the same, for all the grades sorted from highest to lowest, top `k` only
+- nDCG = DCG ÷ ideal DCG, or `0.0` if the ideal DCG is 0
+
+`math.log(x, 2)` gives log₂(x).""",
+        pattern='Add up discounted grades for the top k, and again for the ideal order, then divide.',
+        target='a sort of the grades, then two short walks',
+        realworld='Retrieval and search teams compare embedding models and rerankers on nDCG@10 with graded relevance, because the order of the first few results is what users and LLMs actually read.',
+        starter="""import math
+
+def ndcg_at_k(ranked, grades, k):
+    # your code here
+    pass
+""",
+        solution="""import math
+
+def ndcg_at_k(ranked, grades, k):
+    dcg = 0.0
+    for i, doc in enumerate(ranked[:k]):
+        dcg += grades.get(doc, 0) / math.log(i + 2, 2)
+    best = sorted(grades.values(), reverse=True)[:k]
+    ideal = 0.0
+    for i, grade in enumerate(best):
+        ideal += grade / math.log(i + 2, 2)
+    if ideal == 0:
+        return 0.0
+    return round(dcg / ideal, 2)
+""",
+        cases=[
+            case(['d3', 'd1', 'd7'], {'d1': 3, 'd3': 1}, 3, expected=0.8, sample=True),
+            case(['a', 'b'], {'a': 2, 'b': 1}, 2, expected=1.0),
+            case(['x', 'y'], {'a': 3}, 2, expected=0.0),
+            case(['a'], {}, 1, expected=0.0),
+            case(['b', 'a', 'c'], {'a': 3, 'b': 2, 'c': 1}, 1, expected=0.67),
+            case(['c', 'b', 'a'], {'a': 3, 'b': 2, 'c': 1}, 3, expected=0.79),
+        ],
+        guided="""import math
+
+def ndcg_at_k(ranked, grades, k):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: DCG of what the retriever returned. enumerate counts from 0,
+    # so position i + 1 has the discount log2(i + 2).
+    dcg = 0.0
+    for i, doc in enumerate(ranked[:k]):
+        dcg += ___ / math.log(i + 2, 2)
+
+    # Step 2: the ideal DCG, with the best grades first.
+    best = ___
+    ideal = 0.0
+    for i, grade in enumerate(best):
+        ideal += grade / math.log(i + 2, 2)
+
+    # Step 3: guard against no relevant documents at all, then divide.
+    if ideal == 0:
+        return 0.0
+    return round(dcg / ideal, 2)
+""",
+        fills=['grades.get(doc, 0)', 'sorted(grades.values(), reverse=True)[:k]'],
+        concepts=[
+            [
+                'enumerate',
+                'Gives each item together with its position, counting from 0.',
+                """for i, doc in enumerate(["d3", "d1"]):
+    print(i, doc)   # 0 d3, then 1 d1""",
+            ],
+            [
+                'log base 2',
+                '`math.log(x, 2)` is how many times you double 1 to get x.',
+                """import math
+math.log(2, 2)   # 1.0
+math.log(4, 2)   # 2.0""",
+            ],
+        ],
+        byhand='d3 (grade 1) at position 1 counts 1. d1 (grade 3) at position 2 counts 3 × 0.63 ≈ 1.89. d7 counts 0. DCG ≈ 2.89. Ideal: grade 3 first (3) then grade 1 (0.63), 3.63. 2.89 ÷ 3.63 ≈ 0.80.',
+        why='Sorting the grades is the slowest step; each walk looks at k items.',
+        gotchas=[
+            [
+                'Grade the same way every time',
+                'nDCG is only comparable across runs if the grades come from the same rubric and the same judge.',
+            ],
+            [
+                'Variants exist',
+                'Some versions use 2^grade − 1 instead of the grade, which rewards the very best documents more. Say which one you used.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'rerank_check',
+    title='Did the reranker help?',
+    learn=[
+        "A **reranker** takes the retriever's candidates, say the top 20, and puts them in a better order, so the top few that reach the model are the most useful. It costs time on every request, so measure what it actually does.",
+        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back: that question is **out of reach**, and the fix belongs in retrieval (chunking, embeddings, hybrid search). Only then compare the top k before and after reranking, on the same candidate lists.",
+        "Count four outcomes per question: **helped** (the right document entered the top k), **hurt** (it was pushed out), **no change**, and **out of reach**. If most misses are out of reach, a better reranker won't help, and you have learned where to spend effort next.",
+    ],
+    example=example('Before and after, on the same candidates', """question        right doc   top 3 before        top 3 after        outcome
+return-label    d12         d4 d9 d1            d12 d4 d9          helped
+change-address  d7          d7 d2 d5            d2 d5 d11          hurt
+refund-time     d3          d3 d8 d1            d3 d1 d8           no change
+gift-card       d40         (not in top 20)                        out of reach"""),
+    check=question(
+        "Half of your RAG app's misses are questions where the right document isn't in the retriever's top 20. Will a better reranker fix them?",
+        [
+            'Yes, a better reranker finds better documents',
+            "No: a reranker only reorders the candidates it's given, so fix retrieval first",
+            'Only if you rerank the top 3 instead',
+        ],
+        answer=1,
+        why='Out-of-reach misses need better retrieval: chunking, embeddings, hybrid search, or more candidates.',
+    ),
+    angle=angle(
+        pattern='Set membership, before and after',
+        text='For each question, check whether the right document is in the candidates, then in the top k before and the top k after. Four outcomes, one pass.',
+        say='"Before tuning a reranker I check how many misses are out of reach, because a reranker can only reorder what retrieval found."',
+        classic=None,
+    ),
+    stack=stack('Databricks Vector Search: retrieve wide, rerank, keep a few', """results = index.similarity_search(query_text=question, columns=["id", "text"], num_results=20)
+candidates = [row[0] for row in results["result"]["data_array"]]
+reranked = rerank(question, candidates)          # your reranker: a cross-encoder or an LLM
+mlflow.log_metric("out_of_reach", int(gold not in candidates))"""),
+    exercise=exercise(
+        title='What Did the Reranker Do?',
+        topic='rag',
+        difficulty='medium',
+        fn='rerank_check',
+        prompt="""Each item in `questions` is a dict like `{"gold": "d12", "before": ["d4", "d9", "d1", "d12"], "after": ["d12", "d4", "d9", "d1"]}`: the right document, the retriever's candidates in its order, and the same candidates after reranking.
+
+For each question, decide its outcome using the top `k` of each list:
+
+- `"out_of_reach"`: the gold document is not in `before` at all
+- `"helped"`: it is in the top k after but not before
+- `"hurt"`: it is in the top k before but not after
+- `"no_change"`: anything else
+
+Return a dict counting all four outcomes, including the ones with a count of 0.""",
+        pattern='One pass, checking membership in the candidates and in each top k.',
+        target='one pass over the questions',
+        realworld='This split tells a RAG team whether to tune the reranker or fix retrieval, and stops weeks of reranker tuning on misses it could never fix.',
+        starter="""def rerank_check(questions, k):
+    # your code here
+    pass
+""",
+        solution="""def rerank_check(questions, k):
+    counts = {"helped": 0, "hurt": 0, "no_change": 0, "out_of_reach": 0}
+    for q in questions:
+        gold = q["gold"]
+        if gold not in q["before"]:
+            counts["out_of_reach"] += 1
+            continue
+        was_in = gold in q["before"][:k]
+        now_in = gold in q["after"][:k]
+        if now_in and not was_in:
+            counts["helped"] += 1
+        elif was_in and not now_in:
+            counts["hurt"] += 1
+        else:
+            counts["no_change"] += 1
+    return counts
+""",
+        cases=[
+            case([
+                {'gold': 'd12', 'before': ['d4', 'd9', 'd1', 'd12'], 'after': ['d12', 'd4', 'd9', 'd1']},
+                {'gold': 'd7', 'before': ['d7', 'd2', 'd5', 'd11'], 'after': ['d2', 'd5', 'd11', 'd7']},
+                {'gold': 'd3', 'before': ['d3', 'd8', 'd1'], 'after': ['d3', 'd1', 'd8']},
+                {'gold': 'd40', 'before': ['d1', 'd2', 'd3'], 'after': ['d2', 'd1', 'd3']},
+            ], 3, expected={'helped': 1, 'hurt': 1, 'no_change': 1, 'out_of_reach': 1}, sample=True),
+            case([], 3, expected={'helped': 0, 'hurt': 0, 'no_change': 0, 'out_of_reach': 0}),
+            case([{'gold': 'a', 'before': ['b', 'a'], 'after': ['b', 'a']}], 1, expected={'helped': 0, 'hurt': 0, 'no_change': 1, 'out_of_reach': 0}),
+            case([{'gold': 'a', 'before': ['b', 'c', 'a'], 'after': ['a', 'b', 'c']}, {'gold': 'z', 'before': [], 'after': []}], 1,
+                 expected={'helped': 1, 'hurt': 0, 'no_change': 0, 'out_of_reach': 1}),
+        ],
+        guided="""def rerank_check(questions, k):
+    # Replace every ___ with real code, then run the tests.
+    counts = {"helped": 0, "hurt": 0, "no_change": 0, "out_of_reach": 0}
+    for q in questions:
+        gold = q["gold"]
+        # Step 1: not among the candidates at all? No reranker can fix that.
+        if ___:
+            counts["out_of_reach"] += 1
+            continue
+        # Step 2: was it in the top k before, and is it now?
+        was_in = gold in q["before"][:k]
+        now_in = ___
+        if now_in and not was_in:
+            counts["helped"] += 1
+        elif was_in and not now_in:
+            counts["hurt"] += 1
+        else:
+            counts["no_change"] += 1
+    return counts
+""",
+        fills=['gold not in q["before"]', 'gold in q["after"][:k]'],
+        concepts=[
+            [
+                'The first k items',
+                'A slice `[:k]` keeps the first k items of a list, or all of them if there are fewer.',
+                """["d4", "d9", "d1", "d12"][:3]   # ["d4", "d9", "d1"]""",
+            ],
+        ],
+        byhand='return-label: d12 was 4th, now 1st, so helped. change-address: d7 was 1st, now 4th, so hurt. refund-time: d3 stayed 1st, no change. gift-card: d40 was never a candidate, out of reach.',
+        why='One pass, with short membership checks on each list.',
+        gotchas=[
+            [
+                'Same candidates, or it is not a reranker test',
+                'Compare before and after on exactly the same candidate lists. If retrieval changed too, you cannot tell which change did what.',
+            ],
+            [
+                'Measure the time it adds',
+                'A reranker that helps 3% of questions but adds a second to every request may not be worth it. Log its span time and put it in the decision rule.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'abstention_rates',
+    title='Knowing when not to answer',
+    learn=[
+        "Retrieval always finds *something*, even when your documents don't contain the answer. A model handed weak chunks will often answer anyway, confidently. If every question in your eval set can be answered from your documents, you never measure this.",
+        "So put **unanswerable questions** in the eval set on purpose: questions on nearby topics that your documents really don't cover, written by someone who knows the documents. Then measure two rates separately. **Missed refusals**: of the unanswerable questions, how often did it answer anyway? That's the dangerous one. **Over-refusals**: of the answerable questions, how often did it decline? That's the annoying one.",
+        "There is no standard name or formula for this yet; these two rates are a practical choice. They trade off against each other like precision and recall, so decide which matters more for your app before you tune.",
+    ],
+    example=example('Two rates, two kinds of mistake', """unanswerable: 10 questions, answered anyway 3   → missed refusals 30%
+answerable:   40 questions, declined 2          → over-refusals    5%"""),
+    check=question(
+        'Your RAG app never declines to answer. Is that good news?',
+        [
+            'Yes: it always helps',
+            "Only if no question is ever outside your documents. Otherwise it's making answers up",
+            "It doesn't matter as long as groundedness is high",
+        ],
+        answer=1,
+        why='Real users ask things your documents do not cover. An app that never declines is answering those from thin air.',
+    ),
+    angle=angle(
+        pattern='Two counters per side',
+        text='Split the results into two groups as you walk them, counting each group and the mistakes in it. Then divide, guarding against an empty group.',
+        say='"I put unanswerable questions in the eval set on purpose and track missed refusals and over-refusals separately, because they cost different things."',
+        classic=None,
+    ),
+    stack=stack('MLflow: a judge for declining when the context is missing', """from mlflow.genai.scorers import Guidelines
+
+declines = Guidelines(
+    name="declines_when_unsupported",
+    guidelines="If the retrieved context does not contain the answer, the response must say it does not know.",
+)
+mlflow.genai.evaluate(data=eval_set, predict_fn=rag_app, scorers=[declines])"""),
+    exercise=exercise(
+        title='Did It Know When to Stop?',
+        topic='rag',
+        difficulty='easy',
+        fn='abstention_rates',
+        prompt="""`results` is a list of dicts like `{"answerable": True, "declined": False}`: whether the eval question could be answered from the documents, and whether the app declined to answer it.
+
+Return a dict with two rates, each rounded to 2 decimal places:
+
+- `"missed_refusals"`: of the unanswerable questions, the fraction it answered anyway
+- `"over_refusals"`: of the answerable questions, the fraction it declined
+
+If there are no questions of a kind, its rate is `0.0`.""",
+        pattern='Count two groups and their mistakes in one pass, then divide with a guard.',
+        target='one pass over the results',
+        realworld='A support bot that invents a refund policy is worse than one that says "I don\'t know, let me connect you". Measuring missed refusals is how you find out which one you built.',
+        starter="""def abstention_rates(results):
+    # your code here
+    pass
+""",
+        solution="""def abstention_rates(results):
+    unanswerable = 0
+    answered_anyway = 0
+    answerable = 0
+    declined_wrongly = 0
+    for r in results:
+        if r["answerable"]:
+            answerable += 1
+            if r["declined"]:
+                declined_wrongly += 1
+        else:
+            unanswerable += 1
+            if not r["declined"]:
+                answered_anyway += 1
+    missed = answered_anyway / unanswerable if unanswerable else 0.0
+    over = declined_wrongly / answerable if answerable else 0.0
+    return {"missed_refusals": round(missed, 2), "over_refusals": round(over, 2)}
+""",
+        cases=[
+            case([
+                {'answerable': False, 'declined': False},
+                {'answerable': False, 'declined': True},
+                {'answerable': False, 'declined': False},
+                {'answerable': False, 'declined': True},
+                {'answerable': False, 'declined': True},
+                {'answerable': True, 'declined': False},
+                {'answerable': True, 'declined': True},
+                {'answerable': True, 'declined': False},
+                {'answerable': True, 'declined': False},
+                {'answerable': True, 'declined': False},
+            ], expected={'missed_refusals': 0.4, 'over_refusals': 0.2}, sample=True),
+            case([], expected={'missed_refusals': 0.0, 'over_refusals': 0.0}),
+            case([{'answerable': True, 'declined': False}] * 4, expected={'missed_refusals': 0.0, 'over_refusals': 0.0}),
+            case([{'answerable': False, 'declined': False}] * 3, expected={'missed_refusals': 1.0, 'over_refusals': 0.0}),
+            case([
+                {'answerable': False, 'declined': True},
+                {'answerable': False, 'declined': True},
+                {'answerable': False, 'declined': False},
+                {'answerable': True, 'declined': True},
+            ], expected={'missed_refusals': 0.33, 'over_refusals': 1.0}),
+        ],
+        guided="""def abstention_rates(results):
+    # Replace every ___ with real code, then run the tests.
+    unanswerable = 0
+    answered_anyway = 0
+    answerable = 0
+    declined_wrongly = 0
+
+    # Step 1: one pass, counting each kind of question and its mistakes.
+    for r in results:
+        if r["answerable"]:
+            answerable += 1
+            if r["declined"]:
+                declined_wrongly += 1
+        else:
+            unanswerable += 1
+            if ___:
+                answered_anyway += 1
+
+    # Step 2: divide, but only if there were questions of that kind.
+    missed = answered_anyway / unanswerable if unanswerable else 0.0
+    over = ___
+    return {"missed_refusals": round(missed, 2), "over_refusals": round(over, 2)}
+""",
+        fills=['not r["declined"]', 'declined_wrongly / answerable if answerable else 0.0'],
+        concepts=[
+            [
+                'A guarded division',
+                'Divide only when the bottom number is not zero, in one line.',
+                """rate = mistakes / total if total else 0.0""",
+            ],
+        ],
+        byhand='Five unanswerable questions; it answered two of them anyway: 2 ÷ 5 = 0.4. Five answerable questions; it declined one: 1 ÷ 5 = 0.2.',
+        why='One step per result.',
+        gotchas=[
+            [
+                'Write unanswerable questions carefully',
+                'They should be close to what your documents cover, not obviously off-topic. "What is the capital of France?" tests nothing useful in a billing bot.',
+            ],
+            [
+                'Report both, always',
+                'Cutting missed refusals is easy if you let over-refusals climb: an app that declines everything never makes anything up.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'claim_gate',
+    title='Checking each claim before release',
+    learn=[
+        'Evals check quality **before** release, on a fixed set. A **claim gate** checks every answer **at request time**, before the user sees it. The model writes one short statement per line, each citing the passage it came from. A verifier (a small specialised model, or an LLM judge) labels each statement **supported**, **unsupported** or **contradicted** by its cited passage.',
+        'A gate then decides: **release** if every claim is supported, **revise** by dropping the unsupported claims, or **abstain** ("I couldn\'t verify an answer") if nothing is supported. A safe policy also abstains if any claim is **contradicted**, because a contradiction means the answer says the opposite of its source.',
+        'Know its limits. **Supported is not relevant**: a claim can match its passage and still not answer the question. A claim with the **wrong citation** gets dropped even when it is true. **Dropping** a claim can change the meaning, for example by removing a "do not". And the verifier is a judge, so check it against human labels like any judge. The share of answers revised or abstained also makes a good monitoring signal.',
+    ],
+    example=example('One answer through the gate', """claim                                              cites  verdict
+Refunds go to your original payment method.         [2]    supported
+They arrive within 5 to 7 business days.            [2]    supported
+You can also get store credit instead.              [3]    unsupported
+→ revise: drop the third claim, release the first two with their citations"""),
+    check=question(
+        'A customer asks how long refunds take. Every claim in the answer is "supported", but they are all about shipping times. What does that tell you?',
+        [
+            'The gate is broken',
+            "Supported means faithful to the cited passage, not relevant to the question: you need a separate relevance check",
+            'The answer is fine',
+        ],
+        answer=1,
+        why='The verifier only compares each claim with its own passage. Whether that passage answers the question is a retrieval and relevance question.',
+    ),
+    angle=angle(
+        pattern='A small policy over labels',
+        text='Walk the verdicts once, keeping the supported claims and noting any contradiction, then pick one of three actions from what you found.',
+        say='"For high-stakes RAG I add a claim-level gate: release, revise or abstain from per-claim verdicts, with a separate relevance check and the verifier evaluated against human labels."',
+        classic=None,
+    ),
+    stack=stack('MLflow: log the gate\'s decision on the trace', """with mlflow.start_span(name="claim_gate", span_type="GUARDRAIL") as span:
+    decision = claim_gate(verdicts)
+    span.set_outputs(decision)
+mlflow.update_current_trace(tags={"gate_action": decision["action"]})"""),
+    exercise=exercise(
+        title='Release, Revise or Abstain',
+        topic='rag',
+        difficulty='easy',
+        fn='claim_gate',
+        prompt="""`verdicts` is a list of dicts like `{"claim": "Refunds take 5 to 7 days.", "verdict": "supported"}`, where the verdict is `"supported"`, `"unsupported"` or `"contradicted"`.
+
+Return `{"action": ..., "kept": [...]}`:
+
+- `"abstain"` with nothing kept if any claim is contradicted, or if no claim is supported (including an empty list)
+- `"release"` with every claim kept if all claims are supported
+- `"revise"` otherwise, keeping only the supported claims, in their original order""",
+        pattern='One walk collecting supported claims and spotting contradictions, then three outcomes.',
+        target='one pass over the claims',
+        realworld='Clinical, legal and finance RAG systems put a gate like this after generation, so an unsupported statement never reaches the user.',
+        starter="""def claim_gate(verdicts):
+    # your code here
+    pass
+""",
+        solution="""def claim_gate(verdicts):
+    kept = []
+    contradicted = False
+    for item in verdicts:
+        if item["verdict"] == "supported":
+            kept.append(item["claim"])
+        elif item["verdict"] == "contradicted":
+            contradicted = True
+    if contradicted or not kept:
+        return {"action": "abstain", "kept": []}
+    if len(kept) == len(verdicts):
+        return {"action": "release", "kept": kept}
+    return {"action": "revise", "kept": kept}
+""",
+        cases=[
+            case([
+                {'claim': 'Refunds go to your original payment method.', 'verdict': 'supported'},
+                {'claim': 'They arrive within 5 to 7 business days.', 'verdict': 'supported'},
+                {'claim': 'You can also get store credit instead.', 'verdict': 'unsupported'},
+            ], expected={'action': 'revise', 'kept': ['Refunds go to your original payment method.', 'They arrive within 5 to 7 business days.']}, sample=True),
+            case([{'claim': 'A', 'verdict': 'supported'}, {'claim': 'B', 'verdict': 'supported'}], expected={'action': 'release', 'kept': ['A', 'B']}),
+            case([{'claim': 'A', 'verdict': 'supported'}, {'claim': 'B', 'verdict': 'contradicted'}], expected={'action': 'abstain', 'kept': []}),
+            case([{'claim': 'A', 'verdict': 'unsupported'}], expected={'action': 'abstain', 'kept': []}),
+            case([], expected={'action': 'abstain', 'kept': []}),
+        ],
+        guided="""def claim_gate(verdicts):
+    # Replace every ___ with real code, then run the tests.
+    kept = []
+    contradicted = False
+    for item in verdicts:
+        if item["verdict"] == "supported":
+            kept.append(item["claim"])
+        elif item["verdict"] == "contradicted":
+            contradicted = True
+    # Step 1: anything contradicted, or nothing supported: abstain.
+    if ___:
+        return {"action": "abstain", "kept": []}
+    # Step 2: everything supported: release as written.
+    if ___:
+        return {"action": "release", "kept": kept}
+    return {"action": "revise", "kept": kept}
+""",
+        fills=['contradicted or not kept', 'len(kept) == len(verdicts)'],
+        concepts=[
+            [
+                'A flag inside a loop',
+                'Start a variable as False and set it to True when something happens. After the loop it tells you whether it ever did.',
+                """seen = False
+for x in [1, 5, 2]:
+    if x > 4:
+        seen = True   # seen is True after the loop""",
+            ],
+        ],
+        byhand='Two claims supported, one unsupported, none contradicted. Not everything is supported, so revise: keep the first two.',
+        why='One look at each claim.',
+        gotchas=[
+            [
+                'Measure the gate itself',
+                'Label a sample of claims by hand and compare with the verifier, per verdict and with kappa. A verifier that marks too much "supported" lets errors through; one that marks too much "unsupported" makes the app abstain needlessly.',
+            ],
+            [
+                'Watch the abstain rate',
+                'Log the action on every trace. A rising share of revise or abstain is an early warning that retrieval or the documents changed.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'pick_config',
     title='Designing a RAG experiment',
     learn=[

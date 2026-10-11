@@ -1,0 +1,647 @@
+{
+ "kb": {
+  "kb-01": {
+   "title": "Plan prices",
+   "text": "The Basic plan costs $12 a month and the Plus plan costs $15 a month. Paying yearly instead of monthly saves 20%."
+  },
+  "kb-02": {
+   "title": "Payment methods",
+   "text": "We accept Visa, Mastercard, American Express and PayPal. Bank transfer is available for yearly plans only."
+  },
+  "kb-03": {
+   "title": "Failed payments",
+   "text": "If a payment fails, we retry it 3 times over 7 days. If all three retries fail, your account is paused until the payment goes through."
+  },
+  "kb-04": {
+   "title": "Invoices",
+   "text": "Invoices are emailed on the 1st of each month. You can also download every past invoice from Settings > Billing."
+  },
+  "kb-05": {
+   "title": "Currency and tax",
+   "text": "Prices are charged in US dollars. Customers in Canada can switch their billing currency to Canadian dollars in Settings > Billing. Sales tax is added at checkout."
+  },
+  "kb-06": {
+   "title": "Cancelling auto-renew",
+   "text": "Turn off auto-renew in Settings > Billing > Auto-renew. Your plan stays active until the end of the period you paid for. We don't give partial refunds for unused time."
+  },
+  "kb-07": {
+   "title": "Delivery times",
+   "text": "Standard shipping takes 3 to 5 business days. Express shipping takes 1 to 2 business days to major cities."
+  },
+  "kb-08": {
+   "title": "Shipping costs",
+   "text": "Standard shipping is free on orders over $50. Express shipping costs $15."
+  },
+  "kb-09": {
+   "title": "Tracking your order",
+   "text": "We email a tracking number within 24 hours of your order shipping. It can take up to 48 hours for the courier's tracking page to show updates."
+  },
+  "kb-10": {
+   "title": "Changing the delivery address",
+   "text": "You can change the delivery address until the order ships, from Orders > Edit address. After it ships, the address can't be changed."
+  },
+  "kb-11": {
+   "title": "Rural areas and territories",
+   "text": "We ship to Yukon, the Northwest Territories and Nunavut through Canada Post. Allow 3 to 7 extra business days."
+  },
+  "kb-12": {
+   "title": "Package marked delivered but missing",
+   "text": "If tracking says delivered but you can't find the package, wait 48 hours and check with your neighbours. Then contact us and we'll open a trace with the courier."
+  },
+  "kb-13": {
+   "title": "Return window",
+   "text": "You can return items within 30 days of delivery, unused and in the original packaging."
+  },
+  "kb-14": {
+   "title": "When refunds arrive",
+   "text": "Refunds go back to your original payment method within 5 to 7 business days after we receive your return."
+  },
+  "kb-15": {
+   "title": "Return shipping costs",
+   "text": "Returns of defective items get a free return label. For other returns, a $6 return shipping fee is taken off your refund."
+  },
+  "kb-16": {
+   "title": "Printing a return label",
+   "text": "Start a return from Orders > Return item and print the label. If you don't have a printer, choose the QR code option and show it at any Canada Post counter."
+  },
+  "kb-17": {
+   "title": "Damaged or defective items",
+   "text": "Report damaged or defective items within 7 days of delivery, with photos. We'll send a replacement or give a full refund, whichever you prefer."
+  },
+  "kb-18": {
+   "title": "Items you can't return",
+   "text": "Gift cards, final-sale items and opened personal care products can't be returned."
+  },
+  "kb-19": {
+   "title": "Orders you didn't place",
+   "text": "If you see orders you didn't place, lock your account right away in Settings > Security > Lock account, then contact our fraud team. We will never ask for your password."
+  },
+  "kb-20": {
+   "title": "Phishing messages",
+   "text": "We never ask for your password or full card number by email, text or phone. Forward suspicious messages to phishing@example.com and delete them."
+  },
+  "kb-21": {
+   "title": "Unexpected password reset emails",
+   "text": "A password reset link is valid for 30 minutes. If you get reset emails you didn't request, someone typed your email address: change your password and turn on two-factor authentication."
+  },
+  "kb-22": {
+   "title": "Two-factor authentication",
+   "text": "Turn on two-factor authentication in Settings > Security > Two-factor. You can use an authenticator app or text messages."
+  },
+  "kb-23": {
+   "title": "Card charges you don't recognise",
+   "text": "Dispute a charge you don't recognise within 60 days. Confirmed fraud is refunded within 10 business days."
+  },
+  "kb-24": {
+   "title": "Deleting your account",
+   "text": "Delete your account in Settings > Privacy > Delete account. Your data is removed within 30 days."
+  }
+ },
+ "questions": [
+  {
+   "id": "billing-01",
+   "group": "billing",
+   "question": "How much is the Plus plan per month?",
+   "gold": "kb-01",
+   "facts": [
+    "$15 | 15 dollars | 15$"
+   ]
+  },
+  {
+   "id": "billing-02",
+   "group": "billing",
+   "question": "Is it cheaper if I pay for the whole year up front?",
+   "gold": "kb-01",
+   "facts": [
+    "20%"
+   ]
+  },
+  {
+   "id": "billing-03",
+   "group": "billing",
+   "question": "Can I pay with PayPal?",
+   "gold": "kb-02",
+   "facts": [
+    "paypal"
+   ]
+  },
+  {
+   "id": "billing-04",
+   "group": "billing",
+   "question": "Can I pay my monthly plan by bank transfer?",
+   "gold": "kb-02",
+   "facts": [
+    "yearly"
+   ]
+  },
+  {
+   "id": "billing-05",
+   "group": "billing",
+   "question": "My card got declined, what happens to my subscription now?",
+   "gold": "kb-03",
+   "facts": [
+    "3 times | three times | 3 retries | three retries",
+    "7 days | seven days"
+   ]
+  },
+  {
+   "id": "billing-06",
+   "group": "billing",
+   "question": "Where do I find my old receipts for my accountant?",
+   "gold": "kb-04",
+   "facts": [
+    "settings > billing | settings, billing | settings, then billing"
+   ]
+  },
+  {
+   "id": "billing-07",
+   "group": "billing",
+   "question": "When do invoices get sent out?",
+   "gold": "kb-04",
+   "facts": [
+    "1st | first"
+   ]
+  },
+  {
+   "id": "billing-08",
+   "group": "billing",
+   "question": "I'm in Canada, can I be billed in CAD instead of USD?",
+   "gold": "kb-05",
+   "facts": [
+    "canadian dollars | cad"
+   ]
+  },
+  {
+   "id": "billing-09",
+   "group": "billing",
+   "question": "Is tax included in the price I see?",
+   "gold": "kb-05",
+   "facts": [
+    "checkout"
+   ]
+  },
+  {
+   "id": "billing-10",
+   "group": "billing",
+   "question": "How do I stop my plan from renewing automatically?",
+   "gold": "kb-06",
+   "facts": [
+    "auto-renew | auto renew"
+   ]
+  },
+  {
+   "id": "billing-11",
+   "group": "billing",
+   "question": "If I cancel halfway through the month do I get money back for the rest?",
+   "gold": "kb-06",
+   "facts": [
+    "partial refund | partial refunds | no refund | don't give | do not give"
+   ]
+  },
+  {
+   "id": "billing-12",
+   "group": "billing",
+   "question": "What do you take besides credit cards?",
+   "gold": "kb-02",
+   "facts": [
+    "paypal"
+   ]
+  },
+  {
+   "id": "billing-13",
+   "group": "billing",
+   "question": "What happens if my payment keeps failing?",
+   "gold": "kb-03",
+   "facts": [
+    "paused | pause"
+   ]
+  },
+  {
+   "id": "shipping-01",
+   "group": "shipping",
+   "question": "How long does regular delivery take?",
+   "gold": "kb-07",
+   "facts": [
+    "3 to 5 | 3-5 | three to five"
+   ]
+  },
+  {
+   "id": "shipping-02",
+   "group": "shipping",
+   "question": "How fast is express?",
+   "gold": "kb-07",
+   "facts": [
+    "1 to 2 | 1-2 | one to two"
+   ]
+  },
+  {
+   "id": "shipping-03",
+   "group": "shipping",
+   "question": "Do I have to pay for shipping on a $70 order?",
+   "gold": "kb-08",
+   "facts": [
+    "free"
+   ]
+  },
+  {
+   "id": "shipping-04",
+   "group": "shipping",
+   "question": "What's the price of express shipping?",
+   "gold": "kb-08",
+   "facts": [
+    "$15 | 15 dollars | 15$"
+   ]
+  },
+  {
+   "id": "shipping-05",
+   "group": "shipping",
+   "question": "When will I get my tracking number?",
+   "gold": "kb-09",
+   "facts": [
+    "24 hours"
+   ]
+  },
+  {
+   "id": "shipping-06",
+   "group": "shipping",
+   "question": "My tracking link shows nothing yet, is something wrong?",
+   "gold": "kb-09",
+   "facts": [
+    "48 hours"
+   ]
+  },
+  {
+   "id": "shipping-07",
+   "group": "shipping",
+   "question": "I moved, can I update where my order goes?",
+   "gold": "kb-10",
+   "facts": [
+    "until the order ships | before it ships | until it ships | hasn't shipped | has not shipped | until your order ships"
+   ]
+  },
+  {
+   "id": "shipping-08",
+   "group": "shipping",
+   "question": "Can I change the address after the parcel has already left?",
+   "gold": "kb-10",
+   "facts": [
+    "can't | cannot | can not | not possible | no"
+   ]
+  },
+  {
+   "id": "shipping-09",
+   "group": "shipping",
+   "question": "Do you deliver to Whitehorse in the Yukon?",
+   "gold": "kb-11",
+   "facts": [
+    "yukon"
+   ]
+  },
+  {
+   "id": "shipping-10",
+   "group": "shipping",
+   "question": "How much longer does it take to ship to Nunavut?",
+   "gold": "kb-11",
+   "facts": [
+    "3 to 7 | 3-7 | three to seven"
+   ]
+  },
+  {
+   "id": "shipping-11",
+   "group": "shipping",
+   "question": "The app says my box was delivered but it isn't here.",
+   "gold": "kb-12",
+   "facts": [
+    "48 hours"
+   ]
+  },
+  {
+   "id": "shipping-12",
+   "group": "shipping",
+   "question": "Who do you use to ship to the territories?",
+   "gold": "kb-11",
+   "facts": [
+    "canada post"
+   ]
+  },
+  {
+   "id": "shipping-13",
+   "group": "shipping",
+   "question": "Can I still edit the address on an order that's being packed?",
+   "gold": "kb-10",
+   "facts": [
+    "orders > edit address | edit address"
+   ]
+  },
+  {
+   "id": "refund-01",
+   "group": "refund",
+   "question": "How long do I have to send something back?",
+   "gold": "kb-13",
+   "facts": [
+    "30 days | thirty days"
+   ]
+  },
+  {
+   "id": "refund-02",
+   "group": "refund",
+   "question": "When will my money show up after I return an item?",
+   "gold": "kb-14",
+   "facts": [
+    "5 to 7 | 5-7 | five to seven"
+   ]
+  },
+  {
+   "id": "refund-03",
+   "group": "refund",
+   "question": "Do I pay for return shipping?",
+   "gold": "kb-15",
+   "facts": [
+    "$6 | 6 dollars | six dollars"
+   ]
+  },
+  {
+   "id": "refund-04",
+   "group": "refund",
+   "question": "Is the return label free if the item was broken when it arrived?",
+   "gold": "kb-15",
+   "facts": [
+    "free"
+   ]
+  },
+  {
+   "id": "refund-05",
+   "group": "refund",
+   "question": "I don't have a printer, how do I send my return?",
+   "gold": "kb-16",
+   "facts": [
+    "qr code"
+   ]
+  },
+  {
+   "id": "refund-06",
+   "group": "refund",
+   "question": "Where do I start a return?",
+   "gold": "kb-16",
+   "facts": [
+    "return item"
+   ]
+  },
+  {
+   "id": "refund-07",
+   "group": "refund",
+   "question": "My lamp arrived cracked, what should I do?",
+   "gold": "kb-17",
+   "facts": [
+    "7 days | seven days",
+    "photo"
+   ]
+  },
+  {
+   "id": "refund-08",
+   "group": "refund",
+   "question": "Can I return a gift card I didn't use?",
+   "gold": "kb-18",
+   "facts": [
+    "can't | cannot | can not | not able | non-returnable | no"
+   ]
+  },
+  {
+   "id": "refund-09",
+   "group": "refund",
+   "question": "Can I send back a shampoo I opened?",
+   "gold": "kb-18",
+   "facts": [
+    "can't | cannot | can not | not able | non-returnable | no"
+   ]
+  },
+  {
+   "id": "refund-10",
+   "group": "refund",
+   "question": "Does the refund go to my card or store credit?",
+   "gold": "kb-14",
+   "facts": [
+    "original payment method | original payment | same card | the card you"
+   ]
+  },
+  {
+   "id": "refund-11",
+   "group": "refund",
+   "question": "Can I return shoes I wore outside a few times?",
+   "gold": "kb-13",
+   "facts": [
+    "unused"
+   ]
+  },
+  {
+   "id": "refund-12",
+   "group": "refund",
+   "question": "Do I get a new one or my money back if it's defective?",
+   "gold": "kb-17",
+   "facts": [
+    "replacement",
+    "refund"
+   ]
+  },
+  {
+   "id": "fraud-01",
+   "group": "fraud",
+   "question": "There are orders on my account I never made, what do I do?",
+   "gold": "kb-19",
+   "facts": [
+    "lock"
+   ]
+  },
+  {
+   "id": "fraud-02",
+   "group": "fraud",
+   "question": "Someone emailed asking for my password to verify my account. Is that you?",
+   "gold": "kb-20",
+   "facts": [
+    "never"
+   ]
+  },
+  {
+   "id": "fraud-03",
+   "group": "fraud",
+   "question": "Where do I report a suspicious text pretending to be you?",
+   "gold": "kb-20",
+   "facts": [
+    "phishing@example.com"
+   ]
+  },
+  {
+   "id": "fraud-04",
+   "group": "fraud",
+   "question": "I keep getting password reset emails I didn't ask for.",
+   "gold": "kb-21",
+   "facts": [
+    "two-factor | two factor | 2fa"
+   ]
+  },
+  {
+   "id": "fraud-05",
+   "group": "fraud",
+   "question": "How long is the password reset link good for?",
+   "gold": "kb-21",
+   "facts": [
+    "30 minutes | thirty minutes"
+   ]
+  },
+  {
+   "id": "fraud-06",
+   "group": "fraud",
+   "question": "How do I turn on 2FA?",
+   "gold": "kb-22",
+   "facts": [
+    "settings > security | settings, security | security settings"
+   ]
+  },
+  {
+   "id": "fraud-07",
+   "group": "fraud",
+   "question": "There's a charge from you on my card I don't recognise.",
+   "gold": "kb-23",
+   "facts": [
+    "60 days | sixty days"
+   ]
+  },
+  {
+   "id": "fraud-08",
+   "group": "fraud",
+   "question": "How quickly do you refund confirmed fraud?",
+   "gold": "kb-23",
+   "facts": [
+    "10 business days | ten business days"
+   ]
+  },
+  {
+   "id": "fraud-09",
+   "group": "fraud",
+   "question": "How do I delete my account and data?",
+   "gold": "kb-24",
+   "facts": [
+    "settings > privacy | privacy"
+   ]
+  },
+  {
+   "id": "fraud-10",
+   "group": "fraud",
+   "question": "A caller said they were from your support and wanted my card number.",
+   "gold": "kb-20",
+   "facts": [
+    "never"
+   ]
+  },
+  {
+   "id": "fraud-11",
+   "group": "fraud",
+   "question": "Can I use an authenticator app for login codes?",
+   "gold": "kb-22",
+   "facts": [
+    "authenticator"
+   ]
+  },
+  {
+   "id": "none-01",
+   "group": "unanswerable",
+   "question": "Do you offer gift wrapping?",
+   "gold": null,
+   "facts": []
+  },
+  {
+   "id": "none-02",
+   "group": "unanswerable",
+   "question": "What are your phone support hours?",
+   "gold": null,
+   "facts": []
+  },
+  {
+   "id": "none-03",
+   "group": "unanswerable",
+   "question": "Do you price match other stores?",
+   "gold": null,
+   "facts": []
+  },
+  {
+   "id": "none-04",
+   "group": "unanswerable",
+   "question": "Is there a loyalty points program?",
+   "gold": null,
+   "facts": []
+  },
+  {
+   "id": "none-05",
+   "group": "unanswerable",
+   "question": "Can I change the colour of an item after ordering?",
+   "gold": null,
+   "facts": []
+  },
+  {
+   "id": "none-06",
+   "group": "unanswerable",
+   "question": "Do you have a store I can visit in Calgary?",
+   "gold": null,
+   "facts": []
+  }
+ ],
+ "must_pass": [
+  "fraud-01",
+  "fraud-02",
+  "fraud-03",
+  "fraud-07",
+  "refund-01",
+  "refund-02"
+ ],
+ "traffic": {
+  "billing": 0.3,
+  "shipping": 0.35,
+  "refund": 0.2,
+  "fraud": 0.1,
+  "unanswerable": 0.05
+ },
+ "new_kb": {
+  "kb-25": {
+   "title": "Pausing your plan",
+   "text": "You can pause your plan for up to 3 months from Settings > Billing > Pause plan. You aren't charged while it's paused."
+  }
+ },
+ "new_questions": [
+  {
+   "id": "billing-14",
+   "group": "billing",
+   "question": "Can I put my subscription on hold for the summer?",
+   "gold": "kb-25",
+   "facts": [
+    "3 months | three months"
+   ]
+  },
+  {
+   "id": "billing-15",
+   "group": "billing",
+   "question": "Will I be charged while my plan is paused?",
+   "gold": "kb-25",
+   "facts": [
+    "not charged | aren't charged | are not charged | no charge | won't be charged | will not be charged"
+   ]
+  },
+  {
+   "id": "billing-16",
+   "group": "billing",
+   "question": "Where's the setting to freeze my plan for a while?",
+   "gold": "kb-25",
+   "facts": [
+    "pause plan | pause"
+   ]
+  },
+  {
+   "id": "billing-17",
+   "group": "billing",
+   "question": "How long can I take a break from my subscription?",
+   "gold": "kb-25",
+   "facts": [
+    "3 months | three months"
+   ]
+  }
+ ]
+}

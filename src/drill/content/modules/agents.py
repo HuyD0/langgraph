@@ -658,6 +658,489 @@ total += 0.012""",
     ),
 )
 
+lesson(MODULE, 'pass_rates',
+    title='Reliable every time: pass^k',
+    learn=[
+        'A success rate from one try per task hides how inconsistent an agent is. Run each task several times, say k times, and look at two numbers.',
+        '**pass@k**: the task succeeded **at least once** in k tries. Useful when a person picks the best attempt. **pass^k** (read "pass hat k"): the task succeeded **every time** in k tries. That is closer to what users feel, because each user gets one try.',
+        'The gap grows fast. If each try succeeds 80% of the time on its own, three in a row succeed only 0.8 × 0.8 × 0.8 ≈ 51% of the time. Agent benchmarks such as τ-bench report pass^k for exactly this reason.',
+    ],
+    example=example('Three tasks, three tries each', """task       try 1   try 2   try 3
+refund       ✓       ✓       ✓     → counts for pass@3 and pass^3
+address      ✓       ✗       ✓     → counts for pass@3 only
+cancel       ✗       ✗       ✗     → counts for neither
+pass@3 = 2/3 ≈ 0.67        pass^3 = 1/3 ≈ 0.33"""),
+    check=question(
+        'Each try of your agent succeeds 90% of the time. Roughly how often does it succeed five times in a row?',
+        ['90%', 'About 59%', 'About 45%'],
+        answer=1,
+        why='0.9 × 0.9 × 0.9 × 0.9 × 0.9 is about 0.59. A 90% agent fails at least once in five runs about 4 times in 10.',
+    ),
+    angle=angle(
+        pattern='any and all',
+        text='`any` is true if at least one item is true; `all` is true only if every item is. One pass over the tasks, counting each.',
+        say='"I report pass^k next to the single-try success rate, because users feel the inconsistency that one try per task hides."',
+        classic=None,
+    ),
+    stack=stack('MLflow: log both rates for an agent version', """with mlflow.start_run(run_name="agent-v7-k3"):
+    mlflow.log_params({"k": 3, "tasks": len(runs)})
+    mlflow.log_metrics(pass_rates(runs))"""),
+    exercise=exercise(
+        title='Lucky or Reliable?',
+        topic='agents',
+        difficulty='easy',
+        fn='pass_rates',
+        prompt="""`runs` has one list per task, each holding the results of k tries as booleans, like `[[True, True, True], [True, False, True]]`.
+
+Return `{"pass_at_k": ..., "pass_hat_k": ...}`:
+
+- `pass_at_k`: the fraction of tasks that succeeded at least once
+- `pass_hat_k`: the fraction of tasks that succeeded on every try
+
+Round both to 2 decimal places. With no tasks, both are `0.0`.""",
+        pattern='One pass over the tasks with two counters, using any and all.',
+        target='one pass over all the tries',
+        realworld='An agent that solves a task 2 times out of 3 looks fine in a demo and fails one user in three. pass^k is the number that predicts the support tickets.',
+        starter="""def pass_rates(runs):
+    # your code here
+    pass
+""",
+        solution="""def pass_rates(runs):
+    if not runs:
+        return {"pass_at_k": 0.0, "pass_hat_k": 0.0}
+    at_least_once = 0
+    every_time = 0
+    for tries in runs:
+        if any(tries):
+            at_least_once += 1
+        if all(tries):
+            every_time += 1
+    n = len(runs)
+    return {"pass_at_k": round(at_least_once / n, 2), "pass_hat_k": round(every_time / n, 2)}
+""",
+        cases=[
+            case([[True, True, True], [True, False, True], [False, False, False]], expected={'pass_at_k': 0.67, 'pass_hat_k': 0.33}, sample=True),
+            case([[True, True], [True, True]], expected={'pass_at_k': 1.0, 'pass_hat_k': 1.0}),
+            case([], expected={'pass_at_k': 0.0, 'pass_hat_k': 0.0}),
+            case([[True, False], [False, True], [True, True], [False, False]], expected={'pass_at_k': 0.75, 'pass_hat_k': 0.25}),
+        ],
+        guided="""def pass_rates(runs):
+    # Replace every ___ with real code, then run the tests.
+    if not runs:
+        return {"pass_at_k": 0.0, "pass_hat_k": 0.0}
+    at_least_once = 0
+    every_time = 0
+    for tries in runs:
+        # Step 1: succeeded on at least one try?
+        if ___:
+            at_least_once += 1
+        # Step 2: succeeded on every try?
+        if ___:
+            every_time += 1
+    n = len(runs)
+    return {"pass_at_k": round(at_least_once / n, 2), "pass_hat_k": round(every_time / n, 2)}
+""",
+        fills=['any(tries)', 'all(tries)'],
+        concepts=[
+            [
+                'any and all',
+                'any: is at least one item true? all: is every item true?',
+                """any([True, False])   # True
+all([True, False])   # False""",
+            ],
+        ],
+        byhand='Refund passed every try: counts for both. Address passed twice: at least once, but not every time. Cancel never passed. pass@3 = 2/3, pass^3 = 1/3.',
+        why='One look at each try.',
+        gotchas=[
+            [
+                'Independent tries',
+                'Each try must start fresh: new session, no memory of the previous try, ideally a different random seed. Otherwise you are measuring one try three times.',
+            ],
+            [
+                'k changes the number',
+                'pass^3 and pass^8 are different metrics. Always say which k you used, and keep it fixed when comparing versions.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'tool_call_scores',
+    title='Right tool, right arguments',
+    learn=[
+        'An agent can reach the right answer the wrong way, or fail because one call had a bad argument. For test tasks where you know the correct calls, score the calls themselves.',
+        'Score two levels. **Tool selection**: was the right tool called at each step? **Arguments**: was it the right tool *and* the right arguments? A refund with the amount 25 instead of 250 picked the right tool and still did real damage.',
+        'Count missing and extra calls as wrong, by dividing by the longer of the two lists. Where you have a reference like this, the check is plain code, with no LLM judge to argue with. Benchmarks such as τ-bench go one step further and check the **final state**, like the database after the task.',
+    ],
+    example=example('Two levels of correct', """expected                              actual                               tool  args
+lookup_order(order_id="A-1")          lookup_order(order_id="A-1")          ✓     ✓
+refund(order_id="A-1", amount=250)    refund(order_id="A-1", amount=25)     ✓     ✗
+tool selection 2/2 = 1.0      arguments 1/2 = 0.5"""),
+    check=question(
+        'The agent called exactly the right tools, in the right order, but one argument was wrong. What do the two scores look like?',
+        [
+            'Both 1.0: the tools were right',
+            'Tool selection 1.0, arguments below 1.0',
+            'Both below 1.0',
+        ],
+        answer=1,
+        why='Tool selection only checks names. The argument score is what catches the wrong amount.',
+    ),
+    angle=angle(
+        pattern='Comparing two lists position by position',
+        text='Walk the longer list once, checking the same position in both. A missing position on either side counts as wrong.',
+        say='"For tasks with a known correct path I score tool selection and arguments separately, and count missing or extra calls as errors."',
+        classic=None,
+    ),
+    stack=stack('MLflow: a code scorer over the trace\'s tool calls', """from mlflow.genai.scorers import scorer
+
+@scorer
+def tool_args_correct(outputs, expectations):
+    scores = tool_call_scores(expectations["calls"], outputs["calls"])
+    return scores["args"]"""),
+    exercise=exercise(
+        title='Score the Tool Calls',
+        topic='agents',
+        difficulty='easy',
+        fn='tool_call_scores',
+        prompt="""`expected` and `actual` are lists of tool calls, in order, each like `{"name": "refund", "args": {"order_id": "A-1", "amount": 250}}`.
+
+Compare them position by position, over the length of the longer list (a call missing on either side counts as wrong). Return:
+
+- `"tool"`: the fraction of positions where both calls exist and the names match
+- `"args"`: the fraction where the names match *and* the args are equal
+
+Round both to 2 decimal places. If both lists are empty, both scores are `1.0`.""",
+        pattern='One walk over the longer list, checking the same position in both.',
+        target='one pass over the calls',
+        realworld='Agent teams run these checks in CI on a set of tasks with known correct calls. A drop in the argument score after a prompt change often explains a drop in task success before anyone reads a trace.',
+        starter="""def tool_call_scores(expected, actual):
+    # your code here
+    pass
+""",
+        solution="""def tool_call_scores(expected, actual):
+    longest = max(len(expected), len(actual))
+    if longest == 0:
+        return {"tool": 1.0, "args": 1.0}
+    right_tool = 0
+    right_args = 0
+    for i in range(min(len(expected), len(actual))):
+        if expected[i]["name"] == actual[i]["name"]:
+            right_tool += 1
+            if expected[i]["args"] == actual[i]["args"]:
+                right_args += 1
+    return {"tool": round(right_tool / longest, 2), "args": round(right_args / longest, 2)}
+""",
+        cases=[
+            case([{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'order_id': 'A-1', 'amount': 250}}],
+                 [{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'order_id': 'A-1', 'amount': 25}}],
+                 expected={'tool': 1.0, 'args': 0.5}, sample=True),
+            case([{'name': 'search', 'args': {'q': 'x'}}], [{'name': 'search', 'args': {'q': 'x'}}, {'name': 'search', 'args': {'q': 'x'}}],
+                 expected={'tool': 0.5, 'args': 0.5}),
+            case([{'name': 'a', 'args': {}}, {'name': 'b', 'args': {}}], [{'name': 'b', 'args': {}}, {'name': 'a', 'args': {}}],
+                 expected={'tool': 0.0, 'args': 0.0}),
+            case([{'name': 'a', 'args': {}}, {'name': 'b', 'args': {}}], [{'name': 'a', 'args': {}}],
+                 expected={'tool': 0.5, 'args': 0.5}),
+            case([], [], expected={'tool': 1.0, 'args': 1.0}),
+        ],
+        guided="""def tool_call_scores(expected, actual):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: missing or extra calls count as wrong, so divide by the longer list.
+    longest = ___
+    if longest == 0:
+        return {"tool": 1.0, "args": 1.0}
+    right_tool = 0
+    right_args = 0
+
+    # Step 2: compare the positions that exist in both lists.
+    for i in range(min(len(expected), len(actual))):
+        if expected[i]["name"] == actual[i]["name"]:
+            right_tool += 1
+            if ___:
+                right_args += 1
+    return {"tool": round(right_tool / longest, 2), "args": round(right_args / longest, 2)}
+""",
+        fills=['max(len(expected), len(actual))', 'expected[i]["args"] == actual[i]["args"]'],
+        concepts=[
+            [
+                'Comparing dicts',
+                '`==` on two dicts is true when they have the same keys with the same values, in any order.',
+                """{"a": 1, "b": 2} == {"b": 2, "a": 1}   # True""",
+            ],
+        ],
+        byhand='Two expected calls, two actual. Position 1: same name, same args. Position 2: same name, amount 250 against 25. Tool 2 of 2 = 1.0; args 1 of 2 = 0.5.',
+        why='One step per position.',
+        gotchas=[
+            [
+                'Order may not matter',
+                'Two independent lookups can happen in either order. When order does not matter, compare the calls as a set instead, as the next lesson shows.',
+            ],
+            [
+                'Normalise arguments first',
+                '"A-1" and "a-1", or 250 and 250.0, may mean the same thing. Decide what counts as equal before you score.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'trajectory_match',
+    title='Did it take a sensible path?',
+    learn=[
+        'The path an agent takes matters as well as the answer. An agent that searches twelve times before answering costs more and breaks more easily, even when the answer is right. The list of tools it called is its **trajectory**.',
+        "Compare it with a reference path, choosing how strict to be. These four modes are the ones LangChain's AgentEvals library uses: **strict**, the same tools in the same order; **unordered**, the same tools in any order; **superset**, every expected tool was called, and extra calls are fine; **subset**, it only called tools from the expected list, though it may have skipped some.",
+        'Pick the mode for each task. Use strict for a required procedure, like checking identity before a refund. Use superset when an extra lookup is harmless. Use subset when calling an unexpected tool is the risk, like an agent that should only ever read.',
+    ],
+    example=example('One path, four verdicts', """expected: lookup_order, refund
+actual:   lookup_order, check_policy, refund
+
+strict     ✗  (an extra call)
+unordered  ✗  (not the same tools)
+superset   ✓  (both expected tools were called)
+subset     ✗  (check_policy was not expected)"""),
+    check=question(
+        'Refunds must only happen after an identity check. Which mode should the test use?',
+        ['superset', 'unordered', 'strict'],
+        answer=2,
+        why='Only strict checks the order. superset and unordered would pass an agent that refunds first and checks identity afterwards.',
+    ),
+    angle=angle(
+        pattern='Choosing the right comparison',
+        text='strict compares the lists directly. unordered compares them sorted. superset and subset check membership, one item at a time, in one direction or the other.',
+        say='"I pick the trajectory match mode per task: strict where order is a rule, superset where extra lookups are fine, subset where unexpected tools are the risk."',
+        classic=None,
+    ),
+    stack=stack("AgentEvals: the same modes on LangChain message lists", """from agentevals.trajectory.match import create_trajectory_match_evaluator
+
+evaluator = create_trajectory_match_evaluator(trajectory_match_mode="superset")
+result = evaluator(outputs=agent_messages, reference_outputs=reference_messages)"""),
+    exercise=exercise(
+        title='Match the Trajectory',
+        topic='agents',
+        difficulty='easy',
+        fn='trajectory_match',
+        prompt="""`expected` and `actual` are lists of tool names, in the order they were called. Return `True` or `False` for the given `mode`:
+
+- `"strict"`: the same tools in the same order
+- `"unordered"`: the same tools, in any order (repeats count)
+- `"superset"`: every tool in `expected` appears in `actual`; extra calls are fine
+- `"subset"`: every tool in `actual` appears in `expected`; skipping some is fine""",
+        pattern='One comparison per mode: direct, sorted, or membership in one direction.',
+        target='a sort for unordered; one pass for the others',
+        realworld='Teams write one reference path per test task and choose a mode for it, so a test fails when the agent breaks a rule that matters and passes when it just takes a harmless detour.',
+        starter="""def trajectory_match(expected, actual, mode):
+    # your code here
+    pass
+""",
+        solution="""def trajectory_match(expected, actual, mode):
+    if mode == "strict":
+        return expected == actual
+    if mode == "unordered":
+        return sorted(expected) == sorted(actual)
+    if mode == "superset":
+        for tool in expected:
+            if tool not in actual:
+                return False
+        return True
+    if mode == "subset":
+        for tool in actual:
+            if tool not in expected:
+                return False
+        return True
+    return False
+""",
+        cases=[
+            case(['lookup_order', 'refund'], ['lookup_order', 'check_policy', 'refund'], 'superset', expected=True, sample=True),
+            case(['lookup_order', 'refund'], ['lookup_order', 'check_policy', 'refund'], 'strict', expected=False),
+            case(['lookup_order', 'refund'], ['lookup_order', 'check_policy', 'refund'], 'subset', expected=False),
+            case(['a', 'b'], ['b', 'a'], 'unordered', expected=True),
+            case(['a', 'b'], ['b', 'a'], 'strict', expected=False),
+            case(['search', 'search', 'answer'], ['search', 'answer'], 'unordered', expected=False),
+            case(['search', 'answer'], ['answer'], 'subset', expected=True),
+            case([], ['delete_table'], 'subset', expected=False),
+        ],
+        guided="""def trajectory_match(expected, actual, mode):
+    # Replace every ___ with real code, then run the tests.
+    if mode == "strict":
+        return expected == actual
+    # Step 1: same tools in any order: compare them sorted.
+    if mode == "unordered":
+        return ___
+    # Step 2: every expected tool must have been called.
+    if mode == "superset":
+        for tool in expected:
+            if tool not in actual:
+                return False
+        return True
+    # Step 3: every tool it called must have been expected.
+    if mode == "subset":
+        for tool in actual:
+            if ___:
+                return False
+        return True
+    return False
+""",
+        fills=['sorted(expected) == sorted(actual)', 'tool not in expected'],
+        concepts=[
+            [
+                'Sorting to ignore order',
+                'Two lists hold the same items, repeats included, exactly when their sorted versions are equal.',
+                """sorted(["b", "a"]) == sorted(["a", "b"])   # True""",
+            ],
+        ],
+        byhand='Expected lookup_order then refund; the agent added check_policy in between. Both expected tools were called, so superset passes. The lists differ, so strict fails. check_policy was not expected, so subset fails.',
+        why='Sorting is the slowest step for unordered; the membership checks look at each tool once.',
+        gotchas=[
+            [
+                'Loops hide inside superset',
+                'superset passes an agent that called search twenty times. Pair it with a step limit or a loop check from the Tracing module.',
+            ],
+            [
+                'One mode per task, written down',
+                'Choose the mode when you write the test, not after you see the agent fail it.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'compare_designs',
+    title='Comparing agent designs',
+    learn=[
+        'There are several ways to build the same agent: **ReAct** (think, call a tool, look, repeat), **plan then execute** (write the plan first, then follow it), or a **supervisor** handing parts of the task to specialist sub-agents. In LangGraph each is a different graph. Which is better depends on your tasks, so measure it.',
+        'Run every design on **the same tasks**, several times each, and compare three things side by side: how often a run succeeds, how many tasks succeed on **every** try (the pass^k idea), and the **cost per success**, which spreads the cost of failed runs over the successful ones.',
+        'Then read the regressions and improvements, trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
+    ],
+    example=example('Three designs, same 20 tasks, 3 tries each', """design            success   reliable tasks   cost per success
+react               80%          65%             $0.040
+plan_execute        78%          75%             $0.028
+supervisor          83%          70%             $0.090
+→ plan_execute: almost as successful, the most reliable, the cheapest"""),
+    check=question(
+        'Supervisor succeeds 3 points more often than ReAct but costs more than twice as much per success. What do you need to decide?',
+        [
+            'Always pick the higher success rate',
+            "Whether 3 extra points (if they are real) are worth the cost: it's a value question, decided by the rule you wrote first",
+            'Always pick the cheaper one',
+        ],
+        answer=1,
+        why='Check the 3 points are more than noise, then weigh them against cost using the decision rule from your plan.',
+    ),
+    angle=angle(
+        pattern='Group by key, then summarise',
+        text='Group the runs by design, and within a design by task, keeping running counts. Then turn the counts into rates at the end, guarding against zero successes.',
+        say='"I compare agent designs on the same tasks with repeat runs, on success, reliability and cost per success, then read the traces to see why."',
+        classic='group_anagrams',
+    ),
+    stack=stack('LangGraph: the same tasks through each graph, tagged', """designs = {"react": build_react(), "plan_execute": build_planner(), "supervisor": build_supervisor()}
+for name, graph in designs.items():
+    mlflow.set_active_model(name=f"support-agent-{name}")
+    for task in tasks:
+        for attempt in range(3):
+            run_and_score(graph, task, tags={"design": name, "attempt": str(attempt)})"""),
+    exercise=exercise(
+        title='Score Each Agent Design',
+        topic='agents',
+        difficulty='medium',
+        fn='compare_designs',
+        prompt="""`runs` is a list of dicts like `{"design": "react", "task": "t1", "success": True, "cost": 0.04}`: every attempt of every task with every design.
+
+Return a dict from each design to:
+
+- `"success_rate"`: successful runs ÷ all its runs, rounded to 2 decimal places
+- `"reliable"`: the share of its tasks where **every** run succeeded, rounded to 2 decimal places
+- `"cost_per_success"`: its total cost ÷ its successful runs, rounded to 3 decimal places, or `None` if it never succeeded""",
+        pattern='Group by design, and by task within a design, then summarise each group.',
+        target='one pass over the runs, then one over the designs',
+        realworld='Agent teams compare designs exactly like this before committing to a graph shape, because the most successful design is often not the most reliable or the cheapest.',
+        starter="""def compare_designs(runs):
+    # your code here
+    pass
+""",
+        solution="""def compare_designs(runs):
+    groups = {}
+    for run in runs:
+        g = groups.setdefault(run["design"], {"runs": 0, "wins": 0, "cost": 0.0, "tasks": {}})
+        g["runs"] += 1
+        g["cost"] += run["cost"]
+        if run["success"]:
+            g["wins"] += 1
+        g["tasks"][run["task"]] = g["tasks"].get(run["task"], True) and run["success"]
+    report = {}
+    for design, g in groups.items():
+        steady = 0
+        for ok in g["tasks"].values():
+            if ok:
+                steady += 1
+        reliable = steady / len(g["tasks"])
+        report[design] = {
+            "success_rate": round(g["wins"] / g["runs"], 2),
+            "reliable": round(reliable, 2),
+            "cost_per_success": round(g["cost"] / g["wins"], 3) if g["wins"] else None,
+        }
+    return report
+""",
+        cases=[
+            case([
+                {'design': 'react', 'task': 't1', 'success': True, 'cost': 0.04},
+                {'design': 'react', 'task': 't1', 'success': False, 'cost': 0.05},
+                {'design': 'react', 'task': 't2', 'success': True, 'cost': 0.03},
+                {'design': 'plan', 'task': 't1', 'success': True, 'cost': 0.02},
+                {'design': 'plan', 'task': 't2', 'success': True, 'cost': 0.02},
+            ], expected={'react': {'success_rate': 0.67, 'reliable': 0.5, 'cost_per_success': 0.06},
+                         'plan': {'success_rate': 1.0, 'reliable': 1.0, 'cost_per_success': 0.02}}, sample=True),
+            case([], expected={}),
+            case([{'design': 'super', 'task': 't1', 'success': False, 'cost': 0.1}],
+                 expected={'super': {'success_rate': 0.0, 'reliable': 0.0, 'cost_per_success': None}}),
+        ],
+        guided="""def compare_designs(runs):
+    # Replace every ___ with real code, then run the tests.
+    groups = {}
+    for run in runs:
+        g = groups.setdefault(run["design"], {"runs": 0, "wins": 0, "cost": 0.0, "tasks": {}})
+        g["runs"] += 1
+        g["cost"] += run["cost"]
+        if run["success"]:
+            g["wins"] += 1
+        # Step 1: a task stays reliable only while every run of it succeeds.
+        g["tasks"][run["task"]] = ___
+    report = {}
+    for design, g in groups.items():
+        steady = 0
+        for ok in g["tasks"].values():
+            if ok:
+                steady += 1
+        reliable = steady / len(g["tasks"])
+        report[design] = {
+            "success_rate": round(g["wins"] / g["runs"], 2),
+            "reliable": round(reliable, 2),
+            # Step 2: spread the total cost over the successes, if there were any.
+            "cost_per_success": ___,
+        }
+    return report
+""",
+        fills=['g["tasks"].get(run["task"], True) and run["success"]', 'round(g["cost"] / g["wins"], 3) if g["wins"] else None'],
+        concepts=[
+            [
+                'setdefault',
+                'Gets a key\'s value, first inserting a starting value if the key is new. Handy for building groups in one pass.',
+                """groups = {}
+groups.setdefault("react", []).append(1)   # {"react": [1]}""",
+            ],
+        ],
+        byhand='react: 2 of 3 runs succeeded (0.67). Task t1 failed once, t2 succeeded, so 1 of 2 tasks is reliable (0.5). Cost 0.04 + 0.05 + 0.03 = 0.12 over 2 successes is 0.06. plan: everything succeeded, 0.04 over 2 successes is 0.02.',
+        why='One step per run, then one per design.',
+        gotchas=[
+            [
+                'Same tasks for every design',
+                'If one design ran on easier tasks, the comparison means nothing. Check every design has the same task list and the same number of attempts.',
+            ],
+            [
+                'Cost per success, not per run',
+                'A cheap design that fails half the time can cost more per *useful* answer than an expensive one that rarely fails.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'approval_run',
     title='Human approval in LangGraph',
     learn=[
