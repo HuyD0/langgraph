@@ -172,7 +172,7 @@ More habits:
 - **quantization** — storing the model's numbers with fewer bits so it takes
   less memory, at a small cost in accuracy (milestone 7).
 - **margin of error** — how far a measured score could be from the true one.
-  For a pass rate on n examples, about ±100 ÷ √n percentage points (milestone 7).
+  For a pass rate on n examples, about 100 divided by the square root of n, in percentage points either way (milestone 7).
 - **paired comparison** — comparing two setups on the same examples, one by one,
   and counting only where they disagree. McNemar's test is the standard version
   for pass/fail results (milestone 7).

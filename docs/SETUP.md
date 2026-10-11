@@ -116,7 +116,7 @@ server must be running while you practise.
 | `DRILL_SANDBOX_TIMEOUT` | `10` | Seconds a submission may run |
 | `DRILL_PROGRESS_PATH` | `.drill/progress.json` | Where the CLI's history is stored |
 | `MLFLOW_TRACKING_URI` | *(unset, so `./mlruns`)* | Tracking server |
-| `MLFLOW_EXPERIMENT_NAME` | `daily-drill` | Experiment for traces and runs |
+| `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | Experiment for traces and runs. Its own name, so Claude Code's MLflow tracing (which sets `MLFLOW_EXPERIMENT_NAME`) can't move them |
 | `AZURE_FOUNDRY_FLAVOUR` | *(inferred)* | Force `azure_openai` or `azure_inference` |
 | `OLLAMA_MODEL` | *(unset)* | Use a local Ollama model instead of Azure |
 | `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Where Ollama is listening |

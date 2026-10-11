@@ -57,7 +57,7 @@ is the same; these steps change:
 | Duplicates and groups | Hand-picked | Cluster near-duplicates by meaning (embeddings); keep a few per cluster. The clusters are often the groups. |
 | Splits | Dealt by position | Assigned from a hash of the question id, so a question never changes split as the set grows; one user or conversation stays in one split |
 | Running variants | Everything, every time | A stratified "smoke" sample of 50-100 while iterating; the full set for finalists; parallel requests with a concurrency cap; cache steps that don't change between variants |
-| Statistics | Only big differences show | Margins shrink (about ±5 points at 400) and per-group results become readable, but more comparisons make the holdout confirmation more important |
+| Statistics | Only big differences show | Margins shrink (about plus or minus 5 points at 400) and per-group results become readable, but more comparisons make the holdout confirmation more important |
 | Reading regressions and improvements | Read every one | Sort them automatically first (did retrieval differ, or the answer from the same articles?), then read a sample from each bucket |
 | Must-pass set | 6 questions | Still small, 10 to 50: it's a gate, not an eval set |
 
@@ -77,3 +77,5 @@ doesn't replace it.
   [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md); 9b's plan is a filled-in example.
 - Already have expert-labelled traces from MLflow? Start at 9a §3 and the
   "Building the eval set from labelled traces" section of the plan template.
+- Have a RAG app at work to check against all this? Use the audit prompt in
+  [RAG_AUDIT.md](RAG_AUDIT.md).

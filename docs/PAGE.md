@@ -20,11 +20,39 @@ Everything is in the package, under `src/drill/content/`:
 | `modules/__init__.py` | `ORDER`, the order of the chapters, and `LIFECYCLE`, the strip at the top of the page |
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
-| `extras.py` | The glossary, the good-habits rules and the gotchas lists |
+| `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Interview step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
 | `page.html` | The page: layout, styles and all the JavaScript. `/*DATA*/` is replaced with the content at build time |
 | `build.py` | Puts it together: `build_data()` is the content as one dict, `render_page()` embeds it |
 
 The money & health track comes from `drill.mine` (`drill.mine.export`), with made-up data.
+
+## The study list
+
+Select any text in a lesson, or a line of your code, to save it to the study list in the
+Notebook. Each item shows as one line until you open it, grouped by the lesson it came from in
+path order, under three headings:
+
+- **Review now**: items you marked "Got it" whose review has come round. Try to recall it, check
+  what you saved, then say whether you remembered. Remembering pushes the next review further
+  out (3 days, then 10, 30 and 90); forgetting puts it back on To learn.
+- **To learn**: everything still being learned, with its explanation, quiz and follow-ups inside.
+- **Got it**: closed by default, each with its next review date.
+
+The search box looks through the text, your notes, the explanations and the lesson names.
+
+**Two copies.** On claude.ai the list lives in the artifact's database; served by `drill-server`
+it lives in `.drill/drill.db`. The two cannot reach each other, so they don't sync by themselves.
+Both keep items by id with a last-changed time, so they merge safely, as often as you like:
+
+```bash
+uv run drill study export study.json     # this Mac's list
+uv run drill study import study.json     # merge a list in: new items added, the newer copy of an item wins
+```
+
+For the claude.ai side, ask Claude Code to "sync my study lists": it reads the artifact's
+`study` collection, imports it here, and writes back anything newer from this Mac. Removing an
+item is not remembered, so remove it from both copies. The merge rules are in
+`src/drill/server/study.py`.
 
 ## Build and publish
 
