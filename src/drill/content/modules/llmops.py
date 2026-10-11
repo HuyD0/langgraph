@@ -7,10 +7,13 @@ MODULE = module('llmops', 'LLMOps', 'Cost and caching in production.')
 lesson(MODULE, 'token_cost',
     title='Tokens and cost',
     learn=[
-        'LLM providers bill per **token** (roughly ¾ of a word), with separate prices for input and output. Output usually costs several times more.',
+        'LLM providers bill per **token** (roughly three quarters of a word), with separate prices for input and output. Output usually costs several times more. Prices are quoted in dollars per million tokens.',
         'Track cost per model, per feature and per user from day one. When the bill jumps, that breakdown tells you why.',
     ],
-    example=example('Cost of one call', 'cost = (input_tokens * input_price + output_tokens * output_price) / 1_000_000'),
+    example=example('Cost of one call', """input_cost = input_tokens * input_price
+output_cost = output_tokens * output_price
+# prices are per million tokens, so divide by 1000000
+cost = (input_cost + output_cost) / 1000000"""),
     check=question(
         "Your bill doubled but the number of requests didn't change. What should you check first?",
         [
@@ -23,8 +26,8 @@ lesson(MODULE, 'token_cost',
     ),
     angle=angle(
         pattern='Group and sum',
-        text='One walk through the calls, adding each cost into a dict keyed by model. Group Anagrams has the same group-by-key shape.',
-        say='"I add up into a dict keyed by model in one pass, and round only at the end so rounding errors don\'t pile up."',
+        text='One walk through the calls, adding each cost into a dict where each key is a model name. Group Anagrams has the same group-by-key shape.',
+        say='"I add each cost into a dict where each key is a model name, in one walk through the calls, and round only at the end so rounding errors don\'t pile up."',
         classic='group_anagrams',
     ),
     stack=stack('Databricks: tokens per endpoint from AI Gateway usage tracking', """SELECT served_entity_id,
@@ -38,10 +41,15 @@ GROUP BY served_entity_id"""),
         topic='llmops',
         difficulty='easy',
         fn='token_cost',
-        prompt="""Each LLM call in `calls` looks like `{"model": "fast-model", "input_tokens": 1200, "output_tokens": 300}`. `prices` maps each model to `[input_price, output_price]` in dollars per million tokens.
+        prompt="""Your function gets two things:
 
-Return a dict from model to its total cost in dollars, rounded to 4 decimal places. Every model in `calls` is in `prices`. The prices are made up.""",
-        pattern='Group by a key and add up into a dict.',
+- `calls`: a list of LLM calls. Each call is a dict like `{"model": "fast-model", "input_tokens": 1200, "output_tokens": 300}`.
+- `prices`: the price of each model, like `{"fast-model": [1, 5]}`. The first number is the input price and the second is the output price, in dollars per million tokens.
+
+For one call, multiply its input tokens by the input price. Multiply its output tokens by the output price. Add the two, then divide by 1000000 (one million). In Python, write big numbers without commas.
+
+Add up the cost of the calls for each model. Return a dict. Each key is a model from `calls`. Its value is that model's total cost, rounded to 4 decimal places at the end. If `calls` is empty, return `{}`.""",
+        pattern="Group by model: add each call's cost to that model's total in a dict.",
         target='one pass over the calls',
         realworld='LLM bills are per token, and output tokens usually cost several times more than input. Breaking cost down by model (and by feature or user) is the first thing a team does when the bill jumps.',
         starter="""def token_cost(calls, prices):
@@ -50,11 +58,17 @@ Return a dict from model to its total cost in dollars, rounded to 4 decimal plac
 """,
         solution="""def token_cost(calls, prices):
     totals = {}
-    for c in calls:
-        inp, out = prices[c["model"]]
-        cost = (c["input_tokens"] * inp + c["output_tokens"] * out) / 1000000
-        totals[c["model"]] = totals.get(c["model"], 0) + cost
-    return {m: round(v, 4) for m, v in totals.items()}
+    for call in calls:
+        model = call["model"]
+        input_price, output_price = prices[model]
+        input_cost = call["input_tokens"] * input_price
+        output_cost = call["output_tokens"] * output_price
+        cost = (input_cost + output_cost) / 1000000
+        totals[model] = totals.get(model, 0) + cost
+    rounded = {}
+    for model in totals:
+        rounded[model] = round(totals[model], 4)
+    return rounded
 """,
         cases=[
             case([
@@ -73,27 +87,55 @@ Return a dict from model to its total cost in dollars, rounded to 4 decimal plac
     # Replace every ___ with real code, then run the tests.
 
     totals = {}
-    for c in calls:
+    for call in calls:
+        model = call["model"]
         # Step 1: this model's two prices.
-        inp, out = prices[c["model"]]
-        # Step 2: prices are per MILLION tokens.
-        cost = (c["input_tokens"] * inp + ___) / 1000000
-        # Step 3: add to this model's running total (0 the first time).
-        totals[c["model"]] = ___ + cost
-    return {m: round(v, 4) for m, v in totals.items()}
+        input_price, output_price = prices[model]
+        # Step 2: tokens times price, for input and output.
+        input_cost = call["input_tokens"] * input_price
+        output_cost = ___
+        # Prices are per million tokens.
+        cost = (input_cost + output_cost) / 1000000
+        # Step 3: add to this model's total (starts at 0).
+        totals[model] = ___ + cost
+
+    # Round each total once, at the end.
+    rounded = {}
+    for model in totals:
+        rounded[model] = round(totals[model], 4)
+    return rounded
 """,
-        fills=['c["output_tokens"] * out', 'totals.get(c["model"], 0)'],
+        fills=['call["output_tokens"] * output_price', 'totals.get(model, 0)'],
         concepts=[
             [
                 'Adding up into a dict',
-                '`d.get(k, 0) + x` adds to a running total that starts at 0.',
-                """totals = {}
-totals['a'] = totals.get('a', 0) + 5""",
+                '`d.get(k, 0)` gives the value for `k`, or 0 if `k` is not there yet. So a running total starts at 0.',
+                """steps = {}
+steps['mon'] = steps.get('mon', 0) + 5
+steps['mon'] = steps.get('mon', 0) + 3
+# steps['mon'] is now 8""",
             ],
-            ['Unpacking a pair', 'Two names, one list of two values.', 'inp, out = [3, 15]'],
+            [
+                'Unpacking a pair',
+                'Two names on the left take the two values of a list, in order.',
+                """low, high = [3, 15]
+# low is 3, high is 15""",
+            ],
+            [
+                'Looping over a dict',
+                '`for k in d` gives each key in turn. `d[k]` is its value.',
+                """ages = {'ann': 30, 'bo': 25}
+for name in ages:
+    print(name, ages[name])""",
+            ],
+            [
+                'round',
+                '`round(x, 4)` keeps 4 decimal places.',
+                'round(3.14159, 2)   # 3.14',
+            ],
         ],
-        byhand='fast-model: (1200×1 + 300×5) / 1,000,000 = 0.0027, then (800×1 + 200×5) / 1,000,000 = 0.0018, total 0.0045. smart-model: (2000×3 + 500×15) / 1,000,000 = 0.0135.',
-        why='One pass; each update is a dict lookup.',
+        byhand='Call 1 is fast-model: 1200 times 1, plus 300 times 5, is 2700. Divided by a million, that is 0.0027. Call 2 is smart-model: 2000 times 3, plus 500 times 15, is 13500, so 0.0135. Call 3 is fast-model again: 800 times 1, plus 200 times 5, is 1800, so 0.0018. fast-model adds up to 0.0027 plus 0.0018, which is 0.0045. smart-model has just the one call, 0.0135. Rounded to 4 places, return {"fast-model": 0.0045, "smart-model": 0.0135}.',
+        why='One walk through the calls. Each call just adds to one total in the dict.',
         gotchas=[
             [
                 'Output tokens dominate',
@@ -110,13 +152,17 @@ totals['a'] = totals.get('a', 0) + 5""",
 lesson(MODULE, 'cache_hits',
     title='Caching responses',
     learn=[
-        'Many requests repeat. A **cache** returns a stored answer instead of calling the model again, which saves money and time.',
-        "Caches have a size limit. **LRU** (least recently used) evicts whatever hasn't been used for the longest time.",
+        'Many requests repeat. A **cache** returns a stored answer instead of calling the model again, which saves money and time. It looks answers up by a **key**, usually the prompt text.',
+        "Caches have a size limit. **LRU** (least recently used) removes whatever hasn't been used for the longest time.",
     ],
-    example=example('LRU in Python', """from collections import OrderedDict
-cache = OrderedDict()
-cache.move_to_end(key)       # on a hit
-cache.popitem(last=False)    # evict the oldest"""),
+    example=example('LRU in Python', """# used longest ago at the front
+cache = ['a', 'b', 'c']
+key = 'a'
+# on a hit: move it to the newest end
+cache.remove(key)
+cache.append(key)   # ['b', 'c', 'a']
+# full: remove the one used longest ago
+cache.pop(0)        # ['c', 'a']"""),
     check=question(
         "A cache returns another user's answer to a question about their own account. What was missing from the cache key?",
         ['The model name', 'Who is asking (the user or their permissions)', 'The time of day'],
@@ -125,8 +171,8 @@ cache.popitem(last=False)    # evict the oldest"""),
     ),
     angle=angle(
         pattern='LRU cache',
-        text='A dict finds things instantly, and a linked list (or Python\'s OrderedDict) remembers which item was used least recently. Together, every lookup and every eviction is instant. "Design an LRU cache" is itself a very common interview question.',
-        say='"A dict for instant lookups plus a linked list for the order of use, so reading and adding are both instant."',
+        text='A dict finds things instantly, and a doubly linked list (a chain where each item is linked to the one before and the one after) or Python\'s OrderedDict remembers which item was used least recently. Because each item knows both neighbours, you can unhook it from the middle without searching. Together, every lookup and every removal is instant. "Design an LRU cache" is itself a very common interview question.',
+        say='"A dict for instant lookups plus a doubly linked list for the order of use. The dict points straight at each item, and each item links to the one before and after, so reading, adding and removing are all instant."',
         classic=None,
     ),
     stack=stack('LangChain: an LLM cache', """from langchain_core.globals import set_llm_cache
@@ -137,12 +183,22 @@ set_llm_cache(InMemoryCache())"""),
         topic='llmops',
         difficulty='medium',
         fn='cache_hits',
-        prompt="""Repeated prompts can be answered from a cache instead of calling the model again. The cache holds at most `capacity` prompts and evicts the least recently used one when full.
+        prompt="""A cache keeps recent prompts, so a repeated prompt can reuse its stored answer instead of calling the model again.
 
-Go through `prompts` in order. If a prompt is in the cache, that's a hit, and it becomes the most recently used. If not, add it as most recently used, evicting the least recently used prompt first if the cache is full. Return the number of hits. A capacity of 0 caches nothing.""",
-        pattern='An LRU cache: fast lookup plus an order of use. Here a list keeps the order: most recent at the end.',
+Your function gets two things:
+
+- `prompts`: the prompts that arrive, in order, like `["hi", "price", "hi"]`.
+- `capacity`: how many prompts the cache can hold, like `2`. It is always at least 1.
+
+The cache starts empty. Go through `prompts` in order:
+
+- If the prompt is already in the cache, that's a hit. Count it. It is now the most recently used.
+- If it is not in the cache, add it as the most recently used. But if the cache is already full, first remove the prompt used longest ago.
+
+Return the number of hits.""",
+        pattern='Keep the cache as a list in order of use: used longest ago at the front, newest at the end.',
         target='one walk through the prompts',
-        realworld='Prompt and response caching cuts cost and latency for repeated questions. Model providers also offer prompt caching for a shared prefix, priced lower than normal input tokens.',
+        realworld='Prompt and response caching cuts cost and waiting time for repeated questions. Model providers also offer cheaper prices when many prompts start with the same opening text.',
         starter="""def cache_hits(prompts, capacity):
     # your code here
     pass
@@ -150,64 +206,73 @@ Go through `prompts` in order. If a prompt is in the cache, that's a hit, and it
         solution="""def cache_hits(prompts, capacity):
     cache = []
     hits = 0
-    if capacity == 0:
-        return 0
-    for p in prompts:
-        if p in cache:
+    for prompt in prompts:
+        if prompt in cache:
             hits += 1
-            cache.remove(p)
+            cache.remove(prompt)
         elif len(cache) == capacity:
             cache.pop(0)
-        cache.append(p)
+        cache.append(prompt)
     return hits
 """,
         cases=[
-            case(['hi', 'price?', 'hi', 'refund', 'price?', 'hi'], 2, expected=1, sample=True),
+            case(['hi', 'price', 'hi', 'refund', 'price'], 2, expected=1, sample=True),
             case([], 3, expected=0),
             case(['a', 'a', 'a'], 1, expected=2),
-            case(['a', 'b', 'a'], 0, expected=0),
             case(['a', 'b', 'c', 'a', 'b', 'c'], 3, expected=3),
             case(['a', 'b', 'c', 'a', 'b', 'c'], 2, expected=0),
         ],
         guided="""def cache_hits(prompts, capacity):
     # Replace every ___ with real code, then run the tests.
 
-    cache = []   # least recently used first, most recent last
+    # Used longest ago at the front, newest at the end.
+    cache = []
     hits = 0
-    if capacity == 0:
-        return 0
-    for p in prompts:
-        if p in cache:
-            # Step 1: a hit. Take it out so it can go to the end.
+    for prompt in prompts:
+        if prompt in cache:
+            # Step 1: a hit. Count it, then take it out
+            # so it can go back in at the end.
             hits += 1
             ___
         elif len(cache) == capacity:
-            # Step 2: full. Evict the least recently used, at the front.
+            # Step 2: full. Remove the first item, the one
+            # used longest ago.
             ___
-        # Step 3: p is now the most recently used.
-        cache.append(p)
+        # Step 3: put this prompt at the end, as the newest.
+        cache.append(prompt)
     return hits
 """,
-        fills=['cache.remove(p)', 'cache.pop(0)'],
+        fills=['cache.remove(prompt)', 'cache.pop(0)'],
         concepts=[
             [
-                'pop(0)',
-                'Removes and returns the first item.',
-                """q = ['a', 'b']
-q.pop(0)   # 'a'""",
+                'Moving an item to the end',
+                '`q.remove(x)` takes `x` out of the list. `q.append(x)` puts it back at the end.',
+                """q = ['a', 'b', 'c']
+q.remove('a')
+q.append('a')   # ['b', 'c', 'a']""",
             ],
             [
-                'Least recently used',
-                'Every use moves an item to the back, so the front is always the one unused longest.',
-                "# use 'a': ['b', 'c', 'a']",
+                'pop(0)',
+                '`q.pop(0)` removes the first item of the list.',
+                """q = ['a', 'b', 'c']
+q.pop(0)   # q is now ['b', 'c']""",
+            ],
+            [
+                'Is it in the list? and elif',
+                '`x in q` is True when the list `q` holds `x`. `elif` means "else, if": it is checked only when the `if` above was False.',
+                """q = ['a', 'b']
+if 'b' in q:
+    print('found')
+elif len(q) == 2:
+    print('full')""",
             ],
         ],
-        byhand='Capacity 2. hi: miss [hi]. price?: miss [hi, price?]. hi: hit, move it to the back [price?, hi]. refund: miss, full, evict price? → [hi, refund]. price?: miss, evict hi → [refund, price?]. hi: miss. One hit.',
-        why="One walk through the prompts. With a list, each lookup means scanning the cache; the interview version uses a dict plus a linked list, or Python's OrderedDict, to make every step instant.",
+        byhand='Capacity 2, and the cache starts empty. hi: not in the cache, so add it: [hi]. price: not there, add it: [hi, price]. hi: a hit, the first one. Move it to the end: [price, hi]. refund: not there, and the cache is full. Remove the first item, price, then add refund: [hi, refund]. price: not there, and full again. Remove hi, then add price: [refund, price]. That is 1 hit, so return 1.',
+        why="One walk through the prompts. Checking a list looks at every item, which is fine for a small cache. In interviews people use Python's OrderedDict, which finds and moves items instantly.",
         gotchas=[
             [
                 'Exact-match caches miss paraphrases',
-                '"what\'s the price" and "how much is it" are different keys. Semantic caches compare embeddings instead, at the risk of returning a wrong match.',
+                '"what\'s the price" and "how much is it" are different keys. A semantic cache (one that matches by meaning, not exact text) compares embeddings (lists of numbers that capture meaning) instead, at the risk of returning a wrong match.',
             ],
             [
                 'Never cache across users by accident',

@@ -39,12 +39,24 @@ graph.invoke({"messages": messages}, config={"recursion_limit": 10})
         topic='agents',
         difficulty='medium',
         fn='run_agent',
-        prompt="""An agent is a loop: the model picks a tool, the tool runs, the result goes back to the model. Here the model's choices are already written down in `plan`, a list of `[name, arg]` steps. `tools` is a dict of tools, each a dict from argument to result.
+        prompt="""The model's picks are already written down for you, as a plan.
 
-Go through at most `max_steps` steps and build a list called the log. For `["final", text]`, add `"answer: " + text` and return the log. For a tool you don't have, add `"error: unknown tool " + name` and keep going. Otherwise add the tool's result. If you run out of steps or plan without a final answer, add `"stopped"` and return.""",
+Your function gets three things:
+
+- `plan`: the steps, in order. Each is `[name, arg]`: a tool's name and what to give it, like `["search", "cats"]`.
+- `tools`: what each tool gives back. `{"search": {"cats": "meow"}}` means searching for "cats" gives "meow".
+- `max_steps`: the most steps you may run, like `5`.
+
+Build a list called `log`. Run at most `max_steps` steps of the plan:
+
+- `["final", text]`: add `"answer: " + text` and return `log`.
+- a tool not in `tools`: add `"error: unknown tool " + name` and keep going.
+- any other tool: add its result, `tools[name][arg]`.
+
+If the plan runs out, or you reach `max_steps` steps, with no final answer, add `"stopped"` and return `log`.""",
         pattern='A loop with a hard stop. Errors become messages the agent can see, not crashes.',
-        target='one pass, never more than `max_steps`',
-        realworld="The core of LangGraph's ReAct agent and every tool-calling loop. Without `max_steps`, a confused model can loop forever and run up your bill.",
+        target='one pass over the plan, never more than `max_steps` steps',
+        realworld="The core of LangGraph's ReAct agent (think, call a tool, look, repeat) and every tool-calling loop. Without `max_steps`, a confused model can loop forever and run up your bill.",
         starter="""def run_agent(plan, tools, max_steps):
     # your code here
     pass
@@ -63,7 +75,7 @@ Go through at most `max_steps` steps and build a list called the log. For `["fin
     return log
 """,
         cases=[
-            case([['search', 'weather paris'], ['final', "It's sunny"]], {'search': {'weather paris': 'sunny, 22C'}}, 5, expected=['sunny, 22C', "answer: It's sunny"], sample=True),
+            case([['search', 'paris'], ['final', "It's sunny"]], {'search': {'paris': 'sunny 22C'}}, 5, expected=['sunny 22C', "answer: It's sunny"], sample=True),
             case([['calc', '2+2'], ['final', '4']], {'search': {}}, 5, expected=['error: unknown tool calc', 'answer: 4']),
             case([['search', 'a'], ['search', 'a'], ['search', 'a'], ['final', 'x']], {'search': {'a': 'b'}}, 2, expected=['b', 'b', 'stopped']),
             case([], {}, 3, expected=['stopped']),
@@ -74,42 +86,67 @@ Go through at most `max_steps` steps and build a list called the log. For `["fin
     # Replace every ___ with real code, then run the tests.
 
     log = []
-    # Step 1: never go past max_steps.
+    # Step 1: take at most max_steps steps from the plan.
     for name, arg in plan[:___]:
-        # Step 2: a final answer ends the loop.
+        # Step 2: a final answer ends the run.
         if name == "final":
-            log.append("answer: " + ___)
+            log.append("answer: " + arg)
             return log
-        # Step 3: unknown tool? Log an error and keep going.
-        if name not in ___:
+        # Step 3: a tool you don't have? Log an error.
+        if ___:
             log.append("error: unknown tool " + name)
         else:
-            log.append(tools[___][___])
+            # Step 4: run the tool: look up its result.
+            log.append(___)
 
-    # Step 4: no final answer in time.
-    log.append("___")
+    # Step 5: the plan ran out or hit max_steps
+    #         with no final answer.
+    log.append("stopped")
     return log
 """,
+        fills=['max_steps', 'name not in tools', 'tools[name][arg]'],
         concepts=[
             [
                 'Unpacking in a for loop',
-                'If each item is a pair, you can name both parts right in the loop.',
-                """for name, arg in [['search', 'cats']]:
-    print(name, arg)""",
+                'When each item is a pair, the for line can name both parts.',
+                """pets = [['cat', 'meow']]
+for animal, sound in pets:
+    print(animal, sound)""",
             ],
             [
                 'Slicing to a limit',
-                'plan[:3] gives at most the first 3 steps, even if the plan is shorter.',
-                '[1, 2][:3]   # [1, 2]',
+                '`items[:3]` gives at most the first 3 items. If the list is shorter, you get all of it.',
+                """[1, 2, 3, 4][:2]   # [1, 2]
+[1][:2]            # [1]""",
             ],
             [
-                'Nested dicts',
-                "tools['search']['cats'] looks up the search tool, then the result for 'cats'.",
-                """tools = {'search': {'cats': 'meow'}}
-tools['search']['cats']   # 'meow'""",
+                '`in` with a dict',
+                '`key in d` is True when the dict has that key. `not in` is the opposite.',
+                """pets = {'cat': 1}
+'dog' not in pets   # True""",
+            ],
+            [
+                'A dict inside a dict',
+                "`d['a']['b']` looks up 'a', then looks up 'b' in what it found.",
+                """sounds = {'cat': {'happy': 'purr'}}
+sounds['cat']['happy']   # 'purr'""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append('Ana')   # ['Ana']""",
+            ],
+            [
+                'Returning early',
+                '`return` inside a loop ends the whole function right there, even mid-loop. Here `first_big([1, 5, 2])` gives 5.',
+                """def first_big(nums):
+    for n in nums:
+        if n > 3:
+            return n""",
             ],
         ],
-        byhand='Plan: search "weather paris", then final "It\'s sunny". Step 1 is a tool you have, so log its result, "sunny, 22C". Step 2 is final, so log "answer: It\'s sunny" and stop. Now try max_steps 1: you\'d only get the search step, then "stopped".',
+        byhand='max_steps is 5 and the plan has 2 steps, so both can run. Step 1 is search, a tool you have. Look up "paris" in it and add "sunny 22C" to the log. Step 2 is final, so add "answer: It\'s sunny" and return. The log is ["sunny 22C", "answer: It\'s sunny"].',
         why='At most max_steps steps, each one a single dict lookup.',
         gotchas=[
             [
@@ -135,9 +172,9 @@ lesson(MODULE, 'trim_history',
         'Always keep the **system prompt** (the instructions), then keep the newest messages that fit.',
     ],
     example=example('Keep instructions, then fill from the newest end', """system, rest = messages[0], messages[1:]
-# walk rest from newest to oldest, keep while under budget"""),
+# walk rest from newest to oldest, keep while within budget"""),
     check=question(
-        'You keep only `messages[-10:]`. What can go wrong?',
+        'You keep only `messages[-10:]`, the last 10 messages. What can go wrong?',
         [
             'Nothing',
             'The system prompt falls off and the assistant forgets its instructions',
@@ -148,7 +185,7 @@ lesson(MODULE, 'trim_history',
     ),
     angle=angle(
         pattern='Greedy from one end',
-        text='Walk backwards once and stop at the first message that doesn\'t fit. Many "budget" problems, including two-pointer and sliding-window ones, use the same thinking.',
+        text='Greedy means taking the best-looking choice at each step (here, the newest message that still fits) and never going back. Walk backwards once and stop at the first message that doesn\'t fit. Many "budget" problems, including two-pointer and sliding-window ones, use the same thinking.',
         say='"I keep the system message, then fill the rest of the budget from the newest message backwards and stop at the first that doesn\'t fit, so there are no gaps."',
         classic=None,
     ),
@@ -162,9 +199,18 @@ trimmed = trim_messages(
         topic='memory',
         difficulty='medium',
         fn='trim_history',
-        prompt="""A chat model can only read so much. `messages` is a list of `[role, text]` pairs, oldest first. Keep the conversation under `max_words` words in total by dropping the oldest messages.
+        prompt="""A chat model can only read so much, so old messages have to go.
 
-Rules: if the first message has the role `"system"`, always keep it, even if it alone goes over. Then keep the newest messages that still fit, and stop at the first one that doesn't, so there are no gaps. Return the kept messages in their original order.""",
+Your function gets two things:
+
+- `messages`: the chat, oldest first. Each message is `[role, text]`, like `["user", "hi there"]`. The first one is always the system message (the instructions), like `["system", "be nice"]`.
+- `max_words`: the most words you may keep in total, like `7`.
+
+Count a message's words with `len(text.split())`. Always keep the system message, even if it alone is over `max_words`. Its words count toward the total.
+
+Then go from the newest message back, keeping each one while the total stays at most `max_words`. Stop at the first one that doesn't fit, so there are no gaps.
+
+Return the system message, then the kept messages, oldest first.""",
         pattern='Pin what must stay, then fill the remaining budget from the newest end.',
         target='walk back through the messages once',
         realworld='Chat memory in every assistant. Dropping the system prompt by accident is one of the most common bugs, and the bot suddenly forgets its instructions.',
@@ -173,22 +219,16 @@ Rules: if the first message has the role `"system"`, always keep it, even if it 
     pass
 """,
         solution="""def trim_history(messages, max_words):
-    system = []
-    rest = messages
-    if messages and messages[0][0] == "system":
-        system = [messages[0]]
-        rest = messages[1:]
-    used = 0
-    for m in system:
-        used += len(m[1].split())
+    system = messages[0]
+    used = len(system[1].split())
     kept = []
-    for m in reversed(rest):
+    for m in reversed(messages[1:]):
         words = len(m[1].split())
         if used + words > max_words:
             break
         kept.append(m)
         used += words
-    return system + kept[::-1]
+    return [system] + kept[::-1]
 """,
         cases=[
             case([
@@ -208,53 +248,75 @@ Rules: if the first message has the role `"system"`, always keep it, even if it 
                 ['assistant', 'hello how are you'],
                 ['user', 'good thanks'],
             ]),
-            case([['user', 'a b c'], ['assistant', 'd e']], 2, expected=[['assistant', 'd e']]),
             case([['system', 'x y z']], 1, expected=[['system', 'x y z']]),
-            case([], 5, expected=[]),
-            case([['user', 'one'], ['assistant', 'a b c d e f'], ['user', 'two']], 3, expected=[['user', 'two']]),
+            case([['system', 'be brief'], ['user', 'a b c']], 2, expected=[['system', 'be brief']]),
+            case([['system', 'x'], ['user', 'a b'], ['assistant', 'c d']], 5, expected=[['system', 'x'], ['user', 'a b'], ['assistant', 'c d']]),
+            case([['system', 'hi'], ['user', 'one'], ['assistant', 'a b c d e f'], ['user', 'two']], 4, expected=[['system', 'hi'], ['user', 'two']]),
         ],
         guided="""def trim_history(messages, max_words):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: pin the system message, if there is one.
-    system = []
-    rest = messages
-    if messages and messages[0][0] == ___:
-        system = [messages[0]]
-        rest = messages[___:]
+    # Step 1: always keep the system message,
+    #         and count its words.
+    #         (system[1] is its text.)
+    system = messages[0]
+    used = len(system[1].split())
 
-    # Step 2: count the words the system message already uses.
-    used = 0
-    for m in system:
-        used += len(m[1].split())
-
-    # Step 3: newest first, keep messages while they fit.
+    # Step 2: skip the system message and go
+    #         from the newest message back.
     kept = []
     for m in reversed(___):
         words = len(m[1].split())
-        if used + words > ___:
+        # Step 3: if used plus its words is over
+        #         max_words, it doesn't fit: stop.
+        if ___ > max_words:
             break
         kept.append(m)
         used += words
 
-    # Step 4: kept is newest-first. Flip it back.
-    return system + kept[___]
+    # Step 4: kept is newest first. Flip it back.
+    return [system] + ___
 """,
+        fills=['messages[1:]', 'used + words', 'kept[::-1]'],
         concepts=[
+            [
+                'Counting words',
+                '`text.split()` cuts text into words at the spaces, and `len` counts them.',
+                "len('hello how are you'.split())   # 4",
+            ],
+            [
+                'Skipping the first item',
+                '`items[1:]` is every item except the first.',
+                "['a', 'b', 'c'][1:]   # ['b', 'c']",
+            ],
             [
                 'reversed',
                 'Walks a list from the last item to the first, without changing the list.',
                 """for m in reversed(['a', 'b', 'c']):
     print(m)   # c, b, a""",
             ],
+            [
+                'break',
+                'Leaves the loop straight away. The code after the loop runs next.',
+                """for n in [1, 5, 2]:
+    if n > 3:
+        break   # stops at 5""",
+            ],
+            [
+                'Running totals',
+                '`+=` adds to a variable, so it can keep a total as you loop.',
+                """total = 0
+for price in [2, 3]:
+    total += price   # total is 5""",
+            ],
             ['[::-1]', 'Gives a reversed copy of a list.', '[1, 2, 3][::-1]   # [3, 2, 1]'],
             [
-                'Counting words',
-                'len(text.split()) is a quick word count.',
-                "len('hello how are you'.split())   # 4",
+                'Joining lists',
+                '`+` puts two lists together into one new list.',
+                "['a'] + ['b', 'c']   # ['a', 'b', 'c']",
             ],
         ],
-        byhand='Budget 7. The system message "be nice" (2 words) always stays, so 5 are left. Go from the newest: "good thanks" (2) fits, 3 left. "hello how are you" (4) doesn\'t fit, so stop there, even though "hi there" would fit. You want no gaps. Put them back in order: system, then "good thanks".',
+        byhand='The budget is 7. Keep the system message "be nice": 2 words, so 2 are used. Now go from the newest. "good thanks" is 2 words: 2 + 2 = 4, within 7, so keep it. "hello how are you" is 4 words: 4 + 4 = 8, over 7, so stop. "hi there" is never checked, even though it would fit: no gaps. Return the system message, then "good thanks".',
         why='You walk back through the messages once, and stop early when the budget runs out.',
         gotchas=[
             [
@@ -276,7 +338,7 @@ Rules: if the first message has the role `"system"`, always keep it, even if it 
 lesson(MODULE, 'tool_schema',
     title='Tools from Unity Catalog',
     learn=[
-        "An agent's tools are described to the model as a **name**, a **description** and **parameters**. The model picks a tool by reading those descriptions, so they are part of your prompt.",
+        "An agent's tools are described to the model as a **name**, a **description** and **parameters** (the inputs the tool takes). The model picks a tool by reading those descriptions, so they are part of your prompt.",
         'On Databricks, a common pattern is to write tools as **Unity Catalog functions**: governed, permissioned and reusable. `UCFunctionToolkit` turns them into LangChain tools, using the function and parameter comments as descriptions.',
     ],
     example=example('A tool as the model sees it', """{"type": "function", "function": {
@@ -294,7 +356,7 @@ lesson(MODULE, 'tool_schema',
     angle=angle(
         pattern='Building nested structures',
         text='A lookup table for the types, then one step per parameter to fill the properties. Interviews test this as "transform this data into that shape".',
-        say='"I map each parameter through a type lookup table into the properties dict, collect the required names in order, and wrap it in the schema."',
+        say='"I map each parameter through a type lookup table into the properties dict, collect the required names in order, and wrap it in the tool description."',
         classic=None,
     ),
     stack=stack('databricks_langchain: Unity Catalog functions as tools', """from databricks_langchain import ChatDatabricks, UCFunctionToolkit
@@ -305,19 +367,37 @@ llm = ChatDatabricks(endpoint=ENDPOINT).bind_tools(tools)"""),
         topic='agents',
         difficulty='medium',
         fn='tool_schema',
-        prompt="""A model can only call a tool it has been told about. Turn a Unity Catalog function into the tool description that chat models read.
+        prompt="""Turn a Unity Catalog function into the tool description that chat models read.
 
-You get the function's `name`, its `description`, and `params`, a list of `[name, sql_type, comment]` like `["order_id", "STRING", "The order number"]`. Map SQL types to JSON types: `STRING` → `"string"`, `INT` and `BIGINT` → `"integer"`, `DOUBLE` and `FLOAT` → `"number"`, `BOOLEAN` → `"boolean"`.
+Your function gets three things:
 
-Return `{"type": "function", "function": {"name": ..., "description": ..., "parameters": {"type": "object", "properties": {...}, "required": [...]}}}`, where each property is `{"type": json_type, "description": comment}` and every parameter is required, in order.""",
-        pattern='A lookup table for the type mapping, then build a nested dict one level at a time.',
-        target='one step per parameter',
+- `name`: the tool's name, like `"refund"`.
+- `description`: what the tool does, like `"Refund an order"`.
+- `params`: its parameters. Each is `[pname, sql_type, comment]`, like `["amount", "DOUBLE", "Dollars to refund"]`. `pname` is the parameter's name, and `sql_type` its type in the database.
+
+For each parameter, make `{"type": json_type, "description": comment}`. `json_type` is the model's word for the type. Look it up in the `TYPES` table at the top: `TYPES["DOUBLE"]` is `"number"`. Put these in a dict called `properties`, with each `pname` as the key. List every `pname` in `required`, in order.
+
+Then wrap it all up, from the inside out, like the tool in the Learn example: put `"type": "object"`, `properties` and `required` in a dict called `parameters`. Put `name`, `description` and `parameters` in a dict under the key `"function"`. Return a dict with `"type": "function"` and that `"function"` dict.""",
+        pattern='A lookup table for the types, then build the result one level at a time, from the inside out.',
+        target='one pass over the parameters',
         realworld="`UCFunctionToolkit` in `databricks_langchain` builds exactly this from a function in Unity Catalog, using the function's and parameters' comments as the descriptions. Vague comments make the model call the wrong tool or pass bad arguments, so the comment is part of your prompt.",
-        starter="""def tool_schema(name, description, params):
+        starter="""TYPES = {
+    "STRING": "string",
+    "INT": "integer",
+    "DOUBLE": "number",
+    "BOOLEAN": "boolean",
+}
+
+def tool_schema(name, description, params):
     # your code here
     pass
 """,
-        solution="""TYPES = {"STRING": "string", "INT": "integer", "BIGINT": "integer", "DOUBLE": "number", "FLOAT": "number", "BOOLEAN": "boolean"}
+        solution="""TYPES = {
+    "STRING": "string",
+    "INT": "integer",
+    "DOUBLE": "number",
+    "BOOLEAN": "boolean",
+}
 
 def tool_schema(name, description, params):
     properties = {}
@@ -325,19 +405,36 @@ def tool_schema(name, description, params):
     for pname, sql_type, comment in params:
         properties[pname] = {"type": TYPES[sql_type], "description": comment}
         required.append(pname)
-    return {"type": "function", "function": {"name": name, "description": description,
-            "parameters": {"type": "object", "properties": properties, "required": required}}}
+    parameters = {
+        "type": "object",
+        "properties": properties,
+        "required": required,
+    }
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description,
+            "parameters": parameters,
+        },
+    }
 """,
         cases=[
-            case('lookup_order', "Look up an order's status and delivery date", [['order_id', 'STRING', 'The order number, like A-1042']], expected={
+            case('refund', 'Refund an order', [
+                ['order_id', 'STRING', 'Order number'],
+                ['amount', 'DOUBLE', 'Dollars to refund'],
+            ], expected={
                 'type': 'function',
                 'function': {
-                    'name': 'lookup_order',
-                    'description': "Look up an order's status and delivery date",
+                    'name': 'refund',
+                    'description': 'Refund an order',
                     'parameters': {
                         'type': 'object',
-                        'properties': {'order_id': {'type': 'string', 'description': 'The order number, like A-1042'}},
-                        'required': ['order_id'],
+                        'properties': {
+                            'order_id': {'type': 'string', 'description': 'Order number'},
+                            'amount': {'type': 'number', 'description': 'Dollars to refund'},
+                        },
+                        'required': ['order_id', 'amount'],
                     },
                 },
             }, sample=True),
@@ -349,30 +446,45 @@ def tool_schema(name, description, params):
                     'parameters': {'type': 'object', 'properties': {}, 'required': []},
                 },
             }),
-            case('refund', 'Refund part of an order', [
+            case('lookup_order', "Look up an order's status", [['order_id', 'STRING', 'The order number, like A-1042']], expected={
+                'type': 'function',
+                'function': {
+                    'name': 'lookup_order',
+                    'description': "Look up an order's status",
+                    'parameters': {
+                        'type': 'object',
+                        'properties': {'order_id': {'type': 'string', 'description': 'The order number, like A-1042'}},
+                        'required': ['order_id'],
+                    },
+                },
+            }),
+            case('cancel_order', 'Cancel an order', [
                 ['order_id', 'STRING', 'Order number'],
-                ['amount', 'DOUBLE', 'Dollars to refund'],
-                ['notify', 'BOOLEAN', 'Email the customer'],
                 ['reason_code', 'INT', '1 damaged, 2 late'],
+                ['notify', 'BOOLEAN', 'Email the customer'],
             ], expected={
                 'type': 'function',
                 'function': {
-                    'name': 'refund',
-                    'description': 'Refund part of an order',
+                    'name': 'cancel_order',
+                    'description': 'Cancel an order',
                     'parameters': {
                         'type': 'object',
                         'properties': {
                             'order_id': {'type': 'string', 'description': 'Order number'},
-                            'amount': {'type': 'number', 'description': 'Dollars to refund'},
-                            'notify': {'type': 'boolean', 'description': 'Email the customer'},
                             'reason_code': {'type': 'integer', 'description': '1 damaged, 2 late'},
+                            'notify': {'type': 'boolean', 'description': 'Email the customer'},
                         },
-                        'required': ['order_id', 'amount', 'notify', 'reason_code'],
+                        'required': ['order_id', 'reason_code', 'notify'],
                     },
                 },
             }),
         ],
-        guided="""TYPES = {"STRING": "string", "INT": "integer", "BIGINT": "integer", "DOUBLE": "number", "FLOAT": "number", "BOOLEAN": "boolean"}
+        guided="""TYPES = {
+    "STRING": "string",
+    "INT": "integer",
+    "DOUBLE": "number",
+    "BOOLEAN": "boolean",
+}
 
 def tool_schema(name, description, params):
     # Replace every ___ with real code, then run the tests.
@@ -380,30 +492,56 @@ def tool_schema(name, description, params):
     properties = {}
     required = []
     for pname, sql_type, comment in params:
-        # Step 1: describe this parameter, using the TYPES lookup.
+        # Step 1: describe this parameter. Look up
+        #         sql_type in TYPES to get json_type.
         properties[pname] = {"type": ___, "description": comment}
-        # Step 2: every parameter is required.
+        # Step 2: add pname to the required list.
         ___
-    # Step 3: wrap it up in the shape models expect.
-    return {"type": "function", "function": {"name": name, "description": description,
-            "parameters": {"type": "object", "properties": properties, "required": required}}}
+
+    # Step 3: wrap it all in the shape models expect.
+    parameters = {
+        "type": "object",
+        "properties": properties,
+        "required": required,
+    }
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description,
+            "parameters": parameters,
+        },
+    }
 """,
         fills=['TYPES[sql_type]', 'required.append(pname)'],
         concepts=[
             [
                 'A lookup table',
-                'A dict that translates one name into another.',
-                """TYPES = {'STRING': 'string'}
-TYPES['STRING']   # 'string'""",
+                'A dict that turns one name into another.',
+                """colors = {'red': '#f00'}
+colors['red']   # '#f00'""",
             ],
             [
                 'Unpacking three values',
-                'Each param is a list of three, so the for line can name all three.',
-                """for pname, sql_type, comment in params:
-    ...""",
+                'When each item is a list of three, the for line can name all three.',
+                """rows = [['Ana', 30, 'Rome']]
+for name, age, city in rows:
+    print(name, city)""",
+            ],
+            [
+                'Adding a key to a dict',
+                '`d[key] = value` adds the key, or replaces its value if it is already there.',
+                """ages = {}
+ages['Ana'] = 30   # {'Ana': 30}""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append('Ana')   # ['Ana']""",
             ],
         ],
-        byhand='One parameter: order_id, STRING, "The order number". Its property is {"type": "string", "description": "The order number"} and required is ["order_id"]. Wrap that in parameters, then in function, then add type "function" at the top.',
+        byhand='Two parameters. order_id is STRING, and `TYPES["STRING"]` is "string", so its property is `{"type": "string", "description": "Order number"}`. amount is DOUBLE, which becomes "number": `{"type": "number", "description": "Dollars to refund"}`. required is `["order_id", "amount"]`. Put "type": "object", properties and required inside "parameters". Put the name, description and parameters inside "function". Add "type": "function" at the top, and return it.',
         why='One step per parameter.',
         gotchas=[
             [
@@ -412,7 +550,7 @@ TYPES['STRING']   # 'string'""",
             ],
             [
                 'Give the agent least privilege',
-                "A Unity Catalog function runs with the permissions it's granted. Grant the agent EXECUTE on the few functions it needs, not on a whole schema.",
+                "A Unity Catalog function runs with the permissions it's granted. Grant the agent EXECUTE on the few functions it needs, not on a whole schema (the Unity Catalog folder that holds many functions).",
             ],
         ],
     ),
@@ -438,108 +576,113 @@ lesson(MODULE, 'tool_pairs',
     ),
     angle=angle(
         pattern='Matching pairs',
-        text='Open on a call, close on its result, and report anything left open or closed without being opened, in one walk through the messages. Valid Parentheses is the same idea with a stack, because brackets must close in order.',
-        say='"I track open call ids and each result closes one. Whatever is still open at the end, or closed without being opened, is an error."',
+        text='Open on a call, close on its result, and report whatever is still open at the end, in one walk through the messages. Valid Parentheses is the same idea with a stack, because brackets must close in order.',
+        say='"I track open call ids, and each result closes one. Whatever is still open at the end is a call with no result, and the API would reject it."',
         classic='valid_parentheses',
     ),
     stack=stack('LangGraph: ToolNode answers every tool call', """from langgraph.prebuilt import ToolNode
-builder.add_node("tools", ToolNode(tools))
-# One ToolMessage per call, with the matching tool_call_id, errors included."""),
+builder.add_node("tools", ToolNode(tools, handle_tool_errors=True))
+# handle_tool_errors=True: a crash comes back as the tool's result, so every call gets one.
+# By default, a crashing tool stops the run instead."""),
     exercise=exercise(
         title='Match Tool Calls to Results',
         topic='agents',
         difficulty='medium',
         fn='tool_pairs',
-        prompt="""In a tool-using chat, the assistant asks for tools and each request gets an id. Each result message must answer one of those ids.
+        prompt="""When a model calls a tool, the call gets an id, and a tool result must answer that id. A call with no result makes the model's service reject the chat.
 
-`messages` is a list of dicts. An assistant message may have `"tool_calls"`, a list like `[{"id": "call_1", "name": "search"}]`. A tool result looks like `{"role": "tool", "tool_call_id": "call_1"}`. Other messages have neither.
+`messages` is the chat, oldest first: a list of dicts. Two kinds matter:
 
-Return `[unanswered, orphans]`: the ids of calls that never got a result, and the ids of results that don't answer an earlier, still-open call. Both in the order they appear.""",
-        pattern="Matching pairs: open something, close it later. Track what's open, and complain about anything closed that wasn't open.",
+- An assistant message may have `"tool_calls"`, a list like `[{"id": "call_1", "name": "search"}]`.
+- A tool result has `"role": "tool"` and the id it answers, like `{"role": "tool", "tool_call_id": "call_1"}`.
+
+Other messages have neither. Every result answers a call made earlier.
+
+Return the ids of the calls that never got a result, in the order the calls were made.""",
+        pattern='Matching pairs: a call opens, its result closes it. Whatever is still open at the end has no result.',
         target='one pass over the messages',
-        realworld='Model APIs reject a conversation where a tool call has no result. This usually happens after trimming chat history cuts a call away from its result, and it shows up as a confusing 400 error in production.',
+        realworld="Model services reject a conversation where a tool call has no result. This usually happens after trimming chat history cuts a call away from its result, and it shows up in production as a confusing 'bad request' error.",
         starter="""def tool_pairs(messages):
     # your code here
     pass
 """,
         solution="""def tool_pairs(messages):
-    open_ids = []
-    orphans = []
+    waiting = []
     for m in messages:
         for call in m.get("tool_calls", []):
-            open_ids.append(call["id"])
+            waiting.append(call["id"])
         if m.get("role") == "tool":
-            cid = m["tool_call_id"]
-            if cid in open_ids:
-                open_ids.remove(cid)
-            else:
-                orphans.append(cid)
-    return [open_ids, orphans]
+            waiting.remove(m["tool_call_id"])
+    return waiting
 """,
         cases=[
             case([
-                {'role': 'user', 'content': 'weather in Paris and Rome?'},
+                {'role': 'user', 'content': 'Paris and Rome?'},
                 {
                     'role': 'assistant',
                     'tool_calls': [{'id': 'call_1', 'name': 'weather'}, {'id': 'call_2', 'name': 'weather'}],
                 },
                 {'role': 'tool', 'tool_call_id': 'call_1', 'content': '22C'},
-            ], expected=[['call_2'], []], sample=True),
-            case([], expected=[[], []]),
-            case([
-                {'role': 'tool', 'tool_call_id': 'call_9'},
-                {'role': 'assistant', 'tool_calls': [{'id': 'call_9', 'name': 'search'}]},
-            ], expected=[['call_9'], ['call_9']]),
-            case([
-                {'role': 'assistant', 'tool_calls': [{'id': 'a', 'name': 'x'}]},
-                {'role': 'tool', 'tool_call_id': 'a'},
-                {'role': 'tool', 'tool_call_id': 'a'},
-            ], expected=[[], ['a']]),
+            ], expected=['call_2'], sample=True),
+            case([], expected=[]),
             case([
                 {'role': 'assistant', 'content': 'hello'},
                 {'role': 'assistant', 'tool_calls': [{'id': 'c1', 'name': 'x'}, {'id': 'c2', 'name': 'y'}]},
                 {'role': 'tool', 'tool_call_id': 'c2'},
                 {'role': 'tool', 'tool_call_id': 'c1'},
-            ], expected=[[], []]),
+            ], expected=[]),
+            case([
+                {'role': 'assistant', 'tool_calls': [{'id': 'a', 'name': 'search'}]},
+                {'role': 'tool', 'tool_call_id': 'a'},
+                {'role': 'assistant', 'tool_calls': [{'id': 'b', 'name': 'search'}]},
+            ], expected=['b']),
+            case([
+                {'role': 'user', 'content': 'hi'},
+                {'role': 'assistant', 'tool_calls': [{'id': 'c1', 'name': 'x'}, {'id': 'c2', 'name': 'y'}]},
+            ], expected=['c1', 'c2']),
         ],
         guided="""def tool_pairs(messages):
     # Replace every ___ with real code, then run the tests.
 
-    open_ids = []   # calls waiting for a result, in order
-    orphans = []
+    waiting = []   # ids of calls with no result yet
     for m in messages:
-        # Step 1: every call this message makes is now open.
-        #         .get("tool_calls", []) is empty for messages without calls.
+        # Step 1: add each call's id to waiting.
+        #         (No tool_calls? m.get gives [].)
         for call in m.get("tool_calls", []):
             ___
 
-        # Step 2: a tool result closes its call, if that call is open.
+        # Step 2: a tool result? Take its
+        #         tool_call_id out of waiting.
         if m.get("role") == "tool":
-            cid = m["tool_call_id"]
-            if ___:
-                open_ids.remove(cid)
-            else:
-                orphans.append(cid)
+            ___
 
-    return [open_ids, orphans]
+    # Step 3: whatever still waits never got a result.
+    return waiting
 """,
-        fills=['open_ids.append(call["id"])', 'cid in open_ids'],
+        fills=['waiting.append(call["id"])', 'waiting.remove(m["tool_call_id"])'],
         concepts=[
             [
                 'dict.get with a default',
-                "Returns the default when the key isn't there, so messages without tool calls just give an empty list.",
-                """m = {'role': 'user'}
-m.get('tool_calls', [])   # []""",
+                "`d.get(key, default)` gives the default when the key isn't there, instead of crashing. With no default, it gives None.",
+                """pet = {'name': 'Rex'}
+pet.get('toys', [])   # []""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append('Ana')   # ['Ana']""",
             ],
             [
                 'list.remove',
-                'Removes the first matching item.',
-                """ids = ['a', 'b']
-ids.remove('a')   # ids is ['b']""",
+                'Takes the first matching item out of a list.',
+                """fruit = ['apple', 'pear']
+fruit.remove('apple')
+# fruit is now ['pear']""",
             ],
         ],
-        byhand="The assistant opens call_1 and call_2. The tool result answers call_1, so it closes. Nothing answers call_2, so it's unanswered. No result arrived for a call that wasn't open, so there are no orphans.",
-        why='One walk through the messages. Removing from a list means searching it, which is fine for a handful of open calls; a set would make it instant.',
+        byhand='The user message has no calls and is not a result. The assistant message calls call_1 and call_2, so both are waiting. The tool result answers call_1, so call_1 stops waiting. Nothing answers call_2. Return ["call_2"].',
+        why='One walk through the messages. Removing from a list means searching it, which is fine for a handful of waiting calls.',
         gotchas=[
             [
                 'Trim in pairs',
@@ -557,18 +700,24 @@ lesson(MODULE, 'agent_scorecard',
     title='Evaluating agents',
     learn=[
         'Agents need more than one number. Track **success rate** (did it finish the task?), **steps** (how much work it took) and **cost per success**, which spreads the cost of failed runs over the successful ones.',
-        'Define success with a clear rule, or an LLM judge with a rubric that you check against a few human labels.',
+        'Define success with a clear rule, or an **LLM judge** (a model that grades each run) with a rubric (written grading rules) that you check against a few human labels.',
     ],
-    example=example('An LLM judge for task success', 'from mlflow.genai.judges import make_judge\n\ntask_done = make_judge(\n    name="task_success",\n    instructions="Did the agent complete the user\'s task?\\n"\n                 "User: {{ inputs }}\\nAgent: {{ outputs }}\\nAnswer yes or no.",\n)\nmlflow.genai.evaluate(data=tasks, predict_fn=run_agent, scorers=[task_done])'),
+    example=example('Three runs, scored by hand', """run 1: success, 4 steps, $0.30
+run 2: success, 6 steps, $0.40
+run 3: failed,  9 steps, $0.20
+
+success rate:     2 successes out of 3 runs   -> 0.67
+average steps:    (4 + 6) / 2 successes       -> 5
+cost per success: $0.90 total / 2 successes   -> $0.45"""),
     check=question(
         'Agent A: 90% success, $0.40 per success. Agent B: 80% success, $0.05 per success. Which is better?',
         ['Always A', 'Depends on what a success is worth and what a failure costs', 'Always B'],
         answer=1,
-        why="If a success saves $20 of human time, A may win; if it saves $0.50, B does. That's the ROI question.",
+        why="If a success saves $20 of human time, A may win; if it saves $0.50, B does. That's the return on investment (ROI) question: what you get back for what you spend.",
     ),
     angle=angle(
         pattern='Running totals',
-        text='One walk with a few counters, then divide with guards for the zero cases.',
+        text='One walk with a few counters, then divide, with a guard for zero successes.',
         say='"One pass to total successes, steps and cost, then ratios guarded against zero successes."',
         classic=None,
     ),
@@ -578,10 +727,16 @@ lesson(MODULE, 'agent_scorecard',
         topic='agents',
         difficulty='easy',
         fn='agent_scorecard',
-        prompt="""You ran an agent on a set of test tasks. Each run in `runs` is `{"success": True, "steps": 4, "cost": 0.012}`.
+        prompt="""You ran an agent on some test tasks. `runs` has one dict per run, like `{"success": True, "steps": 4, "cost": 0.1}`, where cost is in dollars. There is always at least one run.
 
-Return `[success_rate, avg_steps_when_successful, cost_per_success]`: the share of successful runs, the average steps of the successful runs, and the total cost of all runs divided by the number of successes. Round each to 2 places, except cost per success, which rounds to 4. If there are no runs, return `[0.0, None, None]`; if none succeeded, the last two are `None`.""",
-        pattern='One pass, several running totals, then divide with guards.',
+Return a list of three numbers, each rounded to 2 decimal places:
+
+- the success rate: the number of successful runs divided by the number of runs
+- the average `steps` of the successful runs (add up their steps, then divide by the number of successful runs)
+- the cost per success: the total cost of **all** runs divided by the number of successful runs
+
+If no run succeeded, the last two are `None`.""",
+        pattern='One pass with a few running totals, then divide, with a guard for zero successes.',
         target='one walk through the runs',
         realworld="Success rate alone is misleading for agents. An agent that succeeds 90% of the time but needs 12 steps and $0.40 per success may be worse value than one at 80% with 4 steps. Cost per success puts failures' cost where it belongs.",
         starter="""def agent_scorecard(runs):
@@ -589,61 +744,78 @@ Return `[success_rate, avg_steps_when_successful, cost_per_success]`: the share 
     pass
 """,
         solution="""def agent_scorecard(runs):
-    if not runs:
-        return [0.0, None, None]
     wins = 0
     win_steps = 0
     total_cost = 0
-    for r in runs:
-        total_cost += r["cost"]
-        if r["success"]:
+    for run in runs:
+        total_cost += run["cost"]
+        if run["success"]:
             wins += 1
-            win_steps += r["steps"]
+            win_steps += run["steps"]
     rate = round(wins / len(runs), 2)
     if wins == 0:
         return [rate, None, None]
-    return [rate, round(win_steps / wins, 2), round(total_cost / wins, 4)]
+    return [rate, round(win_steps / wins, 2), round(total_cost / wins, 2)]
 """,
         cases=[
             case([
-                {'success': True, 'steps': 4, 'cost': 0.012},
-                {'success': False, 'steps': 10, 'cost': 0.05},
-                {'success': True, 'steps': 6, 'cost': 0.018},
-            ], expected=[0.67, 5.0, 0.04], sample=True),
-            case([], expected=[0.0, None, None]),
-            case([{'success': False, 'steps': 3, 'cost': 0.01}], expected=[0.0, None, None]),
-            case([{'success': True, 'steps': 2, 'cost': 0.004}, {'success': True, 'steps': 3, 'cost': 0.006}], expected=[1.0, 2.5, 0.005]),
+                {'success': True, 'steps': 4, 'cost': 0.1},
+                {'success': False, 'steps': 10, 'cost': 0.5},
+                {'success': True, 'steps': 6, 'cost': 0.3},
+            ], expected=[0.67, 5.0, 0.45], sample=True),
+            case([{'success': False, 'steps': 3, 'cost': 0.2}], expected=[0.0, None, None]),
+            case([{'success': True, 'steps': 2, 'cost': 0.1}, {'success': True, 'steps': 3, 'cost': 0.3}], expected=[1.0, 2.5, 0.2]),
+            case([
+                {'success': True, 'steps': 5, 'cost': 0.2},
+                {'success': False, 'steps': 8, 'cost': 0.6},
+                {'success': False, 'steps': 9, 'cost': 0.6},
+                {'success': False, 'steps': 12, 'cost': 0.6},
+            ], expected=[0.25, 5.0, 2.0]),
         ],
         guided="""def agent_scorecard(runs):
     # Replace every ___ with real code, then run the tests.
 
-    if not runs:
-        return [0.0, None, None]
     wins = 0
     win_steps = 0
     total_cost = 0
-    for r in runs:
-        # Step 1: every run costs money, successful or not.
+    for run in runs:
+        # Step 1: add this run's cost. Every run counts,
+        #         success or not.
         total_cost += ___
-        if r["success"]:
+        if run["success"]:
             wins += 1
-            win_steps += r["steps"]
+            win_steps += run["steps"]
+
     rate = round(wins / len(runs), 2)
-    if wins == 0:
+    # Step 2: no successes? Nothing to divide by.
+    if ___:
         return [rate, None, None]
-    # Step 2: failures' cost is spread over the successes.
-    return [rate, round(win_steps / wins, 2), round(___, 4)]
+    # Step 3: total cost divided by the number of wins.
+    return [rate, round(win_steps / wins, 2), round(___, 2)]
 """,
-        fills=['r["cost"]', 'total_cost / wins'],
+        fills=['run["cost"]', 'wins == 0', 'total_cost / wins'],
         concepts=[
             [
                 'Running totals',
-                '`+=` adds to a variable.',
+                '`+=` adds to a variable, so it can keep a total as you loop.',
                 """total = 0
-total += 0.012""",
+for price in [2, 3]:
+    total += price   # total is 5""",
+            ],
+            [
+                'round',
+                '`round(x, 2)` keeps 2 decimal places.',
+                'round(2 / 3, 2)   # 0.67',
+            ],
+            [
+                'None',
+                "Python's way to say \"no value\". Use it when an answer doesn't exist.",
+                """best = None
+if best is None:
+    print('nothing yet')""",
             ],
         ],
-        byhand='Two of three succeed: 0.67. Their steps are 4 and 6: average 5. Total cost is 0.012 + 0.05 + 0.018 = 0.08, over 2 successes: 0.04 per success.',
+        byhand='3 runs, and 2 succeeded: 2 divided by 3 rounds to 0.67. The successful runs took 4 and 6 steps: 4 + 6 = 10, and 10 divided by 2 is 5. All three runs cost money: 0.1 + 0.5 + 0.3 = 0.9 dollars. Spread over 2 successes, that is 0.45 each. Return [0.67, 5, 0.45].',
         why='One walk through the runs.',
         gotchas=[
             [
@@ -659,22 +831,22 @@ total += 0.012""",
 )
 
 lesson(MODULE, 'pass_rates',
-    title='Reliable every time: pass^k',
+    title='Reliable every time (pass hat k)',
     learn=[
         'A success rate from one try per task hides how inconsistent an agent is. Run each task several times, say k times, and look at two numbers.',
         '**pass@k**: the task succeeded **at least once** in k tries. Useful when a person picks the best attempt. **pass^k** (read "pass hat k"): the task succeeded **every time** in k tries. That is closer to what users feel, because each user gets one try.',
-        'The gap grows fast. If each try succeeds 80% of the time on its own, three in a row succeed only 0.8 × 0.8 × 0.8 ≈ 51% of the time. Agent benchmarks such as τ-bench report pass^k for exactly this reason.',
+        'The gap grows fast. If each try succeeds 80% of the time on its own, three in a row succeed only about 51% of the time: multiply 0.8 by itself three times and you get 0.512. Agent benchmarks such as tau-bench report pass^k for exactly this reason.',
     ],
     example=example('Three tasks, three tries each', """task       try 1   try 2   try 3
 refund       ✓       ✓       ✓     → counts for pass@3 and pass^3
 address      ✓       ✗       ✓     → counts for pass@3 only
 cancel       ✗       ✗       ✗     → counts for neither
-pass@3 = 2/3 ≈ 0.67        pass^3 = 1/3 ≈ 0.33"""),
+pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
     check=question(
         'Each try of your agent succeeds 90% of the time. Roughly how often does it succeed five times in a row?',
         ['90%', 'About 59%', 'About 45%'],
         answer=1,
-        why='0.9 × 0.9 × 0.9 × 0.9 × 0.9 is about 0.59. A 90% agent fails at least once in five runs about 4 times in 10.',
+        why='Multiply 0.9 by itself five times and you get about 0.59. A 90% agent fails at least once in five runs about 4 times in 10.',
     ),
     angle=angle(
         pattern='any and all',
@@ -690,14 +862,12 @@ pass@3 = 2/3 ≈ 0.67        pass^3 = 1/3 ≈ 0.33"""),
         topic='agents',
         difficulty='easy',
         fn='pass_rates',
-        prompt="""`runs` has one list per task, each holding the results of k tries as booleans, like `[[True, True, True], [True, False, True]]`.
+        prompt="""Each test task was tried several times (call it k times; you don't need k itself). `runs` has one list per task, holding `True` or `False` for each try, like `[[True, True], [True, False]]`. There is always at least one task.
 
-Return `{"pass_at_k": ..., "pass_hat_k": ...}`:
+Return a dict with two numbers, each rounded to 2 decimal places:
 
-- `pass_at_k`: the fraction of tasks that succeeded at least once
-- `pass_hat_k`: the fraction of tasks that succeeded on every try
-
-Round both to 2 decimal places. With no tasks, both are `0.0`.""",
+- `"pass_at_k"`: the number of tasks that succeeded on at least one try, divided by the number of tasks
+- `"pass_hat_k"`: the number of tasks that succeeded on every try, divided by the number of tasks""",
         pattern='One pass over the tasks with two counters, using any and all.',
         target='one pass over all the tries',
         realworld='An agent that solves a task 2 times out of 3 looks fine in a demo and fails one user in three. pass^k is the number that predicts the support tickets.',
@@ -706,8 +876,6 @@ Round both to 2 decimal places. With no tasks, both are `0.0`.""",
     pass
 """,
         solution="""def pass_rates(runs):
-    if not runs:
-        return {"pass_at_k": 0.0, "pass_hat_k": 0.0}
     at_least_once = 0
     every_time = 0
     for tries in runs:
@@ -716,18 +884,21 @@ Round both to 2 decimal places. With no tasks, both are `0.0`.""",
         if all(tries):
             every_time += 1
     n = len(runs)
-    return {"pass_at_k": round(at_least_once / n, 2), "pass_hat_k": round(every_time / n, 2)}
+    return {
+        "pass_at_k": round(at_least_once / n, 2),
+        "pass_hat_k": round(every_time / n, 2),
+    }
 """,
         cases=[
             case([[True, True, True], [True, False, True], [False, False, False]], expected={'pass_at_k': 0.67, 'pass_hat_k': 0.33}, sample=True),
             case([[True, True], [True, True]], expected={'pass_at_k': 1.0, 'pass_hat_k': 1.0}),
-            case([], expected={'pass_at_k': 0.0, 'pass_hat_k': 0.0}),
             case([[True, False], [False, True], [True, True], [False, False]], expected={'pass_at_k': 0.75, 'pass_hat_k': 0.25}),
+            case([[False, True]], expected={'pass_at_k': 1.0, 'pass_hat_k': 0.0}),
+            case([[False, False, False]], expected={'pass_at_k': 0.0, 'pass_hat_k': 0.0}),
         ],
         guided="""def pass_rates(runs):
     # Replace every ___ with real code, then run the tests.
-    if not runs:
-        return {"pass_at_k": 0.0, "pass_hat_k": 0.0}
+
     at_least_once = 0
     every_time = 0
     for tries in runs:
@@ -737,24 +908,34 @@ Round both to 2 decimal places. With no tasks, both are `0.0`.""",
         # Step 2: succeeded on every try?
         if ___:
             every_time += 1
+
+    # Step 3: turn the counts into shares of all tasks.
     n = len(runs)
-    return {"pass_at_k": round(at_least_once / n, 2), "pass_hat_k": round(every_time / n, 2)}
+    return {
+        "pass_at_k": round(at_least_once / n, 2),
+        "pass_hat_k": round(every_time / n, 2),
+    }
 """,
         fills=['any(tries)', 'all(tries)'],
         concepts=[
             [
                 'any and all',
-                'any: is at least one item true? all: is every item true?',
+                '`any`: is at least one item True? `all`: is every item True?',
                 """any([True, False])   # True
 all([True, False])   # False""",
             ],
+            [
+                'round',
+                '`round(x, 2)` keeps 2 decimal places.',
+                'round(1 / 3, 2)   # 0.33',
+            ],
         ],
-        byhand='Refund passed every try: counts for both. Address passed twice: at least once, but not every time. Cancel never passed. pass@3 = 2/3, pass^3 = 1/3.',
+        byhand='Task 1 is True, True, True: it succeeded at least once, and every time. Task 2 is True, False, True: at least once, but not every time. Task 3 is False, False, False: neither. At least once: 2 tasks out of 3, which rounds to 0.67. Every time: 1 task out of 3, which rounds to 0.33. Return {"pass_at_k": 0.67, "pass_hat_k": 0.33}.',
         why='One look at each try.',
         gotchas=[
             [
                 'Independent tries',
-                'Each try must start fresh: new session, no memory of the previous try, ideally a different random seed. Otherwise you are measuring one try three times.',
+                'Each try must start fresh: new session, no memory of the previous try, ideally a different random seed (the starting number that controls the randomness in the model). Otherwise you are measuring one try three times.',
             ],
             [
                 'k changes the number',
@@ -769,7 +950,7 @@ lesson(MODULE, 'tool_call_scores',
     learn=[
         'An agent can reach the right answer the wrong way, or fail because one call had a bad argument. For test tasks where you know the correct calls, score the calls themselves.',
         'Score two levels. **Tool selection**: was the right tool called at each step? **Arguments**: was it the right tool *and* the right arguments? A refund with the amount 25 instead of 250 picked the right tool and still did real damage.',
-        'Count missing and extra calls as wrong, by dividing by the longer of the two lists. Where you have a reference like this, the check is plain code, with no LLM judge to argue with. Benchmarks such as τ-bench go one step further and check the **final state**, like the database after the task.',
+        'Count missing and extra calls as wrong, by dividing by the length of the longer list. Where you have a reference like this, the check is plain code, with no LLM judge to argue with. Benchmarks such as tau-bench go one step further and check the **final state**, like the database after the task.',
     ],
     example=example('Two levels of correct', """expected                              actual                               tool  args
 lookup_order(order_id="A-1")          lookup_order(order_id="A-1")          ✓     ✓
@@ -787,11 +968,11 @@ tool selection 2/2 = 1.0      arguments 1/2 = 0.5"""),
     ),
     angle=angle(
         pattern='Comparing two lists position by position',
-        text='Walk the longer list once, checking the same position in both. A missing position on either side counts as wrong.',
+        text='Walk the positions both lists have, comparing the same position in each. Then divide by the length of the longer list, so a missing or extra call counts as wrong.',
         say='"For tasks with a known correct path I score tool selection and arguments separately, and count missing or extra calls as errors."',
         classic=None,
     ),
-    stack=stack('MLflow: a code scorer over the trace\'s tool calls', """from mlflow.genai.scorers import scorer
+    stack=stack('MLflow: a code scorer over the agent\'s tool calls', """from mlflow.genai.scorers import scorer
 
 @scorer
 def tool_args_correct(outputs, expectations):
@@ -802,25 +983,28 @@ def tool_args_correct(outputs, expectations):
         topic='agents',
         difficulty='easy',
         fn='tool_call_scores',
-        prompt="""`expected` and `actual` are lists of tool calls, in order, each like `{"name": "refund", "args": {"order_id": "A-1", "amount": 250}}`.
+        prompt="""Your function gets two things:
 
-Compare them position by position, over the length of the longer list (a call missing on either side counts as wrong). Return:
+- `expected`: the tool calls the agent should make, in order.
+- `actual`: the tool calls it really made, in order.
 
-- `"tool"`: the fraction of positions where both calls exist and the names match
-- `"args"`: the fraction where the names match *and* the args are equal
+Each call is a dict like `{"name": "refund", "args": {"amount": 250}}`. `args` are the values passed to the tool. `expected` always has at least one call.
 
-Round both to 2 decimal places. If both lists are empty, both scores are `1.0`.""",
-        pattern='One walk over the longer list, checking the same position in both.',
+Compare the lists position by position: first with first, second with second, and so on. Count two things:
+
+- right tool: positions where both calls have the same name
+- right args: positions where the names match and the args are equal
+
+Divide each count by the length of the longer list, so a missing or extra call counts as wrong. Return `{"tool": ..., "args": ...}` with the two results, each rounded to 2 decimal places.""",
+        pattern='One walk over the positions both lists have, then divide by the longer list.',
         target='one pass over the calls',
-        realworld='Agent teams run these checks in CI on a set of tasks with known correct calls. A drop in the argument score after a prompt change often explains a drop in task success before anyone reads a trace.',
+        realworld='Agent teams run these checks automatically on every code change (CI), on a set of tasks with known correct calls. A drop in the argument score after a prompt change often explains a drop in task success before anyone reads a trace (MLflow\'s saved record of every step one run took).',
         starter="""def tool_call_scores(expected, actual):
     # your code here
     pass
 """,
         solution="""def tool_call_scores(expected, actual):
     longest = max(len(expected), len(actual))
-    if longest == 0:
-        return {"tool": 1.0, "args": 1.0}
     right_tool = 0
     right_args = 0
     for i in range(min(len(expected), len(actual))):
@@ -828,11 +1012,14 @@ Round both to 2 decimal places. If both lists are empty, both scores are `1.0`."
             right_tool += 1
             if expected[i]["args"] == actual[i]["args"]:
                 right_args += 1
-    return {"tool": round(right_tool / longest, 2), "args": round(right_args / longest, 2)}
+    return {
+        "tool": round(right_tool / longest, 2),
+        "args": round(right_args / longest, 2),
+    }
 """,
         cases=[
-            case([{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'order_id': 'A-1', 'amount': 250}}],
-                 [{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'order_id': 'A-1', 'amount': 25}}],
+            case([{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'amount': 250}}],
+                 [{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'amount': 25}}],
                  expected={'tool': 1.0, 'args': 0.5}, sample=True),
             case([{'name': 'search', 'args': {'q': 'x'}}], [{'name': 'search', 'args': {'q': 'x'}}, {'name': 'search', 'args': {'q': 'x'}}],
                  expected={'tool': 0.5, 'args': 0.5}),
@@ -840,40 +1027,63 @@ Round both to 2 decimal places. If both lists are empty, both scores are `1.0`."
                  expected={'tool': 0.0, 'args': 0.0}),
             case([{'name': 'a', 'args': {}}, {'name': 'b', 'args': {}}], [{'name': 'a', 'args': {}}],
                  expected={'tool': 0.5, 'args': 0.5}),
-            case([], [], expected={'tool': 1.0, 'args': 1.0}),
+            case([{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'amount': 250}}, {'name': 'email', 'args': {}}],
+                 [{'name': 'lookup_order', 'args': {'order_id': 'A-1'}}, {'name': 'refund', 'args': {'amount': 25}}, {'name': 'close', 'args': {}}],
+                 expected={'tool': 0.67, 'args': 0.33}),
+            case([{'name': 'search', 'args': {'q': 'x'}}], [], expected={'tool': 0.0, 'args': 0.0}),
         ],
         guided="""def tool_call_scores(expected, actual):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: missing or extra calls count as wrong, so divide by the longer list.
+    # Step 1: the length of the longer list.
+    #         Dividing by it makes a missing or extra
+    #         call count as wrong.
     longest = ___
-    if longest == 0:
-        return {"tool": 1.0, "args": 1.0}
     right_tool = 0
     right_args = 0
 
-    # Step 2: compare the positions that exist in both lists.
+    # Step 2: compare the positions both lists have.
     for i in range(min(len(expected), len(actual))):
         if expected[i]["name"] == actual[i]["name"]:
             right_tool += 1
+            # Step 3: right tool. Are the args equal too?
             if ___:
                 right_args += 1
-    return {"tool": round(right_tool / longest, 2), "args": round(right_args / longest, 2)}
+
+    return {
+        "tool": round(right_tool / longest, 2),
+        "args": round(right_args / longest, 2),
+    }
 """,
         fills=['max(len(expected), len(actual))', 'expected[i]["args"] == actual[i]["args"]'],
         concepts=[
             [
+                'max and min',
+                '`max` gives the bigger of its values, `min` the smaller.',
+                """max(2, 3)   # 3
+min(2, 3)   # 2""",
+            ],
+            [
+                'Walking positions with range',
+                '`range(n)` counts from 0 up to, but not including, n. Use each number to look up the item at that position.',
+                """names = ['a', 'b']
+for i in range(2):
+    print(i, names[i])
+# 0 a, then 1 b""",
+            ],
+            [
                 'Comparing dicts',
-                '`==` on two dicts is true when they have the same keys with the same values, in any order.',
-                """{"a": 1, "b": 2} == {"b": 2, "a": 1}   # True""",
+                '`==` on two dicts is True when they have the same keys with the same values, in any order.',
+                """a = {'x': 1, 'y': 2}
+a == {'y': 2, 'x': 1}   # True""",
             ],
         ],
-        byhand='Two expected calls, two actual. Position 1: same name, same args. Position 2: same name, amount 250 against 25. Tool 2 of 2 = 1.0; args 1 of 2 = 0.5.',
+        byhand='Both lists have 2 calls, so divide by 2. Position 1: lookup_order and lookup_order, with the same args. Right tool, right args. Position 2: refund and refund, but amount 250 against 25. Right tool, wrong args. Tool: 2 out of 2, which is 1. Args: 1 out of 2, which is 0.5. Return {"tool": 1, "args": 0.5}.',
         why='One step per position.',
         gotchas=[
             [
                 'Order may not matter',
-                'Two independent lookups can happen in either order. When order does not matter, compare the calls as a set instead, as the next lesson shows.',
+                'Two independent lookups can happen in either order. When order does not matter, compare the calls in any order instead, like the unordered mode in the next lesson.',
             ],
             [
                 'Normalise arguments first',
@@ -887,7 +1097,7 @@ lesson(MODULE, 'trajectory_match',
     title='Did it take a sensible path?',
     learn=[
         'The path an agent takes matters as well as the answer. An agent that searches twelve times before answering costs more and breaks more easily, even when the answer is right. The list of tools it called is its **trajectory**.',
-        "Compare it with a reference path, choosing how strict to be. These four modes are the ones LangChain's AgentEvals library uses: **strict**, the same tools in the same order; **unordered**, the same tools in any order; **superset**, every expected tool was called, and extra calls are fine; **subset**, it only called tools from the expected list, though it may have skipped some.",
+        "Compare it with a reference path, choosing how strict to be. These four modes are the ones LangChain's AgentEvals library uses: **strict**, the same tools in the same order; **unordered**, the same tools, each the same number of times, in any order; **superset**, every expected tool was called, and extra calls are fine; **subset**, it only called tools from the expected list, though it may have skipped some.",
         'Pick the mode for each task. Use strict for a required procedure, like checking identity before a refund. Use superset when an extra lookup is harmless. Use subset when calling an unexpected tool is the risk, like an agent that should only ever read.',
     ],
     example=example('One path, four verdicts', """expected: lookup_order, refund
@@ -905,7 +1115,7 @@ subset     ✗  (check_policy was not expected)"""),
     ),
     angle=angle(
         pattern='Choosing the right comparison',
-        text='strict compares the lists directly. unordered compares them sorted. superset and subset check membership, one item at a time, in one direction or the other.',
+        text='strict compares the lists directly. unordered compares them sorted. superset and subset check whether each item is in the other list, in one direction or the other.',
         say='"I pick the trajectory match mode per task: strict where order is a rule, superset where extra lookups are fine, subset where unexpected tools are the risk."',
         classic=None,
     ),
@@ -918,14 +1128,22 @@ result = evaluator(outputs=agent_messages, reference_outputs=reference_messages)
         topic='agents',
         difficulty='easy',
         fn='trajectory_match',
-        prompt="""`expected` and `actual` are lists of tool names, in the order they were called. Return `True` or `False` for the given `mode`:
+        prompt="""An agent's trajectory is the list of tools it called. Check it against the tools it should have called.
 
-- `"strict"`: the same tools in the same order
-- `"unordered"`: the same tools, in any order (repeats count)
-- `"superset"`: every tool in `expected` appears in `actual`; extra calls are fine
-- `"subset"`: every tool in `actual` appears in `expected`; skipping some is fine""",
-        pattern='One comparison per mode: direct, sorted, or membership in one direction.',
-        target='a sort for unordered; one pass for the others',
+Your function gets three things:
+
+- `expected`: the tool names the agent should call, in order, like `["lookup_order", "refund"]`.
+- `actual`: the tool names it really called, in order, like `["lookup_order", "check_policy", "refund"]`.
+- `mode`: how strict to be, like `"superset"`: one of the four below.
+
+Return `True` if `actual` passes for that mode, otherwise `False`:
+
+- `"strict"`: the same tools in the same order.
+- `"unordered"`: the same tools, each the same number of times, in any order.
+- `"superset"`: every tool in `expected` is somewhere in `actual`. Extra calls are fine.
+- `"subset"`: every tool in `actual` is somewhere in `expected`. Skipping some is fine.""",
+        pattern='One comparison per mode: equal lists, equal sorted lists, or "is each one in the other list?" in one direction.',
+        target='a sort for unordered; for the others, one check per tool against the other list',
         realworld='Teams write one reference path per test task and choose a mode for it, so a test fails when the agent breaks a rule that matters and passes when it just takes a harmless detour.',
         starter="""def trajectory_match(expected, actual, mode):
     # your code here
@@ -960,9 +1178,11 @@ result = evaluator(outputs=agent_messages, reference_outputs=reference_messages)
         ],
         guided="""def trajectory_match(expected, actual, mode):
     # Replace every ___ with real code, then run the tests.
+
+    # strict: the same lists, order included.
     if mode == "strict":
         return expected == actual
-    # Step 1: same tools in any order: compare them sorted.
+    # Step 1: same tools in any order? Compare them sorted.
     if mode == "unordered":
         return ___
     # Step 2: every expected tool must have been called.
@@ -982,17 +1202,32 @@ result = evaluator(outputs=agent_messages, reference_outputs=reference_messages)
         fills=['sorted(expected) == sorted(actual)', 'tool not in expected'],
         concepts=[
             [
+                'Comparing lists',
+                '`==` on two lists is True when they hold the same items in the same order.',
+                """[1, 2] == [1, 2]   # True
+[1, 2] == [2, 1]   # False""",
+            ],
+            [
                 'Sorting to ignore order',
-                'Two lists hold the same items, repeats included, exactly when their sorted versions are equal.',
-                """sorted(["b", "a"]) == sorted(["a", "b"])   # True""",
+                '`sorted(items)` gives a new list in order, A to Z. Two lists hold the same items, repeats included, exactly when their sorted versions are equal.',
+                """sorted(['b', 'a'])   # ['a', 'b']
+sorted(['a', 'b'])   # ['a', 'b']
+# equal, so same items""",
+            ],
+            [
+                '`in` with a list',
+                '`x in items` is True when x is somewhere in the list. `not in` is the opposite.',
+                """fruit = ['apple', 'pear']
+'pear' in fruit       # True
+'kiwi' not in fruit   # True""",
             ],
         ],
-        byhand='Expected lookup_order then refund; the agent added check_policy in between. Both expected tools were called, so superset passes. The lists differ, so strict fails. check_policy was not expected, so subset fails.',
-        why='Sorting is the slowest step for unordered; the membership checks look at each tool once.',
+        byhand='The mode is superset, so check each expected tool. lookup_order is in actual. refund is in actual too. Every expected tool was called, and the extra check_policy is fine in this mode. Return True.',
+        why='Sorting is the slowest step for unordered. superset and subset check each tool against the other list, which is fine for a short list of tools.',
         gotchas=[
             [
                 'Loops hide inside superset',
-                'superset passes an agent that called search twenty times. Pair it with a step limit or a loop check from the Tracing module.',
+                'superset passes an agent that called search twenty times. Pair it with a step limit or a loop check, covered later in the Tracing module.',
             ],
             [
                 'One mode per task, written down',
@@ -1007,7 +1242,7 @@ lesson(MODULE, 'compare_designs',
     learn=[
         'There are several ways to build the same agent: **ReAct** (think, call a tool, look, repeat), **plan then execute** (write the plan first, then follow it), or a **supervisor** handing parts of the task to specialist sub-agents. In LangGraph each is a different graph. Which is better depends on your tasks, so measure it.',
         'Run every design on **the same tasks**, several times each, and compare three things side by side: how often a run succeeds, how many tasks succeed on **every** try (the pass^k idea), and the **cost per success**, which spreads the cost of failed runs over the successful ones.',
-        'Then read the regressions and improvements, trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
+        'Then read the regressions and improvements (tasks one design fails and another passes), trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
     ],
     example=example('Three designs, same 20 tasks, 3 tries each', """design            success   reliable tasks   cost per success
 react               80%          65%             $0.040
@@ -1026,7 +1261,7 @@ supervisor          83%          70%             $0.090
     ),
     angle=angle(
         pattern='Group by key, then summarise',
-        text='Group the runs by design, and within a design by task, keeping running counts. Then turn the counts into rates at the end, guarding against zero successes.',
+        text='Group the runs by design, keeping running counts. Then turn the counts into rates at the end, guarding against zero successes.',
         say='"I compare agent designs on the same tasks with repeat runs, on success, reliability and cost per success, then read the traces to see why."',
         classic='group_anagrams',
     ),
@@ -1041,92 +1276,143 @@ for name, graph in designs.items():
         topic='agents',
         difficulty='medium',
         fn='compare_designs',
-        prompt="""`runs` is a list of dicts like `{"design": "react", "task": "t1", "success": True, "cost": 0.04}`: every attempt of every task with every design.
+        prompt="""You ran several agent designs on the same tasks. `runs` has one dict per run, like `{"design": "react", "success": True, "cost": 0.04}`, where cost is in dollars.
 
-Return a dict from each design to:
+Group the runs by `design`. Return a dict with one key per design name. Each value is a dict with two numbers, each rounded to 2 decimal places:
 
-- `"success_rate"`: successful runs ÷ all its runs, rounded to 2 decimal places
-- `"reliable"`: the share of its tasks where **every** run succeeded, rounded to 2 decimal places
-- `"cost_per_success"`: its total cost ÷ its successful runs, rounded to 3 decimal places, or `None` if it never succeeded""",
-        pattern='Group by design, and by task within a design, then summarise each group.',
+- `"success_rate"`: the number of the design's successful runs divided by the number of all its runs
+- `"cost_per_success"`: the total cost of all its runs divided by the number of its successful runs, or `None` if it never succeeded
+
+For example: `{"react": {"success_rate": 0.67, "cost_per_success": 0.06}}`.
+
+(The lesson's "reliable tasks" number needs a task id for each run, so it is left out here.)""",
+        pattern='Group the runs by design, keeping running totals, then summarise each group.',
         target='one pass over the runs, then one over the designs',
-        realworld='Agent teams compare designs exactly like this before committing to a graph shape, because the most successful design is often not the most reliable or the cheapest.',
+        realworld='Agent teams compare designs exactly like this before committing to a graph shape, because the most successful design is often not the cheapest per useful answer.',
         starter="""def compare_designs(runs):
     # your code here
     pass
 """,
         solution="""def compare_designs(runs):
-    groups = {}
+    totals = {}
     for run in runs:
-        g = groups.setdefault(run["design"], {"runs": 0, "wins": 0, "cost": 0.0, "tasks": {}})
-        g["runs"] += 1
-        g["cost"] += run["cost"]
+        name = run["design"]
+        if name not in totals:
+            totals[name] = {"runs": 0, "wins": 0, "cost": 0}
+        totals[name]["runs"] += 1
+        totals[name]["cost"] += run["cost"]
         if run["success"]:
-            g["wins"] += 1
-        g["tasks"][run["task"]] = g["tasks"].get(run["task"], True) and run["success"]
+            totals[name]["wins"] += 1
     report = {}
-    for design, g in groups.items():
-        steady = 0
-        for ok in g["tasks"].values():
-            if ok:
-                steady += 1
-        reliable = steady / len(g["tasks"])
-        report[design] = {
-            "success_rate": round(g["wins"] / g["runs"], 2),
-            "reliable": round(reliable, 2),
-            "cost_per_success": round(g["cost"] / g["wins"], 3) if g["wins"] else None,
+    for name in totals:
+        t = totals[name]
+        cost_per_success = None
+        if t["wins"] > 0:
+            cost_per_success = round(t["cost"] / t["wins"], 2)
+        report[name] = {
+            "success_rate": round(t["wins"] / t["runs"], 2),
+            "cost_per_success": cost_per_success,
         }
     return report
 """,
         cases=[
             case([
-                {'design': 'react', 'task': 't1', 'success': True, 'cost': 0.04},
-                {'design': 'react', 'task': 't1', 'success': False, 'cost': 0.05},
-                {'design': 'react', 'task': 't2', 'success': True, 'cost': 0.03},
-                {'design': 'plan', 'task': 't1', 'success': True, 'cost': 0.02},
-                {'design': 'plan', 'task': 't2', 'success': True, 'cost': 0.02},
-            ], expected={'react': {'success_rate': 0.67, 'reliable': 0.5, 'cost_per_success': 0.06},
-                         'plan': {'success_rate': 1.0, 'reliable': 1.0, 'cost_per_success': 0.02}}, sample=True),
-            case([], expected={}),
-            case([{'design': 'super', 'task': 't1', 'success': False, 'cost': 0.1}],
-                 expected={'super': {'success_rate': 0.0, 'reliable': 0.0, 'cost_per_success': None}}),
+                {'design': 'react', 'success': True, 'cost': 0.04},
+                {'design': 'react', 'success': False, 'cost': 0.05},
+                {'design': 'react', 'success': True, 'cost': 0.03},
+                {'design': 'plan', 'success': True, 'cost': 0.02},
+            ], expected={'react': {'success_rate': 0.67, 'cost_per_success': 0.06},
+                         'plan': {'success_rate': 1.0, 'cost_per_success': 0.02}}, sample=True),
+            case([{'design': 'super', 'success': False, 'cost': 0.1}],
+                 expected={'super': {'success_rate': 0.0, 'cost_per_success': None}}),
+            case([
+                {'design': 'a', 'success': True, 'cost': 0.1},
+                {'design': 'b', 'success': False, 'cost': 0.2},
+                {'design': 'a', 'success': False, 'cost': 0.3},
+                {'design': 'c', 'success': True, 'cost': 0.5},
+                {'design': 'b', 'success': True, 'cost': 0.4},
+            ], expected={'a': {'success_rate': 0.5, 'cost_per_success': 0.4},
+                         'b': {'success_rate': 0.5, 'cost_per_success': 0.6},
+                         'c': {'success_rate': 1.0, 'cost_per_success': 0.5}}),
+            case([
+                {'design': 'react', 'success': True, 'cost': 0.1},
+                {'design': 'react', 'success': True, 'cost': 0.3},
+                {'design': 'react', 'success': True, 'cost': 0.2},
+            ], expected={'react': {'success_rate': 1.0, 'cost_per_success': 0.2}}),
         ],
         guided="""def compare_designs(runs):
     # Replace every ___ with real code, then run the tests.
-    groups = {}
+
+    totals = {}
     for run in runs:
-        g = groups.setdefault(run["design"], {"runs": 0, "wins": 0, "cost": 0.0, "tasks": {}})
-        g["runs"] += 1
-        g["cost"] += run["cost"]
+        name = run["design"]
+        # Step 1: first time you see this design?
+        #         Start its totals at zero.
+        if ___:
+            totals[name] = {"runs": 0, "wins": 0, "cost": 0}
+        # Add this run to its design's totals.
+        totals[name]["runs"] += 1
+        totals[name]["cost"] += run["cost"]
         if run["success"]:
-            g["wins"] += 1
-        # Step 1: a task stays reliable only while every run of it succeeds.
-        g["tasks"][run["task"]] = ___
+            totals[name]["wins"] += 1
+
     report = {}
-    for design, g in groups.items():
-        steady = 0
-        for ok in g["tasks"].values():
-            if ok:
-                steady += 1
-        reliable = steady / len(g["tasks"])
-        report[design] = {
-            "success_rate": round(g["wins"] / g["runs"], 2),
-            "reliable": round(reliable, 2),
-            # Step 2: spread the total cost over the successes, if there were any.
-            "cost_per_success": ___,
+    for name in totals:
+        t = totals[name]   # this design's totals
+        # Step 2: total cost divided by wins,
+        #         if there were any wins.
+        cost_per_success = None
+        if t["wins"] > 0:
+            cost_per_success = round(___, 2)
+        report[name] = {
+            # Step 3: successful runs out of all runs.
+            "success_rate": round(___, 2),
+            "cost_per_success": cost_per_success,
         }
     return report
 """,
-        fills=['g["tasks"].get(run["task"], True) and run["success"]', 'round(g["cost"] / g["wins"], 3) if g["wins"] else None'],
+        fills=['name not in totals', 't["cost"] / t["wins"]', 't["wins"] / t["runs"]'],
         concepts=[
             [
-                'setdefault',
-                'Gets a key\'s value, first inserting a starting value if the key is new. Handy for building groups in one pass.',
-                """groups = {}
-groups.setdefault("react", []).append(1)   # {"react": [1]}""",
+                'Starting a group',
+                'Before you add to a group in a dict, create it the first time you see its name.',
+                """if fruit not in counts:
+    counts[fruit] = 0
+counts[fruit] += 1""",
+            ],
+            [
+                'A dict inside a dict',
+                "`d['a']['b']` looks up 'a', then looks up 'b' in what it found.",
+                """totals = {'react': {'runs': 2}}
+totals['react']['runs']   # 2""",
+            ],
+            [
+                'Looping over a dict',
+                '`for key in d` gives each key, in the order they were added.',
+                """for name in {'react': 1, 'plan': 2}:
+    print(name)   # react, then plan""",
+            ],
+            [
+                'Running totals',
+                '`+=` adds to a variable, so it can keep a total as you loop.',
+                """total = 0
+for price in [2, 3]:
+    total += price   # total is 5""",
+            ],
+            [
+                'round',
+                '`round(x, 2)` keeps 2 decimal places.',
+                'round(2 / 3, 2)   # 0.67',
+            ],
+            [
+                'None',
+                "Python's way to say \"no value\". Use it when an answer doesn't exist.",
+                """best = None
+if best is None:
+    print('nothing yet')""",
             ],
         ],
-        byhand='react: 2 of 3 runs succeeded (0.67). Task t1 failed once, t2 succeeded, so 1 of 2 tasks is reliable (0.5). Cost 0.04 + 0.05 + 0.03 = 0.12 over 2 successes is 0.06. plan: everything succeeded, 0.04 over 2 successes is 0.02.',
+        byhand='Group by design. react has 3 runs, and 2 succeeded: 2 out of 3 rounds to 0.67. Its costs add up to 0.04 + 0.05 + 0.03 = 0.12, and 0.12 divided by 2 successes is 0.06 each. plan has 1 run, and it succeeded: 1 out of 1 is 1. It cost 0.02 for 1 success, so 0.02 each. Return {"react": {"success_rate": 0.67, "cost_per_success": 0.06}, "plan": {"success_rate": 1, "cost_per_success": 0.02}}.',
         why='One step per run, then one per design.',
         gotchas=[
             [
@@ -1145,19 +1431,19 @@ lesson(MODULE, 'approval_run',
     title='Human approval in LangGraph',
     learn=[
         'Some agent actions need a person to say yes. The agent should **pause**, save exactly where it was, and **resume** when the answer comes, even hours later.',
-        'In LangGraph, `interrupt()` pauses, a **checkpointer** saves the state under a `thread_id`, and `Command(resume=...)` continues from that point.',
+        'In LangGraph, `interrupt()` pauses, a **checkpointer** saves the state under a `thread_id` (an id for this conversation), and `Command(resume=...)` continues from that point.',
     ],
     example=example('Pause and resume', """run 1: look_up_order → issue_refund? (pause, waiting for a person)
 run 2 with "approve": issue_refund → email_customer → done"""),
     check=question(
-        'Why does human-in-the-loop need a checkpointer?',
+        'Why does pausing for a person to approve (human-in-the-loop) need a checkpointer?',
         ['To make it faster', "To save the agent's state so it can resume after the pause", 'For logging'],
         answer=1,
         why='Without saved state, the agent would have to start over.',
     ),
     angle=angle(
         pattern='Resumable workflow',
-        text='One walk through the steps, stopping at the first undecided risky one.',
+        text='One walk through the steps, stopping at the first risky step nobody has approved.',
         say='"Risky steps interrupt; state is checkpointed per thread, and resuming replays to the same point with the human\'s decision."',
         classic=None,
     ),
@@ -1177,68 +1463,96 @@ graph.invoke(Command(resume="approve"), config)  # continues"""),
         topic='agents',
         difficulty='medium',
         fn='approval_run',
-        prompt="""An agent runs `steps` in order, each `[name, risky]`. Before a risky step it pauses for a person, unless `decisions` (a dict from step name to `"approve"` or `"reject"`) already holds an answer for it.
+        prompt="""Some agent steps are risky, so a person must approve them first.
 
-Go through the steps. A safe step runs. A risky step: with `"approve"` it runs; with `"reject"` the run stops; with no decision the run pauses there.
+Your function gets two things:
 
-Return `{"status": "done" | "paused" | "stopped", "ran": [...], "at": name or None}`, where `at` is the step it paused or stopped on.""",
-        pattern='Walk the steps; at each risky one, look up a decision and either continue, stop or pause.',
+- `steps`: the steps to run, in order. Each is `[name, risky]`, like `["issue_refund", True]`. `risky` is `True` when a person must approve the step.
+- `approved`: the names of the risky steps a person has already approved, like `["issue_refund"]`.
+
+Go through the steps in order. A step with `risky` False runs. A risky step runs only if its name is in `approved`. If it isn't, the agent pauses there and runs nothing more.
+
+Return a dict with two keys:
+
+- `"ran"`: the names of the steps that ran, in order
+- `"paused_at"`: the name of the step it paused on, or `None` if every step ran""",
+        pattern='Walk the steps in order, and pause at the first risky step nobody has approved.',
         target='one walk through the steps',
-        realworld='This is human-in-the-loop in LangGraph: `interrupt()` pauses the graph, a checkpointer saves its state under a `thread_id`, and `Command(resume=...)` continues it later, even after a restart. Running the same function again with the decision filled in is exactly how resuming works.',
-        starter="""def approval_run(steps, decisions):
+        realworld='This is human-in-the-loop in LangGraph: `interrupt()` pauses the graph, a checkpointer saves its state under a `thread_id`, and `Command(resume=...)` continues it later, even after a restart. Your function runs every step again from the start. LangGraph is smarter: the checkpointer saved the finished steps, so it picks up at the paused step with the approval filled in.',
+        starter="""def approval_run(steps, approved):
     # your code here
     pass
 """,
-        solution="""def approval_run(steps, decisions):
+        solution="""def approval_run(steps, approved):
     ran = []
     for name, risky in steps:
-        if risky:
-            d = decisions.get(name)
-            if d is None:
-                return {"status": "paused", "ran": ran, "at": name}
-            if d == "reject":
-                return {"status": "stopped", "ran": ran, "at": name}
+        if risky and name not in approved:
+            return {"ran": ran, "paused_at": name}
         ran.append(name)
-    return {"status": "done", "ran": ran, "at": None}
+    return {"ran": ran, "paused_at": None}
 """,
         cases=[
-            case([['look_up_order', False], ['issue_refund', True], ['email_customer', False]], {}, expected={'status': 'paused', 'ran': ['look_up_order'], 'at': 'issue_refund'}, sample=True),
-            case([['look_up_order', False], ['issue_refund', True], ['email_customer', False]], {'issue_refund': 'approve'}, expected={'status': 'done', 'ran': ['look_up_order', 'issue_refund', 'email_customer'], 'at': None}),
-            case([['a', True]], {'a': 'reject'}, expected={'status': 'stopped', 'ran': [], 'at': 'a'}),
-            case([], {}, expected={'status': 'done', 'ran': [], 'at': None}),
+            case([['look_up_order', False], ['issue_refund', True], ['email_customer', False]], [], expected={'ran': ['look_up_order'], 'paused_at': 'issue_refund'}, sample=True),
+            case([['look_up_order', False], ['issue_refund', True], ['email_customer', False]], ['issue_refund'], expected={'ran': ['look_up_order', 'issue_refund', 'email_customer'], 'paused_at': None}),
+            case([['delete_table', True], ['report', False]], [], expected={'ran': [], 'paused_at': 'delete_table'}),
+            case([['refund', True], ['email', False], ['close_account', True]], ['refund'], expected={'ran': ['refund', 'email'], 'paused_at': 'close_account'}),
+            case([['search', False], ['answer', False]], [], expected={'ran': ['search', 'answer'], 'paused_at': None}),
+            case([], [], expected={'ran': [], 'paused_at': None}),
         ],
-        guided="""def approval_run(steps, decisions):
+        guided="""def approval_run(steps, approved):
     # Replace every ___ with real code, then run the tests.
 
     ran = []
     for name, risky in steps:
-        if risky:
-            d = decisions.get(name)
-            # Step 1: no decision yet: pause here.
-            if d is None:
-                return {"status": "paused", "ran": ran, "at": name}
-            # Step 2: a person said no: stop.
-            if ___:
-                return {"status": "stopped", "ran": ran, "at": name}
-        ran.append(name)
-    return {"status": ___, "ran": ran, "at": None}
+        # Step 1: risky and not approved? Pause here.
+        if risky and ___:
+            return {"ran": ran, "paused_at": name}
+        # Step 2: otherwise it runs: add its name to ran.
+        ___
+
+    # Step 3: every step ran, so nothing is paused.
+    return {"ran": ran, "paused_at": ___}
 """,
-        fills=['d == "reject"', '"done"'],
+        fills=['name not in approved', 'ran.append(name)', 'None'],
         concepts=[
             [
+                'Unpacking in a for loop',
+                'When each item is a pair, the for line can name both parts.',
+                """for city, sunny in [['Rome', True]]:
+    print(city, sunny)""",
+            ],
+            [
+                '`in` with a list',
+                '`x in items` is True when x is somewhere in the list. `not in` is the opposite.',
+                """fruit = ['apple', 'pear']
+'kiwi' not in fruit   # True""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append('Ana')   # ['Ana']""",
+            ],
+            [
                 'Returning early',
-                '`return` inside a loop ends the function right there.',
-                """for s in steps:
-    if must_stop:
-        return result""",
+                '`return` inside a loop ends the whole function right there, even mid-loop. Here `first_big([1, 5, 2])` gives 5.',
+                """def first_big(nums):
+    for n in nums:
+        if n > 3:
+            return n""",
+            ],
+            [
+                'None',
+                "Python's way to say \"no value\".",
+                'paused_at = None',
             ],
         ],
-        byhand="look_up_order is safe: run it. issue_refund is risky and there's no decision: pause there. Run again with issue_refund approved and everything runs.",
+        byhand='look_up_order is not risky, so it runs. issue_refund is risky, and approved is empty, so pause there. email_customer never runs. Return {"ran": ["look_up_order"], "paused_at": "issue_refund"}.',
         why='One walk through the steps.',
         gotchas=[
             [
                 'Steps before the pause may run twice',
-                'When LangGraph resumes, the node containing interrupt() runs again from its start. Keep side effects after the interrupt, or make them idempotent.',
+                'When LangGraph resumes, the node containing interrupt() runs again from its start. Put actions that change things, like sending an email, after the interrupt, or make them safe to run twice.',
             ],
             [
                 "Show the person what they're approving",
@@ -1265,7 +1579,7 @@ tool_args '{"order_id": ' · tool_args '"A-1042"}' · tool_end"""),
     angle=angle(
         pattern='Buffers and end markers',
         text='One walk through the chunks.',
-        say='"I append deltas to buffers and finalise each tool call on its end event, then parse the arguments once."',
+        say='"I append each streamed piece to a buffer, finalise each tool call on its end event, then parse its arguments once."',
         classic=None,
     ),
     stack=stack('LangGraph: stream tokens as they arrive', """for chunk, metadata in graph.stream(inputs, stream_mode="messages"):
@@ -1275,10 +1589,17 @@ tool_args '{"order_id": ' · tool_args '"A-1042"}' · tool_end"""),
         topic='agents',
         difficulty='medium',
         fn='assemble_stream',
-        prompt="""Streaming sends a reply in small pieces as it's generated. `chunks` is a list of events: `["text", piece]` adds to the visible reply; `["tool_start", name]` begins a tool call; `["tool_args", piece]` adds to the current tool call's arguments; `["tool_end", ""]` finishes it.
+        prompt="""Streaming sends a reply in small pieces while it is being written. `chunks` is the stream: a list of events, each `[kind, piece]`. There are four kinds:
 
-Return `[text, tool_calls]`: the full reply text, and a list of `[name, arguments]` for each finished tool call, in order.""",
-        pattern='Accumulate pieces into buffers, and close a buffer when its end marker arrives.',
+- `["text", piece]`: more of the reply text.
+- `["tool_start", name]`: a tool call begins.
+- `["tool_args", piece]`: more of the current tool call's arguments.
+- `["tool_end", ""]`: the current tool call is finished.
+
+Join all the text pieces into one string. Join each tool call's argument pieces (the details the tool needs, like the search words) into one string too.
+
+Return `[text, calls]`. `calls` has one `[name, args]` for each finished call, in order. `args` is that call's argument pieces joined together.""",
+        pattern='Add pieces to a buffer (a string you keep growing), and save the buffer when its end marker arrives.',
         target='one walk through the chunks',
         realworld='Users see the first words in a few hundred milliseconds instead of waiting for the whole answer. LangGraph streams with `stream_mode="messages"` (token pieces) or `"updates"` (node results), and `ResponsesAgent.predict_stream` streams from a Databricks endpoint. Tool-call arguments arrive in pieces too, and are only valid JSON once complete.',
         starter="""def assemble_stream(chunks):
@@ -1305,11 +1626,18 @@ Return `[text, tool_calls]`: the full reply text, and a list of `[name, argument
             case([
                 ['text', 'Let me '],
                 ['text', 'check.'],
+                ['tool_start', 'search'],
+                ['tool_args', 'weather in '],
+                ['tool_args', 'Paris'],
+                ['tool_end', ''],
+            ], expected=['Let me check.', [['search', 'weather in Paris']]], sample=True),
+            case([
+                ['text', 'One moment.'],
                 ['tool_start', 'lookup_order'],
                 ['tool_args', '{"order_id": '],
                 ['tool_args', '"A-1042"}'],
                 ['tool_end', ''],
-            ], expected=['Let me check.', [['lookup_order', '{"order_id": "A-1042"}']]], sample=True),
+            ], expected=['One moment.', [['lookup_order', '{"order_id": "A-1042"}']]]),
             case([], expected=['', []]),
             case([['text', 'Hi']], expected=['Hi', []]),
             case([['tool_start', 'a'], ['tool_end', ''], ['tool_start', 'b'], ['tool_args', '{}'], ['tool_end', '']], expected=['', [['a', ''], ['b', '{}']]]),
@@ -1322,14 +1650,16 @@ Return `[text, tool_calls]`: the full reply text, and a list of `[name, argument
     name, args = None, ""   # the tool call being built
     for kind, piece in chunks:
         if kind == "text":
-            text += piece
+            text += piece   # more reply text
         elif kind == "tool_start":
+            # A new call: keep its name, empty args.
             name, args = piece, ""
         elif kind == "tool_args":
-            # Step 1: arguments arrive in pieces.
+            # Step 1: add this piece to the arguments.
             ___
         elif kind == "tool_end":
-            # Step 2: the call is complete: save it and reset.
+            # Step 2: call done. Save [name, args], a list,
+            #         to calls. Then reset.
             calls.append(___)
             name, args = None, ""
     return [text, calls]
@@ -1338,18 +1668,46 @@ Return `[text, tool_calls]`: the full reply text, and a list of `[name, argument
         concepts=[
             [
                 'Adding to a string',
-                '`+=` appends text.',
-                """s = 'Let me '
-s += 'check.'""",
+                '`+=` sticks more text onto the end of a string.',
+                """s = 'Good '
+s += 'morning'   # 'Good morning'""",
             ],
             [
-                'Tuple-style unpacking in a loop',
-                'Each event is a pair, so name both parts.',
-                """for kind, piece in chunks:
-    ...""",
+                'Unpacking in a for loop',
+                'When each item is a pair, the for line can name both parts.',
+                """pets = [['cat', 'meow']]
+for animal, sound in pets:
+    print(animal, sound)""",
+            ],
+            [
+                'elif',
+                'Short for "else if". It is checked only when the ifs above it were False.',
+                """if n > 10:
+    size = 'big'
+elif n > 3:
+    size = 'medium'""",
+            ],
+            [
+                'Setting two names at once',
+                '`a, b = 1, 2` sets a to 1 and b to 2 in one line.',
+                """first, last = 'Ana', 'Lee'""",
+            ],
+            [
+                'None',
+                "Python's way to say \"no value\". The code starts `name` as None because no tool call has started yet.",
+                """best = None
+if best is None:
+    print('nothing yet')""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list. x can be a list too.',
+                """pairs = []
+pairs.append(['Ana', 30])
+# pairs is [['Ana', 30]]""",
             ],
         ],
-        byhand='Two text pieces make "Let me check.". tool_start opens lookup_order; two argument pieces build {"order_id": "A-1042"}; tool_end saves it.',
+        byhand='The two text pieces join into "Let me check.". tool_start begins a call named search, with empty arguments. The two tool_args pieces join into "weather in Paris". tool_end finishes the call, so save ["search", "weather in Paris"]. Return the text and the list of calls: ["Let me check.", [["search", "weather in Paris"]]].',
         why='One walk through the chunks.',
         gotchas=[
             [

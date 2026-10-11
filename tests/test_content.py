@@ -68,3 +68,34 @@ def test_page_embeds_the_content(data):
     html = build_page(data)
     assert "/*DATA*/" not in html
     assert json.dumps(data["modules"][0]["title"]) in html
+
+
+def test_every_gotcha_has_a_lesson_and_code_to_spot(data):
+    """Each card is a "Spot the gotcha" challenge in one lesson, or a Build-step habit."""
+    lessons = set(data["lessons"])
+    shown_in: dict[str, str] = {}
+    habits = []
+    for card in data["aiGotchas"] + data["iacGotchas"] + data["rules"]:
+        title, why, before, after, where = card
+        assert title and why, card
+        if where.startswith("build:"):
+            habits.append(where)
+            continue
+        assert where in lessons, f"{title!r} points at {where!r}, which is not a lesson"
+        assert where not in shown_in, f"{where} has two gotchas: {shown_in[where]!r} and {title!r}"
+        assert before and after and before != after, f"{title!r} needs code before and after"
+        shown_in[where] = title
+    assert sorted(habits) == ["build:error", "build:fail", "build:pass"]
+
+
+def test_the_page_only_looks_up_elements_that_exist():
+    """A removed element that the script still looks up breaks the page silently (the Notebook did)."""
+    import re
+    from pathlib import Path
+
+    page = (Path(__file__).parent.parent / "src" / "drill" / "content" / "page.html").read_text()
+    static = set(re.findall(r'id="([A-Za-z0-9_-]+)"', page))
+    looked_up = set(re.findall(r'\$\("([A-Za-z0-9_-]+)"\)', page))
+    assert looked_up <= static, f"looked up but not on the page: {sorted(looked_up - static)}"
+    tabs = re.findall(r'data-nb="([a-z]+)"', page)
+    assert tabs and all(f'id="nb-{t}"' in page for t in tabs), "every Notebook tab needs its nb-<tab> pane"

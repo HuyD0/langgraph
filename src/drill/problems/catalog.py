@@ -8,6 +8,10 @@ dozen patterns a question is wearing as a disguise, so the bank is organised aro
 Adding your own is deliberately easy: append a `Problem` to `ALL_PROBLEMS`.
 `tests/test_catalog.py` then automatically checks that your reference solution
 passes your own test cases, so a malformed problem fails the suite immediately.
+
+The prompts are written for someone new to coding who reads on a phone: every input
+is named with a tiny example, every rule the hidden cases check is stated, and the
+sample case shows the main behaviour rather than an edge case.
 """
 
 from __future__ import annotations
@@ -21,25 +25,30 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="hash-map",
         difficulty="easy",
         pattern=(
-            'Remember what you\'ve already seen. A dictionary lets you ask "have I already '
-            'seen the number I need?" instantly, so you only walk through the list once.'
+            "Remember what you've already seen. A dictionary lets you ask \"have I "
+            'already seen the partner I need?" instantly, so you only walk through the '
+            "list once."
         ),
-        target_complexity='walk through the list once. Using extra memory is fine',
+        target_complexity="one pass over the list (a dict to remember numbers is fine)",
         prompt=(
-            'You get a list of numbers, `nums`, and a number, `target`. Find the two '
-            'numbers in the list that add up to `target`, and return their positions in the'
-            ' list. Positions start at 0.\n\n'
-            "There is always exactly one right pair, and you can't use the same spot twice."
-            ' Put the smaller position first.'
+            "Your function gets two things:\n\n"
+            "- `numbers`: a list of numbers, like `[2, 7, 11, 15]`.\n"
+            "- `target`: the total you want, like `9`.\n\n"
+            "Exactly one pair of numbers in the list adds up to `target`. Return the "
+            "positions of those two numbers as a list, smaller position first. Positions "
+            "start at 0.\n\n"
+            "Don't use the same position twice. Two different positions can hold the same "
+            "number, though, like the two 3s in `[3, 3]`."
         ),
         function_name="two_sum",
-        starter_code="def two_sum(nums, target):\n    # your code here\n    pass\n",
+        starter_code="def two_sum(numbers, target):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def two_sum(nums, target):\n"
+            "def two_sum(numbers, target):\n"
             "    seen = {}\n"
-            "    for i, n in enumerate(nums):\n"
-            "        if target - n in seen:\n"
-            "            return [seen[target - n], i]\n"
+            "    for i, n in enumerate(numbers):\n"
+            "        need = target - n\n"
+            "        if need in seen:\n"
+            "            return [seen[need], i]\n"
             "        seen[n] = i\n"
             "    return []\n"
         ),
@@ -58,36 +67,43 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="stack",
         difficulty="easy",
         pattern=(
-            'Use a stack, like a pile of plates. Put each opening bracket on top. When a '
-            'closing bracket shows up, the plate on top must be its partner.'
+            "Use a stack, like a pile of plates. Put each opening bracket on top. When a "
+            "closing bracket shows up, the plate on top must be its partner."
         ),
-        target_complexity='walk through the string once',
+        target_complexity="one pass over the string",
         prompt=(
-            'You get a string `s` made only of brackets: `( ) [ ] { }`. Return `True` if '
-            'every bracket is closed by the same kind, in the right order. Otherwise return'
-            ' `False`.\n\n'
-            'An empty string counts as `True`.'
+            "Your function gets one string, `brackets`, made only of the characters "
+            '`( ) [ ] { }`, like `"{[]}"`.\n\n'
+            "Return `True` if the brackets match up, or `False` if they don't. They match "
+            "up when:\n\n"
+            "- every opening bracket is closed by one of the same kind, like `(` by `)`.\n"
+            "- the last bracket opened is the first to close, so `\"([])\"` matches but "
+            '`"([)]"` doesn\'t.\n'
+            "- nothing is left open at the end, and nothing closes that was never opened."
+            "\n\n"
+            "An empty string counts as `True`."
         ),
         function_name="is_valid",
-        starter_code="def is_valid(s):\n    # your code here\n    pass\n",
+        starter_code="def is_valid(brackets):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def is_valid(s):\n"
+            "def is_valid(brackets):\n"
             "    pairs = {')': '(', ']': '[', '}': '{'}\n"
             "    stack = []\n"
-            "    for ch in s:\n"
-            "        if ch in pairs:\n"
-            "            if not stack or stack.pop() != pairs[ch]:\n"
-            "                return False\n"
+            "    for bracket in brackets:\n"
+            "        if bracket not in pairs:\n"
+            "            stack.append(bracket)\n"
+            "        elif not stack or stack[-1] != pairs[bracket]:\n"
+            "            return False\n"
             "        else:\n"
-            "            stack.append(ch)\n"
+            "            stack.pop()\n"
             "    return not stack\n"
         ),
         test_cases=(
-            TestCase(args=("()",), expected=True, is_sample=True),
+            TestCase(args=("{[]}",), expected=True, is_sample=True),
+            TestCase(args=("()",), expected=True),
             TestCase(args=("()[]{}",), expected=True),
             TestCase(args=("(]",), expected=False),
             TestCase(args=("([)]",), expected=False),
-            TestCase(args=("{[]}",), expected=True),
             TestCase(args=("",), expected=True),
             TestCase(args=("(",), expected=False),
             TestCase(args=("]",), expected=False),
@@ -100,35 +116,40 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="binary-search",
         difficulty="easy",
         pattern=(
-            'Like finding a word in a paper dictionary: open the middle, decide which half '
-            "it's in, ignore the other half, and repeat. Most mistakes happen at the very "
-            'ends.'
+            "Halve the search area each step. Like finding a word in a paper dictionary: "
+            "open the middle, decide which half it's in, ignore the other half, and repeat."
         ),
-        target_complexity="cut the part you're searching in half each step",
+        target_complexity="halve the search area each step, instead of checking every item",
         prompt=(
-            'You get a list `nums` that is already sorted from smallest to largest, and a '
-            'number `target`. Return the position of `target` in the list, or `-1` if it '
-            "isn't there.\n\n"
-            "Don't check every item one by one. Use the fact that the list is sorted to "
-            'skip most of it.'
+            "Your function gets two things:\n\n"
+            "- `numbers`: a list sorted from smallest to largest, like `[1, 3, 5, 7, 9]`. "
+            "No number appears twice.\n"
+            "- `target`: the number to find, like `7`.\n\n"
+            "Return the position of `target` in the list. Positions start at 0. If "
+            "`target` isn't in the list, return `-1`. An empty list gives `-1` too.\n\n"
+            "Don't check every item one by one. Look at the middle item instead: because "
+            "the list is sorted, it tells you which half `target` must be in, so you can "
+            "ignore the other half."
         ),
         function_name="search",
-        starter_code="def search(nums, target):\n    # your code here\n    pass\n",
+        starter_code="def search(numbers, target):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def search(nums, target):\n"
-            "    lo, hi = 0, len(nums) - 1\n"
-            "    while lo <= hi:\n"
-            "        mid = (lo + hi) // 2\n"
-            "        if nums[mid] == target:\n"
+            "def search(numbers, target):\n"
+            "    low = 0\n"
+            "    high = len(numbers) - 1\n"
+            "    while low <= high:\n"
+            "        mid = (low + high) // 2\n"
+            "        if numbers[mid] == target:\n"
             "            return mid\n"
-            "        if nums[mid] < target:\n"
-            "            lo = mid + 1\n"
+            "        elif numbers[mid] < target:\n"
+            "            low = mid + 1\n"
             "        else:\n"
-            "            hi = mid - 1\n"
+            "            high = mid - 1\n"
             "    return -1\n"
         ),
         test_cases=(
-            TestCase(args=([-1, 0, 3, 5, 9, 12], 9), expected=4, is_sample=True),
+            TestCase(args=([1, 3, 5, 7, 9], 7), expected=3, is_sample=True),
+            TestCase(args=([-1, 0, 3, 5, 9, 12], 9), expected=4),
             TestCase(args=([-1, 0, 3, 5, 9, 12], 2), expected=-1),
             TestCase(args=([5], 5), expected=0),
             TestCase(args=([], 1), expected=-1),
@@ -143,27 +164,37 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="dynamic-programming",
         difficulty="easy",
         pattern=(
-            'Build the answer from smaller answers. The ways to reach step 5 come from the '
-            'ways to reach step 4 plus the ways to reach step 3. You only need to remember '
-            'the last two.'
+            "Build the answer from smaller answers. The ways to reach step 5 are the ways "
+            "to reach step 4 plus the ways to reach step 3, so you only need to remember "
+            "the last two counts."
         ),
-        target_complexity='go up the stairs once, remembering just two counts',
+        target_complexity="one pass up the stairs, remembering just two counts",
         prompt=(
-            'A staircase has `n` steps. Each move, you climb either 1 step or 2 steps. How '
-            'many different ways can you get to the top? Return that count.\n\n'
-            '`n` is always at least 1.'
+            "Your function gets one number, `steps`: how many steps the staircase has, "
+            "like `4`. It is always at least 1.\n\n"
+            "Each move, you climb either 1 step or 2 steps. Count how many different "
+            "orders of moves take you exactly to the top, and return that count. For 3 "
+            "steps there are 3 orders: 1 then 1 then 1, 1 then 2, or 2 then 1.\n\n"
+            "`steps` can be as big as 40, which has over 100 million orders, so don't "
+            "list them one by one. Build the count up from the bottom step instead."
         ),
         function_name="climb_stairs",
-        starter_code="def climb_stairs(n):\n    # your code here\n    pass\n",
+        starter_code="def climb_stairs(steps):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def climb_stairs(n):\n"
-            "    a, b = 1, 1\n"
-            "    for _ in range(n - 1):\n"
-            "        a, b = b, a + b\n"
-            "    return b\n"
+            "def climb_stairs(steps):\n"
+            "    if steps == 1:\n"
+            "        return 1\n"
+            "    ways_below = 1\n"
+            "    ways_here = 2\n"
+            "    for step in range(3, steps + 1):\n"
+            "        new = ways_here + ways_below\n"
+            "        ways_below = ways_here\n"
+            "        ways_here = new\n"
+            "    return ways_here\n"
         ),
         test_cases=(
-            TestCase(args=(2,), expected=2, is_sample=True),
+            TestCase(args=(4,), expected=5, is_sample=True),
+            TestCase(args=(2,), expected=2),
             TestCase(args=(3,), expected=3),
             TestCase(args=(1,), expected=1),
             TestCase(args=(5,), expected=8),
@@ -178,35 +209,44 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="sliding-window",
         difficulty="medium",
         pattern=(
-            'Slide a window along the string. Stretch it on the right. When a character '
-            'repeats, shrink it from the left until the repeat is gone.'
+            "Slide a window along the string. Stretch it on the right. When a character "
+            "repeats, shrink it from the left until the repeat is gone."
         ),
-        target_complexity='walk through the string once',
+        target_complexity=(
+            "one walk along the string. The inner while loop is fine: each character "
+            "joins the window once and leaves it at most once"
+        ),
         prompt=(
-            'You get a string `s`. Find the longest run of characters, side by side, where '
-            'no character repeats. Return how long that run is.\n\n'
-            'The characters must be next to each other. For `"abcabcbb"` the answer is 3, '
-            'from `"abc"`.'
+            'Your function gets one string, `text`, like `"pwwkew"`.\n\n'
+            "A substring is a run of characters that sit next to each other in `text`. "
+            "Find the longest substring in which no character appears twice, and return "
+            "its length.\n\n"
+            '- In `"abcabcbb"` the longest is `"abc"`, so return `3`.\n'
+            '- No skipping: in `"pwwkew"`, `"wke"` counts, but `"pwke"` doesn\'t, because '
+            "those characters aren't side by side.\n"
+            "- An empty string gives `0`."
         ),
         function_name="length_of_longest_substring",
         starter_code=(
-            "def length_of_longest_substring(s):\n    # your code here\n    pass\n"
+            "def length_of_longest_substring(text):\n    # your code here\n    pass\n"
         ),
         reference_solution=(
-            "def length_of_longest_substring(s):\n"
-            "    last = {}\n"
-            "    best = start = 0\n"
-            "    for i, ch in enumerate(s):\n"
-            "        if ch in last and last[ch] >= start:\n"
-            "            start = last[ch] + 1\n"
-            "        last[ch] = i\n"
+            "def length_of_longest_substring(text):\n"
+            "    window = set()\n"
+            "    start = 0\n"
+            "    best = 0\n"
+            "    for i, char in enumerate(text):\n"
+            "        while char in window:\n"
+            "            window.remove(text[start])\n"
+            "            start += 1\n"
+            "        window.add(char)\n"
             "        best = max(best, i - start + 1)\n"
             "    return best\n"
         ),
         test_cases=(
-            TestCase(args=("abcabcbb",), expected=3, is_sample=True),
+            TestCase(args=("pwwkew",), expected=3, is_sample=True),
+            TestCase(args=("abcabcbb",), expected=3),
             TestCase(args=("bbbbb",), expected=1),
-            TestCase(args=("pwwkew",), expected=3),
             TestCase(args=("",), expected=0),
             TestCase(args=("dvdf",), expected=3),
             TestCase(args=("tmmzuxt",), expected=5),
@@ -219,30 +259,32 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="dynamic-programming",
         difficulty="medium",
         pattern=(
-            'Walk along the list keeping a running total. At each number, ask: am I better '
-            'off adding this to my running total, or starting fresh from here?'
+            "Keep a running total as you walk the list. At each number, ask: am I better "
+            "off adding this to my running total, or starting fresh from here?"
         ),
-        target_complexity=(
-            'walk through the list once, keeping just a couple of numbers in your head'
-        ),
+        target_complexity="one pass over the list, keeping just two totals",
         prompt=(
-            'You get a list of numbers, `nums`, which can include negative numbers. Find '
-            'the run of numbers, side by side, that adds up to the biggest total. Return '
-            'that total.\n\n'
-            'The list has at least one number, and all of them might be negative.'
+            "Your function gets one list, `numbers`, like `[3, -4, 2, -1, 4]`. It has at "
+            "least one number, and numbers can be negative.\n\n"
+            "A subarray is a run of numbers that sit next to each other in the list. Find "
+            "the subarray with the biggest total, and return that total.\n\n"
+            "A subarray has at least one number. So if every number is negative, the "
+            "answer is the biggest single number, like `-1` for `[-3, -1, -2]`."
         ),
         function_name="max_sub_array",
-        starter_code="def max_sub_array(nums):\n    # your code here\n    pass\n",
+        starter_code="def max_sub_array(numbers):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def max_sub_array(nums):\n"
-            "    best = current = nums[0]\n"
-            "    for n in nums[1:]:\n"
-            "        current = max(n, current + n)\n"
-            "        best = max(best, current)\n"
+            "def max_sub_array(numbers):\n"
+            "    best = numbers[0]\n"
+            "    running = numbers[0]\n"
+            "    for n in numbers[1:]:\n"
+            "        running = max(running + n, n)\n"
+            "        best = max(best, running)\n"
             "    return best\n"
         ),
         test_cases=(
-            TestCase(args=([-2, 1, -3, 4, -1, 2, 1, -5, 4],), expected=6, is_sample=True),
+            TestCase(args=([3, -4, 2, -1, 4],), expected=5, is_sample=True),
+            TestCase(args=([-2, 1, -3, 4, -1, 2, 1, -5, 4],), expected=6),
             TestCase(args=([1],), expected=1),
             TestCase(args=([5, 4, -1, 7, 8],), expected=23),
             TestCase(args=([-1],), expected=-1),
@@ -257,29 +299,31 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="sorting",
         difficulty="medium",
         pattern=(
-            'Sort the ranges by where they start. Then walk through once: each range either'
-            ' joins the one before it or starts a new one.'
+            "Sort the intervals by where they start. Then walk through once: each one "
+            "either joins the one before it or starts a new one."
         ),
-        target_complexity='sorting first is fine; after that, walk through once',
+        target_complexity="sort once, then one pass over the intervals",
         prompt=(
-            'You get a list of ranges, each written as `[start, end]`. Combine any ranges '
-            'that overlap, and return the result ordered by where each range starts.\n\n'
-            'Ranges that only touch, like `[1, 4]` and `[4, 5]`, still count as overlapping'
-            ' and become `[1, 5]`.'
+            "Your function gets one list, `intervals`, like `[[1, 3], [2, 6], [8, 10]]`. "
+            "Each interval is a range of numbers written as `[start, end]`.\n\n"
+            "Merge intervals that overlap into one interval that covers them both, so "
+            "`[1, 3]` and `[2, 6]` become `[1, 6]`. Intervals that only touch, like "
+            "`[1, 4]` and `[4, 5]`, merge too, into `[1, 5]`. Intervals that don't "
+            "overlap stay as they are.\n\n"
+            "Return the merged intervals in order of their start. The input can come in "
+            "any order, and an empty list gives `[]`."
         ),
         function_name="merge",
         starter_code="def merge(intervals):\n    # your code here\n    pass\n",
         reference_solution=(
             "def merge(intervals):\n"
-            "    if not intervals:\n"
-            "        return []\n"
-            "    out = []\n"
+            "    merged = []\n"
             "    for start, end in sorted(intervals):\n"
-            "        if out and start <= out[-1][1]:\n"
-            "            out[-1][1] = max(out[-1][1], end)\n"
+            "        if merged and start <= merged[-1][1]:\n"
+            "            merged[-1][1] = max(merged[-1][1], end)\n"
             "        else:\n"
-            "            out.append([start, end])\n"
-            "    return out\n"
+            "            merged.append([start, end])\n"
+            "    return merged\n"
         ),
         test_cases=(
             TestCase(
@@ -302,34 +346,42 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         difficulty="medium",
         pattern=(
             "Give every word a label that's identical for words with the same letters, such"
-            ' as its letters in alphabetical order. Then group words by label in a '
-            'dictionary.'
+            " as its letters in alphabetical order. Then group words by label in a "
+            "dictionary."
         ),
-        target_complexity='look at each word once',
+        target_complexity="one pass over the words",
         prompt=(
-            'You get a list of words, `strs`. Put words that use exactly the same letters '
-            'into the same group, like `"eat"`, `"tea"` and `"ate"`. Return the groups as a'
-            ' list of lists.\n\n'
-            "The order of the groups, and of the words inside each group, doesn't matter."
+            'Your function gets one list, `words`, like `["eat", "tan", "tea"]`.\n\n'
+            "Two words are anagrams when they have exactly the same letters in a different "
+            'order, like `"eat"` and `"tea"`. Put words that are anagrams of each other '
+            "in the same group. A word with no anagram gets a group of its own.\n\n"
+            "Return a list of the groups, where each group is a list of words. The order "
+            "of the groups, and of the words inside a group, doesn't matter. An empty "
+            "list gives `[]`."
         ),
         function_name="group_anagrams",
-        starter_code="def group_anagrams(strs):\n    # your code here\n    pass\n",
+        starter_code="def group_anagrams(words):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def group_anagrams(strs):\n"
+            "def group_anagrams(words):\n"
             "    groups = {}\n"
-            "    for word in strs:\n"
-            "        key = ''.join(sorted(word))\n"
-            "        groups.setdefault(key, []).append(word)\n"
+            "    for word in words:\n"
+            "        label = ''.join(sorted(word))\n"
+            "        if label not in groups:\n"
+            "            groups[label] = []\n"
+            "        groups[label].append(word)\n"
             "    return list(groups.values())\n"
         ),
         unordered=True,
         test_cases=(
             TestCase(
-                args=(["eat", "tea", "tan", "ate", "nat", "bat"],),
-                expected=[["eat", "tea", "ate"], ["tan", "nat"], ["bat"]],
+                args=(["eat", "tan", "tea", "nat", "bat"],),
+                expected=[["eat", "tea"], ["tan", "nat"], ["bat"]],
                 is_sample=True,
             ),
-            TestCase(args=([""],), expected=[[""]]),
+            TestCase(
+                args=(["eat", "tea", "tan", "ate", "nat", "bat"],),
+                expected=[["eat", "tea", "ate"], ["tan", "nat"], ["bat"]],
+            ),
             TestCase(args=(["a"],), expected=[["a"]]),
             TestCase(args=([],), expected=[]),
             TestCase(args=(["abc", "cba", "xyz"],), expected=[["abc", "cba"], ["xyz"]]),
@@ -343,14 +395,22 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         difficulty="medium",
         pattern=(
             "When you find land you haven't visited yet, that's a new island. Count it, "
-            "then mark all the land joined to it as visited so you don't count it twice."
+            "then sink it: turn it and all the land joined to it into water, so you "
+            "don't count it twice."
         ),
-        target_complexity='visit each square in the grid once',
+        target_complexity=(
+            "look at each square only a few times. A loop over the rows with a loop over "
+            "the columns inside is fine: together they visit each square once"
+        ),
         prompt=(
-            "You get a grid, written as a list of rows, where `'1'` is land and `'0'` is "
-            'water. Count the islands.\n\n'
-            "An island is land squares joined up, down, left or right. Diagonal doesn't "
-            'count. Everything outside the grid is water.'
+            "Your function gets one thing, `grid`: a map written as a list of rows, like "
+            '`[["1", "1"], ["0", "1"]]`. Each square is the text `"1"` (land) or `"0"` '
+            "(water).\n\n"
+            "An island is a patch of land squares joined up, down, left or right. Count "
+            "the islands and return the count.\n\n"
+            "Squares that only touch at a corner are not joined, so "
+            '`[["1", "0"], ["0", "1"]]` has 2 islands, not 1. Everything outside the grid '
+            "is water. An empty grid, `[]`, has 0 islands."
         ),
         function_name="num_islands",
         starter_code="def num_islands(grid):\n    # your code here\n    pass\n",
@@ -358,22 +418,28 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
             "def num_islands(grid):\n"
             "    if not grid:\n"
             "        return 0\n"
-            "    rows, cols = len(grid), len(grid[0])\n"
+            "    height = len(grid)\n"
+            "    width = len(grid[0])\n"
+            "\n"
+            "    def sink(row, col):\n"
+            "        if row < 0 or row >= height:\n"
+            "            return\n"
+            "        if col < 0 or col >= width:\n"
+            "            return\n"
+            "        if grid[row][col] != '1':\n"
+            "            return\n"
+            "        grid[row][col] = '0'\n"
+            "        sink(row + 1, col)\n"
+            "        sink(row - 1, col)\n"
+            "        sink(row, col + 1)\n"
+            "        sink(row, col - 1)\n"
+            "\n"
             "    count = 0\n"
-            "    for r in range(rows):\n"
-            "        for c in range(cols):\n"
-            "            if grid[r][c] != '1':\n"
-            "                continue\n"
-            "            count += 1\n"
-            "            stack = [(r, c)]\n"
-            "            grid[r][c] = '0'\n"
-            "            while stack:\n"
-            "                y, x = stack.pop()\n"
-            "                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n"
-            "                    ny, nx = y + dy, x + dx\n"
-            "                    if 0 <= ny < rows and 0 <= nx < cols and grid[ny][nx] == '1':\n"
-            "                        grid[ny][nx] = '0'\n"
-            "                        stack.append((ny, nx))\n"
+            "    for row in range(height):\n"
+            "        for col in range(width):\n"
+            "            if grid[row][col] == '1':\n"
+            "                count += 1\n"
+            "                sink(row, col)\n"
             "    return count\n"
         ),
         test_cases=(
