@@ -134,7 +134,7 @@ More habits:
 - **recursion** — a function that calls itself on a smaller input, with a
   stopping rule.
 
-### Terms from milestones 1-6
+### Terms from milestones 1-8
 
 - **TypedDict** — a dict with a declared set of keys and types (milestone 1).
 - **mutate** — change a value in place. Mutating something other code still
@@ -156,5 +156,31 @@ More habits:
   is how a graph branches or loops (milestone 6).
 - **checkpointer** — saves state after each step so a graph can pause and
   resume (milestone 6).
+- **token** — a piece of text the model reads or writes: a common word, part of
+  a rarer word, a digit or a symbol (milestone 7).
+- **chance (probability)** — how likely the model rates each possible next
+  token; all of them add up to 100% (milestone 7).
+- **temperature** — a setting that makes picks safer (low) or more varied
+  (high). At 0 the model always takes its top choice (milestone 7).
+- **top-k / top-p** — filters that throw away unlikely tokens before picking:
+  keep the k most likely, or the most likely until their chances add up to p
+  (milestone 7).
+- **prefill / decode** — the model's two phases: reading the whole prompt at
+  once, then writing the answer one token at a time (milestone 7).
+- **KV cache** — the model's saved notes on text it has already read, reused
+  when a new prompt starts the same way (milestone 7).
+- **quantization** — storing the model's numbers with fewer bits so it takes
+  less memory, at a small cost in accuracy (milestone 7).
+- **margin of error** — how far a measured score could be from the true one.
+  For a pass rate on n examples, about ±100 ÷ √n percentage points (milestone 7).
+- **paired comparison** — comparing two setups on the same examples, one by one,
+  and counting only where they disagree. McNemar's test is the standard version
+  for pass/fail results (milestone 7).
+- **pre-registration** — writing down the metric and the decision rule before
+  running an experiment, so the result can't shape the rule (milestone 8).
+- **stratify** — sample group by group, so every kind of example is
+  represented in proportion, or on purpose more than in proportion (milestone 8).
+- **bootstrap** — getting a range for any number by rebuilding the data many
+  times from random draws, with repeats allowed (milestone 8).
 - **TDD** — test-driven development: read or write the test first, watch it
   fail, then write code until it passes.

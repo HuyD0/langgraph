@@ -197,8 +197,11 @@ def _solve(notebook, stem: str) -> int:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("path", NOTEBOOKS, ids=NOTEBOOK_IDS)
-def test_notebook_is_solvable(path: Path):
+def test_notebook_is_solvable(path: Path, monkeypatch: pytest.MonkeyPatch):
     """With the answer key substituted, every test in the notebook passes."""
+    # Milestone 7 talks to a local Ollama when one is running. Pin it to its recorded
+    # measurements here, so the suite gives the same result on every machine.
+    monkeypatch.setenv("DRILL_NOTEBOOK_OFFLINE", "1")
     notebook = _load(path)
     patched = _solve(notebook, path.stem)
     assert patched, f"no exercise cell in {path.name} was substituted"

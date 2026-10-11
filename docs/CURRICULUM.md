@@ -91,10 +91,19 @@ your code to work on something real.
 | 4 | `m4_progress.ipynb` | Aggregation, ratios, tie-breaks | The tie-break rule |
 | 5 | `m5_sandbox.ipynb` | Subprocess, serialisation, failure as data | Never raising on a bad submission |
 | 6 | `m6_graph.ipynb` | LangGraph: nodes, conditional edges, cycles, checkpointers | Why the checkpointer is mandatory |
+| 7 | `m7_inside_the_model.ipynb` | Tokens, next-word chances, temperature/top-k/top-p, reading vs writing speed, the cache, quantization, fair comparisons | Writing your guess down *before* running the experiment |
+| 8 | `m8_designing_an_eval.ipynb` | One complete experiment: a written plan, eval set margins, per-group scores with ranges, a paired comparison, the bootstrap, and a decision | Keeping the rule you wrote when the result tempts you |
+| 9a | `m9a_build_the_eval_set.ipynb` | Tracing production traffic, expert labels (feedback vs expectations), pulling traces into an MLflow dataset, stratifying, the must-pass set, a dev / test / holdout split | Seeing that grades don't carry into the eval set |
+| 9b | `m9b_plan_and_run.ipynb` | Framing and designing a RAG experiment: the plan, oracle and ablation variants, tags and typed spans, a robust reranker parser | Not deciding yet |
+| 9c | `m9c_analyse_and_decide.ipynb` | The Evaluate stage in order: must-pass gate, oracle headroom, groups, flaky questions, the paired test, reading regressions and improvements, the reranker check, the ablation, the time guardrail, the holdout | Doing the steps in order |
+| 9d | `m9d_ship_monitor_grow.ipynb` | Shipping behind a gate, a monitoring signal, tracing a production failure to its cause, growing the eval set as a new version | Closing the loop |
 
 Milestones 1–4 are ordinary Python and transfer directly to interviews.
 Milestone 5 is the one senior engineers will want to talk about — running code you
-did not write, safely, is a real systems problem. Milestone 6 is the LangGraph one.
+did not write, safely, is a real systems problem. Milestone 6 is the LangGraph one. Milestone 7 steps
+back from the tutor to the model itself: six small experiments on a local model
+(through Ollama, or recorded results if you don't have it), each run the
+scientific-method way - question, written guess, one change, verdict.
 
 `src/drill/` is the worked answer to all six. Looking is allowed. But write your
 version first: reading a solution feels like understanding and usually is not —
@@ -117,6 +126,13 @@ teaching constructs that do not exist in `src/drill/` at all.
 5. Milestone 6, once you have read `src/drill/graph.py` and the LangGraph docs on
    [persistence](https://langchain-ai.github.io/langgraph/concepts/persistence/)
    and [human-in-the-loop](https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/).
+6. Milestone 7 whenever you're curious why the model behaves the way it does.
+   It doesn't depend on milestones 1-6, only on milestone 0.
+7. Milestone 8 after milestone 7, or before your first real "is my change
+   better?" decision at work. [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md) is the
+   template it follows.
+8. Milestones 9a to 9d, in order, to see every stage of the lifecycle in one
+   project. [END_TO_END.md](END_TO_END.md) is the map that ties them together.
 
 ---
 
@@ -167,10 +183,17 @@ hints got better or just longer. That loop — change a prompt, measure it again
 real recorded data — is the thing most people building with LLMs have never
 actually done, and it is worth being able to describe in an interview.
 
+Before you change the prompt, write down how you will judge the change:
+[EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md) is a fill-in template, with this exact
+experiment (which local model gives better hints) worked through. It covers the
+eval set and its splits, how many examples you need, comparing case by case, and
+the decision rule. The Daily Drill's *Experiment design* and *Evals* modules teach
+each part with an exercise.
+
 ---
 
 ## Teaching this to someone else
 
 See [TEACHING.md](TEACHING.md): per-milestone timings, where people get stuck, how to unstick them without solving it for them, and the three demo moments worth putting on a projector.
 
-The headline for anyone planning a session: **the whole notebook track needs no Azure credentials and no cloud spend.** Milestones 1-3 are pure Python; 4-6 import `drill` only for data structures and a fake chat model. Just `uv sync --dev`.
+The headline for anyone planning a session: **the whole notebook track needs no Azure credentials and no cloud spend.** Milestones 1-3 are pure Python; 4-6 import `drill` only for data structures and a fake chat model; 7, 8 and 9a-9d use a free local model through Ollama if you have one, and recorded results if you don't. Just `uv sync --dev`.
