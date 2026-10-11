@@ -100,6 +100,13 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch):
         "AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET",
         "OLLAMA_MODEL", "OLLAMA_BASE_URL", "MLFLOW_GATEWAY_ENDPOINT", "MLFLOW_GATEWAY_URL",
         "DRILL_MAX_ATTEMPTS", "DRILL_SANDBOX_TIMEOUT", "DRILL_PROGRESS_PATH",
-        "MLFLOW_TRACKING_URI", "MLFLOW_EXPERIMENT_NAME",
+        "MLFLOW_TRACKING_URI", "MLFLOW_EXPERIMENT_NAME", "MLFLOW_EXPERIMENT_ID", "DRILL_MLFLOW_EXPERIMENT",
+        "MLFLOW_CLAUDE_TRACING_ENABLED",  # set by `mlflow autolog claude` for Claude Code sessions
     ):
         monkeypatch.delenv(var, raising=False)
+    # Tracing stays off unless a test turns it on with a throwaway store; otherwise the
+    # MCP tools would write their traces into the developer's real .drill/mlflow.db.
+    from drill.server import observe
+
+    monkeypatch.setenv("DRILL_TRACING", "0")
+    monkeypatch.setattr(observe, "_default", {})

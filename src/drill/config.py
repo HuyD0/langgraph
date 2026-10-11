@@ -226,5 +226,7 @@ class DrillSettings:
             progress_path=Path(progress) if progress else DEFAULT_PROGRESS_PATH,
             # Unset means MLflow writes to ./mlruns, which `mlflow ui` reads by default.
             mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI"),
-            mlflow_experiment=os.getenv("MLFLOW_EXPERIMENT_NAME", "daily-drill"),
+            # Its own variable, not MLFLOW_EXPERIMENT_NAME: Claude Code's MLflow tracing sets that
+            # for everything it starts, and would move these traces into its experiment.
+            mlflow_experiment=os.getenv("DRILL_MLFLOW_EXPERIMENT") or "daily-drill",
         )

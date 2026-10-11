@@ -8,6 +8,7 @@ local first, fallback, cache, budget, the page's document protocol - not the pro
 from __future__ import annotations
 
 import asyncio
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -185,31 +186,114 @@ def test_thinking_models_are_told_not_to_think_unless_the_job_is_complex(store):
     assert plain._prepare([], plain.local, "quick", False)[1] is plain.local.chat  # nothing to switch off
 
 
-def test_traces_land_in_mlflow_with_the_first_word_span(store, tmp_path, monkeypatch):
+@pytest.fixture
+def mlflow_store(tmp_path, monkeypatch):
+    """A throwaway MLflow store, with tracing switched on for this test only."""
+    import mlflow
+
+    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", uri)
+    monkeypatch.setenv("DRILL_TRACING", "1")
+    mlflow.set_tracking_uri(uri)
+    yield uri
+    mlflow.clear_active_model()
+    mlflow.set_tracking_uri(None)
+
+
+def traces_in(experiment: str) -> list:
+    import mlflow
+
+    mlflow.flush_trace_async_logging()  # traces are written in the background
+    experiment_id = mlflow.get_experiment_by_name(experiment).experiment_id
+    return [mlflow.get_trace(t.info.trace_id) for t in mlflow.search_traces(locations=[experiment_id], return_type="list")]
+
+
+def test_traces_are_named_tagged_versioned_and_checked(store, mlflow_store):
+    from mlflow.entities import SpanType
+
+    from drill.server.observe import MlflowObserver, app_version
+
+    observer = MlflowObserver("drill-test")
+    assert observer.enabled
+    router = ModelRouter(Route("local", "slow", SlowButTalking()), None, store, observer=observer)
+    context = {"feature": "hint", "lesson_id": "resolve_prompt", "exercise_fn": "resolve_prompt",
+               "hint_level": 2, "word_limit": 2, "session": "s1"}
+    assert run(router.ask("hello", context=context)).text == "slow and steady"
+    observer.drain()
+
+    [trace] = traces_in("drill-test")
+    tags, metadata = trace.info.tags, trace.info.trace_metadata
+    assert tags["mlflow.traceName"] == "hint"  # named after what it was for, not "tutor.ask" every time
+    assert (tags["feature"], tags["lesson_id"], tags["hint_level"]) == ("hint", "resolve_prompt", "2")
+    assert tags["app_version"] == app_version() and metadata["mlflow.modelId"]  # linked to a version
+    assert metadata["mlflow.trace.session"] == "s1" and metadata["mlflow.trace.user"] == "local"
+
+    spans = {s.name: s for s in trace.data.spans}
+    assert spans["hint"].span_type == SpanType.CHAIN and spans["checks"].span_type == SpanType.GUARDRAIL
+    ask = spans["tutor.ask"]
+    assert ask.span_type == SpanType.CHAT_MODEL and ask.inputs["messages"] == [{"role": "user", "content": "hello"}]
+    assert ask.attributes["model"] == "slow" and ask.attributes["ttft_ms"] < ask.attributes["total_ms"]
+    assert ask.attributes["mlflow.chat.tokenUsage"]["total_tokens"] > 0
+    wait_ms = (spans["first_word"].end_time_ns - spans["first_word"].start_time_ns) / 1e6
+    assert wait_ms < 100  # the first word was immediate; the rest took ~300 ms
+
+    # Three words against a limit of two: the checks say so, as a span, as tags and as feedback.
+    assert spans["checks"].outputs == {"words": 3, "solution_leak": False, "big_o": False, "over_word_limit": True}
+    assert (tags["solution_leak"], tags["over_word_limit"]) == ("false", "true")
+    feedback = {a.name: a.value for a in trace.info.assessments}
+    assert feedback == {"solution_leak": False, "big_o": False, "over_word_limit": True}
+
+
+def test_a_leaked_solution_and_a_failed_model_show_on_the_trace(store, mlflow_store):
+    from mlflow.entities import SpanStatusCode
+
+    from drill.server.observe import MlflowObserver
+
+    observer = MlflowObserver("drill-test")
+    leak = "def add(a, b):\n    return a + b"
+    router = ModelRouter(Route("local", "down", Broken()), Route("hosted", "backup", fake(leak)), store, observer=observer)
+    long_prompt = "why? " * 1500  # 7,500 characters: kept whole, not cut at 4,000
+    run(router.ask(long_prompt, context={"feature": "ask_lesson", "question": "why?", "exercise_fn": "add"}))
+    observer.drain()
+
+    [trace] = traces_in("drill-test")
+    spans = {s.name: s for s in trace.data.spans}
+    assert spans["ask_lesson"].inputs == {"question": "why?"} and spans["ask_lesson"].outputs == {"answer": leak}
+    assert spans["tutor.ask"].inputs["messages"][0]["content"] == long_prompt
+    assert spans["tutor.ask"].attributes["route"] == "hosted"
+    failed = spans["attempt local"]
+    assert failed.status.status_code == SpanStatusCode.ERROR and "connection refused" in failed.attributes["error"]
+    assert trace.info.tags["solution_leak"] == "true"
+
+
+def test_tracing_waits_for_mlflow_without_holding_up_answers(store, tmp_path, monkeypatch):
+    import socket
+
     import mlflow
 
     from drill.server.observe import MlflowObserver
 
-    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
-    monkeypatch.setenv("MLFLOW_TRACKING_URI", uri)
-    mlflow.set_tracking_uri(uri)
+    with socket.socket() as sock:  # a port nothing is listening on: MLflow is not running
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", f"http://127.0.0.1:{port}")
+    mlflow.set_tracking_uri(f"http://127.0.0.1:{port}")
     try:
+        started = time.monotonic()
         observer = MlflowObserver("drill-test")
-        assert observer.enabled
-        router = ModelRouter(Route("local", "slow", SlowButTalking()), None, store, observer=observer)
-        assert run(router.ask("hello")).text == "slow and steady"
-        mlflow.flush_trace_async_logging()  # traces are written in the background
-        experiment_id = mlflow.get_experiment_by_name("drill-test").experiment_id
-        traces = mlflow.search_traces(locations=[experiment_id], return_type="list")
-        assert len(traces) == 1
-        spans = {s.name: s for s in traces[0].data.spans}
-        assert {"tutor.ask", "first_word"} <= set(spans)
-        ask = spans["tutor.ask"]
-        assert ask.attributes["model"] == "slow" and ask.attributes["ttft_ms"] < ask.attributes["total_ms"]
-        assert ask.attributes["mlflow.chat.tokenUsage"]["total_tokens"] > 0
-        wait_ms = (spans["first_word"].end_time_ns - spans["first_word"].start_time_ns) / 1e6
-        assert wait_ms < 100  # the first word was immediate; the rest took ~300 ms
+        assert not observer.enabled and time.monotonic() - started < 3  # not MLflow's four minutes of retries
+        router = ModelRouter(Route("local", "fake", fake("fine")), None, store, observer=observer)
+        assert run(router.ask("hello")).text == "fine"
+
+        # MLflow starts later: the next try after the wait turns tracing back on, no restart needed.
+        uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+        monkeypatch.setenv("MLFLOW_TRACKING_URI", uri)
+        mlflow.set_tracking_uri(uri)
+        assert not observer.ready()  # still inside the 30-second wait
+        observer._next_try = 0
+        assert observer.ready()
     finally:
+        mlflow.clear_active_model()
         mlflow.set_tracking_uri(None)
 
 
@@ -276,6 +360,20 @@ def test_ask_streams_text_and_returns_json(store, bank):
     assert client.post("/api/ask", json={"prompt": ""}).status_code == 400
 
 
+def test_the_page_says_what_each_request_is_for(store, bank):
+    from drill.server.observe import RecordingObserver
+
+    observer = RecordingObserver()
+    router = ModelRouter(Route("local", "fake", fake("Try a dict.")), None, store, observer=observer)
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    trace = {"feature": "ask_lesson", "lesson_id": "resolve_prompt", "step": "Learn", "question": "why?",
+             "chip": False, "not_a_field": "dropped"}
+    assert client.post("/api/ask", json={"prompt": "p", "trace": trace}).text == "Try a dict."
+    [record] = observer.records
+    assert record["context"] == {"feature": "ask_lesson", "door": "page", "lesson_id": "resolve_prompt",
+                                 "step": "Learn", "question": "why?", "chip": "no", "user": "local"}
+
+
 def test_ask_without_a_model_is_a_clear_503(store, bank):
     client = client_with(store, bank, local=False)
     assert not client.get("/api/health").json()["ai"]
@@ -314,3 +412,31 @@ def test_mcp_tools_share_the_store_and_bank(store, bank):
     assert modules[0]["lessons"][0] == {"id": first, "title": bank.lessons[first]["title"], "done": True}
     with pytest.raises(KeyError):
         mcp_door.get_drill("no_such_lesson")
+
+
+def test_mcp_tool_calls_are_traced_with_the_model_call_inside(store, bank, mlflow_store):
+    from mlflow.entities import SpanType, TraceState
+
+    from drill.server import observe
+
+    observer = observe.default_observer()
+    router = ModelRouter(Route("local", "fake", fake("Look at .get")), None, store, observer=observer)
+    mcp_door.configure(store=store, router=router, bank=bank)
+    mcp_door.next_drill()
+    assert run(mcp_door.hint("resolve_prompt", "", 2)) == "Look at .get"
+    with pytest.raises(KeyError):
+        mcp_door.get_drill("no_such_lesson")
+    observer.drain()
+
+    traces = {t.info.tags["mlflow.traceName"]: t for t in traces_in("daily-drill")}
+    assert set(traces) == {"next_drill", "hint", "get_drill"}
+    hint = traces["hint"]
+    assert (hint.info.tags["door"], hint.info.tags["lesson_id"]) == ("mcp", "resolve_prompt")
+    assert hint.info.trace_metadata["mlflow.trace.session"] == observe.MCP_SESSION
+    spans = {s.name: s for s in hint.data.spans}
+    tool = spans["hint"]
+    assert tool.span_type == SpanType.TOOL and tool.inputs == {"lesson_id": "resolve_prompt", "code": "", "level": 2}
+    assert tool.outputs == "Look at .get"
+    assert spans["tutor.ask"].parent_id == tool.span_id and spans["checks"].parent_id == tool.span_id
+    assert hint.info.tags["solution_leak"] == "false" and hint.info.tags["hint_level"] == "2"
+    assert traces["get_drill"].info.state == TraceState.ERROR  # a failing tool call is recorded, then re-raised
