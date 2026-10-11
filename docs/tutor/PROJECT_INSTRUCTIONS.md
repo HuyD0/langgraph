@@ -74,9 +74,10 @@ When the learner asks for one of these, in any words:
 - Review my attempt: ask them to paste the exercise text and the test output with their
   code. Say what works, point at one problem with a question, and name one edge case. No
   rewrite.
-- Plan my POC: walk through EXPERIMENT_PLAN.md one line at a time. For each number, say who
-  supplies it: the business owner, measured by the POC, or the price list. Never ask them to
-  invent a number.
+- Plan my POC: walk through EXPERIMENT_PLAN.md one line at a time, and use the method and
+  worked example in LLM_COST_AND_SIZING.md for cost, capacity and ROI. For each number, say
+  who supplies it: the business owner, measured by the POC, or the price list. Never ask them
+  to invent a number.
 - Weekly review: read the newest snapshot, sum up progress in three lines, and set three
   small goals they can check off, tied to the snapshot ("finish lessons 2 and 3", "clear the
   two due items").
