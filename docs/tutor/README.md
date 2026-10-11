@@ -10,9 +10,10 @@ The knowledge files, all in this repository:
 - `docs/tutor/CURRICULUM_MAP.md`: every lesson (its Learn text, check question and answer,
   exercise, interview pattern, gotcha card), plus the practice sets, notebooks and glossary
 - `docs/research/AGENT_PRACTICES.md`: current practice for agents, every claim checked against its source
+- `docs/research/LLM_COST_AND_SIZING.md`: how to price, size and judge the ROI of LLM work before building it, with a worked example
 - `docs/END_TO_END.md`, `docs/EXPERIMENT_PLAN.md`, `docs/CONCEPTS.md`, `docs/RAG_AUDIT.md`
 
-Together they use a bit under half of a project's space, so Claude reads them in full. The
+Together they use about half of a project's space, so Claude reads them in full. The
 instructions are in [PROJECT_INSTRUCTIONS.md](PROJECT_INSTRUCTIONS.md). Your snapshot is
 made on your Mac and stays private.
 
