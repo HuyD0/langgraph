@@ -9,6 +9,7 @@ lesson(MODULE, 'summarize_by_tag',
     learn=[
         'A **trace** records one request: every model call, retrieval and tool, with timings, inputs, outputs and token counts. Design traces before you need them.',
         "Tag every trace with the things you'll want to slice by later: **config**, **model**, **prompt version**, **environment**. Mark spans with their type (RETRIEVER, TOOL, CHAT_MODEL) so evaluation and analysis can find them, and put per-request details in span attributes.",
+        "Give each version you compare a name with `mlflow.set_active_model(name=...)`, like `rag-rerank-v2`. Every trace and eval run is then linked to that version, which is what lets you line up two versions question by question and read their regressions and improvements. This is the **Build and trace** stage: if it isn't in the traces when they're created, no analysis later can recover it.",
     ],
     example=example('Tags and span types in MLflow Tracing', """import mlflow
 
