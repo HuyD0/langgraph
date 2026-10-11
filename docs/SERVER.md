@@ -60,14 +60,54 @@ container needs nothing but `pip install .`.
 
 ## What gets measured
 
-Every answer is one MLflow trace, in `.drill/mlflow.db` unless `MLFLOW_TRACKING_URI` points
-elsewhere (`uv run mlflow ui --backend-store-uri sqlite:///.drill/mlflow.db`, experiment
-`daily-drill`): which route and model answered, the tier, whether it was a cache hit,
-whether the model was allowed to think, token counts in MLflow's own format so the token
-and cost dashboards work, total time, and a `first_word` child span whose length is the
-**time to first token**, the wait the learner actually feels. Thinking costs time, not
-money, on your Mac (a hint takes 5 to 20 s with it, about 1 s without), so it is off for
-hints and on for reviews by default.
+Every request is one MLflow trace, in experiment `daily-drill` (in `.drill/mlflow.db` unless
+`MLFLOW_TRACKING_URI` points elsewhere; view it with
+`uv run mlflow ui --backend-store-uri sqlite:///.drill/mlflow.db`). A question in the page's
+Ask box looks like this:
+
+```
+ask_lesson                 the learner's question, lesson and step in; the answer out
+  tutor.ask                the full prompt, model, route, temperature, tokens, why it stopped
+    first_word             time to first token: how long "Thinking..." showed
+    attempt local          only when a model failed and the next one was tried, with the error
+  checks                   did it leak the exercise's code, use Big-O, go over its word limit
+```
+
+- **Named and tagged by what it was for.** The trace name is the feature (`ask_lesson`,
+  `hint`, `review`, `explain`, `ask_study_item`, `quiz`, or the MCP tool), and the tags say
+  `feature`, `door` (`page` or `mcp`), `lesson_id`, `step`, `hint_level`, `chip` (a one-tap
+  question) and `guard` (`solution_request` when the page turned a request for the solution
+  into a hint). Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.
+- **Sessions.** Follow-ups in one Ask thread share a session; so do the questions about one
+  study-list item, and every tool call from one Claude Code session.
+- **Versions.** `app_version` is the git commit the server runs, with `-dirty` when tracked
+  files have uncommitted changes, and each trace is linked to a model version of that name,
+  so two versions can be compared in the UI.
+- **Checks.** Each answer is checked by code, and the result shows three ways: a `checks`
+  span, tags (`tags.solution_leak = 'true'` finds every leak) and feedback columns in the UI.
+- **MCP tool calls.** Every tool Claude calls is a `TOOL` trace with its arguments and result;
+  for `hint`, `review` and `ask_tutor` the model call and checks sit inside it.
+
+Token counts use MLflow's own format, so its token and cost charts work. Thinking costs
+time, not money, on your Mac (a hint takes 5 to 20 s with it, about 1 s without), so it is
+off for hints and on for reviews by default. When MLflow isn't running, tracing is off and
+is tried again every 30 seconds, so starting MLflow later turns it back on, and no answer
+ever waits for it.
+
+### What Claude does around the tool calls
+
+The app's traces start when a tool is called. To see the rest of a Claude Code turn (your
+message, each call Claude made to its model, which tools it picked and with what, what came
+back, and its reply), trace Claude Code itself, into its own experiment:
+
+```bash
+uv run mlflow autolog claude -d . -u http://localhost:5050 -n claude-code --local -y
+```
+
+This installs MLflow's Claude Code plugin for this folder only and writes the settings to
+`.claude/settings.local.json`, which git ignores. A trace is written when each turn ends.
+It records whole conversations, including any file contents Claude read. Turn it off with
+`uv run mlflow autolog claude --disable`.
 
 ## Knobs
 
@@ -79,6 +119,7 @@ hints and on for reviews by default.
 | `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on hosted usage (about four characters per token) |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
-| `DRILL_TRACING` | `1` | One MLflow trace per answer; `0` turns it off |
+| `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |
+| `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | The experiment the traces go to |
 | `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` values the `/mcp` endpoint accepts |
 | `DRILL_USER_HEADER` | `x-forwarded-email` | Header a login proxy uses to say who is asking |

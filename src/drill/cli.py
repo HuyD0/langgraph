@@ -279,6 +279,67 @@ from drill.mine.cli import mine_app  # noqa: E402
 
 app.add_typer(mine_app, name="mine")
 
+tutor_app = typer.Typer(add_completion=False, help="Material for a chat tutor (a Claude Project): the curriculum map and a snapshot of your progress.")
+app.add_typer(tutor_app, name="tutor")
+
+
+@tutor_app.command("map")
+def tutor_map_cmd() -> None:
+    """Write docs/tutor/CURRICULUM_MAP.md from the lessons: every module, lesson, exercise, notebook and term."""
+    from drill import tutor
+
+    path = tutor.write_map()
+    console.print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
+
+
+@tutor_app.command("snapshot")
+def tutor_snapshot_cmd(
+    out: Path = typer.Option(None, "--out", "-o", help="Where to write it (default ~/Documents/daily-drill/tutor-snapshot.md)."),
+    progress: Path = typer.Option(None, "--progress", exists=True, help="Progress exported from the claude.ai page, to merge in."),
+    study: Path = typer.Option(None, "--study", exists=True, help="Study items exported from the claude.ai page (a file or folder), to merge in."),
+    copy: bool = typer.Option(False, "--copy", help="Also put the text on the clipboard, to paste into the project."),
+) -> None:
+    """Write a one-page snapshot of where you are, to give your tutor project. It is personal: keep it out of git."""
+    import subprocess
+
+    from drill import tutor
+
+    path = tutor.write_snapshot(out or tutor.SNAPSHOT_PATH, progress, study)
+    console.print(f"Wrote {path}")
+    if copy:
+        subprocess.run(["pbcopy"], input=path.read_text(), text=True, check=False)
+        console.print("Copied to the clipboard.")
+    console.print("Next: in your tutor project's knowledge, remove last week's tutor-snapshot.md, then add this one.")
+
+
+study_app = typer.Typer(add_completion=False, help="The study list on this Mac: export it, or merge another copy in.")
+app.add_typer(study_app, name="study")
+
+
+@study_app.command("export")
+def study_export_cmd(out: Path = typer.Argument(..., help="JSON file to write.")) -> None:
+    """Write this Mac's study list (the one drill-server's page uses) to a JSON file."""
+    import json
+
+    from drill.server import study
+    from drill.server.store import DocStore
+
+    items = study.load(DocStore())
+    out.write_text(json.dumps(items, indent=1))
+    console.print(f"Wrote {len(items)} study items to {out}")
+
+
+@study_app.command("import")
+def study_import_cmd(
+    source: Path = typer.Argument(..., exists=True, help="A JSON file of items, or a folder of item files."),
+) -> None:
+    """Merge a study list into this Mac's copy: new items are added, and the newer copy of an item wins."""
+    from drill.server import study
+    from drill.server.store import DocStore
+
+    counts = study.import_items(DocStore(), study.read_items(source))
+    console.print(f"Added {counts['added']}, updated {counts['updated']}, left {counts['unchanged']} as they were.")
+
 
 if __name__ == "__main__":
     app()

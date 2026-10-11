@@ -32,3 +32,10 @@ mlartifacts/
 mlflow.db
 .env.bak.*
 .ipynb_checkpoints/
+
+# Claude Code settings for this machine only (MLflow tracing of Claude Code sessions)
+.claude/settings.local.json
+
+# Personal tutor material: snapshots and exports from the claude.ai page
+*tutor-snapshot*.md
+.drill/export/

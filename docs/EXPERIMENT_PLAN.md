@@ -66,9 +66,9 @@ example more than once. Then check the eval set can see the change you hope for:
 
 | Examples | Margin, about |
 |---|---|
-| 25 | ±20 points |
-| 100 | ±10 points |
-| 400 | ±5 points |
+| 25 | plus or minus 20 points |
+| 100 | plus or minus 10 points |
+| 400 | plus or minus 5 points |
 
 If the change you expect is smaller than the margin, add examples before running.
 [How many examples do you need?] Near 0% or 100%, like 49 out of 50 or 0 failures
@@ -77,7 +77,7 @@ in 30 tries, use a Wilson interval instead of the simple margin.
 
 **test.** When both setups run on the same examples, compare them example by
 example and count only the disagreements. Call a winner only if the gap between
-the two counts is at least 2 × √(disagreements). That is McNemar's test in plain
+the two counts is at least twice the square root of how many disagreements there were. That is McNemar's test in plain
 words, and it is the standard for pass/fail results. For scores that are not
 pass/fail, use a paired bootstrap or a permutation test.
 [Comparing on the same examples]
@@ -182,7 +182,7 @@ groups:         problem pattern (hash map, two pointers, sliding window, other)
 metric:         no-giveaway rate, scored by the deterministic leak detector (no judge)
 guardrails:     p95 seconds per hint under 10
 runs:           3 per case, so 81 hints per model
-size_check:     27 cases -> margin about ±19 points. Only a large difference will show.
+size_check:     27 cases -> margin about plus or minus 19 points. Only a large difference will show.
 test:           paired by case and run, McNemar rule
 decision_rule:  switch to qwen3 only if it wins clearly and stays under 10 s at p95
 no_result:      keep gemma3 (faster), and add cases until the set has 100

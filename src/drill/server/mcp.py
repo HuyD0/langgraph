@@ -9,6 +9,9 @@ local model.
     claude mcp add drill -- /opt/homebrew/bin/uv run --directory /path/to/repo drill-mcp
 
 The web server also serves these tools over HTTP at http://localhost:8787/mcp.
+
+Every tool call is traced in MLflow (see ``observe``): a TOOL span with the arguments and
+the result, and for hints, reviews and questions the model call inside it.
 """
 
 from __future__ import annotations
@@ -19,7 +22,8 @@ import time
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
-from drill.server import tutor
+from drill.server import study, tutor
+from drill.server.observe import traced_tool
 from drill.server.bank import Bank
 from drill.server.router import ModelRouter
 from drill.server.store import DocStore
@@ -72,6 +76,7 @@ def _progress() -> dict:
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 def next_drill() -> dict:
     """The next lesson the learner has not finished: what to read, the check question, the exercise and the interview angle."""
     bank = _bank()
@@ -82,12 +87,14 @@ def next_drill() -> dict:
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 def get_drill(lesson_id: str) -> dict:
     """One lesson by id (see list_lessons), with its exercise, scaffold and sample test case."""
     return _bank().card(lesson_id)
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 def list_lessons() -> list[dict]:
     """The whole path: modules in order, each with its lessons and whether they are done."""
     done = _progress().get("lessons", {})
@@ -105,12 +112,14 @@ def list_lessons() -> list[dict]:
 
 
 @server.tool()
+@traced_tool
 def run_tests(lesson_id: str, code: str) -> dict:
     """Run the learner's code against the exercise's test cases. Returns pass counts and the first failure."""
     return tutor.run_exercise(_bank().problems[lesson_id], code)
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 async def hint(lesson_id: str, code: str = "", level: int = 1) -> str:
     """A hint from the local model, levels 1 (where to look) to 3 (the approach in words). Never the solution."""
     card = _bank().card(lesson_id)
@@ -118,48 +127,62 @@ async def hint(lesson_id: str, code: str = "", level: int = 1) -> str:
     if code.strip():
         result = tutor.run_exercise(_bank().problems[lesson_id], code)
         failure = result["first_failure"] or ({"error": result["fatal_error"]} if result["fatal_error"] else None)
-    answer = await _router().ask(tutor.hint_prompt(card, code, level, failure), tier="quick")
+    context = {"feature": "hint", "door": "mcp", "lesson_id": lesson_id, "exercise_fn": card["exercise"]["function"],
+               "hint_level": level, "word_limit": 80}
+    answer = await _router().ask(tutor.hint_prompt(card, code, level, failure), tier="quick", context=context)
     return answer.text
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 async def review(lesson_id: str, code: str) -> str:
     """Review a passing solution: how fast it is in plain words, an edge case, what to say out loud, one production practice."""
-    answer = await _router().ask(tutor.review_prompt(_bank().card(lesson_id), code), tier="complex")
+    card = _bank().card(lesson_id)
+    context = {"feature": "review", "door": "mcp", "lesson_id": lesson_id, "exercise_fn": card["exercise"]["function"],
+               "word_limit": 140}
+    answer = await _router().ask(tutor.review_prompt(card, code), tier="complex", context=context)
     return answer.text
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 async def ask_tutor(prompt: str, tier: str = "default") -> str:
     """Ask the local tutor model anything, in the learner's plain-language style. tier: quick, default or complex."""
-    answer = await _router().ask(f"{tutor.LEARNER}\n\n{prompt}", tier=tier)
+    context = {"feature": "ask_tutor", "door": "mcp", "question": prompt}
+    answer = await _router().ask(f"{tutor.LEARNER}\n\n{prompt}", tier=tier, context=context)
     return answer.text
 
 
 @server.tool(annotations=READ_ONLY)
+@traced_tool
 def study_list(status: str = "open") -> list[dict]:
-    """Things the learner saved to understand better. status: open, got, or all."""
+    """Things the learner saved to understand better. status: open (to learn), due (understood
+    before and due for a review: quiz them on these), got, or all."""
     items = []
     for item_id, doc in _store().list("study"):
-        if status == "all" or doc.get("status", "open") == status:
-            items.append({"id": item_id, "text": doc.get("text"), "note": doc.get("note", ""), "status": doc.get("status", "open")})
+        state = doc.get("status", "open")
+        if status == "all" or state == status or (status == "due" and study.is_due(doc)):
+            items.append({"id": item_id, "text": doc.get("text"), "note": doc.get("note", ""), "status": state,
+                          "due": study.is_due(doc), "lesson": doc.get("problemId", "")})
     return items
 
 
 @server.tool()
+@traced_tool
 def save_to_study(text: str, note: str = "", source: str = "Claude") -> dict:
     """Save a term, line of code or idea to the learner's study list, with an optional note on what confuses them."""
     item_id = f"s{int(time.time() * 1000):x}"
     doc = {
         "id": item_id, "text": text.strip()[:2000], "kind": "text", "source": source, "problemId": "",
         "note": note.strip(), "status": "open", "createdAt": int(time.time() * 1000),
-        "explanation": "", "quiz": None, "thread": [],
+        "updatedAt": int(time.time() * 1000), "explanation": "", "quiz": None, "thread": [],
     }
     _store().set(f"study/{item_id}", doc)
     return {"id": item_id, "saved": True}
 
 
 @server.tool()
+@traced_tool
 def mark_done(lesson_id: str) -> dict:
     """Mark a lesson finished so next_drill moves on. Also counts today towards the streak."""
     bank = _bank()

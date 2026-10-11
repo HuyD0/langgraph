@@ -47,30 +47,49 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="spending",
         difficulty="easy",
         prompt=(
-            "You get `txns`, a list of your transactions, and `kinds`, a dict saying what kind "
-            "each category is: `\"expense\"`, `\"income\"` or `\"transfer\"`.\n\n"
-            "Each transaction looks like `{\"date\": \"2026-09-14\", \"merchant\": \"Tim Hortons\", "
-            "\"amount_cents\": -245, \"category\": \"Coffee\"}`. Amounts are in cents, and a "
-            "negative amount means money went out.\n\n"
-            "Return a dict of how much you spent in each category, in dollars rounded to 2 "
-            "decimal places. Only count money going out, and only in categories whose kind is "
-            "`\"expense\"`. Leave out categories with no spending."
+            "Your function gets two things:\n\n"
+            "- `transactions`: a list of your transactions. Each one is a dict like "
+            "`{\"date\": \"2026-09-01\", \"merchant\": \"Tim Hortons\", \"amount_cents\": -245, "
+            "\"category\": \"Coffee\"}`. Amounts are in cents. A negative amount means money "
+            "went out.\n"
+            "- `kinds`: what kind each category is, like `{\"Coffee\": \"expense\", "
+            "\"Transfers\": \"transfer\"}`. A transfer, like paying your credit card, just "
+            "moves money between your own accounts, so it isn't spending.\n\n"
+            "Add up the money that went out in each category whose kind is `\"expense\"`. "
+            "Skip money coming in, like refunds.\n\n"
+            "Return a dict of each category to the dollars you spent there, as a positive "
+            "number, like `{\"Coffee\": 5.55}`. Add up in cents and divide by 100 at the end. "
+            "Leave out categories with nothing spent."
         ),
         function_name="spending_by_category",
-        starter_code="def spending_by_category(txns, kinds):\n    # your code here\n    pass\n",
+        starter_code="def spending_by_category(transactions, kinds):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def spending_by_category(txns, kinds):\n"
+            "def spending_by_category(transactions, kinds):\n"
             "    cents = {}\n"
-            "    for t in txns:\n"
-            "        if t[\"amount_cents\"] < 0 and kinds.get(t[\"category\"]) == \"expense\":\n"
-            "            cat = t[\"category\"]\n"
+            "    for t in transactions:\n"
+            "        cat = t[\"category\"]\n"
+            "        if t[\"amount_cents\"] < 0 and kinds.get(cat) == \"expense\":\n"
             "            cents[cat] = cents.get(cat, 0) - t[\"amount_cents\"]\n"
-            "    return {cat: round(c / 100, 2) for cat, c in cents.items()}\n"
+            "    dollars = {}\n"
+            "    for cat in cents:\n"
+            "        dollars[cat] = cents[cat] / 100\n"
+            "    return dollars\n"
         ),
-        target_complexity="walk through the transactions once",
-        pattern="Add up into a dict, keyed by the thing you're grouping by. Filter first, convert units last.",
+        target_complexity="one pass over the transactions",
+        pattern=(
+            "Keep a running total for each category in a dict. Skip what doesn't count "
+            "first, and turn cents into dollars last."
+        ),
         test_cases=(
-            TestCase(args=(_SEPT, KINDS), expected={"Coffee": 5.55, "Groceries": 83.12}, is_sample=True),
+            TestCase(
+                args=([_t("2026-09-01", "Tim Hortons", -245, "Coffee"),
+                       _t("2026-09-02", "RBC Visa payment", -50000, "Credit Card Payment"),
+                       _t("2026-09-03", "Tim Hortons", -310, "Coffee"),
+                       _t("2026-09-04", "Loblaws", -8312, "Groceries")],
+                      {"Coffee": "expense", "Groceries": "expense",
+                       "Credit Card Payment": "transfer"}),
+                expected={"Coffee": 5.55, "Groceries": 83.12}, is_sample=True,
+            ),
             TestCase(
                 args=([_t("2026-09-05", "RBC Visa payment", -50000, "Credit Card Payment"),
                        _t("2026-09-06", "Shell", -6000, "Gas")], KINDS),
@@ -85,8 +104,7 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
             TestCase(args=([], KINDS), expected={}),
             TestCase(
                 args=([_t("2026-09-08", "Tim Hortons", -10, "Coffee"),
-                       _t("2026-09-09", "Tim Hortons", -20, "Coffee"),
-                       _t("2026-09-10", "Mystery shop", -999, None)], KINDS),
+                       _t("2026-09-09", "Tim Hortons", -20, "Coffee")], KINDS),
                 expected={"Coffee": 0.3},
             ),
         ),
@@ -97,29 +115,44 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="spending",
         difficulty="easy",
         prompt=(
-            "Same `txns` and `kinds` as before, plus a number `k`. Return the names of the `k` "
-            "merchants you spent the most at, biggest first.\n\n"
-            "Count only money going out in `\"expense\"` categories. If two merchants have the "
-            "same total, put them in alphabetical order. Return fewer than `k` if there aren't "
-            "enough merchants."
+            "Your function gets three things:\n\n"
+            "- `transactions`: a list of your transactions. Each one is a dict like "
+            "`{\"date\": \"2026-09-01\", \"merchant\": \"Amazon\", \"amount_cents\": -4000, "
+            "\"category\": \"Shopping\"}`. Amounts are in cents. A negative amount means money "
+            "went out.\n"
+            "- `kinds`: what kind each category is, like `{\"Shopping\": \"expense\", "
+            "\"Transfers\": \"transfer\"}`.\n"
+            "- `how_many`: how many merchants to return, like `2`.\n\n"
+            "Add up how much you spent at each merchant. Count only money going out, in "
+            "categories whose kind is `\"expense\"`.\n\n"
+            "Return a list of the names of the `how_many` merchants you spent the most at, biggest "
+            "first. If two have the same total, put them in alphabetical order. If there are "
+            "fewer merchants than `how_many`, return them all."
         ),
         function_name="top_merchants",
-        starter_code="def top_merchants(txns, kinds, k):\n    # your code here\n    pass\n",
+        starter_code="def top_merchants(transactions, kinds, how_many):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def top_merchants(txns, kinds, k):\n"
+            "def top_merchants(transactions, kinds, how_many):\n"
             "    spent = {}\n"
-            "    for t in txns:\n"
-            "        if t[\"amount_cents\"] < 0 and kinds.get(t[\"category\"]) == \"expense\":\n"
-            "            m = t[\"merchant\"]\n"
-            "            spent[m] = spent.get(m, 0) - t[\"amount_cents\"]\n"
-            "    ranked = sorted(spent, key=lambda m: (-spent[m], m))\n"
-            "    return ranked[:k]\n"
+            "    for t in transactions:\n"
+            "        cat = t[\"category\"]\n"
+            "        if t[\"amount_cents\"] < 0 and kinds.get(cat) == \"expense\":\n"
+            "            name = t[\"merchant\"]\n"
+            "            spent[name] = spent.get(name, 0) - t[\"amount_cents\"]\n"
+            "    ranked = sorted(spent, key=lambda name: (-spent[name], name))\n"
+            "    return ranked[:how_many]\n"
         ),
-        target_complexity="add up once, then sort",
-        pattern="Total into a dict, then sort with a key that says exactly what 'best' means, ties included.",
+        target_complexity="one pass to add up, then one sort of the merchants",
+        pattern="Total into a dict, then sort with a key that says exactly what 'most' means, ties included.",
         test_cases=(
-            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6000, "Gas")], KINDS, 2),
-                     expected=["Loblaws", "Shell"], is_sample=True),
+            TestCase(
+                args=([_t("2026-09-01", "Amazon", -4000, "Shopping"),
+                       _t("2026-09-02", "Loblaws", -8312, "Groceries"),
+                       _t("2026-09-03", "Amazon", -3000, "Shopping"),
+                       _t("2026-09-04", "Shell", -6000, "Gas")],
+                      {"Shopping": "expense", "Groceries": "expense", "Gas": "expense"}, 2),
+                expected=["Loblaws", "Amazon"], is_sample=True,
+            ),
             TestCase(args=([_t("2026-09-01", "Pizza Pizza", -1500, "Dining"),
                             _t("2026-09-02", "Amazon", -1500, "Shopping"),
                             _t("2026-09-03", "Tim Hortons", -500, "Coffee")], KINDS, 2),
@@ -128,6 +161,10 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
                             _t("2026-09-02", "Tim Hortons", -245, "Coffee")], KINDS, 1),
                      expected=["Tim Hortons"]),
             TestCase(args=(_SEPT, KINDS, 10), expected=["Loblaws", "Tim Hortons"]),
+            TestCase(args=([_t("2026-09-01", "Amazon", -5000, "Shopping"),
+                            _t("2026-09-05", "Amazon", 4000, "Shopping"),
+                            _t("2026-09-06", "Shell", -3000, "Gas")], KINDS, 1),
+                     expected=["Amazon"]),
             TestCase(args=([], KINDS, 3), expected=[]),
         ),
     ),
@@ -137,61 +174,69 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="patterns",
         difficulty="medium",
         prompt=(
-            "Find the charges that repeat like a subscription. Given `txns`, return a dict of "
-            "merchant to monthly price in dollars (2 decimal places) for every merchant that "
-            "took money out in **at least 3 different months**, for **exactly the same amount** "
-            "every time.\n\n"
-            "Ignore money coming in, like refunds. Three charges in the same month count as one "
-            "month. Months are the first 7 characters of the date, like `\"2026-09\"`."
+            "You get `transactions`, a list of your transactions. Each one is a dict like "
+            "`{\"date\": \"2026-09-03\", \"merchant\": \"Netflix\", \"amount_cents\": -1699, "
+            "\"category\": \"Subscriptions\"}`. Amounts are in cents. A negative amount means "
+            "money went out.\n\n"
+            "A merchant looks like a subscription if it took money out:\n\n"
+            "- in at least 3 different months, and\n"
+            "- for exactly the same amount every time.\n\n"
+            "Return the names of those merchants, in alphabetical order. The month is the first "
+            "7 characters of the date, like `\"2026-09\"`. Two charges in the same month count "
+            "as one month. Skip money coming in, like refunds."
         ),
         function_name="subscriptions",
-        starter_code="def subscriptions(txns):\n    # your code here\n    pass\n",
+        starter_code="def subscriptions(transactions):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def subscriptions(txns):\n"
+            "def subscriptions(transactions):\n"
             "    months = {}\n"
             "    amounts = {}\n"
-            "    for t in txns:\n"
+            "    for t in transactions:\n"
             "        if t[\"amount_cents\"] >= 0:\n"
             "            continue\n"
-            "        m = t[\"merchant\"]\n"
-            "        months.setdefault(m, set()).add(t[\"date\"][:7])\n"
-            "        amounts.setdefault(m, set()).add(t[\"amount_cents\"])\n"
-            "    found = {}\n"
-            "    for m in months:\n"
-            "        if len(months[m]) >= 3 and len(amounts[m]) == 1:\n"
-            "            only = list(amounts[m])[0]\n"
-            "            found[m] = round(-only / 100, 2)\n"
-            "    return found\n"
+            "        name = t[\"merchant\"]\n"
+            "        if name not in months:\n"
+            "            months[name] = set()\n"
+            "            amounts[name] = set()\n"
+            "        months[name].add(t[\"date\"][:7])\n"
+            "        amounts[name].add(t[\"amount_cents\"])\n"
+            "    found = []\n"
+            "    for name in months:\n"
+            "        if len(months[name]) >= 3 and len(amounts[name]) == 1:\n"
+            "            found.append(name)\n"
+            "    return sorted(found)\n"
         ),
-        target_complexity="walk through the transactions once, collecting as you go",
-        pattern="Collect sets per key (which months, which amounts), then check a rule against each key.",
+        target_complexity="one pass to collect, then one check per merchant",
+        pattern=(
+            "Collect a set for each merchant (which months, which amounts), then check the "
+            "rule for each merchant."
+        ),
         test_cases=(
             TestCase(
                 args=([_t("2026-07-03", "Netflix", -1699, "Subscriptions"),
-                       _t("2026-07-04", "Tim Hortons", -245, "Coffee"),
                        _t("2026-08-03", "Netflix", -1699, "Subscriptions"),
-                       _t("2026-08-09", "Tim Hortons", -310, "Coffee"),
+                       _t("2026-08-09", "Tim Hortons", -245, "Coffee"),
                        _t("2026-09-03", "Netflix", -1699, "Subscriptions"),
-                       _t("2026-09-11", "Tim Hortons", -245, "Coffee")],),
-                expected={"Netflix": 16.99}, is_sample=True,
+                       _t("2026-09-11", "Tim Hortons", -310, "Coffee")],),
+                expected=["Netflix"], is_sample=True,
             ),
             TestCase(args=([_t("2026-08-03", "Spotify", -1199, "Subscriptions"),
-                            _t("2026-09-03", "Spotify", -1199, "Subscriptions")],), expected={}),
+                            _t("2026-09-03", "Spotify", -1199, "Subscriptions")],), expected=[]),
             TestCase(args=([_t("2026-09-01", "Uber", -900, "Transportation"),
                             _t("2026-09-08", "Uber", -900, "Transportation"),
-                            _t("2026-09-15", "Uber", -900, "Transportation")],), expected={}),
+                            _t("2026-09-15", "Uber", -900, "Transportation")],), expected=[]),
             TestCase(args=([_t("2026-07-03", "Netflix", -1699, "Subscriptions"),
                             _t("2026-08-03", "Netflix", -1699, "Subscriptions"),
-                            _t("2026-09-03", "Netflix", -1899, "Subscriptions")],), expected={}),
-            TestCase(args=([_t("2026-07-03", "Netflix", -1699, "Subscriptions"),
+                            _t("2026-09-03", "Netflix", -1899, "Subscriptions")],), expected=[]),
+            TestCase(args=([_t("2026-07-01", "Rogers", -8500, "Phone & Internet"),
+                            _t("2026-07-03", "Netflix", -1699, "Subscriptions"),
+                            _t("2026-08-01", "Rogers", -8500, "Phone & Internet"),
                             _t("2026-08-03", "Netflix", -1699, "Subscriptions"),
                             _t("2026-08-20", "Netflix", 1699, "Subscriptions"),
-                            _t("2026-09-03", "Netflix", -1699, "Subscriptions"),
-                            _t("2026-07-15", "Rogers", -8500, "Phone & Internet"),
-                            _t("2026-08-15", "Rogers", -8500, "Phone & Internet"),
-                            _t("2026-09-15", "Rogers", -8500, "Phone & Internet")],),
-                     expected={"Netflix": 16.99, "Rogers": 85.0}),
-            TestCase(args=([],), expected={}),
+                            _t("2026-09-01", "Rogers", -8500, "Phone & Internet"),
+                            _t("2026-09-03", "Netflix", -1699, "Subscriptions")],),
+                     expected=["Netflix", "Rogers"]),
+            TestCase(args=([],), expected=[]),
         ),
     ),
     Problem(
@@ -200,31 +245,39 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="patterns",
         difficulty="medium",
         prompt=(
-            "Your tracker warns you about odd charges. Given `txns` in date order, return the "
-            "positions (0, 1, 2, ...) of charges that are **more than double** the biggest "
-            "earlier charge at the same merchant.\n\n"
-            "Only money going out counts, both for flagging and for \"biggest earlier charge\". "
-            "A merchant's first charge is never flagged, because there's nothing to compare it "
-            "with. Exactly double is not flagged."
+            "You get `transactions`, a list of your transactions in date order. Each one is a "
+            "dict like `{\"date\": \"2026-09-03\", \"merchant\": \"Tim Hortons\", "
+            "\"amount_cents\": -1890, \"category\": \"Coffee\"}`. Amounts are in cents. A "
+            "negative amount means money went out.\n\n"
+            "A charge is unusual when it's more than double the biggest earlier charge at the "
+            "same merchant. Return the positions of the unusual charges, first to last. A "
+            "position is a transaction's place in the list, counting from 0.\n\n"
+            "- Skip money coming in: never flag it, and don't count it as an earlier charge.\n"
+            "- A merchant's first charge is never unusual, because there's nothing to compare "
+            "it with.\n"
+            "- Exactly double is not unusual."
         ),
         function_name="unusual_charges",
-        starter_code="def unusual_charges(txns):\n    # your code here\n    pass\n",
+        starter_code="def unusual_charges(transactions):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def unusual_charges(txns):\n"
+            "def unusual_charges(transactions):\n"
             "    biggest = {}\n"
             "    flagged = []\n"
-            "    for i, t in enumerate(txns):\n"
+            "    for position, t in enumerate(transactions):\n"
             "        if t[\"amount_cents\"] >= 0:\n"
             "            continue\n"
             "        spent = -t[\"amount_cents\"]\n"
-            "        m = t[\"merchant\"]\n"
-            "        if m in biggest and spent > 2 * biggest[m]:\n"
-            "            flagged.append(i)\n"
-            "        biggest[m] = max(biggest.get(m, 0), spent)\n"
+            "        name = t[\"merchant\"]\n"
+            "        if name in biggest and spent > 2 * biggest[name]:\n"
+            "            flagged.append(position)\n"
+            "        biggest[name] = max(biggest.get(name, 0), spent)\n"
             "    return flagged\n"
         ),
-        target_complexity="walk through the transactions once",
-        pattern="Remember the best-so-far per key, and compare each new item against it before updating.",
+        target_complexity="one pass over the transactions",
+        pattern=(
+            "Remember the biggest so far for each merchant. Compare each new charge with it "
+            "before you update it."
+        ),
         test_cases=(
             TestCase(args=([_t("2026-09-01", "Tim Hortons", -245, "Coffee"),
                             _t("2026-09-02", "Tim Hortons", -310, "Coffee"),
@@ -250,45 +303,79 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="context",
         difficulty="medium",
         prompt=(
-            "Your tracker's weekly check-in sends your spending to a model, and prompts should "
-            "be short. Given `txns`, `kinds` and `max_lines`, return a list of lines like "
-            "`\"Groceries: $83.12\"`, one per expense category, biggest first (ties in "
-            "alphabetical order). Count money going out in `\"expense\"` categories only.\n\n"
-            "If there are more categories than `max_lines`, keep the top `max_lines - 1` and add "
-            "a last line `\"Everything else: $X.XX\"` with the rest added together. Always show "
-            "2 decimal places, like `$60.00`."
+            "Your function gets three things:\n\n"
+            "- `transactions`: a month of your transactions. Each one is a dict like "
+            "`{\"date\": \"2026-09-03\", \"merchant\": \"Shell\", \"amount_cents\": -6050, "
+            "\"category\": \"Gas\"}`. Amounts are in cents. A negative amount means money "
+            "went out.\n"
+            "- `kinds`: what kind each category is, like `{\"Gas\": \"expense\", "
+            "\"Transfers\": \"transfer\"}`.\n"
+            "- `max_lines`: the most lines the summary can have, like `3`.\n\n"
+            "Total the money going out in each `\"expense\"` category. Return a list of "
+            "`[category, dollars]` lines, biggest first, like "
+            "`[[\"Groceries\", 83.12], [\"Gas\", 60.5]]`. If two categories have the same "
+            "total, put them in A to Z order.\n\n"
+            "If there are more categories than `max_lines`, keep only the biggest "
+            "`max_lines - 1` (2 when `max_lines` is 3), then add one last line, "
+            "`[\"Everything else\", dollars]`, for all the others.\n\n"
+            "Add up in cents (the last line too) and divide by 100 at the end."
         ),
         function_name="monthly_summary",
-        starter_code="def monthly_summary(txns, kinds, max_lines):\n    # your code here\n    pass\n",
+        starter_code="def monthly_summary(transactions, kinds, max_lines):\n    # your code here\n    pass\n",
         reference_solution=(
-            "def monthly_summary(txns, kinds, max_lines):\n"
+            "def monthly_summary(transactions, kinds, max_lines):\n"
             "    cents = {}\n"
-            "    for t in txns:\n"
-            "        if t[\"amount_cents\"] < 0 and kinds.get(t[\"category\"]) == \"expense\":\n"
-            "            cat = t[\"category\"]\n"
+            "    for t in transactions:\n"
+            "        cat = t[\"category\"]\n"
+            "        if t[\"amount_cents\"] < 0 and kinds.get(cat) == \"expense\":\n"
             "            cents[cat] = cents.get(cat, 0) - t[\"amount_cents\"]\n"
-            "    ranked = sorted(cents, key=lambda c: (-cents[c], c))\n"
+            "    ranked = sorted(cents, key=lambda cat: (-cents[cat], cat))\n"
             "    if len(ranked) <= max_lines:\n"
-            "        return [f\"{c}: ${cents[c] / 100:.2f}\" for c in ranked]\n"
-            "    lines = [f\"{c}: ${cents[c] / 100:.2f}\" for c in ranked[:max_lines - 1]]\n"
-            "    rest = sum(cents[c] for c in ranked[max_lines - 1:])\n"
-            "    lines.append(f\"Everything else: ${rest / 100:.2f}\")\n"
+            "        top = ranked\n"
+            "        rest = []\n"
+            "    else:\n"
+            "        top = ranked[:max_lines - 1]\n"
+            "        rest = ranked[max_lines - 1:]\n"
+            "    lines = []\n"
+            "    for cat in top:\n"
+            "        lines.append([cat, cents[cat] / 100])\n"
+            "    if len(rest) > 0:\n"
+            "        rest_cents = 0\n"
+            "        for cat in rest:\n"
+            "            rest_cents += cents[cat]\n"
+            "        lines.append([\"Everything else\", rest_cents / 100])\n"
             "    return lines\n"
         ),
-        target_complexity="add up once, sort, then keep the top few",
-        pattern="Rank, keep the top, and roll the long tail into one line so nothing is silently dropped.",
+        target_complexity="one pass to add up, one sort, then keep the top few",
+        pattern="Rank, keep the top few, and roll the rest into one line so nothing is silently dropped.",
         test_cases=(
-            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6000, "Gas")], KINDS, 5),
-                     expected=["Groceries: $83.12", "Gas: $60.00", "Coffee: $5.55"], is_sample=True),
-            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6000, "Gas"),
-                                    _t("2026-09-05", "Pizza Pizza", -1500, "Dining")], KINDS, 3),
-                     expected=["Groceries: $83.12", "Gas: $60.00", "Everything else: $20.55"]),
-            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6000, "Gas")], KINDS, 3),
-                     expected=["Groceries: $83.12", "Gas: $60.00", "Coffee: $5.55"]),
+            TestCase(
+                args=([_t("2026-09-01", "Loblaws", -8312, "Groceries"),
+                       _t("2026-09-02", "Tim Hortons", -555, "Coffee"),
+                       _t("2026-09-03", "Shell", -6050, "Gas"),
+                       _t("2026-09-04", "Pizza Pizza", -1500, "Dining")],
+                      {"Coffee": "expense", "Groceries": "expense", "Gas": "expense",
+                       "Dining": "expense"}, 3),
+                expected=[["Groceries", 83.12], ["Gas", 60.5], ["Everything else", 20.55]],
+                is_sample=True,
+            ),
+            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6050, "Gas")], KINDS, 5),
+                     expected=[["Groceries", 83.12], ["Gas", 60.5], ["Coffee", 5.55]]),
+            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6050, "Gas")], KINDS, 3),
+                     expected=[["Groceries", 83.12], ["Gas", 60.5], ["Coffee", 5.55]]),
+            TestCase(args=(_SEPT + [_t("2026-09-04", "Shell", -6050, "Gas"),
+                                    _t("2026-09-05", "Pizza Pizza", -1500, "Dining"),
+                                    _t("2026-09-06", "RBC Visa payment", -50000,
+                                       "Credit Card Payment")], KINDS, 2),
+                     expected=[["Groceries", 83.12], ["Everything else", 81.05]]),
             TestCase(args=([_t("2026-09-01", "RBC Visa payment", -50000, "Credit Card Payment")], KINDS, 4),
                      expected=[]),
             TestCase(args=([_t("2026-09-01", "Rent", -180000, "Housing")], KINDS, 2),
-                     expected=["Housing: $1800.00"]),
+                     expected=[["Housing", 1800.0]]),
+            TestCase(args=([_t("2026-09-01", "Loblaws", -8312, "Groceries"),
+                            _t("2026-09-02", "Tim Hortons", -10, "Coffee"),
+                            _t("2026-09-03", "Pizza Pizza", -20, "Dining")], KINDS, 2),
+                     expected=[["Groceries", 83.12], ["Everything else", 0.3]]),
         ),
     ),
     Problem(
@@ -297,9 +384,13 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="health",
         difficulty="medium",
         prompt=(
-            "You get `days`, the days you logged food, as day numbers: the day after day 100 "
-            "is day 101. They're in no particular order and some may repeat.\n\n"
-            "Return the length of your longest streak of days in a row. No days means 0."
+            "You get `days`, a list of the days you logged food, as day numbers, like "
+            "`[1, 2, 3, 5, 6]`. "
+            "Days are plain counting numbers, so day 4 is the day after day 3. The numbers "
+            "can be in any order, and the same "
+            "day can appear more than once.\n\n"
+            "A streak is a run of days in a row, like 1, 2, 3. Return the length of your "
+            "longest streak. If `days` is empty, return 0."
         ),
         function_name="logging_streak",
         starter_code="def logging_streak(days):\n    # your code here\n    pass\n",
@@ -307,16 +398,16 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
             "def logging_streak(days):\n"
             "    logged = set(days)\n"
             "    best = 0\n"
-            "    for d in logged:\n"
-            "        if d - 1 not in logged:\n"
+            "    for day in logged:\n"
+            "        if day - 1 not in logged:\n"
             "            length = 1\n"
-            "            while d + length in logged:\n"
+            "            while day + length in logged:\n"
             "                length += 1\n"
             "            best = max(best, length)\n"
             "    return best\n"
         ),
-        target_complexity="look at each day a fixed number of times",
-        pattern="Put everything in a set, then only start counting from days that begin a streak.",
+        target_complexity="a set, and count each streak once, from its first day",
+        pattern="Put the days in a set, then only start counting from days that begin a streak.",
         test_cases=(
             TestCase(args=([1, 2, 3, 5, 6],), expected=3, is_sample=True),
             TestCase(args=([],), expected=0),
@@ -332,10 +423,10 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="health",
         difficulty="easy",
         prompt=(
-            "You get `weigh_ins`, a list of `[date, kg]` pairs like `[\"2026-09-15\", 79.2]`. "
-            "Your tracker stores kilograms, but you think in pounds.\n\n"
-            "Return a dict of month (like `\"2026-09\"`) to your lowest weight that month, in "
-            "pounds, rounded to 1 decimal place. To turn kg into lb, divide by `0.45359237`."
+            "You get `weigh_ins`, a list of your weigh-ins. Each one is a `[date, kg]` pair, "
+            "like `[\"2026-09-15\", 79.2]`.\n\n"
+            "Return a dict of each month to your lowest weight that month, in kg, like "
+            "`{\"2026-09\": 79.2}`. The month is the first 7 characters of the date."
         ),
         function_name="monthly_low_weight",
         starter_code="def monthly_low_weight(weigh_ins):\n    # your code here\n    pass\n",
@@ -346,17 +437,20 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
             "        month = date[:7]\n"
             "        if month not in lowest or kg < lowest[month]:\n"
             "            lowest[month] = kg\n"
-            "    return {m: round(kg / 0.45359237, 1) for m, kg in lowest.items()}\n"
+            "    return lowest\n"
         ),
-        target_complexity="walk through the weigh-ins once",
-        pattern="Keep the best-so-far per group. Convert units once, at the very end.",
+        target_complexity="one pass over the weigh-ins",
+        pattern="Keep the lowest so far for each month in one dict.",
         test_cases=(
-            TestCase(args=([["2026-09-01", 80.0], ["2026-09-15", 79.2], ["2026-10-02", 79.5]],),
-                     expected={"2026-09": 174.6, "2026-10": 175.3}, is_sample=True),
+            TestCase(args=([["2026-09-01", 80.4], ["2026-09-15", 79.2], ["2026-09-28", 79.6],
+                            ["2026-10-02", 79.5]],),
+                     expected={"2026-09": 79.2, "2026-10": 79.5}, is_sample=True),
             TestCase(args=([],), expected={}),
-            TestCase(args=([["2026-08-31", 81.0]],), expected={"2026-08": 178.6}),
+            TestCase(args=([["2026-08-31", 81.0]],), expected={"2026-08": 81.0}),
             TestCase(args=([["2026-09-03", 80.0], ["2026-09-03", 79.0], ["2026-09-04", 80.5]],),
-                     expected={"2026-09": 174.2}),
+                     expected={"2026-09": 79.0}),
+            TestCase(args=([["2026-12-30", 78.1], ["2027-01-02", 78.4], ["2027-01-20", 77.9]],),
+                     expected={"2026-12": 78.1, "2027-01": 77.9}),
         ),
     ),
     Problem(
@@ -365,10 +459,11 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
         topic="health",
         difficulty="easy",
         prompt=(
-            "You get `lifts`, a list of `[date, exercise, weight_kg]` entries from your workout "
-            "log, like `[\"2026-09-02\", \"Bench Press\", 60.0]`.\n\n"
-            "Return a dict of each exercise to the heaviest weight you've lifted for it, in kg. "
-            "Leave out entries with a weight of 0, like bodyweight exercises."
+            "You get `lifts`, a list of the entries from your workout log. Each entry is "
+            "`[date, exercise, kg]`, like `[\"2026-09-02\", \"Bench Press\", 57.5]`.\n\n"
+            "Return a dict of each exercise to the heaviest weight you lifted for it, in kg, "
+            "like `{\"Bench Press\": 62.5}`. Leave out entries with a weight of 0, like push "
+            "ups, which use your body weight."
         ),
         function_name="personal_bests",
         starter_code="def personal_bests(lifts):\n    # your code here\n    pass\n",
@@ -380,12 +475,12 @@ MINE_PROBLEMS: tuple[Problem, ...] = (
             "            best[exercise] = kg\n"
             "    return best\n"
         ),
-        target_complexity="walk through your log once",
-        pattern="One pass, one dict, keep the max per key.",
+        target_complexity="one pass over your log",
+        pattern="One pass, one dict, keep the biggest for each exercise.",
         test_cases=(
-            TestCase(args=([["2026-09-02", "Bench Press", 60.0], ["2026-09-05", "Squat", 80.0],
-                            ["2026-09-09", "Bench Press", 62.5], ["2026-09-12", "Bench Press", 60.0]],),
-                     expected={"Bench Press": 62.5, "Squat": 80.0}, is_sample=True),
+            TestCase(args=([["2026-09-02", "Bench Press", 57.5], ["2026-09-05", "Squat", 82.5],
+                            ["2026-09-09", "Bench Press", 62.5], ["2026-09-12", "Bench Press", 57.5]],),
+                     expected={"Bench Press": 62.5, "Squat": 82.5}, is_sample=True),
             TestCase(args=([],), expected={}),
             TestCase(args=([["2026-09-02", "Push Up", 0.0], ["2026-09-03", "Deadlift", 100.0]],),
                      expected={"Deadlift": 100.0}),
@@ -407,14 +502,15 @@ def get_mine_problem(problem_id: str) -> Problem:
         ) from None
 
 
-# Where each problem shows up in your own tracker. Shown on the page's Learn tab.
+# Where each problem shows up in your own tracker. The page doesn't show this for
+# practice problems; it goes to the AI tutor as context when you ask for a hint.
 REAL_WORLD = {
     "spending_by_category": "This is the number behind your tracker's spending chart. Its SQL follows the same two rules: money out only, and transfers like credit card payments don't count, or they'd be counted twice.",
     "top_merchants": "The \"where does my money go\" question you'd ask Claude from your phone. Total first, rank second.",
     "subscriptions": "Forgotten subscriptions are the classic money leak. Your tracker's monitor looks for patterns like this after each import.",
     "unusual_charges": "This is a simple version of what your tracker's monitor does before it sends a phone alert: compare a new charge with what's normal for that merchant.",
-    "monthly_summary": "Context engineering: your weekly check-in sends data to a model. Short, ranked lines with the long tail rolled up give the model what matters without wasting tokens.",
+    "monthly_summary": "Context engineering: your weekly check-in sends data to a model. A few ranked lines, with the small stuff rolled into one, give the model what matters without wasting tokens (the small chunks of text a model reads and charges for).",
     "logging_streak": "Streaks are what keep habits going. Your meal log has gaps, so this finds the longest run without one.",
-    "monthly_low_weight": "Daily weight jumps around with water and food. The monthly low is a calmer way to see the trend, in the unit you actually think in.",
+    "monthly_low_weight": "Daily weight jumps around with water and food. Looking at one number per month, like the lowest, is a simple first way to see the trend.",
     "personal_bests": "Your workout log has thousands of sets. One pass with a dict turns them into the numbers you actually care about.",
 }

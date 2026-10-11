@@ -20,7 +20,7 @@ Configuration (all optional, all in .env):
     DRILL_HOSTED_MODEL=databricks-gemma-3-12b     the endpoint (or model) name
     DRILL_HOSTED_API_KEY=...                      a Databricks token, or the provider's key
     DRILL_HOSTED_DAILY_TOKENS=200000              stop using the hosted model past this
-    DRILL_TRACING=1                               0 switches MLflow tracing off
+    DRILL_TRACING=1                               0 switches MLflow tracing off (see observe.py)
 
 With no DRILL_HOSTED_* set, the Azure settings from drill.config are the hosted model.
 """
@@ -91,10 +91,13 @@ class Answer:
 
 
 class _NullObserver:
-    def start(self, messages: list, tier: str) -> dict:
+    def start(self, messages: list, tier: str, context: dict | None = None) -> dict:
         return {}
 
     def first_word(self, handle: dict) -> None:
+        pass
+
+    def attempt_failed(self, handle: dict, route: str, model: str, error: str, started_ns: int) -> None:
         pass
 
     def finish(self, handle: dict, **fields: Any) -> None:
@@ -284,11 +287,9 @@ class ModelRouter:
         budget = int(os.getenv("DRILL_HOSTED_DAILY_TOKENS", "200000") or 200_000)
         first_word = float(os.getenv("DRILL_FIRST_WORD_SECONDS", "45") or 45)
         thinking = os.getenv("DRILL_THINKING", "complex").strip().lower()
-        observer = None
-        if os.getenv("DRILL_TRACING", "1").strip() not in ("0", "false", "no"):
-            from drill.server.observe import MlflowObserver
+        from drill.server.observe import default_observer
 
-            observer = MlflowObserver()
+        observer = default_observer()  # None when DRILL_TRACING=0
         router = cls(local_route(), hosted_route(), store, budget, first_word, thinking, observer)
         log.info(
             "models: local=%s hosted=%s thinking=%s",
@@ -308,7 +309,7 @@ class ModelRouter:
             "local": self.local.model if self.local else None,
             "hosted": self.hosted.model if self.hosted else None,
             "thinking": self.thinking,
-            "tracing": not isinstance(self.observer, _NullObserver),
+            "tracing": not isinstance(self.observer, _NullObserver) and bool(getattr(self.observer, "enabled", True)),
             "hosted_tokens_today": self.hosted_tokens_today(),
             "hosted_daily_tokens": self.hosted_daily_tokens,
         }
@@ -381,11 +382,18 @@ class ModelRouter:
         return tokens
 
     async def stream(
-        self, prompt_or_messages: str | Iterable[Any], tier: str = "default", json_mode: bool = False
+        self,
+        prompt_or_messages: str | Iterable[Any],
+        tier: str = "default",
+        json_mode: bool = False,
+        context: dict | None = None,
     ) -> AsyncIterator[Chunk]:
-        """Yield the answer as it grows; the last chunk has ``done=True`` and says who answered."""
+        """Yield the answer as it grows; the last chunk has ``done=True`` and says who answered.
+
+        ``context`` says what the request is for (feature, lesson, step...), for the trace.
+        """
         messages = to_messages(prompt_or_messages)
-        handle = self.observer.start(messages, tier)
+        handle = self.observer.start(messages, tier, context)
 
         key = self._cache_key(messages, tier, json_mode)
         cached = self.store.get(key) if self.store else None
@@ -404,6 +412,7 @@ class ModelRouter:
         for route in routes:
             prepared, chat, thinking = self._prepare(messages, route, tier, json_mode)
             raw, started, usage, t0 = "", False, None, time.monotonic()
+            began_ns, finish_reason = time.time_ns(), None
             pieces = chat.astream(prepared)
             try:
                 while True:
@@ -418,6 +427,7 @@ class ModelRouter:
                         break
                     if getattr(piece, "usage_metadata", None):
                         usage = piece.usage_metadata
+                    finish_reason = (getattr(piece, "response_metadata", None) or {}).get("finish_reason") or finish_reason
                     part = chunk_text(piece)
                     if not part:
                         continue
@@ -434,30 +444,42 @@ class ModelRouter:
                     raise
                 log.warning("%s (%s) failed: %s", route.name, route.model, exc)
                 errors.append(f"{route.model}: {exc}")
+                self.observer.attempt_failed(handle, route.name, route.model, str(exc) or type(exc).__name__, began_ns)
                 continue
             finally:
                 await pieces.aclose()  # stop the model generating if we gave up on it
             text = strip_thinking(raw, final=True)
             if not text:
                 errors.append(f"{route.model}: empty answer")
+                self.observer.attempt_failed(handle, route.name, route.model, "empty answer", began_ns)
                 continue
             tokens = self._record(route, messages, text, usage)
             if self.store:
                 self.store.set(key, {"text": text, "route": route.name, "model": route.model, "at": time.time()})
-            self.observer.finish(handle, text=text, route=route.name, model=route.model, thinking=thinking, tokens=tokens, attempts=errors)
+            settings = {"temperature": getattr(route.chat, "temperature", None), "json_mode": json_mode}
+            self.observer.finish(
+                handle, text=text, route=route.name, model=route.model, thinking=thinking, tokens=tokens, attempts=errors,
+                settings={k: v for k, v in settings.items() if v is not None}, finish_reason=finish_reason,
+            )
             yield Chunk(text, done=True, route=route.name, model=route.model)
             return
         self.observer.finish(handle, error="; ".join(errors) or "no model answered")
         raise NoModelAvailable("; ".join(errors) or "no model answered")
 
-    async def ask(self, prompt_or_messages: str | Iterable[Any], tier: str = "default", json_mode: bool = False) -> Answer:
+    async def ask(
+        self,
+        prompt_or_messages: str | Iterable[Any],
+        tier: str = "default",
+        json_mode: bool = False,
+        context: dict | None = None,
+    ) -> Answer:
         last: Chunk | None = None
-        async for chunk in self.stream(prompt_or_messages, tier, json_mode):
+        async for chunk in self.stream(prompt_or_messages, tier, json_mode, context):
             last = chunk
         if last is None:
             raise NoModelAvailable("no model answered")
         return Answer(last.text, last.route, last.model, last.cached)
 
-    async def ask_json(self, prompt_or_messages: str | Iterable[Any], tier: str = "default") -> Any:
-        answer = await self.ask(prompt_or_messages, tier, json_mode=True)
+    async def ask_json(self, prompt_or_messages: str | Iterable[Any], tier: str = "default", context: dict | None = None) -> Any:
+        answer = await self.ask(prompt_or_messages, tier, json_mode=True, context=context)
         return parse_json(answer.text)

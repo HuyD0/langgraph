@@ -1,8 +1,8 @@
-"""Reliability: Timeouts, circuit breakers and error budgets: staying up when dependencies don't."""
+"""Reliability: Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't."""
 
 from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
 
-MODULE = module('reliability', 'Reliability', "Timeouts, circuit breakers and error budgets: staying up when dependencies don't.")
+MODULE = module('reliability', 'Reliability', "Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't.")
 
 lesson(MODULE, 'plan_calls',
     title='Timeouts and deadlines',
@@ -10,7 +10,7 @@ lesson(MODULE, 'plan_calls',
         'Every call that can wait forever eventually will. Set a timeout on every model and HTTP call.',
         "Better still, give the whole request a **deadline** and pass the remaining time down, so no step starts work it can't finish.",
     ],
-    example=example('A 2-second budget', "retrieve 400 ms → rerank 900 ms → generate 1,200 ms won't fit → fall back"),
+    example=example('A 2-second budget (2,000 ms; ms means thousandths of a second)',"retrieve 400 ms → rerank 900 ms → generate 1,200 ms won't fit → fall back"),
     check=question(
         'A user-facing request has a 3-second budget and retrieval took 2.8 s. What should the model call do?',
         [
@@ -35,58 +35,69 @@ lesson(MODULE, 'plan_calls',
         topic='reliability',
         difficulty='easy',
         fn='plan_calls',
-        prompt="""A request must answer within `deadline_ms`. It has optional steps to run in order, each `[name, expected_ms]`. Run a step only if it can finish within what's left of the deadline; otherwise skip it and try the next one, since a shorter later step may still fit.
+        prompt="""Your function gets two things:
 
-Return `[ran, skipped, elapsed_ms]`.""",
-        pattern='Carry the remaining budget forward and check it before each step.',
-        target='one walk through the steps',
-        realworld="Timeouts stop one slow call from stalling everything. Passing the remaining time to each step (deadline propagation) means no step starts work it can't finish, which is how Google's SRE practices avoid cascading failures.",
+- `deadline_ms`: the most time the whole request may take, in milliseconds (ms, thousandths of a second), like `2000`.
+- `steps`: the steps to try, in order. Each step is `[name, ms]`: its name and how many milliseconds it takes, like `["rerank", 900]`.
+
+Keep track of the time left. It starts at `deadline_ms`. For each step, if its time is at most the time left, the step runs: add its name to your list and take its time off the time left. If not, skip it and go on to the next step. A shorter step later may still fit.
+
+Return the names of the steps that run, in order.""",
+        pattern='Carry the time left forward and check it before each step.',
+        target='one pass over the steps',
+        realworld="Timeouts stop one slow call from stalling everything. Passing the time left to each step (called deadline propagation) means no step starts work it can't finish. Google's site reliability teams use this so one slow service doesn't drag down the others.",
         starter="""def plan_calls(deadline_ms, steps):
     # your code here
     pass
 """,
         solution="""def plan_calls(deadline_ms, steps):
-    ran, skipped = [], []
-    elapsed = 0
+    ran = []
+    time_left = deadline_ms
     for name, ms in steps:
-        if elapsed + ms <= deadline_ms:
+        if ms <= time_left:
             ran.append(name)
-            elapsed += ms
-        else:
-            skipped.append(name)
-    return [ran, skipped, elapsed]
+            time_left -= ms
+    return ran
 """,
         cases=[
-            case(2000, [['retrieve', 400], ['rerank', 900], ['generate', 1200], ['cite', 300]], expected=[['retrieve', 'rerank', 'cite'], ['generate'], 1600], sample=True),
-            case(100, [], expected=[[], [], 0]),
-            case(500, [['a', 500]], expected=[['a'], [], 500]),
-            case(300, [['a', 400], ['b', 100]], expected=[['b'], ['a'], 100]),
+            case(2000, [['retrieve', 400], ['rerank', 900], ['generate', 1200], ['cite', 300]], expected=['retrieve', 'rerank', 'cite'], sample=True),
+            case(100, [], expected=[]),
+            case(500, [['generate', 500]], expected=['generate']),
+            case(300, [['rerank', 400], ['cite', 100]], expected=['cite']),
+            case(1000, [['retrieve', 600], ['rerank', 600], ['generate', 300]], expected=['retrieve', 'generate']),
         ],
         guided="""def plan_calls(deadline_ms, steps):
     # Replace every ___ with real code, then run the tests.
 
-    ran, skipped = [], []
-    elapsed = 0
+    ran = []
+    time_left = deadline_ms
     for name, ms in steps:
-        # Step 1: does it fit in what's left?
+        # Step 1: is ms at most time_left?
         if ___:
             ran.append(name)
-            elapsed += ms
-        else:
+            # Step 2: take ms off time_left.
             ___
-    return [ran, skipped, elapsed]
+    return ran
 """,
-        fills=['elapsed + ms <= deadline_ms', 'skipped.append(name)'],
+        fills=['ms <= time_left', 'time_left -= ms'],
         concepts=[
             [
-                'A budget that shrinks',
-                "Keep how much you've used, and compare against the limit before each step.",
-                """if used + cost <= limit:
-    used += cost""",
+                'Two names from each pair',
+                'When every item is a pair, `for a, b in items:` puts the two parts of each pair into two names.',
+                """prices = [["tea", 3], ["jam", 5]]
+for item, price in prices:
+    print(item, price)""",
+            ],
+            [
+                'Spend from a budget',
+                '`<=` means "at most": `4 <= money` is True when 4 is at most money. `money -= 4` is short for `money = money - 4`.',
+                """money = 10
+if 4 <= money:
+    money -= 4   # money is now 6""",
             ],
         ],
-        byhand='2,000 ms budget. retrieve 400 (400 used). rerank 900 (1,300). generate 1,200 would make 2,500: skip. cite 300 (1,600): runs.',
-        why='One walk through the steps.',
+        byhand='Time left: 2000. retrieve takes 400. It fits, so it runs: 1600 left. rerank takes 900. It fits, so it runs: 700 left. generate takes 1200. That is more than 700, so skip it. cite takes 300. It fits, so it runs: 400 left. Return retrieve, rerank and cite.',
+        why='One pass over the steps.',
         gotchas=[
             [
                 'A skipped step needs a fallback',
@@ -103,7 +114,7 @@ Return `[ran, skipped, elapsed_ms]`.""",
 lesson(MODULE, 'circuit_breaker',
     title='Circuit breakers and fallbacks',
     learn=[
-        'When a dependency is down, calling it again and again makes everything slower and the outage worse.',
+        'When a service you depend on (a dependency, like a reranker or model endpoint) is down, calling it again and again makes everything slower and the outage worse.',
         'A **circuit breaker** stops calling after repeated failures, fails fast to a **fallback** (a cheaper model, a cached answer), and tries again after a cooldown.',
     ],
     example=example('Closed → open → trial', """closed: calls go through, failures are counted
@@ -117,8 +128,8 @@ trial:  one call; success closes it, failure re-opens it"""),
     ),
     angle=angle(
         pattern='State machine',
-        text='One walk through the events with a couple of state variables. "Design a circuit breaker" is a common system design question.',
-        say='"After N consecutive failures the breaker opens and fails fast to a fallback; after a cooldown one trial call decides whether to close it."',
+        text='One walk through the calls with a couple of state variables. "Design a circuit breaker" is a common system design question.',
+        say='"After a set number of failures in a row (say, five), the breaker opens and fails fast to a fallback; after a cooldown one trial call decides whether to close it."',
         classic=None,
     ),
     stack=stack('Python: fall back while the breaker is open', """def rerank(docs):
@@ -136,92 +147,125 @@ trial:  one call; success closes it, failure re-opens it"""),
         topic='reliability',
         difficulty='medium',
         fn='circuit_breaker',
-        prompt="""A **circuit breaker** stops calling an endpoint that keeps failing, so you fail fast and fall back instead of piling on.
+        prompt="""A **circuit breaker** stops calling a service that keeps failing.
 
-`events` is a list of `[time, ok]`: a call attempted at `time` and whether it would succeed. The breaker starts **closed**. After `threshold` failures in a row it **opens** at that failure's time. While open, calls before `opened_at + cooldown` are blocked (not sent). The first call at or after that time is a trial: if it succeeds the breaker closes and the failure count resets; if it fails, the breaker opens again at that time.
+Your function gets three things:
 
-Return, for each event, `"ok"`, `"fail"` or `"blocked"`.""",
-        pattern='A small state machine: track the state, the failure count and when it opened; decide each event from those.',
-        target='one walk through the events',
-        realworld='Without a breaker, every request waits for a dead endpoint to time out, and retries make it worse. With one, you switch to a fallback (a cheaper model, a cached answer) immediately, and check back after a cooldown.',
-        starter="""def circuit_breaker(events, threshold, cooldown):
+- `calls`: the calls, in order. Each is `[time, ok]`, like `[5, True]`: the time in seconds, and whether the call works (`True`) or fails (`False`).
+- `threshold`: how many failures in a row open the breaker, like `2`.
+- `cooldown`: how many seconds calls are blocked after it opens, like `10`.
+
+Start with a failure count of 0 and the breaker closed (calls go through). For each call:
+
+- If the breaker is open and `time` is earlier than the time it opened plus `cooldown`, the result is `"blocked"`. Nothing else changes.
+- Otherwise, if the call works, the result is `"ok"`. The count goes back to 0 and the breaker closes.
+- Otherwise, the result is `"fail"`. Add 1 to the count (only a success resets it). If the count is now `threshold` or more, the breaker opens at this `time`.
+
+Return one result per call, in order.""",
+        pattern='Keep two things as you go: failures in a row, and when the breaker opened. Decide each call from those.',
+        target='one pass over the calls',
+        realworld='Without a breaker, every request waits for a dead service to time out, and retries make it worse. With one, you switch to a fallback (a cheaper model, a cached answer) at once, and check back after a cooldown.',
+        starter="""def circuit_breaker(calls, threshold, cooldown):
     # your code here
     pass
 """,
-        solution="""def circuit_breaker(events, threshold, cooldown):
-    out = []
+        solution="""def circuit_breaker(calls, threshold, cooldown):
+    results = []
     failures = 0
     opened_at = None
-    for t, ok in events:
-        if opened_at is not None and t < opened_at + cooldown:
-            out.append("blocked")
-            continue
-        if ok:
-            out.append("ok")
+    for time, ok in calls:
+        if opened_at is not None and time < opened_at + cooldown:
+            results.append("blocked")
+        elif ok:
+            results.append("ok")
             failures = 0
             opened_at = None
         else:
-            out.append("fail")
+            results.append("fail")
             failures += 1
-            if opened_at is not None or failures >= threshold:
-                opened_at = t
-    return out
+            if failures >= threshold:
+                opened_at = time
+    return results
 """,
         cases=[
-            case([[0, False], [1, False], [2, False], [3, True], [12, False], [13, True], [25, True]], 3, 10, expected=['fail', 'fail', 'fail', 'blocked', 'fail', 'blocked', 'ok'], sample=True),
+            case([[0, False], [1, False], [5, True], [12, False], [30, True]], 2, 10, expected=['fail', 'fail', 'blocked', 'fail', 'ok'], sample=True),
             case([], 2, 5, expected=[]),
             case([[0, True], [1, False], [2, True], [3, False]], 2, 5, expected=['ok', 'fail', 'ok', 'fail']),
             case([[0, False], [1, False], [5, True], [6, True]], 2, 4, expected=['fail', 'fail', 'ok', 'ok']),
+            case([[0, False], [1, False], [2, False], [3, True], [12, False], [13, True], [25, True]], 3, 10, expected=['fail', 'fail', 'fail', 'blocked', 'fail', 'blocked', 'ok']),
         ],
-        guided="""def circuit_breaker(events, threshold, cooldown):
+        guided="""def circuit_breaker(calls, threshold, cooldown):
     # Replace every ___ with real code, then run the tests.
 
-    out = []
-    failures = 0       # failures in a row
-    opened_at = None   # when the breaker last opened (None = closed)
-    for t, ok in events:
-        # Step 1: open and still cooling down? Don't send it.
+    results = []
+    failures = 0      # failures in a row
+    opened_at = None  # None means the breaker is closed
+    for time, ok in calls:
+        # Step 1: is time earlier than opened_at + cooldown?
         if opened_at is not None and ___:
-            out.append("blocked")
-            continue
-        if ok:
-            # Step 2: a success closes the breaker and resets the count.
-            out.append("ok")
+            results.append("blocked")
+        elif ok:
+            # A success resets the count and closes it.
+            results.append("ok")
             failures = 0
             opened_at = None
         else:
-            out.append("fail")
+            results.append("fail")
             failures += 1
-            # Step 3: a failed trial, or too many failures in a row, opens it (again).
-            if opened_at is not None or ___:
-                opened_at = t
-    return out
+            # Step 2: is failures at threshold or more?
+            if ___:
+                opened_at = time
+    return results
 """,
-        fills=['t < opened_at + cooldown', 'failures >= threshold'],
+        fills=['time < opened_at + cooldown', 'failures >= threshold'],
         concepts=[
             [
-                'State in a few variables',
-                'A state machine can be just two variables you update as events arrive.',
-                """failures = 0
-opened_at = None""",
+                'None means "no value yet"',
+                '`None` is how Python says "nothing here". Check for it with `is None` or `is not None`. `a and b` is True only when both are True, so the `if` below checks both.',
+                """winner = None
+if winner is not None and winner > 3:
+    print(winner)""",
             ],
             [
-                'continue',
-                'Skip the rest of this loop turn.',
-                """if blocked:
-    continue""",
+                'if, elif, else',
+                'Python tries each test in order and runs only the first block whose test is True. `else` runs when none were. A True/False value can be the test itself: `if ok:` runs when ok is True.',
+                """raining = True
+if raining:
+    print("umbrella")
+else:
+    print("sunglasses")""",
+            ],
+            [
+                'Two names from each pair',
+                'When every item is a pair, `for a, b in items:` puts the two parts of each pair into two names.',
+                """prices = [["tea", 3], ["jam", 5]]
+for item, price in prices:
+    print(item, price)""",
+            ],
+            [
+                'Add one to a count',
+                '`n += 1` is short for `n = n + 1`.',
+                """misses = 0
+misses += 1   # misses is now 1""",
+            ],
+            [
+                'Compare two numbers',
+                '`a < b` is True when a is smaller (for times: earlier). `a >= b` is True when a is b or more.',
+                """age = 20
+print(age < 18)    # False
+print(age >= 18)   # True""",
             ],
         ],
-        byhand='Three failures at 0, 1, 2: the breaker opens at 2. The call at 3 is before 12: blocked. At 12 the trial fails: open again at 12. At 13 (before 22): blocked. At 25 the trial succeeds: closed.',
-        why='One walk through the events.',
+        byhand='Time 0 fails: count 1. Time 1 fails: count 2, which reaches the threshold of 2. The breaker opens at 1. 1 plus 10 is 11, so calls before time 11 are blocked. Time 5 is earlier than 11: blocked. The count stays at 2. Time 12 is not earlier than 11, so it is sent as a trial. It fails: count 3, which is 2 or more, so the breaker re-opens at 12. 12 plus 10 is 22, so calls before time 22 are blocked. Time 30 is not earlier than 22, so it is sent as a trial. It works: ok, the count goes back to 0 and the breaker closes. Return fail, fail, blocked, fail, ok.',
+        why='One pass over the calls.',
         gotchas=[
             [
                 'Have a fallback ready',
                 'A breaker without a fallback just fails faster. Decide what users get instead: a cheaper model, a cached answer, or a clear message.',
             ],
             [
-                'Per endpoint, not global',
-                "Keep one breaker per dependency, so a broken reranker doesn't block the main model.",
+                'One breaker per service',
+                "Keep one breaker for each service you call, so a broken reranker doesn't block the main model.",
             ],
         ],
     ),
@@ -230,8 +274,8 @@ opened_at = None""",
 lesson(MODULE, 'burn_rate',
     title='SLOs and error budgets',
     learn=[
-        'An **SLO** is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your **error budget**.',
-        "Alert on how fast you're using up the budget (the **burn rate**), not on every error. That pages people only when it matters.",
+        'An **SLO** (service level objective) is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your **error budget**.',
+        "Alert on how fast you're using up the budget (the **burn rate**), not on every error. That pages people (sends an urgent alert to whoever is on call) only when it matters.",
     ],
     example=example('Burn rate', """allowed failure rate: 0.5%
 actual failure rate: 7.2%
@@ -248,7 +292,8 @@ burn rate: 7.2 / 0.5 = 14.4 → page someone"""),
         say='"I alert on error-budget burn rate over a window, which ties paging to user impact instead of raw error counts."',
         classic=None,
     ),
-    stack=stack('Databricks SQL: error rate over the last hour, for an alert', """SELECT count_if(status = 'ERROR') / count(*) AS error_rate
+    stack=stack('Databricks SQL: error rate over the last hour, for an alert', """SELECT try_divide(count_if(status = 'ERROR'), count(*)) AS error_rate
+  -- NULL when there were no requests
 FROM agent_requests
 WHERE request_time >= now() - INTERVAL 1 HOUR"""),
     exercise=exercise(
@@ -256,50 +301,72 @@ WHERE request_time >= now() - INTERVAL 1 HOUR"""),
         topic='reliability',
         difficulty='easy',
         fn='burn_rate',
-        prompt="""An SLO (service level objective) like 99.5% success means you're allowed 0.5% failures: your **error budget**. The **burn rate** says how fast you're spending it: the error rate divided by the allowed error rate. 1.0 means you'll use exactly the budget; 10 means ten times too fast.
+        prompt="""An **SLO** (service level objective) is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your **error budget**: the failures you are allowed. The **burn rate** says how fast you are using it up. 1.0 means exactly on budget. 10 means ten times too fast.
 
-Given `errors` and `total` requests in a window, the `slo` (like 0.995) and an `alert_at` burn rate, return `[burn, alert]`, with burn rounded to 1 place. With no requests, return `[0.0, False]`.""",
-        pattern='Turn two raw counts into a ratio against a target, then compare to a threshold.',
-        target='a few arithmetic steps',
-        realworld="Alerting on raw error counts pages people at 3am for noise. Alerting on burn rate pages only when the budget is really at risk, which is the practice Google's SRE book describes. On Databricks you'd compute it from system tables or traces with a SQL alert.",
-        starter="""def burn_rate(errors, total, slo, alert_at):
+Your function gets three things:
+
+- `errors`: how many requests failed, like `72`.
+- `total`: how many requests there were, like `1000`.
+- `slo`: the target as a decimal, like `0.995` for 99.5%.
+
+The error rate (the share of requests that failed) is `errors / total`. The allowed rate is `1 - slo`. The burn rate is the error rate divided by the allowed rate. Return it, rounded to 1 decimal place. If `total` is 0, return `0.0`.""",
+        pattern='Turn two counts into a rate, then divide it by the rate the target allows.',
+        target='a few simple calculations, no loop',
+        realworld="Alerting on raw error counts wakes people at 3am for noise. Alerting on the burn rate instead pages someone only when the budget is really at risk, which is the practice Google's site reliability book describes. On Databricks you'd compute it from system tables or traces with a SQL alert.",
+        starter="""def burn_rate(errors, total, slo):
     # your code here
     pass
 """,
-        solution="""def burn_rate(errors, total, slo, alert_at):
+        solution="""def burn_rate(errors, total, slo):
     if total == 0:
-        return [0.0, False]
-    burn = round((errors / total) / (1 - slo), 1)
-    return [burn, burn >= alert_at]
+        return 0.0
+    error_rate = errors / total
+    allowed_rate = 1 - slo
+    return round(error_rate / allowed_rate, 1)
 """,
         cases=[
-            case(72, 1000, 0.995, 10, expected=[14.4, True], sample=True),
-            case(0, 0, 0.99, 2, expected=[0.0, False]),
-            case(5, 1000, 0.995, 2, expected=[1.0, False]),
-            case(30, 2000, 0.99, 1.5, expected=[1.5, True]),
+            case(72, 1000, 0.995, expected=14.4, sample=True),
+            case(0, 0, 0.99, expected=0.0),
+            case(5, 1000, 0.995, expected=1.0),
+            case(30, 2000, 0.99, expected=1.5),
+            case(0, 500, 0.999, expected=0.0),
         ],
-        guided="""def burn_rate(errors, total, slo, alert_at):
+        guided="""def burn_rate(errors, total, slo):
     # Replace every ___ with real code, then run the tests.
 
+    # No requests means nothing to measure.
     if total == 0:
-        return [0.0, False]
-    # Step 1: error rate divided by the allowed error rate (1 - slo).
-    burn = round((errors / total) / ___, 1)
-    # Step 2: alert when it's burning at least that fast.
-    return [burn, ___]
+        return 0.0
+    # Step 1: the share of requests that failed.
+    error_rate = ___
+    # Step 2: the share the SLO allows to fail.
+    allowed_rate = ___
+    # Step 3: divide error_rate by allowed_rate.
+    return round(___, 1)
 """,
-        fills=['(1 - slo)', 'burn >= alert_at'],
-        concepts=[['Division for rates', 'errors / total gives the share that failed.', '72 / 1000   # 0.072']],
-        byhand='72 errors in 1,000 is 7.2% failing. The SLO allows 0.5%. 7.2 / 0.5 = 14.4 times too fast: alert.',
+        fills=['errors / total', '1 - slo', 'error_rate / allowed_rate'],
+        concepts=[
+            [
+                'Division gives a share',
+                '`/` divides. `part / whole` gives the share as a decimal.',
+                """3 / 4   # 0.75""",
+            ],
+            [
+                'round',
+                '`round(x, 1)` keeps 1 decimal place.',
+                """round(3.14159, 1)   # 3.1""",
+            ],
+        ],
+        byhand='The error rate is 72 divided by 1000, which is 0.072. The SLO of 0.995 allows 1 minus 0.995, which is 0.005 (the 0.5% budget). 0.072 divided by 0.005 is 14.4 (the same as 72 divided by 5). Return 14.4: the budget is burning 14.4 times too fast.',
         why='Two divisions.',
         gotchas=[
             [
                 'Pick the window with the threshold',
-                'A high burn rate over 5 minutes means "page now"; a lower one over 6 hours means "look tomorrow". Teams use both.',
+                'A high burn rate over the last hour means "page now"; a low one over a few days means "open a ticket and look tomorrow". Teams use both.',
             ],
             [
                 'Define failure for AI',
-                'For an AI feature, a 200 response with a wrong answer is also a failure. Count judge failures from production monitoring, not just HTTP errors.',
+                'For an AI feature, a reply that loads fine but gives a wrong answer is also a failure. Count answers your automatic grader marks wrong, not just crashes and errors.',
             ],
         ],
     ),

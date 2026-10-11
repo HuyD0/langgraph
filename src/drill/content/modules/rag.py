@@ -7,7 +7,7 @@ MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retriev
 lesson(MODULE, 'chunk_text',
     title='Chunking documents',
     learn=[
-        'RAG (retrieval-augmented generation) answers questions from your documents. First you cut each document into **chunks** small enough to search and to fit in a prompt.',
+        'RAG (retrieval-augmented generation) answers questions from your documents. First you cut each document into **chunks** small enough to search and to fit in a prompt. The chunks are then stored in a search **index**: a table of chunks that can be searched quickly.',
         'Chunks **overlap** a little, so a sentence that crosses a boundary appears whole in at least one chunk.',
     ],
     example=example('Size 4, overlap 1', """'abcdefghij' -> 'abcd', 'defg', 'ghij'
@@ -39,11 +39,17 @@ lesson(MODULE, 'chunk_text',
         topic='rag',
         difficulty='medium',
         fn='chunk_text',
-        prompt="""Before a document goes into a search index, it's cut into overlapping pieces called chunks. Given `text`, a chunk `size` and an `overlap`, return the chunks: the first starts at character 0, and each next one starts `size - overlap` characters later. Stop once a chunk reaches the end of the text.
+        prompt="""Your function gets three things:
 
-For `"abcdefghij"` with size 4 and overlap 1, the chunks are `"abcd"`, `"defg"`, `"ghij"`. You can assume `overlap` is smaller than `size`. Empty text gives no chunks.""",
-        pattern='Move a window along the text in fixed jumps, and know exactly when to stop.',
-        target='visit each part of the text a fixed number of times',
+- `text`: the document, a string like `"abcdefghij"`.
+- `size`: how many characters go in each chunk, like `4`.
+- `overlap`: how many characters each chunk shares with the one before it, like `1`.
+
+The first chunk starts at character 0. Each next chunk starts `size - overlap` characters later. Stop once a chunk includes the last character of the text. The last chunk can be shorter than `size`.
+
+Return the chunks as a list, in order. Empty text gives `[]`.""",
+        pattern='Move a fixed-size slice along the text in equal jumps, and know exactly when to stop.',
+        target='one pass along the text, in equal jumps',
         realworld='The first step of RAG (retrieval-augmented generation). The overlap stops a sentence from being cut in half and lost.',
         starter="""def chunk_text(text, size, overlap):
     # your code here
@@ -72,20 +78,34 @@ For `"abcdefghij"` with size 4 and overlap 1, the chunks are `"abcd"`, `"defg"`,
 
     chunks = []
     # Step 1: how far each new chunk moves forward.
-    step = ___ - ___
+    step = ___
     start = 0
 
-    # Step 2: keep cutting while start is still inside the text.
     while start < len(text):
-        chunks.append(text[___:___])
-        # Step 3: did that chunk reach the end? Then we're done.
+        # Step 2: cut size characters, beginning at start.
+        chunks.append(text[___])
+        # Step 3: the same end position you used in step 2.
+        # If it is at or past len(text), stop.
         if ___ >= len(text):
             break
-        start += ___
+        start += step
 
     return chunks
 """,
+        fills=['size - overlap', 'start:start + size', 'start + size'],
         concepts=[
+            [
+                'Slicing',
+                '`text[a:b]` gives the characters from position a up to, but not including, position b. Positions count from 0. Going past the end is fine: you just get what is there.',
+                """'python'[0:3]   # 'pyt'
+'python'[4:9]   # 'on'""",
+            ],
+            [
+                'append',
+                '`items.append(x)` adds x to the end of a list.',
+                """names = []
+names.append('ana')   # ['ana']""",
+            ],
             [
                 'while loop',
                 'Repeats while a condition is true. Good when the stopping point depends on what happens inside.',
@@ -95,18 +115,13 @@ while start < 10:
             ],
             [
                 'break',
-                'Leaves the loop immediately.',
+                'Leaves the loop straight away.',
                 """for n in [1, 2, 3]:
     if n == 2:
         break""",
             ],
-            [
-                'Slicing past the end',
-                'text[8:12] on a 10-letter text just gives the last 2 letters. No error.',
-                "'abcdefghij'[8:12]   # 'ij'",
-            ],
         ],
-        byhand='"abcdefghij" (10 letters), size 4, overlap 1, so each jump is 3. Start at 0: "abcd". Jump to 3: "defg". Jump to 6: "ghij", which reaches letter 10, the end. Stop. Without that check you\'d also add "j" alone, a chunk that\'s already covered.',
+        byhand='The text "abcdefghij" has 10 characters. Size is 4 and overlap is 1, so each jump is 3. Start at 0: cut "abcd". Jump to 3: cut "defg". Jump to 6: cut "ghij". That chunk reaches the last character, so stop. (Without the stop you would also add "j" on its own, which "ghij" already has.) Return ["abcd", "defg", "ghij"].',
         why='Each jump moves forward by size minus overlap, so the number of chunks grows in step with the text.',
         gotchas=[
             [
@@ -128,7 +143,7 @@ while start < 10:
 lesson(MODULE, 'dedupe_chunks',
     title='Cleaning the index',
     learn=[
-        'Real document sets are full of repeats: footers, disclaimers, copied pages. Duplicates waste embedding money and push useful chunks out of the top results.',
+        'Real document sets are full of repeats: footers, disclaimers, copied pages. Each chunk is turned into an embedding (a list of numbers used for search), and you pay for each one. Duplicates waste that money and push useful chunks out of the top results.',
         'Normalise text (case, whitespace) into a **key**, and keep only the first chunk for each key.',
     ],
     example=example('Same text, same key', "' '.join('ALL RIGHTS\\nRESERVED.'.lower().split())\n# 'all rights reserved.'"),
@@ -144,18 +159,20 @@ lesson(MODULE, 'dedupe_chunks',
         say='"I turn each chunk into a cleaned-up key and keep a set of keys I\'ve seen, so the first copy survives and the rest are dropped in one pass."',
         classic='group_anagrams',
     ),
-    stack=stack('Databricks SQL: keep one chunk per cleaned text', "CREATE OR REPLACE TABLE main.support.doc_chunks_clean AS\nSELECT * FROM main.support.doc_chunks\nQUALIFY row_number() OVER (\n  PARTITION BY lower(regexp_replace(text, '\\\\s+', ' ')) ORDER BY chunk_id) = 1"),
+    stack=stack('Databricks SQL: keep one chunk per cleaned text', "CREATE OR REPLACE TABLE main.support.doc_chunks_clean AS\nSELECT * FROM main.support.doc_chunks\nQUALIFY row_number() OVER (\n  PARTITION BY lower(trim(regexp_replace(text, '\\\\s+', ' '))) ORDER BY chunk_id) = 1"),
     exercise=exercise(
         title='Remove Duplicate Chunks',
         topic='rag',
         difficulty='easy',
         fn='dedupe_chunks',
-        prompt="""The same text shows up many times in a document collection: footers, disclaimers, copied paragraphs. Given a list of `chunks`, remove duplicates, where two chunks count as the same if they match after lowercasing and squeezing all runs of whitespace (spaces, newlines, tabs) to single spaces, with the ends trimmed.
+        prompt="""`chunks` is a list of text pieces, like `["Hi there", "HI THERE", "Bye"]`.
 
-Keep the first copy of each, unchanged, in the original order.""",
-        pattern="Design a key that is equal exactly when two things should count as the same, then remember the keys you've seen.",
+Make a **key** for each chunk: lowercase it, split it into words, and join the words back with single spaces. That way extra spaces, tabs and line breaks don't change the key. Two chunks with the same key are duplicates.
+
+Return the chunks without duplicates. Keep the first chunk for each key, exactly as it was written, in the original order.""",
+        pattern="Make a key that is the same exactly when two chunks should count as the same, then remember the keys you've seen.",
         target='one pass over the chunks',
-        realworld='Duplicates waste embedding money and crowd retrieval: if the top 5 results are the same disclaimer five times, the model never sees the paragraph that answers the question.',
+        realworld='Duplicates waste money, because every chunk is turned into an embedding (a list of numbers used for search) and you pay for each one. They also crowd retrieval: if the top 5 results are the same disclaimer five times, the model never sees the paragraph that answers the question.',
         starter="""def dedupe_chunks(chunks):
     # your code here
     pass
@@ -171,14 +188,15 @@ Keep the first copy of each, unchanged, in the original order.""",
     return out
 """,
         cases=[
+            case(['Hi there', 'Bye now', 'hi   there', 'BYE\nNOW'], expected=['Hi there', 'Bye now'], sample=True),
+            case([], expected=[]),
             case([
                 'Refunds take 5 days.',
                 'All rights reserved.',
                 'refunds   take 5 days.',
                 """ALL RIGHTS
 RESERVED.""",
-            ], expected=['Refunds take 5 days.', 'All rights reserved.'], sample=True),
-            case([], expected=[]),
+            ], expected=['Refunds take 5 days.', 'All rights reserved.']),
             case(['a', 'b', 'a '], expected=['a', 'b']),
             case(['Hi there', 'hi\tthere', 'hithere'], expected=['Hi there', 'hithere']),
         ],
@@ -186,11 +204,13 @@ RESERVED.""",
     # Replace every ___ with real code, then run the tests.
 
     seen = set()   # keys you've already kept
-    out = []
+    out = []       # the chunks to return
     for chunk in chunks:
-        # Step 1: the key: lowercase, then split() and join with single spaces.
+        # Step 1: the key: lowercase, split into words,
+        # then join the words with single spaces.
         key = " ".join(___)
-        # Step 2: first time you see this key? Keep the chunk.
+        # Step 2: a new key? Remember it, and add the
+        # chunk to the out list.
         if key not in seen:
             seen.add(key)
             ___
@@ -199,24 +219,40 @@ RESERVED.""",
         fills=['chunk.lower().split()', 'out.append(chunk)'],
         concepts=[
             [
+                'lower',
+                'Gives a lowercase copy of a string.',
+                "'Big RED Bus'.lower()   # 'big red bus'",
+            ],
+            [
                 'split with no argument',
-                'Splits on any run of whitespace, including newlines and tabs, and drops empty pieces.',
-                "'a  b\\nc'.split()   # ['a', 'b', 'c']",
+                'Cuts a string into words at any run of spaces, tabs or line breaks. Spaces at the ends are dropped. You can put it straight after `lower()`.',
+                "'  big  red\\nbus '.split()   # ['big', 'red', 'bus']\n'Big  RED\\nBus'.lower().split()   # ['big', 'red', 'bus']",
+            ],
+            [
+                'join',
+                '`" ".join(words)` glues a list of strings back together, with one space between each.',
+                """" ".join(['big', 'red', 'bus'])   # 'big red bus'""",
             ],
             [
                 'A set of seen keys',
-                'Add each key after you use it; check before adding.',
+                'A set holds each value once. `add` puts a value in, and `in` checks whether it is there, instantly.',
                 """seen = set()
 seen.add('x')
 'x' in seen   # True""",
             ],
+            [
+                'append',
+                '`items.append(x)` adds x to the end of a list.',
+                """names = []
+names.append('ana')   # ['ana']""",
+            ],
         ],
-        byhand='"Refunds take 5 days." becomes the key "refunds take 5 days.". Keep it. "refunds   take 5 days." gives the same key: skip. The two disclaimers both become "all rights reserved.": keep the first only.',
+        byhand='Chunk 1, "Hi there", gets the key "hi there". New: keep it. Chunk 2, "Bye now", gets the key "bye now". New: keep it. Chunk 3 has a small h and extra spaces, but its key is "hi there" again: skip it. Chunk 4 has capitals and a line break (shown as \\n), but its key is "bye now" again: skip it. Return ["Hi there", "Bye now"].',
         why='One pass; each key check is a set lookup.',
         gotchas=[
             [
                 'Near-duplicates',
-                'Exact keys miss text that differs by a date or a name. Real pipelines also use hashing tricks such as MinHash to catch near-duplicates.',
+                'Exact keys miss text that differs by a date or a name. Real pipelines also use near-duplicate detection (for example MinHash), which flags chunks that are mostly the same.',
             ],
             [
                 'Dedupe before you embed',
@@ -230,7 +266,7 @@ lesson(MODULE, 'retrieve',
     title='Retrieval: finding the right chunks',
     learn=[
         'Retrieval scores every chunk against the question and keeps the top **k** to put in the prompt.',
-        'Real systems score with **embeddings** (vectors where similar meanings are close), often combined with keyword search. The shape is the same: score, sort, keep the top k, break ties consistently.',
+        'Real systems score with **embeddings** (lists of numbers where similar meanings land close together), often combined with keyword search. The shape is the same: score, sort, keep the top k, break ties consistently.',
     ],
     example=example('Score, sort, slice', """scored = sorted(docs, key=score, reverse=True)
 top = scored[:k]"""),
@@ -261,9 +297,15 @@ results = index.similarity_search(
         topic='rag',
         difficulty='medium',
         fn='retrieve',
-        prompt="""Given a search `query`, a list of `docs` (strings) and a number `k`, return the positions of the `k` best documents, best first. A document's score is how many different query words appear in it, ignoring upper and lower case. Words are separated by spaces.
+        prompt="""Your function gets three things:
 
-If two documents have the same score, the one that comes first in `docs` wins. Leave out documents that score 0. Return fewer than `k` if there aren't enough.""",
+- `query`: the search text, like `"cat food"`.
+- `docs`: the documents, a list of strings like `["dog food", "cat toys"]`.
+- `k`: how many results to return, like `2`.
+
+A document's score is how many of the query's words appear in it, ignoring upper and lower case. Words are separated by spaces. Documents with a score of 0 can still be returned.
+
+Return the positions in `docs` (counting from 0) of the `k` highest-scoring documents, best first. If two documents tie, the one that comes first in `docs` goes first. If there are fewer than `k` documents, return them all.""",
         pattern='Score every candidate, sort by score, keep the top few. Decide up front how ties are broken.',
         target='score each document once, then sort',
         realworld='Retrieval in RAG. Real systems score with embeddings instead of shared words, but the score, sort and keep-the-top-k shape is the same.',
@@ -273,58 +315,89 @@ If two documents have the same score, the one that comes first in `docs` wins. L
 """,
         solution="""def retrieve(query, docs, k):
     words = set(query.lower().split())
-    scored = []
+    pairs = []
     for i, doc in enumerate(docs):
         score = len(words & set(doc.lower().split()))
-        if score > 0:
-            scored.append((-score, i))
-    scored.sort()
-    return [i for _, i in scored[:k]]
+        pairs.append((-score, i))
+    pairs.sort()
+    top = pairs[:k]
+    return [pair[1] for pair in top]
 """,
         cases=[
             case('cat food', ['dog food', 'cat toys', 'cat food bowl', 'birds'], 2, expected=[2, 0], sample=True),
-            case('Python', ['I like python', 'Java'], 3, expected=[0]),
+            case('Python', ['I like python', 'Java'], 3, expected=[0, 1]),
             case('a b', [], 2, expected=[]),
-            case('x y', ['y x', 'x', 'q'], 5, expected=[0, 1]),
+            case('x y', ['y x', 'x', 'q'], 5, expected=[0, 1, 2]),
             case('The', ['the the the', 'THE end'], 1, expected=[0]),
+            case('red car', ['blue car', 'red car', 'red bus'], 3, expected=[1, 0, 2]),
         ],
         guided="""def retrieve(query, docs, k):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: the query's words, lowercase, as a set.
-    words = set(query.___().split())
+    # The query's words, lowercase, as a set.
+    words = set(query.lower().split())
 
-    scored = []
+    pairs = []
     for i, doc in enumerate(docs):
-        # Step 2: how many query words are in this doc?
-        score = len(words & set(___))
-        if score > 0:
-            # Step 3: store (-score, i) so sorting puts best first, ties by position.
-            scored.append((___, ___))
+        # Step 1: this doc's words, lowercase, as a set.
+        # & keeps the words both sets share.
+        score = len(words & ___)
+        # Step 2: store the pair (-score, i). The minus sign
+        # puts the biggest score first when sorted.
+        pairs.append(___)
 
-    scored.sort()
-    # Step 4: keep the first k positions.
-    return [i for _, i in scored[:___]]
+    # Step 3: sort (best first), then keep the first k.
+    pairs.sort()
+    top = pairs[:___]
+    # Return just the positions: item 1 of each pair.
+    return [pair[1] for pair in top]
 """,
+        fills=['set(doc.lower().split())', '(-score, i)', 'k'],
         concepts=[
             [
-                'set',
-                'A collection with no duplicates. a & b gives what two sets have in common.',
-                "{'cat', 'food'} & {'cat', 'toys'}   # {'cat'}",
+                'lower and split',
+                '`lower()` makes text lowercase. `split()` cuts it into words at spaces.',
+                "'Big Red Bus'.lower().split()   # ['big', 'red', 'bus']",
+            ],
+            [
+                'A set and &',
+                'A set holds each value once. `set(a_list)` turns a list into a set, dropping repeats. `a & b` gives the values two sets share, and `len` counts them.',
+                """set(['bo', 'ana', 'bo'])   # {'bo', 'ana'}
+shared = {'big', 'bus'} & {'bus', 'stop'}
+len(shared)   # 1""",
+            ],
+            [
+                'enumerate',
+                'Gives each item together with its position, counting from 0.',
+                """for i, name in enumerate(['ana', 'bo']):
+    print(i, name)   # 0 ana, then 1 bo""",
+            ],
+            [
+                'append',
+                '`items.append(x)` adds x to the end of a list. x can be a pair in round brackets.',
+                """pairs = []
+pairs.append((5, 'ana'))   # [(5, 'ana')]""",
             ],
             [
                 'Sorting pairs',
-                'Python sorts tuples by the first item, then the second. Make the score negative to get biggest first while keeping lower positions first on ties.',
-                """sorted([(-1, 0), (-2, 2), (-1, 1)])
+                'Python sorts pairs by the first item, then by the second. A minus sign on the score puts the biggest score first, and on a tie the lower position comes first. `pairs.sort()` sorts the list itself.',
+                """pairs = [(-1, 0), (-2, 2), (-1, 1)]
+pairs.sort()
 # [(-2, 2), (-1, 0), (-1, 1)]""",
             ],
             [
-                'lower and split',
-                'lower() makes text lowercase. split() cuts it into words at spaces.',
-                "'Cat Food'.lower().split()   # ['cat', 'food']",
+                'The first k items',
+                '`items[:k]` keeps the first k items, or all of them if there are fewer.',
+                "['a', 'b', 'c'][:2]   # ['a', 'b']",
+            ],
+            [
+                'List comprehension',
+                'Builds a new list from another one in a single line. Item 1 of a pair is its second item, because counting starts at 0.',
+                """[n * 2 for n in [1, 2, 3]]   # [2, 4, 6]
+[p[1] for p in [(5, 'a'), (7, 'b')]]   # ['a', 'b']""",
             ],
         ],
-        byhand='Query "cat food". "dog food" shares food (1). "cat toys" shares cat (1). "cat food bowl" shares both (2). "birds" shares nothing, so drop it. Best first: position 2 (score 2), then the ties at positions 0 and 1, and the first one wins. With k = 2 the answer is [2, 0].',
+        byhand='Query words: cat, food. Position 0, "dog food", has food: score 1. Position 1, "cat toys", has cat: score 1. Position 2, "cat food bowl", has both: score 2. Position 3, "birds", has neither: score 0. Best first is position 2. Positions 0 and 1 tie on 1, so 0 comes before 1. k is 2, so return [2, 0].',
         why='You look at each document once to score it, then sort. Sorting is a little slower than one pass, but fine.',
         gotchas=[
             [
@@ -337,7 +410,7 @@ If two documents have the same score, the one that comes first in `docs` wins. L
             ],
             [
                 "More context isn't always better",
-                'Stuffing many chunks into the prompt costs more and can bury the useful one. Picking a small k and reranking is a common pattern.',
+                'Stuffing many chunks into the prompt costs more and can bury the useful one. Picking a small k and reranking (using a second model to put the results in a better order) is a common pattern.',
             ],
         ],
     ),
@@ -347,15 +420,12 @@ lesson(MODULE, 'recall_at_k',
     title='Measuring retrieval',
     learn=[
         "A RAG answer can fail in two places: retrieval didn't find the right document, or the model didn't use it well. Measure them separately.",
-        "**Recall@k** asks: of the documents that should have been found, how many were in the top k? It needs a small set of questions where you've marked the right documents by hand.",
+        "**Recall@k** asks: of the documents that should have been found, what share made it into the top k? It needs a small set of questions where you've marked the right documents by hand.",
     ],
-    example=example('A recall@5 scorer for mlflow.genai.evaluate', """from mlflow.genai.scorers import scorer
-
-@scorer
-def recall_at_5(outputs, expectations):
-    found = set(outputs["doc_ids"][:5])
-    wanted = set(expectations["relevant_ids"])
-    return len(found & wanted) / len(wanted) if wanted else 0.0"""),
+    example=example('Recall@3, by hand', """top 3:     d7 d2 d9
+relevant:  d2 d4
+found:     d2  (d4 is not in the top 3)
+recall@3 = 1 found of 2 relevant = 0.5"""),
     check=question(
         'Recall@5 is 0.3 and answers are poor. What should you work on first?',
         ['The prompt', 'Retrieval: chunking, the embedding model or k', 'A bigger LLM'],
@@ -380,10 +450,16 @@ def recall_at_5(outputs, expectations):
         topic='rag',
         difficulty='easy',
         fn='recall_at_k',
-        prompt="""For one test question you know which documents are relevant. `retrieved` is the list of document ids your retriever returned, best first, and `relevant` is the list of ids that should be found.
+        prompt="""Your function gets three things:
 
-Return the share of relevant ids that appear in the first `k` retrieved, rounded to 2 places. If `relevant` is empty, return `0.0`.""",
-        pattern='Take the top k, turn both into sets, count the overlap.',
+- `retrieved`: the document ids your search returned, best first, like `["d7", "d2", "d9"]`.
+- `relevant`: the ids it should have found, like `["d2", "d4"]`.
+- `k`: how many of the top results to look at, like `3`.
+
+Count how many of the `relevant` ids appear in the first `k` of `retrieved`. Return that count divided by the number of `relevant` ids, rounded to 2 decimal places. This is called **recall@k**.
+
+If `relevant` is empty, return `0.0`.""",
+        pattern='Take the top k, turn both lists into sets, and count what they share.',
         target='one walk through the top k',
         realworld='Measure retrieval separately from the final answer. If recall@5 is low, no prompt change will fix the answers: the model never saw the right document.',
         starter="""def recall_at_k(retrieved, relevant, k):
@@ -394,7 +470,7 @@ Return the share of relevant ids that appear in the first `k` retrieved, rounded
     if not relevant:
         return 0.0
     found = set(retrieved[:k]) & set(relevant)
-    return round(len(found) / len(set(relevant)), 2)
+    return round(len(found) / len(relevant), 2)
 """,
         cases=[
             case(['d7', 'd2', 'd9', 'd4'], ['d2', 'd4'], 3, expected=0.5, sample=True),
@@ -406,28 +482,47 @@ Return the share of relevant ids that appear in the first `k` retrieved, rounded
         guided="""def recall_at_k(retrieved, relevant, k):
     # Replace every ___ with real code, then run the tests.
 
+    # Nothing to find? Return 0.0.
     if not relevant:
         return 0.0
-    # Step 1: the ids in the top k that are also relevant. & is set intersection.
+    # Step 1: the ids in the top k that are also relevant.
+    # & keeps what two sets have in common.
     found = set(___) & set(relevant)
-    # Step 2: what share of the relevant ids were found?
+    # Step 2: how many were found, divided by how many
+    # are relevant, rounded to 2 places.
     return round(___, 2)
 """,
-        fills=['retrieved[:k]', 'len(found) / len(set(relevant))'],
+        fills=['retrieved[:k]', 'len(found) / len(relevant)'],
         concepts=[
-            ['Set intersection', "`a & b` keeps what's in both sets.", "{'d2', 'd7'} & {'d2', 'd4'}   # {'d2'}"],
             [
-                'Slicing past the end',
-                '`items[:5]` on a 3-item list just gives all 3.',
+                'An empty list check',
+                '`if not items:` is true when the list is empty.',
+                """names = []
+if not names:
+    print('no names yet')""",
+            ],
+            [
+                'The first k items',
+                '`items[:k]` keeps the first k items, or all of them if there are fewer.',
                 "['a', 'b'][:5]   # ['a', 'b']",
             ],
+            [
+                'Set intersection',
+                "`set(a_list)` turns a list into a set, dropping repeats. `a & b` keeps what's in both sets. `len` counts it.",
+                "set(['bo', 'ana', 'bo'])   # {'bo', 'ana'}\n{'ana', 'bo'} & {'bo', 'cy'}   # {'bo'}",
+            ],
+            [
+                'round',
+                '`round(x, 2)` rounds x to 2 decimal places.',
+                "round(2 / 3, 2)   # 0.67",
+            ],
         ],
-        byhand='Top 3: d7, d2, d9. Relevant: d2 and d4. Found d2 only, so 1 of 2: 0.5.',
+        byhand='k is 3, so look at the first 3 retrieved ids: d7, d2, d9. The relevant ids are d2 and d4. d2 is in the top 3. d4 is 4th, just outside. That is 1 found out of 2 relevant. 1 divided by 2 is 0.5. Return 0.5.',
         why='One walk through the top k; set lookups are instant.',
         gotchas=[
             [
                 'You need labelled questions',
-                "Recall needs to know which documents are relevant. Start with 30–50 real questions and mark the right documents by hand; it's the most valuable hour in a RAG project.",
+                "Recall needs to know which documents are relevant. Start with 30 to 50 real questions and mark the right documents by hand; it's the most valuable hour in a RAG project.",
             ],
             [
                 "Higher k isn't free",
@@ -440,18 +535,19 @@ Return the share of relevant ids that appear in the first `k` retrieved, rounded
 lesson(MODULE, 'ndcg_at_k',
     title='Ranking quality: nDCG',
     learn=[
-        "Recall@k asks whether the right documents made the top k. It ignores the order inside the top k, and it treats every relevant document as equally good. When order matters, for example when comparing rerankers, use **nDCG@k**.",
-        "Give each document a **grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: it is divided by log₂(position + 1), so position 1 counts in full, position 2 about 63%, position 3 half. Add those up to get the **DCG**.",
+        "Recall@k asks whether the right documents made the top k. It ignores the order inside the top k, and it treats every relevant document as equally good. When order matters, for example when comparing rerankers (models that reorder search results), use **nDCG@k**.",
+        "Give each document a **grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: position 1 counts in full, position 2 about 63%, position 3 half, position 4 about 43%. Add those up to get the **DCG**.",
         'Then divide by the best possible DCG for those grades, the **ideal DCG**, where the best documents come first. So nDCG runs from 0 to 1, and 1 means perfectly ordered. Grades come from people or an LLM judge, on a sample of questions.',
-        'MRR, from the rank fusion lesson, only looks at where the first relevant document appears. nDCG uses every graded document.',
+        'Another common metric, MRR (mean reciprocal rank), only looks at where the first relevant document sits. nDCG uses every graded document.',
     ],
-    example=example('nDCG@3, by hand', """position  doc  grade  discount                 counts
-   1      d3     1    1 ÷ log₂(2) = 1.00         1.00
-   2      d1     3    1 ÷ log₂(3) ≈ 0.63         1.89
-   3      d7     0                               0.00
+    example=example('nDCG@3, by hand', """pos  doc  grade  weight  points
+ 1   d3     1     100%    1.00
+ 2   d1     3      63%    1.89
+ 3   d7     0      50%    0.00
 DCG = 2.89
-ideal order (3, 1, 0): 3.00 + 0.63 = 3.63
-nDCG@3 = 2.89 ÷ 3.63 ≈ 0.80"""),
+ideal order 3, 1, 0: 3.00 + 0.63 = 3.63
+nDCG@3 = 2.89 divided by 3.63
+       = about 0.80"""),
     check=question(
         'Reranker A puts the best document 4th; reranker B puts it 1st. Both have the same recall@5. Which metric shows the difference?',
         ['Recall@5', 'nDCG@5', 'Neither, they are equally good'],
@@ -474,19 +570,30 @@ mlflow.log_metric("ndcg_at_3", ndcg)"""),
         topic='rag',
         difficulty='medium',
         fn='ndcg_at_k',
-        prompt="""`ranked` is the list of document ids your retriever returned, best first. `grades` maps document ids to how useful they are (a missing id has grade 0).
+        prompt="""Your function gets three things:
 
-Return nDCG@k, rounded to 2 decimal places:
+- `ranked`: the ids your search returned, best first, like `["d3", "d1", "d7"]`.
+- `grades`: a dict giving some ids a usefulness number, like `{"d1": 3, "d3": 1}`. Bigger is more useful. Ids not in it have grade 0.
+- `k`: how many top results to score, like `3`.
 
-- DCG: for each of the first `k` documents in `ranked`, at position 1, 2, 3..., add `grade / log2(position + 1)`
-- ideal DCG: the same, for all the grades sorted from highest to lowest, top `k` only
-- nDCG = DCG ÷ ideal DCG, or `0.0` if the ideal DCG is 0
+The helper `dcg(grade_list)` is written for you. Grades lower in the list count less.
 
-`math.log(x, 2)` gives log₂(x).""",
-        pattern='Add up discounted grades for the top k, and again for the ideal order, then divide.',
-        target='a sort of the grades, then two short walks',
+- List the grades of the first `k` ids in `ranked`, in order.
+- Make the best possible list: every value in `grades`, highest first, keeping the first `k`.
+- Return `dcg` of the first list divided by `dcg` of the second, rounded to 2 decimal places. If `dcg` of the second is 0, return `0.0`.""",
+        pattern='Score what you got, score the best possible order, then divide one by the other.',
+        target='one sort of the grades, then two short walks',
         realworld='Retrieval and search teams compare embedding models and rerankers on nDCG@10 with graded relevance, because the order of the first few results is what users and LLMs actually read.',
         starter="""import math
+
+def dcg(grade_list):
+    # Written for you. Adds up the grades: the 1st counts
+    # in full, the 2nd about 63%, the 3rd half, and so on.
+    total = 0.0
+    for i, grade in enumerate(grade_list):
+        total += grade / math.log(i + 2, 2)
+    return total
+
 
 def ndcg_at_k(ranked, grades, k):
     # your code here
@@ -494,17 +601,21 @@ def ndcg_at_k(ranked, grades, k):
 """,
         solution="""import math
 
+def dcg(grade_list):
+    total = 0.0
+    for i, grade in enumerate(grade_list):
+        total += grade / math.log(i + 2, 2)
+    return total
+
+
 def ndcg_at_k(ranked, grades, k):
-    dcg = 0.0
-    for i, doc in enumerate(ranked[:k]):
-        dcg += grades.get(doc, 0) / math.log(i + 2, 2)
+    got = []
+    for doc in ranked[:k]:
+        got.append(grades.get(doc, 0))
     best = sorted(grades.values(), reverse=True)[:k]
-    ideal = 0.0
-    for i, grade in enumerate(best):
-        ideal += grade / math.log(i + 2, 2)
-    if ideal == 0:
+    if dcg(best) == 0:
         return 0.0
-    return round(dcg / ideal, 2)
+    return round(dcg(got) / dcg(best), 2)
 """,
         cases=[
             case(['d3', 'd1', 'd7'], {'d1': 3, 'd3': 1}, 3, expected=0.8, sample=True),
@@ -516,43 +627,73 @@ def ndcg_at_k(ranked, grades, k):
         ],
         guided="""import math
 
+def dcg(grade_list):
+    # Written for you. Adds up the grades: the 1st counts
+    # in full, the 2nd about 63%, the 3rd half, and so on.
+    total = 0.0
+    for i, grade in enumerate(grade_list):
+        total += grade / math.log(i + 2, 2)
+    return total
+
+
 def ndcg_at_k(ranked, grades, k):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: DCG of what the retriever returned. enumerate counts from 0,
-    # so position i + 1 has the discount log2(i + 2).
-    dcg = 0.0
-    for i, doc in enumerate(ranked[:k]):
-        dcg += ___ / math.log(i + 2, 2)
+    # Step 1: the grades of the first k ranked ids, in
+    # order. An id missing from grades has grade 0.
+    got = []
+    for doc in ranked[:k]:
+        got.append(___)
 
-    # Step 2: the ideal DCG, with the best grades first.
-    best = ___
-    ideal = 0.0
-    for i, grade in enumerate(best):
-        ideal += grade / math.log(i + 2, 2)
+    # Step 2: the best possible order. Sort every value
+    # in grades (not only your top k), highest first,
+    # then keep the first k.
+    best = sorted(___, reverse=True)[:k]
 
-    # Step 3: guard against no relevant documents at all, then divide.
-    if ideal == 0:
+    # Step 3: divide the two scores, unless the best
+    # possible score is 0.
+    if dcg(best) == 0:
         return 0.0
-    return round(dcg / ideal, 2)
+    return round(___, 2)
 """,
-        fills=['grades.get(doc, 0)', 'sorted(grades.values(), reverse=True)[:k]'],
+        fills=['grades.get(doc, 0)', 'grades.values()', 'dcg(got) / dcg(best)'],
         concepts=[
             [
-                'enumerate',
-                'Gives each item together with its position, counting from 0.',
-                """for i, doc in enumerate(["d3", "d1"]):
-    print(i, doc)   # 0 d3, then 1 d1""",
+                'get with a default',
+                '`d.get(key, 0)` gives the value for key, or 0 if the key is missing.',
+                """ages = {'ana': 30}
+ages.get('bo', 0)   # 0""",
             ],
             [
-                'log base 2',
-                '`math.log(x, 2)` is how many times you double 1 to get x.',
-                """import math
-math.log(2, 2)   # 1.0
-math.log(4, 2)   # 2.0""",
+                'append',
+                '`items.append(x)` adds x to the end of a list.',
+                """ages = []
+ages.append(30)   # [30]""",
+            ],
+            [
+                'Sorting values, highest first',
+                '`d.values()` gives the values of a dict without the keys. `sorted(..., reverse=True)` puts them biggest first.',
+                """sorted({'a': 1, 'b': 3}.values(), reverse=True)
+# [3, 1]""",
+            ],
+            [
+                'The first k items',
+                '`items[:k]` keeps the first k items, or all of them if there are fewer.',
+                "[9, 4, 2][:2]   # [9, 4]",
+            ],
+            [
+                'round',
+                '`round(x, 2)` rounds x to 2 decimal places.',
+                "round(2 / 3, 2)   # 0.67",
+            ],
+            [
+                'enumerate (used inside dcg)',
+                'Gives each item together with its position, counting from 0.',
+                """for i, name in enumerate(['ana', 'bo']):
+    print(i, name)   # 0 ana, then 1 bo""",
             ],
         ],
-        byhand='d3 (grade 1) at position 1 counts 1. d1 (grade 3) at position 2 counts 3 × 0.63 ≈ 1.89. d7 counts 0. DCG ≈ 2.89. Ideal: grade 3 first (3) then grade 1 (0.63), 3.63. 2.89 ÷ 3.63 ≈ 0.80.',
+        byhand='The first 3 ranked ids are d3, d1, d7. Their grades are 1, 3 and 0 (d7 is not in grades). dcg([1, 3, 0]) counts 1 in full (1), 3 at about 63% (1.89) and 0 at half (0). Total: about 2.89. The best order uses every value in grades, highest first: [3, 1]. That is fewer than 3 values, so keep both. dcg([3, 1]) counts 3 in full (3) and 1 at about 63% (0.63). Total: about 3.63. 2.89 divided by 3.63 is about 0.797. Rounded to 2 places that is 0.80, which Python shows as 0.8. Return 0.8.',
         why='Sorting the grades is the slowest step; each walk looks at k items.',
         gotchas=[
             [
@@ -561,7 +702,7 @@ math.log(4, 2)   # 2.0""",
             ],
             [
                 'Variants exist',
-                'Some versions use 2^grade − 1 instead of the grade, which rewards the very best documents more. Say which one you used.',
+                'Some versions use 2 to the power of the grade, minus 1, instead of the grade itself. That rewards the very best documents more. Say which one you used.',
             ],
         ],
     ),
@@ -597,24 +738,27 @@ gift-card       d40         (not in top 20)                        out of reach"
     ),
     stack=stack('Databricks Vector Search: retrieve wide, rerank, keep a few', """results = index.similarity_search(query_text=question, columns=["id", "text"], num_results=20)
 candidates = [row[0] for row in results["result"]["data_array"]]
-reranked = rerank(question, candidates)          # your reranker: a cross-encoder or an LLM
+reranked = rerank(question, candidates)          # your reranker: a model that scores each (question, chunk) pair, or an LLM
 mlflow.log_metric("out_of_reach", int(gold not in candidates))"""),
     exercise=exercise(
         title='What Did the Reranker Do?',
         topic='rag',
         difficulty='medium',
         fn='rerank_check',
-        prompt="""Each item in `questions` is a dict like `{"gold": "d12", "before": ["d4", "d9", "d1", "d12"], "after": ["d12", "d4", "d9", "d1"]}`: the right document, the retriever's candidates in its order, and the same candidates after reranking.
+        prompt="""Your function gets two things:
 
-For each question, decide its outcome using the top `k` of each list:
+- `questions`: one dict per question, with three keys. `gold` is the right document id, like `"d12"`. `before` is the search results, best first, like `["d4", "d9", "d12"]`. `after` is the same ids, reordered by the reranker.
+- `k`: how many top results count, like `2`.
 
-- `"out_of_reach"`: the gold document is not in `before` at all
-- `"helped"`: it is in the top k after but not before
-- `"hurt"`: it is in the top k before but not after
-- `"no_change"`: anything else
+Give each question one outcome, checking in this order:
 
-Return a dict counting all four outcomes, including the ones with a count of 0.""",
-        pattern='One pass, checking membership in the candidates and in each top k.',
+- `"out_of_reach"`: gold is not in `before` at all.
+- `"helped"`: gold is in the first `k` of `after`, but not in the first `k` of `before`.
+- `"hurt"`: gold is in the first `k` of `before`, but not in the first `k` of `after`.
+- `"no_change"`: anything else.
+
+Return a dict counting each outcome. Include all four, even at 0.""",
+        pattern='One pass, checking whether the right document is in the candidates and in each top k.',
         target='one pass over the questions',
         realworld='This split tells a RAG team whether to tune the reranker or fix retrieval, and stops weeks of reranker tuning on misses it could never fix.',
         starter="""def rerank_check(questions, k):
@@ -622,14 +766,15 @@ Return a dict counting all four outcomes, including the ones with a count of 0."
     pass
 """,
         solution="""def rerank_check(questions, k):
-    counts = {"helped": 0, "hurt": 0, "no_change": 0, "out_of_reach": 0}
-    for q in questions:
-        gold = q["gold"]
-        if gold not in q["before"]:
+    counts = {"helped": 0, "hurt": 0,
+              "no_change": 0, "out_of_reach": 0}
+    for question in questions:
+        gold = question["gold"]
+        if gold not in question["before"]:
             counts["out_of_reach"] += 1
             continue
-        was_in = gold in q["before"][:k]
-        now_in = gold in q["after"][:k]
+        was_in = gold in question["before"][:k]
+        now_in = gold in question["after"][:k]
         if now_in and not was_in:
             counts["helped"] += 1
         elif was_in and not now_in:
@@ -640,11 +785,17 @@ Return a dict counting all four outcomes, including the ones with a count of 0."
 """,
         cases=[
             case([
+                {'gold': 'd12', 'before': ['d4', 'd9', 'd12'], 'after': ['d12', 'd4', 'd9']},
+                {'gold': 'd7', 'before': ['d7', 'd2', 'd5'], 'after': ['d2', 'd5', 'd7']},
+                {'gold': 'd3', 'before': ['d3', 'd8', 'd1'], 'after': ['d8', 'd3', 'd1']},
+                {'gold': 'd40', 'before': ['d1', 'd2', 'd3'], 'after': ['d2', 'd1', 'd3']},
+            ], 2, expected={'helped': 1, 'hurt': 1, 'no_change': 1, 'out_of_reach': 1}, sample=True),
+            case([
                 {'gold': 'd12', 'before': ['d4', 'd9', 'd1', 'd12'], 'after': ['d12', 'd4', 'd9', 'd1']},
                 {'gold': 'd7', 'before': ['d7', 'd2', 'd5', 'd11'], 'after': ['d2', 'd5', 'd11', 'd7']},
                 {'gold': 'd3', 'before': ['d3', 'd8', 'd1'], 'after': ['d3', 'd1', 'd8']},
                 {'gold': 'd40', 'before': ['d1', 'd2', 'd3'], 'after': ['d2', 'd1', 'd3']},
-            ], 3, expected={'helped': 1, 'hurt': 1, 'no_change': 1, 'out_of_reach': 1}, sample=True),
+            ], 3, expected={'helped': 1, 'hurt': 1, 'no_change': 1, 'out_of_reach': 1}),
             case([], 3, expected={'helped': 0, 'hurt': 0, 'no_change': 0, 'out_of_reach': 0}),
             case([{'gold': 'a', 'before': ['b', 'a'], 'after': ['b', 'a']}], 1, expected={'helped': 0, 'hurt': 0, 'no_change': 1, 'out_of_reach': 0}),
             case([{'gold': 'a', 'before': ['b', 'c', 'a'], 'after': ['a', 'b', 'c']}, {'gold': 'z', 'before': [], 'after': []}], 1,
@@ -652,15 +803,16 @@ Return a dict counting all four outcomes, including the ones with a count of 0."
         ],
         guided="""def rerank_check(questions, k):
     # Replace every ___ with real code, then run the tests.
-    counts = {"helped": 0, "hurt": 0, "no_change": 0, "out_of_reach": 0}
-    for q in questions:
-        gold = q["gold"]
-        # Step 1: not among the candidates at all? No reranker can fix that.
+    counts = {"helped": 0, "hurt": 0,
+              "no_change": 0, "out_of_reach": 0}
+    for question in questions:
+        gold = question["gold"]
+        # Step 1: gold not in before at all? Out of reach.
         if ___:
             counts["out_of_reach"] += 1
             continue
-        # Step 2: was it in the top k before, and is it now?
-        was_in = gold in q["before"][:k]
+        # Step 2: is gold in the top k, before and after?
+        was_in = gold in question["before"][:k]
         now_in = ___
         if now_in and not was_in:
             counts["helped"] += 1
@@ -670,15 +822,28 @@ Return a dict counting all four outcomes, including the ones with a count of 0."
             counts["no_change"] += 1
     return counts
 """,
-        fills=['gold not in q["before"]', 'gold in q["after"][:k]'],
+        fills=['gold not in question["before"]', 'gold in question["after"][:k]'],
         concepts=[
             [
+                'in and not in',
+                '`x in items` is True if x is somewhere in the list. `x not in items` is the opposite.',
+                """'bo' in ['ana', 'bo']       # True
+'cy' not in ['ana', 'bo']   # True""",
+            ],
+            [
                 'The first k items',
-                'A slice `[:k]` keeps the first k items of a list, or all of them if there are fewer.',
-                """["d4", "d9", "d1", "d12"][:3]   # ["d4", "d9", "d1"]""",
+                '`items[:k]` keeps the first k items, or all of them if there are fewer.',
+                "['a', 'b', 'c'][:2]   # ['a', 'b']",
+            ],
+            [
+                'continue',
+                'Skips the rest of this turn of the loop and moves on to the next item.',
+                """for n in [1, -2, 3]:
+    if n < 0:
+        continue   # skips -2, goes on to 3""",
             ],
         ],
-        byhand='return-label: d12 was 4th, now 1st, so helped. change-address: d7 was 1st, now 4th, so hurt. refund-time: d3 stayed 1st, no change. gift-card: d40 was never a candidate, out of reach.',
+        byhand='k is 2. Question 1: gold d12 is 3rd before, outside the top 2, and 1st after: helped. Question 2: gold d7 is 1st before and 3rd after: hurt. Question 3: gold d3 is 1st before and 2nd after, in the top 2 both times: no change. Question 4: gold d40 is not in before at all: out of reach. Return {"helped": 1, "hurt": 1, "no_change": 1, "out_of_reach": 1}.',
         why='One pass, with short membership checks on each list.',
         gotchas=[
             [
@@ -687,7 +852,7 @@ Return a dict counting all four outcomes, including the ones with a count of 0."
             ],
             [
                 'Measure the time it adds',
-                'A reranker that helps 3% of questions but adds a second to every request may not be worth it. Log its span time and put it in the decision rule.',
+                'A reranker that helps 3% of questions but adds a second to every request may not be worth it. Log how long it takes on each request and put that in the decision rule.',
             ],
         ],
     ),
@@ -698,7 +863,7 @@ lesson(MODULE, 'abstention_rates',
     learn=[
         "Retrieval always finds *something*, even when your documents don't contain the answer. A model handed weak chunks will often answer anyway, confidently. If every question in your eval set can be answered from your documents, you never measure this.",
         "So put **unanswerable questions** in the eval set on purpose: questions on nearby topics that your documents really don't cover, written by someone who knows the documents. Then measure two rates separately. **Missed refusals**: of the unanswerable questions, how often did it answer anyway? That's the dangerous one. **Over-refusals**: of the answerable questions, how often did it decline? That's the annoying one.",
-        "There is no standard name or formula for this yet; these two rates are a practical choice. They trade off against each other like precision and recall, so decide which matters more for your app before you tune.",
+        "There is no standard name or formula for this yet; these two rates are a practical choice. They pull against each other: pushing one rate down usually pushes the other up. So decide which matters more for your app before you tune.",
     ],
     example=example('Two rates, two kinds of mistake', """unanswerable: 10 questions, answered anyway 3   → missed refusals 30%
 answerable:   40 questions, declined 2          → over-refusals    5%"""),
@@ -707,7 +872,7 @@ answerable:   40 questions, declined 2          → over-refusals    5%"""),
         [
             'Yes: it always helps',
             "Only if no question is ever outside your documents. Otherwise it's making answers up",
-            "It doesn't matter as long as groundedness is high",
+            "It doesn't matter as long as its answers match the retrieved chunks",
         ],
         answer=1,
         why='Real users ask things your documents do not cover. An app that never declines is answering those from thin air.',
@@ -726,19 +891,19 @@ declines = Guidelines(
 )
 mlflow.genai.evaluate(data=eval_set, predict_fn=rag_app, scorers=[declines])"""),
     exercise=exercise(
-        title='Did It Know When to Stop?',
+        title='Did It Know When Not to Answer?',
         topic='rag',
         difficulty='easy',
         fn='abstention_rates',
-        prompt="""`results` is a list of dicts like `{"answerable": True, "declined": False}`: whether the eval question could be answered from the documents, and whether the app declined to answer it.
+        prompt="""`results` has one dict per eval question, like `{"answerable": True, "declined": False}`. `answerable` says whether your documents contain the answer. `declined` says whether the app refused to answer.
 
 Return a dict with two rates, each rounded to 2 decimal places:
 
-- `"missed_refusals"`: of the unanswerable questions, the fraction it answered anyway
-- `"over_refusals"`: of the answerable questions, the fraction it declined
+- `"missed_refusals"`: how many unanswerable questions the app answered anyway, divided by how many unanswerable questions there are.
+- `"over_refusals"`: how many answerable questions the app declined, divided by how many answerable questions there are.
 
 If there are no questions of a kind, its rate is `0.0`.""",
-        pattern='Count two groups and their mistakes in one pass, then divide with a guard.',
+        pattern='Count two groups and their mistakes in one pass, then divide, taking care with a group that is empty.',
         target='one pass over the results',
         realworld='A support bot that invents a refund policy is worse than one that says "I don\'t know, let me connect you". Measuring missed refusals is how you find out which one you built.',
         starter="""def abstention_rates(results):
@@ -750,20 +915,30 @@ If there are no questions of a kind, its rate is `0.0`.""",
     answered_anyway = 0
     answerable = 0
     declined_wrongly = 0
-    for r in results:
-        if r["answerable"]:
+    for result in results:
+        if result["answerable"]:
             answerable += 1
-            if r["declined"]:
+            if result["declined"]:
                 declined_wrongly += 1
         else:
             unanswerable += 1
-            if not r["declined"]:
+            if not result["declined"]:
                 answered_anyway += 1
     missed = answered_anyway / unanswerable if unanswerable else 0.0
     over = declined_wrongly / answerable if answerable else 0.0
-    return {"missed_refusals": round(missed, 2), "over_refusals": round(over, 2)}
+    return {
+        "missed_refusals": round(missed, 2),
+        "over_refusals": round(over, 2),
+    }
 """,
         cases=[
+            case([
+                {'answerable': False, 'declined': False},
+                {'answerable': False, 'declined': True},
+                {'answerable': True, 'declined': False},
+                {'answerable': True, 'declined': False},
+                {'answerable': True, 'declined': True},
+            ], expected={'missed_refusals': 0.5, 'over_refusals': 0.33}, sample=True),
             case([
                 {'answerable': False, 'declined': False},
                 {'answerable': False, 'declined': True},
@@ -775,7 +950,7 @@ If there are no questions of a kind, its rate is `0.0`.""",
                 {'answerable': True, 'declined': False},
                 {'answerable': True, 'declined': False},
                 {'answerable': True, 'declined': False},
-            ], expected={'missed_refusals': 0.4, 'over_refusals': 0.2}, sample=True),
+            ], expected={'missed_refusals': 0.4, 'over_refusals': 0.2}),
             case([], expected={'missed_refusals': 0.0, 'over_refusals': 0.0}),
             case([{'answerable': True, 'declined': False}] * 4, expected={'missed_refusals': 0.0, 'over_refusals': 0.0}),
             case([{'answerable': False, 'declined': False}] * 3, expected={'missed_refusals': 1.0, 'over_refusals': 0.0}),
@@ -793,31 +968,47 @@ If there are no questions of a kind, its rate is `0.0`.""",
     answerable = 0
     declined_wrongly = 0
 
-    # Step 1: one pass, counting each kind of question and its mistakes.
-    for r in results:
-        if r["answerable"]:
+    # Step 1: count each kind of question and its mistakes.
+    for result in results:
+        if result["answerable"]:
             answerable += 1
-            if r["declined"]:
+            if result["declined"]:
                 declined_wrongly += 1
         else:
             unanswerable += 1
+            # It should decline. Did it answer instead?
             if ___:
                 answered_anyway += 1
 
-    # Step 2: divide, but only if there were questions of that kind.
+    # Step 2: divide, unless that kind has no questions.
     missed = answered_anyway / unanswerable if unanswerable else 0.0
     over = ___
-    return {"missed_refusals": round(missed, 2), "over_refusals": round(over, 2)}
+    return {
+        "missed_refusals": round(missed, 2),
+        "over_refusals": round(over, 2),
+    }
 """,
-        fills=['not r["declined"]', 'declined_wrongly / answerable if answerable else 0.0'],
+        fills=['not result["declined"]', 'declined_wrongly / answerable if answerable else 0.0'],
         concepts=[
             [
+                'True or False fields',
+                '`if task["done"]:` runs when the field is True. `if not task["done"]:` runs when it is False.',
+                """task = {'done': False}
+if not task['done']:
+    print('still to do')""",
+            ],
+            [
                 'A guarded division',
-                'Divide only when the bottom number is not zero, in one line.',
+                'Divide only when the bottom number is not 0, all in one line. If it is 0, you get 0.0 instead.',
                 """rate = mistakes / total if total else 0.0""",
             ],
+            [
+                'round',
+                '`round(x, 2)` rounds x to 2 decimal places.',
+                "round(1 / 3, 2)   # 0.33",
+            ],
         ],
-        byhand='Five unanswerable questions; it answered two of them anyway: 2 ÷ 5 = 0.4. Five answerable questions; it declined one: 1 ÷ 5 = 0.2.',
+        byhand='Questions 1 and 2 are unanswerable. The app answered question 1 anyway and declined question 2. Missed refusals: 1 out of 2, which is 0.5. Questions 3, 4 and 5 are answerable. The app declined only question 5. Over-refusals: 1 out of 3, which is 0.333..., rounded to 0.33. Return {"missed_refusals": 0.5, "over_refusals": 0.33}.',
         why='One step per result.',
         gotchas=[
             [
@@ -869,13 +1060,13 @@ mlflow.update_current_trace(tags={"gate_action": decision["action"]})"""),
         topic='rag',
         difficulty='easy',
         fn='claim_gate',
-        prompt="""`verdicts` is a list of dicts like `{"claim": "Refunds take 5 to 7 days.", "verdict": "supported"}`, where the verdict is `"supported"`, `"unsupported"` or `"contradicted"`.
+        prompt="""`verdicts` has one dict per claim (one short statement in the answer), like `{"claim": "Refunds take 5 days.", "verdict": "supported"}`. The verdict is `"supported"`, `"unsupported"` or `"contradicted"`.
 
-Return `{"action": ..., "kept": [...]}`:
+Return a dict like `{"action": "revise", "kept": [...]}`, where `kept` is a list of claim texts. Pick the action like this:
 
-- `"abstain"` with nothing kept if any claim is contradicted, or if no claim is supported (including an empty list)
-- `"release"` with every claim kept if all claims are supported
-- `"revise"` otherwise, keeping only the supported claims, in their original order""",
+- `"abstain"`, keeping nothing, if any claim is contradicted or no claim is supported. An empty `verdicts` list also gives abstain.
+- `"release"`, keeping every claim, if all claims are supported.
+- `"revise"` otherwise, keeping only the supported claims, in their original order.""",
         pattern='One walk collecting supported claims and spotting contradictions, then three outcomes.',
         target='one pass over the claims',
         realworld='Clinical, legal and finance RAG systems put a gate like this after generation, so an unsupported statement never reaches the user.',
@@ -899,10 +1090,10 @@ Return `{"action": ..., "kept": [...]}`:
 """,
         cases=[
             case([
-                {'claim': 'Refunds go to your original payment method.', 'verdict': 'supported'},
-                {'claim': 'They arrive within 5 to 7 business days.', 'verdict': 'supported'},
-                {'claim': 'You can also get store credit instead.', 'verdict': 'unsupported'},
-            ], expected={'action': 'revise', 'kept': ['Refunds go to your original payment method.', 'They arrive within 5 to 7 business days.']}, sample=True),
+                {'claim': 'Refunds go to your card.', 'verdict': 'supported'},
+                {'claim': 'They take 5 to 7 days.', 'verdict': 'supported'},
+                {'claim': 'You can get store credit.', 'verdict': 'unsupported'},
+            ], expected={'action': 'revise', 'kept': ['Refunds go to your card.', 'They take 5 to 7 days.']}, sample=True),
             case([{'claim': 'A', 'verdict': 'supported'}, {'claim': 'B', 'verdict': 'supported'}], expected={'action': 'release', 'kept': ['A', 'B']}),
             case([{'claim': 'A', 'verdict': 'supported'}, {'claim': 'B', 'verdict': 'contradicted'}], expected={'action': 'abstain', 'kept': []}),
             case([{'claim': 'A', 'verdict': 'unsupported'}], expected={'action': 'abstain', 'kept': []}),
@@ -910,19 +1101,21 @@ Return `{"action": ..., "kept": [...]}`:
         ],
         guided="""def claim_gate(verdicts):
     # Replace every ___ with real code, then run the tests.
-    kept = []
-    contradicted = False
+    kept = []              # the supported claims
+    contradicted = False   # seen a contradiction yet?
     for item in verdicts:
         if item["verdict"] == "supported":
             kept.append(item["claim"])
         elif item["verdict"] == "contradicted":
             contradicted = True
-    # Step 1: anything contradicted, or nothing supported: abstain.
+
+    # Step 1: any contradiction, or nothing kept? Abstain.
     if ___:
         return {"action": "abstain", "kept": []}
-    # Step 2: everything supported: release as written.
+    # Step 2: every claim kept? Release them all.
     if ___:
         return {"action": "release", "kept": kept}
+    # Otherwise some were dropped: revise.
     return {"action": "revise", "kept": kept}
 """,
         fills=['contradicted or not kept', 'len(kept) == len(verdicts)'],
@@ -932,16 +1125,32 @@ Return `{"action": ..., "kept": [...]}`:
                 'Start a variable as False and set it to True when something happens. After the loop it tells you whether it ever did.',
                 """seen = False
 for x in [1, 5, 2]:
-    if x > 4:
-        seen = True   # seen is True after the loop""",
+    if x > 4: seen = True   # True after the loop""",
+            ],
+            [
+                'An empty list counts as False',
+                '`not items` is True when the list is empty.',
+                """names = []
+not names   # True""",
+            ],
+            [
+                'The word or',
+                '`x or y` is True when at least one of them is True.',
+                """n = 0
+n == 0 or n > 5   # True""",
+            ],
+            [
+                'Comparing lengths',
+                '`len(a) == len(b)` is True when two lists have the same number of items.',
+                """len(['x', 'y']) == len([1, 2])   # True""",
             ],
         ],
-        byhand='Two claims supported, one unsupported, none contradicted. Not everything is supported, so revise: keep the first two.',
+        byhand='Claim 1 is supported: keep it. Claim 2 is supported: keep it. Claim 3 is unsupported: drop it. No claim is contradicted and 2 were kept, so do not abstain. Only 2 of the 3 claims were kept, so do not release. That leaves revise. Return {"action": "revise", "kept": ["Refunds go to your card.", "They take 5 to 7 days."]}.',
         why='One look at each claim.',
         gotchas=[
             [
                 'Measure the gate itself',
-                'Label a sample of claims by hand and compare with the verifier, per verdict and with kappa. A verifier that marks too much "supported" lets errors through; one that marks too much "unsupported" makes the app abstain needlessly.',
+                'Label a sample of claims by hand and check how often the verifier agrees with you, verdict by verdict. A verifier that marks too much "supported" lets errors through; one that marks too much "unsupported" makes the app abstain needlessly.',
             ],
             [
                 'Watch the abstain rate',
@@ -954,21 +1163,20 @@ for x in [1, 5, 2]:
 lesson(MODULE, 'pick_config',
     title='Designing a RAG experiment',
     learn=[
-        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Vary two at a time.',
-        'Hold the eval set, the judge and the answering model fixed. Log retrieval quality, answer quality, p95 latency and cost for every run. Then pick using the rule you wrote down: best answer quality within the latency budget.',
+        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination, so you can see what each one did.',
+        'Hold the eval set, the judge and the answering model fixed. Log retrieval quality, answer quality, p95 latency (how slow it is: 95 out of 100 requests are faster than this) and cost for every run. Then pick a **config** (one combination of settings) using the rule you wrote down: best answer quality within the latency budget, the slowest you can accept.',
     ],
-    example=example('One evaluated run per config', """from mlflow.genai.scorers import RelevanceToQuery, RetrievalGroundedness
-
-for chunk_size, k in [(256, 3), (512, 5), (1024, 10)]:
-    with mlflow.start_run(run_name=f"cs{chunk_size}-k{k}"):
-        mlflow.log_params({"chunk_size": chunk_size, "k": k})
-        mlflow.genai.evaluate(data=eval_set, predict_fn=make_app(chunk_size, k),
-                              scorers=[RetrievalGroundedness(), RelevanceToQuery()])"""),
+    example=example('Two settings, every combination, a 1500 ms budget', """chunk  k  quality  p95 ms
+ 512   3   0.78    1200
+ 512   5   0.82    1400
+1024   3   0.83    1700  too slow
+1024   5   0.85    2600  too slow
+fast enough and best: 512, 5"""),
     check=question(
         'Your best-quality config has a p95 of 2.6 seconds; the product needs under 1.5. What do you ship?',
         ['The best-quality config anyway', 'The best config within 1.5 seconds', 'The fastest config'],
         answer=1,
-        why="A config the product can't use has no return. Maximise quality inside the budget.",
+        why="A config that is too slow for the product can't ship, however good it is. Pick the best quality inside the budget.",
     ),
     angle=angle(
         pattern='Constraint, then best, then tie-break',
@@ -976,20 +1184,28 @@ for chunk_size, k in [(256, 3), (512, 5), (1024, 10)]:
         say='"I filter by the latency budget, then take the highest quality, with cost as the tie-break."',
         classic=None,
     ),
-    stack=stack('MLflow: one evaluated run per config', """for chunk_size, k in [(256, 3), (512, 5), (1024, 10)]:
-    with mlflow.start_run(run_name=f"cs{chunk_size}-k{k}"):
-        mlflow.log_params({"chunk_size": chunk_size, "k": k})
-        mlflow.genai.evaluate(data=eval_set, predict_fn=make_app(chunk_size, k),
-                              scorers=[RetrievalGroundedness(), RelevanceToQuery()])"""),
+    stack=stack('MLflow: one evaluated run per config', """from mlflow.genai.scorers import RelevanceToQuery, RetrievalGroundedness
+
+for chunk_size in [256, 512, 1024]:
+    for k in [3, 5, 10]:   # every combination: 9 runs
+        with mlflow.start_run(run_name=f"cs{chunk_size}-k{k}"):
+            mlflow.log_params({"chunk_size": chunk_size, "k": k})
+            mlflow.genai.evaluate(data=eval_set, predict_fn=make_app(chunk_size, k),
+                                  scorers=[RetrievalGroundedness(), RelevanceToQuery()])"""),
     exercise=exercise(
         title='Choose Chunk Size and k',
         topic='rag',
         difficulty='medium',
         fn='pick_config',
-        prompt="""You ran a RAG experiment over chunk sizes and k. Each row of `results` looks like `{"chunk_size": 512, "k": 5, "quality": 0.82, "p95_ms": 1400, "cost": 2.1}`.
+        prompt="""Your function gets two things:
 
-Return `[chunk_size, k]` for the row with the highest `quality` whose `p95_ms` is at most `max_ms`. If several tie on quality, pick the cheapest. If none is fast enough, return `None`.""",
-        pattern='Constraint first, then best by the main metric, then a tie-break on cost.',
+- `results`: a list of rows, one dict per setting you tried, like `{"chunk_size": 512, "k": 5, "quality": 0.82, "p95_ms": 1400, "cost": 2.1}`. `p95_ms` is how slow it was, in milliseconds: 95 out of 100 requests were faster than this.
+- `max_ms`: the slowest you can accept, like `1500`.
+
+Skip every row whose `p95_ms` is over `max_ms`. Of the rest, pick the row with the highest `quality`. If two rows tie on quality, pick the one with the lower `cost`.
+
+Return `[chunk_size, k]` from that row, or `None` if no row is fast enough.""",
+        pattern='Skip what breaks the budget, pick the best of the rest, and break ties on cost.',
         target='one walk through the results',
         realworld="Teams often pick the highest-quality config and discover it's too slow for the product. Deciding the latency budget up front, then maximising quality inside it, is how you get a config you can actually ship.",
         starter="""def pick_config(results, max_ms):
@@ -998,12 +1214,18 @@ Return `[chunk_size, k]` for the row with the highest `quality` whose `p95_ms` i
 """,
         solution="""def pick_config(results, max_ms):
     best = None
-    for r in results:
-        if r["p95_ms"] > max_ms:
+    for row in results:
+        if row["p95_ms"] > max_ms:
             continue
-        if best is None or r["quality"] > best["quality"] or (r["quality"] == best["quality"] and r["cost"] < best["cost"]):
-            best = r
-    return [best["chunk_size"], best["k"]] if best else None
+        if best is None:
+            best = row
+        elif row["quality"] > best["quality"]:
+            best = row
+        elif row["quality"] == best["quality"] and row["cost"] < best["cost"]:
+            best = row
+    if best is None:
+        return None
+    return [best["chunk_size"], best["k"]]
 """,
         cases=[
             case([
@@ -1021,25 +1243,66 @@ Return `[chunk_size, k]` for the row with the highest `quality` whose `p95_ms` i
         guided="""def pick_config(results, max_ms):
     # Replace every ___ with real code, then run the tests.
 
-    best = None
-    for r in results:
-        # Step 1: too slow? skip it.
+    best = None   # the best row so far
+    for row in results:
+        # Step 1: too slow? Skip this row.
         if ___:
             continue
-        # Step 2: higher quality wins; on a tie, cheaper wins.
-        if best is None or r["quality"] > best["quality"] or (r["quality"] == best["quality"] and r["cost"] < best["cost"]):
-            best = r
-    # Step 3: return the two settings, or None.
-    return ___ if best else None
+        # First fast-enough row? It is the best so far.
+        if best is None:
+            best = row
+        # Higher quality than best? It becomes the best.
+        elif row["quality"] > best["quality"]:
+            best = row
+        # Step 2: same quality as best, but cheaper? It wins.
+        elif row["quality"] == best["quality"] and ___:
+            best = row
+
+    if best is None:
+        return None
+    # Step 3: the two settings from the best row.
+    return ___
 """,
-        fills=['r["p95_ms"] > max_ms', '[best["chunk_size"], best["k"]]'],
-        concepts=[['A one-line if', '`a if condition else b`.', 'answer = [512, 5] if best else None']],
-        byhand='Budget 1,500 ms. 256/3 takes 900 ms, quality 0.71. 512/5 takes 1,400 ms, quality 0.82: better. 1024/10 takes 2,600 ms: too slow. Answer [512, 5].',
+        fills=[
+            'row["p95_ms"] > max_ms',
+            'row["cost"] < best["cost"]',
+            '[best["chunk_size"], best["k"]]',
+        ],
+        concepts=[
+            [
+                'None as "nothing yet"',
+                'Start with None and replace it with the first thing you find. `x is None` checks whether you found anything.',
+                """best = None
+if best is None:
+    print('nothing yet')""",
+            ],
+            [
+                'continue',
+                'Skips the rest of this turn of the loop and moves on to the next item.',
+                """for n in [1, -2, 3]:
+    if n < 0:
+        continue   # skips -2, goes on to 3""",
+            ],
+            [
+                'if, elif',
+                'Python tries each test in order and runs only the first one that is true.',
+                """n = 7
+if n > 10: print('big')
+elif n > 5: print('medium')   # this one runs""",
+            ],
+            [
+                '== and the word and',
+                '`a == b` asks whether two values are equal. One = stores a value; two == compare. `x and y` is True only when both are True.',
+                """n = 5
+n > 1 and n == 5   # True""",
+            ],
+        ],
+        byhand='The budget is 1500 ms. Row 1 (256, 3) takes 900 ms: fast enough. It is the first, so it is the best so far, with quality 0.71. Row 2 (512, 5) takes 1400 ms: fast enough, and its quality 0.82 is higher, so it becomes the best. Row 3 (1024, 10) takes 2600 ms: too slow, skip it. Return [512, 5].',
         why='One walk through the results.',
         gotchas=[
             [
-                'Change one thing at a time when debugging',
-                "If quality drops after changing chunk size, k and the embedding model together, you won't know which one did it.",
+                'Change only what you are testing',
+                "If quality drops after changing chunk size, k and the embedding model in one go, you won't know which one did it. When you vary two settings, run every combination of them, so each one's effect shows.",
             ],
             [
                 'Measure retrieval and answers separately',
@@ -1052,15 +1315,15 @@ Return `[chunk_size, k]` for the row with the highest `quality` whose `p95_ms` i
 lesson(MODULE, 'rrf',
     title='Hybrid search and rank fusion',
     learn=[
-        'Keyword search is great at exact terms like error codes and product names; vector search is great at meaning. **Hybrid search** runs both.',
-        "Their scores aren't comparable, so merge by **rank** instead: reciprocal rank fusion rewards documents that rank well in either list.",
+        'Keyword search is great at exact terms like error codes and product names; vector search (matching by embeddings) is great at meaning. **Hybrid search** runs both.',
+        "Their scores aren't comparable, so merge by **rank** (place in each list) instead. **Reciprocal rank fusion** gives each document points from every list, more for a higher place, and adds them up, so documents that do well in both lists rise to the top, and a document found by only one search still gets some points.",
     ],
     example=example('Fusing two rankings', """keyword: d3, d1, d7
 vector:  d1, d9, d3
 fused:   d1, d3, d9, d7"""),
     check=question(
         'Users search for error code "E-4021" and vector search misses it. What helps?',
-        ['A bigger embedding model', 'Hybrid search that includes keyword matching', 'Raising k'],
+        ['A bigger embedding model', 'Hybrid search that includes keyword matching', 'Returning more results'],
         answer=1,
         why='Exact codes are what keyword search is for.',
     ),
@@ -1077,13 +1340,18 @@ fused:   d1, d3, d9, d7"""),
     num_results=10,
 )"""),
     exercise=exercise(
-        title='Combine Two Rankings',
+        title='Combine Rankings',
         topic='rag',
         difficulty='medium',
         fn='rrf',
-        prompt="""Hybrid search runs a keyword search and a vector search, then merges their rankings. **Reciprocal rank fusion** gives each document `1 / (k + rank)` from each list it appears in (rank counts from 1), and adds them up.
+        prompt="""Your function gets two things:
 
-`rankings` is a list of ranked lists of document ids. Return all the ids, highest total score first; break ties alphabetically.""",
+- `rankings`: a list of ranked lists, any number of them (even none). Each holds document ids, best first, like `[["d3", "d1"], ["d1", "d9"]]`.
+- `k`: a fixed number added to every rank, usually `60`. It is not "how many results". It stops 1st place from counting far more than 2nd.
+
+In each list, a document gets `1 / (k + rank)` points, where rank is its place in that list, counting from 1. Add up each document's points from all the lists. This is called **reciprocal rank fusion**.
+
+Return every document id, highest total first. If two totals are equal, put those ids in alphabetical order.""",
         pattern='Score by position, add across lists, sort by score with a tie-break.',
         target='one step per ranked item, then a sort',
         realworld='Keyword search finds exact terms (error codes, product names); vector search finds meaning. Fusing them by rank avoids comparing scores on different scales. Databricks Vector Search does hybrid search with `query_type="HYBRID"`.',
@@ -1096,39 +1364,77 @@ fused:   d1, d3, d9, d7"""),
     for ranking in rankings:
         for rank, doc in enumerate(ranking, start=1):
             score[doc] = score.get(doc, 0) + 1 / (k + rank)
-    return sorted(score, key=lambda d: (-score[d], d))
+    pairs = []
+    for doc in score:
+        pairs.append((-score[doc], doc))
+    pairs.sort()
+    return [pair[1] for pair in pairs]
 """,
         cases=[
             case([['d3', 'd1', 'd7'], ['d1', 'd9', 'd3']], 60, expected=['d1', 'd3', 'd9', 'd7'], sample=True),
             case([], 60, expected=[]),
             case([['a', 'b']], 1, expected=['a', 'b']),
             case([['a', 'b'], ['b', 'a']], 60, expected=['a', 'b']),
+            case([['b'], ['a']], 60, expected=['a', 'b']),
         ],
         guided="""def rrf(rankings, k):
     # Replace every ___ with real code, then run the tests.
 
-    score = {}
+    score = {}   # total points for each document id
     for ranking in rankings:
-        # Step 1: enumerate(..., start=1) gives ranks 1, 2, 3...
+        # enumerate(..., start=1) gives ranks 1, 2, 3...
         for rank, doc in enumerate(ranking, start=1):
+            # Step 1: add this list's points for doc.
             score[doc] = score.get(doc, 0) + ___
-    # Step 2: highest score first, then alphabetical.
-    return sorted(score, key=lambda d: (___, d))
+
+    # Step 2: pair each doc as (-score[doc], doc). The
+    # minus sign puts the highest first, ties A to Z.
+    pairs = []
+    for doc in score:
+        pairs.append(___)
+    pairs.sort()
+    return [pair[1] for pair in pairs]
 """,
-        fills=['1 / (k + rank)', '-score[d]'],
+        fills=['1 / (k + rank)', '(-score[doc], doc)'],
         concepts=[
             [
                 'enumerate with start',
-                '`start=1` counts from 1 instead of 0.',
-                "list(enumerate(['a', 'b'], start=1))   # [(1, 'a'), (2, 'b')]",
+                '`enumerate(items, start=1)` gives each item together with its place number, counting from 1.',
+                """for place, name in enumerate(['ana', 'bo'], start=1):
+    print(place, name)   # 1 ana, then 2 bo""",
             ],
             [
-                'Sorting with a key',
-                '`key` says what to sort by; a minus sign puts the biggest first.',
-                "sorted(['a', 'b'], key=lambda d: (-scores[d], d))",
+                'get with a default',
+                '`d.get(key, 0)` gives the value for key, or 0 if the key is not there yet. Handy for running totals.',
+                """totals = {}
+totals['a'] = totals.get('a', 0) + 5   # {'a': 5}""",
+            ],
+            [
+                'Looping over a dict',
+                '`for key in d:` visits each key of the dict.',
+                """for name in {'ana': 3, 'bo': 1}:
+    print(name)   # ana, then bo""",
+            ],
+            [
+                'append',
+                '`items.append(x)` adds x to the end of a list. x can be a pair in round brackets.',
+                """pairs = []
+pairs.append((5, 'ana'))   # [(5, 'ana')]""",
+            ],
+            [
+                'Sorting pairs',
+                'Python sorts pairs by the first item, then by the second. A minus sign on the score puts the biggest score first, and equal scores go in alphabetical order. `pairs.sort()` sorts the list itself.',
+                """pairs = [(-1, 'b'), (-2, 'c'), (-1, 'a')]
+pairs.sort()
+# [(-2, 'c'), (-1, 'a'), (-1, 'b')]""",
+            ],
+            [
+                'List comprehension',
+                'Builds a new list from another one in a single line. Item 1 of a pair is its second item, because counting starts at 0.',
+                """[p[1] for p in [(5, 'a'), (7, 'b')]]   # ['a', 'b']""",
             ],
         ],
-        byhand="With k = 60: d1 is 2nd in one list and 1st in the other, so it scores highest. d3 is 1st and 3rd, next. d9 and d7 appear once each, and d9's rank is better.",
+        byhand='k is 60. d1 is 2nd in list 1, so it gets `1 / (60 + 2)`, which is `1 / 62`. It is 1st in list 2, so it also gets `1 / 61`. Its total is about 0.0325. d3 is 1st in list 1 and 3rd in list 2: `1 / 61 + 1 / 63`, about 0.0323. d9 is only in list 2, 2nd: `1 / 62`, about 0.0161. d7 is only in list 1, 3rd: `1 / 63`, about 0.0159. Highest first, return ["d1", "d3", "d9", "d7"].',
         why='One step per ranked item, then one sort.',
         gotchas=[
             [

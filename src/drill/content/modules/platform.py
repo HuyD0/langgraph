@@ -20,7 +20,7 @@ terraform show -json tfplan > plan.json"""),
     ),
     angle=angle(
         pattern='Counting in one pass',
-        text='Three counters and one walk through `resource_changes`.',
+        text='Three counters and one walk through the resource changes.',
         say='"I walk the resource changes once and count by action, treating a replacement as both an add and a destroy, the way Terraform does."',
         classic=None,
     ),
@@ -29,139 +29,118 @@ terraform show -json tfplan > plan.json"""),
         topic='plan-reading',
         difficulty='easy',
         fn='summarize_plan',
-        prompt="""`plan` is what `terraform show -json tfplan` prints, loaded into Python as a dict. Its `resource_changes` list has one entry per resource, and each entry's `change.actions` says what will happen: `["create"]`, `["update"]`, `["delete"]`, `["no-op"]`, `["read"]`, or a replacement: `["delete", "create"]`, or `["create", "delete"]` when `create_before_destroy` is set.
+        prompt="""`changes` is the list of resource changes in a Terraform plan. Each one is a dict like `{"address": "azurerm_subnet.host", "actions": ["create"]}`.
 
-Return `[add, change, destroy]`, counted the way Terraform's own line `Plan: 3 to add, 1 to change, 1 to destroy.` counts them: a replacement is one add and one destroy, and `no-op` and `read` count as nothing. A plan with no changes may leave out `resource_changes` entirely.""",
-        pattern="Walk the list once and keep three counters. Check what's in the actions list, not the whole list, so replacements land in both counters.",
-        target='one pass over resource_changes',
-        realworld='This is the line in every Spacelift run and `terraform plan` output. Writing it yourself means you understand what the JSON plan contains, which is what Spacelift policies and PR checks read.',
-        starter="""def summarize_plan(plan):
+The `actions` list says what will happen: `["create"]`, `["update"]`, `["delete"]` or `["no-op"]` (no change). A replacement has two actions: `["delete", "create"]` or `["create", "delete"]`.
+
+Count them the way Terraform's summary line does: keep three counts, `add`, `change` and `destroy`, each starting at 0:
+
+- If the actions include `"create"`, count it in `add`.
+- If they include `"update"`, count it in `change`.
+- If they include `"delete"`, count it in `destroy`.
+
+So a replacement counts once in `add` and once in `destroy`, and `no-op` counts nowhere. Return `[add, change, destroy]`.""",
+        pattern='Walk the list once and keep three counters. Check each word with its own `if`, so a replacement counts as both an add and a destroy.',
+        target='one pass over the changes',
+        realworld='This is the summary line in every Spacelift run and `terraform plan` output. In the real JSON from `terraform show -json`, the list is `plan["resource_changes"]` and each entry keeps its actions at `["change"]["actions"]`. Spacelift policies and PR checks read exactly that.',
+        starter="""def summarize_plan(changes):
     # your code here
     pass
 """,
-        solution="""def summarize_plan(plan):
-    add = change = destroy = 0
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
+        solution="""def summarize_plan(changes):
+    add = 0
+    change = 0
+    destroy = 0
+    for item in changes:
+        actions = item["actions"]
         if "create" in actions:
             add += 1
         if "delete" in actions:
             destroy += 1
-        if actions == ["update"]:
+        if "update" in actions:
             change += 1
     return [add, change, destroy]
 """,
         cases=[
-            case({
-                'format_version': '1.2',
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_resource_group.this',
-                        'type': 'azurerm_resource_group',
-                        'change': {'actions': ['no-op'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['update'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'azurerm_storage_container.lake["bronze"]',
-                        'type': 'azurerm_storage_container',
-                        'change': {'actions': ['create'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'azurerm_databricks_access_connector.uc',
-                        'type': 'azurerm_databricks_access_connector',
-                        'change': {'actions': ['create'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_metastore_assignment.this',
-                        'type': 'databricks_metastore_assignment',
-                        'change': {'actions': ['delete', 'create'], 'before': None, 'after': None},
-                    },
-                ],
-            }, expected=[3, 1, 1], sample=True),
-            case({'format_version': '1.2', 'resource_changes': []}, expected=[0, 0, 0]),
-            case({'format_version': '1.2'}, expected=[0, 0, 0]),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'data.azurerm_client_config.current',
-                        'type': 'azurerm_client_config',
-                        'change': {'actions': ['read'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_catalog.sales',
-                        'type': 'databricks_catalog',
-                        'change': {'actions': ['create', 'delete'], 'before': None, 'after': None},
-                    },
-                ],
-            }, expected=[1, 0, 1]),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'databricks_schema.raw',
-                        'type': 'databricks_schema',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_schema.curated',
-                        'type': 'databricks_schema',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_grants.sales',
-                        'type': 'databricks_grants',
-                        'change': {'actions': ['update'], 'before': None, 'after': None},
-                    },
-                ],
-            }, expected=[0, 1, 2]),
+            case([
+                {'address': 'azurerm_subnet.host', 'actions': ['no-op']},
+                {'address': 'databricks_cluster.etl', 'actions': ['update']},
+                {'address': 'databricks_schema.raw', 'actions': ['create']},
+                {'address': 'databricks_catalog.sales', 'actions': ['delete', 'create']},
+            ], expected=[2, 1, 1], sample=True),
+            case([], expected=[0, 0, 0]),
+            case([
+                {'address': 'azurerm_resource_group.this', 'actions': ['no-op']},
+                {'address': 'databricks_catalog.sales', 'actions': ['create', 'delete']},
+            ], expected=[1, 0, 1]),
+            case([
+                {'address': 'databricks_schema.raw', 'actions': ['delete']},
+                {'address': 'databricks_schema.curated', 'actions': ['delete']},
+                {'address': 'databricks_grants.sales', 'actions': ['update']},
+            ], expected=[0, 1, 2]),
+            case([
+                {'address': 'azurerm_resource_group.this', 'actions': ['no-op']},
+                {'address': 'azurerm_databricks_workspace.this', 'actions': ['update']},
+                {'address': 'azurerm_storage_container.lake["bronze"]', 'actions': ['create']},
+                {'address': 'azurerm_databricks_access_connector.uc', 'actions': ['create']},
+                {'address': 'databricks_metastore_assignment.this', 'actions': ['delete', 'create']},
+            ], expected=[3, 1, 1]),
         ],
-        guided="""def summarize_plan(plan):
+        guided="""def summarize_plan(changes):
     # Replace every ___ with real code, then run the tests.
 
-    add = change = destroy = 0
+    add = 0
+    change = 0
+    destroy = 0
 
-    # Step 1: a plan with no changes may not have the key at all.
-    #         .get(key, default) gives you the default instead of a KeyError.
-    for rc in plan.get("resource_changes", ___):
-        actions = rc["change"]["actions"]
+    for item in changes:
+        actions = item["actions"]
 
-        # Step 2: a replacement contains BOTH words, so check each one
-        #         separately rather than with if/elif.
+        # "create" anywhere in actions counts as an add.
         if "create" in actions:
             add += 1
+
+        # Step 1: "delete" anywhere counts as a destroy.
+        # Use a new if, not elif: a replacement has both.
         if ___:
             destroy += 1
 
-        # Step 3: an in-place change is exactly ["update"].
+        # Step 2: "update" counts as a change.
         if ___:
             change += 1
 
     return [add, change, destroy]
 """,
+        fills=['"delete" in actions', '"update" in actions'],
         concepts=[
             [
-                'Getting the plan as JSON',
-                "Terraform's plan file is binary. `terraform show -json` turns it into JSON, which Python loads as dicts and lists.",
-                """terraform plan -out tfplan
-terraform show -json tfplan > plan.json""",
-            ],
-            [
-                'dict.get with a default',
-                '`d.get(key, default)` returns the default instead of raising KeyError when the key is missing.',
-                """plan = {}
-plan.get('resource_changes', [])   # []""",
+                'Reading a field from a dict',
+                '`item["actions"]` gets the value stored under that key.',
+                """pet = {'name': 'Rex', 'age': 3}
+pet['name']   # 'Rex'""",
             ],
             [
                 'in on a list',
-                "`'create' in actions` checks whether the word is anywhere in the list.",
-                "'create' in ['delete', 'create']   # True",
+                '`"create" in actions` is True when that word is anywhere in the list.',
+                """'tea' in ['coffee', 'tea']    # True
+'milk' in ['coffee', 'tea']   # False""",
+            ],
+            [
+                'Separate ifs, not elif',
+                'Python checks every `if` on its own. With `elif`, it would stop at the first one that is True, so a replacement would only count once.',
+                """drinks = ['tea', 'milk']
+if 'tea' in drinks: print('tea')
+if 'milk' in drinks: print('milk')   # prints both""",
+            ],
+            [
+                'Adding 1 to a counter',
+                '`count += 1` is short for `count = count + 1`.',
+                """count = 0
+count += 1   # count is now 1""",
             ],
         ],
-        byhand='Go down the list. The resource group is no-op: nothing. The workspace is update: change 1. The bronze container and the access connector are create: add 2. The metastore assignment is delete then create: add 3 and destroy 1. Result: [3, 1, 1].',
-        why='One pass over the resource changes, with a few checks on a two-item list each time.',
+        byhand='Item 1 is no-op: nothing. Item 2 is update: change is now 1. Item 3 is create: add is now 1. Item 4 is delete and create, a replacement: add goes up to 2 and destroy to 1. Return [2, 1, 1].',
+        why='One pass over the changes, with a quick check of a short list each time.',
         gotchas=[
             [
                 '"0 to change" can still hide a replacement',
@@ -179,7 +158,7 @@ lesson(MODULE, 'find_replacements',
     title='Spotting dangerous replacements',
     learn=[
         "Some attributes can't change in place. Changing them **forces replacement**: Terraform destroys the resource and creates a new one.",
-        'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` in a plan before approving.',
+        'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan\'s mark for a replacement) before approving.',
     ],
     example=example('In the text plan', """-/+ resource "azurerm_databricks_workspace" "this" {
   ~ managed_resource_group_name = "a" -> "b" # forces replacement"""),
@@ -200,117 +179,86 @@ lesson(MODULE, 'find_replacements',
         topic='plan-reading',
         difficulty='easy',
         fn='find_replacements',
-        prompt="""A replacement destroys a resource and creates a new one. On an `azurerm_databricks_workspace` that means a new workspace URL and ID, and every cluster, job, notebook and secret scope in it is gone.
+        prompt="""`changes` is the list of resource changes in a Terraform plan. Each one is a dict like `{"address": "azurerm_subnet.host", "actions": ["create"]}`.
 
-Given a `plan` (the `terraform show -json` dict), return the `address` of every resource that will be replaced, in plan order. A replacement is any entry whose `change.actions` contains both `"delete"` and `"create"`, in either order.""",
+A replacement destroys a resource and creates a new one. On a Databricks workspace, that means a new URL, and everything inside the old one is gone.
+
+A change is a replacement when its `actions` include both `"delete"` and `"create"`, in either order. A plain delete or a plain create is not a replacement.
+
+Return the `address` of every replacement, in the same order as `changes`.""",
         pattern='Filter: keep the entries that match a rule, in their original order.',
-        target='one pass over resource_changes',
+        target='one pass over the changes',
         realworld='Approving a plan without spotting a `-/+` is how workspaces get recreated by accident. Changing `managed_resource_group_name`, `location`, or the VNet settings in `custom_parameters` all force a new workspace.',
-        starter="""def find_replacements(plan):
+        starter="""def find_replacements(changes):
     # your code here
     pass
 """,
-        solution="""def find_replacements(plan):
-    out = []
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
+        solution="""def find_replacements(changes):
+    found = []
+    for item in changes:
+        actions = item["actions"]
         if "delete" in actions and "create" in actions:
-            out.append(rc["address"])
-    return out
+            found.append(item["address"])
+    return found
 """,
         cases=[
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['delete', 'create'], 'before': None, 'after': None},
-                        'action_reason': 'replace_because_cannot_update',
-                    },
-                    {
-                        'address': 'databricks_cluster.shared',
-                        'type': 'databricks_cluster',
-                        'change': {'actions': ['update'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'azurerm_subnet.host',
-                        'type': 'azurerm_subnet',
-                        'change': {'actions': ['no-op'], 'before': None, 'after': None},
-                    },
-                ],
-            }, expected=['azurerm_databricks_workspace.this'], sample=True),
-            case({'resource_changes': []}, expected=[]),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'module.uc.databricks_catalog.sales',
-                        'type': 'databricks_catalog',
-                        'change': {'actions': ['create', 'delete'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_schema.raw',
-                        'type': 'databricks_schema',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_schema.curated',
-                        'type': 'databricks_schema',
-                        'change': {'actions': ['create'], 'before': None, 'after': None},
-                    },
-                ],
-            }, expected=['module.uc.databricks_catalog.sales']),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_storage_container.lake[0]',
-                        'type': 'azurerm_storage_container',
-                        'change': {'actions': ['delete', 'create'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'azurerm_storage_container.lake[1]',
-                        'type': 'azurerm_storage_container',
-                        'change': {'actions': ['delete', 'create'], 'before': None, 'after': None},
-                    },
-                ],
-            }, expected=['azurerm_storage_container.lake[0]', 'azurerm_storage_container.lake[1]']),
-            case({}, expected=[]),
+            case([
+                {'address': 'azurerm_databricks_workspace.this', 'actions': ['delete', 'create']},
+                {'address': 'databricks_cluster.shared', 'actions': ['update']},
+                {'address': 'azurerm_subnet.host', 'actions': ['no-op']},
+            ], expected=['azurerm_databricks_workspace.this'], sample=True),
+            case([], expected=[]),
+            case([
+                {'address': 'module.uc.databricks_catalog.sales', 'actions': ['create', 'delete']},
+                {'address': 'databricks_schema.raw', 'actions': ['delete']},
+                {'address': 'databricks_schema.curated', 'actions': ['create']},
+            ], expected=['module.uc.databricks_catalog.sales']),
+            case([
+                {'address': 'azurerm_storage_container.lake[0]', 'actions': ['delete', 'create']},
+                {'address': 'azurerm_storage_container.lake[1]', 'actions': ['delete', 'create']},
+            ], expected=['azurerm_storage_container.lake[0]', 'azurerm_storage_container.lake[1]']),
+            case([
+                {'address': 'databricks_cluster.shared', 'actions': ['update']},
+                {'address': 'databricks_job.nightly', 'actions': ['delete']},
+            ], expected=[]),
         ],
-        guided="""def find_replacements(plan):
+        guided="""def find_replacements(changes):
     # Replace every ___ with real code, then run the tests.
 
-    out = []
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
+    found = []
+    for item in changes:
+        actions = item["actions"]
 
-        # Step 1: a replacement has both "delete" and "create" in actions.
-        #         A plain delete or a plain create is not a replacement.
+        # Step 1: a replacement has "delete" AND "create".
         if ___:
-            # Step 2: keep its address.
+            # Step 2: add this change's address to found.
             ___
 
-    return out
+    return found
 """,
+        fills=['"delete" in actions and "create" in actions', 'found.append(item["address"])'],
         concepts=[
             [
-                'Replacement in the text plan',
-                'In `terraform plan` output a replacement is marked `-/+` (or `+/-` with create_before_destroy), and the attribute that caused it says `# forces replacement`.',
-                """-/+ resource "azurerm_databricks_workspace" "this" {
-      ~ managed_resource_group_name = "rg-dbw-managed" -> "rg-dbw-sales-managed" # forces replacement""",
+                'Two conditions with and',
+                '`a and b` is True only when both sides are True.',
+                """basket = ['milk', 'eggs']
+'milk' in basket and 'eggs' in basket   # True""",
             ],
             [
-                'Two conditions with and',
-                '`and` is true only when both sides are true.',
-                "'delete' in a and 'create' in a",
+                'Reading a field from a dict',
+                '`item["address"]` gets the value stored under that key.',
+                """pet = {'name': 'Rex', 'age': 3}
+pet['name']   # 'Rex'""",
             ],
             [
                 'Building a result list',
-                'Start empty, append matches in the loop, return it at the end.',
-                """out = []
-out.append('azurerm_databricks_workspace.this')""",
+                'Start with an empty list, append each match in the loop, return it at the end.',
+                """names = []
+names.append('ana')   # ['ana']""",
             ],
         ],
-        byhand="The workspace's actions are delete and create: that's a replacement, keep its address. The cluster is only update. The subnet is no-op. Answer: just the workspace.",
-        why='One pass, two quick membership checks each.',
+        byhand='Change 1, the workspace, has delete and create: a replacement, so keep its address. Change 2, the cluster, is only update: skip it. Change 3, the subnet, is no-op: skip it. Return ["azurerm_databricks_workspace.this"].',
+        why='One pass, with two quick checks for each change.',
         gotchas=[
             [
                 'What forces a new workspace',
@@ -330,7 +278,7 @@ lesson(MODULE, 'guard_destroys',
         "A **plan policy** runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.",
         "Start with the resources you can't rebuild: workspaces, storage accounts, metastores.",
     ],
-    example=example('The same rule in Rego', """deny contains msg if {
+    example=example("A Rego rule (Rego is Spacelift's policy language) that blocks destroying protected resource types", """deny contains msg if {
   rc := input.terraform.resource_changes[_]
   "delete" in rc.change.actions
   rc.type in protected
@@ -340,11 +288,11 @@ lesson(MODULE, 'guard_destroys',
         'A plan policy blocks destroying storage accounts. Can someone still lose one?',
         [
             "No, it's fully protected",
-            'Yes, by deleting it in the portal or with state commands, which never go through a plan',
+            'Yes, by deleting it in the Azure portal, with the Azure CLI, or with a local apply outside Spacelift, none of which go through the policy',
             'Only if the policy has a bug',
         ],
         answer=1,
-        why='Policies only see plans. Pair them with RBAC and resource locks.',
+        why='Policies only see plans. Pair them with RBAC (role-based access control: rules for who may do what) and resource locks.',
     ),
     angle=angle(
         pattern='Set lookup inside a filter',
@@ -357,119 +305,101 @@ lesson(MODULE, 'guard_destroys',
         topic='policy',
         difficulty='easy',
         fn='guard_destroys',
-        prompt="""Spacelift can run a plan policy on every run and block it. Write the same rule in Python: given a `plan` and a list of `protected` resource types, return one message for every resource of a protected type that the plan would destroy, including replacements.
+        prompt="""Your function gets two things:
 
-Each message is `"<address> would be destroyed"`, in plan order. An empty list means the run may go ahead.""",
+- `changes`: the resource changes in a plan. Each one is a dict like `{"address": "azurerm_storage_account.lake", "type": "azurerm_storage_account", "actions": ["delete"]}`. `type` is the kind of resource.
+- `protected`: the resource types that must never be destroyed, like `["azurerm_storage_account"]`.
+
+For each change whose `type` is in `protected` and whose `actions` include `"delete"`, make a message: its address followed by `" would be destroyed"`, like `"azurerm_storage_account.lake would be destroyed"`. A replacement, like `["delete", "create"]`, includes `"delete"`, so it counts too.
+
+Return the messages in the same order as `changes`. An empty list means the run may go ahead.""",
         pattern='Filter, then format. Turn the protected list into a set first so each check is instant.',
-        target='one pass over resource_changes',
+        target='one pass over the changes',
         realworld='The same logic, in Rego, is what a Spacelift plan policy runs against `input.terraform.resource_changes`. Teams use it to stop a merged PR from deleting a workspace, a storage account or a Unity Catalog metastore.',
-        starter="""def guard_destroys(plan, protected):
+        starter="""def guard_destroys(changes, protected):
     # your code here
     pass
 """,
-        solution="""def guard_destroys(plan, protected):
-    protected = set(protected)
-    out = []
-    for rc in plan.get("resource_changes", []):
-        if rc["type"] in protected and "delete" in rc["change"]["actions"]:
-            out.append(rc["address"] + " would be destroyed")
-    return out
+        solution="""def guard_destroys(changes, protected):
+    protected_types = set(protected)
+    messages = []
+    for item in changes:
+        is_protected = item["type"] in protected_types
+        destroyed = "delete" in item["actions"]
+        if is_protected and destroyed:
+            messages.append(item["address"] + " would be destroyed")
+    return messages
 """,
         cases=[
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['delete', 'create'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'databricks_cluster.shared',
-                        'type': 'databricks_cluster',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                ],
-            }, ['azurerm_databricks_workspace', 'azurerm_storage_account'], expected=['azurerm_databricks_workspace.this would be destroyed'], sample=True),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_storage_account.lake',
-                        'type': 'azurerm_storage_account',
-                        'change': {'actions': ['update'], 'before': None, 'after': None},
-                    },
-                ],
-            }, ['azurerm_storage_account'], expected=[]),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'databricks_metastore.this',
-                        'type': 'databricks_metastore',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                    {
-                        'address': 'azurerm_storage_account.lake',
-                        'type': 'azurerm_storage_account',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                ],
-            }, ['databricks_metastore', 'azurerm_storage_account'], expected=['databricks_metastore.this would be destroyed', 'azurerm_storage_account.lake would be destroyed']),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['delete'], 'before': None, 'after': None},
-                    },
-                ],
-            }, [], expected=[]),
-            case({}, ['azurerm_databricks_workspace'], expected=[]),
+            case([
+                {
+                    'address': 'azurerm_databricks_workspace.this',
+                    'type': 'azurerm_databricks_workspace',
+                    'actions': ['delete', 'create'],
+                },
+                {
+                    'address': 'databricks_cluster.shared',
+                    'type': 'databricks_cluster',
+                    'actions': ['delete'],
+                },
+            ], ['azurerm_databricks_workspace', 'azurerm_storage_account'], expected=['azurerm_databricks_workspace.this would be destroyed'], sample=True),
+            case([
+                {'address': 'azurerm_storage_account.lake', 'type': 'azurerm_storage_account', 'actions': ['update']},
+            ], ['azurerm_storage_account'], expected=[]),
+            case([
+                {'address': 'databricks_metastore.this', 'type': 'databricks_metastore', 'actions': ['delete']},
+                {'address': 'azurerm_storage_account.lake', 'type': 'azurerm_storage_account', 'actions': ['delete']},
+            ], ['databricks_metastore', 'azurerm_storage_account'], expected=['databricks_metastore.this would be destroyed', 'azurerm_storage_account.lake would be destroyed']),
+            case([
+                {'address': 'azurerm_databricks_workspace.this', 'type': 'azurerm_databricks_workspace', 'actions': ['delete']},
+            ], [], expected=[]),
+            case([], ['azurerm_databricks_workspace'], expected=[]),
         ],
-        guided="""def guard_destroys(plan, protected):
+        guided="""def guard_destroys(changes, protected):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: a set makes "is this type protected?" instant.
-    protected = set(protected)
-    out = []
+    # A set makes "is this type protected?" instant.
+    protected_types = set(protected)
+    messages = []
 
-    for rc in plan.get("resource_changes", []):
-        # Step 2: protected type AND its actions include "delete".
-        #         (A replacement includes "delete" too.)
-        if rc["type"] in protected and ___:
-            # Step 3: add the message in the exact format the tests expect.
-            out.append(___)
+    for item in changes:
+        is_protected = item["type"] in protected_types
 
-    return out
+        # Step 1: True when "delete" is in this item's actions.
+        destroyed = ___
+
+        if is_protected and destroyed:
+            # Step 2: the address, then " would be destroyed".
+            messages.append(___)
+
+    return messages
 """,
+        fills=['"delete" in item["actions"]', 'item["address"] + " would be destroyed"'],
         concepts=[
             [
                 'Set for lookups',
-                'Checking `x in a_set` is instant; checking a list walks every item.',
-                """protected = set(['azurerm_storage_account'])
-'azurerm_storage_account' in protected""",
+                '`set(a_list)` makes a set. Checking `x in a_set` is instant; checking a list looks at every item.',
+                """fruit = set(['apple', 'pear'])
+'pear' in fruit   # True""",
             ],
             [
-                'The same rule in Rego',
-                'Spacelift plan policies are written in Rego, a query language. The rule reads: for any resource change whose actions include delete and whose type is protected, add a deny message.',
-                """package spacelift
-
-import rego.v1
-
-protected := {"azurerm_databricks_workspace", "azurerm_storage_account"}
-
-deny contains sprintf("%s would be destroyed", [rc.address]) if {
-	rc := input.terraform.resource_changes[_]
-	"delete" in rc.change.actions
-	rc.type in protected
-}""",
+                'Keeping True or False in a name',
+                'A check like `x in y` gives True or False. You can store it in a variable and use it later.',
+                """has_tea = 'tea' in ['tea', 'milk']
+has_tea   # True""",
             ],
-            ['String joining', '`+` joins two strings.', "'databricks_metastore.this' + ' would be destroyed'"],
+            [
+                'Joining strings with +',
+                '`+` joins two strings into one.',
+                "'ana' + ' is here'   # 'ana is here'",
+            ],
         ],
-        byhand="The workspace is a protected type and its actions include delete (it's a replacement), so it gets a message. The cluster is deleted but its type isn't protected, so it's fine.",
+        byhand='Protected: the workspace and storage account types. Change 1 is the workspace. Its type is protected, and its actions include delete (it\'s a replacement). So add "azurerm_databricks_workspace.this would be destroyed". Change 2 is the cluster. It\'s deleted, but its type isn\'t protected, so no message. Return ["azurerm_databricks_workspace.this would be destroyed"].',
         why='One pass; each check is a set lookup and a short list check.',
         gotchas=[
             [
-                'Policies can be bypassed by state surgery',
-                'A plan policy only sees plans. `terraform state rm` or a manual delete in the portal never goes through it. Lock down who can run tasks on production stacks too.',
+                'Policies only see plans',
+                'A delete in the Azure portal, with the Azure CLI, or from a local `terraform apply` outside Spacelift never goes through a plan policy. State commands skip it too: they change what Terraform tracks without a plan. `terraform state rm` doesn\'t delete anything in Azure, but Terraform forgets the resource, so it is no longer managed or protected. Lock down who can run tasks on production stacks too.',
             ],
             [
                 'Warn first, then deny',
@@ -507,104 +437,118 @@ Lock Info:
         topic='state',
         difficulty='easy',
         fn='lock_info',
-        prompt="""A run failed with Terraform's state lock error, shown below as `text`. Before anyone runs `terraform force-unlock`, you need the facts: who holds the lock, since when, and doing what.
+        prompt="""`lines` is a Terraform state lock error as a list, one string per line, like `["Lock Info:", "  Who: ana@laptop"]`.
 
-Return a dict of the fields under `Lock Info:`, with lowercase keys and the values trimmed: `id`, `path`, `operation`, `who`, `version`, `created`. Leave out fields with no value. If there is no `Lock Info:` section, return `{}`.
+Find the line `Lock Info:` and skip every line before it. Each line after it is one field. It starts with a few spaces, like `Who: ana@laptop` with two spaces in front.
 
-Careful: `Created` contains colons of its own.""",
+Cut each field line at its first colon only, because the `Created` time has colons of its own. The part before the colon is the key, and the part after is the value. Trim both (remove the spaces at each end).
+
+Return a dict of all the fields, like `{"Who": "ana@laptop"}`. If there is no `Lock Info:` line, return `{}`.""",
         pattern='Find where the section starts, then split each line on the first colon only.',
         target='one pass over the lines',
         realworld="A lock left by a crashed run blocks every later plan. Force-unlocking while a run is genuinely still applying can corrupt state, so you check `Who` and `Created` first. On Spacelift-managed state, Spacelift handles locking and you'd look at the stack's runs instead.",
-        starter="""def lock_info(text):
+        starter="""def lock_info(lines):
     # your code here
     pass
 """,
-        solution="""def lock_info(text):
-    out = {}
+        solution="""def lock_info(lines):
+    info = {}
     inside = False
-    for line in text.splitlines():
-        if line.strip() == "Lock Info:":
+    for line in lines:
+        if line == "Lock Info:":
             inside = True
-            continue
-        if inside and ":" in line:
+        elif inside:
             key, value = line.split(":", 1)
-            if value.strip():
-                out[key.strip().lower()] = value.strip()
-    return out
+            info[key.strip()] = value.strip()
+    return info
 """,
         cases=[
-            case("""Error: Error acquiring the state lock
-
-Error message: state blob is already locked
-Lock Info:
-  ID:        6a3c1b0e-8f2d-4c1a-9e57-0c2b7d5f9a11
-  Path:      tfstate/prod.databricks.tfstate
-  Operation: OperationTypeApply
-  Who:       spacelift@worker-7
-  Version:   1.9.5
-  Created:   2026-10-08 22:14:03.123456 +0000 UTC
-  Info:      
-""", expected={
-                'id': '6a3c1b0e-8f2d-4c1a-9e57-0c2b7d5f9a11',
-                'path': 'tfstate/prod.databricks.tfstate',
-                'operation': 'OperationTypeApply',
-                'who': 'spacelift@worker-7',
-                'version': '1.9.5',
-                'created': '2026-10-08 22:14:03.123456 +0000 UTC',
+            case([
+                'Error: state blob is already locked',
+                'Lock Info:',
+                '  ID:      6a3c1b0e',
+                '  Who:     spacelift@worker-7',
+                '  Created: 2026-10-08 22:14:03 UTC',
+            ], expected={
+                'ID': '6a3c1b0e',
+                'Who': 'spacelift@worker-7',
+                'Created': '2026-10-08 22:14:03 UTC',
             }, sample=True),
-            case("""Error: Invalid provider configuration
-""", expected={}),
-            case("""Lock Info:
-  ID:        abc
-  Who:       ana@laptop
-""", expected={'id': 'abc', 'who': 'ana@laptop'}),
-            case("""Error message: state blob is already locked
-Lock Info:
-  ID: x1
-  Created:   2026-01-02 03:04:05 +0000 UTC
-""", expected={'id': 'x1', 'created': '2026-01-02 03:04:05 +0000 UTC'}),
-            case('', expected={}),
+            case(['Error: Invalid provider configuration'], expected={}),
+            case([], expected={}),
+            case([
+                'Error: Error acquiring the state lock',
+                '',
+                'Error message: state blob is already locked',
+                'Lock Info:',
+                '  ID:        6a3c1b0e-8f2d-4c1a-9e57-0c2b7d5f9a11',
+                '  Path:      tfstate/prod.databricks.tfstate',
+                '  Operation: OperationTypeApply',
+                '  Who:       spacelift@worker-7',
+                '  Version:   1.9.5',
+                '  Created:   2026-10-08 22:14:03.123456 +0000 UTC',
+            ], expected={
+                'ID': '6a3c1b0e-8f2d-4c1a-9e57-0c2b7d5f9a11',
+                'Path': 'tfstate/prod.databricks.tfstate',
+                'Operation': 'OperationTypeApply',
+                'Who': 'spacelift@worker-7',
+                'Version': '1.9.5',
+                'Created': '2026-10-08 22:14:03.123456 +0000 UTC',
+            }),
+            case(['Lock Info:', '  ID: abc', '  Who: ana@laptop'], expected={'ID': 'abc', 'Who': 'ana@laptop'}),
         ],
-        guided="""def lock_info(text):
+        guided="""def lock_info(lines):
     # Replace every ___ with real code, then run the tests.
 
-    out = {}
-    inside = False   # have we reached the Lock Info: section yet?
+    info = {}
+    inside = False   # a flag: reached "Lock Info:" yet?
 
-    for line in text.splitlines():
-        # Step 1: switch on when you reach the section heading.
-        if line.strip() == "Lock Info:":
-            inside = True
-            continue
-
-        if inside and ":" in line:
-            # Step 2: split on the FIRST colon only. The second argument
-            #         to split says how many cuts to make.
+    for line in lines:
+        if line == "Lock Info:":
+            # Step 1: we've reached it, so turn the flag on.
+            inside = ___
+        elif inside:
+            # Step 2: cut at the FIRST colon only.
             key, value = line.split(":", ___)
+            # Step 3: the key, with its spaces trimmed off.
+            info[___] = value.strip()
 
-            # Step 3: skip empty values; store lowercase, trimmed keys.
-            if value.strip():
-                out[___] = value.strip()
-
-    return out
+    return info
 """,
+        fills=['True', '1', 'key.strip()'],
         concepts=[
-            ['splitlines', 'Cuts text into a list of lines.', "'a\\nb'.splitlines()   # ['a', 'b']"],
-            [
-                'split with a limit',
-                "`split(':', 1)` cuts at the first colon only, so a time like 22:14:03 stays in one piece.",
-                """'Created: 22:14:03'.split(':', 1)
-# ['Created', ' 22:14:03']""",
-            ],
             [
                 'A flag variable',
                 "A True/False variable that remembers whether you've reached the part you care about.",
-                """inside = False
-...
-inside = True""",
+                """seen_start = False
+# later, at the line you were waiting for:
+seen_start = True""",
+            ],
+            [
+                'elif with a flag',
+                '`elif inside:` means "otherwise, if the flag is on". It runs only when the `if` above it was False.',
+                """if line == 'Start': on = True
+elif on: print(line)   # lines after 'Start'""",
+            ],
+            [
+                'split with a limit',
+                "`split(':', 1)` cuts at the first colon only, so a time like 10:30 stays whole. The two parts can go straight into two names.",
+                """key, value = 'Start: 10:30'.split(':', 1)
+# key is 'Start', value is ' 10:30'""",
+            ],
+            [
+                'strip',
+                '`strip()` removes the spaces from both ends of a string.',
+                """'  Name '.strip()   # 'Name'""",
+            ],
+            [
+                'Adding to a dict',
+                '`a_dict[key] = value` stores a value under a key.',
+                """ages = {}
+ages['ana'] = 30   # {'ana': 30}""",
             ],
         ],
-        byhand='Skip lines until `Lock Info:`. Then `  ID:        6a3c…` splits at the first colon into `ID` and the value; lowercase and trim both. `Created:` keeps its time intact because you only cut once. `Info:` has nothing after it, so leave it out.',
+        byhand='Line 1 comes before `Lock Info:`, so skip it. Line 2 is `Lock Info:`, so turn the flag on. From now on, every line is a field. Cut line 3 at its first colon. The key is ID with two spaces in front, and the value is 6a3c1b0e with six spaces in front. Trim both: ID is 6a3c1b0e. Line 4 works the same way: Who is spacelift@worker-7. Line 5 is cut at its first colon only, so the time stays whole: Created is 2026-10-08 22:14:03 UTC. Return {"ID": "6a3c1b0e", "Who": "spacelift@worker-7", "Created": "2026-10-08 22:14:03 UTC"}.',
         why='One pass over the lines.',
         gotchas=[
             [
@@ -623,26 +567,26 @@ lesson(MODULE, 'missing_tags',
     title='Tagging for cost and policy',
     learn=[
         'Azure tags drive **cost allocation** and **Azure Policy**. Missing tags mean spend nobody can attribute.',
-        'azurerm has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.',
+        'The azurerm provider (Terraform\'s plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.',
     ],
     example=example('A shared tag map', """locals {
   tags = { env = var.env, owner = "platform", cost-center = "1234" }
 }
 tags = merge(local.tags, { component = "dbw" })"""),
     check=question(
-        'Which resource in this plan should your tag check skip?',
+        'Which of these resources should your tag check skip?',
         [
             '`azurerm_databricks_workspace`',
-            '`databricks_catalog` (it has no Azure tags)',
+            '`databricks_catalog`',
             '`azurerm_storage_account`',
         ],
         answer=1,
-        why="Databricks resources aren't Azure resources, so they have no tags attribute.",
+        why="Resources from the databricks provider (names starting `databricks_`, like `databricks_catalog`) have no Azure tags attribute. `azurerm_databricks_*` resources, like the workspace, are Azure resources, so they do.",
     ),
     angle=angle(
         pattern='Dict of results',
         text='One walk through the plan; each missing-tag check is an instant dict lookup.',
-        say='"I only check resources that support tags, treat null as no tags, and return a dict from address to the missing keys."',
+        say='"I only check resources that support tags, and return a dict from each address to its missing tag names."',
         classic=None,
     ),
     exercise=exercise(
@@ -650,161 +594,114 @@ tags = merge(local.tags, { component = "dbw" })"""),
         topic='tagging',
         difficulty='medium',
         fn='missing_tags',
-        prompt="""Your Azure policy requires certain tags on every resource that supports them. Given a `plan` and a list of `required` tag keys, check every resource the plan creates or updates (its actions include `"create"` or `"update"`).
+        prompt="""Your function gets two things:
 
-Only resources whose `change.after` has a `"tags"` key support tags. Databricks resources and things like `azurerm_subnet` don't have one, so skip them. A `tags` value of `None` means no tags.
+- `resources`: the resources a plan creates or updates. Each one is a dict like `{"address": "azurerm_storage_account.lake", "tags": {"env": "prod"}}`.
+- `required`: the tag names every resource must have, like `["env", "owner"]`.
 
-Return a dict mapping each failing `address` to its missing keys, sorted. Resources with nothing missing are left out.""",
-        pattern="Dict of results, filled only when there's a problem. Guard against `None` before looking inside.",
-        target='one pass over resource_changes',
+Some resources can't be tagged, such as subnets and resources from the databricks provider (names starting `databricks_`, like `databricks_catalog`). They have no `"tags"` key: skip them. `azurerm_databricks_*` resources are Azure resources, so they do have tags.
+
+For every other resource, list the `required` tag names that are missing from its `tags`, in the same order as `required`. Return a dict. Each key is a resource's `address` and its value is that resource's list of missing tag names. Leave out resources with nothing missing.""",
+        pattern="Dict of results, filled only when something is missing.",
+        target='one pass over the resources',
         realworld="Cost allocation and Azure Policy both depend on tags. Catching a missing `cost-center` in the PR's Spacelift run is much cheaper than finding untagged spend at the end of the month.",
-        starter="""def missing_tags(plan, required):
+        starter="""def missing_tags(resources, required):
     # your code here
     pass
 """,
-        solution="""def missing_tags(plan, required):
-    out = {}
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
-        if "create" not in actions and "update" not in actions:
+        solution="""def missing_tags(resources, required):
+    problems = {}
+    for resource in resources:
+        if "tags" not in resource:
             continue
-        after = rc["change"]["after"] or {}
-        if "tags" not in after:
-            continue
-        tags = after["tags"] or {}
-        missing = sorted(k for k in required if k not in tags)
+        tags = resource["tags"]
+        missing = []
+        for key in required:
+            if key not in tags:
+                missing.append(key)
         if missing:
-            out[rc["address"]] = missing
-    return out
+            problems[resource["address"]] = missing
+    return problems
 """,
         cases=[
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {
-                            'actions': ['update'],
-                            'before': None,
-                            'after': {'name': 'dbw-sales-prod', 'sku': 'premium', 'tags': {'env': 'prod'}},
-                        },
-                    },
-                    {
-                        'address': 'azurerm_subnet.host',
-                        'type': 'azurerm_subnet',
-                        'change': {
-                            'actions': ['create'],
-                            'before': None,
-                            'after': {'name': 'snet-dbw-host', 'address_prefixes': ['10.20.1.0/24']},
-                        },
-                    },
-                    {
-                        'address': 'databricks_catalog.sales',
-                        'type': 'databricks_catalog',
-                        'change': {'actions': ['create'], 'before': None, 'after': {'name': 'sales'}},
-                    },
-                ],
-            }, ['cost-center', 'env', 'owner'], expected={'azurerm_databricks_workspace.this': ['cost-center', 'owner']}, sample=True),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_storage_account.lake',
-                        'type': 'azurerm_storage_account',
-                        'change': {'actions': ['create'], 'before': None, 'after': {'name': 'stsalesprod', 'tags': None}},
-                    },
-                ],
-            }, ['env'], expected={'azurerm_storage_account.lake': ['env']}),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_storage_account.old',
-                        'type': 'azurerm_storage_account',
-                        'change': {'actions': ['delete'], 'before': {'tags': {}}, 'after': None},
-                    },
-                ],
-            }, ['env'], expected={}),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_access_connector.uc',
-                        'type': 'azurerm_databricks_access_connector',
-                        'change': {
-                            'actions': ['create'],
-                            'before': None,
-                            'after': {'name': 'ac-uc', 'tags': {'env': 'dev', 'owner': 'platform', 'cost-center': '1234'}},
-                        },
-                    },
-                ],
-            }, ['owner', 'env', 'cost-center'], expected={}),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_resource_group.this',
-                        'type': 'azurerm_resource_group',
-                        'change': {'actions': ['no-op'], 'before': None, 'after': {'tags': {}}},
-                    },
-                ],
-            }, ['env'], expected={}),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['delete', 'create'], 'before': None, 'after': {'tags': {'owner': 'ana'}}},
-                    },
-                ],
-            }, ['owner', 'env'], expected={'azurerm_databricks_workspace.this': ['env']}),
+            case([
+                {'address': 'azurerm_storage_account.lake', 'tags': {'env': 'prod', 'owner': 'data'}},
+                {'address': 'azurerm_databricks_workspace.this', 'tags': {'env': 'prod'}},
+                {'address': 'databricks_catalog.sales'},
+            ], ['env', 'owner'], expected={'azurerm_databricks_workspace.this': ['owner']}, sample=True),
+            case([
+                {'address': 'azurerm_storage_account.lake', 'tags': {}},
+            ], ['env'], expected={'azurerm_storage_account.lake': ['env']}),
+            case([
+                {
+                    'address': 'azurerm_databricks_access_connector.uc',
+                    'tags': {'env': 'dev', 'owner': 'platform', 'cost-center': '1234'},
+                },
+            ], ['owner', 'env', 'cost-center'], expected={}),
+            case([], ['env'], expected={}),
+            case([
+                {'address': 'azurerm_databricks_access_connector.uc', 'tags': {'env': 'dev'}},
+                {'address': 'azurerm_subnet.host'},
+                {'address': 'azurerm_databricks_workspace.this', 'tags': {'owner': 'ana'}},
+            ], ['owner', 'env', 'cost-center'], expected={
+                'azurerm_databricks_access_connector.uc': ['owner', 'cost-center'],
+                'azurerm_databricks_workspace.this': ['env', 'cost-center'],
+            }),
         ],
-        guided="""def missing_tags(plan, required):
+        guided="""def missing_tags(resources, required):
     # Replace every ___ with real code, then run the tests.
 
-    out = {}
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
-
-        # Step 1: only resources being created or updated.
-        if "create" not in actions and "update" not in actions:
-            continue
-
-        # Step 2: after is None for a plain delete. "or {}" swaps None for an empty dict.
-        after = rc["change"]["after"] or {}
-
-        # Step 3: no "tags" key means this resource type can't be tagged.
+    problems = {}
+    for resource in resources:
+        # Step 1: no "tags" key means it can't be tagged.
+        # Skip it.
         if ___:
             continue
-        tags = after["tags"] or {}
+        tags = resource["tags"]
 
-        # Step 4: which required keys are not in tags? Sort them.
-        missing = sorted(___)
+        # Step 2: collect each required key that tags lacks.
+        missing = []
+        for key in required:
+            if ___:
+                missing.append(key)
+
+        # Step 3: if anything is missing, store the list
+        # in problems under this resource's address.
         if missing:
-            out[rc["address"]] = missing
+            ___
 
-    return out
+    return problems
 """,
+        fills=['"tags" not in resource', 'key not in tags', 'problems[resource["address"]] = missing'],
         concepts=[
             [
-                'or as a fallback',
-                '`x or {}` gives `{}` when x is None (or empty). Handy because the plan uses null for "nothing".',
-                """after = None
-after or {}   # {}""",
+                'not in on a dict',
+                '`key not in a_dict` is True when the dict has no such key.',
+                """prices = {'tea': 2}
+'cake' not in prices   # True""",
             ],
             [
                 'continue',
-                'Skips the rest of this loop turn and moves to the next item.',
-                """for rc in changes:
-    if not wanted:
-        continue
-    ...""",
+                'Skips the rest of this turn of the loop and moves on to the next item.',
+                """for n in [1, 2, 3]:
+    if n == 2: continue
+    print(n)   # prints 1, then 3""",
             ],
             [
-                'sorted with a filter',
-                'Build a list from another, keeping some items, and sort it in one line.',
-                """sorted(k for k in ['owner', 'env'] if k not in {'env': 'prod'})
-# ['owner']""",
+                'An empty list counts as False',
+                '`if a_list:` runs its block only when the list has at least one item.',
+                """basket = []
+if basket: print('not empty')   # prints nothing""",
+            ],
+            [
+                'Adding to a dict',
+                '`a_dict[key] = value` stores a value under a key.',
+                """ages = {}
+ages['ana'] = 30   # {'ana': 30}""",
             ],
         ],
-        byhand='The workspace is updated and has tags with only env, so cost-center and owner are missing. The subnet has no tags key: skip. The catalog is a Databricks resource with no tags key: skip.',
-        why='One pass over the plan; each tag check is a dict lookup.',
+        byhand='Required: env and owner. The storage account has both, so nothing is missing: leave it out. The workspace has env but not owner: missing ["owner"]. The catalog has no tags key: skip it. Return {"azurerm_databricks_workspace.this": ["owner"]}.',
+        why='One pass over the resources; each tag check is a dict lookup.',
         gotchas=[
             [
                 'azurerm has no default_tags',
@@ -812,7 +709,7 @@ after or {}   # {}""",
             ],
             [
                 'Workspace tags reach the managed resource group',
-                "Tags on `azurerm_databricks_workspace` are applied to the resources Databricks creates in its managed resource group, which you can't tag directly. Add cluster tags (`custom_tags`) too, so compute cost can be split by team.",
+                "Tags on `azurerm_databricks_workspace` are applied to the resources Databricks creates in its managed resource group, which you can't tag directly. Clusters use a separate `custom_tags` field, which this check doesn't look at. Set it too, so compute cost can be split by team.",
             ],
         ],
     ),
@@ -822,7 +719,7 @@ lesson(MODULE, 'grants_to_revoke',
     title='Unity Catalog grants',
     learn=[
         '**Unity Catalog** controls who can use which data. `databricks_grants` is **authoritative**: on apply it makes the grants match the code exactly, removing anything else.',
-        'Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal.',
+        'Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).',
     ],
     example=example('Authoritative grants', """resource "databricks_grants" "sales" {
   catalog = databricks_catalog.sales.name
@@ -848,10 +745,15 @@ lesson(MODULE, 'grants_to_revoke',
         topic='unity-catalog',
         difficulty='medium',
         fn='grants_to_revoke',
-        prompt="""`databricks_grants` is authoritative: on every apply it makes a securable's grants exactly match the code, removing anything else. Someone has added grants in Catalog Explorer, so the next apply will take them away.
+        prompt="""Your function gets two things:
 
-`code` and `live` are dicts mapping a principal (a group name, or a service principal's application ID) to its list of privileges on one catalog. Return a dict of what the next apply will revoke: each principal mapped to the privileges it has `live` but not in `code`, sorted. Leave out principals with nothing revoked.""",
-        pattern='Set difference, per key. A principal missing from `code` entirely loses everything.',
+- `code`: the grants written in Terraform, like `{"analysts": ["SELECT"]}`. It's a dict. Each key is a principal (a user, group or service that can be given access). Its value is that principal's list of privileges (permissions, like `SELECT` to read data).
+- `live`: the grants that exist in Databricks right now, in the same shape.
+
+`databricks_grants` makes the live grants match the code. So the next apply (the next time Terraform makes its changes) removes every privilege in `live` but not in `code`. A principal missing from `code` loses everything.
+
+Return a dict in the same shape, with the privileges each principal will lose, in the same order as in `live`. Leave out principals that lose nothing.""",
+        pattern="For each principal, keep the live privileges that the code doesn't list. A principal missing from `code` loses everything.",
         target='one pass over the live grants',
         realworld='This is the classic surprise with `databricks_grants`: a manual grant in the UI quietly disappears at the next Spacelift apply. Either put it in code, or manage that principal with the non-authoritative `databricks_grant` instead.',
         starter="""def grants_to_revoke(code, live):
@@ -859,74 +761,87 @@ lesson(MODULE, 'grants_to_revoke',
     pass
 """,
         solution="""def grants_to_revoke(code, live):
-    out = {}
+    revoke = {}
     for principal, privileges in live.items():
-        keep = set(code.get(principal, []))
-        gone = sorted(set(privileges) - keep)
+        keep = code.get(principal, [])
+        gone = []
+        for privilege in privileges:
+            if privilege not in keep:
+                gone.append(privilege)
         if gone:
-            out[principal] = gone
-    return out
+            revoke[principal] = gone
+    return revoke
 """,
         cases=[
-            case({'data-engineers': ['USE_CATALOG', 'USE_SCHEMA', 'SELECT', 'MODIFY']}, {
-                'data-engineers': ['USE_CATALOG', 'USE_SCHEMA', 'SELECT', 'MODIFY'],
-                'analysts': ['USE_CATALOG', 'SELECT'],
-            }, expected={'analysts': ['SELECT', 'USE_CATALOG']}, sample=True),
+            case({'engineers': ['USE_CATALOG', 'SELECT']}, {
+                'engineers': ['USE_CATALOG', 'SELECT', 'MODIFY'],
+                'analysts': ['SELECT'],
+            }, expected={'engineers': ['MODIFY'], 'analysts': ['SELECT']}, sample=True),
             case({'analysts': ['USE_CATALOG']}, {'analysts': ['USE_CATALOG']}, expected={}),
             case({'analysts': ['USE_CATALOG', 'SELECT']}, {'analysts': ['USE_CATALOG', 'SELECT', 'MODIFY']}, expected={'analysts': ['MODIFY']}),
             case({'data-engineers': ['ALL_PRIVILEGES']}, {}, expected={}),
-            case({}, {'6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10': ['USE_CATALOG', 'BROWSE']}, expected={'6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10': ['BROWSE', 'USE_CATALOG']}),
+            case({}, {'6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10': ['USE_CATALOG', 'BROWSE']}, expected={'6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10': ['USE_CATALOG', 'BROWSE']}),
+            case({'data-engineers': ['USE_CATALOG', 'USE_SCHEMA', 'SELECT', 'MODIFY']}, {
+                'data-engineers': ['USE_CATALOG', 'USE_SCHEMA', 'SELECT', 'MODIFY'],
+                'analysts': ['USE_CATALOG', 'SELECT'],
+            }, expected={'analysts': ['USE_CATALOG', 'SELECT']}),
         ],
         guided="""def grants_to_revoke(code, live):
     # Replace every ___ with real code, then run the tests.
 
-    out = {}
+    revoke = {}
     for principal, privileges in live.items():
-        # Step 1: what the code says this principal should keep.
-        #         A principal not in code at all keeps nothing.
-        keep = set(code.get(principal, ___))
+        # Step 1: what the code lets this principal keep.
+        # Not in code at all? Then it keeps an empty list.
+        keep = code.get(principal, ___)
 
-        # Step 2: live minus keep, sorted.
-        gone = sorted(___)
+        # Step 2: every live privilege that is not in keep.
+        gone = []
+        for privilege in privileges:
+            if ___:
+                gone.append(privilege)
 
         if gone:
-            out[principal] = gone
-    return out
+            revoke[principal] = gone
+
+    return revoke
 """,
+        fills=['[]', 'privilege not in keep'],
         concepts=[
             [
-                'Set difference',
-                "`a - b` is everything in a that isn't in b.",
-                "{'SELECT', 'MODIFY'} - {'SELECT'}   # {'MODIFY'}",
-            ],
-            [
                 'Looping over a dict',
-                '`.items()` gives you each key and value together.',
-                """for principal, privs in live.items():
-    ...""",
+                '`.items()` gives you each key and its value together.',
+                """for name, age in {'ana': 30}.items():
+    print(name, age)   # ana 30""",
             ],
             [
-                'Authoritative vs additive',
-                "`databricks_grants` (plural) owns all grants on a securable. `databricks_grant` (singular) manages one principal's grants and leaves the rest alone.",
-                """resource "databricks_grants" "sales" {
-  catalog = databricks_catalog.sales.name
-  grant {
-    principal  = "data-engineers"
-    privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
-  }
-}""",
+                'dict.get with a default',
+                '`a_dict.get(key, default)` gives the default when the key is missing, instead of an error.',
+                """ages = {'ana': 30}
+ages.get('bo', 0)   # 0""",
+            ],
+            [
+                'not in on a list',
+                '`x not in a_list` is True when x is nowhere in the list.',
+                "'tea' not in ['coffee', 'milk']   # True",
+            ],
+            [
+                'An empty list counts as False',
+                '`if a_list:` runs its block only when the list has at least one item.',
+                """basket = []
+if basket: print('not empty')   # prints nothing""",
             ],
         ],
-        byhand="data-engineers has the same privileges live and in code: nothing revoked. analysts isn't in code at all, so everything it has live goes: SELECT and USE_CATALOG, sorted.",
-        why='One pass over the live principals; each difference is a set operation.',
+        byhand='engineers is in code with USE_CATALOG and SELECT. Live, it also has MODIFY, which the code doesn\'t list, so it loses MODIFY. analysts isn\'t in code at all, so it keeps nothing and loses SELECT. Return {"engineers": ["MODIFY"], "analysts": ["SELECT"]}.',
+        why='One pass over the live grants, checking each privilege against the code.',
         gotchas=[
             [
-                'Never mix plural and singular on one securable',
-                'A `databricks_grants` and a `databricks_grant` on the same catalog fight each other on every apply, and the plan never settles.',
+                'Never mix plural and singular on the same object',
+                'A `databricks_grants` and a `databricks_grant` on the same object (a catalog, schema or table) fight each other on every apply, and the plan never settles.',
             ],
             [
                 'Grant to groups, not people',
-                'Grants to individual users break when people leave. Grant to account-level groups (synced from Entra ID) and manage membership there.',
+                'Grants to individual users break when people leave. Grant to account-level groups (synced from Entra ID, Azure\'s sign-in and user directory) and manage membership there.',
             ],
         ],
     ),
@@ -959,13 +874,21 @@ lesson(MODULE, 'count_shift',
         topic='refactoring',
         difficulty='medium',
         fn='count_shift',
-        prompt="""The lake's containers are created with `count`:
+        prompt="""Your function gets two things:
 
-`count = length(var.containers)` and `name = var.containers[count.index]`.
+- `old`: the storage container names in the code now, like `["bronze", "silver"]`.
+- `new`: the names after your edit, like `["silver"]`.
 
-Terraform tracks them by position: `azurerm_storage_container.lake[0]`, `[1]`, and so on. A container's `name` can't be changed in place, so a different name at the same position means destroy and create.
+The containers use `count`, so Terraform knows them by position: `lake[0]`, `lake[1]`, and so on. A container's name can't be edited. So when a position gets a different name, Terraform deletes that container and makes a new one. That is a replace.
 
-Given the `old` and `new` lists, return what the plan will do as a list of `[address, action]` in index order, where action is `"replace"`, `"create"` or `"delete"`. Unchanged positions are left out.""",
+Check every position, up to the end of the longer list, and give one action for each:
+
+- `"keep"`: the same name in both.
+- `"replace"`: a different name.
+- `"delete"`: `new` has nothing there.
+- `"create"`: `old` has nothing there.
+
+Return the actions in position order.""",
         pattern='Compare two lists position by position, up to the longer one. Past the end of one list is a create or a delete.',
         target='one pass up to the longer list',
         realworld='Removing `bronze` from the front of `["bronze", "silver", "gold"]` shifts every later container up one position, so Terraform plans to destroy and recreate `silver` and `gold`, along with the data in them. `for_each = toset(var.containers)` keys them by name instead, and a `moved` block migrates existing ones without destroying anything.',
@@ -974,74 +897,77 @@ Given the `old` and `new` lists, return what the plan will do as a list of `[add
     pass
 """,
         solution="""def count_shift(old, new):
-    out = []
-    for i in range(max(len(old), len(new))):
-        address = "azurerm_storage_container.lake[" + str(i) + "]"
+    actions = []
+    longest = max(len(old), len(new))
+    for i in range(longest):
         if i >= len(new):
-            out.append([address, "delete"])
+            actions.append("delete")
         elif i >= len(old):
-            out.append([address, "create"])
+            actions.append("create")
         elif old[i] != new[i]:
-            out.append([address, "replace"])
-    return out
+            actions.append("replace")
+        else:
+            actions.append("keep")
+    return actions
 """,
         cases=[
-            case(['bronze', 'silver', 'gold'], ['silver', 'gold'], expected=[
-                ['azurerm_storage_container.lake[0]', 'replace'],
-                ['azurerm_storage_container.lake[1]', 'replace'],
-                ['azurerm_storage_container.lake[2]', 'delete'],
-            ], sample=True),
-            case(['bronze', 'silver'], ['bronze', 'silver', 'gold'], expected=[['azurerm_storage_container.lake[2]', 'create']]),
-            case(['bronze', 'silver', 'gold'], ['bronze', 'silver', 'gold'], expected=[]),
-            case([], ['landing'], expected=[['azurerm_storage_container.lake[0]', 'create']]),
-            case(['bronze', 'silver', 'gold'], ['bronze', 'gold'], expected=[['azurerm_storage_container.lake[1]', 'replace'], ['azurerm_storage_container.lake[2]', 'delete']]),
+            case(['bronze', 'silver', 'gold'], ['silver', 'gold'], expected=['replace', 'replace', 'delete'], sample=True),
+            case(['bronze', 'silver'], ['bronze', 'silver', 'gold'], expected=['keep', 'keep', 'create']),
+            case(['bronze', 'silver', 'gold'], ['bronze', 'silver', 'gold'], expected=['keep', 'keep', 'keep']),
+            case([], ['landing'], expected=['create']),
+            case(['bronze', 'silver', 'gold'], ['bronze', 'gold'], expected=['keep', 'replace', 'delete']),
+            case(['bronze'], [], expected=['delete']),
         ],
         guided="""def count_shift(old, new):
     # Replace every ___ with real code, then run the tests.
 
-    out = []
-    # Step 1: go up to the longer of the two lists.
-    for i in range(___):
-        address = "azurerm_storage_container.lake[" + str(i) + "]"
-
-        # Step 2: position i no longer exists in new.
+    actions = []
+    # Step 1: the length of the longer list.
+    longest = ___
+    for i in range(longest):
+        # Position i is past the end of new.
         if i >= len(new):
-            out.append([address, "delete"])
-        # Step 3: position i didn't exist before.
+            actions.append("delete")
+        # Step 2: position i is past the end of old.
         elif ___:
-            out.append([address, "create"])
-        # Step 4: same position, different name.
+            actions.append("create")
+        # Step 3: same position, different name.
         elif ___:
-            out.append([address, "replace"])
+            actions.append("replace")
+        else:
+            actions.append("keep")
 
-    return out
+    return actions
 """,
+        fills=['max(len(old), len(new))', 'i >= len(old)', 'old[i] != new[i]'],
         concepts=[
             [
-                'range up to the longer list',
-                '`max(len(a), len(b))` lets you visit every position in either list.',
-                """for i in range(max(len(old), len(new))):
-    ...""",
+                'range(n)',
+                '`range(3)` gives 0, 1, 2: one number for each position. Positions start at 0.',
+                """for i in range(3):
+    print(i)   # 0, then 1, then 2""",
             ],
             [
-                'count vs for_each',
-                '`count` names instances by number, so removing one renumbers the rest. `for_each` names them by key, so nothing else moves.',
-                """resource "azurerm_storage_container" "lake" {
-  for_each           = toset(var.containers)
-  name               = each.key
-  storage_account_id = azurerm_storage_account.lake.id
-}""",
+                'The longer of two lists',
+                '`len` counts the items in a list. `max` picks the bigger of two numbers.',
+                "max(len(['a', 'b']), len(['c']))   # 2",
             ],
             [
-                'moved blocks',
-                'Tell Terraform an existing object has a new address, so it updates state instead of destroying and recreating.',
-                """moved {
-  from = azurerm_storage_container.lake[1]
-  to   = azurerm_storage_container.lake["silver"]
-}""",
+                'Reading by position',
+                '`names[1]` is the item at position 1. A position equal to `len(names)` or more is past the end, so check first. `!=` means "is not equal to".',
+                """names = ['ana', 'bo']
+names[1]            # 'bo'
+names[1] != 'ana'   # True""",
+            ],
+            [
+                'if, elif, else',
+                'Python tries each test from the top and runs only the first one that is True. `else` runs when none of them were.',
+                """if 7 > 10: size = 'big'
+elif 7 > 5: size = 'medium'   # this runs
+else: size = 'small'""",
             ],
         ],
-        byhand='Old: bronze, silver, gold. New: silver, gold. Position 0 was bronze, now silver: replace. Position 1 was silver, now gold: replace. Position 2 had gold, now nothing: delete. Removing one container touched all three.',
+        byhand="Old: bronze, silver, gold. New: silver, gold. The longer list has 3 items, so check positions 0, 1 and 2. Position 0 was bronze, now silver: replace. Position 1 was silver, now gold: replace. Position 2 was gold, and new has nothing there: delete. Return [\"replace\", \"replace\", \"delete\"].",
         why='One pass up to the longer list.',
         gotchas=[
             [
@@ -1059,8 +985,9 @@ Given the `old` and `new` lists, return what the plan will do as a list of `[add
 lesson(MODULE, 'overlapping_subnets',
     title='Networking for Databricks',
     learn=[
-        "**VNet injection** puts a Databricks workspace's clusters in your own virtual network, using a **host** and a **container** subnet. They must not overlap each other or anything they connect to.",
-        "Each node uses an address in each subnet, and Azure reserves 5 per subnet, so size them for the clusters you'll need.",
+        "**VNet injection** puts a Databricks workspace's clusters in your own virtual network, using a **host** and a **container** subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.",
+        "A subnet's addresses are written as a **CIDR** block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.",
+        "Each node (one machine in a cluster) uses an address in each subnet, and Azure reserves 5 per subnet, so size them for the clusters you'll need.",
     ],
     example=example('CIDR as a range', """10.20.0.0/24 -> 256 addresses: 10.20.0.0 to 10.20.0.255
 10.20.0.0/22 -> 1024 addresses: 10.20.0.0 to 10.20.3.255"""),
@@ -1072,8 +999,8 @@ lesson(MODULE, 'overlapping_subnets',
     ),
     angle=angle(
         pattern='Interval overlap',
-        text='Turn each CIDR into a start number and an end number; two ranges overlap when each starts before the other ends. Checking every pair is fine for a handful of subnets. With many ranges, sort them by start and sweep once, like Merge Intervals.',
-        say='"I turn each CIDR into a numeric range. Sorted by start, an overlap is any range that starts before the previous one ends."',
+        text='Turn each CIDR into a start number and an end number; two ranges overlap when each starts at or before the other ends. Checking every pair is fine for a handful of subnets. With many ranges, sorting them by start first saves work, as in Merge Intervals.',
+        say='"I turn each CIDR into a first and last number, then compare every pair once. Two ranges overlap when each one starts at or before the other one ends. A VNet has only a handful of subnets, so that is quick."',
         classic='merge_intervals',
     ),
     exercise=exercise(
@@ -1081,97 +1008,124 @@ lesson(MODULE, 'overlapping_subnets',
         topic='networking',
         difficulty='medium',
         fn='overlapping_subnets',
-        prompt="""A VNet-injected Databricks workspace needs a host subnet and a container subnet, and they can't overlap each other or anything else in the VNet. `subnets` is a list of `[name, cidr]` pairs such as `["snet-dbw-host", "10.20.0.0/24"]`.
+        prompt="""`subnets` is a list of `[name, cidr]` pairs, one per subnet (a slice of the network's addresses), like `["snet-host", "10.20.0.0/24"]`. A CIDR is a block of network addresses: `10.20.0.0/24` runs from 10.20.0.0 to 10.20.0.255.
 
-Return every overlapping pair as `[first_name, second_name]`, with the earlier subnet first, in list order.
+Call the ready-made helper `to_range(cidr)` to get `[first, last]`: the block's first and last address, as plain numbers.
 
-A CIDR is an address plus a prefix length. `10.20.0.0/24` covers 2 to the power (32 - 24) = 256 addresses, starting at 10.20.0.0. To compare them, turn each address into one number: `a.b.c.d` is `a*256**3 + b*256**2 + c*256 + d`.""",
-        pattern='Turn each CIDR into a [start, end] range, then two ranges overlap when each starts before the other ends.',
+Two subnets overlap when each one's first address is at or below the other one's last address. Compare every subnet with each one after it in the list. Return every overlapping pair as `[earlier_name, later_name]`, in the order you find them.""",
+        pattern="Turn each CIDR into a [first, last] range. Two ranges overlap when each one's first is at or below the other one's last.",
         target='check each pair once (a VNet has only a handful of subnets)',
-        realworld="Azure rejects overlapping subnets, but often only at apply time, deep into a Spacelift run. The same check matters for VNet peering to a hub network, where overlap isn't caught until traffic fails.",
+        realworld="Azure rejects overlapping subnets, but often only at apply time, deep into a Spacelift run. The same check matters for VNet peering (connecting two virtual networks) to a hub network, where overlap isn't caught until traffic fails.",
         starter="""def overlapping_subnets(subnets):
     # your code here
     pass
-""",
-        solution="""def to_range(cidr):
-    ip, prefix = cidr.split("/")
-    a, b, c, d = [int(x) for x in ip.split(".")]
-    start = a * 256 ** 3 + b * 256 ** 2 + c * 256 + d
-    size = 2 ** (32 - int(prefix))
-    return start, start + size - 1
 
-def overlapping_subnets(subnets):
-    ranges = [(name, to_range(cidr)) for name, cidr in subnets]
-    out = []
-    for i in range(len(ranges)):
-        for j in range(i + 1, len(ranges)):
-            (n1, (s1, e1)), (n2, (s2, e2)) = ranges[i], ranges[j]
-            if s1 <= e2 and s2 <= e1:
-                out.append([n1, n2])
-    return out
+
+def to_range(cidr):
+    # Ready-made helper: call to_range(cidr) in your
+    # code. You don't need to read it or change it.
+    address, size = cidr.split("/")
+    a, b, c, d = [int(part) for part in address.split(".")]
+    first = a * 256 ** 3 + b * 256 ** 2 + c * 256 + d
+    count = 2 ** (32 - int(size))
+    return [first, first + count - 1]
+""",
+        solution="""def overlapping_subnets(subnets):
+    pairs = []
+    for i in range(len(subnets)):
+        for j in range(i + 1, len(subnets)):
+            name1, cidr1 = subnets[i]
+            name2, cidr2 = subnets[j]
+            first1, last1 = to_range(cidr1)
+            first2, last2 = to_range(cidr2)
+            if first1 <= last2 and first2 <= last1:
+                pairs.append([name1, name2])
+    return pairs
+
+
+def to_range(cidr):
+    address, size = cidr.split("/")
+    a, b, c, d = [int(part) for part in address.split(".")]
+    first = a * 256 ** 3 + b * 256 ** 2 + c * 256 + d
+    count = 2 ** (32 - int(size))
+    return [first, first + count - 1]
 """,
         cases=[
             case([
-                ['snet-dbw-host', '10.20.0.0/22'],
-                ['snet-dbw-container', '10.20.2.0/24'],
-                ['snet-privatelink', '10.20.8.0/26'],
-            ], expected=[['snet-dbw-host', 'snet-dbw-container']], sample=True),
+                ['snet-host', '10.20.0.0/22'],
+                ['snet-container', '10.20.2.0/24'],
+                ['snet-link', '10.20.8.0/26'],
+            ], expected=[['snet-host', 'snet-container']], sample=True),
             case([['snet-dbw-host', '10.20.1.0/24'], ['snet-dbw-container', '10.20.2.0/24']], expected=[]),
             case([], expected=[]),
             case([['a', '10.0.0.0/16'], ['b', '10.0.255.0/24'], ['c', '10.1.0.0/24']], expected=[['a', 'b']]),
             case([['host', '10.30.0.0/26'], ['container', '10.30.0.64/26'], ['pe', '10.30.0.0/27']], expected=[['host', 'pe']]),
             case([['x', '192.168.1.0/24'], ['y', '192.168.1.0/24']], expected=[['x', 'y']]),
+            case([['a', '10.0.0.0/16'], ['b', '10.0.1.0/24'], ['c', '10.0.2.0/24']], expected=[['a', 'b'], ['a', 'c']]),
         ],
-        guided="""def to_range(cidr):
-    # Turn "10.20.0.0/24" into (first_address, last_address) as numbers.
-    ip, prefix = cidr.split("/")
-    a, b, c, d = [int(x) for x in ip.split(".")]
-    start = a * 256 ** 3 + b * 256 ** 2 + c * 256 + d
-    # Step 1: how many addresses does this prefix cover?
-    size = ___
-    return start, start + size - 1
-
-
-def overlapping_subnets(subnets):
+        guided="""def overlapping_subnets(subnets):
     # Replace every ___ with real code, then run the tests.
-    ranges = [(name, to_range(cidr)) for name, cidr in subnets]
-    out = []
-    # Step 2: every pair once: j always comes after i.
-    for i in range(len(ranges)):
-        for j in range(___, len(ranges)):
-            (n1, (s1, e1)), (n2, (s2, e2)) = ranges[i], ranges[j]
-            # Step 3: they overlap when each starts before the other ends.
+
+    pairs = []
+    for i in range(len(subnets)):
+        # Step 1: every pair once, so j starts just after i.
+        for j in range(___, len(subnets)):
+            name1, cidr1 = subnets[i]
+            name2, cidr2 = subnets[j]
+            first1, last1 = to_range(cidr1)
+            first2, last2 = to_range(cidr2)
+            # Step 2: overlap when each one's first is at
+            # or below the other one's last (use <= twice).
             if ___:
-                out.append([n1, n2])
-    return out
+                pairs.append([name1, name2])
+
+    return pairs
+
+
+def to_range(cidr):
+    # Ready-made helper, used above. You don't
+    # need to read it or change it.
+    address, size = cidr.split("/")
+    a, b, c, d = [int(part) for part in address.split(".")]
+    first = a * 256 ** 3 + b * 256 ** 2 + c * 256 + d
+    count = 2 ** (32 - int(size))
+    return [first, first + count - 1]
 """,
+        fills=['i + 1', 'first1 <= last2 and first2 <= last1'],
         concepts=[
             [
-                'CIDR notation',
-                '`10.20.0.0/24`: the first 24 bits are fixed, the last 8 vary, giving 2**8 = 256 addresses. A smaller number after the slash means a bigger range.',
-                """# /24 -> 256 addresses
-# /26 -> 64 addresses
+                'Every pair once',
+                '`range(start, stop)` counts from start up to just before stop. Start the inner loop at `i + 1`. Then you never compare an item with itself, and never check the same pair twice.',
+                """for i in range(3):
+    for j in range(i + 1, 3):
+        print(i, j)   # 0 1, 0 2, 1 2""",
+            ],
+            [
+                'Two names from a pair',
+                'A two-item list can be unpacked into two names at once.',
+                """name, age = ['ana', 30]
+name   # 'ana'""",
+            ],
+            [
+                'Do two ranges overlap?',
+                "Two ranges share a number when each one's start is at or below the other one's end.",
+                """# 3 to 7 and 5 to 9 share 5, 6 and 7:
+3 <= 9 and 5 <= 7   # True""",
+            ],
+            [
+                'CIDR sizes',
+                'The number after the slash sets the size of the block. A smaller number means a bigger block.',
+                """# /26 -> 64 addresses
+# /24 -> 256 addresses
 # /22 -> 1024 addresses""",
             ],
-            [
-                'Unpacking a list',
-                'Assign several names at once from a list of the right length.',
-                'a, b, c, d = [10, 20, 0, 0]',
-            ],
-            [
-                'Every pair once',
-                'Start the inner loop at i + 1 so you never compare a subnet with itself or check a pair twice.',
-                """for i in range(n):
-    for j in range(i + 1, n):
-        ...""",
-            ],
         ],
-        byhand='10.20.0.0/22 covers 10.20.0.0 to 10.20.3.255. 10.20.2.0/24 is 10.20.2.0 to 10.20.2.255, which sits inside it: overlap. 10.20.8.0/26 starts well after both: fine.',
-        why='Each pair is compared once, which is fine for the handful of subnets a VNet has. With many ranges, sorting by start first lets you check each one only against its neighbour, like Merge Intervals.',
+        byhand="to_range gives these blocks, shown here as addresses so they're easy to read. snet-host is 10.20.0.0 to 10.20.3.255 (a /22 is 1024 addresses). snet-container is 10.20.2.0 to 10.20.2.255. snet-link is 10.20.8.0 to 10.20.8.63. Host and container: host starts at 10.20.0.0, which is at or below container's last, 10.20.2.255. Container starts at 10.20.2.0, which is at or below host's last, 10.20.3.255. Both are true, so they overlap. Host and link: link's first address is above host's last address, so no. Container and link: no, for the same reason. Return [[\"snet-host\", \"snet-container\"]].",
+        why='Each pair is compared once, which is quick for the handful of subnets a VNet has.',
         gotchas=[
             [
                 'Both subnets need the Databricks delegation',
-                'VNet injection requires each subnet to be delegated to `Microsoft.Databricks/workspaces` and associated with a network security group. A missing delegation fails at apply, not plan.',
+                'VNet injection requires each subnet to be delegated to `Microsoft.Databricks/workspaces` and associated with a network security group (Azure\'s firewall rules for a subnet). A missing delegation fails at apply, not plan.',
             ],
             [
                 "Size for the cluster you'll need",
@@ -1184,10 +1138,10 @@ def overlapping_subnets(subnets):
 lesson(MODULE, 'apply_order',
     title='Dependencies and stacks',
     learn=[
-        'Terraform builds a **dependency graph** from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.',
-        "A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks, with a **stack dependency** between them.",
+        'Terraform builds a **dependency graph** (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.',
+        "A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift **stacks** (a stack is one set of Terraform code with its own state, planned and applied on its own), with a **stack dependency** between them.",
     ],
-    example=example('An implicit dependency', """resource "databricks_metastore_assignment" "this" {
+    example=example('A dependency Terraform finds on its own, because one resource refers to another', """resource "databricks_metastore_assignment" "this" {
   workspace_id = azurerm_databricks_workspace.this.workspace_id
   metastore_id = var.metastore_id
 }"""),
@@ -1203,61 +1157,57 @@ lesson(MODULE, 'apply_order',
     ),
     angle=angle(
         pattern='Topological sort',
-        text='Count how many things each resource is still waiting for, start with the ones waiting for nothing, and each time one finishes, tell the ones waiting on it. This is called a topological sort. Number of Islands uses the same build-the-graph-then-walk-it thinking.',
-        say='"I count what each resource is waiting for and keep a list of the ready ones. If some never become ready, there\'s a cycle."',
-        classic='num_islands',
+        text='Keep adding a resource whose dependencies are all already in the list, until none are left. This is called a topological sort. If you get stuck with resources left over, they depend on each other in a loop.',
+        say='"I keep adding a resource whose dependencies are all already in the list. If some are left but none of them is ready, there\'s a cycle."',
+        classic=None,
     ),
     exercise=exercise(
         title='Work Out the Apply Order',
         topic='dependencies',
         difficulty='medium',
         fn='apply_order',
-        prompt="""Terraform builds a dependency graph from the references between resources. `deps` maps each resource address to the list of addresses it depends on, which must exist first.
+        prompt="""`deps` says what each resource needs first. It's a dict. Each key is a resource name and its value is the list of names it depends on, like `{"vnet": ["rg"], "rg": []}`.
 
-Return one valid creation order. When several resources are ready at the same time, take them in alphabetical order, so there's exactly one right answer. If the dependencies form a loop, return `None`, which is when Terraform stops with `Error: Cycle`.""",
-        pattern='Topological sort: count what each resource is still waiting for, start with the ones waiting for nothing, and each time one is done, tell the resources that were waiting on it.',
-        target='each resource and each dependency handled once',
+Build an order Terraform could create them in. Start with an empty list, then repeat:
+
+- Find the resources not in your list yet whose dependencies are all in it.
+- Add the one that comes first alphabetically.
+
+When every resource is in the list, return it. If you get stuck, with resources left but none of them ready, they depend on each other in a loop. Then return `None`, like Terraform's `Error: Cycle`.""",
+        pattern='Topological sort: keep adding the first resource whose dependencies are all in the list. If none is ready but some are left, there is a loop.',
+        target='one look over the names for each resource you add',
         realworld="Why a Databricks provider pointed at `azurerm_databricks_workspace.this.workspace_url` can't plan the first time in the same stack, why `depends_on` exists, and how Spacelift stack dependencies order a workspace stack before the Unity Catalog stack that configures it.",
         starter="""def apply_order(deps):
     # your code here
     pass
 """,
         solution="""def apply_order(deps):
-    waiting = {r: len(d) for r, d in deps.items()}
-    needed_by = {r: [] for r in deps}
-    for r, d in deps.items():
-        for x in d:
-            needed_by[x].append(r)
-    ready = sorted(r for r in deps if waiting[r] == 0)
     order = []
-    while ready:
-        r = ready.pop(0)
-        order.append(r)
-        for nxt in needed_by[r]:
-            waiting[nxt] -= 1
-            if waiting[nxt] == 0:
-                ready.append(nxt)
-        ready.sort()
-    if len(order) < len(deps):
-        return None
+    while len(order) < len(deps):
+        picked = None
+        for name in sorted(deps):
+            if name in order:
+                continue
+            waiting = 0
+            for dep in deps[name]:
+                if dep not in order:
+                    waiting += 1
+            if waiting == 0:
+                picked = name
+                break
+        if picked is None:
+            return None
+        order.append(picked)
     return order
 """,
         cases=[
             case({
-                'azurerm_resource_group.this': [],
-                'azurerm_virtual_network.this': ['azurerm_resource_group.this'],
-                'azurerm_subnet.host': ['azurerm_virtual_network.this'],
-                'azurerm_subnet.container': ['azurerm_virtual_network.this'],
-                'azurerm_databricks_workspace.this': ['azurerm_subnet.container', 'azurerm_subnet.host'],
-                'databricks_metastore_assignment.this': ['azurerm_databricks_workspace.this'],
-            }, expected=[
-                'azurerm_resource_group.this',
-                'azurerm_virtual_network.this',
-                'azurerm_subnet.container',
-                'azurerm_subnet.host',
-                'azurerm_databricks_workspace.this',
-                'databricks_metastore_assignment.this',
-            ], sample=True),
+                'workspace': ['container', 'host'],
+                'host': ['vnet'],
+                'container': ['vnet'],
+                'vnet': ['rg'],
+                'rg': [],
+            }, expected=['rg', 'vnet', 'container', 'host', 'workspace'], sample=True),
             case({}, expected=[]),
             case({
                 'databricks_catalog.sales': ['databricks_external_location.sales'],
@@ -1277,60 +1227,92 @@ Return one valid creation order. When several resources are ready at the same ti
                 'databricks_schema.raw': ['databricks_catalog.sales'],
             }, expected=['databricks_catalog.sales', 'databricks_grants.sales', 'databricks_schema.raw']),
             case({'x': [], 'y': ['x', 'z'], 'z': ['y']}, expected=None),
+            case({
+                'azurerm_resource_group.this': [],
+                'azurerm_virtual_network.this': ['azurerm_resource_group.this'],
+                'azurerm_subnet.host': ['azurerm_virtual_network.this'],
+                'azurerm_subnet.container': ['azurerm_virtual_network.this'],
+                'azurerm_databricks_workspace.this': ['azurerm_subnet.container', 'azurerm_subnet.host'],
+                'databricks_metastore_assignment.this': ['azurerm_databricks_workspace.this'],
+            }, expected=[
+                'azurerm_resource_group.this',
+                'azurerm_virtual_network.this',
+                'azurerm_subnet.container',
+                'azurerm_subnet.host',
+                'azurerm_databricks_workspace.this',
+                'databricks_metastore_assignment.this',
+            ]),
         ],
         guided="""def apply_order(deps):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: how many things each resource is still waiting for.
-    waiting = {r: len(d) for r, d in deps.items()}
-
-    # Step 2: the reverse direction: who is waiting on r?
-    needed_by = {r: [] for r in deps}
-    for r, d in deps.items():
-        for x in d:
-            needed_by[x].append(r)
-
-    # Step 3: start with everything waiting for nothing, alphabetically.
-    ready = sorted(r for r in deps if ___)
     order = []
-    while ready:
-        r = ready.pop(0)
-        order.append(r)
-        # Step 4: r is done, so everyone waiting on r waits for one less.
-        for nxt in needed_by[r]:
-            waiting[nxt] -= 1
+    while len(order) < len(deps):
+        picked = None
+        # Go through the names alphabetically. Skip any
+        # that are already in the order list.
+        for name in sorted(deps):
+            if name in order:
+                continue
+            # Step 1: count its deps not in the order list yet.
+            waiting = 0
+            for dep in deps[name]:
+                if ___:
+                    waiting += 1
+            # Step 2: is waiting 0? (use ==, not =)
+            # If so, pick it and stop looking.
             if ___:
-                ready.append(nxt)
-        ready.sort()
+                picked = name
+                break
+        # Step 3: if nothing was picked, it's a loop.
+        if ___:
+            return None
+        order.append(picked)
 
-    # Step 5: anything never reached is stuck in a loop.
-    if ___:
-        return None
     return order
 """,
+        fills=['dep not in order', 'waiting == 0', 'picked is None'],
         concepts=[
             [
-                'Implicit dependencies',
-                "Referencing another resource's attribute creates a dependency automatically. `depends_on` is only for dependencies Terraform can't see.",
-                """resource "databricks_metastore_assignment" "this" {
-  workspace_id = azurerm_databricks_workspace.this.workspace_id
-  metastore_id = var.metastore_id
-}""",
+                'while',
+                'Repeats its block for as long as the test is True.',
+                """n = 0
+while n < 3:
+    n += 1   # runs 3 times""",
             ],
             [
-                'pop(0)',
-                'Removes and returns the first item of a list.',
-                """ready = ['a', 'b']
-ready.pop(0)   # 'a'; ready is now ['b']""",
+                'sorted on a dict',
+                '`sorted(a_dict)` gives the keys in alphabetical order.',
+                "sorted({'b': 1, 'a': 2})   # ['a', 'b']",
             ],
             [
-                'Counting down',
-                'Keep a number per item and subtract as things finish; zero means ready.',
-                "waiting['vnet'] -= 1",
+                'in and not in on a list',
+                '`x in a_list` is True when x is in the list. `x not in a_list` is the opposite.',
+                """'tea' in ['tea', 'milk']       # True
+'cake' not in ['tea', 'milk']  # True""",
+            ],
+            [
+                'continue and break',
+                '`continue` skips to the next item. `break` stops the loop straight away, skipping the items left.',
+                """for word in ['a', 'skip', 'stop', 'b']:
+    if word == 'skip': continue
+    if word == 'stop': break""",
+            ],
+            [
+                '== is not =',
+                'A single `=` stores a value. `==` asks "are these equal?" and gives True or False.',
+                """n = 0    # n now holds 0
+n == 0   # True""",
+            ],
+            [
+                'None',
+                "Python's value for \"nothing\". Test for it with `is None`.",
+                """found = None
+found is None   # True""",
             ],
         ],
-        byhand='Only the resource group waits for nothing, so it goes first. That frees the VNet. The VNet frees both subnets; take container before host alphabetically. Once both are done, the workspace is free, then the metastore assignment.',
-        why='Each resource is added to the order once, and each dependency is counted down once.',
+        byhand="rg is the resource group and vnet is the virtual network. Only rg depends on nothing, so add rg. Now vnet's only dependency, rg, is in the list: add vnet. Now container and host are both ready, and container comes first alphabetically: add it, then host. Now workspace has both its dependencies in the list: add it. Every resource is in, so return [\"rg\", \"vnet\", \"container\", \"host\", \"workspace\"].",
+        why='Each round looks over the names once and adds one resource, which is quick for the few dozen resources in a stack.',
         gotchas=[
             [
                 "Provider configured from a resource that doesn't exist yet",
@@ -1347,10 +1329,10 @@ ready.pop(0)   # 'a'; ready is now ['b']""",
 lesson(MODULE, 'plan_policy',
     title='Policy as code',
     learn=[
-        "Review rules that live in people's heads get skipped on busy days. **Policy as code** runs them on every plan: Spacelift plan policies, OPA/Rego, and `terraform test`.",
-        'Start with the rules that prevent real incidents: never destroy stateful resources, never open workspaces or storage to the public internet.',
+        "Review rules that live in people's heads get skipped on busy days. **Policy as code** runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.",
+        'Start with the rules that prevent real incidents: never destroy resources that hold data you can\'t recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.',
     ],
-    example=example('Two rules', 'rule 1: protected type + delete            → "... would be destroyed"\nrule 2: create/update + public access on   → "... allows public network access"'),
+    example=example('Two rules', 'rule 1: protected type + delete  → "... would be destroyed"\nrule 2: public access on         → "... allows public network access"'),
     check=question(
         'Why roll out a new policy as a warning first?',
         ["It's faster", 'To see what it would block before it blocks anyone', 'Warnings are free'],
@@ -1377,96 +1359,135 @@ run "workspace_is_private" {
         topic='platform',
         difficulty='medium',
         fn='plan_policy',
-        prompt="""Write a plan check like a Spacelift plan policy, with two rules. For each resource change in `plan["resource_changes"]`:
+        prompt="""Your function gets two things:
 
-1. If its type is in `protected` and its actions include `"delete"`: `"<address> would be destroyed"`.
-2. If its actions include `"create"` or `"update"` and `change.after` has `public_network_access_enabled` set to `True`: `"<address> allows public network access"`.
+- `changes`: the resource changes in a plan. Each one is a dict like `{"address": "azurerm_subnet.host", "type": "azurerm_subnet", "actions": ["update"], "public_access": False}`. `public_access` is `True` when the resource will be open to the public internet after this run.
+- `protected`: the resource types that must never be destroyed, like `["azurerm_storage_account"]`.
 
-Return all the messages, in plan order (rule 1 before rule 2 for the same resource).""",
-        pattern='One pass, several independent rules, each adding its own message.',
-        target='one walk through the plan',
+Check each change, in order, against two rules:
+
+- Rule 1: its `type` is in `protected` and its `actions` include `"delete"`. Add its address followed by `" would be destroyed"`.
+- Rule 2: its `public_access` is `True`. Add its address followed by `" allows public network access"`.
+
+A change can break both rules: then add both messages, rule 1 first. Return all the messages.""",
+        pattern='One pass, two independent rules, each adding its own message.',
+        target='one walk through the changes',
         realworld="Spacelift plan policies (Rego) and `terraform test` with `mock_provider` turn reviewers' rules into checks that run on every PR. Workspaces and storage accounts with public network access enabled are a common finding in security reviews of Azure Databricks setups.",
-        starter="""def plan_policy(plan, protected):
+        starter="""def plan_policy(changes, protected):
     # your code here
     pass
 """,
-        solution="""def plan_policy(plan, protected):
-    out = []
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
-        if rc["type"] in protected and "delete" in actions:
-            out.append(rc["address"] + " would be destroyed")
-        after = rc["change"].get("after") or {}
-        if ("create" in actions or "update" in actions) and after.get("public_network_access_enabled") is True:
-            out.append(rc["address"] + " allows public network access")
-    return out
+        solution="""def plan_policy(changes, protected):
+    messages = []
+    for item in changes:
+        address = item["address"]
+        if item["type"] in protected and "delete" in item["actions"]:
+            messages.append(address + " would be destroyed")
+        if item["public_access"]:
+            messages.append(address + " allows public network access")
+    return messages
 """,
         cases=[
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'azurerm_databricks_workspace.this',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['update'], 'after': {'public_network_access_enabled': True}},
-                    },
-                    {
-                        'address': 'azurerm_storage_account.lake',
-                        'type': 'azurerm_storage_account',
-                        'change': {'actions': ['delete'], 'after': None},
-                    },
-                ],
-            }, ['azurerm_storage_account'], expected=[
+            case([
+                {
+                    'address': 'azurerm_databricks_workspace.this',
+                    'type': 'azurerm_databricks_workspace',
+                    'actions': ['update'],
+                    'public_access': True,
+                },
+                {
+                    'address': 'azurerm_storage_account.lake',
+                    'type': 'azurerm_storage_account',
+                    'actions': ['delete'],
+                    'public_access': False,
+                },
+            ], ['azurerm_storage_account'], expected=[
                 'azurerm_databricks_workspace.this allows public network access',
                 'azurerm_storage_account.lake would be destroyed',
             ], sample=True),
-            case({}, ['x'], expected=[]),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 'w',
-                        'type': 'azurerm_databricks_workspace',
-                        'change': {'actions': ['delete', 'create'], 'after': {'public_network_access_enabled': True}},
-                    },
-                ],
-            }, ['azurerm_databricks_workspace'], expected=['w would be destroyed', 'w allows public network access']),
-            case({
-                'resource_changes': [
-                    {
-                        'address': 's',
-                        'type': 'azurerm_storage_account',
-                        'change': {'actions': ['no-op'], 'after': {'public_network_access_enabled': True}},
-                    },
-                ],
-            }, [], expected=[]),
+            case([], ['azurerm_storage_account'], expected=[]),
+            case([
+                {
+                    'address': 'azurerm_databricks_workspace.this',
+                    'type': 'azurerm_databricks_workspace',
+                    'actions': ['delete', 'create'],
+                    'public_access': True,
+                },
+            ], ['azurerm_databricks_workspace'], expected=[
+                'azurerm_databricks_workspace.this would be destroyed',
+                'azurerm_databricks_workspace.this allows public network access',
+            ]),
+            case([
+                {
+                    'address': 'azurerm_storage_account.lake',
+                    'type': 'azurerm_storage_account',
+                    'actions': ['update'],
+                    'public_access': False,
+                },
+            ], ['azurerm_storage_account'], expected=[]),
+            case([
+                {
+                    'address': 'databricks_cluster.shared',
+                    'type': 'databricks_cluster',
+                    'actions': ['delete'],
+                    'public_access': False,
+                },
+                {
+                    'address': 'azurerm_storage_account.new',
+                    'type': 'azurerm_storage_account',
+                    'actions': ['create'],
+                    'public_access': True,
+                },
+            ], ['azurerm_storage_account'], expected=['azurerm_storage_account.new allows public network access']),
         ],
-        guided="""def plan_policy(plan, protected):
+        guided="""def plan_policy(changes, protected):
     # Replace every ___ with real code, then run the tests.
 
-    out = []
-    for rc in plan.get("resource_changes", []):
-        actions = rc["change"]["actions"]
-        # Rule 1: protected and being destroyed.
-        if rc["type"] in protected and ___:
-            out.append(rc["address"] + " would be destroyed")
-        # Rule 2: created or updated with public access on.
-        after = rc["change"].get("after") or {}
-        if ("create" in actions or "update" in actions) and ___ is True:
-            out.append(rc["address"] + " allows public network access")
-    return out
+    messages = []
+    for item in changes:
+        address = item["address"]
+
+        # Step 1 (rule 1): protected, and "delete" is in
+        # this item's actions.
+        if item["type"] in protected and ___:
+            messages.append(address + " would be destroyed")
+
+        # Step 2 (rule 2): its public_access is True. Use a
+        # new if, not elif, so one item can break both rules.
+        if ___:
+            messages.append(address + " allows public network access")
+
+    return messages
 """,
-        fills=['"delete" in actions', 'after.get("public_network_access_enabled")'],
+        fills=['"delete" in item["actions"]', 'item["public_access"]'],
         concepts=[
             [
-                'Independent rules',
-                'Separate ifs (not elif) so one resource can break several rules.',
-                """if rule_one:
-    ...
-if rule_two:
-    ...""",
+                'in on a list',
+                '`x in a_list` is True when x is anywhere in the list.',
+                """'tea' in ['coffee', 'tea']    # True
+'milk' in ['coffee', 'tea']   # False""",
+            ],
+            [
+                'Separate ifs for separate rules',
+                'Python checks every `if` on its own. With `elif`, it would stop at the first rule that matched.',
+                """drinks = ['tea', 'milk']
+if 'tea' in drinks: print('tea')
+if 'milk' in drinks: print('milk')   # prints both""",
+            ],
+            [
+                'A True/False field',
+                '`if task["done"]:` runs its block when that field is True.',
+                """task = {'done': True}
+if task['done']: print('finished')""",
+            ],
+            [
+                'Joining strings with +',
+                '`+` joins two strings into one.',
+                "'ana' + ' is here'   # 'ana is here'",
             ],
         ],
-        byhand='The workspace is updated with public access on: rule 2. The storage account is protected and deleted: rule 1. Two messages, in plan order.',
-        why='One walk through the plan.',
+        byhand='Change 1 is the workspace. Its type isn\'t protected, so rule 1 doesn\'t apply. Its public_access is True, so rule 2 adds "azurerm_databricks_workspace.this allows public network access". Change 2 is the storage account. It\'s protected and its actions include delete, so rule 1 adds "azurerm_storage_account.lake would be destroyed". Its public_access is False: no rule 2. Return both messages, in that order.',
+        why='One walk through the changes.',
         gotchas=[
             [
                 'Warn first, then deny',

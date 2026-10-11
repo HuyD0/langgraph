@@ -7,8 +7,8 @@ MODULE = module('models', 'Choosing a model', 'Quality, cost and latency, and wh
 lesson(MODULE, 'percentile',
     title='Latency that users feel',
     learn=[
-        'Averages hide slow requests. **p95** is the time 95 out of 100 requests beat; p99 is for 99 out of 100.',
-        "Measure the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you, and compare models and configs on p95.",
+        '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.',
+        "Measure the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
     ],
     example=example('Finding slow traces in MLflow', """slow = mlflow.search_traces(
     filter_string="attributes.execution_time_ms > 5000",
@@ -22,74 +22,100 @@ lesson(MODULE, 'percentile',
     ),
     angle=angle(
         pattern='Sort, then pick by position',
-        text='Sort once (the slowest part), then index. The common bug is mixing up counting from 1 and indexing from 0.',
-        say='"I sort, compute the rank by rounding up, and subtract one to get the index."',
+        text='Sort the list once (that is the most work), then pick the item at the right position. The common bug is mixing up counting from 1 and indexes that start at 0.',
+        say='"I sort, work out the position by rounding up, and subtract one to get the index."',
         classic=None,
     ),
-    stack=stack('MLflow: find slow traces', """slow = mlflow.search_traces(
-    filter_string="attributes.execution_time_ms > 5000", max_results=100,
-)"""),
+    stack=stack('MLflow: p95 of your real traces', """traces = mlflow.search_traces(max_results=1000)
+# each trace's total time, in milliseconds
+durations = list(traces["execution_duration"])
+p95 = percentile(durations, 95)   # the function you write here"""),
     exercise=exercise(
         title='The Latency Users Feel',
         topic='models',
         difficulty='easy',
         fn='percentile',
-        prompt="""The average response time hides the slow requests users complain about, so teams track a **percentile**: p95 is the time that 95 out of 100 requests beat.
+        prompt="""Teams track a **percentile** of response times, not the average. p95, the 95th percentile, is the time that 95 out of 100 requests finish within.
 
-Given a list of `latencies` in milliseconds and `pct` (like 95), sort them and return the item at position `pct` percent of the way through, rounding the position up, counting from 1. In code: position = `(pct * n + 99) // 100`, and the answer is the item at index position − 1. An empty list gives `None`.""",
+Your function gets two things:
+
+- `latencies`: response times in milliseconds, like `[820, 640, 4100]`.
+- `percent`: which percentile you want, like `95` for p95.
+
+Sort the latencies, fastest first. Multiply the list's length by `percent`, divide by 100, and round up to a whole number. That is the position of your answer, counting from 1. For example, 5 items at 50 percent is 5 times 50 divided by 100, which is 2.5, so round up to position 3. Return the latency at that position.
+
+If `latencies` is empty, return `None`.""",
         pattern='Sort, then pick by position.',
-        target='sort once',
+        target='sort the list once, then pick one item',
         realworld='A model with a 900 ms average can still have a 4-second p95, which is what users notice. Compare models and configs on p95 latency, not the average.',
-        starter="""def percentile(latencies, pct):
+        starter="""def percentile(latencies, percent):
     # your code here
     pass
 """,
-        solution="""def percentile(latencies, pct):
+        solution="""def percentile(latencies, percent):
     if not latencies:
         return None
     ordered = sorted(latencies)
-    position = (pct * len(ordered) + 99) // 100
-    return ordered[max(position, 1) - 1]
+    position = (percent * len(ordered) + 99) // 100
+    return ordered[position - 1]
 """,
         cases=[
-            case([820, 640, 4100, 700, 910, 760, 690, 3900, 720, 800], 90, expected=3900, sample=True),
+            case([820, 3900, 640, 4100, 700], 80, expected=3900, sample=True),
+            case([820, 640, 4100, 700, 910, 760, 690, 3900, 720, 800], 90, expected=3900),
             case([], 95, expected=None),
             case([500], 99, expected=500),
             case([5, 1, 3, 2, 4], 50, expected=3),
             case([10, 20, 30, 40], 100, expected=40),
             case([7, 8, 9], 1, expected=7),
         ],
-        guided="""def percentile(latencies, pct):
+        guided="""def percentile(latencies, percent):
     # Replace every ___ with real code, then run the tests.
 
     if not latencies:
         return None
-    # Step 1: sorted() gives a new list, smallest first.
+    # Step 1: sort the latencies, fastest first.
     ordered = ___
-    # Step 2: the position, rounded up, counting from 1.
-    position = (pct * len(ordered) + 99) // 100
-    # Step 3: positions count from 1 but indexes from 0.
+    # Step 2: the position, rounded up (done for you).
+    position = (percent * len(ordered) + 99) // 100
+    # Step 3: return the item at that position.
+    # Indexes start at 0, so take 1 off position.
     return ordered[___]
 """,
-        fills=['sorted(latencies)', 'max(position, 1) - 1'],
+        fills=['sorted(latencies)', 'position - 1'],
         concepts=[
             [
                 'sorted',
-                'Returns a new sorted list and leaves the original alone.',
+                'Gives back a new list, smallest first, and leaves the original alone.',
                 'sorted([3, 1, 2])   # [1, 2, 3]',
             ],
             [
+                'Indexes start at 0',
+                'The first item of a list is at index 0, the second at index 1, and so on.',
+                """letters = ['a', 'b', 'c']
+letters[0]   # 'a'
+letters[2]   # 'c'""",
+            ],
+            [
                 'Rounding up with //',
-                '`(a + 99) // 100` divides by 100 and rounds up, without decimals.',
-                '(901 + 99) // 100   # 10',
+                '`//` divides and drops anything after the decimal point. Adding 99 before dividing by 100 makes it round up instead.',
+                """250 // 100          # 2
+(250 + 99) // 100   # 3
+(400 + 99) // 100   # 4""",
+            ],
+            [
+                'if not',
+                '`not items` is True when the list is empty, so the code under `if not items:` runs only for an empty list.',
+                """items = []
+if not items:
+    print('nothing here')""",
             ],
         ],
-        byhand='Ten latencies, p90. Sorted: 640, 690, 700, 720, 760, 800, 820, 910, 3900, 4100. 90% of 10 is position 9: 3900 ms. The average is about 1,400 ms, which hides two very slow requests.',
-        why='Sorting is the slowest part.',
+        byhand='Sorted, fastest first: 640, 700, 820, 3900, 4100. 5 times 80 divided by 100 is exactly 4, so there is nothing to round up. (If it came to 3.5, you would round up to position 4.) The answer is at position 4. Position 4 is index 3, because indexes start at 0. That latency is 3900. Check: 4 of the 5 requests take 3900 ms or less, which is 80 percent. So return 3900.',
+        why='Sorting the list is the most work. Picking one item after that is quick.',
         gotchas=[
             [
                 'Average lies about latency',
-                'One 30-second timeout and 99 fast requests average 400 ms. The p99 tells you about the timeout.',
+                'Out of 100 requests, 98 take 100 ms and 2 time out at 30 seconds. The average is about 700 ms, but the p99 is 30 seconds.',
             ],
             [
                 'Measure where the user is',
@@ -103,7 +129,7 @@ lesson(MODULE, 'pareto_models',
     title='Comparing LLMs for a task',
     learn=[
         'To choose a model for a task, run each candidate on the **same eval set**, with the **same judge**, and record **quality, cost and p95 latency** as one MLflow run per model.',
-        "Throw out any model that loses on all three to another. What's left is a short list of real trade-offs, decided by what quality is worth to you.",
+        "Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the **Pareto front**.",
     ],
     example=example('One run per model, same eval set', """from mlflow.genai.scorers import Correctness
 
@@ -119,46 +145,63 @@ for model in ["fast-model", "smart-model"]:
         why='A model beaten on every measure is never the right choice.',
     ),
     angle=angle(
-        pattern='Pairwise domination',
+        pattern='Compare every pair',
         text='Compare every pair and keep the models nothing beats. Fine for a handful of models.',
-        say='"A model is out if another is at least as good on quality, cost and latency and strictly better on one; what\'s left is the Pareto front."',
+        say='"A model is out if another is at least as good on quality, cost and latency and better on one. What\'s left, the models nothing beats, is called the Pareto front."',
         classic=None,
     ),
-    stack=stack('MLflow: one run per candidate endpoint', """for endpoint in candidates:   # Foundation Model API endpoints in your workspace
+    stack=stack('MLflow: one run per candidate endpoint', """# candidates: names of the models you can call in Databricks.
+# Each one is a serving endpoint: a web address your code sends questions to.
+for endpoint in candidates:
     with mlflow.start_run(run_name=endpoint):
         mlflow.log_param("endpoint", endpoint)
         mlflow.genai.evaluate(data=eval_set, predict_fn=make_app(endpoint), scorers=[Correctness()])"""),
     exercise=exercise(
-        title='Compare Models Fairly',
+        title='Keep the Models Nothing Beats',
         topic='models',
         difficulty='medium',
         fn='pareto_models',
-        prompt="""You evaluated several models on the same task. Each row of `models` is `{"name": "fast-model", "quality": 0.78, "cost": 0.4, "p95_ms": 900}`. Higher quality is better; lower cost and latency are better.
+        prompt="""You tested some models on the same task. `models` is a list of dicts, one per model, like `{"name": "fast-model", "quality": 0.78, "cost": 0.4, "p95_ms": 900}`.
 
-A model is **beaten** if some other model is at least as good on all three and strictly better on at least one. Return the names of the models that are not beaten, in their original order. These are the only ones worth choosing between.""",
-        pattern='Compare every pair: a candidate survives only if nothing dominates it.',
-        target='compare every pair (there are only a handful of models)',
+- `quality`: the eval score. Higher is better.
+- `cost`: dollars per 1,000 calls. Lower is better.
+- `p95_ms`: the p95 latency in milliseconds. Lower is better.
+
+Model A **beats** model B when A is at least as good on all three, and better on at least one. So two models with the same numbers do not beat each other.
+
+Return the names of the models that no other model beats, in their original order. These are called the Pareto front, which is where the name `pareto_models` comes from.""",
+        pattern='Compare every pair: keep a model only if no other model beats it.',
+        target='compare each model with every other one (fine for a handful)',
         realworld='There is rarely one best model. A small model can be the right choice for a high-volume, simple task, and a large one for rare, hard questions. Throwing out models that lose on every measure leaves a short list to decide between on value.',
         starter="""def pareto_models(models):
     # your code here
     pass
 """,
         solution="""def beats(a, b):
-    no_worse = a["quality"] >= b["quality"] and a["cost"] <= b["cost"] and a["p95_ms"] <= b["p95_ms"]
-    better = a["quality"] > b["quality"] or a["cost"] < b["cost"] or a["p95_ms"] < b["p95_ms"]
+    no_worse = (a["quality"] >= b["quality"]
+                and a["cost"] <= b["cost"]
+                and a["p95_ms"] <= b["p95_ms"])
+    better = (a["quality"] > b["quality"]
+              or a["cost"] < b["cost"]
+              or a["p95_ms"] < b["p95_ms"])
     return no_worse and better
 
+
 def pareto_models(models):
-    out = []
-    for m in models:
-        if not any(beats(other, m) for other in models):
-            out.append(m["name"])
-    return out
+    kept = []
+    for model in models:
+        beaten = False
+        for other in models:
+            if beats(other, model):
+                beaten = True
+        if not beaten:
+            kept.append(model["name"])
+    return kept
 """,
         cases=[
             case([
                 {'name': 'fast-model', 'quality': 0.78, 'cost': 0.4, 'p95_ms': 900},
-                {'name': 'smart-model', 'quality': 0.88, 'cost': 3.0, 'p95_ms': 2400},
+                {'name': 'smart-model', 'quality': 0.88, 'cost': 3, 'p95_ms': 2400},
                 {'name': 'old-model', 'quality': 0.75, 'cost': 1.2, 'p95_ms': 1500},
             ], expected=['fast-model', 'smart-model'], sample=True),
             case([], expected=[]),
@@ -176,70 +219,116 @@ def pareto_models(models):
                 {'name': 'good', 'quality': 0.9, 'cost': 2, 'p95_ms': 900},
             ], expected=['cheap', 'quick', 'good']),
         ],
-        guided="""def beats(a, b):
-    # a beats b: no worse on every measure, and better on at least one.
-    no_worse = a["quality"] >= b["quality"] and a["cost"] <= b["cost"] and a["p95_ms"] <= b["p95_ms"]
-    better = ___
+        guided="""# Replace every ___ with real code, then run the tests.
+
+def beats(a, b):
+    # True when model a beats model b.
+    # Step 1: a is at least as good as b on all three.
+    no_worse = (a["quality"] >= b["quality"]
+                and a["cost"] <= b["cost"]
+                and a["p95_ms"] <= b["p95_ms"])
+    # Step 2: a is better on at least one.
+    # For p95_ms, lower is better.
+    better = (a["quality"] > b["quality"]
+              or a["cost"] < b["cost"]
+              or ___)
     return no_worse and better
 
 
 def pareto_models(models):
-    # Replace every ___ with real code, then run the tests.
-    out = []
-    for m in models:
-        # Keep m only if no other model beats it.
-        # any(...) is True if at least one item is True.
-        if not any(___ for other in models):
-            out.append(m["name"])
-    return out
+    kept = []
+    for model in models:
+        # Step 3: ask beats() if other beats this model.
+        # A model never beats itself, so no need to skip it.
+        beaten = False
+        for other in models:
+            if ___:
+                beaten = True
+        # Step 4: keep the name only if nothing beat it.
+        if ___:
+            kept.append(model["name"])
+    return kept
 """,
-        fills=[
-            'a["quality"] > b["quality"] or a["cost"] < b["cost"] or a["p95_ms"] < b["p95_ms"]',
-            'beats(other, m)',
-        ],
+        fills=['a["p95_ms"] < b["p95_ms"]', 'beats(other, model)', 'not beaten'],
         concepts=[
-            ['any', 'True if at least one item is true.', 'any(x > 5 for x in [1, 7, 3])   # True'],
+            [
+                'Dict access',
+                '`model["name"]` gets one field from a dict.',
+                """car = {'colour': 'red', 'seats': 4}
+car['seats']   # 4""",
+            ],
+            [
+                'and, or',
+                '`and` is True only when both sides are True. `or` is True when at least one side is. Brackets let a long condition run over several lines.',
+                """ok = (age >= 18
+      and has_ticket)
+free = (age < 5
+        or is_member)""",
+            ],
             [
                 'A helper function',
-                'Pulling a rule into its own small function makes the main loop easy to read.',
-                """def beats(a, b):
-    ...""",
+                'Putting one rule in its own small function keeps the main loop easy to read. You call it like any other function.',
+                """def is_long(word):
+    return len(word) > 5
+is_long('banana')   # True""",
+            ],
+            [
+                'A True/False flag',
+                'Start a variable at False. Set it to True inside the loop when you find what you are looking for. After the loop, `if not found:` means it never happened.',
+                """found = False
+for word in ['hi', 'stop']:
+    if word == 'stop':
+        found = True""",
+            ],
+            [
+                'A loop inside a loop',
+                'For each item of the outer loop, the inner loop goes through the whole list again. So every item meets every other item.',
+                """for a in ['x', 'y']:
+    for b in ['x', 'y']:
+        print(a, b)   # x x, x y, y x, y y""",
+            ],
+            [
+                'Adding to a list',
+                '`my_list.append(x)` puts x on the end of the list.',
+                """names = []
+names.append('Ana')   # ['Ana']""",
             ],
         ],
-        byhand="old-model costs more, is slower and scores lower than fast-model, so it's beaten. fast-model and smart-model each win on something (cheap and quick vs better), so both stay.",
+        byhand='fast-model: smart-model does not beat fast-model, because smart-model costs more (3 against 0.4). old-model does not beat fast-model either, because old-model costs more (1.2 against 0.4). Keep fast-model. smart-model: fast-model scores lower (0.78 against 0.88), so fast-model does not beat smart-model. old-model scores lower too (0.75 against 0.88). Keep smart-model. old-model: fast-model beats it. fast-model scores higher (0.78 against 0.75), costs less (0.4 against 1.2) and is faster (900 ms against 1500 ms). Drop old-model. So return ["fast-model", "smart-model"], in their original order.',
         why='Every model is compared with every other, which is fine for a handful of models.',
         gotchas=[
             [
-                'Same eval set, same judge, same prompt',
-                'Model comparisons are only fair when everything else is held fixed. Prompts tuned for one model often underperform on another, so test each with a reasonable prompt.',
+                'Same eval set, same judge, fair prompts',
+                'Model comparisons are only fair when the eval set and the judge are held fixed. Use the same prompt for every model unless the prompt is what you are testing. If one prompt was tuned for one model, give the others a fair version too.',
             ],
             [
                 'Quality on your task, not a leaderboard',
-                'Public benchmarks rarely match your data. Thirty real examples from your own task tell you more.',
+                'Public benchmarks (standard test sets that every model gets scored on) rarely match your data. Thirty real examples from your own task tell you more.',
             ],
         ],
     ),
 )
 
 lesson(MODULE, 'better_option',
-    title='Return on investment',
+    title='Net value per month',
     learn=[
         'Every experiment ends with a decision, and the decision is about value: what does a success earn or save, and what does each call cost?',
-        'Net monthly value = volume × success rate × value per success − volume × cost per call. A cheaper model can lose money if it succeeds less often, and an expensive one can pay for itself many times over.',
+        'Net monthly value is what good answers earn (volume times success rate times value per success) minus what the calls cost (volume times cost per call). A cheaper model can end up making less money if it succeeds less often, and an expensive one can pay for itself many times over.',
+        'People often call this the return on investment (ROI) question. Strictly, ROI is profit divided by cost, but for choosing a model, the total net value is what matters.',
     ],
     example=example('Log the business number with the run', """with mlflow.start_run(run_name="decision-oct"):
-    mlflow.log_params({"volume": 10_000, "value_per_success": 4.0})
-    mlflow.log_metric("net_monthly_value", 35_700)
+    mlflow.log_params({"volume": 10000, "value_per_success": 4.0})
+    mlflow.log_metric("net_monthly_value", 35700)
     mlflow.set_tag("decision", "ship smart-model")"""),
     check=question(
-        'A model costs 10× more per call but resolves 25% more tickets, each worth $4. Calls cost $0.002 vs $0.02. Is it worth it?',
+        'A model costs 10 times more per call but resolves 25 more tickets out of every 100, each worth $4. Calls cost $0.002 against $0.02. Is it worth it?',
         [
-            "No, it's 10× more expensive",
+            "No, it's 10 times more expensive",
             'Very likely: the extra resolutions are worth far more than the extra cents',
             "Can't tell",
         ],
         answer=1,
-        why='25 extra resolutions per 100 calls is $100; the extra cost is $1.80.',
+        why='25 extra resolutions per 100 calls are worth $100 (25 times $4). Those 100 calls cost only $1.80 more (100 times the extra $0.018 per call).',
     ),
     angle=angle(
         pattern='Score and keep the best',
@@ -247,71 +336,109 @@ lesson(MODULE, 'better_option',
         say='"I compute net value per option with the same formula, then take the maximum; the inputs come from evals and from the team that owns the outcome."',
         classic=None,
     ),
-    stack=stack('MLflow: log the decision with its numbers', """with mlflow.start_run(run_name="decision-oct"):
-    mlflow.log_params({"volume": 10_000, "value_per_success": 4.0})
-    mlflow.log_metric("net_monthly_value", 35_700)
-    mlflow.set_tag("decision", "ship smart-model")"""),
+    stack=stack('MLflow: log each option\'s inputs', """for option in options:   # one run per model
+    with mlflow.start_run(run_name=option["name"]):
+        mlflow.log_metrics({
+            "success_rate": option["success_rate"],
+            "cost_per_call": option["cost_per_call"],
+        })"""),
     exercise=exercise(
-        title='Return on Investment',
+        title='Most Value per Month',
         topic='models',
         difficulty='easy',
         fn='better_option',
-        prompt="""Each option in `options` is `{"name": "smart-model", "success_rate": 0.9, "cost_per_call": 0.03}`. Each month there are `volume` requests, and each successful answer is worth `value_per_success` dollars (for example, a support ticket that doesn't reach a human).
+        prompt="""Pick the model that makes the most money each month, after paying for its calls.
 
-An option's net monthly value is `volume * success_rate * value_per_success - volume * cost_per_call`. Return `[name, net]` for the option with the highest net value, with net rounded to 2 places. If two tie, the first listed wins. There is at least one option.""",
+Your function gets three things:
+
+- `options`: the models you could use, each a dict like `{"name": "smart-model", "success_rate": 0.9, "cost_per_call": 0.03}`. A `success_rate` of 0.9 means 9 in 10 answers are good. `cost_per_call` is dollars per call.
+- `volume`: how many requests come in each month, like `10000`.
+- `value_per_success`: how many dollars one good answer is worth, like `4.0`.
+
+For each option, work out:
+
+- earned: `volume` times its `success_rate` times `value_per_success`.
+- spent: `volume` times its `cost_per_call`.
+- net: earned minus spent.
+
+Return the name of the option with the highest net. If two tie, return the one listed first. There is always at least one option.""",
         pattern='Score every option with the same formula, keep the best so far.',
-        target='one walk through the options',
-        realworld='This is the ROI question behind every experiment. A cheaper model that answers fewer questions can lose money, and an expensive one can pay for itself. Value per success is a business number: get it from the team that owns the outcome.',
+        target='one pass over the options',
+        realworld='People often call this the return on investment (ROI) question. Strictly, ROI is profit divided by cost, which can pick a different winner, so say "net value". A cheaper model that answers fewer questions can end up making less money, and an expensive one can pay for itself. Value per success is a business number: get it from the team that owns the outcome.',
         starter="""def better_option(options, volume, value_per_success):
     # your code here
     pass
 """,
         solution="""def better_option(options, volume, value_per_success):
-    best = None
-    for o in options:
-        net = volume * o["success_rate"] * value_per_success - volume * o["cost_per_call"]
-        if best is None or net > best[1]:
-            best = [o["name"], net]
-    return [best[0], round(best[1], 2)]
+    best_name = None
+    best_net = None
+    for option in options:
+        rate = option["success_rate"]
+        earned = volume * rate * value_per_success
+        spent = volume * option["cost_per_call"]
+        net = earned - spent
+        if best_net is None or net > best_net:
+            best_name = option["name"]
+            best_net = net
+    return best_name
 """,
         cases=[
             case([
                 {'name': 'fast-model', 'success_rate': 0.72, 'cost_per_call': 0.002},
                 {'name': 'smart-model', 'success_rate': 0.9, 'cost_per_call': 0.03},
-            ], 10000, 4.0, expected=['smart-model', 35700.0], sample=True),
-            case([{'name': 'only', 'success_rate': 0.5, 'cost_per_call': 0.01}], 100, 1.0, expected=['only', 49.0]),
+            ], 10000, 4.0, expected='smart-model', sample=True),
+            case([
+                {'name': 'fast-model', 'success_rate': 0.72, 'cost_per_call': 0.002},
+                {'name': 'smart-model', 'success_rate': 0.9, 'cost_per_call': 0.03},
+            ], 10000, 0.1, expected='fast-model'),
+            case([{'name': 'only', 'success_rate': 0.5, 'cost_per_call': 0.01}], 100, 1.0, expected='only'),
             case([
                 {'name': 'a', 'success_rate': 0.8, 'cost_per_call': 0.01},
                 {'name': 'b', 'success_rate': 0.81, 'cost_per_call': 0.5},
-            ], 1000, 1.0, expected=['a', 790.0]),
+            ], 1000, 1.0, expected='a'),
             case([
                 {'name': 'x', 'success_rate': 0.6, 'cost_per_call': 0.1},
                 {'name': 'y', 'success_rate': 0.6, 'cost_per_call': 0.1},
-            ], 10, 2.0, expected=['x', 11.0]),
+            ], 10, 2.0, expected='x'),
         ],
         guided="""def better_option(options, volume, value_per_success):
     # Replace every ___ with real code, then run the tests.
 
-    best = None   # [name, net] of the best so far
-    for o in options:
-        # Step 1: value earned minus money spent, per month.
-        net = volume * o["success_rate"] * value_per_success - ___
-        # Step 2: strictly better replaces it, so the first wins a tie.
-        if best is None or ___:
-            best = [o["name"], net]
-    return [best[0], round(best[1], 2)]
+    best_name = None   # name of the best option so far
+    best_net = None    # its net value
+    for option in options:
+        # Money earned by good answers this month.
+        rate = option["success_rate"]
+        earned = volume * rate * value_per_success
+        # Step 1: money spent on calls this month.
+        spent = ___
+        net = earned - spent
+        # Step 2: replace the best only if net is bigger.
+        # A tie keeps the earlier option.
+        if best_net is None or ___:
+            best_name = option["name"]
+            best_net = net
+    return best_name
 """,
-        fills=['volume * o["cost_per_call"]', 'net > best[1]'],
+        fills=['volume * option["cost_per_call"]', 'net > best_net'],
         concepts=[
             [
-                'Keeping a pair',
-                'A two-item list can hold the best name and its score together.',
-                """best = ['fast-model', 28780.0]
-best[1]   # the score""",
+                'Dict access',
+                '`option["name"]` gets one field from a dict.',
+                """car = {'colour': 'red', 'seats': 4}
+car['seats']   # 4""",
+            ],
+            [
+                'Best so far',
+                'Start with None, which means "nothing yet". Replace it each time you find something bigger. `is None` checks for it.',
+                """best = None
+for n in [3, 9, 4]:
+    if best is None or n > best:
+        best = n""",
             ],
         ],
-        byhand='fast-model: 10,000 × 0.72 × $4 = $28,800 earned, minus 10,000 × $0.002 = $20 spent: $28,780. smart-model: 10,000 × 0.9 × $4 = $36,000, minus $300: $35,700. The expensive model is worth $6,920 more a month.',
-        why='One walk through the options.',
+        byhand='fast-model earns 10,000 times 0.72 times 4, which is 28,800 dollars. It spends 10,000 times 0.002, which is 20 dollars. Its net is 28,780. smart-model earns 10,000 times 0.9 times 4, which is 36,000 dollars. It spends 10,000 times 0.03, which is 300 dollars. Its net is 35,700. 35,700 is higher, so return "smart-model".',
+        why='One pass over the options.',
         gotchas=[
             [
                 'Count every cost',
@@ -319,7 +446,7 @@ best[1]   # the score""",
             ],
             [
                 'Success must be measured, not assumed',
-                "The success rate comes from your evals and from production feedback. If it's a guess, the ROI is a guess.",
+                "The success rate comes from your evals and from production feedback. If it's a guess, the net value is a guess.",
             ],
         ],
     ),

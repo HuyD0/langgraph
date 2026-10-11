@@ -49,7 +49,11 @@ NO_MODEL = {
 
 
 class AskBody(BaseModel):
-    """What the page sends: a prompt (or messages), the tier it would like, and whether it wants JSON back."""
+    """What the page sends: a prompt (or messages), the tier it would like, and whether it wants JSON back.
+
+    ``trace`` says what the request is for (feature, lesson_id, step, question, session...),
+    so its MLflow trace can be found again; see ``observe.CONTEXT_KEYS``.
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -57,6 +61,7 @@ class AskBody(BaseModel):
     messages: list[dict[str, Any]] | None = None
     tier: str = "default"
     json_mode: bool = Field(False, alias="json")
+    trace: dict[str, Any] | None = None
 
 
 def user_id(request: Request) -> str:
@@ -124,16 +129,17 @@ def create_app(
     # -- the tutor -----------------------------------------------------------
 
     @app.post("/api/ask")
-    async def ask(body: AskBody):
+    async def ask(body: AskBody, request: Request):
         if body.messages is None and not (body.prompt or "").strip():
             raise HTTPException(400, {"code": "bad_request", "text": "Send a prompt or messages."})
         messages: Any = body.messages if body.messages is not None else body.prompt
         if not router.order(body.tier):
             raise HTTPException(503, NO_MODEL)
+        context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
 
         if body.json_mode:
             try:
-                return {"value": await router.ask_json(messages, body.tier)}
+                return {"value": await router.ask_json(messages, body.tier, context=context)}
             except NoModelAvailable:
                 raise HTTPException(503, NO_MODEL)
             except ValueError as exc:
@@ -141,7 +147,7 @@ def create_app(
 
         # Pull the first chunk before answering, so a model that is down turns into a
         # proper error instead of an empty stream.
-        chunks = router.stream(messages, body.tier)
+        chunks = router.stream(messages, body.tier, context=context)
         try:
             first = await chunks.__anext__()
         except StopAsyncIteration:

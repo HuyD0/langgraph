@@ -327,6 +327,63 @@ body.no-ai .ai-only { display: none; }
 .asklesson .linkbtn { padding: 2px 0; font-size: 14px; }
 .aa ul, .aa ol, .ai ul, .ai ol { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
 .empty { color: var(--muted); margin: 0; }
+#taskExample { white-space: pre-wrap; overflow-wrap: anywhere; }
+.task ul, .task ol { margin: 0 0 10px; padding-left: 22px; display: grid; gap: 6px; max-width: 65ch; }
+.byhand { margin: 0; padding: 10px 12px; background: var(--sunk); border-radius: 10px; max-width: 65ch; }
+@media (pointer: coarse), (max-width: 560px) { textarea#code { white-space: pre-wrap; overflow-wrap: anywhere; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* spot the gotcha */
+.gotcha-card { border-color: color-mix(in srgb, var(--hint) 45%, var(--line)); }
+.gc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gc-head h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--hint); }
+.gc-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gc-icon { position: relative; width: 22px; height: 22px; flex: none; }
+.gc-icon .ic { position: absolute; inset: 0; width: 22px; height: 22px; }
+.gc-icon .bug { color: var(--hint); }
+.gc-icon .ok { color: var(--pass); opacity: 0; }
+.gc-icon.done .bug { opacity: 0; }
+.gc-icon.done .ok { opacity: 1; }
+.gcode { display: grid; margin: 0; padding: 10px 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; font: 14px/1.6 var(--mono); }
+.gln { white-space: pre; padding: 0 14px 0 8px; min-width: max-content; }
+.gln .gm { display: inline-block; width: 2ch; color: var(--muted); user-select: none; }
+.gln.del { background: color-mix(in srgb, var(--fail) 13%, transparent); color: var(--muted); text-decoration: line-through; text-decoration-color: var(--fail); }
+.gln.add { background: color-mix(in srgb, var(--pass) 14%, transparent); }
+.gln.del .gm { color: var(--fail); }
+.gln.add .gm { color: var(--pass); }
+.habit { font-size: 14px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+.habit b { color: var(--fg); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) {
+  .gcode.reveal .gln.del { animation: gl-del .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+  .gcode.reveal .gln.add { animation: gl-add .45s ease-out both; animation-delay: calc(var(--i) * 70ms + 350ms); }
+  @keyframes gl-del { from { background: transparent; color: var(--fg); text-decoration-color: transparent; } }
+  @keyframes gl-add { from { opacity: 0; transform: translateX(-12px); } }
+  .gc-icon.squash .bug { animation: gc-squash .5s ease-in both; }
+  .gc-icon.squash .ok { animation: gc-pop .4s .4s ease-out both; }
+  @keyframes gc-squash { 0% { opacity: 1; transform: none; } 50% { opacity: 1; transform: scale(1.3) rotate(-14deg); } 100% { opacity: 0; transform: scale(.2) rotate(50deg); } }
+  @keyframes gc-pop { 0% { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: none; } }
+}
+/* study list: sections, lesson groups, one line per item until opened */
+#items { gap: 18px; }
+.ssec, .sgroup, .srows { display: grid; gap: 6px; min-width: 0; }
+.ssec { gap: 10px; }
+.ssec h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.ssec h3 span, .sgroup h4 span { font-weight: 400; color: var(--muted); }
+details.ssec > summary { list-style: none; cursor: pointer; min-height: 36px; display: flex; align-items: center; gap: 8px; }
+details.ssec > summary::-webkit-details-marker { display: none; }
+details.ssec > summary::after { content: "+"; font: 600 15px var(--mono); color: var(--muted); }
+details.ssec[open] > summary::after { content: "−"; }
+details.ssec > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sgroup h4 { margin: 4px 0 0; font: 600 14px var(--body); }
+.items .item { padding: 0; gap: 0; }
+.itemrow { display: grid; gap: 2px; width: 100%; min-width: 0; text-align: left; background: none; border: 0; border-radius: 12px; padding: 10px 12px; min-height: 48px; cursor: pointer; color: inherit; font: inherit; }
+.itemrow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.itemrow .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itemrow .t.code { font: 13px var(--mono); }
+.item.open .itemrow .t { white-space: normal; overflow-wrap: anywhere; }
+.itemrow .m { font-size: 13px; color: var(--muted); }
+.itemrow .due { color: var(--hint); }
+.itembody { display: grid; gap: 10px; padding: 0 12px 12px; min-width: 0; }
+@media (hover: hover) { .itemrow:hover { background: var(--sunk); } }
 #selbar { position: absolute; z-index: 50; display: flex; gap: 4px; padding: 4px; background: var(--fg); border-radius: 10px; box-shadow: 0 6px 20px color-mix(in srgb, var(--fg) 25%, transparent); }
 #selbar button { font: 600 14px var(--body); background: none; color: var(--bg); border: 0; border-radius: 7px; padding: 8px 12px; cursor: pointer; min-height: 40px; }
 #selbar button:focus-visible { outline: 2px solid var(--bg); }
@@ -376,7 +433,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .savestate { justify-content: center; padding-top: 8px; }
 </style>
 
-<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0z"/><path d="M12 10v8M8 13H4M20 13h-4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2M10 6L9 3M14 6l1-3"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol></svg>
 <div id="selbar" hidden role="toolbar" aria-label="Selected text"><button id="selSave">Save to study list</button><button id="selExplain">Explain this</button></div>
 
 <header class="top">
@@ -401,10 +458,11 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
       <h2 id="taskTitle"></h2>
       <div id="taskPrompt"></div>
       <div class="example"><span class="meta">Example. More tests stay hidden until you run your code.</span><pre class="code" id="taskExample"></pre></div>
+      <p class="byhand" id="taskByhand" hidden></p>
       <div class="goal" id="taskGoal"></div>
       <div class="callout" id="moneyNote" hidden><b>Made-up data</b><p>These numbers are invented, shaped like your finance tracker's. To run this on your real data, on your Mac: <code id="moneyCmd"></code></p></div>
     </div>
-    <details class="quiet" id="help"><summary>Python you'll need, and a worked example</summary><div><div id="blocksBody" class="pane"></div><div id="byhandBody"></div></div></details>
+    <details class="quiet" id="help"><summary>Python you'll need</summary><div><div id="blocksBody" class="pane"></div></div></details>
     <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea>
     <div class="tools">
       <button class="btn primary" id="run"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span>Run tests</span></button>
@@ -432,20 +490,18 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-nb="study" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-bookmark"/></svg>Study list</button>
     <button class="tab" role="tab" data-nb="gloss" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
-    <button class="tab" role="tab" data-nb="gotchas" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg>Gotchas</button>
     <button class="tab" role="tab" data-nb="speed" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>How fast is it?</button>
   </div>
   <div class="drawer-body">
     <div id="nb-study" class="pane">
-      <p class="lede" id="studySub">Things you tagged to understand better. Select any text in a lesson, or a line of your code, to add it.</p>
-      <div class="minis" role="group" aria-label="Show"><button class="mini on" data-filter="open">To learn</button><button class="mini" data-filter="got">Got it</button><button class="mini" data-filter="all">All</button></div>
+      <p class="lede" id="studySub">Things you saved to understand better. Select any text in a lesson, or a line of your code, to add it. Once you've got one, it comes back for a quick review after 3 days, then 10, 30 and 90.</p>
+      <input class="search" id="studySearch" type="search" placeholder="Search your study list" aria-label="Search your study list">
       <div class="items" id="items"></div>
     </div>
     <div id="nb-gloss" class="pane" hidden>
       <input class="search" id="glossSearch" type="search" placeholder="Search terms" aria-label="Search the glossary">
       <div id="glossBody"></div>
     </div>
-    <div id="nb-gotchas" class="pane" hidden><div id="gotchasBody"></div></div>
     <div id="nb-speed" class="pane" hidden>
       <p class="lede">Some code takes about the same time however much data you give it. Some slows down a little as data grows, and some slows down enormously. Drag the slider to give it more data. Times assume Python does about 10 million simple steps a second.</p>
       <div class="slider"><label for="nRange" class="meta">How many items</label><input type="range" id="nRange" min="1" max="9" step="0.1" value="3"><output id="nOut" for="nRange" class="meta"></output></div>
@@ -494,6 +550,30 @@ function py(v) {
   return String(v);
 }
 const short = (s, n = 90) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+// The example, readable on a phone: each input on its own line under its name, and lists
+// of rows one row per line.
+function pretty(v, pad) {
+  pad = pad || "";
+  const flat = py(v);
+  const nested = v && typeof v === "object" && Object.values(v).some(x => x && typeof x === "object");
+  // Numbers stay on one line; a long list of text goes one item per line, so each string reads whole.
+  const plain = Array.isArray(v) && !nested && !v.some(x => typeof x === "string");
+  if (flat.length <= 32 || !v || typeof v !== "object" || plain) return flat;
+  const inner = pad + "  ";
+  if (Array.isArray(v)) return "[\n" + v.map(x => inner + pretty(x, inner) + ",").join("\n") + "\n" + pad + "]";
+  return "{\n" + Object.entries(v).map(([k, x]) => inner + JSON.stringify(k) + ": " + pretty(x, inner) + ",").join("\n") + "\n" + pad + "}";
+}
+function paramNames(p) {
+  const m = (p.starter || p.solution || "").match(new RegExp("def\\s+" + p.fn + "\\s*\\(([^)]*)\\)"));
+  return m ? m[1].split(",").map(x => x.split(/[:=]/)[0].replace("*", "").trim()).filter(Boolean) : [];
+}
+function exampleText(p, c) {
+  const names = paramNames(p);
+  const use = names.length === c.args.length;
+  const lines = c.args.map((a, i) => (use ? names[i] : "input " + (i + 1)) + " = " + pretty(a));
+  const text = lines.join("\n") + "\n\nreturns " + pretty(c.expected);
+  return text.split("\n").length > 40 ? "call     " + callText(p, c) + "\nreturns  " + short(py(c.expected), 200) : text;
+}
 const callText = (p, c) => p.fn + "(" + short(c.args.map(py).join(", ")) + ")";
 function harness(p, code) {
   const cases = p.cases.map(c => "(" + "(" + c.args.map(py).join(", ") + ",), " + py(c.expected) + ")").join(",\n    ");
@@ -533,9 +613,9 @@ async function runPython(src) {
 }
 
 // ---------- progress (account when signed in, this browser otherwise) ----------
-let progress = { solved: {}, days: [], lessons: {}, current: null };
+let progress = { solved: {}, days: [], lessons: {}, gotchas: {}, current: null };
 let progressDoc = null;
-function loadLocal() { try { const raw = localStorage.getItem("drill-progress"); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch {} progress.lessons = progress.lessons || {}; }
+function loadLocal() { try { const raw = localStorage.getItem("drill-progress"); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch {} progress.lessons = progress.lessons || {}; progress.gotchas = progress.gotchas || {}; }
 function saveLocal() { try { localStorage.setItem("drill-progress", JSON.stringify(progress)); } catch {} }
 async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
 function markDay() { const t = today(); if (!progress.days.includes(t)) { progress.days.push(t); progress.days = progress.days.slice(-400); } }
@@ -715,9 +795,86 @@ function anglePane() {
   const gotchas = (Ln.gotchas || []).map(([h, t]) => `<li><b>${esc(h)}.</b> ${md(t)}</li>`).join("");
   return `<section class="sec"><h3>The pattern you used</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p><p class="say">${md(say)}</p></section>
     ${p.realworld ? `<section class="sec"><h3>At work</h3><p>${md(p.realworld)}</p></section>` : ""}
-    ${gotchas ? `<section class="sec"><h3>Gotchas</h3><ul class="gl">${gotchas}</ul></section>` : ""}
+    ${gotchaCard()}
+    ${gotchas ? `<section class="sec"><h3>Watch out for</h3><ul class="gl">${gotchas}</ul></section>` : ""}
     ${classic && byId[classic] ? `<button class="linkbtn" data-classic="${classic}">Practice the classic: ${esc(byId[classic].title)}${ic("arrowr")}</button>` : ""}
     ${askPanel()}`;
+}
+
+// ---------- spot the gotcha: one challenge per lesson, in its Interview step ----------
+// Each card in extras.py names its lesson. You see the risky code, pick the rule it breaks,
+// then watch it turn into the fix. Habits about how you work show in the Build step instead.
+const GOTCHAS = {}, HABITS = {};
+for (const set of [D.aiGotchas, D.iacGotchas, D.rules]) set.forEach(([title, why, bad, good, where], i) => {
+  if (where.startsWith("build:")) { HABITS[where.slice(6)] = { title, why }; return; }
+  const others = set.filter(c => c[0] !== title).map(c => c[0]);
+  const options = [others[(i * 5 + 1) % others.length], others[(i * 5 + 4) % others.length]];
+  const answer = i % 3; options.splice(answer, 0, title);
+  GOTCHAS[where] = { title, why, bad, good, options, answer };
+});
+const N_GOTCHAS = Object.keys(GOTCHAS).length;
+let gotchaView = "diff";
+function lineDiff(a, b) {  // the lines of a and b, marked " " kept, "-" removed or "+" added
+  const A = a.split("\n"), B = b.split("\n"), n = A.length, m = B.length;
+  const L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { out.push([" ", A[i]]); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) out.push(["-", A[i++]]);
+    else out.push(["+", B[j++]]);
+  }
+  while (i < n) out.push(["-", A[i++]]);
+  while (j < m) out.push(["+", B[j++]]);
+  return out;
+}
+function codeLines(rows) {
+  let k = 0;
+  return rows.map(([t, line]) => {
+    const cls = t === "-" ? " del" : t === "+" ? " add" : "", sr = t === "-" ? '<span class="sr">removed: </span>' : t === "+" ? '<span class="sr">added: </span>' : "";
+    return `<div class="gln${cls}" style="--i:${t === " " ? 0 : k++}"><span class="gm" aria-hidden="true">${t === "-" ? "−" : t}</span>${sr}${esc(line) || " "}</div>`;
+  }).join("");
+}
+function gotchaCard(anim) {
+  const g = cur && GOTCHAS[cur.id]; if (!g) return "";
+  anim = anim || {};
+  const picked = progress.gotchas[cur.id], answered = picked != null, right = picked === g.answer;
+  const spotted = Object.keys(GOTCHAS).filter(id => progress.gotchas[id] === GOTCHAS[id].answer).length;
+  const opts = g.options.map((o, k) => {
+    let cls = "opt";
+    if (answered && k === g.answer) cls += " right"; else if (answered && k === picked) cls += " wrong";
+    return `<button class="${cls}" data-gotcha="${k}"${answered ? " disabled" : ""}><span class="k">${"ABC"[k]}</span><span>${esc(o)}</span></button>`;
+  }).join("");
+  const rows = !answered ? g.bad.split("\n").map(l => [" ", l]) : gotchaView === "after" ? g.good.split("\n").map(l => [" ", l]) : lineDiff(g.bad, g.good);
+  const verdict = !answered ? "" : right
+    ? `<div class="verdict ok">${ic("check")}<div><b>Spotted it.</b> ${md(g.why)}</div></div>`
+    : `<div class="verdict no">${ic("x")}<div><b>Not quite: it breaks "${esc(g.title)}".</b> ${md(g.why)}</div></div>`;
+  return `<section class="card gotcha-card" id="gotchaCard">
+    <div class="gc-head"><h3>Spot the gotcha</h3><span class="gc-badge"><span class="gc-icon${right ? " done" : ""}${anim.squash ? " squash" : ""}" aria-hidden="true">${ic("bug", "bug")}${ic("check", "ok")}</span>${spotted} of ${N_GOTCHAS} spotted</span></div>
+    <p class="q">${!answered ? "This passes the tests on your laptop. Which rule does it break?" : gotchaView === "after" ? "The fixed version:" : "What changed to fix it:"}</p>
+    ${answered ? `<div class="seg" role="group" aria-label="Show"><button data-gview="diff" aria-pressed="${gotchaView !== "after"}">What changed</button><button data-gview="after" aria-pressed="${gotchaView === "after"}">Fixed code</button></div>` : ""}
+    <div class="gcode${anim.reveal ? " reveal" : ""}">${codeLines(rows)}</div>
+    <div class="opts">${opts}</div>
+    <div aria-live="polite">${verdict}</div>
+    ${answered ? `<div class="tools"><button class="linkbtn" data-gotcha-retry>Try again</button>${right ? "" : `<button class="linkbtn" data-gotcha-save>Save it to my study list</button>`}</div>` : ""}
+  </section>`;
+}
+function renderGotcha(anim) { const el = $("gotchaCard"); if (el) el.outerHTML = gotchaCard(anim); }
+function answerGotcha(k) {
+  const g = GOTCHAS[cur.id]; if (!g) return;
+  progress.gotchas[cur.id] = k; gotchaView = "diff"; saveProgress();
+  renderGotcha({ reveal: true, squash: k === g.answer });
+}
+async function saveGotcha() {
+  const g = GOTCHAS[cur.id]; if (!g) return;
+  const it = await addItem(g.title, "Gotcha · " + LESSONS[cur.id].title, "text");
+  if (!it.explanation) await updateItem(it.id, { explanation: g.why + "\n\nBefore:\n```\n" + g.bad + "\n```\n\nAfter:\n```\n" + g.good + "\n```" });
+  toast("Saved to your study list");
+}
+function habitLine(kind) {  // a working habit, shown in the Build step at the moment it applies
+  const h = HABITS[kind]; if (!h) return "";
+  const text = kind === "pass" ? "It works. Now compare it with the target above: is there a simpler or faster way?" : h.why;
+  return `<div class="habit"><b>Habit: ${esc(h.title.charAt(0).toLowerCase() + h.title.slice(1))}.</b> ${md(text)}</div>`;
 }
 
 // ---------- ask about this lesson ----------
@@ -772,11 +929,16 @@ The lesson's coding exercise: ${p.title}, writing \`${p.fn}\`. ${p.prompt.split(
 // answered as a hint, and an answer that starts defining the exercise function is hidden.
 const SOLUTION_ASK = /\b(solution|solve (it|this)|answer key|write (the|my|this) (code|function)|code for (the|this) exercise|do the exercise)\b/i;
 const LEAKED = "That answer started to include code for the exercise, so it's hidden here. Try the step-by-step hints in the Build step instead.";
+// What a request is for (feature, lesson, step, question...), so the local server's MLflow traces say so.
+// Only the local server gets it; claude.ai's sample() keeps its own options.
+const withTrace = (opts, trace) => sample && sample.local ? Object.assign({}, opts, { trace }) : opts;
 async function askLesson(question, instruction) {
   if (!sample || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
   const id = cur.id, fn = cur.p.fn, thread = askThreads[id] = askThreads[id] || [];
+  thread.session = thread.session || id + "-" + Date.now().toString(36);
   const leaks = text => new RegExp("def\\s+" + fn + "\\s*\\(").test(text);
-  if (!instruction && (question.includes(fn) || SOLUTION_ASK.test(question)))
+  const chip = !!instruction, guarded = !chip && (question.includes(fn) || SOLUTION_ASK.test(question));
+  if (guarded)
     instruction = "They are asking about the coding exercise. Do not write any code at all. In two or three plain sentences, describe only the first step to take, then ask one question that helps them work out the next step. Mention that the Build step has step-by-step hints.";
   const history = thread.filter(t => !t.failed).slice(-4).map(t => "Q: " + t.q + "\nA: " + t.a).join("\n\n");
   const turn = { q: question.trim().slice(0, 500), a: "", streaming: true };
@@ -797,11 +959,12 @@ Rules:
 - Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.
 - Reply with the answer only.`;
   try {
-    const { text } = await sample(prompt, { onText: ({ text }) => {
+    const { text } = await sample(prompt, withTrace({ onText: ({ text }) => {
       turn.a = leaks(text) ? LEAKED : text;
       const el = document.getElementById("aa-" + i);
       if (el && cur && cur.id === id) el.innerHTML = fmt(turn.a);
-    } });
+    } }, { feature: "ask_lesson", lesson_id: id, step: STEPS[cur.step], question: turn.q, session: thread.session,
+           exercise_fn: fn, word_limit: 180, chip, guard: guarded ? "solution_request" : "" }));
     turn.a = text;
     if (leaks(text)) { turn.a = LEAKED; turn.failed = true; }
   } catch (e) {
@@ -829,15 +992,16 @@ function loadProblem(p) {
   const Ln = LEARN[p.id] || {};
   $("buildTitle").textContent = p.title;
   $("taskTitle").textContent = p.title;
-  $("taskPrompt").innerHTML = p.prompt.split("\n\n").map(x => "<p>" + md(x) + "</p>").join("");
+  $("taskPrompt").innerHTML = p.prompt.split("\n\n").map(x => /^\s*[-*]\s/m.test(x) ? blockHtml(x) : "<p>" + md(x) + "</p>").join("");
   const ex = p.cases.find(c => c.sample) || p.cases[0];
-  $("taskExample").textContent = "call     " + callText(p, ex) + "\nreturns  " + short(py(ex.expected), 200);
+  $("taskExample").textContent = exampleText(p, ex);
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("moneyNote").hidden = !D.money.includes(p.id);
   $("moneyCmd").textContent = "uv run drill mine new " + p.id;
-  $("help").hidden = !((Ln.concepts && Ln.concepts.length) || Ln.byhand);
+  $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
-  $("byhandBody").innerHTML = Ln.byhand ? "<p style='margin:0'><b>Worked example.</b> " + md(Ln.byhand) + "</p>" : "";
+  $("taskByhand").hidden = !Ln.byhand;
+  $("taskByhand").innerHTML = Ln.byhand ? "<b>The example, step by step.</b> " + md(Ln.byhand) : "";
   $("help").open = false; $("morePanel").hidden = true; $("moreBtn").setAttribute("aria-expanded", "false");
   let draft = null; try { draft = localStorage.getItem(draftKey(p.id)); } catch {}
   $("code").value = draft || startCode(p);
@@ -869,6 +1033,7 @@ async function runTests() {
     if (/NameError: name '___'/.test(error)) msg = "There's still a ___ blank to fill in. Replace each ___ with real code.";
     lastRun = { summary: "Did not run: " + error };
     setResult("fail", "Didn't run", msg);
+    if (msg === error) $("result").insertAdjacentHTML("beforeend", habitLine("error"));
   } else {
     const passed = results.filter(r => r && r.status === "ok").length, total = p.cases.length;
     const dots = p.cases.map((_, i) => `<span class="dot ${results[i] ? (results[i].status === "ok" ? "ok" : "bad") : ""}"></span>`).join("");
@@ -880,7 +1045,7 @@ async function runTests() {
       $("result").className = "result pass";
       const nextLabel = cur.kind === "lesson" ? "Next: Interview" : (cur.from ? "Back to lesson" : "Back to path");
       $("result").innerHTML = `<div class="score">${ic("check")} ${total}/${total} passed</div><div class="dots">${dots}</div>
-        <div>Solved. The pattern: <em>${md(p.pattern)}</em></div>
+        <div>Solved. The pattern: <em>${md(p.pattern)}</em></div>${habitLine("pass")}
         <div class="tools"><button class="btn primary" id="afterPass">${nextLabel}${ic("arrowr")}</button><button class="btn" id="reviewBtn"${sampleOff ? " hidden" : ""}>Review my code</button></div>`;
       $("afterPass").onclick = () => { if (cur.kind === "lesson") setStep(3); else goPrev(); };
       $("reviewBtn").onclick = review;
@@ -892,7 +1057,7 @@ async function runTests() {
       $("result").className = "result fail";
       $("result").innerHTML = `<div class="score">${passed}/${total} passed</div><div class="dots">${dots}</div>
         <div class="case"><span>call</span><span>${esc(callText(p, c))}</span><span>expected</span><span>${esc(short(py(c.expected), 200))}</span><span>${gotLabel}</span><span>${esc(short(r.got, 200))}</span></div>
-        <div class="meta">Most mistakes show up with unusual inputs, like an empty list or a single item. Try this example by hand before asking for a hint.</div>`;
+        <div class="meta">Most mistakes show up with unusual inputs, like an empty list or a single item. Try this example by hand before asking for a hint.</div>${habitLine(r.status === "err" ? "error" : "fail")}`;
     }
   }
   await saveProgress(); renderTop();
@@ -944,7 +1109,8 @@ Rules:
 
 ${tutorContext(p)}`;
   try {
-    const { text } = await sample(prompt, { modelTier: "quick", onText: ({ text }) => { para.innerHTML = inline(text); } });
+    const { text } = await sample(prompt, withTrace({ modelTier: "quick", onText: ({ text }) => { para.innerHTML = inline(text); } },
+      { feature: "hint", lesson_id: cur.id, exercise_fn: p.fn, hint_level: level, word_limit: 80 }));
     para.innerHTML = inline(text); hintLevel = level;
   } catch (e) {
     if (e && e.code === "not_granted") { sampleOff = true; note.remove(); hintLevel = 0; updateHintBtn(); busy = false; return hint(); }
@@ -969,7 +1135,8 @@ No rewritten code. Wrap identifiers in backticks.
 
 ${tutorContext(cur.p)}`;
   try {
-    const { text } = await sample(prompt, { onText: ({ text }) => { para.innerHTML = inline(text); } });
+    const { text } = await sample(prompt, withTrace({ onText: ({ text }) => { para.innerHTML = inline(text); } },
+      { feature: "review", lesson_id: cur.id, exercise_fn: cur.p.fn, word_limit: 140 }));
     para.innerHTML = inline(text);
   } catch (e) {
     if (e && e.code === "not_granted") { sampleOff = true; note.remove(); }
@@ -1050,8 +1217,9 @@ function insertSnippet(t) {
 let nbTab = "study";
 function openNotebook(tab) {
   if (tab) nbTab = tab;
+  if (!$("nb-" + nbTab)) nbTab = "study";  // a tab that no longer exists falls back to the study list
   for (const t of document.querySelectorAll("[data-nb]")) t.setAttribute("aria-selected", String(t.dataset.nb === nbTab));
-  for (const id of ["study", "gloss", "gotchas", "speed"]) $("nb-" + id).hidden = id !== nbTab;
+  for (const t of document.querySelectorAll("[data-nb]")) $("nb-" + t.dataset.nb).hidden = t.dataset.nb !== nbTab;
   if (nbTab === "study") renderStudy();
   $("drawer").hidden = false; $("scrim").hidden = false;
   document.body.style.overflow = "hidden";
@@ -1087,17 +1255,6 @@ function renderGrowth() {
     return `<span><b>${esc(name)}</b><br><span class="meta">${esc(eg)}</span></span><span class="t ${cls === "dead" ? "dead" : ""}">${fmtTime(sec)}</span><span class="track" aria-hidden="true"><span class="fill ${cls}" style="width:${w}%;display:block"></span></span>`;
   }).join("");
 }
-function ruleCards(list, source) {
-  return list.map(([head, text, bad, good]) => {
-    let code = "";
-    if (bad && good) code = `<span class="tag no">Avoid</span><pre class="code">${esc(bad)}</pre><span class="tag yes">Prefer</span><pre class="code">${esc(good)}</pre>`;
-    else if (good) code = `<pre class="code">${esc(good)}</pre>`;
-    return `<div class="rule"><h4>${esc(head)}</h4><p>${md(text)}</p>${code}${tagButtons(head, source)}</div>`;
-  }).join("");
-}
-function renderGotchas() {
-  $("gotchasBody").innerHTML = `<h3>AI, ML and agents</h3>${ruleCards(D.aiGotchas, "AI gotchas")}<h3>Azure Databricks, Terraform and Spacelift</h3>${ruleCards(D.iacGotchas, "IaC gotchas")}<h3>Good coding habits</h3>${ruleCards(D.rules, "Good habits")}`;
-}
 function renderGlossary() {
   const q = $("glossSearch").value.trim().toLowerCase();
   const html = D.glossary.map(([group, terms]) => {
@@ -1110,8 +1267,12 @@ function renderGlossary() {
 }
 
 // ---------- study list: tag anything, then get it explained ----------
-let studyItems = [], studyCol = null, studyFilter = "open", renderPending = false;
-const streaming = {}, revealed = new Set(), busyItems = new Set();
+let studyItems = [], studyCol = null, studyQuery = "", gotOpen = false, renderPending = false;
+const streaming = {}, revealed = new Set(), busyItems = new Set(), openItems = new Set();
+// Spaced review: a "Got it" item comes back after 3 days, then 10, 30 and 90 while you keep
+// remembering it. Keep these in step with drill/server/study.py.
+const REVIEW_DAYS = [3, 10, 30, 90], DAY_MS = 86400000;
+const isDue = it => it.status === "got" && (it.reviewAt || 0) <= Date.now();
 function loadStudyLocal() { try { studyItems = JSON.parse(localStorage.getItem("drill-study") || "[]"); } catch { studyItems = []; } }
 function saveStudyLocal() { if (studyCol) return; try { localStorage.setItem("drill-study", JSON.stringify(studyItems)); } catch {} }
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1120,20 +1281,21 @@ function tagButtons() { return ""; }
 function markSaved() {
   const saved = new Set(studyItems.map(i => i.text));
   for (const b of document.querySelectorAll("[data-tag]")) { const on = saved.has(b.dataset.text); b.classList.toggle("on", on); b.textContent = on ? "Saved" : "Save"; }
-  const open = studyItems.filter(i => i.status !== "got").length;
+  const open = studyItems.filter(i => i.status !== "got" || isDue(i)).length;
   $("studyCount").textContent = open ? String(open) : "";
 }
 async function addItem(text, source, kind) {
   text = text.trim();
   const existing = studyItems.find(i => i.text === text);
   if (existing) return existing;
-  const item = { id: newId(), text: text.slice(0, 2000), kind: kind || "text", source, problemId: cur ? cur.p.id : "", note: "", status: "open", createdAt: Date.now(), explanation: "", quiz: null, thread: [] };
+  const item = { id: newId(), text: text.slice(0, 2000), kind: kind || "text", source, problemId: cur ? cur.p.id : "", note: "", status: "open", createdAt: Date.now(), updatedAt: Date.now(), explanation: "", quiz: null, thread: [] };
   studyItems.unshift(item); saveStudyLocal(); renderStudy();
   if (studyCol) { try { await studyCol.doc(item.id).set(item); } catch { flashStudy("Couldn't save to your account. It's kept for this visit only."); } }
   return item;
 }
 async function updateItem(id, patch) {
   const it = studyItems.find(i => i.id === id); if (!it) return;
+  patch = Object.assign({}, patch, { updatedAt: Date.now() });  // the newer copy wins when two lists are merged
   Object.assign(it, patch); saveStudyLocal(); renderStudy();
   if (studyCol) { try { await studyCol.doc(id).update(patch); } catch {} }
 }
@@ -1167,33 +1329,98 @@ function fmt(text) {
     : part.split(/\n{2,}/).filter(x => x.trim()).map(blockHtml).join("")
   ).join("");
 }
+function gotIt(it) { openItems.delete(it.id); return updateItem(it.id, { status: "got", stage: 0, reviewAt: Date.now() + REVIEW_DAYS[0] * DAY_MS }); }
+function backToLearning(it) { return updateItem(it.id, { status: "open", stage: 0, reviewAt: null }); }
+async function reviewed(it, remembered) {
+  revealed.delete(it.id); openItems.delete(it.id);
+  if (!remembered) { await backToLearning(it); toast("Back on your To learn list"); return; }
+  const stage = Math.min((it.stage || 0) + 1, REVIEW_DAYS.length - 1);
+  await updateItem(it.id, { stage, reviewAt: Date.now() + REVIEW_DAYS[stage] * DAY_MS });
+  toast("Next review in " + REVIEW_DAYS[stage] + " days");
+}
+let lessonOrder = null;
+function studyGroup(it) {  // the lesson an item came from, in path order
+  if (!lessonOrder) { lessonOrder = {}; let n = 0; for (const m of D.modules) for (const id of m.lessons) lessonOrder[id] = n++; }
+  const id = it.problemId || "";
+  if (id in lessonOrder && LESSONS[id]) return { key: id, title: LESSONS[id].title, order: lessonOrder[id] };
+  if (byId[id]) return { key: id, title: "Practice: " + byId[id].title, order: 1e5 };
+  return { key: "", title: "Other", order: 2e5 };
+}
+const studyMatches = (it, q) => !q || [it.text, it.note, it.explanation, it.source, studyGroup(it).title].some(t => (t || "").toLowerCase().includes(q));
+function whenText(ms) { const d = Math.ceil(((ms || 0) - Date.now()) / DAY_MS); return d <= 0 ? "today" : d === 1 ? "tomorrow" : "in " + d + " days"; }
+function itemMarks(it) {
+  const marks = [];
+  if (isDue(it)) marks.push(`<b class="due">Review now</b>`);
+  else if (it.status === "got") marks.push("next review " + whenText(it.reviewAt));
+  if (it.explanation) marks.push("explained");
+  if (it.quiz) marks.push("quiz");
+  const n = (it.thread || []).length; if (n) marks.push(n + (n === 1 ? " follow-up" : " follow-ups"));
+  if (it.note) marks.push("your note");
+  return marks.join(" · ") || esc(it.source || "");
+}
+function itemRow(it) {
+  const open = openItems.has(it.id) || !!streaming[it.id], code = it.kind === "code";
+  return `<article class="item${it.status === "got" && !isDue(it) ? " got" : ""}${open ? " open" : ""}">
+    <button class="itemrow" data-act="open" data-id="${it.id}" aria-expanded="${open}"><span class="t${code ? " code" : ""}">${esc(code ? it.text.split("\n")[0] : it.text)}</span><span class="m">${itemMarks(it)}</span></button>
+    ${open ? `<div class="itembody">${isDue(it) ? reviewBody(it) : itemBody(it)}</div>` : ""}
+  </article>`;
+}
+function quizBlock(it) {
+  if (!it.quiz) return "";
+  return `<div class="ai"><h4>Quiz</h4><p>${md(it.quiz.question)}</p>${revealed.has(it.id) ? `<div>${fmt(it.quiz.answer)}</div>` : `<p><button class="mini" data-act="reveal" data-id="${it.id}">Think first, then show the answer</button></p>`}</div>`;
+}
+function threadBlock(it) {
+  const s = streaming[it.id] || {};
+  const thread = (it.thread || []).map(t => `<div class="ai"><h4>You asked</h4><p>${esc(t.q)}</p>${fmt(t.a)}</div>`).join("");
+  const live = s.field === "thread" ? `<div class="ai"><h4>You asked</h4><p>${esc(s.q)}</p>${fmt(s.text || "Thinking…")}</div>` : "";
+  return thread + live;
+}
+function itemBody(it) {
+  const s = streaming[it.id] || {}, got = it.status === "got";
+  const expl = s.field === "explanation" ? s.text : it.explanation;
+  const dis = busyItems.has(it.id) ? " disabled" : "";
+  const aiBtns = sample ? `<button class="mini" data-act="explain" data-id="${it.id}"${dis}>${it.explanation ? "Explain again, simpler" : "Explain"}</button><button class="mini" data-act="quiz" data-id="${it.id}"${dis}>${it.quiz ? "New quiz question" : "Quiz me"}</button>` : "";
+  return `<div class="item-top"><span>${esc(it.source || "")} · ${new Date(it.createdAt).toLocaleDateString()}</span><span class="status${got ? " got" : ""}">${got ? "Next review " + whenText(it.reviewAt) : "To learn"}</span></div>
+      ${it.kind === "code" ? `<p class="quote code">${esc(it.text)}</p>` : ""}
+      <input class="field" data-note="${it.id}" id="note-${it.id}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">
+      ${expl ? `<div class="ai"><h4>Explanation</h4>${fmt(expl)}</div>` : ""}
+      ${quizBlock(it)}${threadBlock(it)}
+      ${sample ? `<form class="ask" data-ask="${it.id}"><input class="field" id="ask-${it.id}" placeholder="Ask a follow-up question" aria-label="Ask a follow-up question"${dis}><button class="btn" type="submit"${dis}>Ask</button></form>` : ""}
+      <div class="minis">${aiBtns}<button class="mini" data-act="${got ? "unlearn" : "got"}" data-id="${it.id}">${got ? "Back to learning" : "Got it"}</button><button class="mini" data-act="remove" data-id="${it.id}">Remove</button></div>`;
+}
+function reviewBody(it) {  // recall first, then check, then say how it went
+  const dis = busyItems.has(it.id) ? " disabled" : "";
+  const ask = it.quiz ? quizBlock(it) : `<p class="meta">Can you explain this in your own words? Try it, then check what you saved.</p>`;
+  const quizBtn = sample ? `<button class="mini" data-act="quiz" data-id="${it.id}"${dis}>${it.quiz ? "A different question" : "Quiz me instead"}</button>` : "";
+  const saved = it.explanation || (it.thread || []).length ? `<details class="quiet"><summary>Check what you saved</summary><div>${it.explanation ? fmt(it.explanation) : ""}${threadBlock(it)}</div></details>` : "";
+  return `${it.kind === "code" ? `<p class="quote code">${esc(it.text)}</p>` : ""}${ask}${saved}
+      <div class="minis">${quizBtn}<button class="mini on" data-act="remembered" data-id="${it.id}">I remembered</button><button class="mini" data-act="forgot" data-id="${it.id}">I'd forgotten</button></div>`;
+}
+function groupRows(items) {
+  const groups = new Map();
+  for (const it of items) { const g = studyGroup(it); if (!groups.has(g.key)) groups.set(g.key, Object.assign({ items: [] }, g)); groups.get(g.key).items.push(it); }
+  return [...groups.values()].sort((a, b) => a.order - b.order).map(g =>
+    `<div class="sgroup"><h4>${esc(g.title)} <span>${g.items.length}</span></h4><div class="srows">${g.items.map(itemRow).join("")}</div></div>`).join("");
+}
 function renderStudy() {
   markSaved();
   const box = $("items");
   if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") { renderPending = true; return; }
   renderPending = false;
-  for (const b of document.querySelectorAll("[data-filter]")) b.classList.toggle("on", b.dataset.filter === studyFilter);
-  const list = studyItems.filter(i => studyFilter === "all" || (studyFilter === "got" ? i.status === "got" : i.status !== "got"));
   if (!studyItems.length) { box.innerHTML = `<p class="empty">Nothing saved yet. Select any text in a lesson, or a line of your code, and choose <b>Save to study list</b>. Each saved item can be explained, turned into a quiz question, or asked about.</p>`; return; }
-  if (!list.length) { box.innerHTML = `<p class="empty">${studyFilter === "got" ? "Nothing marked as understood yet." : "Everything here is marked as understood."}</p>`; return; }
-  box.innerHTML = list.map(it => {
-    const s = streaming[it.id] || {};
-    const expl = s.field === "explanation" ? s.text : it.explanation;
-    const thread = (it.thread || []).map(t => `<div class="ai"><h4>You asked</h4><p>${esc(t.q)}</p>${fmt(t.a)}</div>`).join("");
-    const live = s.field === "thread" ? `<div class="ai"><h4>You asked</h4><p>${esc(s.q)}</p>${fmt(s.text || "Thinking…")}</div>` : "";
-    const quiz = it.quiz ? `<div class="ai"><h4>Quiz</h4><p>${md(it.quiz.question)}</p>${revealed.has(it.id) ? `<div>${fmt(it.quiz.answer)}</div>` : `<p><button class="mini" data-act="reveal" data-id="${it.id}">Think first, then show the answer</button></p>`}</div>` : "";
-    const dis = busyItems.has(it.id) ? " disabled" : "";
-    const aiBtns = sample ? `<button class="mini" data-act="explain" data-id="${it.id}"${dis}>${it.explanation ? "Explain again, simpler" : "Explain"}</button><button class="mini" data-act="quiz" data-id="${it.id}"${dis}>${it.quiz ? "New quiz question" : "Quiz me"}</button>` : "";
-    return `<article class="item${it.status === "got" ? " got" : ""}">
-      <div class="item-top"><span>${esc(it.source || "")} · ${new Date(it.createdAt).toLocaleDateString()}</span><span class="status${it.status === "got" ? " got" : ""}">${it.status === "got" ? "Got it" : "To learn"}</span></div>
-      <p class="quote${it.kind === "code" ? " code" : ""}">${esc(it.text)}</p>
-      <input class="field" data-note="${it.id}" id="note-${it.id}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">
-      ${expl ? `<div class="ai"><h4>Explanation</h4>${fmt(expl)}</div>` : ""}
-      ${quiz}${thread}${live}
-      ${sample ? `<form class="ask" data-ask="${it.id}"><input class="field" id="ask-${it.id}" placeholder="Ask a follow-up question" aria-label="Ask a follow-up question"${dis}><button class="btn" type="submit"${dis}>Ask</button></form>` : ""}
-      <div class="minis">${aiBtns}<button class="mini" data-act="toggle" data-id="${it.id}">${it.status === "got" ? "Back to learning" : "Got it"}</button><button class="mini" data-act="remove" data-id="${it.id}">Remove</button></div>
-    </article>`;
-  }).join("");
+  const q = studyQuery.trim().toLowerCase();
+  const list = studyItems.filter(it => studyMatches(it, q));
+  if (!list.length) { box.innerHTML = `<p class="empty">Nothing in your study list matches "${esc(studyQuery.trim())}".</p>`; return; }
+  const due = list.filter(isDue).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
+  const learn = list.filter(it => it.status !== "got");
+  const got = list.filter(it => it.status === "got" && !isDue(it)).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
+  const head = (title, n) => `<h3>${title} <span>${n}</span></h3>`;
+  let html = "";
+  if (due.length) html += `<section class="ssec">${head("Review now", due.length)}<div class="srows">${due.map(itemRow).join("")}</div></section>`;
+  if (learn.length) html += `<section class="ssec">${head("To learn", learn.length)}${groupRows(learn)}</section>`;
+  else if (!q) html += `<section class="ssec">${head("To learn", 0)}<p class="empty">Nothing left to learn. Select any text in a lesson to add more.</p></section>`;
+  if (got.length) html += `<details class="ssec gotsec"${q || gotOpen ? " open" : ""}><summary>${head("Got it", got.length)}</summary><div class="srows">${got.map(itemRow).join("")}</div></details>`;
+  box.innerHTML = html;
 }
 function tutorFrame(it) {
   const prob = byId[it.problemId];
@@ -1204,10 +1431,12 @@ ${it.text}
 """
 ${it.note ? "Their note about what confuses them: " + it.note + "\n" : ""}${prob ? "They were working on: " + prob.title + " - " + prob.prompt.split("\n")[0] + "\n" : ""}`;
 }
-async function streamInto(it, field, prompt, extra) {
+const studyTrace = (it, feature, more) => Object.assign({ feature, lesson_id: it.problemId || "",
+  exercise_fn: (byId[it.problemId] || {}).fn || "", session: "study-" + it.id }, more);
+async function streamInto(it, field, prompt, extra, trace) {
   busyItems.add(it.id); streaming[it.id] = Object.assign({ field, text: "" }, extra || {}); renderStudy();
   try {
-    const { text } = await sample(prompt, { onText: ({ text }) => { streaming[it.id].text = text; renderStudy(); } });
+    const { text } = await sample(prompt, withTrace({ onText: ({ text }) => { streaming[it.id].text = text; renderStudy(); } }, trace));
     return text;
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
@@ -1223,7 +1452,8 @@ Explain it to them${again ? " again, more simply than before, using an everyday 
 - Say what it is in one plain sentence first.
 - Then show a tiny Python example in a \`\`\`python block, with a comment on each line. Keep the example about something else, and never solve the exercise they're working on.
 - Then one or two sentences on why it matters or where they'll meet it at work.
-- Explain any other jargon you use. Under 180 words.${again ? "\nYour previous explanation, which didn't land: " + it.explanation.slice(0, 600) : ""}`);
+- Explain any other jargon you use. Under 180 words.${again ? "\nYour previous explanation, which didn't land: " + it.explanation.slice(0, 600) : ""}`,
+    null, studyTrace(it, "explain", { question: it.text.slice(0, 300), word_limit: 180 }));
   if (text) await updateItem(id, { explanation: text }); else renderStudy();
 }
 async function quizItem(id) {
@@ -1232,7 +1462,8 @@ async function quizItem(id) {
   try {
     const q = await sample.json(`${tutorFrame(it)}
 Write one short quiz question that checks whether they really understand it, ideally "what does this code print?" or "what would happen if…". It must be answerable in your head without running code.${it.quiz ? " Make it different from: " + it.quiz.question : ""}
-Return JSON: {"question": string, "answer": string}. The answer is 1-3 sentences explaining why. Use backticks for code.`, { modelTier: "quick" });
+Return JSON: {"question": string, "answer": string}. The answer is 1-3 sentences explaining why. Use backticks for code.`,
+      withTrace({ modelTier: "quick" }, studyTrace(it, "quiz")));
     if (q && q.question) { revealed.delete(id); await updateItem(id, { quiz: { question: String(q.question), answer: String(q.answer || "") } }); }
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
@@ -1246,7 +1477,8 @@ async function askItem(id, question) {
 ${it.explanation ? "You already explained:\n" + it.explanation.slice(0, 1200) + "\n" : ""}${history ? "Earlier questions:\n" + history + "\n" : ""}
 Their new question: ${question}
 
-Answer it plainly for a beginner, under 150 words. Small code examples are fine in a \`\`\`python block, but never solve the exercise they're working on.`, { q: question });
+Answer it plainly for a beginner, under 150 words. Small code examples are fine in a \`\`\`python block, but never solve the exercise they're working on.`, { q: question },
+    studyTrace(it, "ask_study_item", { question, word_limit: 150 }));
   if (text) await updateItem(id, { thread: [...(it.thread || []), { q: question, a: text, at: Date.now() }] }); else renderStudy();
 }
 async function connectStudy(db) {
@@ -1317,7 +1549,7 @@ $("selSave").onclick = async () => { if (!pendingSel) return; await addItem(pend
 $("selExplain").onclick = async () => {
   if (!pendingSel) return;
   const it = await addItem(pendingSel.text, pendingSel.source, pendingSel.kind);
-  hideSelbar(); studyFilter = it.status === "got" ? "all" : "open"; openNotebook("study"); explainItem(it.id);
+  hideSelbar(); openItems.add(it.id); openNotebook("study"); explainItem(it.id);
 };
 
 // ---------- editor: auto-indent, Tab/Shift+Tab, comments, symbol keys ----------
@@ -1384,7 +1616,8 @@ $("nbClose").onclick = closeNotebook; $("scrim").onclick = closeNotebook;
 for (const t of document.querySelectorAll("[data-nb]")) t.onclick = () => openNotebook(t.dataset.nb);
 $("nRange").oninput = renderGrowth;
 $("glossSearch").oninput = renderGlossary;
-for (const b of document.querySelectorAll("[data-filter]")) b.onclick = () => { studyFilter = b.dataset.filter; renderStudy(); };
+$("studySearch").oninput = e => { studyQuery = e.target.value; renderStudy(); };
+$("items").addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("gotsec")) gotOpen = e.target.open; }, true);
 document.addEventListener("click", async e => {
   const t = e.target;
   const tg = t.closest("[data-toggle]"); if (tg) { const id = tg.dataset.toggle, open = !openMods.has(id); if (open) openMods.add(id); else openMods.delete(id); tg.setAttribute("aria-expanded", String(open)); tg.nextElementSibling.hidden = !open; return; }
@@ -1396,20 +1629,28 @@ document.addEventListener("click", async e => {
   const aq = t.closest("[data-askq]"); if (aq) { if (!aq.disabled) askLesson(aq.textContent, ASK_INSTRUCTIONS[aq.dataset.askq]); return; }
   const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
   const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
+  const gq = t.closest("[data-gotcha]"); if (gq && !gq.disabled) { answerGotcha(+gq.dataset.gotcha); return; }
+  const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
+  if (t.closest("[data-gotcha-retry]")) { delete progress.gotchas[cur.id]; saveProgress(); renderGotcha(); return; }
+  if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) { lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1); return; }
   if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1); return; }
   const tag = t.closest("[data-tag], [data-explain]");
   if (tag && tag.matches("[data-tag]")) { const ex = studyItems.find(i => i.text === tag.dataset.text); if (ex) removeItem(ex.id); else { addItem(tag.dataset.text, tag.dataset.src, "text"); toast("Saved to your study list"); } return; }
-  if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); studyFilter = it.status === "got" ? "all" : "open"; openNotebook("study"); if (!it.explanation) explainItem(it.id); }
+  if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); openItems.add(it.id); openNotebook("study"); if (!it.explanation) explainItem(it.id); }
 });
 $("items").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const id = b.dataset.id, it = studyItems.find(i => i.id === id); if (!it) return;
-  if (b.dataset.act === "explain") explainItem(id);
-  else if (b.dataset.act === "quiz") quizItem(id);
-  else if (b.dataset.act === "reveal") { revealed.add(id); renderStudy(); }
-  else if (b.dataset.act === "toggle") updateItem(id, { status: it.status === "got" ? "open" : "got" });
-  else if (b.dataset.act === "remove") removeItem(id);
+  const act = b.dataset.act;
+  if (act === "open") { if (openItems.has(id)) openItems.delete(id); else openItems.add(id); renderStudy(); }
+  else if (act === "explain") explainItem(id);
+  else if (act === "quiz") quizItem(id);
+  else if (act === "reveal") { revealed.add(id); renderStudy(); }
+  else if (act === "got") gotIt(it);
+  else if (act === "unlearn") backToLearning(it);
+  else if (act === "remembered" || act === "forgot") reviewed(it, act === "remembered");
+  else if (act === "remove") removeItem(id);
 });
 $("paneText").addEventListener("submit", e => {
   if (e.target.id !== "askForm") return;
@@ -1475,8 +1716,8 @@ async function localBackend() {
     return { text, truncated: false };
   }
   const s = !health.ai ? null : Object.assign(
-    (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default" }, opts.onText),
-    { json: (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", json: true }) });
+    (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", trace: opts.trace }, opts.onText),
+    { json: (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", json: true, trace: opts.trace }), local: true });
   const call = async (method, path, body) => {
     const res = await fetch("/api/docs/" + path, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     if (!res.ok) await fail(res);
@@ -1514,7 +1755,7 @@ async function localBackend() {
 const measureTop = () => document.documentElement.style.setProperty("--toph", document.querySelector(".top").offsetHeight + "px");
 measureTop(); addEventListener("resize", measureTop);
 loadLocal(); loadStudyLocal();
-renderGrowth(); renderGotchas(); renderGlossary(); renderStudy();
+renderGrowth(); renderGlossary(); renderStudy();
 document.body.classList.add("no-ai");
 goHome();
 (async () => {
@@ -1539,7 +1780,7 @@ goHome();
           progress = {
             solved: Object.assign({}, r.solved || {}, progress.solved),
             days: [...new Set([...(r.days || []), ...progress.days])].sort(),
-            lessons, current: progress.current || r.current || null,
+            lessons, gotchas: Object.assign({}, r.gotchas || {}, progress.gotchas), current: progress.current || r.current || null,
           };
         }
         await saveProgress();
