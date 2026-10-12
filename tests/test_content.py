@@ -115,3 +115,23 @@ def test_the_page_only_looks_up_elements_that_exist():
     assert looked_up <= static, f"looked up but not on the page: {sorted(looked_up - static)}"
     tabs = re.findall(r'data-nb="([a-z]+)"', page)
     assert tabs and all(f'id="nb-{t}"' in page for t in tabs), "every Notebook tab needs its nb-<tab> pane"
+
+
+def test_every_machine_fits_its_example(data):
+    """The machine animates the sample case, so it must sort exactly the input rows into its bins."""
+    import json
+
+    key = lambda r: json.dumps(r, sort_keys=True)
+    machines = [p for p in data["bank"] if p.get("machine")]
+    assert {p["id"] for p in machines} >= {"split_by_key", "validate_rows"}
+    for p in machines:
+        m, case = p["machine"], next(c for c in p["cases"] if c.get("sample"))
+        rows, out = case["args"][0], case["expected"]
+        assert isinstance(rows, list) and rows and all(isinstance(r, dict) for r in rows), p["id"]
+        assert isinstance(out, list) and len(out) == len(m["bins"]), f"{p['id']}: one returned list per bin"
+        assert sorted(key(r) for g in out for r in g) == sorted(key(r) for r in rows), f"{p['id']}: the bins hold exactly the input rows"
+        field = m["label_field"] or case["args"][m["label_arg"]]
+        assert all(field in r for r in rows), f"{p['id']}: every row has the pill's field {field!r}"
+        if m["leak_arg"] is not None:
+            assert isinstance(case["args"][m["leak_arg"]], str), f"{p['id']}: leak_arg names a field"
+

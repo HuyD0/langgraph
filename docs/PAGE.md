@@ -89,6 +89,16 @@ where it should appear. Copy a neighbour; every field is named. In short:
 - `exercise`: the `prompt`, `starter`, `solution` and `cases` (mark one `sample=True`), the
   `guided` scaffold with `___` blanks and the matching `fills`, and the Learn panel
   (`concepts`, `byhand`, `why`, `gotchas`).
+- `machine`: optional, for an exercise that sorts rows into groups (the first argument is
+  a list of dicts, and the sample case returns one list per group holding exactly those
+  rows). `machine(bins=[...], who=[...], label_field=... or label_arg=..., leak_arg=...)`
+  draws the Build step's "Watch the rows" card: the example's rows travel through the
+  function into named bins, with a replay slider, a table per bin and, with `leak_arg`, a
+  check that no value of that field lands in two bins. `split_by_key` and `validate_rows`
+  use it; `tests/test_content.py` checks each machine fits its example.
+
+Every exercise whose example takes a list of rows also shows those rows as a table, and,
+after a run, your result for the example beside the expected rows when it returns rows.
 
 Then `uv run drill build-page`. It runs the solution and the filled-in scaffold against the
 cases, so a lesson that cannot be solved never reaches the page. A new chapter is a new

@@ -124,7 +124,58 @@ b { font-weight: 600; }
 .editor { position: relative; background: var(--code-bg); border-radius: 10px; }
 .editor .hl { position: absolute; inset: 0; margin: 0; pointer-events: none; overflow: hidden; font: 15px/1.6 var(--mono); tab-size: 4; padding: 14px 14px 14px 44px; border: 1px solid transparent; white-space: pre; color: var(--fg); counter-reset: line; }
 .editor .hl .ln::before { counter-increment: line; content: counter(line); position: absolute; left: var(--sl, 0px); width: 32px; text-align: right; color: var(--muted); }
-.editor .hl .k { color: var(--accent); }
+.editor .hl .k { color: var(--syn-kw); font-weight: 600; }
+.editor .hl .s { color: var(--syn-str); }
+.editor .hl .n { color: var(--syn-num); }
+.editor .hl .f { color: var(--syn-fn); font-weight: 600; }
+.editor .hl .bi { color: var(--syn-bi); }
+.editor .codebar { position: absolute; left: 0; right: 0; background: var(--hint-bg); pointer-events: none; transition: top .25s; }
+/* data tables: the example's rows, and what your code returned */
+.dtwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-width: 0; }
+table.dt { width: 100%; border-collapse: collapse; font: 13px var(--mono); font-variant-numeric: tabular-nums; }
+table.dt caption { caption-side: top; text-align: left; padding: 9px 12px 6px; font: 600 13px var(--body); color: var(--fg); }
+table.dt caption small { font: 400 13px var(--body); color: var(--muted); margin-left: 6px; }
+table.dt caption small.bad { color: var(--fail); font-weight: 600; }
+table.dt th { text-align: left; font: 600 11px var(--mono); letter-spacing: .04em; color: var(--muted); padding: 6px 12px; background: var(--bg); border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.dt td { padding: 6px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.dt tr:last-child td { border-bottom: 0; }
+table.dt tr.wrong td { background: var(--fail-bg); }
+table.dt tr.now td { background: var(--hint-bg); }
+table.dt tr.empty td { color: var(--muted); font: 13px var(--body); white-space: normal; }
+table.dt .pdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.dtpair { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+/* the machine: the example's rows travel through the function into bins */
+.mach { display: grid; gap: 12px; }
+.mach h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.mstage { position: relative; }
+.mstage svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mrows { position: absolute; left: 0; top: 2px; font: 600 12px var(--mono); }
+.mrows small { font: 400 12px var(--body); color: var(--muted); margin-left: 6px; }
+.mfn { position: absolute; left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); font: 600 13px var(--mono); border-radius: 10px; padding: 10px 16px; white-space: nowrap; transition: box-shadow .2s; }
+.mfn.busy { box-shadow: 0 0 0 5px color-mix(in srgb, var(--fg) 18%, transparent); }
+.margs { position: absolute; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.margs span { font: 600 11.5px var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
+.mbin { position: absolute; background: var(--bg); border: 1.5px solid var(--line); border-radius: 14px; }
+.mbin .mlabel { position: absolute; left: 12px; top: 8px; font: 600 12px var(--mono); }
+.mbin .mwho { position: absolute; left: 12px; top: 26px; right: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mret { position: absolute; left: 0; right: 0; text-align: center; font: 600 12.5px var(--mono); color: var(--muted); }
+.mtag { position: absolute; right: 0; top: 0; font: 600 11px var(--mono); letter-spacing: .05em; color: var(--hint); background: var(--hint-bg); border-radius: 999px; padding: 3px 10px; }
+.mtok { position: absolute; left: 0; top: 0; width: 44px; height: 26px; border-radius: 13px; border: 0; padding: 0; display: grid; place-items: center; font: 700 12px var(--mono); color: #fff; cursor: pointer; transition: transform .45s cubic-bezier(.3,.7,.3,1), opacity .3s, box-shadow .2s; will-change: transform; }
+.mtok.cur { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5.5px var(--fg); }
+.mtok.leak { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5.5px var(--fail); }
+.mtok.lost { opacity: .25; }
+.mpanel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.mkv { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; font: 12.5px/1.45 var(--mono); min-width: 0; overflow-wrap: anywhere; }
+.mkv span { display: block; color: var(--muted); font: 11.5px var(--body); }
+.mkv.wide { grid-column: span 2; }
+.mkv .ok { color: var(--pass); font-weight: 700; }
+.mkv .no { color: var(--fail); font-weight: 700; }
+.iconbtn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; flex: none; cursor: pointer; }
+.iconbtn .ic { width: 18px; height: 18px; }
+.mreplay { display: flex; align-items: center; gap: 10px; }
+.mreplay input { flex: 1; min-width: 0; accent-color: var(--fg); height: 32px; }
+.mreplay .n { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; min-width: 9ch; text-align: right; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .mtok, .editor .codebar { transition: none; } }
 .editor .hl .c { color: var(--muted); }
 .editor .hl .b { color: var(--hint); background: var(--hint-bg); border-radius: 3px; }
 .editor textarea#code { display: block; padding-left: 44px; position: relative; resize: none; overflow-y: hidden; }
@@ -517,15 +568,40 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
       <div class="taskbody">
       <div id="taskPrompt"></div>
       <div class="example"><span class="meta">Example. More tests stay hidden until you run your code.</span><pre class="code" id="taskExample"></pre></div>
+      <div id="taskTable"></div>
       <p class="byhand" id="taskByhand" hidden></p>
       <div class="goal" id="taskGoal"></div>
       <div class="callout" id="moneyNote" hidden><b>Made-up data</b><p>These numbers are invented, shaped like your finance tracker's. To run this on your real data, on your Mac: <code id="moneyCmd"></code></p></div>
       </div>
     </details>
+    <section class="card mach" id="machine" hidden aria-label="The example's rows moving through your function">
+      <h3>Watch the rows</h3>
+      <div class="mstage" id="mStage">
+        <svg id="mWires" aria-hidden="true"></svg>
+        <span class="mrows" id="mRowsLabel"></span>
+        <span class="mtag" id="mTag" hidden>EXAMPLE · THE GOAL</span>
+        <div class="mfn" id="mFn"></div>
+        <div class="margs" id="mArgs"></div>
+        <div id="mBins"></div>
+        <div class="mret" id="mRet"></div>
+        <div id="mTokens"></div>
+      </div>
+      <div class="mpanel" id="mPanel"></div>
+      <div class="mreplay" id="mReplay" hidden>
+        <button class="iconbtn" id="mPlay" aria-label="Replay"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg></button>
+        <label for="mScrub" class="sr">Replay position</label>
+        <input type="range" id="mScrub" min="0" max="1" value="0" step="1">
+        <span class="n" id="mStep"></span>
+      </div>
+      <div id="mLeak"></div>
+      <div class="dtpair" id="mOuts"></div>
+      <button class="btn" id="mDemo"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span>Watch what should happen</span></button>
+    </section>
     <details class="quiet" id="help"><summary>Python you'll need</summary><div><div id="blocksBody" class="pane"></div></div></details>
-    <div class="editor" id="editor"><pre class="hl" id="codeHl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea></div>
+    <div class="editor" id="editor"><div class="codebar" id="codeBar" hidden></div><pre class="hl" id="codeHl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea></div>
     <div class="result idle" id="result">Write your code, then run the tests. Python runs right here in the page.</div>
     <pre class="out" id="stdout" hidden></pre>
+    <div class="dtpair" id="outView" hidden></div>
     <div class="tools">
       <button class="btn" id="hintBtn"><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg><span>Get a hint</span></button>
       <button class="btn quiet" id="moreBtn" aria-expanded="false" aria-controls="morePanel">More</button>
@@ -636,10 +712,31 @@ function exampleText(p, c) {
   return text.split("\n").length > 40 ? "call     " + callText(p, c) + "\nreturns  " + short(py(c.expected), 200) : text;
 }
 const callText = (p, c) => p.fn + "(" + short(c.args.map(py).join(", ")) + ")";
+// The example's own result goes back as JSON, so the page can draw it as tables and move the rows.
+const PY_JSON = String.raw`
+def _d_json(x):
+    if x is None:
+        return "null"
+    if x is True:
+        return "true"
+    if x is False:
+        return "false"
+    if isinstance(x, int) or isinstance(x, float):
+        s = repr(x)
+        return "null" if s in ("inf", "-inf", "nan") else s
+    if isinstance(x, str):
+        return '"' + x.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
+    if isinstance(x, list) or isinstance(x, tuple):
+        return "[" + ",".join([_d_json(v) for v in x]) + "]"
+    if isinstance(x, dict):
+        return "{" + ",".join([_d_json(str(k)) + ":" + _d_json(v) for k, v in x.items()]) + "}"
+    return _d_json(repr(x))
+`;
+const sampleIndex = p => Math.max(0, p.cases.findIndex(c => c.sample));
 function harness(p, code) {
   const cases = p.cases.map(c => "(" + "(" + c.args.map(py).join(", ") + ",), " + py(c.expected) + ")").join(",\n    ");
   return code + `
-
+${PY_JSON}
 def _d_norm(x):
     ${p.unordered ? "return sorted([sorted(g) for g in x])" : "return x"}
 
@@ -656,6 +753,8 @@ for _d_i, (_d_a, _d_e) in enumerate(_d_cases):
     try:
         _d_g = ${p.fn}(*_d_a)
         print("@@" + str(_d_i) + "|" + ("ok" if _d_same(_d_g, _d_e) else "fail") + "|" + repr(_d_g))
+        if _d_i == ${sampleIndex(p)}:
+            print("@@J|" + _d_json(_d_g))
     except Exception as _d_x:
         print("@@" + str(_d_i) + "|err|" + type(_d_x).__name__ + ": " + str(_d_x))
 `;
@@ -1164,6 +1263,9 @@ function loadProblem(p) {
   $("taskPrompt").innerHTML = p.prompt.split("\n\n").map(x => /^\s*[-*]\s/m.test(x) ? blockHtml(x) : "<p>" + md(x) + "</p>").join("");
   const ex = p.cases.find(c => c.sample) || p.cases[0];
   $("taskExample").textContent = exampleText(p, ex);
+  const names = paramNames(p), first = ex.args[0];
+  $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
+  machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("moneyNote").hidden = !D.money.includes(p.id);
   $("moneyCmd").textContent = "uv run drill mine new " + p.id;
@@ -1191,10 +1293,14 @@ async function runTests() {
   const { out, error } = await runPython(harness(p, code));
   busy = false; for (const b of runBtns()) { b.disabled = false; setLabel(b, b.dataset.was); }
   const results = [], prints = [];
+  let gotJson;
   for (const line of out.split("\n")) {
     const m = line.match(/^@@(\d+)\|(ok|fail|err)\|(.*)$/);
-    if (m) results[+m[1]] = { status: m[2], got: m[3] }; else if (line.trim()) prints.push(line);
+    if (m) { results[+m[1]] = { status: m[2], got: m[3] }; continue; }
+    if (line.startsWith("@@J|")) { try { gotJson = { v: JSON.parse(line.slice(4)) }; } catch {} continue; }
+    if (line.trim()) prints.push(line);
   }
+  showOutputs(p, gotJson);
   $("stdout").hidden = !prints.length; $("stdout").textContent = prints.length ? "Your print output:\n" + prints.join("\n") : "";
   markDay();
   if (error && !results.length) {
@@ -1230,8 +1336,169 @@ async function runTests() {
     }
   }
   await saveProgress(); renderTop();
-  $("result").scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  const smooth = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  if (M.p && gotJson) { $("machine").scrollIntoView({ block: "start", behavior: smooth }); machineRun(gotJson.v); }
+  else $("result").scrollIntoView({ block: "nearest", behavior: smooth });
 }
+
+// ---------- tables of rows ----------
+const isRows = v => Array.isArray(v) && v.length > 0 && v.length <= 12 && v.every(r => r && typeof r === "object" && !Array.isArray(r)) && new Set(v.flatMap(r => Object.keys(r))).size <= 6;
+function rowsTable(rows, o = {}) {
+  const cols = [...new Set(rows.flatMap(r => Object.keys(r)))];
+  const head = (o.numbered ? "<th>row</th>" : "") + cols.map(c => `<th>${esc(JSON.stringify(c))}</th>`).join("");
+  const body = rows.length ? rows.map((r, i) => {
+    const cls = (o.wrong && o.wrong(i) ? "wrong" : "") + (o.now === i ? " now" : "");
+    const n = o.ids ? o.ids[i] + 1 : i + 1;
+    return `<tr class="${cls.trim()}">${o.numbered ? `<td>${n}</td>` : ""}${cols.map(c => `<td>${c in r ? esc(short(py(r[c]), 24)) : '<span class="meta">missing</span>'}</td>`).join("")}</tr>`;
+  }).join("") : `<tr class="empty"><td colspan="${cols.length + (o.numbered ? 1 : 0) || 1}">${esc(o.empty || "No rows.")}</td></tr>`;
+  return `<table class="dt">${o.caption ? `<caption>${o.caption}</caption>` : ""}<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+// Any lesson whose example returns rows: your result beside the expected one. The machine draws its own.
+function showOutputs(p, got) {
+  const view = $("outView"), c = p.cases[sampleIndex(p)];
+  view.hidden = true; view.innerHTML = "";
+  if (M.p || !got || !c || !isRows(c.expected) || !Array.isArray(got.v)) return;
+  const mine = got.v.filter(r => r && typeof r === "object" && !Array.isArray(r));
+  if (mine.length !== got.v.length || mine.length > 12) return;
+  view.innerHTML = `<div class="dtwrap">${rowsTable(mine, { caption: "Your result <small>for the example</small>", empty: "Your code returned no rows." })}</div><div class="dtwrap">${rowsTable(c.expected, { caption: "Expected" })}</div>`;
+  view.hidden = false;
+}
+
+// ---------- the machine: the example's rows travel through your function into bins ----------
+// Only for lessons whose exercise sets `machine` (content/model.py): rows in, one list per bin out.
+const M = { p: null, rows: [], exp: null, got: null, k: 0, timer: null, mode: "idle", picked: null, tokens: [], g: null };
+const rowKey = r => JSON.stringify(Object.keys(r).sort().map(k => [k, r[k]]));
+function matchBins(rows, lists) {  // which input row ended up in which list, by equal value, in order
+  const pool = new Map();
+  rows.forEach((r, i) => { const k = rowKey(r); if (!pool.has(k)) pool.set(k, []); pool.get(k).push(i); });
+  const bin = rows.map(() => null), order = lists.map(() => []);
+  lists.forEach((list, b) => (Array.isArray(list) ? list : []).forEach(r => {
+    const q = r && typeof r === "object" && !Array.isArray(r) ? pool.get(rowKey(r)) : null;
+    if (q && q.length) { const i = q.shift(); bin[i] = b; order[b].push(i); }
+  }));
+  return { bin, order };
+}
+function machineLoad(p) {
+  machineStop();
+  M.p = p.machine ? p : null; M.g = null; $("machine").hidden = !M.p;
+  if (!M.p) return;
+  const c = p.cases[sampleIndex(p)], m = p.machine, names = paramNames(p);
+  M.rows = c.args[0]; M.exp = matchBins(M.rows, c.expected); M.got = null; M.k = 0; M.mode = "idle"; M.picked = null;
+  M.field = m.label_field || c.args[m.label_arg];
+  M.leakField = m.leak_arg != null ? c.args[m.leak_arg] : null;
+  const values = [...new Set(M.rows.map(r => String(r[M.field])))];
+  $("mFn").textContent = p.fn + "()";
+  $("mArgs").innerHTML = c.args.slice(1).map((a, i) => `<span>${esc((names[i + 1] || "input " + (i + 2)) + " = " + short(py(a), 36))}</span>`).join("");
+  $("mRowsLabel").innerHTML = `${esc(names[0] || "rows")}<small>each pill is one row · tap one</small>`;
+  $("mRet").textContent = "return [" + m.bins.join(", ") + "]";
+  $("mBins").innerHTML = m.bins.map((b, i) => `<div class="mbin"><span class="mlabel">${esc(b)}</span><span class="mwho">${esc(m.who[i])}</span></div>`).join("");
+  $("mTokens").innerHTML = M.rows.map((r, i) => {
+    const v = String(r[M.field]), col = ["var(--tok-a)", "var(--tok-b)", "var(--tok-c)", "var(--tok-d)"][values.indexOf(v) % 4];
+    return `<button type="button" class="mtok" data-i="${i}" style="background:${col}" aria-label="Row ${i + 1}, ${esc(M.field)} ${esc(v)}. Show the whole row.">${esc(short(v, 5))}</button>`;
+  }).join("");
+  M.tokens = [...$("mTokens").children];
+  M.tokens.forEach(t => t.onclick = () => { M.picked = +t.dataset.i; machinePanel(); });
+  $("mScrub").max = M.rows.length; $("mReplay").hidden = true; $("mLeak").innerHTML = ""; $("mDemo").disabled = false;
+  setLabel($("mDemo"), "Watch what should happen");
+  machineLayout(); machineRender(false);
+}
+function machineLayout() {
+  if (!M.p) return;
+  const W = $("mStage").clientWidth; if (!W) return;
+  const n = M.rows.length, nb = M.p.machine.bins.length, tw = 44, gap = 6;
+  const perRow = Math.max(1, Math.floor((W + gap) / (tw + gap))), qRows = Math.ceil(n / perRow);
+  const qTop = 26, fnTop = qTop + qRows * 32 + 26, argsTop = fnTop + 48, binTop = argsTop + 46;
+  const bw = (W - (nb - 1) * 10) / nb, cols = Math.max(1, Math.floor((bw - 16) / (tw + 8)));
+  const binH = 50 + Math.ceil(n / cols) * 32 + 4, retTop = binTop + binH + 10;
+  M.g = { W, n, nb, tw, gap, perRow, qTop, fnTop, binTop, bw, cols };
+  $("mStage").style.height = (retTop + 22) + "px";
+  $("mFn").style.top = fnTop + "px"; $("mArgs").style.top = argsTop + "px"; $("mRet").style.top = retTop + "px";
+  [...$("mBins").children].forEach((b, i) => Object.assign(b.style, { left: i * (bw + 10) + "px", top: binTop + "px", width: bw + "px", height: binH + "px" }));
+  const c = W / 2, fb = fnTop + 40;
+  $("mWires").innerHTML = `<path d="M${c} ${qTop + qRows * 32 + 2} V ${fnTop - 4}" stroke="var(--fg)" stroke-width="2" fill="none"/><path d="M${c - 6} ${fnTop - 10} L${c} ${fnTop - 2} L${c + 6} ${fnTop - 10}" stroke="var(--fg)" stroke-width="2" fill="none"/>` +
+    [...Array(nb).keys()].map(i => { const x = i * (bw + 10) + bw / 2; return `<path d="M${c} ${fb} C ${c} ${fb + 30}, ${x} ${binTop - 30}, ${x} ${binTop - 2}" stroke="var(--fg)" stroke-width="2" fill="none"/>`; }).join("");
+}
+function machineData() {
+  return M.mode === "demo" ? M.exp : M.mode === "run" ? M.got : null;
+}
+function machineRender(fly) {
+  if (M.p && (!M.g || M.g.W !== $("mStage").clientWidth)) machineLayout();  // measure on demand: the card may have just appeared
+  if (!M.p || !M.g) return;
+  const g = M.g, res = machineData(), bins = M.p.machine.bins;
+  const leak = new Set();
+  if (M.mode === "run" && M.leakField && res) {
+    const seen = new Map();
+    res.order.forEach((ids, b) => ids.filter(i => i < M.k).forEach(i => { const v = String(M.rows[i][M.leakField]); if (!seen.has(v)) seen.set(v, new Set()); seen.get(v).add(b); }));
+    seen.forEach((bs, v) => { if (bs.size > 1) leak.add(v); });
+  }
+  M.tokens.forEach((t, i) => {
+    let x, y; const b = res ? res.bin[i] : null;
+    if (res && i < M.k && b != null) { const slot = res.order[b].filter(id => id < M.k).indexOf(i); x = b * (g.bw + 10) + 10 + (slot % g.cols) * (g.tw + 8); y = g.binTop + 50 + Math.floor(slot / g.cols) * 32; }
+    else if (res && i < M.k) { x = g.W / 2 - g.tw / 2; y = g.fnTop + 7; }
+    else { x = (i % g.perRow) * (g.tw + g.gap); y = g.qTop + Math.floor(i / g.perRow) * 32; }
+    if (fly === i) { x = g.W / 2 - g.tw / 2; y = g.fnTop + 7; }
+    t.style.transform = `translate(${x}px, ${y}px)`;
+    const isLeak = M.leakField && i < M.k && leak.has(String(M.rows[i][M.leakField]));
+    t.classList.toggle("cur", !!res && i === M.k - 1 && fly !== i && !isLeak);
+    t.classList.toggle("leak", !!isLeak);
+    t.classList.toggle("lost", !!res && i < M.k && b == null);
+  });
+  $("mFn").classList.toggle("busy", fly != null && fly !== false);
+  $("mTag").hidden = M.mode !== "demo";
+  $("mStep").textContent = `Row ${M.k} of ${M.rows.length}`;
+  $("mLeak").innerHTML = leak.size ? `<div class="result fail"><div><b>Leak found.</b> ${esc(M.leakField)} ${[...leak].map(v => `"${esc(v)}"`).join(" and ")} ${leak.size > 1 ? "are" : "is"} in more than one bin. Rows that share a ${esc(M.leakField)} must stay together, or the test includes data the model already trained on and its score looks better than it really is.</div></div>` : "";
+  // what each bin holds so far, as tables
+  $("mOuts").innerHTML = res ? bins.map((name, b) => {
+    const ids = res.order[b].filter(i => i < M.k);
+    const wrong = ids.filter(i => M.exp.bin[i] !== b).length;
+    const cap = `${esc(name)} <small class="${wrong ? "bad" : ""}">${wrong ? wrong + " on the wrong side" : M.mode === "demo" ? "expected" : "your result"}</small>`;
+    return `<div class="dtwrap">${rowsTable(ids.map(i => M.rows[i]), { caption: cap, numbered: true, ids, wrong: j => M.exp.bin[ids[j]] !== b, empty: "No rows yet." })}</div>`;
+  }).join("") : "";
+  machinePanel();
+}
+function machinePanel() {
+  const res = machineData(), show = M.picked != null ? M.picked : (res && M.k > 0 ? M.k - 1 : null);
+  if (show == null) { $("mPanel").innerHTML = `<div class="mkv wide"><span>Tap a pill to see the whole row</span>${esc(py(M.rows[0]))}</div>`; codeBar(0); return; }
+  const r = M.rows[show], bins = M.p.machine.bins, should = M.exp.bin[show];
+  let html = `<div class="mkv wide"><span>Row ${show + 1}</span>${esc(py(r))}</div><div class="mkv"><span>${esc(M.field)}</span>${esc(py(r[M.field]))}</div><div class="mkv"><span>Should go to</span>${should != null ? esc(bins[should]) : "?"}</div>`;
+  const went = res && show < M.k ? res.bin[show] : undefined;
+  if (M.mode === "run" && went !== undefined) html += `<div class="mkv wide"><span>Your code sent it to</span><b class="${went === should ? "ok" : "no"}">${went != null ? esc(bins[went]) : "nowhere: it went missing"}</b></div>`;
+  $("mPanel").innerHTML = html;
+  if (M.mode === "run" && went != null && M.picked == null) {
+    const lines = $("code").value.split("\n"), re = new RegExp("\\b" + bins[went] + "\\.append");
+    let n = lines.findIndex(l => re.test(l)) + 1; if (!n) n = lines.findIndex(l => /\.append/.test(l)) + 1;
+    codeBar(n);
+  } else codeBar(0);
+}
+function codeBar(n) {  // the yellow line behind the code that sent this row to its bin
+  const bar = $("codeBar"), line = n ? $("codeHl").children[n - 1] : null;
+  if (!line) { bar.hidden = true; return; }
+  bar.hidden = false; bar.style.top = line.offsetTop + "px"; bar.style.height = parseFloat(getComputedStyle($("code")).lineHeight) + "px";
+}
+function machineSet(v, fly) {
+  M.k = Math.max(0, Math.min(M.rows.length, v)); $("mScrub").value = M.k;
+  if (fly && !matchMedia("(prefers-reduced-motion: reduce)").matches) { machineRender(M.k - 1); setTimeout(() => machineRender(false), 320); } else machineRender(false);
+}
+function machineStop() { clearInterval(M.timer); M.timer = null; $("mPlay").innerHTML = ic("play"); $("mPlay").setAttribute("aria-label", "Replay"); }
+function machinePlay(from, done) {
+  machineStop(); M.picked = null; machineSet(from, false);
+  $("mPlay").innerHTML = '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>'; $("mPlay").setAttribute("aria-label", "Pause");
+  M.timer = setInterval(() => { if (M.k >= M.rows.length) { machineStop(); if (done) done(); return; } machineSet(M.k + 1, true); }, 800);
+}
+function machineRun(got) {
+  if (!M.p) return;
+  const lists = Array.isArray(got) ? got : [];
+  M.got = matchBins(M.rows, M.p.machine.bins.map((_, b) => lists[b]));
+  M.mode = "run"; $("mReplay").hidden = false;
+  machinePlay(0);
+}
+$("mPlay").onclick = () => { if (M.timer) machineStop(); else machinePlay(M.k >= M.rows.length ? 0 : M.k); };
+$("mScrub").oninput = e => { machineStop(); M.picked = null; machineSet(+e.target.value, false); };
+$("mDemo").onclick = () => {
+  M.mode = "demo"; $("mReplay").hidden = true; $("mDemo").disabled = true;
+  machinePlay(0, () => setTimeout(() => { $("mDemo").disabled = false; setLabel($("mDemo"), "Watch it again"); if (M.mode === "demo") { M.mode = M.got ? "run" : "idle"; machineSet(M.got ? M.rows.length : 0, false); } }, 1600));
+};
+{ let w = 0; new ResizeObserver(() => { const nw = $("mStage").clientWidth; if (nw && nw !== w) { w = nw; machineLayout(); machineRender(false); } }).observe($("mStage")); }
 
 // ---------- hints, review, solution ----------
 function addNote(kind, head, text) {
@@ -1740,16 +2007,22 @@ ed.addEventListener("input", () => { try { localStorage.setItem(draftKey(cur.p.i
 // see-through. The textarea grows with its code, so only sideways scrolling needs syncing. If drawing
 // ever fails, .hl-on is never set and the plain textarea shows as before.
 const PY_KW = new Set("and as assert break class continue def del elif else except False finally for from global if import in is lambda None nonlocal not or pass raise return True try while with yield".split(" "));
+const PY_BI = new Set("set list dict tuple len range enumerate print sorted reversed str int float bool sum min max abs round zip map filter any all isinstance".split(" "));
 function hlPython(src) {
-  const re = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(___)|([A-Za-z_][A-Za-z0-9_]*)|([^#"'A-Za-z_]+)/g;
-  let out = "", m;
+  const re = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(___)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^#"'A-Za-z_0-9]+|\d)/g;
+  let out = "", m, afterDef = false;
   while ((m = re.exec(src))) {
-    const [t, com, str, blank, word] = m;
+    const [t, com, str, blank, num, word] = m;
     if (com) out += `<span class="c">${esc(com)}</span>`;
-    else if (str) out += esc(str);
+    else if (str) out += `<span class="s">${esc(str)}</span>`;
     else if (blank) out += `<span class="b">___</span>`;
-    else if (word) out += PY_KW.has(word) ? `<span class="k">${word}</span>` : word;
-    else out += esc(t);
+    else if (num) out += `<span class="n">${num}</span>`;
+    else if (word) {
+      if (afterDef) { out += `<span class="f">${word}</span>`; afterDef = false; }
+      else if (PY_KW.has(word)) { out += `<span class="k">${word}</span>`; afterDef = word === "def"; }
+      else if (PY_BI.has(word)) out += `<span class="bi">${word}</span>`;
+      else out += word;
+    } else out += esc(t);
   }
   return out;
 }

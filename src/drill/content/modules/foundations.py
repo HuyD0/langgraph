@@ -1,6 +1,6 @@
 """AI & ML foundations: How models learn from data, and how you know whether they're any good."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, stack
 
 MODULE = module('foundations', 'AI & ML foundations', "How models learn from data, and how you know whether they're any good.")
 
@@ -42,6 +42,7 @@ for row in rows:
         topic='foundations',
         difficulty='easy',
         fn='split_by_key',
+        machine=machine(bins=['train', 'test'], who=['everyone else', 'rows of the test users'], label_arg=1, leak_arg=1),
         prompt="""Your function gets three things:
 
 - `rows`: the data, a list of rows. Each row is a dict (named values in curly braces), like `{"user": "u1", "label": 1}`.

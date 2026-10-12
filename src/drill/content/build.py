@@ -32,7 +32,7 @@ PAGE_TEMPLATE = HERE / "page.html"
 TOKENS = HERE / "tokens.css"  # the design tokens, inlined into the page at /*TOKENS*/
 
 _EXERCISE_FIELDS = ("title", "topic", "difficulty", "fn", "prompt", "pattern", "target",
-                    "realworld", "starter", "solution", "cases", "unordered")
+                    "realworld", "starter", "solution", "cases", "unordered", "machine")
 _LEARN_FIELDS = ("concepts", "byhand", "why", "gotchas", "guided")
 _SCAFFOLD_HEADER = "# Replace every ___ with real code, then run the tests."
 

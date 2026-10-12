@@ -28,6 +28,12 @@
 
   --scrim: rgba(15, 20, 27, 0.35);
 
+  /* code colours: keyword, string, number, comment, function name, built-in. No green or red, which mean pass and fail. */
+  --syn-kw: #7a3fc7; --syn-str: #a04a00; --syn-num: #b4307a; --syn-com: #6b7280; --syn-fn: #1f5fbf; --syn-bi: #0f7a8a;
+
+  /* the machine's row pills: one colour per value of the labelled field, in this order */
+  --tok-a: #2a62d0; --tok-b: #b65a15; --tok-c: #7743c2; --tok-d: #0f7a8a;
+
   /* type: display for headings, body for reading, mono for anything the computer said */
   --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
@@ -42,6 +48,8 @@
   --fg: #e6ebf2; --muted: #93a0b1;
   --accent: #7f9bff; --accent-ink: #0b1020; --accent-soft: #1c2440;
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
+  --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
+  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
 :root[data-theme="dark"] {
@@ -49,4 +57,6 @@
   --fg: #e6ebf2; --muted: #93a0b1;
   --accent: #7f9bff; --accent-ink: #0b1020; --accent-soft: #1c2440;
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
+  --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
+  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
