@@ -109,6 +109,44 @@ This installs MLflow's Claude Code plugin for this folder only and writes the se
 It records whole conversations, including any file contents Claude read. Turn it off with
 `uv run mlflow autolog claude --disable`.
 
+### Sending traces to Databricks instead
+
+Traces can go to your Databricks workspace's MLflow instead of this Mac's. Put two lines in
+`.env` and restart the server:
+
+```bash
+MLFLOW_TRACKING_URI=databricks
+DATABRICKS_CONFIG_PROFILE=DEFAULT   # the CLI profile for your workspace
+```
+
+The experiment becomes `/Users/<you>/daily-drill` (Databricks needs a workspace path; set
+`DRILL_MLFLOW_EXPERIMENT=/Shared/...` to choose another). Check it first:
+
+```bash
+uv run drill tracing check
+```
+
+It says where traces go, creates the experiment, writes one test trace and reads it back.
+
+**Before you switch:**
+
+- **A storage firewall stops it working from your Mac.** Traces are written to the
+  workspace's own storage account. If the workspace has its default storage firewall on
+  (`defaultStorageFirewall: Enabled`), only the workspace's own networks may write there.
+  Your Mac can still create the experiment, but every trace's data is refused (403
+  `AuthorizationFailure`), and `drill tracing check` says so. Keep tracing on this Mac then,
+  or log from code that runs inside Databricks.
+- **Experiment storage is free to browse; Unity Catalog storage is not.** By default traces
+  are kept in the experiment itself, up to 100,000 per experiment, and reading them in the
+  UI or with `mlflow.search_traces` needs no SQL warehouse. If an experiment stores its
+  traces in Unity Catalog tables, every read needs a SQL warehouse, which costs compute;
+  `drill tracing check` tells you which kind you have.
+- **What does cost money:** built-in LLM judges (they call a Databricks-hosted model),
+  production monitoring (serverless compute), and model calls through the gateway.
+- Old traces stay on this Mac; nothing is copied over. To go back, set
+  `MLFLOW_TRACKING_URI` to your local server again.
+- The notebooks always use their own local stores, whatever `.env` says.
+
 ## Knobs
 
 | Variable | Default | What it does |
@@ -120,6 +158,8 @@ It records whole conversations, including any file contents Claude read. Turn it
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
 | `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |
-| `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | The experiment the traces go to |
+| `DRILL_MLFLOW_EXPERIMENT` | `daily-drill` | The experiment the traces go to (on Databricks, `/Users/<you>/daily-drill` unless you give a path) |
+| `MLFLOW_TRACKING_URI` | *(unset, so `.drill/mlflow.db`)* | Where traces go: a local MLflow server, or `databricks` |
+| `DATABRICKS_CONFIG_PROFILE` | *(the CLI's default)* | Which Databricks CLI profile `databricks` means |
 | `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` values the `/mcp` endpoint accepts |
 | `DRILL_USER_HEADER` | `x-forwarded-email` | Header a login proxy uses to say who is asking |

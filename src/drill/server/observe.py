@@ -36,6 +36,8 @@ import threading
 import time
 from typing import Any, Iterator
 
+from drill.config import databricks_user, experiment_path, is_databricks_uri, uc_trace_location
+
 log = logging.getLogger("drill.server")
 
 TEXT_LIMIT = 50_000  # characters kept per message; the page's prompts are about 4,000
@@ -199,7 +201,14 @@ class MlflowObserver:
             import httpx
 
             httpx.get(uri.rstrip("/") + "/health", timeout=1.0).raise_for_status()
-        mlflow.set_experiment(self.experiment)
+        experiment = self.experiment
+        if is_databricks_uri(uri):
+            # No /health to ask on Databricks: asking who we are is the quick check, and the
+            # answer turns "daily-drill" into the workspace path the experiment needs.
+            experiment = experiment_path(experiment, uri, databricks_user(uri))
+        where = uc_trace_location(mlflow.set_experiment(experiment))
+        if where:
+            log.warning("Traces for %s are stored in Unity Catalog (%s): reading them needs a SQL warehouse", experiment, where)
         mlflow.set_active_model(name=f"daily-drill-{app_version()}")
 
     def _off(self, exc: Exception) -> None:

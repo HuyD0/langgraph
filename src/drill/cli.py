@@ -312,6 +312,65 @@ def tutor_snapshot_cmd(
     console.print("Next: in your tutor project's knowledge, remove last week's tutor-snapshot.md, then add this one.")
 
 
+tracing_app = typer.Typer(add_completion=False, help="Where MLflow traces go: this Mac's MLflow, or your Databricks workspace.")
+app.add_typer(tracing_app, name="tracing")
+
+
+@tracing_app.command("check")
+def tracing_check_cmd(
+    experiment: str = typer.Option(None, "--experiment", "-e", help="Experiment to check (default DRILL_MLFLOW_EXPERIMENT or daily-drill)."),
+) -> None:
+    """Say where traces go, check the connection, create the experiment if needed, and log one test trace."""
+    import os
+
+    import mlflow
+
+    from drill.config import databricks_profile, databricks_user, experiment_path, is_databricks_uri, uc_trace_location
+
+    os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
+    uri = os.getenv("MLFLOW_TRACKING_URI", "").strip()
+    if not uri:
+        uri = f"sqlite:///{PROJECT_ROOT / '.drill' / 'mlflow.db'}"
+    mlflow.set_tracking_uri(uri)
+    name = experiment or os.getenv("DRILL_MLFLOW_EXPERIMENT") or "daily-drill"
+    if is_databricks_uri(uri):
+        from databricks.sdk import WorkspaceClient
+
+        user = databricks_user(uri)
+        host = WorkspaceClient(profile=databricks_profile(uri)).config.host.rstrip("/")
+        console.print(f"Traces go to your Databricks workspace: {host} (profile {databricks_profile(uri) or 'DEFAULT'})")
+        name = experiment_path(name, uri, user)
+    else:
+        host = None
+        console.print(f"Traces go to MLflow on this Mac: {uri}")
+    exp = mlflow.set_experiment(name)
+    where = uc_trace_location(exp)
+    console.print(f"Experiment: {name}")
+    console.print(
+        f"Storage: Unity Catalog ({where}), so reading traces needs a SQL warehouse, which costs compute"
+        if where else "Storage: the experiment itself (no SQL warehouse needed to read traces)"
+    )
+    with mlflow.start_span(name="drill tracing check") as span:
+        span.set_inputs({"check": "can this machine write a trace here?"})
+        span.set_outputs({"ok": True})
+    mlflow.flush_trace_async_logging()
+    try:
+        found = mlflow.search_traces(locations=[exp.experiment_id], max_results=1, return_type="list")
+    except Exception as exc:
+        if "AuthorizationFailure" in str(exc) or "403" in str(exc):
+            console.print(
+                "[red]The trace's data could not be saved or read.[/red] The workspace's storage account "
+                "refused this machine (403 AuthorizationFailure). That usually means the workspace's "
+                "storage firewall is on, so only the workspace's own networks may write there. Keep "
+                "traces on this Mac's MLflow, or log from inside Databricks. See docs/SERVER.md."
+            )
+            raise typer.Exit(1) from None
+        raise
+    console.print(f"Test trace logged and read back: {'yes' if found else 'no'}")
+    if host:
+        console.print(f"Open it: {host}/ml/experiments/{exp.experiment_id}/traces")
+
+
 study_app = typer.Typer(add_completion=False, help="The study list on this Mac: export it, or merge another copy in.")
 app.add_typer(study_app, name="study")
 
