@@ -96,7 +96,10 @@ def drill_run(problem: Problem, settings: DrillSettings, thread_id: str) -> Iter
                     "max_attempts": settings.max_attempts,
                 }
             )
-            mlflow.set_tags({"thread_id": thread_id, "app": "daily-drill"})
+            from drill import mlflow_names
+            from drill.server.observe import app_version
+
+            mlflow.set_tags({"thread_id": thread_id, "app": "daily-drill", **mlflow_names.context_tags(app_version())})
             yield run
     except Exception:
         # A tracking failure must never cost you a practice session.

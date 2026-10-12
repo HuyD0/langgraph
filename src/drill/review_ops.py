@@ -11,12 +11,13 @@
 
 from __future__ import annotations
 
+import os
+
 from typing import Any, Callable
 
 from drill.content import review
 
-REVIEW_PROMPT_NAME = "drill-use-case-review"
-CHALLENGE_PROMPT_NAME = "drill-use-case-challenge"
+from drill import mlflow_names
 
 
 # -- the maths: agreement and Cohen's kappa ---------------------------------
@@ -55,6 +56,19 @@ def _mlflow():
     return mlflow
 
 
+def _reviewer(mlflow) -> str:
+    """Who is labelling: your Databricks user name there, ``DRILL_OWNER`` (or ``local``) on your Mac."""
+    from drill.config import databricks_user, is_databricks_uri
+
+    uri = mlflow.get_tracking_uri()
+    if is_databricks_uri(uri):
+        try:
+            return databricks_user(uri)
+        except Exception:  # noqa: BLE001
+            pass
+    return os.getenv("DRILL_OWNER", "").strip() or "local"
+
+
 def _review_of(trace) -> tuple[str, str] | None:
     """(prompt, review) from a review trace's root span, or None if it has no answer."""
     for span in trace.data.spans:
@@ -89,6 +103,7 @@ def label(n: int, ask: Callable[[str, str, dict], tuple[bool | None, str]]) -> i
     from mlflow.entities import AssessmentSource
 
     done = 0
+    reviewer = _reviewer(mlflow)
     for trace in review_traces(limit=200):
         if done >= n:
             break
@@ -103,7 +118,7 @@ def label(n: int, ask: Callable[[str, str, dict], tuple[bool | None, str]]) -> i
         if verdict is None:
             continue
         mlflow.log_feedback(trace_id=trace.info.trace_id, name="grounded", value=verdict, rationale=note or None,
-                            source=AssessmentSource(source_type="HUMAN", source_id="you"))
+                            source=AssessmentSource(source_type="HUMAN", source_id=reviewer))
         done += 1
     return done
 
@@ -134,8 +149,12 @@ def calibrate(tier: str = "default", log_run: bool = True) -> dict:
         rows.append({"trace": trace.info.trace_id, "you": bool(mine.value), "judge": ok, "flagged": unsupported[:3]})
     result = {"judge_version": JUDGE_VERSION, **agreement(human, judge), "rows": rows}
     if log_run and result["n"]:
-        with mlflow.start_run(run_name=f"judge calibration {JUDGE_VERSION}"):
-            mlflow.log_params({"judge_version": JUDGE_VERSION, "tier": tier, "labelled": result["n"]})
+        from drill.server.observe import app_version
+
+        with mlflow.start_run(run_name=mlflow_names.run_name("judge-calibration", JUDGE_VERSION)):
+            mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "judge_calibration"})
+            mlflow.log_params({"judge_version": JUDGE_VERSION, "tier": tier, "labelled": result["n"],
+                               "judge_model": _model_for(router, tier)})
             mlflow.log_metrics({k: float(result[k]) for k in ("agreement", "kappa", "judge_missed", "judge_false_alarm") if result[k] is not None})
     return result
 
@@ -162,9 +181,24 @@ def _register(mlflow: Any, name: str, template: str, version_tag: str) -> dict:
 
 
 def register() -> list[dict]:
-    """Register the review and challenge prompts (a new version only when the text changed)."""
+    """Register the review and challenge prompts (a new version only when the text changed).
+
+    On Databricks the registry is Unity Catalog, so the names are ``<DRILL_PROMPT_SCHEMA>.use_case_review``
+    and ``.use_case_challenge``; locally they are the short names.
+    """
     mlflow = _mlflow()
+    if mlflow_names.needs_prompt_schema(mlflow.get_tracking_uri()):
+        raise RuntimeError("On Databricks prompts live in Unity Catalog: set DRILL_PROMPT_SCHEMA=<catalog>.<schema> in .env.")
     return [
-        _register(mlflow, REVIEW_PROMPT_NAME, review.review_template(), review.REVIEW_VERSION),
-        _register(mlflow, CHALLENGE_PROMPT_NAME, review.challenge_template(), review.CHALLENGE_VERSION),
+        _register(mlflow, mlflow_names.prompt_name("review"), review.review_template(), review.REVIEW_VERSION),
+        _register(mlflow, mlflow_names.prompt_name("challenge"), review.challenge_template(), review.CHALLENGE_VERSION),
     ]
+
+
+def _model_for(router, tier: str) -> str:
+    """The model a tier's first route uses, for run parameters."""
+    try:
+        routes = router.order(tier)
+        return routes[0].model if routes else "none"
+    except Exception:  # noqa: BLE001
+        return "unknown"

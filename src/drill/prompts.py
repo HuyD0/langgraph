@@ -64,7 +64,11 @@ def load_prompt(registry_name: str, default: str) -> str:
     try:
         import mlflow
 
-        return str(mlflow.genai.load_prompt(f"prompts:/{registry_name}/1"))
+        from drill import mlflow_names
+
+        schema = mlflow_names.prompt_schema()
+        name = f"{schema}.{registry_name}" if schema else registry_name  # Unity Catalog needs catalog.schema.name
+        return str(mlflow.genai.load_prompt(f"prompts:/{name}/1"))
     except Exception:
         return default
 
