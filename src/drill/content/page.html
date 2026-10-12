@@ -2325,8 +2325,14 @@ function askChips() {
   const L = LESSONS[cur.id], s = lp(cur.id), chips = [], add = (q, how) => chips.push({ q, how });
   if (cur.step === 0) {
     // the lesson's bold terms, if they are terms: up to three words, no quotes or brackets
-    const terms = [...new Set((L.learn.join(" ").match(/\*\*([^*]+)\*\*/g) || []).map(t => t.slice(2, -2)))]
-      .filter(t => t.split(/\s+/).length <= 3 && t.length <= 28 && !/["“”\[\]()]/.test(t)).slice(0, 2);
+    const bold = [...new Set((L.learn.join(" ").match(/\*\*([^*]+)\*\*/g) || []).map(t => t.slice(2, -2)))]
+      .filter(t => t.split(/\s+/).length <= 3 && t.length <= 28 && !/["“”\[\]()]/.test(t));
+    // compare two terms only when the lesson puts them in the same sentence; otherwise ask about
+    // one, preferring a word the glossary defines over a word that is only bold for emphasis
+    const inGloss = t => GLOSS.some(g => g.term.toLowerCase() === t.toLowerCase());
+    const pair = L.learn.flatMap(para => para.split(/(?<=[.!?])\s+/)).map(sent => bold.filter(t => sent.includes("**" + t + "**"))).find(ts => ts.length >= 2);
+    const one = bold.find(inGloss) || bold.find(t => t.length >= 6 || /\s/.test(t));
+    const terms = pair ? pair.slice(0, 2) : one ? [one] : [];
     if (terms.length === 2) add(`How is ${quoted(terms[0])} different from ${quoted(terms[1])}?`,
       `Contrast ${terms[0]} and ${terms[1]} as this lesson uses them: what each one is, how they differ, and how they work together, with an everyday comparison and the lesson's example.`);
     else if (terms.length) add(`What does ${quoted(terms[0])} mean here?`,
