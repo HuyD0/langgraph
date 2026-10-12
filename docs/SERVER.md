@@ -24,19 +24,26 @@ in [SETUP.md](SETUP.md), or any OpenAI-compatible endpoint named with `DRILL_HOS
 `DRILL_HOSTED_DAILY_TOKENS` a day. Every answer is cached by its exact prompt, so asking the
 same hint twice is free.
 
-**At work, through Databricks AI Gateway.** No key to create or keep: sign in once with
-`databricks auth login --host https://adb-<id>.azuredatabricks.net` (it goes through Entra),
-and put two lines in `.env`:
+**At work, through Databricks Unity Gateway (formerly AI Gateway).** No key to create or
+keep: sign in once with `databricks auth login --host https://adb-<id>.azuredatabricks.net`
+(it goes through Entra), and put two lines in `.env`:
 
 ```bash
 DRILL_HOSTED_AUTH=databricks
-DRILL_HOSTED_MODEL=<the gateway endpoint's name>
+DRILL_HOSTED_MODEL=<the model's name>
 ```
 
 Each request is signed with that login, and the token is renewed as it runs out, so a
-server left running all day keeps working. The address defaults to the workspace's
-`/serving-endpoints`; set `DRILL_HOSTED_BASE_URL` if your gateway lives elsewhere. A
-Databricks address with no `DRILL_HOSTED_API_KEY` uses the login too. With no Ollama on the
+server left running all day keeps working. The model's name says where to send it:
+
+| `DRILL_HOSTED_MODEL` looks like | It is | Requests go to |
+|---|---|---|
+| `catalog.schema.service`, e.g. `system.ai.<model>` | a Unity Gateway model service | `/ai-gateway/mlflow/v1` |
+| anything else, e.g. `drill-claude` | a model serving endpoint (the legacy route) | `/serving-endpoints` |
+
+Ask your platform team which one they give you; you need `EXECUTE` on a model service.
+`DRILL_HOSTED_BASE_URL` overrides the address, and a Databricks address with no
+`DRILL_HOSTED_API_KEY` uses the login too. With no Ollama on the
 laptop, every question goes to the gateway, and your gateway's own limits and usage
 reports apply per person.
 
@@ -68,7 +75,7 @@ to this machine (`localhost`, `127.0.0.1`), a defence against DNS rebinding; add
 ## Later, in the cloud
 
 Everything is configuration: `DRILL_DATABASE_URL` for Postgres (Neon on Azure, Lakebase on
-Databricks), `DRILL_HOSTED_*` for a serving endpoint behind AI Gateway, and the same server
+Databricks), `DRILL_HOSTED_*` for a model behind Unity Gateway, and the same server
 in a container on Azure Container Apps or Databricks Apps, which forwards the signed-in
 user's identity in a header (`DRILL_USER_HEADER`, default `x-forwarded-email`) so each
 person gets their own progress. The package carries its own content and page, so the
@@ -101,9 +108,8 @@ databricks postgres create-project daily-drill --json '{"spec": {"display_name":
 databricks postgres list-endpoints projects/daily-drill/branches/production --profile <work-profile>
 ```
 
-Give each learner a Lakebase role for their Databricks identity (`databricks postgres
-create-role -h` shows how). Then connect (`databricks psql --project daily-drill`) and
-create the tables, with row-level security so each person only sees their own rows:
+Then connect (`databricks psql --project daily-drill`) and create the tables, with
+row-level security so each person only sees their own rows, and a login role for each person:
 
 ```sql
 CREATE TABLE IF NOT EXISTS docs (
@@ -121,7 +127,7 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY own_docs ON docs USING (owner = current_user) WITH CHECK (owner = current_user);
 CREATE POLICY own_events ON events USING (owner = current_user) WITH CHECK (owner = current_user);
 
--- Two Postgres group roles: grant one to each person's role.
+-- Two Postgres group roles that hold the permissions.
 CREATE ROLE drill_learners NOLOGIN;
 CREATE ROLE drill_managers NOLOGIN;
 GRANT SELECT, INSERT, UPDATE, DELETE ON docs, events TO drill_learners;
@@ -129,8 +135,18 @@ GRANT SELECT ON docs, events TO drill_managers;
 CREATE POLICY managers_read_docs ON docs FOR SELECT TO drill_managers USING (true);
 CREATE POLICY managers_read_events ON events FOR SELECT TO drill_managers USING (true);
 
-GRANT drill_learners TO "sam@example.com";   -- one line per person
+-- A login role for each person, named after their Databricks user (their work email),
+-- then a group role on top. Once per database for the extension.
+CREATE EXTENSION IF NOT EXISTS databricks_auth;
+SELECT databricks_create_role('sam@example.com', 'USER');   -- one pair of lines per person
+GRANT drill_learners TO "sam@example.com";
 ```
+
+Give each person their own `USER` role, not a role for a Databricks group. Lakebase can make
+a role for a whole group, but its members then sign in *as the group*, so `current_user` is
+the group's name: everyone would share one owner and see each other's progress. Roles live
+on a branch, so add them on `production`. Your own role (the project creator) owns the tables
+and is not held to row-level security.
 
 **On each work laptop.** Install with the Postgres driver, sign in through Entra, and add
 two lines to `.env` (the host comes from `list-endpoints` above):
@@ -156,10 +172,27 @@ SQLite file instead and the health check shows `store_fallback: true`. Once it i
 events already sent are skipped. The same command brings your home history (saved as
 `local`) to work, if you copy `drill.db` over first.
 
-**The manager's view.** Turn on Lakehouse Sync for the `public` schema (the branch's
-"Lakehouse sync" tab, or `databricks postgres -h` for the `*-cdf-config` commands) and
-Lakebase copies both tables into Unity Catalog as `lb_docs_history` and
-`lb_events_history`. Build an AI/BI dashboard on those, not on Lakebase itself.
+**The manager's view.** Register the Lakebase database in Unity Catalog: in Catalog Explorer,
+**Create a catalog**, type **Lakebase Postgres**, **Autoscaling**, then the `daily-drill`
+project, `production` branch and `databricks_postgres` database (or `databricks postgres
+create-catalog`). That makes a read-only catalog, say `drill`, so `drill.public.events` can be
+queried from a **Serverless** SQL warehouse (Pro and Classic are refused) and an AI/BI
+dashboard built on it. Who may look is a Unity Catalog grant:
+
+```sql
+GRANT USE CATALOG, SELECT ON CATALOG drill TO `drill-managers`;
+```
+
+The queries still reach Postgres as a person, so row-level security applies: whoever
+publishes the dashboard (its credentials are embedded by default) needs `GRANT drill_managers
+TO "<their email>";` in Lakebase, or the dashboard shows only their own rows.
+
+*Optional history.* Lakebase Change Data Feed (Public Preview, switched on from the
+workspace's Previews page) copies every change into Delta tables named `lb_<table>_history`,
+useful for trends over time. Each table needs `ALTER TABLE <table> REPLICA IDENTITY FULL;`
+first. It does not work when the destination catalog's storage is only reachable through a
+private endpoint, which is the case behind a workspace storage firewall, so check that
+before relying on it.
 
 ## What gets measured
 
