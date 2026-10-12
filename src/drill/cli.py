@@ -273,6 +273,38 @@ def build_page_cmd(
     raise typer.Exit(build_main(["--out", str(out)]))
 
 
+review_app = typer.Typer(add_completion=False, help="The use case review prompt: score it on cards with planted gaps before publishing a change.")
+app.add_typer(review_app, name="review")
+
+
+@review_app.command("eval")
+def review_eval_cmd(
+    judge: bool = typer.Option(False, "--judge", help="Also ask the model whether every claim is backed by the card."),
+    tier: str = typer.Option("default", "--tier", help="Which model tier to ask: default or complex."),
+    no_mlflow: bool = typer.Option(False, "--no-mlflow", help="Score and print only, without an MLflow evaluation run."),
+) -> None:
+    """Ask the model to review each planted-gap card and score the reviews. Fails if a must-pass case fails."""
+    from rich.table import Table
+
+    from drill import review_eval
+    from drill.content.review import REVIEW_VERSION
+
+    rows = review_eval.run(tier=tier, judge=judge, use_mlflow=not no_mlflow)
+    keys = [k for k in ("all_pillars", "gaps_flagged", "no_verdict", "high_risk_named", "grounded", "must_pass") if any(k in r for r in rows)]
+    table = Table(title=f"Review prompt {REVIEW_VERSION}: {len(rows)} cases")
+    table.add_column("case")
+    for k in keys:
+        table.add_column(k.replace("_", " "))
+    for r in rows:
+        table.add_row(r["case"], *["-" if k not in r else ("yes" if r[k] is True else "no" if r[k] is False else str(r[k])) for k in keys])
+    console.print(table)
+    failed = [r["case"] for r in rows if not r.get("must_pass")]
+    if failed:
+        console.print(f"[red]Must-pass failed:[/red] {', '.join(failed)}")
+        raise typer.Exit(1)
+    console.print("Every must-pass case passed: every planted gap flagged, and no verdict.")
+
+
 tutor_app = typer.Typer(add_completion=False, help="Material for a chat tutor (a Claude Project): the curriculum map and a snapshot of your progress.")
 app.add_typer(tutor_app, name="tutor")
 

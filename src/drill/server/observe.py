@@ -47,9 +47,10 @@ SOURCE_ID = "drill.observe"
 # What the page and the MCP tools may say about a request, and which of those become tags.
 CONTEXT_KEYS = (
     "feature", "door", "lesson_id", "step", "hint_level", "question", "session", "user",
-    "exercise_fn", "word_limit", "chip", "guard",
+    "exercise_fn", "word_limit", "chip", "guard", "request", "prompt_version", "blank_fields",
 )
-TAG_KEYS = ("feature", "door", "lesson_id", "step", "hint_level", "chip", "guard")
+TAG_KEYS = ("feature", "door", "lesson_id", "step", "hint_level", "chip", "guard", "request", "prompt_version")
+REQUEST_ID = re.compile(r"^[A-Za-z0-9_-]{6,64}$")  # the page's id for one request, used to find its trace again
 
 _BIG_O = re.compile(r"\bO\([^)\n]{1,15}\)")
 
@@ -106,6 +107,10 @@ def answer_checks(text: str, context: dict) -> dict:
     limit = context.get("word_limit")
     if limit and str(limit).isdigit():
         checks["over_word_limit"] = words > int(limit)
+    if context.get("feature") == "use_case_review":  # the review's own rules: drill.review_checks
+        from drill.review_checks import review_checks
+
+        checks.update(review_checks(text, (context.get("blank_fields") or "").split(",")))
     return checks
 
 
@@ -376,7 +381,14 @@ class MlflowObserver:
 
         source = AssessmentSource(source_type="CODE", source_id=SOURCE_ID)
         while True:
-            trace_id, checks = self._feedback.get()
+            item = self._feedback.get()
+            if item and item[0] == "human":
+                try:
+                    self._log_human(*item[1:])
+                finally:
+                    self._feedback.task_done()
+                continue
+            trace_id, checks = item
             try:
                 for attempt in range(20):  # an MCP tool's trace is saved only when the tool returns
                     try:
@@ -390,6 +402,39 @@ class MlflowObserver:
                         time.sleep(0.25)
             finally:
                 self._feedback.task_done()
+
+    # -- people's feedback on an answer ----------------------------------
+
+    def human_feedback(self, request: str, name: str, value: Any, rationale: str | None, user: str) -> bool:
+        """Attach a person's feedback to the trace the page tagged with ``request``. Queued, as the
+        trace may still be saving; returns False when tracing is off or the id is not one of ours."""
+        if not REQUEST_ID.match(request or "") or not self.ready():
+            return False
+        try:
+            self._feedback.put_nowait(("human", request, name, value, rationale, user))
+        except queue.Full:
+            return False
+        if self._worker is None or not self._worker.is_alive():
+            self._worker = threading.Thread(target=self._log_feedback, name="drill-feedback", daemon=True)
+            self._worker.start()
+        return True
+
+    def _log_human(self, request: str, name: str, value: Any, rationale: str | None, user: str) -> None:
+        import mlflow
+        from mlflow.entities import AssessmentSource
+
+        for attempt in range(20):
+            try:
+                mlflow.flush_trace_async_logging()
+                found = mlflow.search_traces(filter_string=f"tags.request = '{request}'", max_results=1, return_type="list")
+                if found:
+                    mlflow.log_feedback(trace_id=found[0].info.trace_id, name=name, value=value, rationale=rationale or None,
+                                        source=AssessmentSource(source_type="HUMAN", source_id=user or "learner"))
+                    return
+            except Exception as exc:
+                if attempt == 19:
+                    log.info("could not attach feedback for request %s: %s", request, exc)
+            time.sleep(0.25)
 
     def drain(self) -> None:
         """Wait until every queued check has been attached (for tests)."""

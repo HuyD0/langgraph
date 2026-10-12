@@ -465,3 +465,11 @@ def test_mcp_tool_calls_are_traced_with_the_model_call_inside(store, bank, mlflo
     assert spans["tutor.ask"].parent_id == tool.span_id and spans["checks"].parent_id == tool.span_id
     assert hint.info.tags["solution_leak"] == "false" and hint.info.tags["hint_level"] == "2"
     assert traces["get_drill"].info.state == TraceState.ERROR  # a failing tool call is recorded, then re-raised
+
+
+def test_feedback_is_accepted_and_logged_as_activity(store, bank):
+    client = client_with(store, bank, "unused")
+    r = client.post("/api/feedback", json={"request": "abc123def", "name": "useful", "value": True})
+    assert r.status_code == 200 and r.json()["ok"]
+    assert client.post("/api/feedback", json={"request": "x", "name": "n" * 61, "value": 1}).status_code == 422
+
