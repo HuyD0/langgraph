@@ -1,7 +1,7 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-129 lessons in 17 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
+130 lessons in 17 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
 going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
@@ -76,6 +76,11 @@ idea, ungraded:
   card, until you write yours) with a review prompt like the one you built.
 - **Is it fit for purpose?**: your bars, and later your pilot's results, with the go, fix or
   stop call worked out by the exercise's rule.
+- **Turn your vetting into a skill** (the last lesson of Frame): the repository's Claude skill,
+  `.claude/skills/vet-ai-use-case` (a `SKILL.md`, reference files and `scripts/tco.py`), in an
+  editor checked against the skill rules as you type. "Run my skill on my use case" sends your
+  version, with your card, requirements, bars and the cost table worked out from your worksheet,
+  to the model. In Claude Code the skill runs as `/vet-ai-use-case`.
 - **Total cost of ownership**: a worksheet laid out like the bill of a RAG pipeline on Azure: LLM
   calls (answers and embeddings, pay as you go or provisioned), retrieval (Azure AI Search or
   Databricks Vector Search), Databricks compute (the chunk-and-embed jobs, and serving), storage,
