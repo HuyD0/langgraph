@@ -59,6 +59,21 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
+## Search
+
+The magnifier in the top bar, or the `/` key, opens search. As you type it finds:
+
+- **Words** from the glossary, each with its meaning and a "Where it's taught" list of the
+  lessons that use it.
+- **Lessons** whose title, text or function name holds every word typed, title matches first.
+  Each shows its phase shape, its number (like 2.11), its module and whether it's done.
+- **Your study list** items whose text, note or explanation match; choosing one opens it in
+  the Notebook.
+
+With nothing typed it offers the six phases to jump to, the lessons you're in the middle of,
+and a few example searches. Enter opens the first lesson; Escape or Close goes back to where
+you were.
+
 ## The study list
 
 Select any text in a lesson, or a line of your code, to save it to the study list in the

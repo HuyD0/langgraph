@@ -650,6 +650,42 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .callout.ahead > b { color: var(--hint); }
 .callout.ahead p { margin: 0; }
 .callout.ahead .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#search { padding-block: 16px 48px; }
+.sbar { display: flex; align-items: center; gap: 8px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--toph, 61px)); z-index: 5; background: var(--bg); padding-block: 8px; }
+.sfield { flex: 1; display: flex; align-items: center; gap: 8px; min-height: 48px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
+.sfield:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.sfield .ic { color: var(--muted); }
+.sfield input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 16px; color: var(--fg); }
+#searchOut { display: grid; gap: 20px; }
+.sgrp { display: grid; gap: 8px; }
+.sgrp h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.slist { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.shit { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 14px; min-height: 52px; cursor: pointer; color: var(--fg); }
+.shit:first-child { border-top: 0; }
+.shit.snote { grid-template-columns: minmax(0, 1fr); }
+.shit .mt { display: grid; gap: 2px; min-width: 0; }
+.shit .mt b { font-weight: 600; line-height: 1.35; }
+.shit .mt > span { font-size: 13px; color: var(--muted); }
+.shit .no { font: 600 11px var(--mono); background: var(--sunk); border-radius: 999px; padding: 1px 5px; color: var(--fg); }
+.shit em { font-style: normal; color: var(--accent); font-weight: 600; }
+.shit em.ok { color: var(--pass); }
+.shit code { font-size: 12px; color: var(--syn-fn); background: none; border: 0; padding: 0; }
+.shit:focus-visible, .swordhead:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (hover: hover) { .shit:hover, .swordhead:hover { background: var(--sunk); } }
+.smini { width: 22px; height: 22px; overflow: visible; margin-top: 1px; }
+.smini .sh { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 2 2; }
+.smini.done .sh { fill: var(--fg); stroke: var(--fg); stroke-dasharray: none; }
+.smini.now .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-dasharray: none; }
+.sword { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.swordhead { display: grid; gap: 2px; width: 100%; text-align: left; background: none; border: 0; padding: 12px 14px; cursor: pointer; color: var(--fg); }
+.swordhead b { font-weight: 600; }
+.swordhead span { font-size: 14px; color: var(--muted); }
+.swordhead em { font-style: normal; font-size: 13px; color: var(--accent); font-weight: 600; }
+.sword .slist { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+.sphases { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.sphase { justify-content: flex-start; min-height: 44px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.sphase svg { overflow: visible; }
+mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 0 1px; }
 .ministk { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
 .ministk svg { width: 16px; height: 16px; overflow: visible; }
 .ministk .sh { stroke-width: 1.6; fill: none; stroke: var(--muted); stroke-dasharray: 2 2; }
@@ -680,6 +716,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   <div class="wrap">
     <button class="brand" id="homeBtn" aria-label="Daily Drill: go to your learning path">Daily Drill</button>
     <div class="week" id="week" role="img" aria-label="This week"></div>
+    <button class="btn" id="searchBtn" aria-label="Search lessons, words and your study list" title="Search ( / )"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
     <button class="btn" id="nbBtn" aria-controls="drawer"><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16l-4-2-4 2-4-2-3 2V5a2 2 0 0 1 2-2z"/></svg><span class="nblabel">Notebook</span><span class="count" id="studyCount"></span></button>
   </div>
 </header>
@@ -749,6 +786,10 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 </main>
 
 <main id="done" class="wrap" hidden aria-live="polite"></main>
+<main id="search" class="wrap" hidden>
+  <div class="sbar"><label class="sfield"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="searchIn" type="search" autocomplete="off" spellcheck="false" placeholder="Find a lesson or a word" aria-label="Find a lesson, a word or something you saved"></label><button class="btn quiet" id="searchClose">Close</button></div>
+  <div id="searchOut" aria-live="polite"></div>
+</main>
 <div class="stktip" id="stkTip" role="tooltip" hidden></div>
 
 <nav class="foot" id="foot" hidden aria-label="Lesson navigation"><div class="wrap"><button class="btn" id="prevBtn">Back</button><span class="grow"></span><button class="btn quiet" id="midBtn" hidden></button><button class="btn primary" id="nextBtn">Next</button></div></nav>
@@ -1176,6 +1217,77 @@ function renderHome() {
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
 }
 
+// ---------- search: lessons, glossary words and the study list ----------
+// Every result shows where it sits on the path (its phase shape and number), so a search
+// also teaches the shape of the path. Matching is plain: every word typed must appear.
+const plainText = t => String(t).replace(/\*\*|`/g, "");
+let searchFrom = "home", wordOpen = null;
+const SEARCH_INDEX = ORDER.map(id => {
+  const L = LESSONS[id], m = modOf[id], ph = phaseOf[m.id];
+  return { id, title: L.title.toLowerCase(), fn: ((byId[id] || {}).fn || "").toLowerCase(),
+    body: [L.learn.join(" "), L.example[0], L.angle[0], m.title, ph.name].map(plainText).join(" ").toLowerCase() };
+});
+const GLOSS = (D.glossary || []).flatMap(([, terms]) => terms.map(([term, def]) => ({ term, def })));
+const searchTerms = q => q.toLowerCase().split(/\s+/).filter(Boolean);
+function hiTerms(text, terms) {
+  let out = esc(text);
+  for (const t of terms) { if (t.length < 2) continue; const re = new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"); out = out.replace(re, "<mark>$1</mark>"); }
+  return out;
+}
+function miniShape(id) {
+  const st = stickerState(id);
+  return `<svg class="smini ${st}" viewBox="-11 -11 22 22" aria-hidden="true">${phShape(phaseIdx(id), 8)}</svg>`;
+}
+function lessonHit(id, terms, note) {
+  const st = isDoneL(id) ? "done" : started(id) ? "in progress" : id === nextInOrder() ? "next" : "";
+  const fn = (byId[id] || {}).fn;
+  return `<button class="shit" data-open="${id}" data-tip="${id}">${miniShape(id)}<span class="mt"><b>${hiTerms(LESSONS[id].title, terms)}</b><span><span class="no">${lessonNo(id)}</span> ${esc(phaseOf[modOf[id].id].name)} · ${esc(modOf[id].title)}${fn ? ` · <code>${hiTerms(fn, terms)}()</code>` : ""}${st ? ` · <em class="${st === "done" ? "ok" : ""}">${st}</em>` : ""}${note ? ` · ${note}` : ""}</span></span></button>`;
+}
+// Where a word is taught: lessons whose Learn text uses it, in path order.
+const taughtIn = term => { const t = term.toLowerCase(); return SEARCH_INDEX.filter(x => x.body.includes(t) || x.title.includes(t)).map(x => x.id); };
+function renderSearch() {
+  const q = $("searchIn").value.trim(), terms = searchTerms(q), out = $("searchOut");
+  if (!terms.length) {
+    const recent = ORDER.filter(id => started(id) && !isDoneL(id)).slice(0, 3);
+    const nid = nextInOrder();
+    const phases = PHASES.map((ph, i) => `<button class="chipbtn sphase" data-phase-go="${i}">${badgeSvg(i, 7, phState(i))}${esc(ph.name)}</button>`).join("");
+    const tries = ["leakage", "retries", "Unity Catalog", "canary", "split_by_key"].map(t => `<button class="chipbtn" data-try="${esc(t)}">${esc(t)}</button>`).join("");
+    out.innerHTML = `<section class="sgrp"><h3>Jump to a phase</h3><div class="sphases">${phases}</div></section>
+      ${nid || recent.length ? `<section class="sgrp"><h3>Pick up where you are</h3><div class="slist">${[...new Set([nid, ...recent].filter(Boolean))].map(id => lessonHit(id, [])).join("")}</div></section>` : ""}
+      <section class="sgrp"><h3>Try</h3><div class="minis">${tries}</div></section>
+      <p class="meta">Searches lesson titles and text, the functions you write, the glossary and your study list.</p>`;
+    return;
+  }
+  const has = (str) => terms.every(t => str.includes(t));
+  const words = GLOSS.filter(g => has((g.term + " " + g.def).toLowerCase()))
+    .sort((a, b) => (has(b.term.toLowerCase()) ? 1 : 0) - (has(a.term.toLowerCase()) ? 1 : 0)).slice(0, 4);
+  const scored = SEARCH_INDEX.map(x => ({ id: x.id, s: has(x.title) ? 3 : has(x.fn) ? 2 : has(x.title + " " + x.fn + " " + x.body) ? 1 : 0 }))
+    .filter(x => x.s).sort((a, b) => b.s - a.s || ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
+  const notes = studyItems.filter(it => has([it.text, it.note, it.explanation].join(" ").toLowerCase())).slice(0, 5);
+  const wordHtml = words.map(g => {
+    const open = wordOpen === g.term, where = open ? taughtIn(g.term) : [];
+    return `<div class="sword"><button class="swordhead" data-word="${esc(g.term)}" aria-expanded="${open}"><b>${hiTerms(g.term, terms)}</b><span>${hiTerms(g.def, terms)}</span><em>${open ? "Hide where it’s taught" : "Where it’s taught"}</em></button>
+      ${open ? (where.length ? `<div class="slist">${where.slice(0, 6).map(id => lessonHit(id, [])).join("")}</div>` : `<p class="meta">No lesson uses this word by name yet.</p>`) : ""}</div>`;
+  }).join("");
+  const noteHtml = notes.map(it => `<button class="shit snote" data-snote="${it.id}"><span class="mt"><b>${hiTerms(it.text.length > 140 ? it.text.slice(0, 138) + "…" : it.text, terms)}</b><span>${it.status === "got" ? "Got it" : "To learn"}${it.note ? " · " + hiTerms(it.note, terms) : ""}</span></span></button>`).join("");
+  const total = words.length + scored.length + notes.length;
+  out.innerHTML = total ? `
+    ${words.length ? `<section class="sgrp"><h3>Words · ${words.length}</h3>${wordHtml}</section>` : ""}
+    ${scored.length ? `<section class="sgrp"><h3>Lessons · ${scored.length}</h3><div class="slist">${scored.slice(0, 20).map(x => lessonHit(x.id, terms)).join("")}</div>${scored.length > 20 ? `<p class="meta">Showing 20. Add a word to narrow it down.</p>` : ""}</section>` : ""}
+    ${notes.length ? `<section class="sgrp"><h3>Your study list · ${notes.length}</h3><div class="slist">${noteHtml}</div></section>` : ""}`
+    : `<p class="empty">Nothing matches “${esc(q)}”. Try fewer words, or a function name like <code>retrieve</code>.</p>`;
+}
+function openSearch() {
+  if ($("search").hidden) searchFrom = !$("lesson").hidden ? "lesson" : !$("done").hidden ? "done" : "home";
+  closeNotebook(); show("search"); wordOpen = null; renderSearch();
+  const inp = $("searchIn"); inp.focus(); inp.select();
+}
+function closeSearch() {
+  if (searchFrom === "lesson" && cur && (cur.kind === "lesson" || cur.kind === "practice")) show("lesson");
+  else if (searchFrom === "done" && cur && cur.kind === "done") show("done");
+  else goHome();
+}
+
 // ---------- views ----------
 let cur = null;   // { kind: "lesson" | "practice", id, p, step, from }
 function show(view) {
@@ -1183,6 +1295,7 @@ function show(view) {
   $("home").hidden = view !== "home";
   $("lesson").hidden = view !== "lesson";
   $("done").hidden = view !== "done";
+  $("search").hidden = view !== "search";
   $("foot").hidden = view !== "lesson" && view !== "done";
   window.scrollTo(0, 0);
 }
@@ -2409,6 +2522,12 @@ $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.
 document.addEventListener("click", async e => {
   const t = e.target;
   if (t.closest("[data-review]")) { openNotebook("study"); return; }
+  if (t.closest("#searchBtn")) { openSearch(); return; }
+  if (t.closest("#searchClose")) { closeSearch(); return; }
+  const tr = t.closest("[data-try]"); if (tr) { $("searchIn").value = tr.dataset.try; renderSearch(); $("searchIn").focus(); return; }
+  const wd = t.closest("[data-word]"); if (wd) { wordOpen = wordOpen === wd.dataset.word ? null : wd.dataset.word; renderSearch(); return; }
+  const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
+  const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openItems.add(sn.dataset.snote); openNotebook("study"); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
@@ -2469,10 +2588,15 @@ $("items").addEventListener("change", e => { const id = e.target.dataset.note; i
 $("items").addEventListener("submit", e => { e.preventDefault(); const f = e.target.closest("[data-ask]"); if (!f) return; const input = f.querySelector("input"), q = input.value; input.value = ""; input.blur(); askItem(f.dataset.ask, q); });
 $("items").addEventListener("focusout", () => setTimeout(() => { if (renderPending) renderStudy(); }, 0));
 document.addEventListener("keydown", e => {
+  // "/" opens search from anywhere except while typing
+  if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest("input, textarea, [contenteditable]")) { e.preventDefault(); openSearch(); return; }
   if (e.key !== "Escape") return;
   if (!$("selbar").hidden) { hideSelbar(); return; }
-  if (!$("drawer").hidden) closeNotebook();
+  if (!$("drawer").hidden) { closeNotebook(); return; }
+  if (!$("search").hidden && !tipFor) closeSearch();
 });
+$("searchIn").addEventListener("input", () => { wordOpen = null; renderSearch(); });
+$("searchIn").addEventListener("keydown", e => { if (e.key === "Enter") { const first = $("searchOut").querySelector("[data-open]"); if (first) first.click(); } });
 // swipe between steps on touch screens
 let swipe = null;
 document.addEventListener("touchstart", e => {
