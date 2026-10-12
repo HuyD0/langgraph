@@ -183,6 +183,21 @@ def test_every_build_it_for_real_card_points_at_a_real_notebook_section():
         assert section in headings, f"{lesson_id}: {notebook} has no section {section!r}"
 
 
+def test_the_use_case_sort_agrees_with_the_python_answer(loaded):
+    """Lesson 1.1's sorting board and its Python exercise must place every idea the same way."""
+    ex = next(e["exercise"] for m in loaded for e in m.lessons if e["id"] == "use_case_score")
+    namespace: dict = {}
+    exec(ex["solution"], namespace)  # noqa: S102 - our own reference solution
+    rows = [{"id": i["name"], "name": i["name"], "value": i["value"], "doable": i["doable"], "gate": i["gate"]}
+            for i in ex["sort"]["items"]]
+    lists = namespace[ex["fn"]](rows)
+    code_bin = {r["id"]: name for name, got in zip(ex["machine"]["bins"], lists) for r in got}
+    for item in ex["sort"]["items"]:
+        assert code_bin[item["name"]] == ("shelve" if item["bin"] == "gate" else item["bin"]), item["name"]
+        assert (item["bin"] == "gate") == bool(item["gate"]), item["name"]
+    assert {i["bin"] for i in ex["sort"]["items"]} == {b["id"] for b in ex["sort"]["bins"]}, "every bin gets at least one idea"
+
+
 def test_motion_effects_keep_their_promises():
     """Every effect the script plays has its look, and the looks stay cheap: they never loop or blur,
     each root ends with fx-end (when the script removes it), and the engine checks motion first."""

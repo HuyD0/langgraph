@@ -64,6 +64,7 @@ def exercise(
     fills: list[str] | None = None,
     unordered: bool = False,
     machine: dict | None = None,
+    sort: dict | None = None,
 ) -> dict:
     """The Build step of a lesson.
 
@@ -79,7 +80,7 @@ def exercise(
         "title": title, "topic": topic, "difficulty": difficulty, "fn": fn,
         "prompt": prompt, "pattern": pattern, "target": target, "realworld": realworld,
         "starter": starter, "solution": solution, "cases": cases, "unordered": unordered,
-        "guided": guided, "fills": fills, "machine": machine,
+        "guided": guided, "fills": fills, "machine": machine, "sort": sort,
         "concepts": concepts, "byhand": byhand, "why": why, "gotchas": gotchas,
     }
 
@@ -98,6 +99,25 @@ def machine(*, bins: list[str], who: list[str], label_field: str | None = None,
     assert len(bins) == len(who) and 2 <= len(bins) <= 4, "a machine has 2 to 4 bins, each with a who; 4 make a 2 by 2 map"
     assert (label_field is None) != (label_arg is None), "label pills by a field or by an argument, not both"
     return {"bins": bins, "who": who, "label_field": label_field, "label_arg": label_arg, "leak_arg": leak_arg}
+
+
+def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict]) -> dict:
+    """The Build step as a judgement task, for lessons where the skill is deciding, not coding.
+
+    The learner places each item in a bin, by tapping or dragging, and sees its ``why`` after
+    every move. The first four ``bins`` make a 2 by 2 map in map order (top left, top right,
+    bottom left, bottom right); a fifth is a tray under it. Each bin is ``(id, label, who)``.
+    Each item is ``{"name", "say", "bin", "why"}``, plus any facts a test wants to check the
+    item against the exercise's own solution. The Python exercise stays, one click away.
+    """
+    assert len(bins) in (4, 5), "a sort task is a 2 by 2 map, with an optional tray under it"
+    ids = [b[0] for b in bins]
+    assert len(set(ids)) == len(ids), "bin ids must differ"
+    for item in items:
+        missing = {"name", "say", "bin", "why"} - set(item)
+        assert not missing, f"{item.get('name')}: missing {sorted(missing)}"
+        assert item["bin"] in ids, f"{item['name']}: unknown bin {item['bin']!r}"
+    return {"intro": intro, "bins": [{"id": i, "label": l, "who": w} for i, l, w in bins], "items": items}
 
 
 def example(caption: str, code: str) -> dict:

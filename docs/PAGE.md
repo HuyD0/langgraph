@@ -252,6 +252,14 @@ where it should appear. Copy a neighbour; every field is named. In short:
   function into named bins (four bins make a 2 by 2 map), with a replay slider, a table per bin and, with `leak_arg`, a
   check that no value of that field lands in two bins. `split_by_key` and `validate_rows`
   use it; `tests/test_content.py` checks each machine fits its example.
+- `sort`: optional, for a lesson whose real skill is judgement, not code.
+  `sort_task(intro=..., bins=[(id, label, who), ...], items=[{"name", "say", "bin", "why"}, ...])`
+  makes the Build step a sorting board: one idea at a time, placed by tapping or dragging
+  onto a 2 by 2 map (the first four bins, in map order) or a tray above it (a fifth bin).
+  Every move shows the item's `why`; a wrong move keeps the card, and the score is how many
+  were right first time. "Place one for me" is the hint. The Python exercise stays, behind
+  "Rather write it in Python?", and the page remembers which one the learner chose.
+  Lesson 1.1 uses it; `tests/test_content.py` checks its answers match the Python solution's.
 
 Every exercise whose example takes a list of rows also shows those rows as a table, and,
 after a run, your result for the example beside the expected rows when it returns rows.

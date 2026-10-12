@@ -828,6 +828,45 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .newstk h2 { font: 800 22px/1.2 var(--display); margin: 0; }
 .newstk p { margin: 0; color: var(--muted); max-width: 46ch; }
 @media (prefers-reduced-motion: no-preference) { :root:not([data-motion="off"]) .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } } }
+/* the sorting board: Build as a judgement task, one idea at a time */
+#paneBuild.sorting .codeonly { display: none !important; }
+.sortbox { display: grid; gap: 14px; }
+.sortbox h2 { margin: 0; font: 800 20px/1.2 var(--display); }
+.sortbox > p { margin: 0; color: var(--muted); }
+.shead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.scount { font: 600 12px var(--mono); color: var(--muted); }
+.scard { display: grid; gap: 6px; text-align: left; width: 100%; background: var(--surface); border: 1.5px solid var(--fg); border-radius: 14px; padding: 14px 16px; font: inherit; color: inherit; cursor: grab; box-shadow: 0 3px 0 var(--line); }
+.scard b { font: 800 17px/1.25 var(--display); }
+.scard span { color: var(--muted); line-height: 1.45; }
+.scard:active { cursor: grabbing; }
+.sskip { justify-self: start; padding: 0; font-size: 14px; }
+.snote { border-radius: 10px; padding: 10px 12px; line-height: 1.45; }
+.snote.ok { background: var(--pass-bg); }
+.snote.ok b { color: var(--pass); }
+.snote.no { background: var(--fail-bg); }
+.snote.no b { color: var(--fail); }
+.snote.info { background: var(--sunk); }
+.smapwrap { display: grid; grid-template-columns: 22px 1fr; grid-template-rows: auto 22px; gap: 4px 6px; }
+.sy { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font: 600 12px var(--mono); color: var(--muted); }
+.sx { grid-column: 2; text-align: center; font: 600 12px var(--mono); color: var(--muted); }
+.smap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sbin { display: grid; align-content: start; min-height: 104px; background: var(--bg); border: 1.5px dashed var(--line); border-radius: 14px; padding: 10px 12px; cursor: pointer; min-width: 0; }
+.sput { display: grid; gap: 4px; text-align: left; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: inherit; }
+.sput b { font: 700 14px var(--body); }
+.sput span { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.sbin:not(.off):hover, .sbin.over { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+.sbin.tray { min-height: 72px; }
+.sbin.off { cursor: default; }
+.schips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.schip { font: 600 12px var(--body); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; cursor: pointer; color: inherit; }
+.schip.ok::before { content: "✓ "; color: var(--pass); }
+.schip.late::before { content: "↺ "; color: var(--hint); }
+.sdone { background: var(--pass-bg); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; }
+.sdone b { font: 800 18px/1.25 var(--display); }
+.sdone p { margin: 0; }
+.sfoot { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.modeswap { margin-bottom: 4px; }
+@media (max-width: 420px) { .sbin { min-height: 92px; padding: 8px 10px; } .sput span { font-size: 12px; } }
 .themepick { display: flex; align-items: center; gap: 10px; padding: 2px 16px 10px; }
 .prefs { display: flex; flex-wrap: wrap; column-gap: 4px; }
 .themepick > span { min-width: 4.5em; font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -989,8 +1028,10 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <nav class="stepper" id="stepper" aria-label="Lesson steps"></nav>
   <section class="pane" id="paneText" aria-live="polite"></section>
   <section class="pane" id="paneBuild" hidden>
-    <div class="buildbar"><div class="keys" id="keys" role="toolbar" aria-label="Typing shortcuts"></div></div>
-    <details class="card task" id="taskBox" open>
+    <div class="buildbar codeonly"><div class="keys" id="keys" role="toolbar" aria-label="Typing shortcuts"></div></div>
+    <section class="card sortbox" id="sortBox" hidden aria-label="Sort the ideas"></section>
+    <div class="modeswap" id="modeSwap" hidden></div>
+    <details class="card task codeonly" id="taskBox" open>
       <summary><h2 id="taskTitle"></h2></summary>
       <div class="taskbody">
       <div id="taskPrompt"></div>
@@ -1000,7 +1041,7 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
       <div class="goal" id="taskGoal"></div>
       </div>
     </details>
-    <section class="card mach" id="machine" hidden aria-label="The example's rows moving through your function">
+    <section class="card mach codeonly" id="machine" hidden aria-label="The example's rows moving through your function">
       <h3>Watch the rows</h3>
       <div class="mstage" id="mStage">
         <svg id="mWires" aria-hidden="true"></svg>
@@ -1023,23 +1064,23 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
       <div class="dtpair" id="mOuts"></div>
       <button class="btn" id="mDemo"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span>Watch what should happen</span></button>
     </section>
-    <details class="quiet" id="help"><summary>Python you'll need</summary><div><div id="blocksBody" class="pane"></div></div></details>
-    <div class="editor" id="editor"><div class="codebar" id="codeBar" hidden></div><pre class="hl" id="codeHl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea></div>
-    <div class="result idle" id="result">Write your code, then run the tests. Python runs right here in the page.</div>
-    <pre class="out" id="stdout" hidden></pre>
-    <div class="dtpair" id="outView" hidden></div>
-    <div class="tools">
+    <details class="quiet codeonly" id="help"><summary>Python you'll need</summary><div><div id="blocksBody" class="pane"></div></div></details>
+    <div class="editor codeonly" id="editor"><div class="codebar" id="codeBar" hidden></div><pre class="hl" id="codeHl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea></div>
+    <div class="result idle codeonly" id="result">Write your code, then run the tests. Python runs right here in the page.</div>
+    <pre class="out codeonly" id="stdout" hidden></pre>
+    <div class="dtpair codeonly" id="outView" hidden></div>
+    <div class="tools codeonly">
       <button class="btn" id="hintBtn"><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg><span>Get a hint</span></button>
       <button class="btn quiet" id="moreBtn" aria-expanded="false" aria-controls="morePanel">More</button>
     </div>
-    <div class="morepanel" id="morePanel" hidden>
+    <div class="morepanel codeonly" id="morePanel" hidden>
     <div class="startmode"><span class="label"><svg class="ic" aria-hidden="true"><use href="#i-pencil"/></svg>Start from</span><div class="seg" role="group" aria-label="Starting code"><button data-mode="scaffold" aria-pressed="true">Scaffold</button><button data-mode="blank" aria-pressed="false">Blank</button></div><span class="meta" id="modeHint"></span></div>
       <div class="tools"><button class="btn" id="solBtn"><svg class="ic" aria-hidden="true"><use href="#i-eye"/></svg><span>Show solution</span></button><button class="btn" id="resetBtn"><svg class="ic" aria-hidden="true"><use href="#i-reset"/></svg><span>Start over</span></button></div>
       <span class="kbd">⌘/Ctrl+Enter run · Tab/⇧Tab indent · ⌘/Ctrl+/ comment</span>
     </div>
-    <div class="confirm" id="guideConfirm" hidden><span id="guideMsg">This replaces your code.</span><button class="btn" id="guideYes">Replace my code</button><button class="btn quiet" id="guideNo">Keep my code</button></div>
-    <div class="confirm" id="solConfirm" hidden><span>Try a hint first? Seeing the answer too early teaches less.</span><button class="btn" id="solYes">Show it anyway</button><button class="btn quiet" id="solNo">Keep trying</button></div>
-    <div class="feed" id="feed"></div>
+    <div class="confirm codeonly" id="guideConfirm" hidden><span id="guideMsg">This replaces your code.</span><button class="btn" id="guideYes">Replace my code</button><button class="btn quiet" id="guideNo">Keep my code</button></div>
+    <div class="confirm codeonly" id="solConfirm" hidden><span>Try a hint first? Seeing the answer too early teaches less.</span><button class="btn" id="solYes">Show it anyway</button><button class="btn quiet" id="solNo">Keep trying</button></div>
+    <div class="feed codeonly" id="feed"></div>
     <section class="card real" id="realBox" hidden aria-label="Build it for real, with the libraries"></section>
     <section class="card mine" id="mineBox" hidden aria-label="Your own use case"></section>
   </section>
@@ -2064,7 +2105,13 @@ function renderFoot() {
   prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
-  if (building() && !solvedNow()) {
+  if (building() && sorting() && !solvedNow()) {
+    label = "Place one for me"; icon = "bulb"; quiet = true;
+    if (cur.kind === "lesson") { mid.hidden = false; mid.textContent = "Skip"; mid.dataset.act = "skip"; }
+  } else if (building() && sorting()) {
+    mid.hidden = false; mid.textContent = "Sort again"; mid.dataset.act = "resort";
+    label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
+  } else if (building() && !solvedNow()) {
     label = "Run tests"; icon = "play"; next.dataset.run = "";
     if (cur.kind === "lesson") { mid.hidden = false; mid.textContent = "Skip"; mid.dataset.act = "skip"; }
   } else if (building()) {
@@ -2073,7 +2120,7 @@ function renderFoot() {
   } else if (i === 0) label = "Next: Check";
   else if (i === 1) { if (lp(cur.id).checked === null) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
   else { label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path"; icon = "check"; next.disabled = !canFinish(); }
-  next.innerHTML = icon === "play" ? ic("play") + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
+  next.innerHTML = icon === "play" || icon === "bulb" ? ic(icon) + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
   next.className = quiet ? "btn quiet" : "btn primary";
 }
 function goPrev() {
@@ -2083,6 +2130,7 @@ function goPrev() {
 }
 function goNext() {
   if (cur.kind === "done") { goHome(); return; }
+  if (building() && sorting() && !solvedNow()) { sortHint(); return; }
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
@@ -2382,6 +2430,7 @@ function loadProblem(p) {
   const names = paramNames(p), first = ex.args[0];
   $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
   machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
+  sortLoad(p);
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
@@ -2458,6 +2507,100 @@ async function runTests() {
   if (M.p && gotJson) { $("machine").scrollIntoView({ block: "start", behavior: smooth }); machineRun(gotJson.v); }
   else $("result").scrollIntoView({ block: "nearest", behavior: smooth });
 }
+
+// ---------- the sorting board: Build as a judgement task (content/model.py sort_task) ----------
+// One idea at a time: place it on the map or in the tray, and the reason shows straight away.
+// Right first time counts; a wrong move teaches and the card stays. The Python version is one click away.
+const SO = { p: null, placed: {}, first: {}, skip: [], note: null, code: false };
+const sortKey = id => "drill-sort-" + id, codeKey = id => "drill-code-" + id;
+const sorting = () => !!(SO.p && cur && cur.p === SO.p && !SO.code);
+function sortLoad(p) {
+  Object.assign(SO, { p: p.sort ? p : null, placed: {}, first: {}, skip: [], note: null, code: false });
+  if (SO.p) try {
+    const s = JSON.parse(localStorage.getItem(sortKey(p.id)) || "null");
+    if (s) { SO.placed = s.placed || {}; SO.first = s.first || {}; }
+    SO.code = localStorage.getItem(codeKey(p.id)) === "1";
+  } catch {}
+  sortMode();
+}
+function sortMode() {
+  const on = sorting();
+  $("paneBuild").classList.toggle("sorting", on);
+  $("sortBox").hidden = !on;
+  $("modeSwap").hidden = !SO.p || on;
+  $("modeSwap").innerHTML = SO.p && !on ? `<button class="linkbtn" data-sort-mode="sort">${ic("arrowl")}Back to sorting the ideas</button>` : "";
+  if (on) sortRender();
+}
+function sortSave() { try { localStorage.setItem(sortKey(SO.p.id), JSON.stringify({ placed: SO.placed, first: SO.first })); } catch {} }
+function sortLeft() {
+  const left = SO.p.sort.items.map((_, i) => i).filter(i => !(i in SO.placed));
+  return [...left.filter(i => !SO.skip.includes(i)), ...SO.skip.filter(i => left.includes(i))];
+}
+const sortRight = () => Object.keys(SO.placed).filter(i => SO.first[i]).length;
+function sortRender() {
+  const t = SO.p.sort, items = t.items, left = sortLeft(), now = left[0], n = items.length;
+  const binOf = id => t.bins.find(b => b.id === id);
+  const chip = i => `<button class="schip ${SO.first[i] ? "ok" : "late"}" data-sort-why="${i}" title="${SO.first[i] ? "Right first time" : "Took another try"}">${esc(items[i].name)}</button>`;
+  const bin = (b, cls) => `<div class="sbin${cls ? " " + cls : ""}${now == null ? " off" : ""}" data-sort-bin="${b.id}"><button class="sput"${now == null ? " disabled" : ""} aria-label="${esc(now == null ? `${b.label}: ${b.who}` : `Put “${items[now].name}” in ${b.label}: ${b.who}`)}"><b>${esc(b.label)}</b><span>${esc(b.who)}</span></button><div class="schips">${items.map((_, i) => i).filter(i => SO.placed[i] === b.id).map(chip).join("")}</div></div>`;
+  const note = `<div class="snote ${SO.note ? SO.note.kind : ""}" aria-live="polite"${SO.note ? "" : " hidden"}>${SO.note ? SO.note.html : ""}</div>`;
+  const top = now != null
+    ? `<button class="scard" draggable="true" data-sort-item="${now}" aria-describedby="sortHelp"><b>${esc(items[now].name)}</b><span>${esc(items[now].say)}</span></button>
+       ${left.length > 1 ? `<button class="linkbtn sskip" data-sort-skip>Not sure? Come back to this one</button>` : ""}`
+    : `<div class="sdone"><b>${ic("check")} All ${n} placed. ${sortRight()} of ${n} right first time.</b><p>The pattern: <em>${md((LESSONS[SO.p.id] || {}).angle ? LESSONS[SO.p.id].angle[0] : SO.p.pattern)}</em></p><p class="meta">Tap any idea on the map to see why it goes there.</p></div>`;
+  $("sortBox").innerHTML = `<div class="shead"><h2>Sort the ideas</h2><span class="scount">${n - left.length} of ${n} placed</span></div>
+    <p id="sortHelp">${md(t.intro)}</p>${top}${note}
+    ${t.bins[4] ? bin(t.bins[4], "tray") : ""}
+    <div class="smapwrap"><span class="sy">more value →</span><div class="smap">${t.bins.slice(0, 4).map(b => bin(b)).join("")}</div><span class="sx">easier to do →</span></div>
+    <div class="sfoot">${Object.keys(SO.placed).length ? `<button class="linkbtn" data-sort-reset>${ic("reset")}Start over</button>` : ""}<button class="linkbtn" data-sort-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
+}
+function sortPlace(i, binId, byHint) {
+  const t = SO.p.sort, it = t.items[i], right = t.bins.find(b => b.id === it.bin);
+  if (i in SO.placed) return;
+  if (binId === it.bin || byHint) {
+    if (!(i in SO.first)) SO.first[i] = !byHint;
+    SO.placed[i] = it.bin; SO.skip = SO.skip.filter(x => x !== i);
+    SO.note = { kind: "ok", html: `<b>${byHint ? "Placed for you" : ic("check") + " Right"}: ${esc(right.label)}.</b> ${esc(it.why)}` };
+  } else {
+    SO.first[i] = false;
+    const wrong = t.bins.find(b => b.id === binId);
+    SO.note = { kind: "no", html: `<b>Not ${esc(wrong.label.toLowerCase())}.</b> ${esc(it.why)} Try again.` };
+  }
+  sortSave();
+  if (!sortLeft().length) sortSolved();
+  sortRender(); renderFoot();
+}
+function sortSolved() {
+  const p = SO.p, n = p.sort.items.length, prev = progress.solved[p.id];
+  progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - sortRight() };
+  lastRun = { summary: `Sorted all ${n} ideas, ${sortRight()} right first time.` };
+  markDay();
+  if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
+  saveProgress(); renderTop();
+}
+function sortHint() { const now = sortLeft()[0]; if (now != null) sortPlace(now, null, true); }
+function sortReset() {
+  Object.assign(SO, { placed: {}, first: {}, skip: [], note: null }); sortSave(); sortRender(); renderFoot();
+  $("sortBox").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+function sortSetCode(on) {
+  SO.code = on; try { localStorage.setItem(codeKey(SO.p.id), on ? "1" : "0"); } catch {}
+  sortMode(); renderFoot();
+  if (on) machineLoad(SO.p);
+}
+$("sortBox").addEventListener("click", e => {
+  const t = e.target;
+  const b = t.closest("[data-sort-bin]"), why = t.closest("[data-sort-why]");
+  if (why) { const it = SO.p.sort.items[+why.dataset.sortWhy], bn = SO.p.sort.bins.find(x => x.id === it.bin); SO.note = { kind: "info", html: `<b>${esc(it.name)}: ${esc(bn.label)}.</b> ${esc(it.why)}` }; sortRender(); return; }
+  if (b) { const now = sortLeft()[0]; if (now != null && !b.classList.contains("off")) sortPlace(now, b.dataset.sortBin); return; }
+  if (t.closest("[data-sort-skip]")) { const now = sortLeft()[0]; SO.skip = [...SO.skip.filter(x => x !== now), now]; SO.note = null; sortRender(); return; }
+  if (t.closest("[data-sort-reset]")) { sortReset(); return; }
+  if (t.closest("[data-sort-mode]")) sortSetCode(true);
+});
+$("modeSwap").addEventListener("click", e => { if (e.target.closest("[data-sort-mode]")) sortSetCode(false); });
+$("sortBox").addEventListener("dragstart", e => { const c = e.target.closest("[data-sort-item]"); if (c) e.dataTransfer.setData("text/plain", c.dataset.sortItem); });
+$("sortBox").addEventListener("dragover", e => { const b = e.target.closest("[data-sort-bin]"); if (b && !b.classList.contains("off")) { e.preventDefault(); b.classList.add("over"); } });
+$("sortBox").addEventListener("dragleave", e => { const b = e.target.closest("[data-sort-bin]"); if (b && !b.contains(e.relatedTarget)) b.classList.remove("over"); });
+$("sortBox").addEventListener("drop", e => { const b = e.target.closest("[data-sort-bin]"); if (!b) return; e.preventDefault(); const i = e.dataTransfer.getData("text/plain"); if (i !== "") sortPlace(+i, b.dataset.sortBin); });
 
 // ---------- tables of rows ----------
 const isRows = v => Array.isArray(v) && v.length > 0 && v.length <= 12 && v.every(r => r && typeof r === "object" && !Array.isArray(r)) && new Set(v.flatMap(r => Object.keys(r))).size <= 6;
@@ -3227,7 +3370,7 @@ $("homeBtn").onclick = goHome;
 $("backPath").onclick = () => { if (cur && cur.kind === "practice" && cur.from) openLesson(cur.from, 3); else goHome(); };
 $("prevBtn").onclick = goPrev;
 $("nextBtn").onclick = goNext;
-$("midBtn").onclick = () => { if ($("midBtn").dataset.act === "run") runTests(); else setStep(3); };
+$("midBtn").onclick = () => { const a = $("midBtn").dataset.act; if (a === "run") runTests(); else if (a === "resort") sortReset(); else setStep(3); };
 $("hintBtn").onclick = hint;
 for (const b of document.querySelectorAll("[data-mode]")) b.onclick = () => setMode(b.dataset.mode);
 $("guideYes").onclick = applyStart; $("guideNo").onclick = () => { $("guideConfirm").hidden = true; startMode = startMode === "scaffold" ? "blank" : "scaffold"; store.set("drill-start", startMode); renderMode(); };
