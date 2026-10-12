@@ -2460,6 +2460,8 @@ async function saveAsk(i) {
 
 // ---------- build step ----------
 let hintLevel = 0, lastRun = null, sample = null, sampleOff = true, busy = false, taskFolds = true;
+// The tutor's own flags, apart from `busy` (tests running): a slow hint must not block Run tests.
+let hintBusy = false, reviewBusy = false;
 const runBtns = () => [...document.querySelectorAll("[data-run]")];
 const draftKey = id => "drill-draft-" + id;
 let runs = 0, failedRun = false, curtainDone = false;  // this exercise, since it was opened: for its effects
@@ -2837,13 +2839,13 @@ function tutorContext(p) {
 }
 const LEARNER = "The student is new to programming and is learning AI engineering (ML, LLM apps, RAG, agents, evals, LLMOps, MLOps, AgentOps); at work they maintain Azure Databricks infrastructure in Terraform with Spacelift. They find math hard: use plain, everyday words, no math notation, no formulas and no Big-O (like O(n)). A small example with real values beats an abstract rule.";
 async function hint() {
-  if (busy) return;
+  if (hintBusy) return;
   const p = cur.p;
   if (sampleOff || !sample) { hintLevel = 1; updateHintBtn(); fxOn(addNote("hint", "The pattern", p.pattern), "unveil", FX.unveil); return; }
   const level = hintLevel + 1;
   const note = addNote("hint", `Hint ${level} of 3`, "Thinking…"); fxOn(note, "unveil", FX.unveil);
   const para = note.querySelector("p");
-  busy = true; $("hintBtn").disabled = true;
+  hintBusy = true; $("hintBtn").disabled = true;
   const prompt = `You are a patient tutor. ${LEARNER} Give hint ${level} of 3 for this exercise.
 
 Rules:
@@ -2858,19 +2860,20 @@ ${tutorContext(p)}`;
   try {
     const { text } = await sample(prompt, withTrace({ modelTier: "quick", onText: ({ text }) => { para.innerHTML = inline(text); } },
       { feature: "hint", lesson_id: cur.id, exercise_fn: p.fn, hint_level: level, word_limit: 80 }));
-    para.innerHTML = inline(text); hintLevel = level;
+    para.innerHTML = inline(text);
+    if (cur && cur.p === p) hintLevel = level;  // you may have moved to another exercise meanwhile
   } catch (e) {
-    if (e && e.code === "not_granted") { sampleOff = true; note.remove(); hintLevel = 0; updateHintBtn(); busy = false; return hint(); }
+    if (e && e.code === "not_granted") { sampleOff = true; note.remove(); hintLevel = 0; updateHintBtn(); hintBusy = false; return hint(); }
     para.textContent = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.text) || "The hint didn't come through. Try again in a moment.";
-  }
-  busy = false; updateHintBtn();
+  } finally { hintBusy = false; }
+  updateHintBtn();
 }
 async function review() {
-  if (!sample || busy) return;
+  if (!sample || reviewBusy) return;
   const btn = $("reviewBtn"); if (btn) btn.disabled = true;
   const note = addNote("review", "Review", "Thinking…");
   const para = note.querySelector("p");
-  busy = true;
+  reviewBusy = true;
   const prompt = `You are a friendly reviewer. ${LEARNER} Their solution passes all tests. Review it briefly.
 
 Cover, in under 140 words of prose:
@@ -2887,9 +2890,8 @@ ${tutorContext(cur.p)}`;
     para.innerHTML = inline(text);
   } catch (e) {
     if (e && e.code === "not_granted") { sampleOff = true; note.remove(); }
-    else para.textContent = (e && e.text) || "The review didn't come through. Try again in a moment.";
-  }
-  busy = false;
+    else { para.textContent = (e && e.text) || "The review didn't come through. Try again in a moment."; if (btn) btn.disabled = false; }
+  } finally { reviewBusy = false; }
 }
 function showSolution() {
   $("solConfirm").hidden = true;
@@ -3576,18 +3578,32 @@ async function localBackend() {
     const d = (body && body.detail) || body || {};
     throw Object.assign(new Error(d.text || res.statusText), { code: d.code || (res.status === 429 ? "rate_limited" : "error"), text: d.text });
   };
+  // A request that goes quiet for 2 minutes, or runs past 4, is given up on, so a dropped
+  // connection or a stopped app can't leave the tutor's buttons stuck until a reload.
+  // (The server tries two models for up to 45 s each before the first word.)
+  const QUIET_MS = 120000, MAX_MS = 240000;
   async function ask(body, onText) {
-    const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!res.ok) await fail(res);
-    if (body.json) return (await res.json()).value;
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    let text = "";
-    for (;;) {
-      const { value, done } = await reader.read(); if (done) break;
-      text += dec.decode(value, { stream: true });
-      if (onText) onText({ text, delta: text });
-    }
-    return { text, truncated: false };
+    const ctl = new AbortController();
+    let quiet = setTimeout(() => ctl.abort(), QUIET_MS);
+    const whole = setTimeout(() => ctl.abort(), MAX_MS);
+    const awake = () => { clearTimeout(quiet); quiet = setTimeout(() => ctl.abort(), QUIET_MS); };
+    try {
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal });
+      if (!res.ok) await fail(res);
+      if (body.json) return (await res.json()).value;
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let text = "";
+      for (;;) {
+        const { value, done } = await reader.read(); if (done) break;
+        awake();
+        text += dec.decode(value, { stream: true });
+        if (onText) onText({ text, delta: text });
+      }
+      return { text, truncated: false };
+    } catch (e) {
+      if (ctl.signal.aborted) throw Object.assign(new Error("timeout"), { code: "timeout", text: "The tutor took too long to answer. Try again in a moment." });
+      throw e;
+    } finally { clearTimeout(quiet); clearTimeout(whole); }
   }
   const s = !health.ai ? null : Object.assign(
     (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", trace: opts.trace }, opts.onText),

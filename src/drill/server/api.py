@@ -19,6 +19,7 @@ and writes that person's progress. The header is only believed behind such a log
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import hashlib
 import logging
@@ -235,12 +236,16 @@ def create_app(
         if body.messages is None and not (body.prompt or "").strip():
             raise HTTPException(400, {"code": "bad_request", "text": "Send a prompt or messages."})
         messages: Any = body.messages if body.messages is not None else body.prompt
-        if not router.order(body.tier):
+        # Store calls go to a worker thread: on Lakebase each is a network round trip, and
+        # waiting here would hold up every other request the server is answering.
+        if not await asyncio.to_thread(router.order, body.tier):
             raise HTTPException(503, NO_MODEL)
         context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
         trace = body.trace or {}
-        mine(request).log("asked", str(trace.get("lesson_id") or ""),
-                  **{k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None})
+        await asyncio.to_thread(
+            mine(request).log, "asked", str(trace.get("lesson_id") or ""),
+            **{k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None},
+        )
 
         if body.json_mode:
             try:
@@ -286,7 +291,7 @@ def create_app(
         from drill.server.observe import default_observer
 
         user = user_id(request)
-        mine(request).log("feedback", "", name=body.name, value=str(body.value)[:60])
+        await asyncio.to_thread(mine(request).log, "feedback", "", name=body.name, value=str(body.value)[:60])
         observer = default_observer()
         logged = bool(observer and observer.human_feedback(body.request, body.name, body.value, body.rationale, user))
         return {"ok": True, "logged": logged}

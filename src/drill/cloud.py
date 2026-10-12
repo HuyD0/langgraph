@@ -25,6 +25,7 @@ from drill.config import PROJECT_ROOT
 APP_RESOURCE = "daily_drill"  # the app's key under resources.apps in databricks.yml
 DEFAULT_APP_NAME = "daily-drill"
 DEFAULT_PROJECT = "daily-drill"
+CRASHED = {"CRASHED", "UNAVAILABLE"}  # app_status states where the app's own code isn't running
 
 
 class CloudError(RuntimeError):
@@ -71,7 +72,15 @@ def cli(*args: str, profile: str | None = None, target: str | None = None, check
         cmd += ["--profile", profile]
     if target:
         cmd += ["--target", target]
-    done = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True)
+    # Uploading and starting the app installs packages and can take many minutes; anything
+    # else that hasn't answered in a few minutes is stuck, not slow.
+    limit = 30 * 60 if args[:1] == ("bundle",) else 5 * 60
+    try:
+        done = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=limit)
+    except FileNotFoundError:
+        raise CloudError("The Databricks CLI isn't installed: run `brew install databricks`, then try again.") from None
+    except subprocess.TimeoutExpired:
+        raise CloudError(f"`{' '.join(cmd)}` didn't finish in {limit // 60} minutes, so it was stopped.") from None
     if check and done.returncode != 0:
         raise CloudError(f"`{' '.join(cmd)}` failed:\n{(done.stderr or done.stdout).strip()}")
     out = done.stdout.strip()
@@ -138,11 +147,15 @@ def setup(target: str, profile: str | None, project: str, create_lakebase: bool,
 
 def requirements() -> Path:
     """Write requirements.txt from uv.lock: the exact versions the tests ran, plus this repo itself."""
-    out = subprocess.run(
-        ["uv", "export", "--no-dev", "--extra", "lakebase", "--no-hashes", "--no-emit-project",
-         "--format", "requirements-txt", "--quiet"],
-        cwd=PROJECT_ROOT, capture_output=True, text=True, check=True,
-    ).stdout
+    try:
+        out = subprocess.run(
+            ["uv", "export", "--no-dev", "--extra", "lakebase", "--no-hashes", "--no-emit-project",
+             "--format", "requirements-txt", "--quiet"],
+            cwd=PROJECT_ROOT, capture_output=True, text=True, check=True, timeout=5 * 60,
+        ).stdout
+    except (OSError, subprocess.SubprocessError) as exc:
+        detail = getattr(exc, "stderr", None) or exc
+        raise CloudError(f"Couldn't write requirements.txt with `uv export`: {detail}") from None
     pins = [line for line in out.splitlines() if line and not line.startswith(("#", " "))]
     head = (
         "# What a Databricks App installs (it reads only this file). Generated from uv.lock, so the\n"
@@ -172,8 +185,25 @@ def deploy(target: str, profile: str | None) -> dict:
         raise CloudError(f"Run `uv run drill cloud setup --target {target}` first (missing {', '.join(missing)}).")
     version = stamp_version()
     cli("bundle", "deploy", profile=profile, target=target)
-    cli("bundle", "run", APP_RESOURCE, profile=profile, target=target)
+    still_billing = (f"The app may still be running, and billing. Check with `uv run drill cloud status --target {target}`; "
+                     f"stop it with `uv run drill cloud stop --target {target}`.")
+    try:
+        cli("bundle", "run", APP_RESOURCE, profile=profile, target=target)
+    except CloudError as exc:
+        raise CloudError(f"{exc}\n\n{still_billing}") from None
     info = status(target, profile)
+    if info["state"] == "NOT DEPLOYED":
+        raise CloudError(f"The app started but couldn't be looked up afterwards. {still_billing}")
+    # The idle stop runs inside the app's own code: if that code crashed, nothing will ever
+    # stop the app, so stop it now rather than let it bill until someone notices.
+    if info.get("app_state") in CRASHED:
+        stop(target, profile)
+        raise CloudError(
+            f"The app's code didn't start ({info['app_state']}), so it was stopped to save money. "
+            f"See why with `databricks apps logs {info['name']}`."
+        )
+    if not info.get("service_principal"):
+        raise CloudError(f"The app is running but couldn't be allowed to stop itself when idle. {still_billing}")
     allow_self_stop(info["name"], info["service_principal"], profile)
     return {**info, "version": version}
 
@@ -193,6 +223,7 @@ def status(target: str, profile: str | None) -> dict:
     return {
         "name": app["name"],
         "state": app.get("compute_status", {}).get("state", "UNKNOWN"),
+        "app_state": app.get("app_status", {}).get("state", ""),  # whether the code itself is running
         "url": app.get("url", ""),
         "service_principal": app.get("service_principal_client_id", ""),
     }

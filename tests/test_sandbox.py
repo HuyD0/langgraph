@@ -99,3 +99,28 @@ def test_unordered_problem_accepts_any_ordering():
 def test_hidden_cases_only_excludes_samples():
     result = run_submission(TWO_SUM, CORRECT, include_samples=False)
     assert result["total"] == len(TWO_SUM.hidden)
+
+
+def test_printing_forever_is_capped_not_held_in_memory(monkeypatch):
+    from drill import sandbox
+
+    monkeypatch.setattr(sandbox, "MAX_OUTPUT_BYTES", 256 * 1024)
+    source = "def two_sum(nums, target):\n    while True:\n        print('x' * 1000)\n"
+    result = run_submission(get_problem("two_sum"), source, timeout=10)
+    assert not result["passed"] and not result["timed_out"]  # stopped by the cap, well before the time limit
+    assert "printed more than" in result["fatal_error"]
+
+
+def test_processes_the_submission_starts_are_stopped_too(tmp_path):
+    marker = tmp_path / "still-running"
+    source = (
+        "import subprocess, sys\n"
+        "def two_sum(nums, target):\n"
+        f"    subprocess.Popen([sys.executable, '-c', 'import time, pathlib; time.sleep(1.5); pathlib.Path({str(marker)!r}).touch()'])\n"
+        "    return [0, 1]\n"
+    )
+    run_submission(get_problem("two_sum"), source)
+    import time
+
+    time.sleep(2.5)
+    assert not marker.exists()  # the background process was killed with the submission
