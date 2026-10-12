@@ -15,13 +15,10 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # The floor and ceiling of requires-python. The sandbox spawns
-        # sys.executable and the notebooks run a kernel, so version skew shows up
-        # here rather than on a learner's machine.
-        python-version: ["3.10", "3.13"]
+    env:
+      # One Python, the one used day to day. Testing the floor and ceiling of
+      # requires-python (3.10 and 3.13) doubled every run for little gain.
+      PYTHON: "3.12"
 
     steps:
       - uses: actions/checkout@v4
@@ -32,11 +29,11 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+      - name: Set up Python ${{ env.PYTHON }}
+        run: uv python install ${{ env.PYTHON }}
 
       - name: Install dependencies
-        run: uv sync --dev --python ${{ matrix.python-version }}
+        run: uv sync --dev --python ${{ env.PYTHON }}
 
       - name: Run tests
         # No Azure credentials are set, deliberately: the whole suite must pass
@@ -44,7 +41,7 @@ jobs:
         # needs_llm marker.
         env:
           MLFLOW_DISABLE_AGENT_HINT: "1"
-        run: uv run --python ${{ matrix.python-version }} pytest -q
+        run: uv run --python ${{ env.PYTHON }} pytest -q
 
   notebooks-ship-unsolved:
     # Guards against committing a notebook with the exercises filled in, which
