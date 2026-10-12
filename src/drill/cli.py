@@ -684,6 +684,22 @@ def _show_findings(found) -> None:
                   + (" Run with --fix to grant what you can." if any(f.grant for f in missing) else ""))
 
 
+@cloud_app.command("manager-view")
+def cloud_manager_view_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    warehouse: str = typer.Option(None, "--warehouse", help="A small serverless SQL warehouse id (default: the one saved for the target)."),
+    catalog: str = typer.Option(None, "--catalog", help="Unity Catalog name for the app's Lakebase data (default daily_drill_lakebase)."),
+) -> None:
+    """The managers' dashboard: every learner's progress, where they are stuck, their questions and weekly notes."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    info = _cloud(lambda: cloud.manager_view(target, prof, warehouse, catalog))
+    console.print(f"Dashboard: {info['url']}\nReads catalog {info['catalog']} with your credentials.")
+    console.print("Share it with managers only: it shows every learner's progress, study list and questions.")
+
+
 @cloud_app.command("requirements")
 def cloud_requirements_cmd() -> None:
     """Rewrite requirements.txt from uv.lock. Run it after changing dependencies, before deploying."""

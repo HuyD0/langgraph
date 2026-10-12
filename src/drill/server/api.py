@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from drill.config import PROJECT_ROOT
 from drill.server.bank import Bank
 from drill.server.router import ModelRouter, NoModelAvailable
-from drill.server import activity
+from drill.server import activity, team
 from drill.server.store import DocStore, lakebase_endpoint, open_store
 
 log = logging.getLogger("drill.server")
@@ -180,6 +180,10 @@ def create_app(
         import asyncio
 
         watcher = asyncio.create_task(watch_idle()) if idle else None
+        notes = None
+        if team.enabled(store):  # the manager's view: lessons table, managers' read access, weekly notes
+            team.prepare(store, bank)
+            notes = asyncio.create_task(team.keep_summaries(store, router, bank))
         try:
             if mcp_app is None:
                 yield
@@ -189,8 +193,9 @@ def create_app(
                 async with mcp_door.server.session_manager.run():
                     yield
         finally:
-            if watcher:
-                watcher.cancel()
+            for task in (watcher, notes):
+                if task:
+                    task.cancel()
 
     app = FastAPI(title="Daily Drill", lifespan=lifespan)
     app.state.store, app.state.router, app.state.bank = store, router, bank
@@ -239,8 +244,10 @@ def create_app(
             raise HTTPException(503, NO_MODEL)
         context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
         trace = body.trace or {}
-        mine(request).log("asked", str(trace.get("lesson_id") or ""),
-                  **{k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None})
+        detail = {k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None}
+        if trace.get("question"):  # what they asked, for the manager's view (drill.server.team)
+            detail["question"] = str(trace["question"])[:500]
+        mine(request).log("asked", str(trace.get("lesson_id") or ""), **detail)
 
         if body.json_mode:
             try:
