@@ -540,6 +540,8 @@ body.no-ai .ai-only { display: none; }
 #taskExample { white-space: pre-wrap; overflow-wrap: anywhere; }
 .task ul, .task ol { margin: 0 0 10px; padding-left: 22px; display: grid; gap: 6px; max-width: 65ch; }
 .byhand { margin: 0; padding: 10px 12px; background: var(--sunk); border-radius: 10px; max-width: 65ch; }
+.byhand ol.steps { margin: 6px 0 0; padding-left: 22px; display: grid; gap: 4px; }
+.byhand ol.steps li::marker { font: 600 12px var(--mono); color: var(--muted); }
 @media (pointer: coarse), (max-width: 560px) { textarea#code { white-space: pre-wrap; overflow-wrap: anywhere; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* spot the gotcha */
@@ -2662,7 +2664,7 @@ function loadProblem(p) {
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
   $("taskByhand").hidden = !Ln.byhand;
-  $("taskByhand").innerHTML = Ln.byhand ? "<b>The example, step by step.</b> " + md(Ln.byhand) : "";
+  $("taskByhand").innerHTML = Ln.byhand ? "<b>The example, step by step.</b>" + byhandSteps(Ln.byhand) : "";
   $("help").open = false; $("morePanel").hidden = true; $("moreBtn").setAttribute("aria-expanded", "false");
   let draft = null; try { draft = localStorage.getItem(draftKey(p.id)); } catch {}
   $("code").value = draft || startCode(p);
@@ -3236,6 +3238,16 @@ async function removeItem(id) {
 function flashStudy(msg) { toast(msg); }
 // Model replies: code blocks, paragraphs, bullet and numbered lists, headings, **bold**, *italics*, `code`.
 const emph = s => md(s).replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1<i>$2</i>");
+// The worked example, one sentence per line: as a paragraph, "add up to 0.6. 0.6 divided by 2"
+// reads like a broken number. Decimals have no space after their dot, so ". " always ends a
+// sentence; a very short one ("No.") stays on the line before.
+function byhandSteps(text) {
+  const steps = [];
+  for (const s of text.trim().split(/(?<=[.!?])\s+(?=\S)/)) {
+    if (steps.length && s.length < 6) steps[steps.length - 1] += " " + s; else steps.push(s);
+  }
+  return `<ol class="steps">${steps.map(s => `<li>${md(s)}</li>`).join("")}</ol>`;
+}
 function blockHtml(block) {
   const out = []; let list = null, para = [];
   const flushPara = () => { if (para.length) { out.push("<p>" + para.map(emph).join("<br>") + "</p>"); para = []; } };
