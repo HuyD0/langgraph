@@ -98,13 +98,17 @@ your code to work on something real.
 | 9c | `m9c_analyse_and_decide.ipynb` | The Evaluate stage in order: must-pass gate, oracle headroom, groups, flaky questions, the paired test, reading regressions and improvements, the reranker check, the ablation, the time guardrail, the holdout | Doing the steps in order |
 | 9d | `m9d_ship_monitor_grow.ipynb` | Shipping behind a gate, a monitoring signal, tracing a production failure to its cause, growing the eval set as a new version | Closing the loop |
 | 10 | `m10_one_agent_or_a_team.ipynb` | One agent against a team on the help center: parallel researchers with `Send` and a reducer, a supervisor made with `create_agent`, one writer, a checker with a round limit; 3 runs per question through `mlflow.genai.evaluate`; passed every time, dollars per success, hand-off facts kept, tokens per agent, failure labels, and the verdict by a rule written first | Applying the rule when the team looks better |
+| 11 | `m11_vet_a_use_case.ipynb` | MLflow's GenAI tools on the use case review, the machinery behind `drill review`: `@mlflow.trace` and trace tags, code checks and your labels as feedback (`log_feedback`, `AssessmentSource`), reading them back with `search_traces`, a `@scorer` in `mlflow.genai.evaluate`, judge agreement with scikit-learn's `cohen_kappa_score`, and the prompt registry (`register_prompt`, aliases, `load_prompt`) | Telling code's, your and a judge's judgements apart on one trace |
+| 12 | `m12_build_the_agent_for_real.ipynb` | The Agents lessons with LangGraph's and LangChain's real classes: a `@tool`, `StateGraph` with `MessagesState`, `ToolNode` and `tools_condition`, memory with `InMemorySaver` and a thread id, human approval with `interrupt` and `Command(resume=...)`, streaming with `stream_mode="updates"`, and tracing with `mlflow.langchain.autolog` | Seeing that the paused state lives in the checkpointer |
 
 Milestones 1–4 are ordinary Python and transfer directly to interviews.
 Milestone 5 is the one senior engineers will want to talk about — running code you
 did not write, safely, is a real systems problem. Milestone 6 is the LangGraph one. Milestone 7 steps
 back from the tutor to the model itself: six small experiments on a local model
 (through Ollama, or recorded results if you don't have it), each run the
-scientific-method way - question, written guess, one change, verdict.
+scientific-method way - question, written guess, one change, verdict. Milestones 11 and 12
+build the Daily Drill's use case review and agent lessons with the real MLflow, LangGraph and
+LangChain classes; the page's "Build it for real" card links each lesson to its section.
 
 `src/drill/` is the worked answer to all six. Looking is allowed. But write your
 version first: reading a solution feels like understanding and usually is not —

@@ -694,6 +694,10 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .fbbar .chipbtn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 .fbbar .chipbtn:disabled:not([aria-pressed="true"]) { opacity: .5; }
 .fbwhy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; }
+.real h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.real p { margin: 0; }
+.realuses { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
+.realuses code { color: var(--syn-fn); }
 .mine-private { display: flex; align-items: center; gap: 6px; }
 .mine-private .ic { width: 16px; height: 16px; }
 #search { padding-block: 16px 48px; }
@@ -828,6 +832,7 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
     <div class="confirm" id="guideConfirm" hidden><span id="guideMsg">This replaces your code.</span><button class="btn" id="guideYes">Replace my code</button><button class="btn quiet" id="guideNo">Keep my code</button></div>
     <div class="confirm" id="solConfirm" hidden><span>Try a hint first? Seeing the answer too early teaches less.</span><button class="btn" id="solYes">Show it anyway</button><button class="btn quiet" id="solNo">Keep trying</button></div>
     <div class="feed" id="feed"></div>
+    <section class="card real" id="realBox" hidden aria-label="Build it for real, with the libraries"></section>
     <section class="card mine" id="mineBox" hidden aria-label="Your own use case"></section>
   </section>
 </main>
@@ -1264,6 +1269,20 @@ function renderHome() {
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
 }
 
+// ---------- build it for real: the same idea with the real libraries, in a notebook ----------
+// The exercise teaches the idea in plain Python in the browser; the notebook (src/drill/content/real.py
+// says which) builds it with MLflow, LangGraph and LangChain's real classes, on your Mac.
+function renderReal() {
+  const box = $("realBox"), r = cur && cur.kind === "lesson" && D.real.lessons[cur.id];
+  if (!r) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.innerHTML = `<span class="eyebrow">Build it for real · on your Mac</span>
+    <h3>${esc(D.real.notebooks[r.notebook])}</h3>
+    <p>Section <b>${esc(r.section)}</b>. The exercise above teaches the idea in plain Python; the notebook builds it with the real library, with its own tests.</p>
+    <div class="realuses"><span>You use</span>${r.uses.map(u => `<code>${esc(u)}</code>`).join("")}</div>
+    <pre class="code">uv run jupyter lab notebooks/${esc(r.notebook)}.ipynb</pre>`;
+}
+
 // ---------- your own use case: the thread through Frame ----------
 // The graded exercises use the HR assistant, so every test has a known answer. After each one,
 // the learner can do the same for their own idea. It is saved in their own progress only
@@ -1659,7 +1678,7 @@ function setStep(i) {
   if (cur.kind === "lesson") { const s = lp(cur.id); if (!s.done) s.step = Math.max(s.step, i); saveProgress(); }
   $("stepper").innerHTML = STEPS.map((name, k) => `<button class="stepbtn${stepDone(k) ? " done" : ""}" data-step="${k}"${k === i ? ' aria-current="step"' : ""}><i></i><span>${ic(STEP_ICON[k])}${name}</span></button>`).join("");
   $("paneBuild").hidden = i !== 2;
-  if (i === 2) renderMine();
+  if (i === 2) { renderMine(); renderReal(); }
   $("paneText").hidden = i === 2;
   if (i !== 2) $("paneText").innerHTML = i === 0 ? learnPane() : i === 1 ? checkPane() : anglePane();
   renderFoot();

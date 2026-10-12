@@ -1,5 +1,8 @@
 """Score the use case review prompt on cards with planted gaps: ``drill review eval``.
 
+The MLflow calls here (``@scorer``, ``Feedback``, ``mlflow.genai.evaluate``) are built step by step
+in notebooks/m11_vet_a_use_case.ipynb, section 5.
+
 Each case is the HR assistant's card with something planted: a blank owner, no test data, no
 feedback loop, a success line with no number, or answers nobody checks. A good review flags
 each gap as an Unknown or a question, names every pillar, gives the unchecked case a high risk,
