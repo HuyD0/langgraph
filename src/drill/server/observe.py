@@ -49,7 +49,7 @@ CONTEXT_KEYS = (
     "feature", "door", "lesson_id", "step", "hint_level", "question", "session", "user",
     "exercise_fn", "word_limit", "chip", "guard", "request", "prompt_version", "blank_fields",
 )
-TAG_KEYS = ("feature", "door", "lesson_id", "step", "hint_level", "chip", "guard", "request", "prompt_version")
+TAG_KEYS = ("feature", "door", "lesson_id", "step", "hint_level", "chip", "guard", "prompt_version")  # "request" is the client_request_id
 REQUEST_ID = re.compile(r"^[A-Za-z0-9_-]{6,64}$")  # the page's id for one request, used to find its trace again
 
 _BIG_O = re.compile(r"\bO\([^)\n]{1,15}\)")
@@ -88,6 +88,40 @@ def app_version() -> str:
             return version("daily-drill")
         except Exception:
             return "unknown"
+
+
+PROMPT_FEATURES = {"use_case_review": "review", "use_case_challenge": "challenge"}  # feature -> prompt key
+
+
+def load_prompt_versions(model_id: str | None) -> dict:
+    """The registered prompt versions this app version uses, by the feature that uses them.
+
+    The version record ``drill cloud deploy`` writes names them exactly (``prompt_review`` =
+    ``catalog.schema.use_case_review/3``); without one, the ``production`` alias of each prompt's
+    configured name. Nothing registered, or no access: no links, and nothing else changes.
+    """
+    import mlflow
+
+    from drill import mlflow_names
+
+    params: dict = {}
+    if model_id:
+        try:
+            params = mlflow.get_logged_model(model_id).params or {}
+        except Exception as exc:  # noqa: BLE001
+            log.info("could not read the version record %s: %s", model_id, str(exc).splitlines()[0][:200])
+            params = {}
+    found = {}
+    for feature, key in PROMPT_FEATURES.items():
+        ref = params.get(f"prompt_{key}")
+        uri = f"prompts:/{ref}" if ref else f"prompts:/{mlflow_names.prompt_name(key)}@production"
+        try:
+            found[feature] = mlflow.genai.load_prompt(uri, link_to_model=False)
+        except Exception as exc:  # noqa: BLE001
+            log.info("no prompt link for %s (%s): %s", feature, uri, str(exc).splitlines()[0][:200])
+    if found:
+        log.info("traces link to prompts: %s", ", ".join(f"{pv.name}/{pv.version}" for pv in found.values()))
+    return found
 
 
 def clean_context(raw: dict | None) -> dict:
@@ -166,12 +200,15 @@ class MlflowObserver:
     def __init__(self, experiment: str | None = None):
         # DRILL_MLFLOW_EXPERIMENT, not MLFLOW_EXPERIMENT_NAME: Claude Code's MLflow tracing sets
         # the latter for every process it starts, drill-mcp included.
-        self.experiment = experiment or os.getenv("DRILL_MLFLOW_EXPERIMENT") or "daily-drill"
+        from drill import mlflow_names
+
+        self.experiment = experiment or mlflow_names.experiment()
         self.enabled = False
         self._next_try = 0.0
         self._warned = False
         self._feedback: queue.Queue = queue.Queue(maxsize=500)
         self._worker: threading.Thread | None = None
+        self._prompts: dict = {}  # feature -> the registered prompt version its traces are linked to
         self.ready()
 
     # -- connecting --------------------------------------------------------
@@ -224,10 +261,17 @@ class MlflowObserver:
                 # answer turns "daily-drill" into the workspace path the experiment needs.
                 experiment = experiment_path(experiment, uri, databricks_user(uri))
             chosen = mlflow.set_experiment(experiment)
+        from drill import mlflow_names
+
+        if mlflow_names.prompt_schema():
+            # Tells MLflow tools which Unity Catalog schema holds this app's prompts.
+            mlflow.set_experiment_tags({"mlflow.promptRegistryLocation": mlflow_names.prompt_schema()})
+        self.experiment_id = getattr(chosen, "experiment_id", None)  # for evals and datasets that belong beside the traces
         where = uc_trace_location(chosen)
         if where:
             log.info("Traces for %s go to Unity Catalog (%s); reading them needs a SQL warehouse", experiment, where)
-        mlflow.set_active_model(name=f"daily-drill-{app_version()}")
+        active = mlflow.set_active_model(name=f"daily-drill-{app_version()}")
+        self._prompts = load_prompt_versions(getattr(active, "model_id", None))
 
     def _off(self, exc: Exception) -> None:
         if self.enabled:
@@ -246,16 +290,19 @@ class MlflowObserver:
         try:
             import mlflow
             from mlflow.tracing.constant import TraceMetadataKey
+            from mlflow.tracing.trace_manager import InMemoryTraceManager
 
-            tags = {k: ctx[k] for k in TAG_KEYS if k in ctx}
-            tags["app_version"] = app_version()
+            from drill import mlflow_names
+
+            version = app_version()
+            tags = {**{k: ctx[k] for k in TAG_KEYS if k in ctx}, **mlflow_names.context_tags(version)}
             parent = mlflow.get_current_active_span()  # an MCP tool call, when there is one
             if parent is None:
                 question = ctx.get("question") or next(
                     (str(m.content) for m in reversed(messages) if getattr(m, "type", "") == "human"), ""
                 )[:TEXT_LIMIT]
                 inputs = {"question": question, **{k: ctx[k] for k in ("lesson_id", "step", "hint_level") if k in ctx}}
-                metadata = {}
+                metadata = mlflow_names.context_metadata(version)
                 if "session" in ctx:
                     metadata[TraceMetadataKey.TRACE_SESSION] = ctx["session"]
                 metadata[TraceMetadataKey.TRACE_USER] = ctx.get("user", "local")
@@ -264,6 +311,11 @@ class MlflowObserver:
                 )
                 handle["root"] = parent
                 tags = None  # already on the trace
+                if ctx.get("request"):
+                    # MLflow's own field for the caller's request id: the page finds this trace again by it.
+                    with InMemoryTraceManager.get_instance().get_trace(parent.trace_id) as trace:
+                        if trace is not None:
+                            trace.info.client_request_id = ctx["request"]
             span = mlflow.start_span_no_context(
                 "tutor.ask", span_type="CHAT_MODEL", parent_span=parent,
                 inputs={"messages": _message_dicts(messages), "tier": tier}, tags=tags,
@@ -352,6 +404,10 @@ class MlflowObserver:
                 span.set_status(SpanStatusCode.ERROR)
             span.end(outputs={"content": text[:TEXT_LIMIT]} if text else None)
 
+            with InMemoryTraceManager.get_instance().get_trace(span.trace_id) as trace:
+                if trace is not None:  # filterable per trace: tags.model, tags.route, tags.cached
+                    trace.info.tags.update({"model": model or "none", "route": route or "none", "cached": str(cached).lower()})
+
             ctx = handle["context"]
             if text:
                 checks = answer_checks(text, ctx)
@@ -364,7 +420,18 @@ class MlflowObserver:
                     if trace is not None:
                         for name, value in checks.items():
                             trace.info.tags[name] = str(value).lower()
-                self._queue_feedback(span.trace_id, {k: v for k, v in checks.items() if isinstance(v, bool)})
+                if os.getenv("DRILL_CHECKS_AS_FEEDBACK", "1").strip().lower() not in ("0", "false", "no"):
+                    # Off in the app: with traces in Unity Catalog each write wakes a SQL warehouse.
+                    # The checks are still tags and a span; `drill traces score` adds them in one batch.
+                    self._queue_feedback(span.trace_id, {k: v for k, v in checks.items() if isinstance(v, bool)})
+
+            pv = self._prompts.get(ctx.get("feature"))
+            if pv is not None:
+                # A tag to filter by; the link itself is kept with the prompt version in the registry.
+                with InMemoryTraceManager.get_instance().get_trace(span.trace_id) as trace:
+                    if trace is not None:
+                        trace.info.tags["prompt"] = f"{pv.name}/{pv.version}"
+                self._link_prompt(span.trace_id, ctx["feature"])
 
             root = handle.get("root")
             if root is not None:
@@ -373,6 +440,19 @@ class MlflowObserver:
                 root.end(outputs={"answer": text[:TEXT_LIMIT]} if text else None)
         except Exception as exc:
             self._off(exc)
+
+    def _link_prompt(self, trace_id: str, feature: str) -> None:
+        """Link a review or challenge trace to the registered prompt version it was built from."""
+        pv = self._prompts.get(feature)
+        if pv is None:
+            return
+        try:
+            self._feedback.put_nowait(("link", trace_id, pv))
+        except queue.Full:
+            return
+        if self._worker is None or not self._worker.is_alive():
+            self._worker = threading.Thread(target=self._log_feedback, name="drill-feedback", daemon=True)
+            self._worker.start()
 
     # -- the checks as feedback ------------------------------------------
 
@@ -398,6 +478,20 @@ class MlflowObserver:
             if item and item[0] == "human":
                 try:
                     self._log_human(*item[1:])
+                finally:
+                    self._feedback.task_done()
+                continue
+            if item and item[0] == "link":
+                try:
+                    for attempt in range(20):  # the trace must be saved before it can be linked
+                        try:
+                            mlflow.flush_trace_async_logging()
+                            mlflow.MlflowClient().link_prompt_versions_to_trace([item[2]], item[1])
+                            break
+                        except Exception as exc:
+                            if attempt == 19:
+                                log.info("could not link %s to its prompt: %s", item[1], exc)
+                            time.sleep(0.25)
                 finally:
                     self._feedback.task_done()
                 continue
@@ -439,7 +533,8 @@ class MlflowObserver:
         for attempt in range(20):
             try:
                 mlflow.flush_trace_async_logging()
-                found = mlflow.search_traces(filter_string=f"tags.request = '{request}'", max_results=1, return_type="list")
+                found = mlflow.search_traces(filter_string=f"trace.client_request_id = '{request}'", max_results=1, return_type="list") \
+                    or mlflow.search_traces(filter_string=f"tags.request = '{request}'", max_results=1, return_type="list")  # older traces
                 if found:
                     mlflow.log_feedback(trace_id=found[0].info.trace_id, name=name, value=value, rationale=rationale or None,
                                         source=AssessmentSource(source_type="HUMAN", source_id=user or "learner"))
@@ -493,7 +588,9 @@ def tool_span(name: str, inputs: dict) -> Iterator[Any]:
     try:
         try:
             span.set_inputs(inputs)
-            tags = {"feature": name, "door": "mcp", "app_version": app_version()}
+            from drill import mlflow_names
+
+            tags = {"feature": name, "door": "mcp", **mlflow_names.context_tags(app_version())}
             if inputs.get("lesson_id"):
                 tags["lesson_id"] = str(inputs["lesson_id"])
             mlflow.update_current_trace(tags=tags, session_id=MCP_SESSION, user="local")

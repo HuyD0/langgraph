@@ -44,6 +44,17 @@ variables:
     description: The Lakebase database, projects/<project>/branches/<branch>/databases/<database>.
   experiment_id:
     description: The MLflow experiment the app's traces go to.
+  warehouse_id:
+    description: The SQL warehouse the app uses to attach feedback to traces kept in Unity Catalog (a small serverless one).
+  prompt_schema:
+    description: The catalog.schema holding the app's prompts (Unity Catalog prompt registry), used when registering a version.
+    default: ""
+  experiment_path:
+    description: That experiment's workspace path, kept for reference (default /Shared/daily-drill).
+    default: /Shared/daily-drill
+  trace_schema:
+    description: The catalog.schema holding the experiment's traces in Unity Catalog, kept for reference.
+    default: ""
 
 resources:
   apps:
@@ -69,6 +80,10 @@ resources:
           experiment:
             experiment_id: ${var.experiment_id}
             permission: CAN_EDIT
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
 
 targets:
   personal:

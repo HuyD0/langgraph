@@ -120,8 +120,10 @@ idea, ungraded:
   or stop call is attached to the review and challenge drafts that vetted that idea
   (`pilot_outcome`), so you can later see whether the vetting predicted the pilot.
 - **The prompt registry**: `uv run drill review register` puts both prompts in MLflow's prompt
-  registry (`drill-use-case-review`, `drill-use-case-challenge`), a new version only when the
-  text changed, with the `production` alias on the current one.
+  registry (`use_case_review`, `use_case_challenge`; on Databricks `<DRILL_PROMPT_SCHEMA>.use_case_review`
+  and so on, since the registry there is Unity Catalog), a new version only when the text changed,
+  with the `production` alias on the current one. See [DATABRICKS_APP.md](DATABRICKS_APP.md) for
+  how versions, traces, evals and the review cases link to them.
 
 It is saved in your own progress only (`mine` in the progress document; on claude.ai under
 `data/users/<you>`, which nobody else can read) and the tutor snapshot includes it.
