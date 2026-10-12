@@ -1,4 +1,4 @@
-"""Keeping the use case review honest over time: ``drill review label``, ``calibrate`` and ``register``.
+"""Keeping the use case review honest over time (each MLflow call here is an exercise in notebooks/m11_vet_a_use_case.ipynb): ``drill review label``, ``calibrate`` and ``register``.
 
 - **label**: show recent reviews from MLflow traces, one at a time, and record whether each one
   invented a fact. Your answer goes on the trace as HUMAN feedback named ``grounded``.

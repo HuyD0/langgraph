@@ -23,7 +23,7 @@ import re
 import sys
 from pathlib import Path
 
-from drill.content import classics, extras, modules, review
+from drill.content import classics, extras, modules, real, review
 from drill.content.model import Module
 
 HERE = Path(__file__).resolve().parent
@@ -103,6 +103,7 @@ def build_data(loaded: list[Module] | None = None) -> dict:
         "iacGotchas": extras.IAC_GOTCHAS,
         "classics": [p.id for p in ALL_PROBLEMS],
         "review": review.data(),
+        "real": real.data(),
     }, ensure_ascii=False))
 
 

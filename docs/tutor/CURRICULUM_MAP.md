@@ -2225,6 +2225,8 @@ Longer, hands-on milestones in `notebooks/`, each with an answer key in `noteboo
 - `m9c_analyse_and_decide.ipynb`: Milestone 9c - Analyse and decide
 - `m9d_ship_monitor_grow.ipynb`: Milestone 9d - Ship, monitor, and grow the eval set
 - `m10_one_agent_or_a_team.ipynb`: Milestone 10 - One agent or a team?
+- `m11_vet_a_use_case.ipynb`: Milestone 11 - Vet a use case with MLflow
+- `m12_build_the_agent_for_real.ipynb`: Milestone 12 - Build the agent for real
 
 ## Glossary
 

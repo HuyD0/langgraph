@@ -165,3 +165,19 @@ def test_every_machine_fits_its_example(data):
         if m["leak_arg"] is not None:
             assert isinstance(case["args"][m["leak_arg"]], str), f"{p['id']}: leak_arg names a field"
 
+
+
+def test_every_build_it_for_real_card_points_at_a_real_notebook_section():
+    import json
+    from pathlib import Path
+
+    from drill.content import real
+
+    lessons = {lid for m in modules.load(modules.ORDER) for lid in m.lesson_ids}
+    root = Path(__file__).resolve().parents[1] / "notebooks"
+    for lesson_id, (notebook, section, uses) in real.REAL.items():
+        assert lesson_id in lessons, f"no lesson {lesson_id}"
+        assert notebook in real.NOTEBOOKS and uses, lesson_id
+        cells = json.loads((root / f"{notebook}.ipynb").read_text())["cells"]
+        headings = {line[3:].strip() for c in cells if c["cell_type"] == "markdown" for line in "".join(c["source"]).splitlines() if line.startswith("## ")}
+        assert section in headings, f"{lesson_id}: {notebook} has no section {section!r}"
