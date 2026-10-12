@@ -1,6 +1,6 @@
 """Use case and fit: pick an AI use case worth doing, write it down, and decide whether it is fit for purpose."""
 
-from drill.content.model import angle, case, example, exercise, lesson, machine, module, question
+from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, sort_task
 
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
@@ -33,7 +33,7 @@ failed a gate, so shelved:
     ),
     angle=angle(
         pattern='Gates first, then the map',
-        text='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. Your code makes four empty lists, one per corner of the map. For each idea it first checks the gate: any reason written there sends it to shelve. Otherwise it reads value and doable: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It returns the lists in map order, top left to bottom right. It is like sorting post into four trays by two questions, after binning the junk.',
+        text='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. The order matters. The gates come first, because a valuable idea that does harm unchecked is still shelved. Then two separate questions, value and doable, pick one of four corners: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It is like sorting post into four trays by two questions, after binning the junk. In Python the same steps are four empty lists, one if for the gate, and if, elif and else for the corners.',
         say='"I start from a business problem and write the use case in one line. I rule it out if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked. Then I place it by value and how doable it is, and pilot the valuable, doable ones first."',
         classic=None,
     ),
@@ -158,6 +158,36 @@ for n in [1, 2, 3]:
                 'Adding value, ease and risk into one total hides the trade-off. Keep value and doable as two axes, and treat harm as a gate.',
             ],
         ],
+        sort=sort_task(
+            intro="Six ideas came in. Check the gates first, then how valuable and how doable each one is. Tap where it goes, or drag it there.",
+            bins=[
+                ('research', 'Research', 'valuable, not doable yet'),
+                ('accelerate', 'Accelerate', 'valuable and doable: pilot it'),
+                ('shelve', 'Shelve', 'small, and hard to do'),
+                ('incubate', 'Incubate', 'doable but small: learn on it'),
+                ('gate', 'Failed a gate', 'a rule does it, nothing to test on, or harm nobody checks'),
+            ],
+            items=[
+                {'name': 'Rejecting job applicants', 'say': 'Reads CVs and sends rejections on its own. Nobody looks before they go out.',
+                 'bin': 'gate', 'why': 'A wrong rejection harms a real person, and nobody checks. That fails the harm gate, however much time it saves.',
+                 'value': 'high', 'doable': 'high', 'gate': 'harm, nobody checks'},
+                {'name': 'Customer email replies', 'say': 'Support answers 3,000 similar emails a month. Past replies are rated, and an agent checks every draft before it is sent.',
+                 'bin': 'accelerate', 'why': 'Lots of repeated work, rated past replies to test on, and a person checks each draft. Valuable and doable: pilot it.',
+                 'value': 'high', 'doable': 'high', 'gate': ''},
+                {'name': 'Naming scanned files', 'say': "Suggests names for scanned files in one team's drive. Easy to try, and saves a few minutes a week.",
+                 'bin': 'incubate', 'why': 'Doable, but small. A safe first project to learn on, not one to bet a budget on.',
+                 'value': 'low', 'doable': 'high', 'gate': ''},
+                {'name': 'Spotting fraud in expenses', 'say': 'Would save auditors weeks. Past claims were checked, but the records sit in three old systems, and audits would have to change how they work.',
+                 'bin': 'research', 'why': 'Valuable, but not doable yet: the data has to be pulled together and the team has to agree to work differently. Fix that first, then look again.',
+                 'value': 'high', 'doable': 'low', 'gate': ''},
+                {'name': 'Busy meeting rooms', 'say': 'Guesses which meeting rooms will be busy next year. Few people asked for it, and bookings live in three systems.',
+                 'bin': 'shelve', 'why': 'Small value and hard to do. Shelve it and spend the effort elsewhere.',
+                 'value': 'low', 'doable': 'low', 'gate': ''},
+                {'name': 'Currency on invoices', 'say': "Converts invoice amounts into dollars using today's exchange rate.",
+                 'bin': 'gate', 'why': 'Amount times rate is a fixed rule. Write the rule: it is cheaper than AI and never wrong.',
+                 'value': 'low', 'doable': 'high', 'gate': 'a rule does it'},
+            ],
+        ),
         machine=machine(bins=['research', 'accelerate', 'shelve', 'incubate'], who=['high value, hard to do yet', 'high value, doable: pilot it', 'low value, or failed a gate', 'doable but small: learn on it'], label_field='id'),
     ),
 )
