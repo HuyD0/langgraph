@@ -40,6 +40,13 @@ Home shows the path as a sticker book, with the six phases always in view:
 - **A phase's page** holds its stickers, one scene per module. Small phases open in full; in a big
   one, the scene with the next lesson is open and the rest fold to a row of small shapes. Today's
   page previews the next phase below it.
+- **Each phase page opens with a title card**: the phase's shape large, a "You are here", "Done",
+  "Earlier" or "Coming up" label, and what you come out with. The page is printed on the phase's
+  own paper, matched to its shape: dots, graph paper, a lattice, ruled lines, hatching, dashes.
+- **Lesson pictures**: a lesson with its own picture shows it on its sticker, faded until you get
+  there; the others show their module's icon. Frame, Design and Building with LLMs have pictures so
+  far. To add one, put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` in the sprite at the
+  top of `page.html`, drawn as strokes on a 24 grid centred on 0.
 - **Finishing a lesson** shows its new sticker.
 
 Shape and position carry the phases, not colour: colour stays for passed, failed and the next

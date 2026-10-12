@@ -58,6 +58,18 @@ def test_every_module_has_an_icon_for_its_stickers():
     assert not missing, f"MOD_ICON has no icon for {missing}"
 
 
+def test_every_lesson_picture_belongs_to_a_real_lesson():
+    # A lesson's own sticker picture is a sprite symbol "s-<lesson id>"; a typo would silently fall back.
+    import re
+    from pathlib import Path
+    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    pictures = re.findall(r'<symbol id="s-([a-z0-9_]+)"', page)
+    lessons = {lid for m in modules.load(modules.ORDER) for lid in m.lesson_ids}
+    assert pictures, "no lesson pictures found"
+    assert len(pictures) == len(set(pictures)), "a lesson has two pictures"
+    assert not set(pictures) - lessons, f"pictures for lessons that don't exist: {set(pictures) - lessons}"
+
+
 def test_every_lesson_has_an_exercise_and_every_classic_is_real(data):
     bank = {p["id"] for p in data["bank"]}
     assert set(data["lessons"]) <= bank
