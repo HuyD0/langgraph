@@ -194,6 +194,18 @@ first. It does not work when the destination catalog's storage is only reachable
 private endpoint, which is the case behind a workspace storage firewall, so check that
 before relying on it.
 
+Managers see everything: every person's progress, study list and events. Learners still see
+only their own rows in Lakebase. The Unity Catalog copies have no per-person filter, so
+anyone who can read them sees everyone: give `SELECT` on them (and the dashboard) to a
+managers group only, not to learners:
+
+```sql
+GRANT SELECT ON TABLE <catalog>.<schema>.lb_docs_history TO `drill-managers`;
+GRANT SELECT ON TABLE <catalog>.<schema>.lb_events_history TO `drill-managers`;
+```
+
+Tell learners up front that their manager can see their progress and activity.
+
 ## What gets measured
 
 Every request is one MLflow trace, in experiment `daily-drill` (in `.drill/mlflow.db` unless
