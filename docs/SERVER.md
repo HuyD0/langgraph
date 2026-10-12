@@ -176,6 +176,10 @@ SQLite file instead and the health check shows `store_fallback: true`. Once it i
 events already sent are skipped. The same command brings your home history (saved as
 `local`) to work, if you copy `drill.db` over first.
 
+The Databricks App doesn't do this. Its disk is wiped every time it restarts, so a local
+file there would quietly lose everyone's work. Instead it keeps trying Lakebase for two
+minutes (it may still be waking up), then refuses to start with a message saying why.
+
 **The manager's view.** Register the Lakebase database in Unity Catalog: in Catalog Explorer,
 **Create a catalog**, type **Lakebase Postgres**, **Autoscaling**, then the `daily-drill`
 project, `production` branch and `databricks_postgres` database (or `databricks postgres

@@ -58,6 +58,27 @@ def test_corrupt_history_does_not_block_practice(store, progress_path):
     assert store.load() == []
 
 
+def test_a_corrupt_history_is_kept_aside_not_overwritten(store, progress_path):
+    progress_path.parent.mkdir(parents=True, exist_ok=True)
+    progress_path.write_text("{not json", encoding="utf-8")
+    record(store, "two_sum", solved=True)
+    kept = list(progress_path.parent.glob(progress_path.name + ".bad-*"))
+    assert len(kept) == 1 and kept[0].read_text(encoding="utf-8") == "{not json"
+    assert [r.problem_id for r in store.load()] == ["two_sum"]
+
+
+def test_a_history_that_is_not_an_object_does_not_crash(store, progress_path):
+    progress_path.parent.mkdir(parents=True, exist_ok=True)
+    progress_path.write_text("[1, 2]", encoding="utf-8")
+    assert store.load() == []
+
+
+def test_saving_leaves_no_temporary_files(store, progress_path):
+    record(store, "two_sum", solved=True)
+    record(store, "two_sum", solved=False)
+    assert [p.name for p in progress_path.parent.iterdir()] == [progress_path.name]
+
+
 def test_rows_from_an_older_schema_are_skipped(store, progress_path):
     progress_path.parent.mkdir(parents=True, exist_ok=True)
     progress_path.write_text(
