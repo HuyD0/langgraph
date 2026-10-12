@@ -620,9 +620,21 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 }
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="dusk"] .bdg.now { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
-  :root[data-theme="dusk"] .btn.primary:not([disabled]), :root[data-theme="dusk"] .stepbtn[aria-current="step"] i { animation: none; }
+  :root[data-theme="dusk"] .btn.primary:not([disabled]), :root[data-theme="dusk"] .stepbtn[aria-current="step"] i, :root[data-theme="dusk"] .ministk svg.now { animation: none; }
+  :root[data-theme="dusk"] .stk.next .stg { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
   :root[data-theme="dusk"] .stepbtn[aria-current="step"] i { box-shadow: 0 0 8px rgba(91,140,255,.55); }
 }
+:root[data-theme="dusk"] .stk.next .stg { filter: url(#aura); }
+:root[data-theme="dusk"] .stk.now:not(.next) .stg { filter: drop-shadow(0 0 4px rgba(91,140,255,.55)); }
+:root[data-theme="dusk"] .ministk svg.now { filter: drop-shadow(0 0 3px rgba(91,140,255,.8)); animation: dd-ember 2.6s ease-in-out infinite; }
+@keyframes dd-ember {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(91,140,255,.75)) drop-shadow(0 -2px 3px rgba(179,234,255,.35)); }
+  31% { filter: drop-shadow(0 0 5px rgba(91,140,255,.95)) drop-shadow(0 -3px 4px rgba(179,234,255,.55)); }
+  64% { filter: drop-shadow(0 0 2px rgba(91,140,255,.6)) drop-shadow(0 -1px 2px rgba(179,234,255,.3)); }
+}
+/* the machine's function box: dark glass with a blue rim that flares while a row passes through */
+:root[data-theme="dusk"] .mfn { background: rgba(19,18,28,.92); color: var(--fg); border: 1px solid rgba(91,140,255,.45); box-shadow: 0 0 16px rgba(91,140,255,.22), inset 0 1px 0 rgba(255,255,255,.06); }
+:root[data-theme="dusk"] .mfn.busy { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 28px rgba(91,140,255,.55), 0 -8px 24px -6px rgba(125,160,255,.45); }
 :root[data-theme="dusk"] .callout.ahead { background: rgba(93,85,103,.18); border: 1px solid rgba(232,196,122,.30); }
 @media (prefers-reduced-transparency: reduce) {
   :root[data-theme="dusk"] .top, :root[data-theme="dusk"] .foot, :root[data-theme="dusk"] .keyidea { backdrop-filter: none; -webkit-backdrop-filter: none; }
@@ -1173,7 +1185,7 @@ const LESSON_PIC = new Set([...document.querySelectorAll('symbol[id^="s-"]')].ma
 function stickerSvg(id, st, r) {
   const k = phaseIdx(id), own = LESSON_PIC.has(id), size = r * (own ? 1.15 : .95);
   const pic = own ? `<use class="ico" href="#s-${id}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>` : shIcon(MOD_ICON[modOf[id].id] || "book", size);
-  return `<svg viewBox="${-r - 4} ${-r - 4} ${2 * r + 8} ${2 * r + 8}" aria-hidden="true">${phShape(k, r)}${pic}</svg>`;
+  return `<svg viewBox="${-r - 4} ${-r - 4} ${2 * r + 8} ${2 * r + 8}" aria-hidden="true"><g class="stg">${phShape(k, r)}${pic}</g></svg>`;
 }
 // A lesson's place on the path: phase number, then its position in the phase, like 2.11.
 const lessonNo = id => { const i = phaseIdx(id); return `${i + 1}.${phLessons(PHASES[i]).indexOf(id) + 1}`; };
