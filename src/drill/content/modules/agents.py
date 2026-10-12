@@ -343,6 +343,385 @@ for price in [2, 3]:
     ),
 )
 
+lesson(MODULE, 'stale_claims',
+    title="Memory that knows when it's stale",
+    learn=[
+        'An agent\'s **long-term memory** keeps facts between chats, like "refunds over $100 need a manager". When the policy changes, the memory doesn\'t, and the agent repeats the old rule with full confidence.',
+        "So save each fact with its **source** (where it came from) and that source's **version**: a number that goes up each time the source changes. Before using the fact, compare the saved version with the source's version now, in plain code with no model call. If they differ, the fact is **stale**.",
+        'Stale means "check again", not "wrong": don\'t delete it, and don\'t use it as if nothing happened. Re-read the source, then refresh the fact or save the new one; if you can\'t, say "I can\'t confirm that right now". A fact whose source has no version, like something the user said, gets an expiry date instead.',
+        'This check only catches facts whose **source changed**. If a user says "I moved to York", no source gets a new version, so the old "lives in Leeds" fact still looks fresh. Spotting that needs a model, and it is hard: in one 2026 test of noticing out-of-date memories, the best model got only about 55 percent right overall.',
+    ],
+    example=example('Saved versions next to the sources now ("-" means the source has no version)', """fact    source  saved  now  result
+refund  policy  3      4    stale
+office  sites   7      7    fresh
+pet     chat    1      -    unknown"""),
+    check=question(
+        "A remembered fact was saved at version 3 of its source, and the source is now at version 4. What should the agent do before using the fact?",
+        [
+            'Re-read the source, then refresh or replace it',
+            'Delete it, since its source has changed',
+            "Use it, since most changes don't affect it",
+        ],
+        answer=0,
+        why='A new version only means the fact might be out of date. Many changes leave it true, so check the source rather than trusting or deleting the fact blindly.',
+    ),
+    angle=angle(
+        pattern='Sort into groups with a lookup table',
+        text='The current versions sit in a dict, so each memory needs one lookup, and three lists keep the input order. The interview point is the third group: "can\'t tell" is not the same as fresh.',
+        say='"I store each fact with its source and that source\'s version, compare versions in plain code before using it, and re-read the source when it\'s stale instead of deleting it or trusting it."',
+        classic=None,
+    ),
+    stack=stack('LangGraph store and Databricks row versions', '''# LangGraph: save the fact with its
+# evidence. user_id comes from login.
+ns = ("facts", user_id)
+store.put(ns, "refund", {
+    "text": "Refunds over $100 "
+            "need a manager",
+    "source": "main.hr.policies/12",
+    "version": 3})
+
+# Databricks: read that ROW's version
+# now (row tracking must be on). Not
+# the table's version: that changes
+# on every write to the table.
+row = spark.sql("""
+  SELECT _metadata.row_commit_version
+         AS version
+  FROM main.hr.policies
+  WHERE id = 12""").first()
+
+fact = store.get(ns, "refund").value
+if row["version"] != fact["version"]:
+    ...  # stale: re-read the row'''),
+    exercise=exercise(
+        title='Spot Stale Memories',
+        topic='memory',
+        difficulty='easy',
+        fn='stale_claims',
+        prompt="""Sort remembered facts by whether their source has changed since they were saved.
+
+Your function gets two things:
+
+- `memories`: the saved facts. Each is a dict like `{"id": "refund", "source": "policy", "version": 3}`: the fact's name, where it came from, and that source's version when it was saved.
+- `current`: each source's version now, like `{"policy": 4}`.
+
+For each memory, in order:
+
+- its source is not in `current`: there is nothing to compare, so add its id to `"unknown"`.
+- its version is the same as the source's version now: add its id to `"fresh"`.
+- otherwise: add its id to `"stale"`.
+
+Return `{"fresh": [...], "stale": [...], "unknown": [...]}`, each list in the same order as `memories`. A group with no ids is `[]`.""",
+        pattern='Compare each item with a lookup table and sort it into one of three lists.',
+        target='one pass over the memories, one lookup each',
+        realworld="LangChain's OpenWiki memory saves each claim with the file and version it came from, and checks versions with plain code, no model call, before trusting a claim. On Databricks, the row's `_metadata.row_commit_version` is a good version to save.",
+        starter="""def stale_claims(memories, current):
+    # your code here
+    pass
+""",
+        solution="""def stale_claims(memories, current):
+    result = {"fresh": [],
+              "stale": [],
+              "unknown": []}
+    for m in memories:
+        source = m["source"]
+        if source not in current:
+            result["unknown"].append(m["id"])
+        elif current[source] == m["version"]:
+            result["fresh"].append(m["id"])
+        else:
+            result["stale"].append(m["id"])
+    return result
+""",
+        cases=[
+            case([
+                {'id': 'refund', 'source': 'policy', 'version': 3},
+                {'id': 'office', 'source': 'sites', 'version': 7},
+                {'id': 'pet', 'source': 'chat', 'version': 1},
+            ], {'policy': 4, 'sites': 7}, expected={'fresh': ['office'], 'stale': ['refund'], 'unknown': ['pet']}, sample=True),
+            case([], {'policy': 4}, expected={'fresh': [], 'stale': [], 'unknown': []}),
+            case([
+                {'id': 'a', 'source': 'wiki', 'version': 2},
+                {'id': 'b', 'source': 'faq', 'version': 5},
+                {'id': 'c', 'source': 'wiki', 'version': 2},
+            ], {'wiki': 2, 'faq': 5}, expected={'fresh': ['a', 'b', 'c'], 'stale': [], 'unknown': []}),
+            case([
+                {'id': 'old', 'source': 'doc', 'version': 1},
+                {'id': 'new', 'source': 'doc', 'version': 2},
+            ], {'doc': 2}, expected={'fresh': ['new'], 'stale': ['old'], 'unknown': []}),
+            case([
+                {'id': 'x', 'source': 'wiki', 'version': 1},
+                {'id': 'y', 'source': 'gone', 'version': 4},
+                {'id': 'z', 'source': 'wiki', 'version': 3},
+                {'id': 'w', 'source': 'gone', 'version': 1},
+            ], {'wiki': 3, 'other': 9}, expected={'fresh': ['z'], 'stale': ['x'], 'unknown': ['y', 'w']}),
+            case([{'id': 'rule', 'source': 'policy', 'version': 6}], {'policy': 5}, expected={'fresh': [], 'stale': ['rule'], 'unknown': []}),
+        ],
+        guided="""def stale_claims(memories, current):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: three empty lists to fill.
+    result = {"fresh": [],
+              "stale": [],
+              "unknown": []}
+    for m in memories:
+        source = m["source"]
+        # Step 2: no version now for this source?
+        if ___:
+            result["unknown"].append(m["id"])
+        # Step 3: is the version now the same as
+        #         the saved one, m["version"]?
+        elif ___:
+            result["fresh"].append(m["id"])
+        # Step 4: the source changed: stale.
+        else:
+            result["stale"].append(m["id"])
+    return result
+""",
+        fills=['source not in current', 'current[source] == m["version"]'],
+        concepts=[
+            [
+                'Reading a dict',
+                '`d["key"]` gives the value saved under that key.',
+                """pet = {'name': 'Rex', 'age': 3}
+pet['name']   # 'Rex'""",
+            ],
+            [
+                '`in` with a dict',
+                '`key in d` is True when the dict has that key. `not in` is the opposite.',
+                """ages = {'Ana': 30}
+'Bo' not in ages   # True""",
+            ],
+            [
+                'if, elif, else',
+                'Python tries each test in order and runs only the first one that is True. `else` runs when none were.',
+                """if n > 10:
+    size = 'big'
+elif n > 3:
+    size = 'medium'
+else:
+    size = 'small'""",
+            ],
+            [
+                'Same or not',
+                '`a == b` is True when a and b are the same. `a != b` is True when they differ.',
+                """3 == 3   # True
+3 != 4   # True""",
+            ],
+            [
+                'A dict of lists',
+                'Each key holds its own list, and `.append` adds to the end of one of them.',
+                """groups = {'big': [], 'small': []}
+groups['big'].append(9)
+# {'big': [9], 'small': []}""",
+            ],
+        ],
+        byhand='current has policy at 4 and sites at 7. refund came from policy at version 3. policy is now at 4, not 3, so refund is stale. office came from sites at version 7, and sites is still at 7, so office is fresh. pet came from chat, and chat is not in current, so there is nothing to compare: unknown. Return {"fresh": ["office"], "stale": ["refund"], "unknown": ["pet"]}.',
+        why='One pass over the memories, with one dict lookup for each.',
+        gotchas=[
+            [
+                "Saving the whole table's version",
+                "A Delta table gets a new version on every write, even maintenance like OPTIMIZE, so every fact looks stale and you re-check everything. Save the row's `_metadata.row_commit_version`, or a version column you control.",
+            ],
+            [
+                'Deleting stale facts',
+                'Many source changes leave a fact true. Re-read the source, then refresh the fact or save the new one. If you can\'t, say "I can\'t confirm that" rather than repeating the old fact.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'fact_history',
+    title='When a new fact replaces an old one',
+    learn=[
+        'When a new fact replaces an old one, **overwriting** the old one loses the history. You can no longer answer "where was the office in March?", or see what the agent believed when it made an old decision. In LangGraph, `store.put` on a key that already exists replaces the whole value, with no warning.',
+        "Instead, **close** the old fact. Give each fact a `from` day (when it became true) and a `to` day (`None` while it is still true). When a new fact arrives, set the old fact's `to` to the new fact's `from`, and save the new fact next to it under its own key.",
+        'Now "what\'s true now?" means the facts whose `to` is `None`. "What was true on day 30?" means the fact that started on or before day 30 and hadn\'t ended yet. Some systems also save a second date, the day they **learned** the fact, because it can differ from the day it became true.',
+        'One exception is **personal data**. When a person asks to be forgotten, deleting wins over keeping history (see the "Personal data" lesson in Security).',
+    ],
+    example=example('Two facts about the office', """value  from  to
+Leeds  1     40
+York   40    None
+
+day 10  ->  Leeds
+day 40  ->  York  (Leeds ended)
+day 99  ->  York"""),
+    check=question(
+        'The agent runs `store.put(ns, "office", {"city": "York"})` on the key that held "Leeds". What is lost?',
+        [
+            'Nothing, as the store keeps each old value too',
+            'Only the time the Leeds fact was first saved',
+            'Any way to answer where the office used to be',
+        ],
+        answer=2,
+        why='put on an existing key replaces the whole value, with no error. With one key per fact and the old fact closed, "where was the office in March?" still has an answer.',
+    ),
+    angle=angle(
+        pattern='Find the range that holds a point',
+        text='Each fact covers a range of days: from its `from` day up to, but not including, its `to` day. The question is which range holds the day asked about. One pass, and stop at the first match.',
+        say='"I never overwrite a fact. I close the old one with an end date and save the new one beside it, so I can answer both what\'s true now and what was true then."',
+        classic=None,
+    ),
+    stack=stack('LangGraph store: one key per version', '''# put on an existing key REPLACES the
+# value. So use one key per version.
+ns = ("facts", user_id)
+old = store.get(ns, "office@1").value
+old["to"] = 40          # close it
+store.put(ns, "office@1", old)
+store.put(ns, "office@2", {
+    "subject": "office",
+    "value": "York",
+    "from": 40, "to": None})
+
+# What's true now: "to" is still None.
+now = store.search(ns, filter={
+    "subject": "office", "to": None})
+
+# Databricks AUTO CDC keeps the same
+# kind of history for a table (SCD
+# Type 2): each row gets __START_AT
+# and __END_AT, and __END_AT is empty
+# on the current row:
+#   SELECT value FROM office_history
+#   WHERE __END_AT IS NULL'''),
+    exercise=exercise(
+        title='Look Up a Fact on a Day',
+        topic='memory',
+        difficulty='easy',
+        fn='fact_at',
+        prompt="""Find the fact that was true on a given day.
+
+Your function gets three things:
+
+- `facts`: every saved fact, in any order. Each is a dict like `{"subject": "office", "value": "Leeds", "from": 1, "to": 40}`. `from` is the day it became true. `to` is the day it stopped, or `None` while it is still true.
+- `subject`: what to ask about, like `"office"`.
+- `day`: the day to ask about, like `30`.
+
+A fact was true on `day` when all three hold:
+
+- its `subject` matches.
+- its `from` is `day` or earlier.
+- its `to` is `None`, or `day` is before `to`. So on day 40, a fact with `to` 40 has already ended.
+
+Return that fact's `value`, or `None` if no fact was true that day.""",
+        pattern='Find the one range that holds the day: start on or before it, end after it.',
+        target='one pass over the facts, stopping at the first match',
+        realworld="Graphiti, Zep's memory library, closes an old fact by setting its end to the new fact's start, and deletes nothing. Databricks AUTO CDC builds the same history for tables (SCD Type 2), with `__START_AT` and `__END_AT` columns.",
+        starter="""def fact_at(facts, subject, day):
+    # your code here
+    pass
+""",
+        solution="""def fact_at(facts, subject, day):
+    for f in facts:
+        if f["subject"] != subject:
+            continue
+        if f["from"] > day:
+            continue
+        if f["to"] is None or day < f["to"]:
+            return f["value"]
+    return None
+""",
+        cases=[
+            case([
+                {'subject': 'office', 'value': 'Leeds', 'from': 1, 'to': 40},
+                {'subject': 'manager', 'value': 'Ana', 'from': 5, 'to': None},
+                {'subject': 'office', 'value': 'York', 'from': 40, 'to': None},
+            ], 'office', 30, expected='Leeds', sample=True),
+            case([
+                {'subject': 'office', 'value': 'Leeds', 'from': 1, 'to': 40},
+                {'subject': 'manager', 'value': 'Ana', 'from': 5, 'to': None},
+                {'subject': 'office', 'value': 'York', 'from': 40, 'to': None},
+            ], 'office', 40, expected='York'),
+            case([
+                {'subject': 'office', 'value': 'Leeds', 'from': 1, 'to': 40},
+                {'subject': 'office', 'value': 'York', 'from': 40, 'to': None},
+            ], 'office', 0, expected=None),
+            case([
+                {'subject': 'office', 'value': 'Leeds', 'from': 1, 'to': 40},
+                {'subject': 'office', 'value': 'York', 'from': 40, 'to': None},
+            ], 'parking', 30, expected=None),
+            case([
+                {'subject': 'plan', 'value': 'Pro', 'from': 20, 'to': 50},
+                {'subject': 'plan', 'value': 'Free', 'from': 1, 'to': 20},
+                {'subject': 'plan', 'value': 'Team', 'from': 50, 'to': None},
+            ], 'plan', 20, expected='Pro'),
+            case([
+                {'subject': 'manager', 'value': 'Ana', 'from': 1, 'to': 10},
+                {'subject': 'office', 'value': 'York', 'from': 1, 'to': None},
+            ], 'manager', 15, expected=None),
+        ],
+        guided="""def fact_at(facts, subject, day):
+    # Replace every ___ with real code, then run the tests.
+
+    for f in facts:
+        # Step 1: skip facts about something else.
+        if f["subject"] != subject:
+            continue
+        # Step 2: skip facts that start after day.
+        if ___:
+            continue
+        # Step 3: still true (to is None), or
+        #         day is before f["to"]?
+        if ___:
+            return f["value"]
+
+    # Step 4: nothing was true that day.
+    return None
+""",
+        fills=['f["from"] > day', 'f["to"] is None or day < f["to"]'],
+        concepts=[
+            [
+                'continue',
+                'Skips the rest of this round of the loop and goes on to the next item.',
+                """for n in [1, -2, 3]:
+    if n < 0:
+        continue
+    print(n)   # 1, then 3""",
+            ],
+            [
+                '`is None`',
+                '`None` means "no value". `x is None` is True when x holds nothing.',
+                """end = None
+end is None   # True""",
+            ],
+            [
+                '`or`',
+                'True when either side is True. Python stops at the first True side, so here `n > 3` never runs when n is None.',
+                """n = None
+n is None or n > 3   # True""",
+            ],
+            [
+                'Comparing numbers',
+                '`a < b` is True when a is smaller, and `a > b` when a is bigger. `a != b` is True when they are not the same.',
+                """30 < 40       # True
+40 < 40       # False
+'a' != 'b'    # True""",
+            ],
+            [
+                'Returning early',
+                '`return` inside a loop ends the whole function right there. If the loop finishes, the code after it runs.',
+                """def first_big(nums):
+    for n in nums:
+        if n > 3:
+            return n
+    return None""",
+            ],
+        ],
+        byhand='Look for "office" on day 30. The first fact is about the office. Its from is 1, which is not after day 30, so it had started. Its to is 40, and 30 is before 40, so it hadn\'t ended. Return "Leeds". The loop stops there, so the other facts are never checked.',
+        why='One pass over the facts, and it stops at the first one that was true that day.',
+        gotchas=[
+            [
+                'Overwriting the same key',
+                '`store.put(ns, "office", new_value)` replaces the old value with no error, and InMemoryStore even resets its created_at. Use one key per version, like office@1 and office@2, and close the old one.',
+            ],
+            [
+                'Keeping personal data forever',
+                "Closing old facts is right for business facts. When a person asks to be erased, delete their memories for real, including copies in Delta table history, search indexes and traces.",
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'tool_schema',
     title='Tools from Unity Catalog',
     learn=[

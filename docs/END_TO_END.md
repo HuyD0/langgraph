@@ -182,3 +182,11 @@ measured number. The method, with a worked example, is in
   with one agent? Copy the
   [one agent or a team](EXPERIMENT_PLAN.md#a-worked-example-one-agent-or-a-team)
   plan.
+  Notebook 10 runs that plan on the help-center app; on its recording the
+  rule says to keep one agent.
+- Giving an agent memory that lasts between chats? Store each fact with its
+  source and version, close old facts instead of overwriting them, check what
+  gets written, and test with planted changes: **Memory that knows when it's
+  stale**, **When a new fact replaces an old one**, **Guarding what goes into
+  memory** and **Testing memory with planted changes**. The evidence is in
+  [research/AGENT_MEMORY.md](research/AGENT_MEMORY.md).

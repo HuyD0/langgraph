@@ -1,7 +1,7 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-119 lessons in 16 modules (AI & ML foundations through agents and agent teams, security,
+123 lessons in 16 modules (AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
 going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
