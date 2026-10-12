@@ -191,8 +191,34 @@ uv run drill cloud deploy --target work
 At work the team's Spacelift stack can run the same `databricks bundle deploy -t work`, with
 the overrides file written from its own variables instead of by `drill cloud setup`.
 
-**Managers' view.** In the app, everyone's rows are written by the app's service principal,
-with each person's email as the `owner`. Register the Lakebase database in Unity Catalog
-(see [SERVER.md](SERVER.md), "The manager's view") and grant managers `SELECT` on
-`<catalog>.drill.docs` and `<catalog>.drill.events`. Learners use the app, which only ever
-shows them their own rows.
+**Managers' view.** One command gives managers a dashboard of every learner:
+
+```bash
+uv run drill cloud manager-view --target work --warehouse <serverless warehouse id>
+```
+
+It registers the app's Lakebase database in Unity Catalog as a read-only catalog
+(`daily_drill_lakebase`, or `--catalog`), then creates and publishes an AI/BI dashboard,
+**Daily Drill: learners**, in your workspace folder. Running it again updates both. The pages:
+
+| Page | Shows |
+|---|---|
+| Team | One row per learner: lessons done and current lesson, last active, days active this week, Check right %, exercises solved and hints per exercise, questions this week, open study list items; lessons finished and days active per week |
+| Where they're stuck | Check answers they got wrong (with the right one), exercises that took 2 or more hints, their study list |
+| Questions | Every question they asked the tutor, with the lesson and step |
+| Weekly notes | A few plain sentences per learner per week, written by the app's model (below) |
+
+The dashboard runs with **your** credentials (embedded), so it shows everyone's rows. Share it,
+and grant `USE CATALOG` and `SELECT` on the catalog, to a managers group only: the catalog has
+no per-person filter. Learners keep using the app, which only ever shows them their own rows.
+If the Lakebase project was not created by you, ask for a Postgres role: the app grants the
+role `drill_managers`, if it exists, read access to every table when it starts.
+
+The app writes what the dashboard needs beside progress and the study list
+(`src/drill/server/team.py`): a `lessons` table (numbers, titles, phases, right Check answers),
+the text of each question in the `asked` events, and a `summaries` table. The weekly notes are
+written while the app runs, at most once a day per learner and only after new activity, by the
+same model and daily token cap as the tutor; a week nobody studies costs nothing.
+`DRILL_TEAM_SUMMARIES=0` in `app.yaml` turns them off.
+
+Tell learners up front that their manager can see their progress, study list and questions.
