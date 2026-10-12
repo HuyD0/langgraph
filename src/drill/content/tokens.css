@@ -39,6 +39,20 @@
   --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
+  /* motion: how long things move and how. The effects themselves are the "fx" rules in page.html;
+     the catalogue of when each one plays is in docs/PAGE.md, "Motion". */
+  --dur-tap: 160ms;      /* a press; an effect fading away */
+  --dur-step: 400ms;     /* moving between steps; a stamp */
+  --dur-moment: 900ms;   /* a small win: a hint, a gotcha, a healed test */
+  --dur-big: 1600ms;     /* finishing a lesson or a phase: rare, so it can take its time */
+  --ease-out: cubic-bezier(.2, .7, .3, 1);   /* arriving */
+  --ease-in: cubic-bezier(.6, 0, .9, .4);    /* leaving, or gathering speed */
+  --ease-pop: cubic-bezier(.2, 1.5, .4, 1);  /* overshoots a little, then settles */
+
+  /* effect colours, only ever used by the fx rules: a hot core, the energy, the dark of a closed
+     space, and the red that meets the energy to make the mix colour */
+  --fx-core: #5f84ff; --fx-glow: #2346d1; --fx-veil: #0b1233; --fx-red: #c2362f; --fx-mix: #6d3fd6;
+
   /* layout: one reading column */
   --col: 760px;
 }
@@ -50,6 +64,7 @@
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
+  --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
 :root[data-theme="dark"] {
@@ -59,4 +74,19 @@
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
+  --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
+
+/* Dusk: an opt-in dark theme, data-theme="dusk" on <html>. Blue-black darks with a
+   mauve-grey sheen; blue only for the next step; lavender only for finishing.
+   page.html adds its glass, grain and glow. */
+:root[data-theme="dusk"] {
+  --bg: #07070f; --surface: #13121c; --sunk: #0c0b14; --code-bg: #0c0b14; --line: #2b2836;
+  --fg: #eeedf4; --muted: #a7a2b5;
+  --accent: #5b8cff; --accent-ink: #0a1233; --accent-soft: #1c1a26;
+  --pass: #7fd6b0; --pass-bg: #10261f; --fail: #ff8f9e; --fail-bg: #351723; --hint: #e8c47a; --hint-bg: #2a2517;
+  --syn-kw: #9db7ff; --syn-str: #f0c6a0; --syn-num: #f2a7c3; --syn-com: #8f8a9f; --syn-fn: #c3b5ff; --syn-bi: #9fd2db;
+  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
+  --finish: #b49cff; --finish-ink: #0a1233;
+  --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6;
+  --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }

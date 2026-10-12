@@ -62,9 +62,16 @@ _BIG_O = re.compile(r"\bO\([^)\n]{1,15}\)")
 
 @functools.lru_cache(maxsize=1)
 def app_version() -> str:
-    """The git commit this code runs from, ``-dirty`` if tracked files changed; else the package version."""
+    """The git commit this code runs from, ``-dirty`` if tracked files changed; else the package version.
+
+    A Databricks App has no git history, so ``drill cloud deploy`` writes the commit to
+    ``.drill-version`` beside the code first.
+    """
     from drill.config import PROJECT_ROOT
 
+    stamp = PROJECT_ROOT / ".drill-version"
+    if stamp.is_file() and stamp.read_text().strip():
+        return stamp.read_text().strip()
     try:
         def git(*args: str) -> str:
             return subprocess.run(
@@ -207,11 +214,17 @@ class MlflowObserver:
 
             httpx.get(uri.rstrip("/") + "/health", timeout=1.0).raise_for_status()
         experiment = self.experiment
-        if is_databricks_uri(uri):
-            # No /health to ask on Databricks: asking who we are is the quick check, and the
-            # answer turns "daily-drill" into the workspace path the experiment needs.
-            experiment = experiment_path(experiment, uri, databricks_user(uri))
-        where = uc_trace_location(mlflow.set_experiment(experiment))
+        experiment_id = os.getenv("DRILL_MLFLOW_EXPERIMENT_ID", "").strip()  # a Databricks App's experiment resource
+        if experiment_id:
+            chosen = mlflow.set_experiment(experiment_id=experiment_id)
+            experiment = chosen.name
+        else:
+            if is_databricks_uri(uri):
+                # No /health to ask on Databricks: asking who we are is the quick check, and the
+                # answer turns "daily-drill" into the workspace path the experiment needs.
+                experiment = experiment_path(experiment, uri, databricks_user(uri))
+            chosen = mlflow.set_experiment(experiment)
+        where = uc_trace_location(chosen)
         if where:
             log.info("Traces for %s go to Unity Catalog (%s); reading them needs a SQL warehouse", experiment, where)
         mlflow.set_active_model(name=f"daily-drill-{app_version()}")

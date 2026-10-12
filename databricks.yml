@@ -1,0 +1,81 @@
+# The Daily Drill server as a Databricks App, deployed with a bundle.
+#
+#   uv run drill cloud deploy              # your personal workspace (target "personal")
+#   uv run drill cloud deploy --target work
+#
+# Porting is a change of settings, not code: each target gives the same variables its own
+# values. Values that name a real workspace (Lakebase paths, the experiment id) are not
+# kept here, because this repository is public: `drill cloud setup` writes them to
+# .databricks/bundle/<target>/variable-overrides.json, which git ignores.
+# See docs/DATABRICKS_APP.md.
+
+bundle:
+  name: daily-drill
+
+# Upload only what the server needs; the notebooks, tests and docs stay behind.
+sync:
+  include:
+    - .drill-version
+  exclude:
+    - .claude/worktrees/**
+    - .claude/settings*.json
+    - .claude/launch.json
+    - notebooks/**
+    - tests/**
+    - docs/**
+    - scripts/**
+    - ai-starter/**
+    - design-review/**
+    - evals/**
+    - Brewfile
+    - setup-mac.sh
+    - uv.lock
+
+variables:
+  app_name:
+    description: The app's name in the workspace (lowercase letters, digits and hyphens, at most 26).
+    default: daily-drill
+  model:
+    description: The Unity Gateway model service the tutor talks to, catalog.schema.name. Each workspace sets its own.
+    default: system.ai.claude-haiku-4-5
+  lakebase_branch:
+    description: The Lakebase branch, projects/<project>/branches/<branch>.
+  lakebase_database:
+    description: The Lakebase database, projects/<project>/branches/<branch>/databases/<database>.
+  experiment_id:
+    description: The MLflow experiment the app's traces go to.
+
+resources:
+  apps:
+    daily_drill:
+      name: ${var.app_name}
+      description: "Daily Drill: a learning path for AI engineering, with a tutor."
+      source_code_path: .
+      # Attaching a resource grants the app's service principal the permission named here.
+      resources:
+        # A Unity Gateway model service: attaching it grants the app EXECUTE on it, plus
+        # USE CATALOG and USE SCHEMA on its parents, and hands the app its three-part name.
+        - name: model
+          uc_securable:
+            securable_full_name: ${var.model}
+            securable_type: MODEL_SERVICE
+            permission: EXECUTE
+        - name: postgres
+          postgres:
+            branch: ${var.lakebase_branch}
+            database: ${var.lakebase_database}
+            permission: CAN_CONNECT_AND_CREATE
+        - name: experiment
+          experiment:
+            experiment_id: ${var.experiment_id}
+            permission: CAN_EDIT
+
+targets:
+  personal:
+    default: true
+    workspace:
+      profile: DEFAULT
+  work:
+    # Pass --profile to `drill cloud` (or edit this) to match your work CLI profile.
+    workspace:
+      profile: work

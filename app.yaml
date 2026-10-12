@@ -1,0 +1,35 @@
+# How the Daily Drill server runs as a Databricks App. Nothing here names a workspace:
+# every value that differs between workspaces comes from a resource the bundle attaches
+# (databricks.yml), so the same file serves your personal workspace and work.
+command: ["python", "-m", "drill.server.api"]
+
+env:
+  # The tutor's model: the Unity Gateway model service attached as "model", by its
+  # three-part name, so requests go through the gateway and its limits and usage reports.
+  # The app signs its requests as its own service principal; no key to keep.
+  - name: DRILL_HOSTED_MODEL
+    valueFrom: model
+  - name: DRILL_HOSTED_AUTH
+    value: databricks
+
+  # Progress and the study list: the Lakebase database attached as "postgres". The
+  # platform also sets PGHOST, PGDATABASE and PGUSER; the tables live in their own schema.
+  - name: LAKEBASE_ENDPOINT
+    valueFrom: postgres
+  - name: DRILL_DB_SCHEMA
+    value: drill
+
+  # One MLflow trace per request, in the experiment attached as "experiment".
+  - name: MLFLOW_TRACKING_URI
+    value: databricks
+  - name: DRILL_MLFLOW_EXPERIMENT_ID
+    valueFrom: experiment
+
+  # An app can't scale to zero, so it stops itself after this many minutes with no
+  # requests; `drill cloud start` brings it back. 0 keeps it running.
+  - name: DRILL_IDLE_STOP_MINUTES
+    value: "30"
+
+  # The app's disk is wiped on every restart: only caches go here, never progress.
+  - name: DRILL_HOME
+    value: /tmp/daily-drill
