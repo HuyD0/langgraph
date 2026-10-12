@@ -150,8 +150,8 @@ a **tray**: on the path it waits at the bottom, one line tall, saying what's due
 page a chip in the header opens it (glowing, with a count, when something is due). Tap the tray
 to slide it up. Three tabs:
 
-- **Due**: items you marked "Got it" whose review has come round.
-- **Learning**: everything still being learned.
+- **To review**: items you marked "Got it" whose review has come round.
+- **Still learning**: everything you saved and haven't marked "Got it" yet.
 - **Got it**: each waiting for its next review.
 
 Each row is one line: the item, the shape of the phase it came from, and four **seals** for the
