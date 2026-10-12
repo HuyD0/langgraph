@@ -49,6 +49,15 @@ NO_MODEL = {
 }
 
 
+class FeedbackBody(BaseModel):
+    """A person's feedback on one answer: ``request`` is the id the page sent with it."""
+
+    request: str
+    name: str = Field(max_length=60)
+    value: bool | int | float | str
+    rationale: str | None = Field(default=None, max_length=1000)
+
+
 class AskBody(BaseModel):
     """What the page sends: a prompt (or messages), the tier it would like, and whether it wants JSON back.
 
@@ -181,6 +190,16 @@ def create_app(
             media_type="text/plain; charset=utf-8",
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )
+
+    @app.post("/api/feedback")
+    async def feedback(body: FeedbackBody, request: Request):
+        from drill.server.observe import default_observer
+
+        user = user_id(request)
+        store.log("feedback", "", name=body.name, value=str(body.value)[:60])
+        observer = default_observer()
+        logged = bool(observer and observer.human_feedback(body.request, body.name, body.value, body.rationale, user))
+        return {"ok": True, "logged": logged}
 
     # -- documents: progress and the study list ------------------------------
 

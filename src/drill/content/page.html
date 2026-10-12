@@ -690,6 +690,10 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .max { position: absolute; font-size: 11px; color: var(--muted); }
 .max.x { bottom: 0; left: 50%; transform: translateX(-30%); }
 .max.y { left: 0; top: 50%; transform: translate(-42%, -50%) rotate(-90deg); white-space: nowrap; }
+.fbbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 14px; color: var(--muted); }
+.fbbar .chipbtn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.fbbar .chipbtn:disabled:not([aria-pressed="true"]) { opacity: .5; }
+.fbwhy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; }
 .mine-private { display: flex; align-items: center; gap: 6px; }
 .mine-private .ic { width: 16px; height: 16px; }
 #search { padding-block: 16px 48px; }
@@ -1264,17 +1268,10 @@ function renderHome() {
 // The graded exercises use the HR assistant, so every test has a known answer. After each one,
 // the learner can do the same for their own idea. It is saved in their own progress only
 // (on claude.ai, under data/users/<them>, which nobody else can read) and reaches the tutor snapshot.
-const CARD_FIELDS = [
-  ["user", "Who uses it", "HR team"], ["task", "The task it helps with", "answer employee policy questions"],
-  ["decision", "The decision: what the AI predicts or drafts, from what", "a draft answer from the policy pages"],
-  ["action", "The action: what happens next, and who does it", "HR approves or edits it before sending"],
-  ["today", "How it is done today, and the cost", "15 minutes by hand, about $8"],
-  ["success", "Success, as a number", "80 in 100 drafts approved without edits"],
-  ["wrong_answer", "What a wrong answer costs, and who catches it", "HR reviews each draft before sending"],
-  ["data", "The data to test on", "last month's 200 questions"],
-  ["feedback", "Feedback: how real outcomes improve it", "every edit goes into the eval set"],
-  ["owner", "The owner who decides", "Head of HR operations"],
-];
+// The card, the pillars and the prompt wording come from src/drill/content/review.py, so the page,
+// the server's checks and `drill review eval` all use the same, versioned text.
+const RV = D.review;
+const CARD_FIELDS = RV.cardFields;
 const GATES = [["rule", "A fixed rule could do it"], ["nodata", "There are no past examples with right answers"], ["harm", "A wrong answer causes harm and nobody checks"]];
 const CORNERS = { research: ["Research", "Valuable, not doable yet: fix the data or the definition first."], accelerate: ["Accelerate", "Valuable and doable: plan a pilot."],
   shelve: ["Shelve", "Not worth it now."], incubate: ["Incubate", "Doable but small: a safe way to learn."] };
@@ -1289,28 +1286,9 @@ function challengePrompt(idea) {
     `The problem: ${idea.problem || "not written"}`, `The use case: ${line}`,
     `They plan to ${idea.mode === "automate" ? "automate the task" : idea.mode === "augment" ? "augment people: AI drafts, a person decides" : "(not chosen yet) automate or augment"}.`,
     `They rate it ${idea.value || "?"} value and ${idea.doable || "?"} to do.`, "",
-    "Argue against it, kindly but honestly:",
-    "- Could a simple rule, a search box or a better form solve this without AI?",
-    "- What data would you need to test it, and is it likely to exist?",
-    "- What happens when it is wrong, and who would notice?",
-    "- Is their value or doable rating too optimistic? Why?",
-    "- The one question they must answer before going further.",
-    "Plain words, short bullets, under 220 words. Do not say whether to build it; they decide."].join("\n");
+    "Argue against it, kindly but honestly:", ...RV.challengeAsks, RV.challengeClose].join("\n");
 }
 const HOW_WELL = ["seconds", "uptime", "cost", "encrypt", "personal data", "audit", "at once"];
-const REVIEW_PILLARS = {
-  "Reliability": ["What happens when the model endpoint is down or out of quota?", "Is there a timeout, a retry limit and a fallback?"],
-  "Security": ["Who can see the inputs and answers?", "Could a prompt injection make it leak data or take an action?"],
-  "Cost Optimization": ["What drives the monthly cost, and is there a budget alert?"],
-  "Operational Excellence": ["Is every answer traced, and is there an eval set to test changes?", "How are new versions released and rolled back?"],
-  "Performance Efficiency": ["Can it handle the busiest minute within the speed target?"],
-  "Data and AI governance": ["Which data and models may it use, and who grants that access?"],
-};
-const REVIEW_RULES = ["Rules:", "- Base every finding on the card, and quote the line you used.",
-  "- If the card does not say, write Unknown, then the question to ask the owner.",
-  "- Give each pillar a risk: low, medium or high.", "- Do not say whether to build it. A person decides."];
-// The worksheet follows the bill of a typical RAG pipeline on Azure: LLM calls, retrieval
-// (Azure AI Search or Databricks Vector Search), Databricks compute, storage, people, one-off.
 const COST_ITEMS = {  // [key, label, hint]
   people: [["checking", "People checking answers", "hours a month times the hourly rate"], ["redo", "Redoing wrong answers", "failed tasks a month times the cost of one redo"], ["oncall", "On call and upkeep", "re-running evals, prompt updates, someone on call"]],
   once: [["build", "The build", "people's time to build the pilot"], ["evalset", "The eval set", "time to collect and check test cases"], ["review", "Security and privacy review", "the review before going live"], ["backfill", "First indexing of the documents", "embedding and loading the whole corpus once"]],
@@ -1333,12 +1311,37 @@ const PRIVATE = `<p class="meta mine-private">${ic("bookmark")} Saved only in yo
 function cardGaps(card) {
   return CARD_FIELDS.filter(([k]) => { const v = (card[k] || "").trim(); return !v || (k === "success" && !/\d/.test(v)); }).map(([k, label]) => label);
 }
-function reviewPromptFor(card) {
+function reviewPromptFor(card) {  // the same text as review.review_prompt in Python
   const lines = ["Review this AI use case against the Well-Architected pillars.", "", "Use case card:"];
   for (const [k] of CARD_FIELDS) lines.push(`- ${k}: ${(card[k] || "").trim() || "not written"}`);
-  for (const [pillar, qs] of Object.entries(REVIEW_PILLARS)) { lines.push("", "## " + pillar); qs.forEach(q => lines.push("- " + q)); }
-  lines.push("", ...REVIEW_RULES, "", "Answer with one short section per pillar: Risk, Findings (each quoting the card), Unknowns (as questions for the owner). Plain words, under 350 words.");
+  for (const [pillar, qs] of Object.entries(RV.pillars)) { lines.push("", "## " + pillar); qs.forEach(q => lines.push("- " + q)); }
+  lines.push("", ...RV.rules, "", RV.answerFormat);
   return lines.join("\n");
+}
+// ---------- feedback on drafted reviews and challenges ----------
+// Every draft carries a request id. A rating and reasons go to MLflow on the local server
+// (attached to that draft's trace) and into your progress everywhere, so nothing is lost on claude.ai.
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const FB_REASONS = {
+  no: [["made_something_up", "Made something up"], ["missed_a_risk", "Missed a risk"], ["too_vague", "Too vague"], ["decided_for_me", "Decided for me"]],
+  yes: [["useful_question", "Asked a useful question"], ["caught_a_risk", "Caught a risk I missed"], ["changed_my_mind", "Changed my mind"]],
+};
+let lastDraft = null;  // { feature, request, before }: to notice when a draft changes what you wrote
+function sendFeedback(request, feature, name, value, rationale) {
+  const list = mine().feedback = (mine().feedback || []).slice(-99);
+  list.push({ at: Date.now(), feature, request, name, value, ...(rationale ? { rationale } : {}) });
+  saveMine();
+  if (sample && sample.local) fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request, name, value, rationale }) }).catch(() => {});
+}
+function feedbackBar(feature, request) {
+  return `<div class="fbbar" data-fb-request="${request}" data-fb-feature="${feature}"><span>Was this useful?</span>
+    <button class="chipbtn" data-fb="yes">${ic("check")}Yes</button><button class="chipbtn" data-fb="no">${ic("x")}No</button><div class="fbwhy" hidden></div></div>`;
+}
+const draftState = feature => JSON.stringify(feature === "use_case_challenge" ? (({ value, doable, mode, rule, nodata, harm }) => ({ value, doable, mode, rule, nodata, harm }))(mine().idea || {}) : (mine().card || {}));
+function noticeChange() {  // an implicit signal: the draft moved you to change your rating, gates or card
+  if (!lastDraft || lastDraft.sent || draftState(lastDraft.feature) === lastDraft.before) return;
+  lastDraft.sent = true;
+  sendFeedback(lastDraft.request, lastDraft.feature, lastDraft.feature === "use_case_challenge" ? "changed_rating_after" : "edited_card_after", true);
 }
 function tcoNumbers() {
   const c = mine().costs || {}, years = Math.max(1, Math.min(10, num(c.years) || 2)), months = 12 * years;
@@ -1483,15 +1486,19 @@ document.addEventListener("input", e => {
   const [group, key] = el.dataset.mine.split(".");
   const val = el.type === "checkbox" ? el.checked : el.value;
   if (key) { mine()[group] = mine()[group] || {}; mine()[group][key] = val; } else mine()[group] = val;
-  saveMine(); updateMine();
+  saveMine(); updateMine(); noticeChange();
 });
 async function challengeIdea() {
   const d = mine().idea || {}, out = $("mineReview"), btn = document.querySelector("[data-mine-challenge]");
   if (!sample || !out) return;
   btn.disabled = true; out.innerHTML = `<p class="meta">Thinking of objections…</p>`;
+  const request = rid();
   try {
-    const { text } = await sample(challengePrompt(d), withTrace({ onText: ({ text }) => { out.innerHTML = fmt(text); } }, { feature: "use_case_challenge", lesson_id: cur.id }));
-    out.innerHTML = fmt(text); d.challenge = text; mine().idea = d; saveMine();
+    const { text } = await sample(challengePrompt(d), withTrace({ onText: ({ text }) => { out.innerHTML = fmt(text); } },
+      { feature: "use_case_challenge", lesson_id: cur.id, request, prompt_version: RV.challengeVersion }));
+    out.innerHTML = fmt(text) + feedbackBar("use_case_challenge", request);
+    lastDraft = { feature: "use_case_challenge", request, before: draftState("use_case_challenge") };
+    d.challenge = text; mine().idea = d; saveMine();
   } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a reply just now. Try again in a moment.</p>`; }
   btn.disabled = false;
 }
@@ -1501,9 +1508,13 @@ async function draftReview() {
   const out = $("mineReview"), btn = document.querySelector("[data-mine-review]");
   if (!sample || !out) return;
   btn.disabled = true; out.innerHTML = `<p class="meta">Drafting…</p>`;
+  const request = rid(), used = filled ? card : Object.fromEntries(CARD_FIELDS.map(([k, , eg]) => [k, eg]));
+  const blank = CARD_FIELDS.filter(([k]) => !(used[k] || "").trim()).map(([k]) => k).join(",");
   try {
-    const { text } = await sample(prompt, withTrace({ onText: ({ text }) => { out.innerHTML = fmt(text); } }, { feature: "use_case_review", lesson_id: cur.id, own_card: filled }));
-    out.innerHTML = fmt(text);
+    const { text } = await sample(prompt, withTrace({ onText: ({ text }) => { out.innerHTML = fmt(text); } },
+      { feature: "use_case_review", lesson_id: cur.id, own_card: filled, request, prompt_version: RV.reviewVersion, blank_fields: blank }));
+    out.innerHTML = fmt(text) + feedbackBar("use_case_review", request);
+    lastDraft = { feature: "use_case_review", request, before: draftState("use_case_review") };
     if (filled) { mine().review = text; saveMine(); }
   } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a draft just now. Try again in a moment.</p>`; }
   btn.disabled = false;
@@ -2824,7 +2835,18 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-mine-challenge]")) { challengeIdea(); return; }
   const mp = t.closest("[data-mine-pick]");
   if (mp) { const [g, k] = mp.dataset.minePick.split("."); mine()[g] = mine()[g] || {}; mine()[g][k] = mp.dataset.v; saveMine();
-    for (const b of mp.parentElement.children) b.setAttribute("aria-pressed", String(b === mp)); updateMine(); return; }
+    for (const b of mp.parentElement.children) b.setAttribute("aria-pressed", String(b === mp)); updateMine(); noticeChange(); return; }
+  const fb = t.closest("[data-fb]");
+  if (fb) {
+    const bar = fb.closest(".fbbar"), yes = fb.dataset.fb === "yes", req = bar.dataset.fbRequest, feat = bar.dataset.fbFeature;
+    sendFeedback(req, feat, "useful", yes);
+    for (const b of bar.querySelectorAll("[data-fb]")) { b.disabled = true; b.setAttribute("aria-pressed", String(b === fb)); }
+    const why = bar.querySelector(".fbwhy"); why.hidden = false;
+    why.innerHTML = `<span>${yes ? "What helped?" : "What went wrong?"}</span>` + FB_REASONS[yes ? "yes" : "no"].map(([k, l]) => `<button class="chipbtn" data-fb-reason="${k}">${l}</button>`).join("");
+    return;
+  }
+  const fr = t.closest("[data-fb-reason]");
+  if (fr) { const bar = fr.closest(".fbbar"); sendFeedback(bar.dataset.fbRequest, bar.dataset.fbFeature, fr.dataset.fbReason, true); fr.disabled = true; fr.setAttribute("aria-pressed", "true"); return; }
   const bill = t.closest("[data-mine-bill]"); if (bill) { mine().costs = mine().costs || {}; mine().costs.billing = bill.dataset.mineBill; saveMine(); renderMine(); return; }
   if (t.closest("#searchBtn")) { openSearch(); return; }
   if (t.closest("#searchClose")) { closeSearch(); return; }

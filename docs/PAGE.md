@@ -82,6 +82,25 @@ idea, ungraded:
   people and one-off costs. The page ships no prices; each group links to the Azure pricing page
   to take them from.
 
+**Improving the review and the challenge.** Their prompts live in `src/drill/content/review.py`
+(versioned: `review-v2`, `challenge-v1`), which the page, the server and the eval all read.
+
+- **Traces**: every draft is traced in MLflow with its feature, prompt version and a request id.
+  The server checks every review by code (`drill.review_checks`: a missing pillar, a verdict, no
+  Unknowns for blank lines) and attaches the results to the trace.
+- **Your feedback**: under each draft, "Was this useful?" and a reason ("Made something up",
+  "Missed a risk", "Caught a risk I missed"...). Served locally it goes to `/api/feedback` and onto
+  the draft's trace as human feedback; everywhere it is also kept in your progress (`mine.feedback`).
+- **What you did next**: changing your rating, gates or card after a draft is logged as a signal
+  on that draft (`changed_rating_after`, `edited_card_after`).
+- **The eval**: `uv run drill review eval` asks the model to review cards with planted gaps (no
+  owner, no test data, no feedback loop, vague success, nobody checking, two gaps) and scores
+  every planted gap flagged, every pillar named, no verdict, and a high risk where nobody checks.
+  It fails if a must-pass case fails, and logs an MLflow evaluation run. `--judge` adds a
+  groundedness judge; it must quote the review word for word and code drops anything else, but
+  it was tuned on these same cases, so check it against your own labels before trusting it.
+  Run it before changing a prompt, and bump the version.
+
 It is saved in your own progress only (`mine` in the progress document; on claude.ai under
 `data/users/<you>`, which nobody else can read) and the tutor snapshot includes it.
 
