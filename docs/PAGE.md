@@ -182,6 +182,21 @@ cd scripts/skulpt-check && npm install && node check_in_browser_python.js
 Then ask Claude Code to publish `dist/daily-drill.html` to the URL above. Publishing to the
 same URL keeps learners' progress, which lives in the artifact's database, not in the HTML.
 
+## Ask about this lesson
+
+When an AI tutor is available, Learn, Check (once answered) and Explain end with a short
+conversation about the lesson. Its suggested questions are built from that lesson, by
+`askChips()` in `page.html`, so they change from lesson to lesson:
+
+| Step | Questions |
+|---|---|
+| Learn | the lesson's bold terms, another way ("Explain “source” and “version” another way"); walk through the example; how it looks in the "In your stack" tool (or where you'd meet it at work); what goes wrong if a team skips it |
+| Check | "Why not …?" for each wrong option; a harder question like it |
+| Explain | "Is my sentence right?" (once you've written one); how to say the pattern in an interview; why the lesson's gotcha matters; where else the pattern shows up |
+
+Each question carries its own instruction to the tutor. None of them asks about the exercise,
+and two guards still stop any answer from writing the exercise's code.
+
 ## Motion
 
 Short effects mark real moments: finishing something, getting something right, fixing a bug.
