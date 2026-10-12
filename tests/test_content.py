@@ -208,7 +208,7 @@ def test_motion_effects_keep_their_promises():
     fx = page.split("/* fx: start */")[1].split("/* fx: end */")[0]
     assert "infinite" not in fx and "blur(" not in fx, "effects must end on their own and stay cheap to draw"
     played = set(re.findall(r'fxScreen\("([a-z]+)"', page)) | set(re.findall(r'fxOn\(.*?, "([a-z]+)", FX\.', page))
-    assert played >= {"space", "merge", "spark", "turn", "curtain", "heal", "smoke", "seal", "unveil"}
+    assert played >= {"space", "merge", "spark", "turn", "curtain", "heal", "smoke", "seal", "unveil", "room"}
     for name in played:
         assert f".fx-{name} " in fx, f"fx {name!r} is played but has no .fx-{name} rules"
         assert re.search(rf"\b{name}: ", page.split("const FX = {")[1].split("};")[0]), f"FX.{name} has no markup"
@@ -229,5 +229,23 @@ def test_every_look_has_the_motion_tokens():
     tokens = (Path(__file__).parent.parent / "src" / "drill" / "content" / "tokens.css").read_text()
     for name in ("--fx-core", "--fx-glow", "--fx-veil", "--fx-red", "--fx-mix"):
         assert tokens.count(name + ":") == 4, name
-    for name in ("--dur-tap", "--dur-step", "--dur-moment", "--dur-big", "--ease-out", "--ease-in", "--ease-pop"):
+    for name in ("--path", "--path-bg", "--path-line", "--path-ink"):
+        assert tokens.count(name + ":") == 4, name
+    for name in ("--dur-tap", "--dur-step", "--dur-moment", "--dur-big", "--dur-slide", "--ease-out", "--ease-in", "--ease-pop"):
         assert tokens.count(name + ":") == 1, name
+
+
+def test_phase_tabs_are_one_piece_with_their_room():
+    """Home's phases are a real tab list joined to the room below, and only the room's title shape glows."""
+    from pathlib import Path
+
+    page = (Path(__file__).parent.parent / "src" / "drill" / "content" / "page.html").read_text()
+    rail = page.split("function railHtml(")[1].split("\n}")[0]
+    assert 'role="tablist"' in rail and 'role="tab"' in rail and "aria-selected" in rail and 'aria-controls="phasePanel"' in rail
+    assert 'badgeSvg(i, 11, st === "done" ? "done" : "")' in rail, "the tabs never get the glowing 'now' badge"
+    assert 'id="phasePanel" role="tabpanel"' in page and "aria-labelledby=\"phtab${nidx}\"" in page
+    assert '.rail.phtabs [role=tab]' in page and '"ArrowLeft"' not in rail, "arrow keys are handled once, outside railHtml"
+    assert "ArrowRight" in page.split("the phase tabs: arrows")[1].split("});")[0]
+    for rule in (".phasebox {", ".phasebox.here {", ".rail.phtabs {", ".rail.phtabs .sleeve {", ".book.room {"):
+        assert rule in page, rule
+    assert 'class="phasebox' in page and "data-showing=" in page, "the box must not carry data-phase, or any tap inside it would switch phase"

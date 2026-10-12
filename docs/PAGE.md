@@ -28,9 +28,15 @@ Everything is in the package, under `src/drill/content/`:
 
 Home shows the path as a sticker book, with the six phases always in view:
 
-- **The phase rail** shows the six phases in order, done phases filled, the current one large and
-  blue. On Home each phase is a button: tap one to see its page of stickers, and "Back to today"
-  returns to the current phase. Above every lesson the rail is a reminder only, so a tap never
+- **Phase tabs and the room.** On Home the six phases are tabs on a violet strip (the path), and
+  the phase you picked opens below as a room: one piece, with the chosen tab cut from the room's
+  own paper and no gap between them. The room is rimmed in blue when it is where you are and in
+  violet for any other phase, and its title shape is the only thing that glows. A small blue dot
+  marks your phase on the strip, and a thin violet line along the top fills as phases are done.
+  Tap a tab (or use the arrow keys, Home and End) to see its page of stickers; "Back to today"
+  returns to the current phase. It is a real tab list (`role="tablist"`, `tab`, `tabpanel`).
+  The look lives in `.phasebox`, `.rail.phtabs` and `.book.room` in `page.html`; the colours are
+  the `--path*` tokens. Above every lesson the small rail is a reminder only, so a tap never
   leaves the lesson.
 - **One shape per phase**: circle (Frame), rounded square (Design), hexagon (Build and trace),
   diamond (Evaluate), shield (Ship), pentagon (Monitor). Every lesson is a sticker in its phase's
@@ -55,8 +61,8 @@ Home shows the path as a sticker book, with the six phases always in view:
   phone a long press shows the same card; a tap still opens the lesson.
 - **Finishing a lesson** shows its new sticker.
 
-Shape and position carry the phases, not colour: colour stays for passed, failed and the next
-step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
+Shape and position carry the phases, not colour: colour stays for passed, failed, the next
+step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
 ## Your own use case
@@ -222,6 +228,7 @@ They decorate what already happened and never change a lesson's order, wording o
 | 10 | Seal | A right answer in Check | 0.5 s | the Check click → `fxOn(option, "seal")` |
 | 11 | Energy flow | A row travels into the machine's function box | with each row | `machineRender` (`.mtok.fly`) |
 | 12 | Unveil | A hint opens | about 1 s | `hint` → `fxOn(note, "unveil")` |
+| 13 | Room | You change phase on Home: the tab slides over, the page's words follow it, rings ripple from the title shape and a red-black spark runs along the top edge. Once per visit, the path's line first fills to where you are | 0.3 s (about 1 s the first time) | phase tab click → `phaseFx` → `fxMove` + `fxOn(book, "room", …, shape)` |
 
 Grades are worked out from lessons done, so nothing new is saved and they can't disagree with progress.
 
@@ -231,7 +238,8 @@ and `/* fx: end */` in `page.html`. Every effect is played by one of three funct
 
 - `fxScreen(name, html, at, cover)`: over the screen, centred on the element `at` (or, with
   `cover`, only over the part of `at` you can see). One at a time: a new one replaces the last.
-- `fxOn(el, name, html)`: inside one element, clipped to its box.
+- `fxOn(el, name, html, at)`: inside one element, clipped to its box; with `at`, centred on that
+  element (`--x`, `--y` in the effect's own box).
 - `fxMove(el, frames)`: the element itself moves, with the Web Animations API, and is left as it was.
 
 **The promises,** checked by `tests/test_content.py`:

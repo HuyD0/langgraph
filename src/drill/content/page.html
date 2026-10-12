@@ -572,6 +572,29 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .rail.mini .ph { cursor: default; min-height: 0; }
 .rail.mini .ph { grid-template-rows: 36px; }
 .railcap { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* Home's phase tabs and the room under them: one piece. The strip is the path, in violet; the
+   chosen tab is cut from the room's own paper and runs into it with no gap. The room is rimmed in
+   blue when it is where you are and in violet otherwise, and its title shape is the only glow. */
+.phasebox { --room: var(--path); display: grid; }
+.phasebox.here { --room: var(--accent); }
+.rail.phtabs { background: var(--path-bg); border: 1px solid var(--path-line); border-bottom: 0; border-radius: 14px 14px 0 0; padding: 4px 4px 0; }
+.rail.phtabs::before { display: none; }
+.rail.phtabs .fill { left: 4px; top: 0; height: 2px; border-radius: 0; background: var(--path); transform-origin: left; }
+.rail.phtabs .sleeve { position: absolute; left: 4px; top: 4px; bottom: 0; width: calc((100% - 8px) / 6); transform: translateX(calc(var(--i) * 100%)); background: var(--surface); border-radius: 10px 10px 0 0; box-shadow: inset 0 2px 0 var(--room); }
+.rail.phtabs .ph { grid-template-rows: 34px auto auto; padding: 6px 0 6px; color: var(--path-ink); }
+.rail.phtabs .nm { border-bottom: 0; color: var(--path-ink); font-weight: 400; }
+.rail.phtabs .cnt { color: var(--path-ink); }
+.rail.phtabs .ph.now .cnt { color: var(--accent); }
+.rail.phtabs .ph[aria-selected="true"] .nm { color: var(--fg); font-weight: 600; }
+.rail.phtabs .ph.now::after { content: ""; position: absolute; top: 4px; left: calc(50% + 12px); width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.rail.phtabs .bdg .sh { fill: var(--path-bg); stroke: var(--path-ink); }
+.rail.phtabs .bdg .ico { stroke: var(--path-ink); }
+.rail.phtabs .bdg.done .sh { fill: var(--path); stroke: var(--path); }
+.rail.phtabs .bdg.done .ico { stroke: var(--path-bg); }
+.rail.phtabs .ph[aria-selected="true"] .bdg:not(.done) .sh { fill: var(--surface); stroke: var(--room); }
+.rail.phtabs .ph[aria-selected="true"] .bdg:not(.done) .ico { stroke: var(--room); }
+@media (hover: hover) { .rail.phtabs button.ph:hover .nm { color: var(--fg); } }
+.book.room { border-radius: 0 0 14px 14px; border-color: color-mix(in srgb, var(--room) 55%, var(--line)); box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 4px color-mix(in srgb, var(--room) 25%, transparent); }
 .stk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bdg .sh { stroke-width: 2; fill: var(--surface); stroke: var(--muted); }
 .bdg .ico { fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -966,6 +989,13 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .fx-unveil .eye .iris { fill: var(--fx-glow); } .fx-unveil .eye .pupil { fill: var(--fx-veil); } .fx-unveil .eye .glint { fill: #fff; }
 @keyframes fx-open-eye { from { transform: scaleY(.05); } }
 
+/* 13. changing phase on Home: rings ripple out from the room's title shape, and a red-black spark runs along its top edge */
+.fx-room { --hold: 600ms; }
+.fx-room .ring { left: var(--x); top: var(--y); width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 1.5px solid var(--fx-glow); animation: fx-wave 700ms var(--ease-out) both; }
+.fx-room .ring + .ring { animation-delay: 120ms; }
+.fx-room .edge { left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, #000 20%, var(--fx-red) 32%, #000 44%, transparent 50%, var(--fx-red) 64%, #000 72%, transparent); animation: fx-crackle 340ms steps(4) both; }
+@keyframes fx-crackle { from { transform: translateX(-30%); } to { transform: translateX(30%); opacity: 0; } }
+
 /* 11. the machine: the row in flight glows and trails energy into the function box */
 .mtok.fly { box-shadow: 0 0 0 2px var(--fx-core), 0 0 14px var(--fx-glow); }
 .mtok.fly::after { content: ""; position: absolute; left: 50%; bottom: 100%; width: 3px; height: 24px; margin-left: -1.5px; border-radius: 2px; background: linear-gradient(transparent, var(--fx-glow)); pointer-events: none; }
@@ -1203,11 +1233,12 @@ function fxScreen(name, html, at, cover) {  // a moment over the screen, centred
     fxLayer.replaceChildren(root);
   } catch {}
 }
-function fxOn(el, name, html) {  // an effect inside one element, clipped to its box
+function fxOn(el, name, html, at) {  // an effect inside one element, clipped to its box; with `at`, centred on that element
   try {
     if (!el || !motionOn()) return;
     el.querySelectorAll(":scope > .fx").forEach(x => x.remove());
     const root = fxRoot(name, html);
+    if (at) { const a = at.getBoundingClientRect(), b = el.getBoundingClientRect(); root.style.setProperty("--x", a.left - b.left + a.width / 2 + "px"); root.style.setProperty("--y", a.top - b.top + a.height / 2 + "px"); }
     fxWhenDone(root, () => { root.remove(); if (!el.querySelector(":scope > .fx")) el.classList.remove("fx-host"); });
     el.classList.add("fx-host"); el.append(root);
   } catch {}
@@ -1231,6 +1262,7 @@ const FX = {
   heal: '<i class="wash"></i><svg class="cracks" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline pathLength="1" points="62,0 57,12 63,19 54,30 58,40"/><polyline pathLength="1" points="57,12 47,15 43,9"/><polyline pathLength="1" points="54,30 68,33 72,26"/></svg><i class="sweep"></i>',
   smoke: [[-38, -30], [30, -42], [44, 4], [-8, -54], [-46, 10], [14, 30]].map(([x, y]) => `<i style="--dx:${x}px;--dy:${y}px"></i>`).join(""),
   seal: () => `<i class="stamp">${ic("check")}</i><i class="ink"></i>`,
+  room: '<i class="ring"></i><i class="ring"></i><i class="edge"></i>',
   unveil: '<i class="band"><svg class="eye" viewBox="0 0 120 60"><path d="M6 30 Q 60 -6 114 30 Q 60 66 6 30 Z"/><circle class="iris" cx="60" cy="30" r="15"/><circle class="pupil" cx="60" cy="30" r="6"/><circle class="glint" cx="54" cy="24" r="3"/></svg></i>',
 };
 // Grades: a rank that follows lessons done, so it needs no saving and can never disagree with progress.
@@ -1432,16 +1464,36 @@ function railHtml(mini, focus, viewing) {
     const r = mini ? (st === "now" ? 10 : 8) : (st === "now" ? 15 : 12);
     const ids = phLessons(ph), d = ids.filter(isDoneL).length;
     const say = `${ph.name}, ${st === "done" ? "done" : d + " of " + ids.length}${st === "now" ? ", you are here" : ""}`;
-    const pic = badgeSvg(i, r, st);
-    if (mini) return `<span class="ph">${pic}</span>`;
-    return `<button class="ph ${st}" data-phase="${i}" aria-pressed="${viewing === i}" aria-label="${esc(say)}">${pic}<span class="nm">${esc(ph.name.split(" ")[0])}</span><span class="cnt">${st === "now" || viewing === i ? d + "/" + ids.length : ""}</span></button>`;
+    if (mini) return `<span class="ph">${badgeSvg(i, r, st)}</span>`;
+    // On Home the tabs never glow: the glow belongs to the room's title shape below.
+    const on = viewing === i, pic = badgeSvg(i, 11, st === "done" ? "done" : "");
+    return `<button class="ph ${st}" role="tab" id="phtab${i}" data-phase="${i}" aria-selected="${on}" aria-controls="phasePanel" tabindex="${on ? 0 : -1}" aria-label="${esc(say)}">${pic}<span class="nm">${esc(ph.name.split(" ")[0])}</span><span class="cnt">${st === "now" || on ? d + "/" + ids.length : ""}</span></button>`;
   }).join("");
-  const fill = lastDone >= 0 ? `<i class="fill" style="width: calc((100% - 8px) / 6 * ${Math.min(lastDone + 1, 5)})"></i>` : "";
   if (mini) {
     const ph = PHASES[focus];
+    const fill = lastDone >= 0 ? `<i class="fill" style="width: calc((100% - 8px) / 6 * ${Math.min(lastDone + 1, 5)})"></i>` : "";
     return `<div class="rail mini" role="img" aria-label="Phase ${focus + 1} of 6, ${esc(ph.name)}">${fill}${items}</div><div class="railcap">${esc(ph.name)} · phase ${focus + 1} of ${PHASES.length}</div>`;
   }
-  return `<nav class="rail" aria-label="The six phases">${fill}${items}</nav>`;
+  const fill = lastDone >= 0 ? `<i class="fill" style="width: calc((100% - 8px) / 6 * ${lastDone + 1})"></i>` : "";
+  return `<div class="rail phtabs" role="tablist" aria-label="The six phases">${fill}<i class="sleeve" style="--i: ${viewing}" aria-hidden="true"></i>${items}</div>`;
+}
+// Changing phase on Home: the tab slides over, the room's words follow it in, and the room opens
+// (rings from its title shape, a spark along its top edge). Once per visit the path fills up to
+// where you are first. All of it goes through the fx engine, so Motion off stills it.
+let pathOpened = false;
+function phaseFx(from) {
+  const box = document.querySelector(".phasebox"); if (!box) return;
+  const book = box.querySelector(".book"), to = +box.dataset.showing;
+  if (from == null) {
+    const fill = box.querySelector(".rail .fill");
+    if (fill) fxMove(fill, [{ transform: "scaleX(0)" }, { transform: "none" }], "--dur-moment");
+  } else if (from !== to) {
+    fxMove(box.querySelector(".sleeve"), [{ transform: `translateX(${from * 100}%)` }, { transform: `translateX(${to * 100}%)` }], "--dur-slide");
+    const dir = to > from ? 1 : -1;
+    [...book.children].forEach(c => fxMove(c, [{ opacity: 0, transform: `translateX(${dir * 16}px)` }, { opacity: 1, transform: "none" }], "--dur-slide"));
+  } else return;
+  const open = () => fxOn(book, "room", FX.room, book.querySelector(".titlecard > svg"));
+  if (from == null) setTimeout(open, 450); else open();
 }
 function stickerState(id) {
   if (isDoneL(id)) return "done";
@@ -1510,6 +1562,12 @@ document.addEventListener("focusin", e => { const el = e.target.closest("[data-t
 document.addEventListener("focusout", e => { if (e.target.closest("[data-tip]")) hideTip(); });
 addEventListener("scroll", () => { if (tipFor && !pressed) hideTip(); }, { passive: true });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && tipFor) hideTip(); });
+document.addEventListener("keydown", e => {  // the phase tabs: arrows, Home and End move between them, like any tab list
+  const tab = e.target.closest && e.target.closest(".rail.phtabs [role=tab]"); if (!tab) return;
+  const i = +tab.dataset.phase, j = { ArrowLeft: i - 1, ArrowRight: i + 1, Home: 0, End: PHASES.length - 1 }[e.key];
+  if (j == null || j < 0 || j >= PHASES.length) return;
+  e.preventDefault(); document.querySelector(`.rail.phtabs [data-phase="${j}"]`).click();
+});
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest("[data-tip]");
   if (!el || e.pointerType === "mouse") { if (tipFor && !el) hideTip(); return; }
@@ -1585,7 +1643,7 @@ function renderHome() {
   const pg = phasePage(nidx, "h");
   const where = nidx === today_ && nid ? "You are here" : st_ === "done" ? "Done" : nidx < today_ ? "Earlier" : "Coming up";
   const chip = `<span class="chip${nidx === today_ && nid ? " here" : ""}">${where}</span>`;
-  const book = `<section class="book paper${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}"><div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
+  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}"><div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
   const after = nidx === today_ ? PHASES[nidx + 1] : null;
   const upnext = after ? `<section class="upnext"><div class="top-row">${badgeSvg(nidx + 1, 10, "")}<span class="eyebrow">Next · ${esc(after.name)}</span></div><p>${esc(after.modules.map(mid => MOD[mid].title).join(" · "))}</p>${minis(phLessons(after))}</section>` : "";
   const block = (id, icon, title, done, total, rows) => {
@@ -1600,13 +1658,13 @@ function renderHome() {
     ${aiOffNote()}
     <div id="homeReview">${reviewCard()}</div>
     <div class="pathhead"><h2>Your path</h2>${nidx !== today_ ? `<button class="linkbtn" data-phase="${today_}">Back to today</button>` : `<span>Tap a phase</span>`}</div>
-    ${railHtml(false, null, nidx)}
-    ${book}
+    <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(false, null, nidx)}${book}</div>
     ${upnext}
     <div class="sets"><h3>Practice sets</h3></div>
     <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>
     <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
+  if (!pathOpened) { pathOpened = true; requestAnimationFrame(() => phaseFx(null)); }
 }
 
 // ---------- build it for real: the same idea with the real libraries, in a notebook ----------
@@ -3461,10 +3519,12 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
-    const i = +phb.dataset.phase, nid = nextLesson();
+    const i = +phb.dataset.phase, nid = nextLesson(), box = document.querySelector(".phasebox");
+    const from = box ? +box.dataset.showing : i;
     viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i;
     const y = window.scrollY; renderHome(); window.scrollTo(0, y);
     const f = document.querySelector(`.rail [data-phase="${i}"]`); if (f) f.focus({ preventScroll: true });
+    phaseFx(from);
     return;
   }
   const sc = t.closest("[data-scene]");
