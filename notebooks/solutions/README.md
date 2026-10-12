@@ -18,3 +18,8 @@ Milestones 1-4 are the important ones to have here: `merge_update`,
 constructs that exist only in the notebooks, so `src/drill/` is *not* an answer
 key for them. Milestones 5 and 6 do mirror `src/drill/sandbox.py` and
 `src/drill/graph.py` fairly closely.
+
+Milestones 9a-9d and 10 run on the small help-center app in `src/drill/rag_lab/`. They
+replay recorded model replies, so the notebooks (and this check) give the same result
+on every machine: 9a-9d from `recorded.json`, and 10 (one agent or a team) from
+`recorded_m10.json`, recorded from `qwen3:14b` in Ollama because its agents call tools.

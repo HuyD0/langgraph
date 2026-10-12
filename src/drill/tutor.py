@@ -72,7 +72,12 @@ def gotcha_cards(data: dict) -> dict[str, dict]:
 
 def _notebooks() -> list[tuple[str, str]]:
     out = []
-    for path in sorted((PROJECT_ROOT / "notebooks").glob("m*.ipynb")):
+    # By milestone number, so m10 comes after m9d rather than after m1.
+    def milestone(path: Path) -> tuple[int, str]:
+        number = re.match(r"m(\d+)", path.stem)
+        return (int(number.group(1)) if number else 0, path.stem)
+
+    for path in sorted((PROJECT_ROOT / "notebooks").glob("m*.ipynb"), key=milestone):
         cells = json.loads(path.read_text()).get("cells", [])
         heading = next((c for c in cells if c.get("cell_type") == "markdown"), None)
         title = "".join(heading["source"]).split("\n")[0].lstrip("# ").strip() if heading else path.stem
