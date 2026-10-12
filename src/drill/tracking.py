@@ -20,7 +20,7 @@ from __future__ import annotations
 import contextlib
 from typing import Any, Iterator
 
-from drill.config import DrillSettings
+from drill.config import DrillSettings, databricks_user, experiment_path, is_databricks_uri
 from drill.problems import Problem
 from drill.state import DrillState
 
@@ -43,7 +43,11 @@ def setup_tracing(settings: DrillSettings | None = None) -> bool:
 
         if settings.mlflow_tracking_uri:
             mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
-        mlflow.set_experiment(settings.mlflow_experiment)
+        experiment = settings.mlflow_experiment
+        if is_databricks_uri(settings.mlflow_tracking_uri):
+            experiment = experiment_path(experiment, settings.mlflow_tracking_uri,
+                                         databricks_user(settings.mlflow_tracking_uri))
+        mlflow.set_experiment(experiment)
         mlflow.langchain.autolog()
         _patch_graph_lifecycle_hooks()
         _AUTOLOG_ENABLED = True

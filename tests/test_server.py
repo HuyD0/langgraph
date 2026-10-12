@@ -297,6 +297,31 @@ def test_tracing_waits_for_mlflow_without_holding_up_answers(store, tmp_path, mo
         mlflow.set_tracking_uri(None)
 
 
+def test_tracing_to_databricks_uses_a_workspace_path_and_fails_fast(monkeypatch):
+    import mlflow
+
+    from drill.server import observe
+
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", "databricks")
+    named = []
+    monkeypatch.setattr(mlflow, "set_experiment", lambda name: named.append(name))
+    monkeypatch.setattr(mlflow, "set_active_model", lambda **kw: None)
+    monkeypatch.setattr(observe, "databricks_user", lambda uri: "ana@example.com")
+    try:
+        assert observe.MlflowObserver("daily-drill").enabled
+        assert named == ["/Users/ana@example.com/daily-drill"]  # Databricks needs a workspace path
+
+        def offline(uri):
+            raise ConnectionError("no network")
+
+        monkeypatch.setattr(observe, "databricks_user", offline)
+        started = time.monotonic()
+        observer = observe.MlflowObserver("daily-drill")
+        assert not observer.enabled and time.monotonic() - started < 3  # the quick check gave up
+    finally:
+        mlflow.set_tracking_uri(None)
+
+
 def test_thinking_is_hidden():
     assert strip_thinking("<think>hmm</think>the answer", final=True) == "the answer"
     assert strip_thinking("<think>still thinking") == ""

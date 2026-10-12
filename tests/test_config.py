@@ -175,3 +175,36 @@ def test_gateway_without_endpoint_name_explains_what_to_set():
     with pytest.raises(MissingCredentials) as exc:
         build_chat_model(LLMSettings(flavour="mlflow_gateway", endpoint="http://localhost:5050"))
     assert "MLFLOW_GATEWAY_ENDPOINT" in str(exc.value)
+
+
+def test_experiment_names_become_workspace_paths_only_on_databricks():
+    from drill.config import experiment_path
+
+    assert experiment_path("daily-drill", "databricks", "ana@example.com") == "/Users/ana@example.com/daily-drill"
+    assert experiment_path("daily-drill", "databricks://work", "ana@example.com") == "/Users/ana@example.com/daily-drill"
+    assert experiment_path("/Shared/drill", "databricks", "ana@example.com") == "/Shared/drill"  # already a path
+    assert experiment_path("daily-drill", "http://localhost:5050") == "daily-drill"  # local: unchanged
+    assert experiment_path("daily-drill", None) == "daily-drill"
+    with pytest.raises(ValueError):
+        experiment_path("daily-drill", "databricks")  # a path needs the user
+
+
+def test_the_databricks_profile_comes_from_the_uri_first(monkeypatch):
+    from drill.config import databricks_profile, is_databricks_uri
+
+    monkeypatch.setenv("DATABRICKS_CONFIG_PROFILE", "DEFAULT")
+    assert databricks_profile("databricks://work") == "work"
+    assert databricks_profile("databricks") == "DEFAULT"
+    monkeypatch.delenv("DATABRICKS_CONFIG_PROFILE")
+    assert databricks_profile("databricks") is None
+    assert is_databricks_uri("databricks") and is_databricks_uri("databricks://work")
+    assert not is_databricks_uri("http://localhost:5050") and not is_databricks_uri(None)
+
+
+def test_unity_catalog_trace_storage_is_spotted():
+    from types import SimpleNamespace
+
+    from drill.config import UC_TRACE_TAG, uc_trace_location
+
+    assert uc_trace_location(SimpleNamespace(tags={UC_TRACE_TAG: "main.traces"})) == "main.traces"
+    assert uc_trace_location(SimpleNamespace(tags={})) is None
