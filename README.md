@@ -124,7 +124,6 @@ not a pipeline.
 | `tracking.py` | MLflow traces and per-session runs. |
 | `evaluation.py` | Scores the tutor — mainly, does it leak answers. |
 | `cli.py` | The terminal. |
-| `mine/` | `drill mine`: the same drill on your own money and health data. |
 | `content/` | The Daily Drill page: one file per module, the classics' Learn text, the page template, the build. |
 | `server/` | The page and the MCP tools as a local service: model routing, SQLite store, tracing. |
 

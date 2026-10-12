@@ -8,7 +8,6 @@ The parts, and where each one lives:
 - the learning path: one file per module in :mod:`drill.content.modules`
 - the classic interview problems: :mod:`drill.problems`, the same bank the CLI drills,
   plus their page-only Learn text in :mod:`drill.content.classics`
-- the money & health track: :mod:`drill.mine`, exported with made-up data
 - the glossary, habits and gotchas: :mod:`drill.content.extras`
 - the page itself: ``page.html`` next to this file, with ``/*DATA*/`` where the content goes
 
@@ -70,7 +69,6 @@ def _classic_problem(problem) -> dict:
 
 def build_data(loaded: list[Module] | None = None) -> dict:
     """Everything the page, the server and the MCP tools show, as plain data."""
-    from drill.mine.export import page_track
     from drill.problems import ALL_PROBLEMS
 
     loaded = loaded if loaded is not None else modules.load()
@@ -89,13 +87,6 @@ def build_data(loaded: list[Module] | None = None) -> dict:
             learn[entry["id"]] = _without_none({k: ex[k] for k in _LEARN_FIELDS})
             lessons[entry["id"]] = _page_lesson(entry)
 
-    money = page_track()
-    for problem in money["problems"]:
-        problem = dict(problem)
-        problem.pop("track", None)
-        bank[problem["id"]] = problem
-    learn.update(money["learn"])
-
     for lesson_id, entry in lessons.items():
         classic = entry["angle"][3]
         assert classic is None or classic in bank, f"{lesson_id}: unknown classic {classic!r}"
@@ -111,7 +102,6 @@ def build_data(loaded: list[Module] | None = None) -> dict:
         "aiGotchas": extras.AI_GOTCHAS,
         "iacGotchas": extras.IAC_GOTCHAS,
         "classics": [p.id for p in ALL_PROBLEMS],
-        "money": [p["id"] for p in money["problems"]],
     }, ensure_ascii=False))
 
 

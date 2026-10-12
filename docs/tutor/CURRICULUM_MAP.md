@@ -2136,7 +2136,6 @@ Alert on how fast you're using up the budget (the burn rate), not on every error
 Optional practice outside the path.
 
 - **Classic interview problems**: Two Sum (`two_sum`); Valid Parentheses (`is_valid`); Binary Search (`search`); Climbing Stairs (`climb_stairs`); Longest Substring Without Repeating Characters (`length_of_longest_substring`); Maximum Subarray (`max_sub_array`); Merge Intervals (`merge`); Group Anagrams (`group_anagrams`); Number of Islands (`num_islands`)
-- **My money & health (made-up data)**: Spending by Category (`spending_by_category`); Where Your Money Goes (`top_merchants`); Find Your Subscriptions (`subscriptions`); Spot Unusual Charges (`unusual_charges`); Summarize a Month for the AI (`monthly_summary`); Longest Meal-Logging Streak (`logging_streak`); Lowest Weight Each Month (`monthly_low_weight`); Your Personal Bests (`personal_bests`)
 
 ## Notebooks
 

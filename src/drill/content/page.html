@@ -703,7 +703,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
       <div id="taskTable"></div>
       <p class="byhand" id="taskByhand" hidden></p>
       <div class="goal" id="taskGoal"></div>
-      <div class="callout" id="moneyNote" hidden><b>Made-up data</b><p>These numbers are invented, shaped like your finance tracker's. To run this on your real data, on your Mac: <code id="moneyCmd"></code></p></div>
       </div>
     </details>
     <section class="card mach" id="machine" hidden aria-label="The example's rows moving through your function">
@@ -1172,7 +1171,7 @@ function renderHome() {
     ${book}
     ${upnext}
     <div class="sets"><h3>Practice sets</h3></div>
-    <div class="list">${set("classics", "Classic interview problems", D.classics)}${set("money", "My money & health", D.money)}</div>
+    <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>
     <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
 }
@@ -1211,7 +1210,7 @@ function openLesson(id, step) {
 }
 function openPractice(pid, from) {
   cur = { kind: "practice", id: pid, p: byId[pid], from };
-  $("lessonWhere").textContent = D.money.includes(pid) ? "Practice · My money & health" : "Practice · Classic interview problems";
+  $("lessonWhere").textContent = "Practice · Classic interview problems";
   $("lessonTitle").textContent = byId[pid].title;
   $("lessonRail").hidden = true; $("lessonEarn").hidden = true; $("aheadNote").hidden = true;
   $("stepper").hidden = true;
@@ -1561,8 +1560,6 @@ function loadProblem(p) {
   $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
   machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
-  $("moneyNote").hidden = !D.money.includes(p.id);
-  $("moneyCmd").textContent = "uv run drill mine new " + p.id;
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
   $("taskByhand").hidden = !Ln.byhand;

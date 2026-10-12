@@ -160,7 +160,7 @@ def curriculum_map(data: dict | None = None) -> str:
             lines.append("")
 
     lines += ["## Practice sets", "", "Optional practice outside the path.", ""]
-    for name, ids in (("Classic interview problems", data["classics"]), ("My money & health (made-up data)", data["money"])):
+    for name, ids in (("Classic interview problems", data["classics"]),):
         lines.append(f"- **{name}**: " + "; ".join(f"{_plain(bank[i]['title'])} (`{bank[i]['fn']}`)" for i in ids))
     lines += [
         "",
