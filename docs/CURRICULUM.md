@@ -142,9 +142,20 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 14 modules in
-the order of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor),
-and the page keeps track of which lessons are done. One lesson is 15 to 30 minutes.
+Or use the published page on claude.ai. Either way the path is the same: 116 lessons in
+16 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
+minutes. "How the path is organised", on the home page, groups the modules by
+stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
+The list itself runs roughly from foundations to shipping, and any module can be opened
+at any time.
+
+Two modules look past a single experiment. **Pricing and sizing** works out what an AI
+task really costs, what it saves and how much capacity it needs, before you build; it
+goes with the cost and capacity lines of [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md). It
+sits later in the list, but it belongs to the Frame stage: do it first if you are
+deciding whether an idea is worth building.
+**Agent teams** starts with whether you need a team at all, then covers splitting the
+work, fanning out, checking, and what a team costs.
 
 Each lesson is four steps. **Learn** is a short read with one worked example. **Check**
 is a single question, to find out whether the read landed. **Build** is a small Python

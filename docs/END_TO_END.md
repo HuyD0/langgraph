@@ -70,6 +70,92 @@ it: **Checking each claim before release** (RAG) checks every answer at request
 time and releases, revises or withholds it. It complements the eval set; it
 doesn't replace it.
 
+## Agent systems: what to measure
+
+An agent, or a team of agents, goes through the same stages. What changes is what
+you measure, because an agent takes many steps, and it can pass a task once and
+fail it the next time. The research behind this is in
+[research/AGENT_PRACTICES.md](research/AGENT_PRACTICES.md).
+
+| Measure | Why it matters | Lessons |
+|---|---|---|
+| Success rate, and pass hat k (passed on every one of k tries) | One run hides an agent that is only right some of the time | Reliable every time (pass hat k) · Evaluating agents |
+| Cost per success: the cost of all runs, failed ones included, divided by the runs that passed | A design that is cheaper per run but fails more can cost more per success | Dollars per success · Comparing agent designs |
+| Steps per run, and how many runs hit the step limit | Repeating steps and not knowing when to stop are common failures; a run stopped by the limit counts as failed | The agent loop · Guardrails for agents |
+| How full the context gets | Answers get worse as the context fills, even when the right fact is in it | How full is the context? · What a summary forgets |
+
+Grade the end state, not the agent's word for it: query the table, read the
+ticket. A judge that reads only "I've updated the ticket" can be fooled.
+**Testing the checker with planted mistakes** and **An agent that runs code**
+practise this.
+
+Before building a team, ask **Do you need a team?** Start with one agent, move up
+only for a problem you can name, and compare the team with that one agent on the
+same questions, by cost per success. The **Agent teams** module goes on with
+**Split by what each agent needs to know**, **Fan out, then gather**, **A checker
+with a round limit** and **Dollars per success**. One note on tools: build a
+supervisor as a main agent made with `create_agent`, with the helper agents as its
+tools. The langgraph-supervisor package is no longer maintained, and on
+Databricks, Supervisor Agent and the Supervisor API are listed as legacy.
+
+**At scale**, with thousands of runs a day, nobody reads every trace:
+
+- **Traces to a table.** On Databricks, the recommended home for production
+  traces is Unity Catalog tables. They don't appear on their own: you create
+  the schema first and grant MODIFY and SELECT on the tables, then query them
+  with SQL. Keep every trace, and save money by judging only a sample of them.
+- **Automatic checks.** The scorers from your eval run on a sample of live traces
+  (production monitoring, in Beta on Databricks). Code checks first; an LLM judge
+  only where code can't decide, checked against labels a person made.
+- **Read what the numbers point at.** Label each failed trace with its cause,
+  count the labels and fix the biggest group first (**Label failures, then
+  count**). Then read a sample of the traces in that group.
+
+## Before you build: pricing, then graduation
+
+The reranker example starts from an app that already runs. A new idea starts one
+step earlier: is it worth building, and how much capacity will it need? Work it
+out before the build, then let the POC (proof of concept) swap each guess for a
+measured number. The method, with a worked example, is in
+[research/LLM_COST_AND_SIZING.md](research/LLM_COST_AND_SIZING.md), and the
+**Pricing and sizing** module teaches it one exercise at a time.
+
+1. **Cost per finished task.** The model cost, plus people checking answers, plus
+   redoing the wrong ones, plus the errors that slip through (the lesson keeps
+   that last part apart). The token bill is usually the smallest part. An agent sends everything so far again at every
+   step, so price whole runs. (**Cost per finished task**, **Tokens grow every
+   step**)
+2. **Is it worth it?** Work out the real saving per task: the staff time freed
+   (today's cost, minus checking and redo), counting only the share that is real
+   money, minus the model cost and the errors that slip through. The monthly
+   net, payback and break-even come from it. Then change one guess at a time to
+   find the one to measure hardest. (**Payback and break-even**, **Which guess
+   matters most**)
+3. **Capacity.** Size for the busiest minute, not the daily average, and check it
+   against the Foundry deployment's tokens-per-minute limit and the gateway's
+   limits. Start on pay-as-you-go, and reserve only once traffic is steady
+   (step 7). (**Size for the busiest minute**)
+4. **Write it into the plan.** The [cost and capacity](EXPERIMENT_PLAN.md#cost-and-capacity)
+   lines of the plan template say who gives each number.
+5. **Run the POC in a shared space with fair limits.** The shared space (some
+   teams call it the sandbox) is where many teams try ideas, on a model
+   deployment of its own, never production's. Each user's limit sits below the
+   shared space's overall limit, so one runaway test can't block everyone.
+   (**A shared space with fair limits**)
+6. **Graduate on evidence.** A workload leaves the shared space only when it has
+   an owner, passes the eval bar and its must-pass set, costs no more per success
+   than the bar allows, fits the capacity at its busiest minute, and has
+   monitoring. (**The graduation gate**)
+7. **Share scarce capacity by tier.** Critical apps come first. Once their
+   traffic is steady, they move to reserved capacity (PTU), with spillover to a
+   standard deployment for the peaks. For the models in the research,
+   reserving mostly buys guaranteed throughput, not a lower price. Graduated
+   apps share standard deployments sized from what the POC measured. The shared
+   space gets what is left, on its own deployment. (**Who gets capacity when
+   it's scarce**)
+8. **Check the estimate against the bill** once it runs, and carry the gap into
+   the next plan. (**Estimate against actual**)
+
 ## Where to start
 
 - New to all of this? Do notebooks 7 and 8 first, then 9a to 9d in order.
@@ -79,3 +165,8 @@ doesn't replace it.
   "Building the eval set from labelled traces" section of the plan template.
 - Have a RAG app at work to check against all this? Use the audit prompt in
   [RAG_AUDIT.md](RAG_AUDIT.md).
+- Deciding whether an AI idea is worth building? Start with the **Pricing and
+  sizing** module and the [cost and capacity](EXPERIMENT_PLAN.md#cost-and-capacity)
+  lines of the plan.
+- Building with agents? Measure the four things in the agent table above, and
+  ask **Do you need a team?** before adding a second agent.

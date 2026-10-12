@@ -149,6 +149,181 @@ for name in ages:
     ),
 )
 
+lesson(MODULE, 'estimate_vs_actual',
+    title='Estimate against actual',
+    learn=[
+        'Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.',
+        'So each month, set the **estimate** (what the plan said a project would cost) next to the **actual** (what it really cost). **Percent over** is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.',
+        "When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a **request tag** does this, and the usage table records it next to each request's tokens.",
+        'Flag only projects over by a set margin, such as 20 percent, and look at the biggest first. Then replace the guess in the plan with the measured number.',
+    ],
+    example=example('Percent over for one project', """estimate = 400   # the plan, dollars
+actual = 520     # the real bill
+over = (actual - estimate) / estimate
+# over is 0.3
+percent = int(round(over * 100))
+# percent is 30"""),
+    check=question(
+        'Project A planned $100 a month and spent $150. Project B planned $1,000 and spent $1,200. Whose estimate was the worse guess for its size?',
+        [
+            'B, because it spent $200 more than planned',
+            'Neither, both are off by about the same',
+            'A, because it spent 50 percent more than planned',
+        ],
+        answer=2,
+        why="Percent over compares each project with its own estimate. A is 50 percent over and B only 20 percent, even though B's extra dollars are bigger.",
+    ),
+    angle=angle(
+        pattern='Filter, then rank with a tie-break',
+        text='One pass over the rows works out each percent and keeps the ones at or above the threshold. Then one sort puts the biggest first, with names breaking ties so the report always comes out the same.',
+        say='"I compare each project with its own estimate as a percent, keep the ones at or above the threshold, and sort biggest first with the name as a tie-break."',
+        classic=None,
+    ),
+    stack=stack('Databricks: actual tokens per project from request tags', """-- each app sends its project name in
+-- the Databricks-Ai-Gateway-Request-Tags
+-- header; it lands in request_tags
+SELECT
+  request_tags['project'] AS project,
+  destination_model,
+  SUM(input_tokens) AS input_tokens,
+  SUM(output_tokens) AS output_tokens
+FROM system.ai_gateway.usage
+WHERE request_tags['project'] IS NOT NULL
+  AND event_time >=
+      current_date() - INTERVAL 30 DAYS
+GROUP BY request_tags['project'],
+         destination_model
+-- times each model's prices: a close
+-- guess at the actual. Add up each
+-- project's rows. Azure's bill is
+-- final. Set it next to each estimate."""),
+    exercise=exercise(
+        title='Projects Over Estimate',
+        topic='llmops',
+        difficulty='easy',
+        fn='estimate_vs_actual',
+        prompt="""Your function gets two things:
+
+- `rows`: one dict per project, like `{"project": "search", "estimate": 100, "actual": 165}`. `estimate` is the planned dollars for the month and `actual` is what it really cost. `estimate` is always above 0.
+- `threshold`: how far over counts as a problem, as a share, like `0.2` for 20 percent.
+
+For each project, work out `over = (actual - estimate) / estimate`. Keep the project only if `over` is at least `threshold`.
+
+For each kept project, make a pair `[project, percent]`. `percent` is `over` times 100 as a whole number: `int(round(over * 100))`.
+
+Return the list of pairs, biggest percent first. When two percents are equal, put those names in A to Z order. If no project is kept, return `[]`.""",
+        pattern="Filter and rank: work out each project's percent over, keep the ones at or above the threshold, then sort biggest first with the name breaking ties.",
+        target='one pass over the rows, then one sort',
+        realworld="After launch, teams set each project's planned spend next to its real spend every month. When projects share one model service, tagging every request with its project (a request tag on the Databricks AI gateway) is what lets the real spend be split by project. A project with its own model service can use a service tag set in Terraform instead.",
+        starter="""def estimate_vs_actual(rows, threshold):
+    # your code here
+    pass
+""",
+        solution="""def estimate_vs_actual(rows, threshold):
+    kept = []
+    for row in rows:
+        estimate = row["estimate"]
+        actual = row["actual"]
+        over = (actual - estimate) / estimate
+        if over >= threshold:
+            percent = int(round(over * 100))
+            kept.append([row["project"], percent])
+    kept.sort(key=lambda p: (-p[1], p[0]))
+    return kept
+""",
+        cases=[
+            case([
+                {'project': 'help-center', 'estimate': 400, 'actual': 520},
+                {'project': 'hr-bot', 'estimate': 250, 'actual': 240},
+                {'project': 'search', 'estimate': 100, 'actual': 165},
+                {'project': 'summaries', 'estimate': 300, 'actual': 330},
+            ], 0.2, expected=[['search', 65], ['help-center', 30]], sample=True),
+            case([], 0.2, expected=[]),
+            case([
+                {'project': 'faq', 'estimate': 100, 'actual': 90},
+                {'project': 'triage', 'estimate': 200, 'actual': 210},
+            ], 0.2, expected=[]),
+            case([
+                {'project': 'rag-search', 'estimate': 200, 'actual': 250},
+                {'project': 'chat', 'estimate': 80, 'actual': 100},
+                {'project': 'triage', 'estimate': 40, 'actual': 60},
+                {'project': 'faq', 'estimate': 100, 'actual': 124},
+            ], 0.25, expected=[['triage', 50], ['chat', 25], ['rag-search', 25]]),
+            case([
+                {'project': 'agent', 'estimate': 300, 'actual': 1000},
+                {'project': 'docs', 'estimate': 70, 'actual': 79},
+                {'project': 'faq', 'estimate': 50, 'actual': 50},
+            ], 0.1, expected=[['agent', 233], ['docs', 13]]),
+        ],
+        guided="""def estimate_vs_actual(rows, threshold):
+    # Replace every ___ with real code, then run the tests.
+
+    kept = []
+    for row in rows:
+        estimate = row["estimate"]
+        actual = row["actual"]
+        # Step 1: the extra, as a share of the estimate.
+        over = ___
+        # Step 2: keep it if over is at least threshold.
+        if ___:
+            percent = int(round(over * 100))
+            kept.append([row["project"], percent])
+
+    # Step 3: biggest percent first, ties A to Z.
+    kept.sort(key=lambda p: (-p[1], p[0]))
+    return kept
+""",
+        fills=['(actual - estimate) / estimate', 'over >= threshold'],
+        concepts=[
+            [
+                'Dividing to get a share',
+                '`a / b` divides and gives a decimal. Dividing a part by the whole gives a share: 0.25 means 25 percent.',
+                """late = 15
+share = late / 60   # 0.25""",
+            ],
+            [
+                'At least: >=',
+                '`a >= b` is True when `a` is equal to `b` or bigger.',
+                """5 >= 5   # True
+4 >= 5   # False""",
+            ],
+            [
+                'A whole number: int(round(x))',
+                '`round(x)` goes to the nearest whole number. `int(...)` makes it show as 30, not 30.0.',
+                """int(round(29.6))   # 30
+int(round(12.4))   # 12""",
+            ],
+            [
+                'append',
+                '`items.append(x)` adds `x` to the end of a list. `x` can itself be a list, like a pair.',
+                """pairs = []
+pairs.append(["ann", 30])
+# [["ann", 30]]""",
+            ],
+            [
+                'Sorting with a tie-break',
+                '`key=` says what to sort by. `lambda p: ...` is a tiny function: give it a pair `p` and it gives back what to sort by. `p[1]` is the second item (the number) and `p[0]` the first (the name). Python compares the first thing, and looks at the second only when the first is equal. The minus sign flips the number, so the biggest comes first.',
+                """pets = [["cat", 3], ["dog", 9],
+        ["ant", 9]]
+pets.sort(key=lambda p: (-p[1], p[0]))
+# ant 9, dog 9, cat 3""",
+            ],
+        ],
+        byhand='The threshold is 0.2, so a project must be at least 20 percent over. help-center: 520 minus 400 is 120, and 120 divided by 400 is 0.3. That is at least 0.2, so keep it as 30 percent. hr-bot: 240 is less than its estimate of 250, so it came in under. Leave it out. search: 165 minus 100 is 65, and 65 divided by 100 is 0.65. Keep it as 65 percent. summaries: 330 minus 300 is 30, and 30 divided by 300 is 0.1. That is below 0.2, so leave it out. Biggest first, return [["search", 65], ["help-center", 30]].',
+        why='One pass over the rows to work out and keep each percent, then one sort of the kept pairs.',
+        gotchas=[
+            [
+                'Untagged requests go missing',
+                'A request sent without a project tag belongs to no project, so its project looks cheaper than it is. Count the untagged requests too.',
+            ],
+            [
+                'A big percent on a tiny bill',
+                'A $10 project that is 200 percent over costs only $20 more. Look at the dollars as well before you act.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'cache_hits',
     title='Caching responses',
     learn=[
