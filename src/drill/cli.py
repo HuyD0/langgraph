@@ -587,7 +587,10 @@ def cloud_setup_cmd(
     profile: str = PROFILE,
     project: str = typer.Option("daily-drill", "--lakebase-project", help="The Lakebase project that keeps progress."),
     create_lakebase: bool = typer.Option(False, "--create-lakebase", help="Create the Lakebase project if it is not there."),
-    experiment: str = typer.Option(None, "--experiment", help="MLflow experiment path for traces (default /Users/<you>/daily-drill)."),
+    experiment: str = typer.Option(None, "--experiment", help="The app's MLflow experiment (default /Shared/daily-drill, apart from your own)."),
+    warehouse: str = typer.Option(None, "--warehouse", help="SQL warehouse id for attaching feedback to traces in Unity Catalog (default: the smallest serverless one)."),
+    prompt_schema: str = typer.Option(None, "--prompt-schema", help="catalog.schema of the app's prompts, linked to each version at deploy."),
+    trace_schema: str = typer.Option(None, "--trace-schema", help="catalog.schema to keep a new experiment's traces in Unity Catalog (needed behind a storage firewall)."),
     model: str = typer.Option(None, "--model", help="Unity Gateway model service for the tutor, catalog.schema.name (default system.ai.claude-haiku-4-5)."),
     name: str = typer.Option(None, "--name", help="The app's name in the workspace (default daily-drill)."),
 ) -> None:
@@ -595,7 +598,8 @@ def cloud_setup_cmd(
     from drill import cloud
 
     prof = _cloud(lambda: cloud.profile_for(target, profile))
-    info = _cloud(lambda: cloud.setup(target, prof, project, create_lakebase, experiment, model, name))
+    info = _cloud(lambda: cloud.setup(target, prof, project, create_lakebase, experiment, model, name, trace_schema,
+                                      warehouse, prompt_schema))
     console.print(f"Lakebase: {info['lakebase_database']}\nTraces: {info['experiment']} ({info['experiment_id']})")
     console.print(f"Saved to {info['file']} (git ignores it). Next: uv run drill cloud deploy --target {target}")
 
@@ -609,6 +613,13 @@ def cloud_deploy_cmd(target: str = TARGET, profile: str = PROFILE) -> None:
     console.print(f"Deploying to {target}. Installing packages in the app takes a few minutes...")
     info = _cloud(lambda: cloud.deploy(target, prof))
     _show_status(info)
+    reg = info.get("registered") or {}
+    if reg.get("error"):
+        console.print(f"[yellow]Version record not written: {reg['error']}[/yellow]")
+    else:
+        console.print(f"Version {reg['name']} recorded in the experiment"
+                      + (f", linked to {', '.join(reg['prompts'])}" if reg.get("prompts") else "")
+                      + (f"; scorers registered: {', '.join(reg['scorers'])}" if reg.get("scorers") else ""))
     console.print(f"Running code {info['version']}. It stops itself after 30 idle minutes.\n\nChecking its permissions:")
     from drill import cloud_check
 
@@ -698,6 +709,40 @@ def cloud_manager_view_cmd(
     info = _cloud(lambda: cloud.manager_view(target, prof, warehouse, catalog))
     console.print(f"Dashboard: {info['url']}\nReads catalog {info['catalog']} with your credentials.")
     console.print("Share it with managers only: it shows every learner's progress, study list and questions.")
+
+
+traces_app = typer.Typer(add_completion=False, help="The deployed app's traces: score them with the registered scorers.")
+app.add_typer(traces_app, name="traces")
+
+
+@traces_app.command("score")
+def traces_score_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    days: float = typer.Option(1.0, "--days", help="Score traces from this many days back."),
+) -> None:
+    """Run the answer-rule scorers over the app's recent traces, as one evaluation run with pass rates."""
+    import os
+
+    import mlflow
+
+    from drill import cloud, trace_scoring
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    saved = cloud.read_overrides(target)
+    if "experiment_id" not in saved:
+        console.print(f"[red]Run `uv run drill cloud setup --target {target}` first.[/red]")
+        raise typer.Exit(1)
+    if saved.get("warehouse_id"):
+        os.environ.setdefault("MLFLOW_TRACING_SQL_WAREHOUSE_ID", saved["warehouse_id"])
+    mlflow.set_tracking_uri(f"databricks://{prof}" if prof else "databricks")
+    result = trace_scoring.score(saved["experiment_id"], days)
+    if not result["traces"]:
+        console.print("No traces in that window.")
+        return
+    console.print(f"Scored {result['traces']} traces (run {result['run_id']}):")
+    for name, value in sorted(result["metrics"].items()):
+        console.print(f"  {name}: {value:.2f}" if isinstance(value, float) else f"  {name}: {value}")
 
 
 @cloud_app.command("requirements")

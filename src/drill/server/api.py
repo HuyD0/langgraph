@@ -242,7 +242,8 @@ def create_app(
         messages: Any = body.messages if body.messages is not None else body.prompt
         if not router.order(body.tier):
             raise HTTPException(503, NO_MODEL)
-        context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
+        # MLflow's user field: the signed-in email in an app (the same owner Lakebase uses), "local" elsewhere.
+        context = {**(body.trace or {}), "door": "page", "user": owner_for(request, "local")}
         trace = body.trace or {}
         detail = {k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None}
         if trace.get("question"):  # what they asked, for the manager's view (drill.server.team)
@@ -292,9 +293,10 @@ def create_app(
     async def feedback(body: FeedbackBody, request: Request):
         from drill.server.observe import default_observer
 
-        user = user_id(request)
+        user = owner_for(request, "local")
         mine(request).log("feedback", "", name=body.name, value=str(body.value)[:60])
-        observer = default_observer()
+        # The router's own observer: the one that wrote the trace this feedback is about.
+        observer = router.observer if hasattr(router.observer, "human_feedback") else default_observer()
         logged = bool(observer and observer.human_feedback(body.request, body.name, body.value, body.rationale, user))
         return {"ok": True, "logged": logged}
 

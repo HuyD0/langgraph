@@ -229,7 +229,8 @@ class DrillSettings:
             mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI"),
             # Its own variable, not MLFLOW_EXPERIMENT_NAME: Claude Code's MLflow tracing sets that
             # for everything it starts, and would move these traces into its experiment.
-            mlflow_experiment=os.getenv("DRILL_MLFLOW_EXPERIMENT") or "daily-drill",
+            # The terminal tutor's practice runs: an experiment of their own, apart from the page's traces.
+            mlflow_experiment=os.getenv("DRILL_CLI_MLFLOW_EXPERIMENT") or "daily-drill-cli",
         )
 
 

@@ -3557,6 +3557,9 @@ async function claudeBackend() {
   const [s, db, user] = await Promise.all([claude.use("sample"), claude.use("db"), claude.use("user")]);
   return { s, db, user };
 }
+// One MLflow session per visit, so every request from this visit groups together; an Ask thread
+// or a study item sends its own session instead.
+const VISIT = "visit-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 async function localBackend() {
   if (!/^https?:$/.test(location.protocol)) return null;
   let health;
@@ -3568,6 +3571,7 @@ async function localBackend() {
     throw Object.assign(new Error(d.text || res.statusText), { code: d.code || (res.status === 429 ? "rate_limited" : "error"), text: d.text });
   };
   async function ask(body, onText) {
+    body = { ...body, trace: { session: VISIT, ...(body.trace || {}) } };
     const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) await fail(res);
     if (body.json) return (await res.json()).value;

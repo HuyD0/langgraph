@@ -136,6 +136,37 @@ def _mlflow_ready() -> bool:
     return bool(observer and observer.ready())
 
 
+def records() -> list[dict]:
+    """The cases as evaluation-dataset records: the card in, what a good review must do as expectations."""
+    return [{"inputs": {"name": c["name"], "card": c["card"]},
+             "expectations": {"gaps": [field for field, _ in c["gaps"]], "high_risk": c["high_risk"]}} for c in CASES]
+
+
+def eval_dataset(mlflow, experiment_id: str):
+    """The review cases as an MLflow evaluation dataset (``review_cases``), created or brought up to date.
+
+    Runs that use it show it as their input, so you can tell which cases a score was measured on.
+    ``None`` when the tracking store keeps no datasets; the run then uses the cases directly.
+    """
+    from drill import mlflow_names
+
+    name = mlflow_names.dataset_name("review_cases")
+    try:
+        try:
+            dataset = mlflow.genai.get_dataset(name=name)
+        except Exception:  # noqa: BLE001 - not there yet
+            from drill.config import is_databricks_uri
+
+            # Unity Catalog manages a dataset's tags itself, so MLflow tags are only passed elsewhere.
+            tags = None if is_databricks_uri(mlflow.get_tracking_uri()) else {"source": "src/drill/review_eval.py", "cases": str(len(CASES))}
+            dataset = mlflow.genai.create_dataset(name=name, experiment_id=experiment_id, tags=tags)
+        dataset.merge_records(records())
+        return dataset
+    except Exception as exc:  # noqa: BLE001
+        print(f"(no evaluation dataset: {str(exc).splitlines()[0][:120]}; using the cases directly)")
+        return None
+
+
 def _run_with_mlflow(predict, router, tier: str, judge: bool) -> list[dict]:
     import mlflow
     from mlflow.entities import Feedback
@@ -180,12 +211,34 @@ def _run_with_mlflow(predict, router, tier: str, judge: bool) -> list[dict]:
         answers[name] = text = predict(name, card)
         return text
 
-    data = [{"inputs": {"name": c["name"], "card": c["card"]}} for c in CASES]
     # One case at a time: a single local model cannot answer several reviews at once.
     os.environ["MLFLOW_GENAI_EVAL_MAX_WORKERS"] = "1"
-    with mlflow.start_run(run_name=f"review eval {review.REVIEW_VERSION}"):
-        mlflow.log_params({"prompt_version": review.REVIEW_VERSION, "tier": tier, "judge": JUDGE_VERSION if judge else "off", "cases": len(CASES)})
-        result = mlflow.genai.evaluate(data=data, predict_fn=predict_and_keep, scorers=scorers)
+    from drill import mlflow_names
+    from drill.review_ops import _model_for
+    from drill.server.observe import app_version
+
+    from drill.server.observe import default_observer
+
+    dataset = eval_dataset(mlflow, getattr(default_observer(), "experiment_id", None))
+    data = dataset if dataset is not None else [{"inputs": r["inputs"]} for r in records()]
+    version = app_version()
+    active = mlflow.set_active_model(name=f"daily-drill-{version}")  # the eval's metrics show on this version
+    with mlflow.start_run(run_name=mlflow_names.run_name("review-eval", review.REVIEW_VERSION)):
+        prompt = None
+        try:  # loading the registered prompt inside the run links it to the run
+            prompt = mlflow.genai.load_prompt(f"prompts:/{mlflow_names.prompt_name('review')}@production")
+        except Exception:  # noqa: BLE001 - not registered here: the run uses the code's prompt
+            prompt = None
+        mlflow.set_tags({**mlflow_names.context_tags(version), "kind": "review_eval",
+                         "mlflow.note.content": f"The use case review prompt ({review.REVIEW_VERSION}) on {len(CASES)} planted "
+                                                "cards: does it name every pillar, flag each planted gap, flag unchecked harm, "
+                                                "and leave the decision to the learner?"})
+        mlflow.log_params({"prompt_version": review.REVIEW_VERSION, "tier": tier, "model": _model_for(router, tier),
+                           "prompt": f"{prompt.name}/{prompt.version}" if prompt else mlflow_names.prompt_name("review"),
+                           "dataset": mlflow_names.dataset_name("review_cases") if dataset is not None else "inline",
+                           "judge": JUDGE_VERSION if judge else "off", "cases": len(CASES)})
+        result = mlflow.genai.evaluate(data=data, predict_fn=predict_and_keep, scorers=scorers,
+                                       model_id=getattr(active, "model_id", None))
     # The printed table is scored here from the same answers, so it never depends on MLflow's table layout.
     rows = []
     for case in CASES:
