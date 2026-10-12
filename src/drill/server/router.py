@@ -19,10 +19,18 @@ Configuration (all optional, all in .env):
     DRILL_HOSTED_BASE_URL=https://adb-123.azuredatabricks.net/serving-endpoints
     DRILL_HOSTED_MODEL=databricks-gemma-3-12b     the endpoint (or model) name
     DRILL_HOSTED_API_KEY=...                      a Databricks token, or the provider's key
+    DRILL_HOSTED_AUTH=databricks                  key | databricks: sign in with the Databricks login
     DRILL_HOSTED_DAILY_TOKENS=200000              stop using the hosted model past this
     DRILL_TRACING=1                               0 switches MLflow tracing off (see observe.py)
 
 With no DRILL_HOSTED_* set, the Azure settings from drill.config are the hosted model.
+
+At work, the hosted model is a Databricks AI Gateway endpoint and there is no key to keep:
+``DRILL_HOSTED_AUTH=databricks`` signs each request with the login already on the machine
+(``databricks auth login``, which goes through Entra on Azure), renewed as it runs out. It
+is also what happens when a Databricks address is set with no key. Without
+``DRILL_HOSTED_BASE_URL`` the address is the workspace's own ``/serving-endpoints``, so
+``DRILL_HOSTED_MODEL`` (the endpoint's name) is the only other line needed.
 """
 
 from __future__ import annotations
@@ -37,6 +45,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Iterable
 
+import httpx
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from drill.config import LLMSettings
@@ -159,15 +168,70 @@ def local_route() -> Route | None:
     return Route("local", model, chat)
 
 
-def hosted_route() -> Route | None:
-    """``DRILL_HOSTED_*`` (any OpenAI-compatible endpoint) first, else the Azure settings."""
+class DatabricksAuth(httpx.Auth):
+    """Signs each request to a Databricks endpoint with the login on this machine.
+
+    ``config`` is a ``databricks.sdk.config.Config``; its ``authenticate()`` hands back fresh
+    headers, renewing the token when it runs out (it only goes to the network then, about
+    once an hour), so a server left running all day keeps working. As the ``httpx`` auth
+    under the OpenAI client, it replaces the placeholder key that client sends.
+    """
+
+    def __init__(self, config: Any):
+        self.config = config
+
+    def auth_flow(self, request):
+        request.headers.update(self.config.authenticate())
+        yield request
+
+
+def is_databricks_url(url: str) -> bool:
+    return bool(re.search(r"\.(azuredatabricks\.net|cloud\.databricks\.com|gcp\.databricks\.com)(/|$)", url))
+
+
+def databricks_config() -> Any:
+    """The Databricks login on this machine (``DATABRICKS_CONFIG_PROFILE`` picks a profile)."""
+    from databricks.sdk.config import Config
+
+    return Config()
+
+
+def hosted_auth(base: str, key: str) -> str:
+    """``key`` or ``databricks``: ``DRILL_HOSTED_AUTH`` if set, else ``databricks`` for a Databricks address with no key."""
+    wanted = os.getenv("DRILL_HOSTED_AUTH", "").strip().lower()
+    if wanted in ("key", "databricks"):
+        return wanted
+    return "databricks" if not key and is_databricks_url(base) else "key"
+
+
+def hosted_route(config_factory=databricks_config, transport: Any = None) -> Route | None:
+    """``DRILL_HOSTED_*`` (any OpenAI-compatible endpoint) first, else the Azure settings.
+
+    ``transport`` stands in for the network in tests.
+    """
     base = os.getenv("DRILL_HOSTED_BASE_URL", "").strip()
     model = os.getenv("DRILL_HOSTED_MODEL", "").strip()
+    key = os.getenv("DRILL_HOSTED_API_KEY", "").strip()
+    if model and hosted_auth(base, key) == "databricks":
+        from langchain_openai import ChatOpenAI
+
+        try:
+            config = config_factory()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("No Databricks login for the hosted model (%s). Run `databricks auth login`.", exc)
+            return None
+        base = base or f"{config.host.rstrip('/')}/serving-endpoints"
+        auth = DatabricksAuth(config)
+        chat = ChatOpenAI(
+            base_url=base, model=model, api_key="databricks", timeout=120, max_retries=1, stream_usage=True,
+            http_client=httpx.Client(auth=auth, timeout=120, transport=transport),
+            http_async_client=httpx.AsyncClient(auth=auth, timeout=120, transport=transport),
+        )
+        return Route("hosted", model, chat)
     if base and model:
         from langchain_openai import ChatOpenAI
 
-        key = os.getenv("DRILL_HOSTED_API_KEY", "").strip() or "none"
-        chat = ChatOpenAI(base_url=base, model=model, api_key=key, timeout=120, max_retries=1, stream_usage=True)
+        chat = ChatOpenAI(base_url=base, model=model, api_key=key or "none", timeout=120, max_retries=1, stream_usage=True)
         return Route("hosted", model, chat)
 
     env = {k: v for k, v in os.environ.items() if k not in LOCAL_ONLY_VARS}
