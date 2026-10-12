@@ -305,6 +305,56 @@ def review_eval_cmd(
     console.print("Every must-pass case passed: every planted gap flagged, and no verdict.")
 
 
+@review_app.command("label")
+def review_label_cmd(n: int = typer.Option(10, "--n", help="How many reviews to label this time.")) -> None:
+    """Label recent reviews: did each one invent a fact the card does not contain? Saved on the trace in MLflow."""
+    from rich.panel import Panel
+
+    from drill import review_ops
+
+    def ask(answer: str, card_text: str, card: dict):
+        console.rule("A review to label")
+        console.print(Panel(card_text, title="The card", expand=False))
+        console.print(Panel(answer, title="The review", expand=False))
+        choice = typer.prompt("Did it invent a fact the card does not contain? [y]es / [n]o / [s]kip / [q]uit", default="s").strip().lower()[:1]
+        if choice == "q":
+            raise typer.Exit(0)
+        if choice not in ("y", "n"):
+            return None, ""
+        note = typer.prompt("Which claim? (Enter to leave blank)", default="", show_default=False) if choice == "y" else ""
+        return choice == "n", note
+
+    done = review_ops.label(n, ask)
+    console.print(f"Labelled {done} review{'s' if done != 1 else ''}. Next: uv run drill review calibrate")
+
+
+@review_app.command("calibrate")
+def review_calibrate_cmd(tier: str = typer.Option("default", "--tier", help="Which model tier the judge uses.")) -> None:
+    """Run the groundedness judge on the reviews you labelled, and show how well it agrees with you."""
+    from drill import review_ops
+
+    r = review_ops.calibrate(tier=tier)
+    if not r["n"]:
+        console.print("No labelled reviews yet. Run: uv run drill review label")
+        raise typer.Exit(1)
+    kappa = r["kappa"] if r["kappa"] is not None else "not enough variety yet (every label is the same)"
+    console.print(f"Judge {r['judge_version']} on {r['n']} reviews you labelled: agrees {r['agreement']:.0%} of the time, kappa {kappa}.")
+    if r["n"] < 20:
+        console.print(f"Only {r['n']} labelled so far: label at least 20, including some with inventions, before trusting these numbers.")
+    console.print(f"Missed an invention you found: {r['judge_missed']}. Flagged one you did not see: {r['judge_false_alarm']}.")
+    console.print("Rough guide: kappa above 0.6 is good enough to lean on; below 0.4, keep reading the reviews yourself.")
+
+
+@review_app.command("register")
+def review_register_cmd() -> None:
+    """Put the review and challenge prompts in MLflow's prompt registry, and point 'production' at them."""
+    from drill import review_ops
+
+    for p in review_ops.register():
+        state = "new version" if p["registered_new"] else "unchanged"
+        console.print(f"{p['name']}: version {p['version']} ({p['drill_version']}, {state}), alias production -> {p['uri']}")
+
+
 tutor_app = typer.Typer(add_completion=False, help="Material for a chat tutor (a Claude Project): the curriculum map and a snapshot of your progress.")
 app.add_typer(tutor_app, name="tutor")
 

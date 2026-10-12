@@ -338,6 +338,15 @@ def snapshot(progress: dict, study_items: list[dict], data: dict | None = None, 
     if summary.get("total"):
         top = "; ".join(f"{name} ${value:,}" for name, value in (summary.get("items") or [])[:5])
         own_rows.append(f"- Their total cost of ownership: ${summary['total']:,} over {summary.get('years', '?')} years, ${summary.get('perMonth', 0):,} a month to run. Biggest items: {top}.")
+    outcome = own.get("outcome") or {}
+    if outcome.get("call"):
+        own_rows.append(f"- Their pilot's call, by their own bars: {outcome['call']}.")
+    feedback = own.get("feedback") or []
+    if feedback:
+        useful = [f for f in feedback if f.get("name") == "useful"]
+        reasons = [f["name"].replace("_", " ") for f in feedback if f.get("value") is True and f.get("name") not in ("useful", "pilot_outcome")]
+        own_rows.append(f"- Their ratings of AI drafts: {sum(1 for f in useful if f.get('value'))} useful, {sum(1 for f in useful if not f.get('value'))} not"
+                        + (f"; reasons given: {', '.join(sorted(set(reasons)))}" if reasons else "") + ".")
     section("Their own use case (from the Use case and fit lessons)", own_rows, "Not written yet.")
     focus = (
         [f"review \"{_short(text_of(it), 60)}\"" for it in due[:3]]
