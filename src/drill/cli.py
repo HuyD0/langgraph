@@ -316,6 +316,25 @@ tracing_app = typer.Typer(add_completion=False, help="Where MLflow traces go: th
 app.add_typer(tracing_app, name="tracing")
 
 
+@tracing_app.command("use")
+def tracing_use_cmd(
+    target: str = typer.Argument(..., help="local (this Mac's MLflow, free) or databricks (your workspace; reading traces there uses a SQL warehouse)."),
+    uri: str = typer.Option(None, "--uri", help="The local MLflow server (default http://localhost:5050)."),
+) -> None:
+    """Switch where the drill server's traces go, by changing MLFLOW_TRACKING_URI in .env."""
+    from drill.config import LOCAL_TRACKING_URI, set_tracking_target
+
+    try:
+        value = set_tracking_target(PROJECT_ROOT / ".env", target.lower(), uri or LOCAL_TRACKING_URI)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+    console.print(f"Traces now go to {value} (MLFLOW_TRACKING_URI in .env).")
+    if value == "databricks":
+        console.print("Databricks also needs DATABRICKS_CONFIG_PROFILE in .env; check with `uv run drill tracing check`.")
+    console.print("Restart drill-server to pick it up.")
+
+
 @tracing_app.command("check")
 def tracing_check_cmd(
     experiment: str = typer.Option(None, "--experiment", "-e", help="Experiment to check (default DRILL_MLFLOW_EXPERIMENT or daily-drill)."),

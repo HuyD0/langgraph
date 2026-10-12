@@ -131,13 +131,24 @@ MLFLOW_TRACKING_URI=databricks DATABRICKS_CONFIG_PROFILE=DEFAULT \
   uv run drill tracing check --uc-schema <catalog>.drill_traces
 ```
 
-Then put these in `.env` and restart the server:
+Then add these to `.env`:
 
 ```bash
-MLFLOW_TRACKING_URI=databricks
 DATABRICKS_CONFIG_PROFILE=DEFAULT            # the CLI profile for your workspace
 MLFLOW_TRACING_SQL_WAREHOUSE_ID=<warehouse>  # only for reading traces back
 ```
+
+Local stays the default. Switch when you want Databricks, and back when you're done, then
+restart drill-server each time:
+
+```bash
+uv run drill tracing use databricks
+uv run drill tracing use local      # back to this Mac's MLflow (http://localhost:5050)
+```
+
+Only the `MLFLOW_TRACKING_URI` line in `.env` changes. Traces in Databricks can cost money:
+Unity Catalog trace storage runs on Databricks' serverless side and reading uses a SQL
+warehouse, so check the workspace's usage page while it is on.
 
 The experiment is `/Users/<you>/daily-drill` (Databricks needs a workspace path; set
 `DRILL_MLFLOW_EXPERIMENT` to choose another). `uv run drill tracing check` says where traces go
