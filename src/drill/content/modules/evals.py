@@ -431,9 +431,9 @@ weighted by real traffic:        78%
         why='The headline should reflect what users experience. The per-group scores still show that refunds need work.',
     ),
     angle=angle(
-        pattern='Weighted average',
-        text='Multiply each score by its weight, add those up, and divide by the total weight. Two running totals in one walk through the groups. Dividing by the total weight means the weights do not have to add up to exactly 1.',
-        say='"I report every group with its count, and I weight the headline number by production traffic, not by how I sampled the eval set."',
+        pattern='A weighted average',
+        text="The big idea: the headline score should count each group as much as real users meet it, not as much as your eval set happens to test it. Your code multiplies each group's score by its share of traffic, adds those up, and divides by the total traffic. It is like a school average where bigger classes count for more. Dividing by the total means the traffic can be given as shares like 0.7 or as counts like 700.",
+        say='"I report a score for every group, and I weight the overall number by each group\'s share of real traffic, not by how many eval examples it has."',
         classic=None,
     ),
     stack=stack('MLflow: a metric per group, plus the weighted one', """with mlflow.start_run(run_name="faq-v4-eval"):

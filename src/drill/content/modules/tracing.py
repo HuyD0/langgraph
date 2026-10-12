@@ -35,9 +35,9 @@ traces = mlflow.search_traces(filter_string="tags.config = 'cs512-k5'")"""),
         why="If nothing recorded which config served each request, you can't work it out later, so tag traces when they are created. Decide the tags before the experiment.",
     ),
     angle=angle(
-        pattern='Group by key',
-        text='One walk adding into a dict of totals keyed by tag value, then turn totals into averages. The same group-by-key shape as Group Anagrams.',
-        say='"I group traces by the tag into running totals in one pass, then divide to get the averages at the end."',
+        pattern='Group by a tag, then average',
+        text="The big idea: tagging every trace lets you compare versions later, like v1 against v2. Your code sorts the traces into piles by their tag. For each pile it keeps a running count and a running total of milliseconds, stored in a dict: a lookup table from the tag's value to its numbers. At the end it divides each total by its count to get the average time per version. Traces without the tag are skipped.",
+        say='"I tag every trace with its version, then group the traces by that tag and average their times, so I can compare versions side by side."',
         classic='group_anagrams',
     ),
     stack=stack('MLflow tracing a LangGraph app, with tags', """mlflow.langchain.autolog()   # every LangGraph run becomes a trace

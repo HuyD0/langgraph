@@ -1063,7 +1063,7 @@ function anglePane() {
   const [pattern, text, say, classic] = L.angle;
   const gotchas = (Ln.gotchas || []).map(([h, t]) => `<li><b>${esc(h)}.</b> ${md(t)}</li>`).join("");
   const said = lp(cur.id).said || "", ready = words(said) >= SAY_WORDS;
-  return `<section class="sec"><h3>The pattern you used</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p></section>
+  return `<section class="sec"><h3>How your code did it</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p></section>
     <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
       <textarea id="sayIn" rows="3" maxlength="600" placeholder="I used … because …">${esc(said)}</textarea>
       <div class="saynote" id="sayNote">${ready ? "" : "Write one sentence to finish the lesson."}</div>

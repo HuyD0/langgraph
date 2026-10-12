@@ -1236,9 +1236,9 @@ pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
         why='Multiply 0.9 by itself five times and you get about 0.59. A 90% agent fails at least once in five runs about 4 times in 10.',
     ),
     angle=angle(
-        pattern='any and all',
-        text='`any` is true if at least one item is true; `all` is true only if every item is. One pass over the tasks, counting each.',
-        say='"I report pass^k next to the single-try success rate, because users feel the inconsistency that one try per task hides."',
+        pattern="Count 'at least once' and 'every time'",
+        text="The big idea: one try per task hides how unreliable an agent is, so you run each task several times and count two things. Your code goes through the tasks one by one. For each task, Python's `any` says whether at least one try worked, and `all` says whether every try worked. Dividing each count by the number of tasks gives pass@k and pass^k. The second is the one users feel, because each user only gets one try.",
+        say='"I run each task several times and report how often it worked at least once and how often it worked every time. Users feel the second number."',
         classic=None,
     ),
     stack=stack('MLflow: log both rates for an agent version', """with mlflow.start_run(run_name="agent-v7-k3"):

@@ -1253,9 +1253,9 @@ paired check for the reranker:
         why='86% to 85% on 100 questions is a 1-question gap, far too small to pass the paired check (even 1 to 0 fails it). It says nothing either way.',
     ),
     angle=angle(
-        pattern='Differences, then sort',
-        text='Subtract each ablation score from the full score, then sort by the drop, biggest first.',
-        say='"I ablate each component of the pipeline and keep only the ones whose removal costs more than the noise."',
+        pattern='Measure the drop, then sort',
+        text='The big idea: to find out what one part of your app is worth, take it out and see how much the score drops. Your code works out that drop for each part: the full score minus the score without it. Then it sorts the parts so the biggest drop comes first. The part you would miss most is at the top, and a part whose drop is 0 is one you could delete: less to run, pay for and fix.',
+        say='"I take out one part at a time and rerun the eval. The bigger the drop, the more that part is worth; a part with no drop can go."',
         classic=None,
     ),
     stack=stack('LangGraph: build the graph with a part switched off', """def build_graph(use_rerank=True, use_rewrite=True):

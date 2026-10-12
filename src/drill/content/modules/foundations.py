@@ -29,9 +29,9 @@ for row in rows:
         why='Seeing the same users in training made the test easy. Splitting by user would have given a more honest, lower score.',
     ),
     angle=angle(
-        pattern='Set lookup',
-        text='You check every row against a set of test values. A set answers "is this in here?" in one step however big it is, so the whole split is a single walk through the rows. Checking a list instead means scanning the list for every row, which gets slow fast.',
-        say='"I put the test keys in a set so each check is instant, which makes the split one pass over the rows."',
+        pattern='Check each row against a set',
+        text="The big idea: every row from a test user goes to test, so no user ends up on both sides and the score stays honest. Your code does it by asking one question per row: is this row's user one of the test users? Keeping the test users in a set makes that question instant, like finding a word through a book's index. A plain list is read from the start every time, like checking a guest list name by name: fine for 2 names, slow for 10,000.",
+        say='"I split by user so nobody is in both training and test. I keep the test users in a set, so checking each row is instant."',
         classic='two_sum',
     ),
     stack=stack('MLflow: record which data trained the model', """with mlflow.start_run(run_name="churn-split-by-user"):
