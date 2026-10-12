@@ -28,6 +28,10 @@
 
   --scrim: rgba(15, 20, 27, 0.35);
 
+  /* the path: violet marks the whole route (the phase tabs on Home); blue stays for where you are.
+     --path for fills and done phases, --path-bg the tab strip, --path-line its edge, --path-ink its text */
+  --path: #6a3fd0; --path-bg: #efeafc; --path-line: #d9cff5; --path-ink: #574a80;
+
   /* code colours: keyword, string, number, comment, function name, built-in. No green or red, which mean pass and fail. */
   --syn-kw: #7a3fc7; --syn-str: #a04a00; --syn-num: #b4307a; --syn-com: #6b7280; --syn-fn: #1f5fbf; --syn-bi: #0f7a8a;
 
@@ -45,6 +49,7 @@
   --dur-step: 400ms;     /* moving between steps; a stamp */
   --dur-moment: 900ms;   /* a small win: a hint, a gotcha, a healed test */
   --dur-big: 1600ms;     /* finishing a lesson or a phase: rare, so it can take its time */
+  --dur-slide: 260ms;    /* a tab sliding to its page, and the page's words following it */
   --ease-out: cubic-bezier(.2, .7, .3, 1);   /* arriving */
   --ease-in: cubic-bezier(.6, 0, .9, .4);    /* leaving, or gathering speed */
   --ease-pop: cubic-bezier(.2, 1.5, .4, 1);  /* overshoots a little, then settles */
@@ -65,6 +70,7 @@
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
+  --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
 :root[data-theme="dark"] {
@@ -75,10 +81,11 @@
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
+  --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
 
 /* Dusk: an opt-in dark theme, data-theme="dusk" on <html>. Blue-black darks with a
-   mauve-grey sheen; blue only for the next step; lavender only for finishing.
+   mauve-grey sheen; blue only for the next step; violet only for the path; lavender only for finishing.
    page.html adds its glass, grain and glow. */
 :root[data-theme="dusk"] {
   --bg: #07070f; --surface: #13121c; --sunk: #0c0b14; --code-bg: #0c0b14; --line: #2b2836;
@@ -89,4 +96,5 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --finish: #b49cff; --finish-ink: #0a1233;
   --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6;
+  --path: #8b5cf6; --path-bg: #150f28; --path-line: #3a2a63; --path-ink: #a99ad6;
   --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }
