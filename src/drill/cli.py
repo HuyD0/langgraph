@@ -356,7 +356,9 @@ def tracing_check_cmd(
     os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
     uri = os.getenv("MLFLOW_TRACKING_URI", "").strip()
     if not uri:
-        uri = f"sqlite:///{PROJECT_ROOT / '.drill' / 'mlflow.db'}"
+        from drill.server.store import data_dir
+
+        uri = f"sqlite:///{data_dir() / 'mlflow.db'}"
     mlflow.set_tracking_uri(uri)
     name = experiment or os.getenv("DRILL_MLFLOW_EXPERIMENT") or "daily-drill"
     if is_databricks_uri(uri):
@@ -426,9 +428,9 @@ def study_export_cmd(out: Path = typer.Argument(..., help="JSON file to write.")
     import json
 
     from drill.server import study
-    from drill.server.store import DocStore
+    from drill.server.store import open_store
 
-    items = study.load(DocStore())
+    items = study.load(open_store())
     out.write_text(json.dumps(items, indent=1))
     console.print(f"Wrote {len(items)} study items to {out}")
 
@@ -439,10 +441,45 @@ def study_import_cmd(
 ) -> None:
     """Merge a study list into this Mac's copy: new items are added, and the newer copy of an item wins."""
     from drill.server import study
-    from drill.server.store import DocStore
+    from drill.server.store import open_store
 
-    counts = study.import_items(DocStore(), study.read_items(source))
+    counts = study.import_items(open_store(), study.read_items(source))
     console.print(f"Added {counts['added']}, updated {counts['updated']}, left {counts['unchanged']} as they were.")
+
+
+store_app = typer.Typer(add_completion=False, help="Where progress is kept: this machine's SQLite file, or Lakebase.")
+app.add_typer(store_app, name="store")
+
+
+@store_app.command("status")
+def store_status_cmd() -> None:
+    """Say where progress is being saved, as whom, and how many events are recorded."""
+    from drill.server.store import open_store
+
+    store = open_store()
+    where = "this machine (Lakebase was out of reach)" if store.fallback else store.kind
+    console.print(f"Saving to: {where}\nAs: {store.owner}\nEvents recorded: {len(store.events())}")
+
+
+@store_app.command("push")
+def store_push_cmd() -> None:
+    """Send this machine's progress, study list and events up to Lakebase.
+
+    Use it after working while Lakebase was out of reach, or once to bring your own
+    history (saved as "local") to work. The newer copy of each document wins, and
+    events already sent are skipped, so running it twice is harmless.
+    """
+    from drill.server.store import LOCAL_OWNER, DocStore, local_url, open_store
+
+    target = open_store()
+    if target.kind != "lakebase":
+        console.print("[red]Lakebase is not set up or out of reach.[/] Set DRILL_LAKEBASE_ENDPOINT and DRILL_DATABASE_URL "
+                      "(see docs/SERVER.md), run `databricks auth login`, and try again.")
+        raise typer.Exit(1)
+    for owner in dict.fromkeys([LOCAL_OWNER, target.owner]):
+        counts = DocStore(local_url(), owner=owner).push_to(target)
+        console.print(f"From {owner}: {counts['docs']} documents sent, {counts['skipped']} already up to date, "
+                      f"{counts['events']} events sent.")
 
 
 if __name__ == "__main__":
