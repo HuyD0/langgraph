@@ -3233,10 +3233,19 @@ Answer it plainly for a beginner, under 150 words. Small code examples are fine 
 async function connectStudy(db) {
   try {
     const col = db.collection("study");
-    for (const it of studyItems) { try { await col.doc(it.id).set(it); } catch {} }
+    // Send up what was saved on this device. Only items that made it leave the local copy:
+    // any that failed stay saved here, stay on screen, and are sent again next visit.
+    const unsent = [];
+    for (const it of studyItems) { try { await col.doc(it.id).set(it); } catch { unsent.push(it); } }
     studyCol = col;
-    try { localStorage.removeItem("drill-study"); } catch {}
-    col.orderBy("createdAt", "desc").onSnapshot(snap => { studyItems = snap.docs.map(d => Object.assign({}, d.data(), { id: d.id })); renderStudy(); }, () => flashStudy("Your study list couldn't load from your account. Reload to try again."));
+    try { if (unsent.length) localStorage.setItem("drill-study", JSON.stringify(unsent)); else localStorage.removeItem("drill-study"); } catch {}
+    if (unsent.length) flashStudy("Some saved items couldn't reach your account yet. They're kept on this device and will be sent next time.");
+    col.orderBy("createdAt", "desc").onSnapshot(snap => {
+      const items = snap.docs.map(d => Object.assign({}, d.data(), { id: d.id }));
+      const have = new Set(items.map(it => it.id));
+      studyItems = items.concat(unsent.filter(it => !have.has(it.id)));
+      renderStudy();
+    }, () => flashStudy("Your study list couldn't load from your account. Reload to try again."));
   } catch {}
 }
 
@@ -3634,8 +3643,11 @@ goHome();
       const id = await user.id();
       if (id) {
         connectStudy(db);
-        progressDoc = db.doc("data/users/" + id + "/progress");
-        const snap = await progressDoc.get();
+        // progressDoc is only set once the account copy is merged in: a save before then
+        // would replace the account copy with this device's alone (other devices' work lost).
+        // Until it's set, saveProgress keeps saving on this device, and the merge picks that up.
+        const doc = db.doc("data/users/" + id + "/progress");
+        const snap = await doc.get();
         if (snap.exists) {
           const r = snap.data() || {};
           const lessons = Object.assign({}, r.lessons || {});
@@ -3651,6 +3663,7 @@ goHome();
             mine: ((progress.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (progress.mine || r.mine || {}) : r.mine,
           };
         }
+        progressDoc = doc;
         await saveProgress();
         if (!cur) renderHome(); else renderTop();
       }

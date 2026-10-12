@@ -7,7 +7,10 @@ Databricks client, so these run with no workspace and no credentials.
 from __future__ import annotations
 
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
+
+import pytest
 
 from fastapi.testclient import TestClient
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
@@ -108,6 +111,23 @@ def test_the_page_saving_progress_and_asking_are_logged(tmp_path):
     assert client.get("/api/health").json()["owner"] == "local"
 
 
+# -- saving ---------------------------------------------------------------------
+
+
+def test_saving_the_same_document_twice_replaces_it(tmp_path):
+    store = DocStore(sqlite_url(tmp_path))
+    store.set("study/a", {"n": 1})
+    store.set("study/a", {"n": 2})
+    assert store.get("study/a") == {"n": 2} and len(store.list("study")) == 1
+
+
+def test_counters_added_from_many_threads_at_once_are_all_counted(tmp_path):
+    store = DocStore(sqlite_url(tmp_path))
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(lambda _: store.add("usage/today", "hosted", {"calls": 1, "tokens": 10}), range(40)))
+    assert store.get("usage/today") == {"hosted": {"calls": 40, "tokens": 400}}
+
+
 # -- Lakebase -------------------------------------------------------------------
 
 
@@ -130,6 +150,19 @@ def test_lakebase_out_of_reach_falls_back_to_this_machine(tmp_path, monkeypatch)
     assert databricks.issued == 1  # it did sign in with a fresh password before the connection failed
     assert store.fallback and store.kind == "sqlite" and store.owner == "sam@example.com"
     assert store.url == f"sqlite:///{tmp_path / 'drill.db'}"
+
+
+def test_in_a_databricks_app_lakebase_out_of_reach_stops_the_app_instead_of_losing_work(tmp_path, monkeypatch):
+    databricks = FakeDatabricks()
+    monkeypatch.setenv("DRILL_HOME", str(tmp_path))
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    monkeypatch.setenv("DRILL_LAKEBASE_ENDPOINT", "projects/p/branches/b/endpoints/e")
+    monkeypatch.setenv("DRILL_DATABASE_URL", "postgresql+psycopg://127.0.0.1:1/databricks_postgres?connect_timeout=2")
+    monkeypatch.setattr(store_mod.time, "sleep", lambda s: None)
+    with pytest.raises(RuntimeError, match="will not start"):
+        open_store(make_login=lambda endpoint: LakebaseLogin(endpoint, client=databricks), wait=5)
+    assert databricks.issued >= 2  # it tried again before giving up
+    assert not (tmp_path / "drill.db").exists()  # and never started saving to the app's wiped disk
 
 
 def test_no_lakebase_settings_means_the_local_file(tmp_path, monkeypatch):

@@ -451,12 +451,7 @@ class ModelRouter:
                 "total_tokens": int(usage["total_tokens"]),
             }
         if self.store:
-            path = self._usage_path()
-            doc = self.store.get(path) or {}
-            entry = doc.setdefault(route.name, {"calls": 0, "tokens": 0})
-            entry["calls"] += 1
-            entry["tokens"] += tokens["total_tokens"]
-            self.store.set(path, doc)
+            self.store.add(self._usage_path(), route.name, {"calls": 1, "tokens": tokens["total_tokens"]})
         return tokens
 
     async def stream(
