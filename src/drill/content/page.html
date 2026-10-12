@@ -650,6 +650,32 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .callout.ahead > b { color: var(--hint); }
 .callout.ahead p { margin: 0; }
 .callout.ahead .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mine { gap: 12px; }
+.mine h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.mine h4 { margin: 4px 0 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.mine p { margin: 0; }
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.mfield { display: grid; gap: 4px; font-size: 14px; }
+.mfield span { font-weight: 600; }
+.mfield input { font: inherit; font-size: 16px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 42px; }
+.mfield input:focus, .mtext:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.mfield small { color: var(--muted); font-size: 12px; }
+.mtext { width: 100%; font: 15px/1.5 var(--body); background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
+.mcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.mcol { background: var(--sunk); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.mcol ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: 14px; }
+.mprompt summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 36px; display: flex; align-items: center; }
+.mprompt pre { font-size: 12px; white-space: pre-wrap; max-height: 280px; overflow: auto; }
+.mreview:not(:empty) { background: var(--sunk); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; }
+.mreview p, .mreview ul { margin: 0; }
+.mlinks { font-size: 14px; }
+.mlinks a { color: var(--accent); font-weight: 600; }
+.mbill { justify-self: start; }
+.mtco { display: grid; gap: 10px; }
+.mtco > div { display: grid; gap: 2px; }
+.mtotal { font: 800 30px/1.1 var(--display); }
+.mine-private { display: flex; align-items: center; gap: 6px; }
+.mine-private .ic { width: 16px; height: 16px; }
 .ministk { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
 .ministk svg { width: 16px; height: 16px; overflow: visible; }
 .ministk .sh { stroke-width: 1.6; fill: none; stroke: var(--muted); stroke-dasharray: 2 2; }
@@ -745,6 +771,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
     <div class="confirm" id="guideConfirm" hidden><span id="guideMsg">This replaces your code.</span><button class="btn" id="guideYes">Replace my code</button><button class="btn quiet" id="guideNo">Keep my code</button></div>
     <div class="confirm" id="solConfirm" hidden><span>Try a hint first? Seeing the answer too early teaches less.</span><button class="btn" id="solYes">Show it anyway</button><button class="btn quiet" id="solNo">Keep trying</button></div>
     <div class="feed" id="feed"></div>
+    <section class="card mine" id="mineBox" hidden aria-label="Your own use case"></section>
   </section>
 </main>
 
@@ -1176,6 +1203,193 @@ function renderHome() {
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
 }
 
+// ---------- your own use case: the thread through Frame ----------
+// The graded exercises use the HR assistant, so every test has a known answer. After each one,
+// the learner can do the same for their own idea. It is saved in their own progress only
+// (on claude.ai, under data/users/<them>, which nobody else can read) and reaches the tutor snapshot.
+const CARD_FIELDS = [
+  ["user", "Who uses it", "HR team"], ["task", "The task it helps with", "answer employee policy questions"],
+  ["input", "What goes in", "an employee's question"], ["output", "What comes out", "a draft answer with its source"],
+  ["today", "How it is done today, and the cost", "15 minutes by hand, about $8"],
+  ["success", "Success, as a number", "80 in 100 drafts approved without edits"],
+  ["wrong_answer", "What a wrong answer costs, and who catches it", "HR reviews each draft before sending"],
+  ["data", "The data to test on", "last month's 200 questions"], ["owner", "The owner who decides", "Head of HR operations"],
+];
+const HOW_WELL = ["seconds", "uptime", "cost", "encrypt", "personal data", "audit", "at once"];
+const REVIEW_PILLARS = {
+  "Reliability": ["What happens when the model endpoint is down or out of quota?", "Is there a timeout, a retry limit and a fallback?"],
+  "Security": ["Who can see the inputs and answers?", "Could a prompt injection make it leak data or take an action?"],
+  "Cost Optimization": ["What drives the monthly cost, and is there a budget alert?"],
+  "Operational Excellence": ["Is every answer traced, and is there an eval set to test changes?", "How are new versions released and rolled back?"],
+  "Performance Efficiency": ["Can it handle the busiest minute within the speed target?"],
+  "Data and AI governance": ["Which data and models may it use, and who grants that access?"],
+};
+const REVIEW_RULES = ["Rules:", "- Base every finding on the card, and quote the line you used.",
+  "- If the card does not say, write Unknown, then the question to ask the owner.",
+  "- Give each pillar a risk: low, medium or high.", "- Do not say whether to build it. A person decides."];
+// The worksheet follows the bill of a typical RAG pipeline on Azure: LLM calls, retrieval
+// (Azure AI Search or Databricks Vector Search), Databricks compute, storage, people, one-off.
+const COST_ITEMS = {  // [key, label, hint]
+  people: [["checking", "People checking answers", "hours a month times the hourly rate"], ["redo", "Redoing wrong answers", "failed tasks a month times the cost of one redo"], ["oncall", "On call and upkeep", "re-running evals, prompt updates, someone on call"]],
+  once: [["build", "The build", "people's time to build the pilot"], ["evalset", "The eval set", "time to collect and check test cases"], ["review", "Security and privacy review", "the review before going live"], ["backfill", "First indexing of the documents", "embedding and loading the whole corpus once"]],
+};
+const PRICE_LINKS = [["Azure pricing calculator", "https://azure.microsoft.com/pricing/calculator/"],
+  ["Azure OpenAI and Foundry model prices", "https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/"],
+  ["Azure AI Search prices", "https://azure.microsoft.com/pricing/details/search/"],
+  ["Azure Databricks prices", "https://azure.microsoft.com/pricing/details/databricks/"],
+  ["Azure Storage prices", "https://azure.microsoft.com/pricing/details/storage/data-lake/"]];
+const mine = () => (progress.mine = progress.mine || {});
+let mineTimer = null;
+function saveMine() {  // local copy at once, the account copy shortly after typing stops
+  mine().updatedAt = Date.now(); saveLocal();
+  clearTimeout(mineTimer); mineTimer = setTimeout(saveProgress, 700);
+}
+const num = v => { const n = parseFloat(String(v == null ? "" : v).replace(/[$,\s]/g, "")); return isFinite(n) ? n : 0; };
+const money = n => "$" + Math.round(n).toLocaleString();
+const field = (key, label, value, hint, attrs) => `<label class="mfield"><span>${esc(label)}</span><input data-mine="${key}" value="${esc(value || "")}" ${attrs || ""}>${hint ? `<small>${esc(hint)}</small>` : ""}</label>`;
+const PRIVATE = `<p class="meta mine-private">${ic("bookmark")} Saved only in your own progress. Nobody else can see it.</p>`;
+function cardGaps(card) {
+  return CARD_FIELDS.filter(([k]) => { const v = (card[k] || "").trim(); return !v || (k === "success" && !/\d/.test(v)); }).map(([k, label]) => label);
+}
+function reviewPromptFor(card) {
+  const lines = ["Review this AI use case against the Well-Architected pillars.", "", "Use case card:"];
+  for (const [k] of CARD_FIELDS) lines.push(`- ${k}: ${(card[k] || "").trim() || "not written"}`);
+  for (const [pillar, qs] of Object.entries(REVIEW_PILLARS)) { lines.push("", "## " + pillar); qs.forEach(q => lines.push("- " + q)); }
+  lines.push("", ...REVIEW_RULES, "", "Answer with one short section per pillar: Risk, Findings (each quoting the card), Unknowns (as questions for the owner). Plain words, under 350 words.");
+  return lines.join("\n");
+}
+function tcoNumbers() {
+  const c = mine().costs || {}, years = Math.max(1, Math.min(10, num(c.years) || 2)), months = 12 * years;
+  const answers = c.billing === "ptu" ? num(c.ptu) : num(c.tasks) * (num(c.tin) * num(c.pin) + num(c.tout) * num(c.pout)) / 1e6;
+  const monthly = [
+    ["LLM: answers", answers],
+    ["LLM: embeddings", num(c.etok) * num(c.epr) / 1e6],
+    ["Azure AI Search", num(c.su) * num(c.suprice)],
+    ["Databricks Vector Search", num(c.vsh) * num(c.vsrate)],
+    ["Databricks jobs: chunk and embed", num(c.jdbu) * num(c.jhours) * num(c.rate)],
+    ["Databricks serving", num(c.dbu) * num(c.hours) * num(c.rate)],
+    ["Storage", num(c.gb) * num(c.gbprice)],
+    ...COST_ITEMS.people.map(([k, label]) => [label, num(c[k])]),
+  ];
+  const once = COST_ITEMS.once.map(([k, label]) => [label, num(c[k])]);
+  const life = [...once, ...monthly.map(([l, v]) => [l, v * months])];
+  const total = life.reduce((a, [, v]) => a + v, 0), perMonth = monthly.reduce((a, [, v]) => a + v, 0);
+  const biggest = life.reduce((b, x) => x[1] > b[1] ? x : b, ["", 0]);
+  return { years, months, perMonth, total, biggest, life };
+}
+function renderMine() {
+  const box = $("mineBox");
+  if (!cur || cur.kind !== "lesson" || !MINE_PANELS[cur.id]) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false; box.innerHTML = MINE_PANELS[cur.id]();
+  updateMine();
+}
+const MINE_PANELS = {
+  use_case_card: () => `<h3>Now your own use case</h3><p>Write a card for an idea from your own work. The next lessons in this module use it.</p>
+    <div class="mgrid">${CARD_FIELDS.map(([k, label, eg]) => field("card." + k, label, (mine().card || {})[k], "", `placeholder="${esc("e.g. " + eg)}"`)).join("")}</div>
+    <div id="mineOut"></div>${PRIVATE}`,
+  split_requirements: () => `<h3>Now your own requirements</h3><p>One per line. The page sorts them with the same words as the exercise; then check the sort yourself, and give every how-well line a number.</p>
+    <textarea class="mtext" data-mine="reqs" rows="6" placeholder="Answer questions from our runbook pages&#10;Reply within 5 seconds for 95 in 100">${esc(mine().reqs || "")}</textarea>
+    <div id="mineOut"></div>${PRIVATE}`,
+  well_architected: () => {
+    const card = mine().card || {}, filled = CARD_FIELDS.some(([k]) => (card[k] || "").trim());
+    return `<h3>Try it on ${filled ? "your use case" : "the HR assistant"}</h3>
+    <p>${filled ? "This sends your card from lesson 1.2 to the model with a review prompt like the one you built, with Databricks' governance pillar added." : "Write your own card in lesson 1.2 to review your own idea. Until then, this uses the HR assistant."}</p>
+    <details class="mprompt"><summary>See the prompt</summary><pre class="code">${esc(reviewPromptFor(filled ? card : Object.fromEntries(CARD_FIELDS.map(([k, , eg]) => [k, eg]))))}</pre></details>
+    <button class="btn" data-mine-review ${sample ? "" : "disabled"}>${ic("sparkle")}Ask the model to draft the review</button>
+    ${sample ? "" : `<p class="meta">This needs the AI tutor, which is off right now.</p>`}
+    <div class="mreview" id="mineReview">${mine().review ? fmt(mine().review) : ""}</div>
+    <p class="meta">Read it like a reviewer: check every claim against the card, and take the Unknowns to the owner.</p>`;
+  },
+  fit_for_purpose: () => {
+    const b = mine().bars || {};
+    return `<h3>Now your own bars</h3><p>Set them before any pilot. Add the pilot's results later and the page gives the call, by the rule from the exercise.</p>
+    <div class="mgrid">${field("bars.quality", "Quality bar, percent right", b.quality, "", 'inputmode="decimal" placeholder="80"')}${field("bars.seconds", "Speed bar, seconds", b.seconds, "", 'inputmode="decimal" placeholder="5"')}${field("bars.cost", "Cost bar, $ per finished task", b.cost, "", 'inputmode="decimal" placeholder="2"')}${field("bars.mustpass", "Must-pass cases", b.mustpass, "the dangerous cases it may never get wrong", 'placeholder="never give a wrong leave balance"')}</div>
+    <h4>Pilot results, when you have them</h4>
+    <div class="mgrid">${field("bars.rq", "Quality, percent right", b.rq, "", 'inputmode="decimal"')}${field("bars.rs", "Seconds", b.rs, "", 'inputmode="decimal"')}${field("bars.rc", "Cost, $ per task", b.rc, "", 'inputmode="decimal"')}${field("bars.rf", "Must-pass failures", b.rf, "", 'inputmode="numeric"')}</div>
+    <div id="mineOut"></div>${PRIVATE}`;
+  },
+  total_cost: () => {
+    const c = mine().costs || {}, f = (k, label, hint, attrs) => field("costs." + k, label, c[k], hint, attrs || 'inputmode="decimal"');
+    const n = (k, label, hint) => f(k, label, hint, 'inputmode="numeric"');
+    return `<h3>Now your own numbers: a RAG pipeline</h3>
+    <p>The lines follow the bill of a typical RAG pipeline on Azure: LLM calls, retrieval, Databricks compute and storage, plus people. Fill in what you know; blanks count as zero. The page ships no prices, because they change with region, tier and contract. Take them from:</p>
+    <p class="mlinks">${PRICE_LINKS.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}</p>
+    <div class="mgrid">${n("years", "Years it will run", "")}</div>
+    <h4>LLM calls, through Azure AI Foundry</h4>
+    <div class="seg mbill" role="group" aria-label="How you pay for the model"><button data-mine-bill="paygo" aria-pressed="${c.billing !== "ptu"}">Pay as you go</button><button data-mine-bill="ptu" aria-pressed="${c.billing === "ptu"}">Provisioned (PTU)</button></div>
+    <p class="meta">${c.billing === "ptu" ? "Provisioned throughput is rented by the hour or month, busy or idle. It pays off only when it is busy most of the time." : "Pay per token. Take token counts per question from your pilot's traces: the prompt includes the retrieved chunks, so input is usually much bigger than output."}</p>
+    <div class="mgrid">${c.billing === "ptu" ? f("ptu", "PTU cost a month, $", "your reservation's monthly cost") : n("tasks", "Questions a month", "") + n("tin", "Input tokens per question", "prompt plus retrieved chunks") + n("tout", "Output tokens per question", "") + f("pin", "$ per million input tokens", "") + f("pout", "$ per million output tokens", "")}${n("etok", "Embedding tokens a month", "new and changed documents, plus every question")}${f("epr", "$ per million embedding tokens", "")}</div>
+    <h4>Retrieval: fill in the one you use</h4>
+    <div class="mgrid">${f("su", "Azure AI Search units", "replicas times partitions")}${f("suprice", "$ per search unit a month", "depends on the tier")}${n("vsh", "Databricks Vector Search endpoint hours a month", "720 if it runs all month")}${f("vsrate", "$ per endpoint hour", "")}</div>
+    <h4>Databricks compute</h4>
+    <div class="mgrid">${f("rate", "$ per DBU", "depends on tier, compute type and region")}${f("jdbu", "Jobs: DBUs per hour", "the cluster or serverless job that chunks and embeds")}${n("jhours", "Jobs: hours a month", "how long the refresh runs, times how often")}${f("dbu", "Serving: DBUs per hour", "only if the app or agent is served on Databricks")}${n("hours", "Serving: hours a month", "720 if it never scales to zero")}</div>
+    <h4>Storage</h4>
+    <div class="mgrid">${f("gb", "GB stored", "documents, chunks, traces and inference tables")}${f("gbprice", "$ per GB a month", "Data Lake Storage, your tier")}</div>
+    <h4>People</h4>
+    <div class="mgrid">${COST_ITEMS.people.map(([k, l, h]) => f(k, l + ", $ a month", h)).join("")}</div>
+    <h4>One-off</h4>
+    <div class="mgrid">${COST_ITEMS.once.map(([k, l, h]) => f(k, l + ", $", h)).join("")}</div>
+    <div id="mineOut"></div>${PRIVATE}`;
+  },
+};
+function updateMine() {
+  const out = $("mineOut"); if (!out || !cur) return;
+  const m = mine();
+  if (cur.id === "use_case_card") {
+    const gaps = cardGaps(m.card || {});
+    out.innerHTML = gaps.length ? `<div class="callout"><b>Still open: ${gaps.length}</b><p>${gaps.map(esc).join(" · ")}. Answer these before building${gaps.includes("Success, as a number") ? ", and put a number in Success" : ""}.</p></div>` : `<div class="verdict ok"><b>Card complete</b>Every line answered, with success as a number.</div>`;
+  } else if (cur.id === "split_requirements") {
+    const reqs = (m.reqs || "").split("\n").map(x => x.trim()).filter(Boolean);
+    const nf = reqs.filter(r => HOW_WELL.some(w => r.toLowerCase().includes(w))), fn_ = reqs.filter(r => !nf.includes(r));
+    const noNum = nf.filter(r => !/\d/.test(r));
+    const col = (h, rows) => `<div class="mcol"><b>${h} · ${rows.length}</b>${rows.length ? `<ul>${rows.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : `<p class="meta">None yet.</p>`}</div>`;
+    out.innerHTML = reqs.length ? `<div class="mcols">${col("What it must do", fn_)}${col("How well", nf)}</div>${noNum.length ? `<p class="meta">Give these a number: ${noNum.map(esc).join(" · ")}</p>` : ""}` : "";
+  } else if (cur.id === "fit_for_purpose") {
+    const b = m.bars || {}, has = k => String(b[k] || "").trim() !== "";
+    if (!["quality", "seconds", "cost"].every(has)) { out.innerHTML = `<p class="meta">Set the three numeric bars to see your rule written out.</p>`; return; }
+    let line = `<div class="callout"><b>Your bars</b><p>At least ${num(b.quality)} in 100 right, under ${num(b.seconds)} seconds, under $${num(b.cost)} per finished task${has("mustpass") ? `, and never: ${esc(b.mustpass)}` : ""}.</p></div>`;
+    if (["rq", "rs", "rc"].every(has)) {
+      const fails = num(b.rf), q = num(b.rq) / 100, Q = num(b.quality) / 100;
+      let call, missed = [], close = true;
+      if (fails > 0) call = "stop";
+      else {
+        if (q < Q) { missed.push("quality"); if (q < Q - 0.05) close = false; }
+        if (num(b.rs) > num(b.seconds)) { missed.push("speed"); if (num(b.rs) > num(b.seconds) * 1.2) close = false; }
+        if (num(b.rc) > num(b.cost)) { missed.push("cost"); if (num(b.rc) > num(b.cost) * 1.2) close = false; }
+        call = !missed.length ? "go" : missed.length === 1 && close ? "fix" : "stop";
+      }
+      const why = fails > 0 ? `${fails} must-pass ${fails === 1 ? "case" : "cases"} failed.` : !missed.length ? "Every bar met." : `Missed: ${missed.join(", ")}${call === "fix" ? ", only just" : ""}.`;
+      line += `<div class="verdict ${call === "go" ? "ok" : call === "stop" ? "no" : ""}"><b>${call === "go" ? "Go" : call === "fix" ? "Fix, then test again" : "Stop"}</b>${why} A person still makes the final call.</div>`;
+    }
+    out.innerHTML = line;
+  } else if (cur.id === "total_cost") {
+    const t = tcoNumbers(), rows = t.life.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    m.costs = Object.assign(m.costs || {}, { summary: { years: t.years, perMonth: Math.round(t.perMonth), total: Math.round(t.total), biggest: t.biggest[0], items: rows.map(([l, v]) => [l, Math.round(v)]) } });
+    out.innerHTML = rows.length ? `<div class="mtco"><div><span class="eyebrow">Over ${t.years} ${t.years === 1 ? "year" : "years"}</span><b class="mtotal">${money(t.total)}</b><span class="meta">${money(t.perMonth)} a month to run, plus one-off costs</span></div>
+      <table class="dt"><thead><tr><th>Item</th><th>Over its life</th></tr></thead><tbody>${rows.map(([l, v]) => `<tr${l === t.biggest[0] ? ' class="now"' : ""}><td>${esc(l)}</td><td>${money(v)}</td></tr>`).join("")}</tbody></table>
+      <p class="meta">Biggest item: <b>${esc(t.biggest[0])}</b>. A saving there matters most.</p></div>` : "";
+  }
+}
+document.addEventListener("input", e => {
+  const el = e.target.closest("[data-mine]"); if (!el) return;
+  const [group, key] = el.dataset.mine.split(".");
+  if (key) { mine()[group] = mine()[group] || {}; mine()[group][key] = el.value; } else mine()[group] = el.value;
+  saveMine(); updateMine();
+});
+async function draftReview() {
+  const card = mine().card || {}, filled = CARD_FIELDS.some(([k]) => (card[k] || "").trim());
+  const prompt = reviewPromptFor(filled ? card : Object.fromEntries(CARD_FIELDS.map(([k, , eg]) => [k, eg])));
+  const out = $("mineReview"), btn = document.querySelector("[data-mine-review]");
+  if (!sample || !out) return;
+  btn.disabled = true; out.innerHTML = `<p class="meta">Drafting…</p>`;
+  try {
+    const { text } = await sample(prompt, withTrace({ onText: ({ text }) => { out.innerHTML = fmt(text); } }, { feature: "use_case_review", lesson_id: cur.id, own_card: filled }));
+    out.innerHTML = fmt(text);
+    if (filled) { mine().review = text; saveMine(); }
+  } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a draft just now. Try again in a moment.</p>`; }
+  btn.disabled = false;
+}
+
 // ---------- views ----------
 let cur = null;   // { kind: "lesson" | "practice", id, p, step, from }
 function show(view) {
@@ -1231,6 +1445,7 @@ function setStep(i) {
   if (cur.kind === "lesson") { const s = lp(cur.id); if (!s.done) s.step = Math.max(s.step, i); saveProgress(); }
   $("stepper").innerHTML = STEPS.map((name, k) => `<button class="stepbtn${stepDone(k) ? " done" : ""}" data-step="${k}"${k === i ? ' aria-current="step"' : ""}><i></i><span>${ic(STEP_ICON[k])}${name}</span></button>`).join("");
   $("paneBuild").hidden = i !== 2;
+  if (i === 2) renderMine();
   $("paneText").hidden = i === 2;
   if (i !== 2) $("paneText").innerHTML = i === 0 ? learnPane() : i === 1 ? checkPane() : anglePane();
   renderFoot();
@@ -2409,6 +2624,8 @@ $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.
 document.addEventListener("click", async e => {
   const t = e.target;
   if (t.closest("[data-review]")) { openNotebook("study"); return; }
+  if (t.closest("[data-mine-review]")) { draftReview(); return; }
+  const bill = t.closest("[data-mine-bill]"); if (bill) { mine().costs = mine().costs || {}; mine().costs.billing = bill.dataset.mineBill; saveMine(); renderMine(); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
@@ -2588,6 +2805,8 @@ goHome();
             solved: Object.assign({}, r.solved || {}, progress.solved),
             days: [...new Set([...(r.days || []), ...progress.days])].sort(),
             lessons, gotchas: Object.assign({}, r.gotchas || {}, progress.gotchas), current: progress.current || r.current || null,
+            // your own use case and numbers: the newer copy wins
+            mine: ((progress.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (progress.mine || r.mine || {}) : r.mine,
           };
         }
         await saveProgress();

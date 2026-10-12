@@ -83,3 +83,19 @@ def test_progress_from_two_copies_merges_like_the_page():
     assert merged["gotchas"] == {"x": 0, "y": 2} and merged["days"] == ["d1", "d2"] and merged["current"] == "y"
     mac["lessons"]["x"]["said"] = "I used a set so each check is instant."
     assert tutor.merge_progress(mac, phone)["lessons"]["x"]["said"] == mac["lessons"]["x"]["said"], "the sentence survives a merge"
+
+
+def test_their_own_use_case_reaches_the_snapshot_and_survives_a_merge():
+    data = build_data()
+    own = {"updatedAt": 5, "card": {"user": "Platform team", "success": "90 in 100 tickets routed right", "owner": ""},
+           "reqs": "Route tickets to the right team\nReply within 3 seconds",
+           "bars": {"quality": "90", "seconds": "3", "cost": "0.5", "mustpass": "never close a P1"},
+           "costs": {"summary": {"years": 2, "perMonth": 1200, "total": 40800, "biggest": "Azure AI Search", "items": [["Azure AI Search", 14400]]}}}
+    text = tutor.snapshot({"lessons": {}, "mine": own}, [], data, today="2026-10-12")
+    assert "## Their own use case" in text and "user: Platform team" in text and "owner" not in text.split("## Their own use case")[1].split("##")[0].split("Their use case card:")[1].split(".")[0]
+    assert "Reply within 3 seconds" in text and "must never: never close a P1" in text
+    assert "$40,800 over 2 years" in text and "Azure AI Search $14,400" in text
+    older = dict(own, updatedAt=1, card={"user": "old"})
+    assert tutor.merge_progress({"mine": own}, {"mine": older})["mine"]["card"]["user"] == "Platform team", "the newer copy wins"
+    assert "Not written yet." in tutor.snapshot({"lessons": {}}, [], data, today="2026-10-12")
+

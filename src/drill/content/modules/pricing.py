@@ -300,6 +300,7 @@ lesson(MODULE, 'total_cost',
     learn=[
         "The **total cost of ownership** (TCO) is everything it costs to have the system for its whole life, not just to call the model. It is the cost side of every business case, and the tokens are often the smallest part.",
         "Its variables fall into three groups. **Build**, paid once: people's time, preparing data, building the eval set, the security review. **Run**, paid every month: the model's tokens, hosting and compute, the vector search index, tracing and monitoring, and people checking and redoing answers. **Keep it working**, also monthly: re-running evals when the model or prompt changes, updating prompts, and someone on call.",
+        "For a typical **RAG pipeline** on Azure, the monthly lines are: LLM calls (the answers, plus embeddings for new documents and every question), retrieval (Azure AI Search, or Databricks Vector Search), Databricks compute for the jobs that chunk and embed documents, and storage for documents, chunks and traces. The first indexing of all the documents is a one-off.",
         "Microsoft's cost guidance for AI says to find the cost drivers first: how much data you index, how many queries arrive, the throughput you need, and the hidden costs of the services underneath, like the step that prepares documents before they are indexed.",
         'Add it up over the years you plan to run it: the one-off costs, plus every monthly cost times 12 times the years. Then look at the biggest single item, because that is where a saving matters most.',
     ],
