@@ -190,10 +190,10 @@ class MlflowObserver:
             # MLflow 3.17 no longer accepts the ./mlruns folder store, so the default
             # here is a SQLite file next to the progress database. View it with:
             #   uv run mlflow ui --backend-store-uri sqlite:///.drill/mlflow.db
-            from drill.config import PROJECT_ROOT
+            # (or the same file under DRILL_HOME, when that is set).
+            from drill.server.store import data_dir
 
-            (PROJECT_ROOT / ".drill").mkdir(parents=True, exist_ok=True)
-            mlflow.set_tracking_uri(f"sqlite:///{PROJECT_ROOT / '.drill' / 'mlflow.db'}")
+            mlflow.set_tracking_uri(f"sqlite:///{data_dir() / 'mlflow.db'}")
         uri = mlflow.get_tracking_uri()
         if uri.startswith(("http://", "https://")):
             # A stopped server makes MLflow retry for about four minutes. Ask it first,

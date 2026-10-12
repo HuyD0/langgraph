@@ -31,6 +31,14 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[project.optional-dependencies]
+# Progress in Lakebase (Postgres on Databricks) instead of this machine's SQLite file:
+#   uv sync --extra lakebase      and see docs/SERVER.md > Moving progress to Lakebase
+lakebase = [
+    "psycopg[binary]>=3.2,<4",
+    "databricks-sdk>=0.81",  # for w.postgres; MLflow brings it too, but the store calls it directly
+]
+
 [project.scripts]
 drill = "drill.cli:app"
 drill-server = "drill.server.api:main"

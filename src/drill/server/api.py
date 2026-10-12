@@ -9,7 +9,7 @@ the work to the model router (Ollama first) and the document store (SQLite). The
 is mounted on the same server at ``/mcp``, so Claude Code can use the tools over HTTP.
 
 Settings: ``DRILL_HOST`` (default 0.0.0.0, so the phone can reach it; use 127.0.0.1 to keep
-it to this machine), ``DRILL_PORT`` (default 8787).
+it to this machine, which is the default when the store is Lakebase), ``DRILL_PORT`` (default 8787).
 """
 
 from __future__ import annotations
@@ -27,7 +27,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from drill.config import PROJECT_ROOT
 from drill.server.bank import Bank
 from drill.server.router import ModelRouter, NoModelAvailable
-from drill.server.store import DocStore
+from drill.server import activity
+from drill.server.store import DocStore, lakebase_endpoint, open_store
 
 log = logging.getLogger("drill.server")
 
@@ -80,7 +81,7 @@ def create_app(
     with_mcp: bool = True,
     port: int | None = None,
 ) -> FastAPI:
-    store = store or DocStore()
+    store = store or open_store()
     bank = bank or Bank.load()
     router = router or ModelRouter.from_env(store)
     port = port or int(os.getenv("DRILL_PORT", "8787"))
@@ -119,6 +120,8 @@ def create_app(
             "user": user_id(request),
             "models": router.describe(),
             "store": store.kind,
+            "store_fallback": store.fallback,
+            "owner": store.owner,
             "lessons": len(bank.lessons),
         }
 
@@ -136,6 +139,9 @@ def create_app(
         if not router.order(body.tier):
             raise HTTPException(503, NO_MODEL)
         context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
+        trace = body.trace or {}
+        store.log("asked", str(trace.get("lesson_id") or ""),
+                  **{k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None})
 
         if body.json_mode:
             try:
@@ -188,13 +194,27 @@ def create_app(
         doc = store.get(_check(path))
         return {"exists": doc is not None, "data": doc}
 
+    def _log_progress(before: dict | None, after: dict) -> None:
+        for kind, lesson_id, detail in activity.progress_events(before, after):
+            store.log(kind, lesson_id, **detail)
+
     @app.put("/api/docs/{path:path}")
     def set_doc(path: str, doc: dict[str, Any]) -> dict:
-        return {"data": store.set(_check(path), doc)}
+        path = _check(path)
+        before = store.get(path) if activity.is_progress(path) else None
+        saved = store.set(path, doc)
+        if activity.is_progress(path):
+            _log_progress(before, saved)
+        return {"data": saved}
 
     @app.patch("/api/docs/{path:path}")
     def update_doc(path: str, patch: dict[str, Any]) -> dict:
-        return {"data": store.update(_check(path), patch)}
+        path = _check(path)
+        before = store.get(path) if activity.is_progress(path) else None
+        saved = store.update(path, patch)
+        if activity.is_progress(path):
+            _log_progress(before, saved)
+        return {"data": saved}
 
     @app.delete("/api/docs/{path:path}")
     def delete_doc(path: str) -> dict:
@@ -219,7 +239,8 @@ def main() -> None:
 
     load_dotenv(PROJECT_ROOT / ".env")
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    host = os.getenv("DRILL_HOST", "0.0.0.0")
+    # A work laptop on Lakebase keeps the server to itself; at home the phone may reach it.
+    host = os.getenv("DRILL_HOST", "").strip() or ("127.0.0.1" if lakebase_endpoint() else "0.0.0.0")
     port = int(os.getenv("DRILL_PORT", "8787"))
     app = create_app(port=port)
     log.info("Daily Drill at http://localhost:%s  (MCP at http://localhost:%s/mcp)", port, port)

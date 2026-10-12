@@ -16,17 +16,18 @@ the result, and for hints, reviews and questions the model call inside it.
 
 from __future__ import annotations
 
+import copy
 import os
 import time
 
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
-from drill.server import study, tutor
+from drill.server import activity, study, tutor
 from drill.server.observe import traced_tool
 from drill.server.bank import Bank
 from drill.server.router import ModelRouter
-from drill.server.store import DocStore
+from drill.server.store import DocStore, open_store
 
 READ_ONLY = ToolAnnotations(readOnlyHint=True)
 PROGRESS_PATH = "data/users/local/progress"  # the same document the page uses when served locally
@@ -50,7 +51,7 @@ def configure(store: DocStore | None = None, router: ModelRouter | None = None, 
 
 def _store() -> DocStore:
     if _deps.get("store") is None:
-        _deps["store"] = DocStore()
+        _deps["store"] = open_store()
     return _deps["store"]
 
 
@@ -115,7 +116,10 @@ def list_lessons() -> list[dict]:
 @traced_tool
 def run_tests(lesson_id: str, code: str) -> dict:
     """Run the learner's code against the exercise's test cases. Returns pass counts and the first failure."""
-    return tutor.run_exercise(_bank().problems[lesson_id], code)
+    result = tutor.run_exercise(_bank().problems[lesson_id], code)
+    _store().log("tests_run", lesson_id, door="mcp", passed=result["passed"],
+                 passed_count=result["passed_count"], total=result["total"])
+    return result
 
 
 @server.tool(annotations=READ_ONLY)
@@ -130,6 +134,7 @@ async def hint(lesson_id: str, code: str = "", level: int = 1) -> str:
     context = {"feature": "hint", "door": "mcp", "lesson_id": lesson_id, "exercise_fn": card["exercise"]["function"],
                "hint_level": level, "word_limit": 80}
     answer = await _router().ask(tutor.hint_prompt(card, code, level, failure), tier="quick", context=context)
+    _store().log("hint_used", lesson_id, door="mcp", level=level)
     return answer.text
 
 
@@ -178,6 +183,7 @@ def save_to_study(text: str, note: str = "", source: str = "Claude") -> dict:
         "updatedAt": int(time.time() * 1000), "explanation": "", "quiz": None, "thread": [],
     }
     _store().set(f"study/{item_id}", doc)
+    _store().log("saved_to_study", "", door="mcp", source=source)
     return {"id": item_id, "saved": True}
 
 
@@ -189,12 +195,15 @@ def mark_done(lesson_id: str) -> dict:
     if lesson_id not in bank.lessons:
         raise KeyError(f"No lesson called {lesson_id!r}. Try list_lessons().")
     progress = _progress()
+    before = copy.deepcopy(progress)
     lesson = progress.setdefault("lessons", {}).setdefault(lesson_id, {"step": 3, "checked": None, "done": False})
     lesson.update(step=3, done=True)
     today = time.strftime("%Y-%m-%d")
     if today not in progress.setdefault("days", []):
         progress["days"].append(today)
     _store().set(PROGRESS_PATH, progress)
+    for kind, changed, detail in activity.progress_events(before, progress):
+        _store().log(kind, changed, door="mcp", **detail)
     return {"lesson_id": lesson_id, "done": True, "next": bank.next_lesson(progress)}
 
 
