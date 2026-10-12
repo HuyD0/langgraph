@@ -4,8 +4,22 @@
     {
       "name": "drill-server",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "drill-server"],
+      "runtimeArgs": [
+        "run",
+        "drill-server"
+      ],
       "port": 8787
+    },
+    {
+      "name": "drill-server-branch",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DRILL_PORT=8788",
+        "uv",
+        "run",
+        "drill-server"
+      ],
+      "port": 8788
     }
   ]
 }
