@@ -629,11 +629,32 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .stk.ahead .ico { stroke: var(--muted); opacity: .5; }
 .stk.done:nth-child(3n+1) svg { transform: rotate(-3deg); }
 .stk.done:nth-child(3n+2) svg { transform: rotate(2deg); }
-.minis { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
-.minis svg { width: 16px; height: 16px; overflow: visible; }
-.minis .sh { stroke-width: 1.6; fill: none; stroke: var(--muted); stroke-dasharray: 2 2; }
-.minis .done .sh { fill: var(--fg); stroke: var(--fg); stroke-dasharray: none; }
-.minis .now .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-dasharray: none; }
+.stk { position: relative; -webkit-touch-callout: none; user-select: none; }
+.stk .no { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 2; font: 600 10px/1 var(--mono); padding: 2px 5px; border-radius: 999px; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.stk.done .no { color: var(--fg); }
+.stk.next .no { background: var(--accent); color: var(--accent-ink); font-family: var(--body); letter-spacing: .02em; }
+.stk.link::after { content: ""; position: absolute; top: 33px; left: calc(50% + 31px); width: calc(100% - 58px); border-top: 2px dotted var(--line); }
+.stk.done.link::after { border-top-color: var(--muted); }
+.stk.turn::after { content: ""; position: absolute; top: 24px; right: -3px; width: 8px; height: 22px; border: 2px dotted var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
+.stk.done.turn::after { border-color: var(--muted); }
+.stktip { position: fixed; z-index: 40; width: min(280px, calc(100vw - 16px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; pointer-events: none; font-size: 14px; }
+.stktip b { font-weight: 600; line-height: 1.3; }
+.stktip p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.stktip .fn { font-size: 13px; }
+.stktip .fn code { font: 12px var(--mono); color: var(--syn-fn); }
+.stktip .st { font-size: 12px; color: var(--muted); }
+.stktip .st .here { color: var(--accent); font-weight: 600; }
+.stktip .st .ok { color: var(--pass); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.stktip .st .ic { width: 14px; height: 14px; }
+.callout.ahead { background: var(--hint-bg); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; margin-bottom: 12px; }
+.callout.ahead > b { color: var(--hint); }
+.callout.ahead p { margin: 0; }
+.callout.ahead .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ministk { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
+.ministk svg { width: 16px; height: 16px; overflow: visible; }
+.ministk .sh { stroke-width: 1.6; fill: none; stroke: var(--muted); stroke-dasharray: 2 2; }
+.ministk .done .sh { fill: var(--fg); stroke: var(--fg); stroke-dasharray: none; }
+.ministk .now .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-dasharray: none; }
 .upnext { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 8px; }
 .upnext .top-row { display: flex; align-items: center; gap: 10px; }
 .upnext .top-row svg { width: 26px; height: 26px; flex: none; }
@@ -669,6 +690,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   <div class="railbar" id="lessonRail"></div>
   <div class="crumbs"><button class="btn quiet" id="backPath"><svg class="ic" aria-hidden="true"><use href="#i-arrowl"/></svg>Path</button><span class="eyebrow" id="lessonWhere"></span></div>
   <div class="lessonhead"><h1 class="lesson-title" id="lessonTitle"></h1><span class="earn" id="lessonEarn"></span></div>
+  <div class="callout ahead" id="aheadNote" hidden></div>
   <nav class="stepper" id="stepper" aria-label="Lesson steps"></nav>
   <section class="pane" id="paneText" aria-live="polite"></section>
   <section class="pane" id="paneBuild" hidden>
@@ -728,6 +750,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 </main>
 
 <main id="done" class="wrap" hidden aria-live="polite"></main>
+<div class="stktip" id="stkTip" role="tooltip" hidden></div>
 
 <nav class="foot" id="foot" hidden aria-label="Lesson navigation"><div class="wrap"><button class="btn" id="prevBtn">Back</button><span class="grow"></span><button class="btn quiet" id="midBtn" hidden></button><button class="btn primary" id="nextBtn">Next</button></div></nav>
 
@@ -898,6 +921,9 @@ function streak() {
 }
 const lp = id => progress.lessons[id] || (progress.lessons[id] = { step: 0, checked: null, done: false });
 const started = id => { const s = progress.lessons[id]; return !!(s && (s.step > 0 || s.checked !== null || s.done)); };
+// The first lesson not yet done, in path order: what "Next" means on the stickers.
+// nextLesson() is different: the lesson you are working on, which may be one you jumped to.
+const nextInOrder = () => ORDER.find(id => !isDoneL(id)) || null;
 function nextLesson() {
   if (progress.current && progress.lessons[progress.current] && !progress.lessons[progress.current].done) return progress.current;
   return ORDER.find(id => !(progress.lessons[id] && progress.lessons[id].done)) || null;
@@ -997,13 +1023,73 @@ function stickerSvg(id, st, r) {
   const pic = own ? `<use class="ico" href="#s-${id}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>` : shIcon(MOD_ICON[modOf[id].id] || "book", size);
   return `<svg viewBox="${-r - 4} ${-r - 4} ${2 * r + 8} ${2 * r + 8}" aria-hidden="true">${phShape(k, r)}${pic}</svg>`;
 }
+// A lesson's place on the path: phase number, then its position in the phase, like 2.11.
+const lessonNo = id => { const i = phaseIdx(id); return `${i + 1}.${phLessons(PHASES[i]).indexOf(id) + 1}`; };
+const undoneBefore = id => ORDER.slice(0, ORDER.indexOf(id)).filter(x => !isDoneL(x)).length;
 function sticker(id) {
-  const st = stickerState(id), t = LESSONS[id].title;
-  const say = st === "done" ? "done" : st === "now" ? (started(id) ? "in progress" : "next") : "not started";
-  return `<button class="stk ${st}" data-open="${id}" title="${esc(t)}" aria-label="${esc(t)}, ${say}">${stickerSvg(id, st, 24)}<span class="lbl">${esc(t)}</span></button>`;
+  const st = stickerState(id), t = LESSONS[id].title, isNext = id === nextInOrder(), no = lessonNo(id);
+  const say = st === "done" ? "done" : started(id) ? "in progress" : isNext ? "next" : "not started";
+  return `<button class="stk ${st}${isNext ? " next" : ""}" data-open="${id}" data-tip="${id}" aria-label="Lesson ${no}, ${esc(t)}, ${say}"><span class="no">${isNext ? "Next" : no}</span>${stickerSvg(id, st, 24)}<span class="lbl">${esc(t)}</span></button>`;
 }
+// The trail: a dotted link between stickers in the same row, and a turn at the end of a row,
+// so the order reads like a line of text. Rows depend on the screen width, so it is measured.
+function markTrails() {
+  for (const box of document.querySelectorAll(".stickers")) {
+    const kids = [...box.children];
+    kids.forEach((k, i) => {
+      const n = kids[i + 1];
+      k.classList.toggle("link", !!n && n.offsetTop === k.offsetTop);
+      k.classList.toggle("turn", !!n && n.offsetTop !== k.offsetTop);
+    });
+  }
+}
+window.addEventListener("resize", () => { clearTimeout(markTrails.t); markTrails.t = setTimeout(markTrails, 100); });
+// The hover card: where a lesson sits, what it is about, what you build, and where you are with it.
+// Mouse hover or keyboard focus shows it; on a phone a long press does, and a tap still opens the lesson.
+function firstSentence(t) {
+  const plain = String(t).replace(/\*\*|`/g, "").replace(/\s*\([^)]*\)/g, "");
+  const cut = plain.search(/[.:](\s|$)/);
+  const s1 = cut > 0 ? plain.slice(0, cut + 1) : plain;
+  return s1.length > 150 ? s1.slice(0, 147).replace(/\s+\S*$/, "") + "…" : s1;
+}
+function tipHtml(id) {
+  const m = modOf[id], ph = phaseOf[m.id], s = progress.lessons[id], fn = (byId[id] || {}).fn, before = undoneBefore(id);
+  const where = isDoneL(id) ? `<span class="ok">${ic("check")}Done</span>`
+    : started(id) ? `<span class="here">In progress · ${STEPS[s.step]} step</span>`
+    : id === nextInOrder() ? `<span class="here">Next in order</span>`
+    : `<span>Comes after ${before} lesson${before === 1 ? "" : "s"} you haven’t done</span>`;
+  return `<span class="eyebrow">Lesson ${lessonNo(id)} · ${esc(ph.name)} · ${esc(m.title)}</span>
+    <b>${esc(LESSONS[id].title)}</b><p>${esc(firstSentence(LESSONS[id].learn[0]))}</p>
+    ${fn ? `<span class="fn">You build <code>${esc(fn)}()</code></span>` : ""}<span class="st">${where}</span>`;
+}
+function showTip(el) {
+  const tip = $("stkTip"), id = el.dataset.tip;
+  tip.innerHTML = tipHtml(id); tip.hidden = false;
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  const left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+  const top = r.top - h - 8 > 8 ? r.top - h - 8 : r.bottom + 8;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+  tipFor = el;
+}
+let tipFor = null, pressTimer = null, pressed = false;
+function hideTip() { const t = $("stkTip"); if (t) t.hidden = true; tipFor = null; }
+document.addEventListener("mouseover", e => { const el = e.target.closest("[data-tip]"); if (el && el !== tipFor && matchMedia("(hover: hover)").matches) showTip(el); else if (!el && tipFor) hideTip(); });
+document.addEventListener("focusin", e => { const el = e.target.closest("[data-tip]"); if (el && el.matches(":focus-visible")) showTip(el); else if (tipFor) hideTip(); });
+document.addEventListener("focusout", e => { if (e.target.closest("[data-tip]")) hideTip(); });
+addEventListener("scroll", () => { if (tipFor && !pressed) hideTip(); }, { passive: true });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && tipFor) hideTip(); });
+document.addEventListener("pointerdown", e => {
+  const el = e.target.closest("[data-tip]");
+  if (!el || e.pointerType === "mouse") { if (tipFor && !el) hideTip(); return; }
+  pressed = false; clearTimeout(pressTimer);
+  pressTimer = setTimeout(() => { pressed = true; showTip(el); }, 450);
+});
+for (const ev of ["pointerup", "pointercancel", "pointermove"]) document.addEventListener(ev, e => { if (ev !== "pointermove" || Math.abs(e.movementX) + Math.abs(e.movementY) > 4) clearTimeout(pressTimer); });
+// After a long press, the lifted finger must not open the lesson.
+document.addEventListener("click", e => { if (pressed && e.target.closest("[data-tip]")) { e.stopImmediatePropagation(); e.preventDefault(); pressed = false; } }, true);
+document.addEventListener("contextmenu", e => { if (e.target.closest("[data-tip]")) e.preventDefault(); });
 function minis(ids) {
-  return `<div class="minis" aria-hidden="true">${ids.map(id => { const st = stickerState(id); return `<svg class="${st}" viewBox="-9 -9 18 18">${phShape(phaseIdx(id), 7)}</svg>`; }).join("")}</div>`;
+  return `<div class="ministk" aria-hidden="true">${ids.map(id => { const st = stickerState(id); return `<svg class="${st}" viewBox="-9 -9 18 18">${phShape(phaseIdx(id), 7)}</svg>`; }).join("")}</div>`;
 }
 // One phase as a page of stickers, one scene per module. The scene holding the next lesson is open;
 // the others fold to a row of small shapes, so a 55-lesson phase stays short.
@@ -1088,11 +1174,13 @@ function renderHome() {
     <div class="sets"><h3>Practice sets</h3></div>
     <div class="list">${set("classics", "Classic interview problems", D.classics)}${set("money", "My money & health", D.money)}</div>
     <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
+  hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
 }
 
 // ---------- views ----------
 let cur = null;   // { kind: "lesson" | "practice", id, p, step, from }
 function show(view) {
+  hideTip();
   $("home").hidden = view !== "home";
   $("lesson").hidden = view !== "lesson";
   $("done").hidden = view !== "done";
@@ -1112,6 +1200,10 @@ function openLesson(id, step) {
   $("lessonEarn").className = "earn" + (isDoneL(id) ? " done" : "");
   $("lessonEarn").innerHTML = `<span class="stk ${est}">${stickerSvg(id, est, 18)}</span><span>${isDoneL(id) ? "earned" : "earning"}</span>`;
   $("lessonEarn").hidden = false; $("lessonRail").hidden = false;
+  const nid = nextInOrder(), before = undoneBefore(id);
+  const ahead = !isDoneL(id) && !started(id) && nid && nid !== id && before > 0;
+  $("aheadNote").hidden = !ahead;
+  if (ahead) $("aheadNote").innerHTML = `<b>This lesson builds on ${before} you haven’t done yet</b><p>The next one in order is <b>${lessonNo(nid)} ${esc(LESSONS[nid].title)}</b>. You can stay here; the earlier lessons may make this one easier.</p><div class="row"><button class="btn" data-open="${nid}">Go to the next one</button><button class="linkbtn" data-aheadok>Stay here</button></div>`;
   $("stepper").hidden = false;
   loadProblem(cur.p);
   show("lesson");
@@ -1121,7 +1213,7 @@ function openPractice(pid, from) {
   cur = { kind: "practice", id: pid, p: byId[pid], from };
   $("lessonWhere").textContent = D.money.includes(pid) ? "Practice · My money & health" : "Practice · Classic interview problems";
   $("lessonTitle").textContent = byId[pid].title;
-  $("lessonRail").hidden = true; $("lessonEarn").hidden = true;
+  $("lessonRail").hidden = true; $("lessonEarn").hidden = true; $("aheadNote").hidden = true;
   $("stepper").hidden = true;
   loadProblem(cur.p);
   show("lesson");
@@ -2320,6 +2412,7 @@ $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.
 document.addEventListener("click", async e => {
   const t = e.target;
   if (t.closest("[data-review]")) { openNotebook("study"); return; }
+  if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
     const i = +phb.dataset.phase, nid = nextLesson();

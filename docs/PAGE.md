@@ -47,6 +47,13 @@ Home shows the path as a sticker book, with the six phases always in view:
   there; the others show their module's icon. Frame, Design and Building with LLMs have pictures so
   far. To add one, put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` in the sprite at the
   top of `page.html`, drawn as strokes on a 24 grid centred on 0.
+- **Order**: each sticker carries its place, like 2.11 (phase 2, lesson 11), and a dotted trail
+  links stickers in reading order, turning at the end of each row. The first lesson not yet done
+  is tagged Next. Opening a lesson further on shows a gentle note naming the next one in order,
+  with "Go to the next one" and "Stay here"; it never blocks.
+- **Hover card**: hovering a sticker, or reaching it with the keyboard, shows its place, a one-line
+  idea from its first Learn paragraph, the function you build, and where you are with it. On a
+  phone a long press shows the same card; a tap still opens the lesson.
 - **Finishing a lesson** shows its new sticker.
 
 Shape and position carry the phases, not colour: colour stays for passed, failed and the next
