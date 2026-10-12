@@ -97,6 +97,7 @@ your code to work on something real.
 | 9b | `m9b_plan_and_run.ipynb` | Framing and designing a RAG experiment: the plan, oracle and ablation variants, tags and typed spans, a robust reranker parser | Not deciding yet |
 | 9c | `m9c_analyse_and_decide.ipynb` | The Evaluate stage in order: must-pass gate, oracle headroom, groups, flaky questions, the paired test, reading regressions and improvements, the reranker check, the ablation, the time guardrail, the holdout | Doing the steps in order |
 | 9d | `m9d_ship_monitor_grow.ipynb` | Shipping behind a gate, a monitoring signal, tracing a production failure to its cause, growing the eval set as a new version | Closing the loop |
+| 10 | `m10_one_agent_or_a_team.ipynb` | One agent against a team on the help center: parallel researchers with `Send` and a reducer, a supervisor made with `create_agent`, one writer, a checker with a round limit; 3 runs per question through `mlflow.genai.evaluate`; passed every time, dollars per success, hand-off facts kept, tokens per agent, failure labels, and the verdict by a rule written first | Applying the rule when the team looks better |
 
 Milestones 1–4 are ordinary Python and transfer directly to interviews.
 Milestone 5 is the one senior engineers will want to talk about — running code you
@@ -142,7 +143,7 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 119 lessons in
+Or use the published page on claude.ai. Either way the path is the same: 123 lessons in
 16 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).

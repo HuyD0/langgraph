@@ -1218,6 +1218,217 @@ names.append("Ana")   # ["Ana"]""",
     ),
 )
 
+lesson(MODULE, 'memory_update_score',
+    title='Testing memory with planted changes',
+    learn=[
+        'An agent with memory can keep giving an old fact after its source has changed. An ordinary eval never notices, because nothing changes while it runs. So **plant a change**: update a source on purpose (the office moves from Leeds to York), then ask a question that depends on it.',
+        'Score each answer as one of three outcomes: **current** (it used the new fact), **unsure** (it said it can\'t confirm, which is honest) or **stale** (it used the old fact). Be strict: an answer that mentions the old fact counts as stale, even if it gives the new one too, because the user cannot tell which is right. The price: a correct answer like "you moved from Silver to Gold" also scores as stale, so read a few of the stale ones by hand.',
+        'Watch for two scoring traps. A judge that passes any answer containing "York" also passes "Leeds or York". And MLflow\'s `RetrievalGroundedness` only checks the answer against what the agent looked up, so an answer built on a stale memory still passes.',
+        'Then add checks that catch lazy scoring. A code check reads the memory store itself: was the old fact marked as replaced? Two **baselines** (simple stand-ins to compare with) must do badly: a memory that never updates must fail the changed facts, and no memory at all must fail the facts that did not change.',
+    ],
+    example=example('One planted change, four answers', """change: office Leeds → York
+question: "Where is my office?"
+
+"Your office is in York."  current
+"I can't confirm that."    unsure
+"It's in Leeds."           stale
+"York, or maybe Leeds."    stale"""),
+    check=question(
+        'The office moved to York last week. Your agent answers "Your office is in Leeds" from an old memory it looked up, and `RetrievalGroundedness` passes it. Why?',
+        [
+            'It trusts any memory saved less than a month ago',
+            'It compares the answer with what was looked up',
+            'It only fails answers that sound unsure of themselves',
+        ],
+        answer=1,
+        why='Grounded means "matches what was looked up", not "true". The old memory was looked up, so the answer matches it. Only a planted change, where you know the right answer, catches this.',
+    ),
+    angle=angle(
+        pattern='Label each item, then count the labels',
+        text='One pass over the answers, checking the worst outcome first. The order is the point: an answer that mentions both facts must land in stale.',
+        say='"I change a source on purpose, ask questions that depend on it, and score three outcomes: current, unsure and stale, where mentioning the old fact counts as stale. I add a code check of the store and two baselines: a memory that never updates, and no memory at all."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: a code scorer with three labels', """import mlflow
+from mlflow.genai.scorers import scorer
+
+# One label per answer: the same
+# rule as your exercise.
+@scorer
+def memory_update(outputs,
+                  expectations):
+    text = outputs.lower()
+    old = expectations["old"].lower()
+    new = expectations["new"].lower()
+    if old in text:
+        return "stale"
+    if new in text:
+        return "current"
+    return "unsure"
+
+# Answers recorded after you changed
+# the source on purpose.
+planted = [{
+    "inputs": {"question":
+        "Where is my office?"},
+    "outputs": "York, or maybe Leeds.",
+    "expectations": {"new": "York",
+                     "old": "Leeds"},
+}]
+
+res = mlflow.genai.evaluate(
+    data=planted,
+    scorers=[memory_update])
+
+# The share of each label
+col = res.result_df[
+    "memory_update/value"]
+print(col.value_counts(normalize=True))"""),
+    exercise=exercise(
+        title='Score the Memory Test',
+        topic='evals',
+        difficulty='easy',
+        fn='memory_update_score',
+        prompt="""You changed some facts on purpose, then asked your agent questions about them. Now score its answers.
+
+`answers` is a list with at least one item. Each item is a dict like `{"answer": "It's in York.", "new": "York", "old": "Leeds"}`: the agent's answer, the fact after your change, and the fact before it.
+
+Label each answer, ignoring upper and lower case:
+
+- `"stale"` if the answer contains `old`. This counts even if it contains `new` too.
+- `"current"` if it contains `new` (and not `old`).
+- `"unsure"` otherwise.
+
+Return a dict with the share of answers for each label, like `{"current": 0.5, "unsure": 0.0, "stale": 0.5}`. A share is that label's count divided by the number of answers, rounded to 2 decimal places.""",
+        pattern='Give each answer one label, checking the worst outcome first, then turn the counts into shares.',
+        target='one pass over the answers',
+        realworld='Research tests of agent memory (LongMemEval, STALE) are built on planted changes too, and find that agents often fail to use the updated fact. Run your planted set a few times and report the counts with how many questions there were. In MLflow 3, a code `@scorer` can return the label for each answer.',
+        starter="""def memory_update_score(answers):
+    # your code here
+    pass
+""",
+        solution="""def memory_update_score(answers):
+    counts = {"current": 0, "unsure": 0,
+              "stale": 0}
+    for a in answers:
+        text = a["answer"].lower()
+        if a["old"].lower() in text:
+            counts["stale"] += 1
+        elif a["new"].lower() in text:
+            counts["current"] += 1
+        else:
+            counts["unsure"] += 1
+    n = len(answers)
+    shares = {}
+    for label in counts:
+        shares[label] = round(
+            counts[label] / n, 2)
+    return shares
+""",
+        cases=[
+            case([
+                {'answer': 'Your office is in York.', 'new': 'York', 'old': 'Leeds'},
+                {'answer': "It's in Leeds.", 'new': 'York', 'old': 'Leeds'},
+                {'answer': 'York, or maybe Leeds.', 'new': 'York', 'old': 'Leeds'},
+                {'answer': "I can't confirm that.", 'new': 'York', 'old': 'Leeds'},
+            ], expected={'current': 0.25, 'unsure': 0.25, 'stale': 0.5}, sample=True),
+            case([
+                {'answer': 'Refunds take 3 days.', 'new': '3 days', 'old': '5 days'},
+            ], expected={'current': 1.0, 'unsure': 0.0, 'stale': 0.0}),
+            case([
+                {'answer': 'The policy now says 3 DAYS.', 'new': '3 days', 'old': '5 days'},
+                {'answer': "Sorry, I don't know.", 'new': '3 days', 'old': '5 days'},
+                {'answer': 'Still 5 Days.', 'new': '3 days', 'old': '5 days'},
+            ], expected={'current': 0.33, 'unsure': 0.33, 'stale': 0.33}),
+            case([
+                {'answer': 'Your manager is Priya.', 'new': 'Priya', 'old': 'Sam'},
+                {'answer': 'You are on the Gold plan.', 'new': 'Gold', 'old': 'Silver'},
+                {'answer': 'Gold, or maybe still Silver.', 'new': 'Gold', 'old': 'Silver'},
+            ], expected={'current': 0.67, 'unsure': 0.0, 'stale': 0.33}),
+            case([
+                {'answer': "I don't have a current record of that.", 'new': 'York', 'old': 'Leeds'},
+                {'answer': 'Please check with HR.', 'new': 'Priya', 'old': 'Sam'},
+            ], expected={'current': 0.0, 'unsure': 1.0, 'stale': 0.0}),
+            case([
+                {'answer': 'Leeds.', 'new': 'York', 'old': 'Leeds'},
+                {'answer': 'leeds, I think', 'new': 'York', 'old': 'Leeds'},
+            ], expected={'current': 0.0, 'unsure': 0.0, 'stale': 1.0}),
+        ],
+        guided="""def memory_update_score(answers):
+    # Replace every ___ with real code, then run the tests.
+
+    counts = {"current": 0, "unsure": 0,
+              "stale": 0}
+    for a in answers:
+        text = a["answer"].lower()
+        # Step 1: mentions the old fact? Stale,
+        # even if it says the new one too.
+        if ___ in text:
+            counts["stale"] += 1
+        # Step 2: says the new fact? Current.
+        elif a["new"].lower() in text:
+            counts["current"] += 1
+        else:
+            counts["unsure"] += 1
+    # Step 3: each count divided by how
+    # many answers, rounded to 2 places.
+    n = len(answers)
+    shares = {}
+    for label in counts:
+        shares[label] = round(
+            ___, 2)
+    return shares
+""",
+        fills=['a["old"].lower()', 'counts[label] / n'],
+        concepts=[
+            [
+                'lower and in',
+                '`lower()` gives a lowercase copy of the text. `"ab" in text` is True if those characters appear anywhere in the text. Lowercase both sides so "York" and "york" match.',
+                """'Green TEA'.lower()           # 'green tea'
+'tea' in 'green tea'          # True""",
+            ],
+            [
+                'if, elif, else',
+                'Python tries each test from the top and runs only the first one that is True. `else` runs when none were.',
+                """size = 7
+if size > 10:
+    print('big')
+elif size > 5:
+    print('medium')   # this one
+else:
+    print('small')""",
+            ],
+            [
+                'Counting with a dict',
+                'Start each label at 0, then add 1 with `+= 1` each time you see it.',
+                """votes = {'yes': 0, 'no': 0}
+votes['yes'] += 1
+votes   # {'yes': 1, 'no': 0}""",
+            ],
+            [
+                'Looping over a dict',
+                '`for key in a_dict:` gives you each key in turn. Use `a_dict[key]` to get its value.',
+                """ages = {'ana': 30, 'bo': 25}
+for name in ages:
+    print(name, ages[name])""",
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
+        ],
+        byhand='All four answers are about the office: old is Leeds, new is York. Answer 1, "Your office is in York.", has no "leeds" but has "york": current. Answer 2, "It\'s in Leeds.", has "leeds": stale. Answer 3, "York, or maybe Leeds.", has "leeds", so it is stale even though it says York too. Answer 4, "I can\'t confirm that.", has neither: unsure. That is 1 current, 1 unsure and 2 stale out of 4. 1 divided by 4 is 0.25, and 2 divided by 4 is 0.5. Return {"current": 0.25, "unsure": 0.25, "stale": 0.5}.',
+        why='One pass over the answers, then one step per label.',
+        gotchas=[
+            [
+                'Passing answers that give both',
+                'A judge that only looks for the new fact passes "Leeds or York". The user still can\'t tell which is right, so score it stale.',
+            ],
+            [
+                'Counting "unsure" as wrong',
+                'An honest "I can\'t confirm that" beats a confident old fact. Report it as its own number. If you count it as wrong, an agent that guesses scores better than one that admits it doesn\'t know.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'review_queue',
     title='Drafted labels, expert-confirmed',
     learn=[

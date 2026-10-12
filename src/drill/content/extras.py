@@ -105,6 +105,11 @@ GLOSSARY = [
             ['planted mistake', 'A fault you add on purpose, like a wrong answer or a claim that a task was done when it was not, to see whether a checker or judge catches it.'],
             ['graduation gate', 'The checks a project must pass to leave the shared experiment space for its own production setup: an owner, a passing eval, a known cost per success, measured peak traffic and monitoring.'],
             ['fine-tuning', 'Training an existing model a bit more on your own examples.'],
+            ['provenance', 'Where a remembered fact came from: the source, its version and when it was saved. Without it, you cannot tell later whether the fact is still true.'],
+            ['stale memory', 'A saved fact whose source has changed since it was saved, so it may no longer be true. Mark it and recheck the source; do not use it silently.'],
+            ['invalidate (close a fact)', 'Marking an old fact as no longer true by setting the date it stopped being true, instead of deleting it. You can still answer "what was true then".'],
+            ['memory poisoning', 'Getting a false fact or a hidden instruction saved into an agent\'s memory, so it comes back in every later session. A prompt injection that lasts.'],
+            ['memory namespace', 'The label that keeps one user\'s saved facts apart from everyone else\'s, like ("facts", user_id). Your code sets it from the signed-in user, never the model.'],
         ],
     ],
     [
@@ -792,6 +797,71 @@ def writer(state):
             scorers=[end_state],
             model_id=m.model_id)""",
         'team_experiment',
+    ],
+    [
+        "Save the row's version, not the table's",
+        'Every write to a Delta table, even OPTIMIZE, makes a new table version, so every saved fact looks stale. Save the version of the row the fact came from, which changes when that row is inserted, updated or merged.',
+        """# any write to the table bumps this
+v = spark.sql("DESCRIBE HISTORY policies"
+              " LIMIT 1").first()["version"]
+store.put(("facts", user_id), key,
+          {"text": text, "version": v})""",
+        """# row tracking on: this row's own version
+v = spark.sql(
+    "SELECT _metadata.row_commit_version AS v"
+    " FROM policies WHERE id = 42").first()["v"]
+store.put(("facts", user_id), key,
+          {"text": text, "version": v})""",
+        'stale_claims',
+    ],
+    [
+        "Close old facts, don't overwrite them",
+        'Putting a new value on the same key replaces the old one with no error, so "where was the office in March?" has no answer. Give each version its own key and set when the old one stopped being true.',
+        """ns = ("facts", user_id)
+store.put(ns, "office", {"value": "Leeds"})
+# later the user moves: Leeds is gone
+store.put(ns, "office", {"value": "York"})""",
+        """ns = ("facts", user_id)
+old = store.get(ns, "office@1")
+store.put(ns, "office@1",
+          {**old.value, "to": 40})
+store.put(ns, "office@2",
+          {"subject": "office", "value": "York",
+           "from": 40, "to": None})""",
+        'fact_history',
+    ],
+    [
+        'Choose the memory namespace in code',
+        "If the model fills in the user id, one planted message can read or write another user's memory. Take it from the signed-in user in code, and keep it out of the tool's arguments.",
+        """@tool  # the model fills in user_id
+def remember(user_id: str, fact: str):
+    \"\"\"Save a fact about the user.\"\"\"
+    store.put(("facts", user_id),
+              new_id(), {"text": fact})""",
+        """@tool
+def remember(fact: str, runtime: ToolRuntime):
+    \"\"\"Save a fact about the user.\"\"\"
+    uid = runtime.context.user_id  # login
+    runtime.store.put(("facts", uid),
+                      new_id(), {"text": fact})""",
+        'memory_write_gate',
+    ],
+    [
+        'Fail any answer that keeps the old fact',
+        'A check that passes any answer with the new fact in it also passes "York, or maybe Leeds". Score three outcomes, and count an answer that still uses the old fact as stale.',
+        """@scorer
+def updated(outputs, expectations):
+    new = expectations["new"].lower()
+    return new in outputs.lower()""",
+        '''@scorer
+def updated(outputs, expectations):
+    a = outputs.lower()
+    if expectations["old"].lower() in a:
+        return "stale"  # even next to the new
+    if expectations["new"].lower() in a:
+        return "current"
+    return "unsure"''',
+        'memory_update_score',
     ],
 ]
 
