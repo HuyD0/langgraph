@@ -295,6 +295,144 @@ steps += 300   # steps is now 800""",
     ),
 )
 
+lesson(MODULE, 'total_cost',
+    title='Total cost of ownership',
+    learn=[
+        "The **total cost of ownership** (TCO) is everything it costs to have the system for its whole life, not just to call the model. It is the cost side of every business case, and the tokens are often the smallest part.",
+        "Its variables fall into three groups. **Build**, paid once: people's time, preparing data, building the eval set, the security review. **Run**, paid every month: the model's tokens, hosting and compute, the vector search index, tracing and monitoring, and people checking and redoing answers. **Keep it working**, also monthly: re-running evals when the model or prompt changes, updating prompts, and someone on call.",
+        "Microsoft's cost guidance for AI says to find the cost drivers first: how much data you index, how many queries arrive, the throughput you need, and the hidden costs of the services underneath, like the step that prepares documents before they are indexed.",
+        'Add it up over the years you plan to run it: the one-off costs, plus every monthly cost times 12 times the years. Then look at the biggest single item, because that is where a saving matters most.',
+    ],
+    example=example('Two years of the HR assistant', """build = {"build team": 60000, "eval set": 8000,
+         "security review": 5000}      # 73000
+monthly = {"model": 900, "hosting": 1200,
+           "monitoring": 300, "checking": 3500}
+# 5900 a month for 24 months: 141600
+# total: 214600
+# biggest item: checking, 3500 x 24 = 84000,
+# more than the whole build team"""),
+    check=question(
+        'Two years of an AI assistant cost $214,600. Which change cuts the most?',
+        [
+            'A model that is half the price per token',
+            'Fewer answers that need a person to check them',
+            'A cheaper security review before launch',
+        ],
+        answer=1,
+        why='Checking costs $3,500 a month, $84,000 over two years. Halving the model saves about $10,800, and the security review is paid only once.',
+    ),
+    angle=angle(
+        pattern='One-off plus monthly times months',
+        text='The big idea: the total cost of ownership is the one-off build costs plus every monthly cost for the whole life of the system, and the biggest single item shows where a saving matters most. Your code works out the number of months as 12 times the years. It adds up the one-off costs as they are and each monthly cost times the months, and while doing it keeps the name of the item with the biggest share so far. It returns the total, rounded to whole dollars, and that name. It is like the true cost of a car: the price, plus fuel, insurance and servicing for as long as you keep it.',
+        say='"I price the total cost of ownership: one-off build costs plus every monthly cost, tokens, hosting, monitoring, people checking and upkeep, for the life of the system, and I look hardest at the biggest item."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Add Up the Total Cost',
+        topic='pricing',
+        difficulty='easy',
+        fn='total_cost',
+        prompt="""Your function gets three things:
+
+- `build`: a dict of one-off costs in dollars, like `{"build team": 60000}`.
+- `monthly`: a dict of costs paid every month, like `{"model": 900}`.
+- `years`: how many years the system will run, like `2`.
+
+Over its life, a one-off cost counts once, and a monthly cost counts 12 times `years`.
+
+Return `[total, biggest]`: the total over its life, rounded to a whole number, and the name of the single item with the biggest life cost. Look at the `build` items first, then the `monthly` ones, and on a tie keep the one you saw first.""",
+        pattern='Add every item over its life, keeping the biggest so far.',
+        target='one pass over the items',
+        realworld='Business cases that list only build cost and tokens surprise everyone later. A TCO table over the planned life, with the biggest line on top, is what finance asks for.',
+        starter="""def total_cost(build, monthly, years):
+    # your code here
+    pass
+""",
+        solution="""def total_cost(build, monthly, years):
+    months = 12 * years
+    total = 0
+    biggest = None
+    biggest_cost = -1
+    for name in build:
+        cost = build[name]
+        total += cost
+        if cost > biggest_cost:
+            biggest = name
+            biggest_cost = cost
+    for name in monthly:
+        cost = monthly[name] * months
+        total += cost
+        if cost > biggest_cost:
+            biggest = name
+            biggest_cost = cost
+    return [round(total), biggest]
+""",
+        cases=[
+            case({"build team": 60000, "eval set": 8000, "security review": 5000},
+                 {"model": 900, "hosting": 1200, "monitoring": 300, "checking": 3500}, 2,
+                 expected=[214600, "checking"], sample=True),
+            case({"build team": 50000}, {"model": 100}, 1, expected=[51200, "build team"]),
+            case({}, {"model": 250.5, "hosting": 300}, 3, expected=[19818, "hosting"]),
+            case({"pilot": 12000}, {"on call": 1000}, 1, expected=[24000, "pilot"]),
+        ],
+        guided="""def total_cost(build, monthly, years):
+    # Replace every ___ with real code, then run the tests.
+    months = 12 * years
+    total = 0
+    biggest = None
+    biggest_cost = -1
+    # Step 1: one-off costs count once.
+    for name in build:
+        cost = build[name]
+        total += cost
+        if cost > biggest_cost:
+            biggest = name
+            biggest_cost = cost
+    # Step 2: monthly costs count for every month.
+    for name in monthly:
+        cost = ___
+        total += cost
+        if ___:
+            biggest = name
+            biggest_cost = cost
+    return [round(total), biggest]
+""",
+        fills=['monthly[name] * months', 'cost > biggest_cost'],
+        concepts=[
+            [
+                'Looping over a dict',
+                '`for name in costs:` gives each key in turn; `costs[name]` is its value.',
+                """costs = {"model": 900}
+for name in costs:
+    print(name, costs[name])   # model 900""",
+            ],
+            [
+                '+=',
+                '`total += cost` adds cost to the running total.',
+                """total = 0
+total += 5   # 5""",
+            ],
+            [
+                'round to whole dollars',
+                '`round(x)` with no second number gives a whole number.',
+                'round(19818.0)   # 19818',
+            ],
+        ],
+        byhand='24 months. Build: 60000 + 8000 + 5000 = 73000; biggest so far is the build team at 60000. Monthly: model 900 x 24 = 21600, hosting 28800, monitoring 7200, checking 3500 x 24 = 84000, now the biggest. Total 73000 + 141600 = 214600. Return [214600, "checking"].',
+        why='Each cost is looked at once, so the work grows with the number of items.',
+        gotchas=[
+            [
+                'Pricing the build and the tokens only',
+                'Hosting, monitoring, people checking answers and upkeep are paid every month for years. They usually add up to more than the build.',
+            ],
+            [
+                'Forgetting the services underneath',
+                "Microsoft's guidance warns about hidden dependency costs, like the step that prepares documents before indexing. List every service the system touches.",
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'payback_plan',
     title='Payback and break-even',
     learn=[

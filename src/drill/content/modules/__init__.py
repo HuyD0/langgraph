@@ -8,7 +8,7 @@ from drill.content.model import Module
 
 # Phase by phase, as LIFECYCLE below lists them, so "next lesson" never jumps ahead a phase.
 ORDER = [
-    'foundations', 'pricing',                                              # Frame
+    'use-case', 'foundations', 'pricing',                                  # Frame
     'experiments',                                                         # Design
     'llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security',  # Build and trace
     'evals', 'models',                                                     # Evaluate
@@ -19,8 +19,8 @@ ORDER = [
 # The ML lifecycle strip at the top of the page: which modules belong to which stage.
 LIFECYCLE = [
     ('Frame',
-     'Decide the question, the metric and what success is worth.',
-     ['foundations', 'pricing']),
+     'Pick the use case, decide how to measure it and what success is worth.',
+     ['use-case', 'foundations', 'pricing']),
     ('Design',
      'Plan the runs: what you vary, what you hold fixed, what it costs.',
      ['experiments']),
