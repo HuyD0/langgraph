@@ -240,7 +240,8 @@ def create_app(
         # waiting here would hold up every other request the server is answering.
         if not await asyncio.to_thread(router.order, body.tier):
             raise HTTPException(503, NO_MODEL)
-        context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
+        # MLflow's user field: the signed-in email in an app (the same owner Lakebase uses), "local" elsewhere.
+        context = {**(body.trace or {}), "door": "page", "user": owner_for(request, "local")}
         trace = body.trace or {}
         await asyncio.to_thread(
             mine(request).log, "asked", str(trace.get("lesson_id") or ""),
@@ -290,9 +291,10 @@ def create_app(
     async def feedback(body: FeedbackBody, request: Request):
         from drill.server.observe import default_observer
 
-        user = user_id(request)
+        user = owner_for(request, "local")
         await asyncio.to_thread(mine(request).log, "feedback", "", name=body.name, value=str(body.value)[:60])
-        observer = default_observer()
+        # The router's own observer: the one that wrote the trace this feedback is about.
+        observer = router.observer if hasattr(router.observer, "human_feedback") else default_observer()
         logged = bool(observer and observer.human_feedback(body.request, body.name, body.value, body.rationale, user))
         return {"ok": True, "logged": logged}
 

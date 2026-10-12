@@ -2312,6 +2312,139 @@ The definitions the page uses; use the same ones.
 - **memory poisoning**: Getting a false fact or a hidden instruction saved into an agent's memory, so it comes back in every later session. A prompt injection that lasts.
 - **memory namespace**: The label that keeps one user's saved facts apart from everyone else's, like ("facts", user_id). Your code sets it from the signed-in user, never the model.
 
+### Planning an AI project
+
+- **use case card**: One page that describes an AI idea before anything is built: the problem, who it helps, the prediction it makes, the data, how you'll judge it, and what it costs.
+- **AI Canvas**: A one-page template that treats AI as cheap prediction inside a decision: what is predicted, what decision it feeds, what data trains it, and how results come back. The use case card is shaped like it.
+- **automate or augment**: Whether the AI does the task itself (automate) or helps a person do it (augment). Automate tasks that are dull, high-volume and have an agreed right answer; keep people in charge where they disagree or care about the work.
+- **proof of concept (POC)**: A small trial build that tests whether an idea works on real examples before anyone commits to the full thing.
+- **fit for purpose**: Good enough for this particular job, measured on real examples against bars that were agreed before the trial started.
+- **functional and non-functional requirements**: Functional: what the system must do (answer refund questions). Non-functional: how well it must do it: speed, cost, privacy, uptime, security.
+- **Well-Architected Framework**: Microsoft's checklist for judging a system against five pillars: reliability, security, cost, operational excellence (running it day to day) and performance.
+- **total cost of ownership (TCO)**: Everything a system costs over its whole life, not just the model calls: building it, running it each month, and people's time checking and fixing it.
+
+### Measuring and testing
+
+- **label**: The right answer attached to an example, usually written by a person: "spam", "refund", "this answer is correct". You need labelled examples to test anything.
+- **classifier**: A model that sorts things into groups, like spam or not spam. Most give a score, and a threshold turns the score into a yes or no.
+- **threshold**: The score a model needs before it says yes. Raise it and you get fewer false alarms but miss more; lower it and the opposite.
+- **accuracy**: The share of all answers that are right. Misleading when one answer is rare: if 1 in 100 cases is fraud, always saying "no fraud" scores 99%.
+- **precision**: Of everything the model flagged, how much was right? High precision means few false alarms.
+- **recall**: Of everything the model should have flagged, how much did it catch? High recall means little is missed.
+- **false alarm (false positive)**: The model flagged something that wasn't there: a normal email marked as spam.
+- **miss (false negative)**: The model failed to flag something that was there: a fraud it let through.
+- **baseline**: What a simple or random approach scores, so you can tell whether your model is actually better than doing nothing clever.
+- **training data**: The examples a model learns from. It must never include the examples you test on, or the test score lies.
+- **cross-validation**: Splitting the data into a few equal groups called folds (often 5) and testing on each fold in turn while training on the rest, so every example gets tested once.
+- **reliability diagram**: A chart that groups answers by how confident the model said it was and shows how often each group was really right. A well-calibrated model's points sit on the diagonal.
+- **eval set**: The fixed list of questions or tasks you score every version on, so results can be compared fairly from one change to the next.
+- **golden set**: A small set of examples checked carefully by hand, used as the trusted core of an eval set.
+- **unanswerable questions**: Questions on nearby topics that your documents really don't cover, put in an eval set on purpose to check the app says "I don't know" instead of making something up.
+- **rubric**: Written grading rules, so a person or an LLM judge marks every answer the same way.
+- **scorer**: A piece of code (or an LLM judge) that marks one answer, for example pass or fail, or a number. MLflow runs scorers over a whole eval set.
+- **failure label**: A short name for what went wrong in a failed run, like "wrong tool" or "gave up early". Counting labels shows which fix matters most.
+- **success rate**: The share of tasks an agent actually finished correctly.
+- **pass@k**: Whether a task succeeded at least once in k tries. Kind to the model; pass^k (succeeded every time) is the strict one.
+- **flaky test**: A test that passes one run and fails the next without any change, often because a model's answers vary.
+- **decision rule**: The rule for picking a winner, written down before the results come in, like "highest quality at $2 or less per 1,000 requests".
+- **release gate**: A check every new version must pass before it ships, such as "every must-pass question still passes".
+- **champion and challenger**: The champion is the version in use now; a challenger is a newer one that wants the job. It only takes over if it wins clearly on the same data.
+- **Pareto front**: The options nothing beats on every measure at once, for example the models that are not both slower and worse than some other model. The sensible choices sit here.
+- **permutation test**: A way to check a gap isn't luck: randomly swap the two versions' scores on each example many times and see how often chance alone makes a gap that big.
+- **sensitivity check**: Changing one guess at a time, from a bad value to a good one, to see which guess moves the result most.
+- **Recall@k**: Of the documents that should have been found, the share that made it into the top k results.
+- **p95 latency**: How slow a system is for nearly everyone: 95 out of 100 requests are faster than this. Averages hide the slow ones; p95 doesn't.
+- **latency**: How long one request takes, from asking to getting the answer.
+- **throughput**: How much work a system gets through in a given time, such as requests per minute.
+
+### Search and RAG
+
+- **retrieval**: The search step in RAG: finding the chunks of your documents most likely to answer the question, before the model writes anything.
+- **embedding model**: The model that turns text into embeddings (lists of numbers where similar meanings land close together). Changing it changes what search finds.
+- **chunk size and overlap**: How big a piece each document is cut into, and how much neighbouring pieces share, so a sentence split at a boundary isn't lost.
+- **k (top k)**: How many search results, or chunks, go into the prompt.
+- **keyword search**: Search that matches the actual words in the question. Good for names, codes and exact terms that meaning-based search can miss.
+- **vector search**: Search by meaning: find the chunks whose embeddings are closest to the question's embedding.
+- **hybrid search**: Running keyword search and vector search together and combining the results, so you get exact matches and meaning matches.
+- **reranker**: A model that reorders search results so the best ones come first. Slower than search, so it only looks at the top few dozen.
+- **reciprocal rank fusion**: A way to merge two result lists: each document gets points from every list, more for a higher place, and the points are added up.
+- **query rewriting**: Rephrasing the user's question before searching, so it matches how the documents are written.
+- **grounded**: Matches what was looked up. A grounded answer can still be false if the document was wrong or out of date.
+- **supported claim**: A sentence in an answer that the cited document really backs up. A claim with the wrong citation is dropped even when it happens to be true.
+
+### Agents
+
+- **fixed workflow**: Steps your code runs in a set order, with the model doing one job at each step. Cheaper and more predictable than an agent; try it first.
+- **agent ladder**: Climb only as high as you need: one model call, then a fixed workflow, then one agent with tools, then a team of agents.
+- **hand-off**: One agent passing work to another. Details get lost at every hand-off, like a game of telephone, so keep them few.
+- **checker**: A second agent that starts fresh and sees only the finished work and a checklist of pass or fail rules, not the chat that made it.
+- **coding agent**: An agent that writes code, runs it, reads the error, writes a fix and runs it again.
+- **sandbox**: A locked-down computer of its own where an agent's code runs, with a time limit and no internet, so a bad run can't touch real data.
+- **container**: A sealed mini computer that runs one program apart from everything else. Sandboxes are often containers.
+- **shell**: The text window where you type commands for the computer to run. Letting an agent use one is powerful and risky.
+- **exit code**: The number a program returns when it stops: 0 means no error, anything else means it failed.
+- **round limit (step limit)**: The most tries or steps an agent gets before it must stop, so a loop that isn't working can't run forever.
+- **allowlist**: A list of what is allowed; everything else is rejected. Safer than a blocklist, which only rejects what you thought of.
+- **least privilege**: Giving an agent only the tools and permissions its job needs, so a mistake or an attack can do little harm.
+- **guardrail**: A check that blocks or changes an answer or action before it reaches the user or the real world.
+- **lethal trifecta**: The dangerous mix in one agent: private data, untrusted text it reads (web pages, emails) and a way to send data out. Remove at least one.
+- **end-state check**: Judging an agent by what really happened, like reading the ticket table, not by what it said it did.
+- **do-nothing agent**: A fake agent that changes nothing and just replies "Done!". If your checks pass it, they are too easy.
+- **tool selection**: Whether the agent called the right tool at each step.
+- **MAST**: A research list of the common ways agent teams fail, such as repeating steps, not knowing when to stop and weak checks.
+- **context rot**: Models answer worse as their prompt fills up with long chats and tool output, even with room to spare. A bigger window doesn't fix it.
+- **long-term memory**: Facts an agent keeps between chats, like "refunds over $100 need a manager". Needs care, because facts go out of date.
+- **interrupt and resume**: Pausing an agent to wait for a person's approval, saving where it was, then carrying on from that exact point.
+- **MCP (Model Context Protocol)**: A standard way to offer tools and data to AI apps, so one tool server works with many agents.
+- **named span**: A labelled box in a trace for one part of the work, like "researcher" or "writer", so you can see what each part did and cost.
+- **tokens per agent**: The input and output tokens each agent in a team used, added up from its named span. Shows which helper costs the most.
+
+### Running AI in production
+
+- **MLflow**: Open-source tooling (built into Databricks) for recording experiments, traces, prompts and models, and for evaluating them.
+- **experiment (MLflow)**: A folder in MLflow that holds the runs and traces for one project or question.
+- **run (MLflow)**: One recorded try: the settings used, the scores it got and any files it made.
+- **trace**: A step-by-step record of one request: what went in, each model and tool call, what came out, how long each took and what it cost.
+- **span**: One step inside a trace, like a single model call or tool call. Spans nest inside each other.
+- **autolog**: MLflow recording runs or traces for you, with one line of code, instead of you logging each thing.
+- **MLflow Prompt Registry**: A shared store for prompts. Each save makes a new numbered version that never changes.
+- **model registry**: A store for trained models, with every version and its scores, so you can promote or roll back.
+- **alias**: A nickname like "production" that points at one version of a prompt or model. Apps load the alias, so switching versions needs no code change.
+- **Unity Catalog**: Databricks' catalog for tables, models, prompts and functions, with three-part names (like main.support.answer) and one set of permissions.
+- **Unity Catalog functions**: Functions stored in Unity Catalog that agents can call as tools: permissioned, shared and reused.
+- **serving endpoint**: A web address that runs a model and answers requests. Your app calls it instead of running the model itself.
+- **AI gateway**: A front door for model calls that adds rate limits, usage tracking and logging. On Databricks it's called Unity Gateway.
+- **request tag**: A label sent with each model request, such as the app or team, so the usage table can split costs by it.
+- **tokens per minute (TPM)**: A limit on how many tokens a model deployment will process each minute. Busy minutes, not the daily average, decide whether you hit it.
+- **per-user limit**: A cap on each person's share of the capacity, so one heavy user can't use it all.
+- **token bucket**: A way to stay under a rate limit: a budget that refills at a steady rate, with room for a short burst.
+- **retry**: Trying a failed request again. Only worth it for temporary errors like a timeout, never for a wrong key.
+- **exponential backoff**: Waiting longer before each retry, each wait double the last, up to a cap, so a struggling service gets room to recover.
+- **jitter**: A small random amount added to each retry wait, so many clients don't all retry at the same moment.
+- **timeout**: How long to wait for a reply before giving up on it.
+- **deadline**: The time a whole request must finish by. Each step gets the time that's left, so none starts work it can't finish.
+- **circuit breaker**: Stops calling a service after repeated failures, fails fast to a fallback, and tries again after a cooldown.
+- **fallback**: What you use when the first choice fails: a cheaper model, a cached answer, or a polite "try again later".
+- **cache**: Stored answers returned instead of calling the model again, which saves money and time. LRU (least recently used) is a common rule for what to throw out when it's full.
+- **streaming**: Showing the answer as it's written, so users see the first words in a fraction of a second instead of waiting for the whole reply.
+- **canary release**: Sending a small share of real traffic, say 10%, to a new version, comparing it with the old one, then moving more over if it holds up.
+- **SLO (service level objective)**: A target for how well a service should work, like "99.5% of answers in under 3 seconds".
+- **error budget**: The failures an SLO allows: with a 99.5% target, the other 0.5%. Spend it on changes; stop shipping when it runs out.
+- **burn rate**: How fast you are using up the error budget. Alert on a fast burn rather than on every single error.
+- **upsert**: Update the row if it exists, insert it if it doesn't, matched on a stable id. Running it twice gives the same result.
+- **race condition**: When the result depends on timing, like two people saving the same record at once and one change being lost.
+- **optimistic concurrency**: Each save says which version it read, and is rejected if the record changed since, so no change is lost silently.
+- **watermark**: In streaming data, the rule for how late an event may arrive and still be counted.
+- **hot key**: One value that has most of the rows, so the one worker handling it does most of the job while the others wait.
+- **batch inference**: Running a model over every row of a table in one job, rather than one request at a time.
+- **shared experiment space**: One model deployment shared by many people trying ideas, with a spending limit and rate limit each. Apps that prove themselves graduate to their own capacity.
+- **PII (personal data)**: Information that identifies a person: names, emails, phone numbers, card numbers, addresses. Keep it out of prompts, logs and traces where you can.
+- **secret**: A password, key or token. Never put one in code, prompts or anywhere an agent's command could print it.
+- **policy as code**: Rules about infrastructure (tags, regions, sizes) written as code and checked automatically on every change.
+- **cost allocation**: Splitting a bill between teams or projects, usually by tags on each resource or request.
+- **LangChain**: A Python library of building blocks for LLM apps: model clients, prompts, tools and retrievers.
+- **LangGraph**: A library for building agents and workflows as a graph of steps (nodes) joined by edges, with saved state so they can pause and resume.
+
 ### Terraform, Azure and Databricks
 
 - **state**: Terraform's record of which real objects it manages and their last known settings. Here it lives in an Azure storage blob or in Spacelift.

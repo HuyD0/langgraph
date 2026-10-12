@@ -57,6 +57,46 @@ things: it listens on the port the platform gives it, it believes the `x-forward
 header the platform's sign-in adds (and only there, so nobody on your home Wi-Fi can claim
 to be someone else), and each request reads and writes that person's rows.
 
+## What MLflow records, and where
+
+Every name comes from settings ([`src/drill/mlflow_names.py`](../src/drill/mlflow_names.py)), so
+none of it changes in code between workspaces:
+
+| What | Where | Named by |
+|---|---|---|
+| The deployed app's traces | its own experiment, `/Shared/daily-drill`, traces in Unity Catalog tables `<trace_schema>.daily_drill_otel_*` | `drill cloud setup --experiment --trace-schema` |
+| Your laptop's traces and evals | `daily-drill` (on Databricks `/Users/<you>/daily-drill`) | `DRILL_MLFLOW_EXPERIMENT` |
+| The terminal tutor's practice runs | `daily-drill-cli` | `DRILL_CLI_MLFLOW_EXPERIMENT` |
+| Prompts | `<prompt_schema>.use_case_review`, `.use_case_challenge`, alias `production` | `DRILL_PROMPT_SCHEMA` / `--prompt-schema` |
+| The review cases | evaluation dataset `<prompt_schema>.review_cases` (a Unity Catalog table) | the same |
+| Each app version | logged model `daily-drill-<commit>`: description, parameters (model, prompt versions, review, challenge and judge versions, target), linked prompt versions | written by `drill cloud deploy` |
+| Scorers | `answer_rules`, registered on the app's experiment | written by `drill cloud deploy` |
+
+**On every trace:** the name is what it was for (`ask_lesson`, `hint`, `use_case_review`...);
+tags say `feature`, `door`, `lesson_id`, `step`, `environment` (`local` or `app`), `app_name`,
+`workspace_id`, `app_version`, `model`, `route`, `cached`, and for reviews the `prompt` version;
+MLflow's own fields hold the user (`mlflow.trace.user`, the signed-in email in the app), the
+session (each page visit, or one Ask thread), the commit (`mlflow.source.git.commit`), the version
+(`mlflow.modelId`), token counts, and the page's request id as `client_request_id`. Spans record
+the full prompt, the model, timings (time to first word, total), finish reason and fallbacks, and
+a `checks` span the answer rules. Feedback buttons attach HUMAN feedback (who clicked, why).
+
+**Scoring.** The answer rules are on every trace as tags and a span. In the app they are not
+written as assessments one by one, because each write to traces kept in Unity Catalog wakes the
+SQL warehouse. Instead, score them in a batch, one evaluation run with a pass rate per rule:
+
+```bash
+uv run drill traces score --days 7
+```
+
+**Evals.** `drill review eval` runs the review prompt over the `review_cases` dataset, linked to the
+dataset, the registered prompt version and the app version, with parameters (model, tier, prompt,
+judge) and a description; its scores show on the version too. On Databricks set
+`DRILL_PROMPT_SCHEMA` (and `MLFLOW_TRACING_SQL_WAREHOUSE_ID`) in `.env` first.
+
+On Databricks a prompt's links to traces are kept with the prompt version in the registry (its page
+lists the traces), not on the trace; the `prompt` tag is there to filter traces by it.
+
 ## Practising work's model catalog at home
 
 If work names its model services in a catalog of its own (say `<gateway_catalog>.<schema>.<service>`),
@@ -87,7 +127,9 @@ Porting is setup and deploy against the `work` target. Before you start, check t
 your platform team; each one is a setting, not a code change:
 
 1. **A CLI profile for the work workspace.** `databricks auth login --host https://adb-<id>.azuredatabricks.net --profile work`.
-   The target expects a profile named `work`; pass `--profile` to use another.
+   The target expects a profile named `work`; pass `--profile` to use another. Use CLI v1.20 or
+   newer; `bundle validate` may warn that `MODEL_SERVICE` is not a known `securable_type`, because
+   the CLI's schema lags the API, which accepts it.
 2. **The model you are given**, by its three-part name (`catalog.schema.name`): pass it as
    `--model`. Use one your runbook lists as a governed model service, not just one in the
    capacity inventory. It is a Unity Gateway model service on both sides (the default is
@@ -102,11 +144,17 @@ your platform team; each one is a setting, not a code change:
    Behind a storage firewall, create the experiment linked to a Unity Catalog schema first
    (`uv run drill tracing check --uc-schema <catalog>.<schema>`, see [SERVER.md](SERVER.md)),
    and grant the app's service principal `USE CATALOG`, `USE SCHEMA`, `SELECT` and `MODIFY` there.
-5. **Network.** The app installs packages from PyPI when it deploys. If egress is locked down,
+5. **Experiments and prompts at work.** `/Shared` may be locked down: pass a team folder with
+   `--experiment /Workspace/Groups/<team>/daily-drill` or similar. Give `--trace-schema` and
+   `--prompt-schema` schemas your team owns. Registering scorers and evaluation datasets from your
+   laptop uses the `databricks-agents` package (a dev dependency: `uv sync`); the app does not need it.
+   Tools on your laptop may set `MLFLOW_EXPERIMENT_NAME` (Claude Code's tracing does); every drill
+   command names its experiment outright, so they can't redirect it.
+6. **Network.** The app installs packages from PyPI when it deploys. If egress is locked down,
    allow `pypi.org` and `files.pythonhosted.org`, or set `PIP_INDEX_URL` to your mirror as an
    app secret. With Private Link, apps live under `*.azure.databricksapps.com`, which needs its
    own private DNS zone.
-6. **Limits for a team.** The daily token cap is shared by everyone using the app: raise
+7. **Limits for a team.** The daily token cap is shared by everyone using the app: raise
    `DRILL_HOSTED_DAILY_TOKENS` in `app.yaml`, or rely on the gateway's per-user limits. With
    people studying all day, a longer `DRILL_IDLE_STOP_MINUTES` (or `0`) avoids cold starts.
 
@@ -120,8 +168,13 @@ the app's service principal itself, and `--fix` grants what is missing where you
 | `USE CATALOG`, `USE SCHEMA`, `EXECUTE` | the model service | the `model` resource |
 | a Postgres role | the Lakebase branch | the `postgres` resource |
 | `CAN_EDIT` | the MLflow experiment | the `experiment` resource |
-| `USE CATALOG`, `USE SCHEMA`, `SELECT`, `MODIFY` | the trace tables (spans and logs) | nobody: `--fix`, or the platform team |
+| `USE CATALOG`, `USE SCHEMA`, `SELECT`, `MODIFY` | the trace tables (spans, logs and annotations) | nobody: `--fix`, or the platform team |
+| `CAN_USE` | the SQL warehouse, to attach feedback to those traces | the `sql-warehouse` resource (or the workspace `users` group) |
+| `USE CATALOG`, `USE SCHEMA`, `EXECUTE` | the prompts schema, to link traces to prompt versions | nobody: `--fix`, or the platform team |
 | `CAN_MANAGE` | its own app, to stop when idle | `drill cloud deploy` |
+
+And **you** need `USE SCHEMA`, `CREATE FUNCTION`, `CREATE TABLE` and `EXECUTE` on the prompts schema
+to register the prompts and the review cases; `drill cloud check` says so before you try.
 
 At home every account user holds broad rights, so all of this passes without effort; at work
 the trace tables are the one most likely to need a grant.
@@ -129,7 +182,8 @@ the trace tables are the one most likely to need a grant.
 Then:
 
 ```bash
-uv run drill cloud setup --target work --lakebase-project <id> --model <catalog.schema.service> --experiment /Shared/daily-drill
+uv run drill cloud setup --target work --lakebase-project <id> --model <catalog.schema.service> \
+  --experiment /Shared/daily-drill --trace-schema <catalog.schema> --prompt-schema <catalog.schema> --warehouse <id>
 uv run drill cloud check --target work
 uv run drill cloud deploy --target work
 ```

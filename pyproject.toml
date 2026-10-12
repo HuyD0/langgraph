@@ -59,6 +59,7 @@ dev = [
     # tests/test_store.py drives a real Postgres connection attempt (refused on port 1) to
     # check the Lakebase sign-in and fallback, so the driver from the lakebase extra is needed.
     "psycopg[binary]>=3.2,<4",
+    "databricks-agents>=1.12.0",
 ]
 
 [build-system]

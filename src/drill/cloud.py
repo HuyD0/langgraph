@@ -116,25 +116,59 @@ def ensure_lakebase(project: str, profile: str | None, create: bool) -> tuple[st
     return branch, databases[0]["name"]
 
 
-def experiment_id(path: str, profile: str | None) -> str:
-    """The id of the MLflow experiment at ``path``, creating it if it is not there."""
+DEFAULT_EXPERIMENT = "/Shared/daily-drill"  # the deployed app's traces: shared, and apart from your own experiments
+
+
+def experiment_id(path: str, profile: str | None, trace_schema: str | None = None) -> str:
+    """The id of the MLflow experiment at ``path``, creating it if it is not there.
+
+    With ``trace_schema`` (``catalog.schema``) a new experiment keeps its traces in Unity Catalog
+    tables named after it, which a workspace storage firewall doesn't block. The link can only
+    be made when the experiment is created.
+    """
     found = cli("experiments", "get-by-name", path, "-o", "json", profile=profile, check=False)
     if isinstance(found, dict) and found.get("experiment"):
         return found["experiment"]["experiment_id"]
-    made = cli("experiments", "create-experiment", path, "-o", "json", profile=profile)
-    return made["experiment_id"]
+    if not trace_schema:
+        return cli("experiments", "create-experiment", path, "-o", "json", profile=profile)["experiment_id"]
+    import mlflow
+    from mlflow.entities.trace_location import UnityCatalog
+
+    catalog, _, schema = trace_schema.partition(".")
+    prefix = "".join(ch if ch.isalnum() else "_" for ch in path.rsplit("/", 1)[-1])  # daily-drill -> daily_drill
+    mlflow.set_tracking_uri(f"databricks://{profile}" if profile else "databricks")
+    return mlflow.set_experiment(path, trace_location=UnityCatalog(catalog, schema, table_prefix=prefix)).experiment_id
 
 
 def me(profile: str | None) -> str:
     return cli("current-user", "me", "-o", "json", profile=profile)["userName"]
 
 
+def default_warehouse(profile: str | None) -> str:
+    """A serverless SQL warehouse to attach feedback with: the smallest, which stops itself when idle."""
+    warehouses = cli("warehouses", "list", "-o", "json", profile=profile) or []
+    serverless = [w for w in warehouses if w.get("enable_serverless_compute")]
+    if not serverless:
+        raise CloudError("No serverless SQL warehouse found. Create a 2X-Small one with a short auto-stop, then pass --warehouse.")
+    sizes = ["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"]
+    return min(serverless, key=lambda w: sizes.index(w.get("cluster_size")) if w.get("cluster_size") in sizes else 99)["id"]
+
+
 def setup(target: str, profile: str | None, project: str, create_lakebase: bool, experiment: str | None,
-          model: str | None, name: str | None) -> dict:
+          model: str | None, name: str | None, trace_schema: str | None = None, warehouse: str | None = None,
+          prompt_schema: str | None = None) -> dict:
     """Find or create what the app needs in the workspace, and save the values for ``deploy``."""
     branch, database = ensure_lakebase(project, profile, create_lakebase)
-    path = experiment or f"/Users/{me(profile)}/daily-drill"
-    values = {"lakebase_branch": branch, "lakebase_database": database, "experiment_id": experiment_id(path, profile)}
+    saved = read_overrides(target)
+    path = experiment or saved.get("experiment_path") or DEFAULT_EXPERIMENT
+    schema = trace_schema or saved.get("trace_schema")
+    values = {"lakebase_branch": branch, "lakebase_database": database,
+              "experiment_id": experiment_id(path, profile, schema), "experiment_path": path}
+    if schema:
+        values["trace_schema"] = schema
+    values["warehouse_id"] = warehouse or saved.get("warehouse_id") or default_warehouse(profile)
+    if prompt_schema:
+        values["prompt_schema"] = prompt_schema
     if model:
         values["model"] = model
     if name:
@@ -184,6 +218,10 @@ def deploy(target: str, profile: str | None) -> dict:
     if missing:
         raise CloudError(f"Run `uv run drill cloud setup --target {target}` first (missing {', '.join(missing)}).")
     version = stamp_version()
+    try:
+        registered = register_version(target, profile, version)
+    except Exception as exc:  # noqa: BLE001 - a missing record must not stop a deploy
+        registered = {"error": str(exc).splitlines()[0][:200]}
     cli("bundle", "deploy", profile=profile, target=target)
     still_billing = (f"The app may still be running, and billing. Check with `uv run drill cloud status --target {target}`; "
                      f"stop it with `uv run drill cloud stop --target {target}`.")
@@ -205,7 +243,57 @@ def deploy(target: str, profile: str | None) -> dict:
     if not info.get("service_principal"):
         raise CloudError(f"The app is running but couldn't be allowed to stop itself when idle. {still_billing}")
     allow_self_stop(info["name"], info["service_principal"], profile)
-    return {**info, "version": version}
+    return {**info, "version": version, "registered": registered}
+
+
+def register_version(target: str, profile: str | None, version: str) -> dict:
+    """Record this version of the app in its experiment before it starts, so its traces link to it.
+
+    One MLflow logged model per commit, ``daily-drill-<commit>``, with a description, the settings
+    that shape its answers as parameters, and links to the prompt versions it uses. The app's
+    ``set_active_model(name=...)`` finds it by name. The scorers are registered on the experiment too.
+    """
+    import mlflow
+    from mlflow import MlflowClient
+
+    from drill import mlflow_names, trace_scoring
+    from drill.content import review
+    from drill.review_eval import JUDGE_VERSION
+
+    saved = read_overrides(target)
+    experiment = saved["experiment_id"]
+    mlflow.set_tracking_uri(f"databricks://{profile}" if profile else "databricks")
+    # Name the experiment outright: some MLflow calls fall back on MLFLOW_EXPERIMENT_NAME/_ID from the
+    # environment, which other tools set (Claude Code's own tracing does), and would aim elsewhere.
+    mlflow.set_experiment(experiment_id=experiment)
+    name = f"daily-drill-{version}"
+    prompts = {}
+    if saved.get("prompt_schema"):
+        for key in ("review", "challenge"):
+            pv = mlflow.genai.load_prompt(f"prompts:/{saved['prompt_schema']}.{mlflow_names.PROMPTS[key]}@production",
+                                          link_to_model=False)
+            prompts[key] = pv
+    params = {
+        "model": saved.get("model", "system.ai.claude-haiku-4-5"), "target": target,
+        "review_version": review.REVIEW_VERSION, "challenge_version": review.CHALLENGE_VERSION,
+        "judge_version": JUDGE_VERSION, "lakebase_branch": saved.get("lakebase_branch", ""),
+        **{f"prompt_{k}": f"{pv.name}/{pv.version}" for k, pv in prompts.items()},
+    }
+    tags = {**mlflow_names.context_tags(version), "environment": "app", "target": target,
+            "mlflow.note.content": f"Daily Drill {version}: the page, the tutor and its reviews, deployed to "
+                                   f"the {target} workspace. Answers come from {params['model']}."}
+    found = mlflow.search_logged_models(experiment_ids=[experiment], filter_string=f"name = '{name}'", output_format="list")
+    model = found[0] if found else mlflow.create_external_model(
+        name=name, experiment_id=experiment, model_type="agent", params=params, tags=tags)
+    client = MlflowClient()
+    for pv in prompts.values():
+        client.link_prompt_version_to_model(pv.name, str(pv.version), model.model_id)
+    try:
+        scorers = trace_scoring.register(experiment)
+    except ImportError:  # registering on Databricks needs databricks-agents (a dev dependency, not the app's)
+        scorers = ["(not registered: run `uv sync` for databricks-agents)"]
+    return {"model_id": model.model_id, "name": name, "new": not found, "prompts": [f"{pv.name}/{pv.version}" for pv in prompts.values()],
+            "scorers": scorers}
 
 
 def allow_self_stop(name: str, service_principal: str, profile: str | None) -> None:

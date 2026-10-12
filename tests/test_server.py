@@ -564,3 +564,62 @@ def test_idle_stop_only_runs_inside_an_app(monkeypatch):
     assert IdleStop.from_env() is None
     monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
     assert IdleStop.from_env().seconds == 1800
+
+
+def test_an_apps_traces_carry_where_they_ran_who_asked_and_the_pages_request_id(store, bank, mlflow_store, monkeypatch):
+    """Context a portable deployment needs: environment, workspace, app, user email and the request id."""
+    import mlflow
+
+    from drill.server import observe
+
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    monkeypatch.setenv("DATABRICKS_WORKSPACE_ID", "123")
+    monkeypatch.setenv("DRILL_MLFLOW_EXPERIMENT", "drill-app-test")
+    observer = observe.MlflowObserver()
+    router = ModelRouter(Route("hosted", "ai.models.haiku", fake("Use a dict.")), None, store, observer=observer)
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    sam = {"x-forwarded-email": "sam@example.com"}
+    client.post("/api/ask", json={"prompt": "hint?", "trace": {"feature": "hint", "request": "req-123456"}}, headers=sam)
+    observer.drain()
+
+    [trace] = traces_in("drill-app-test")
+    tags, metadata = trace.info.tags, trace.info.trace_metadata
+    assert (tags["environment"], tags["app_name"], tags["workspace_id"]) == ("app", "daily-drill", "123")
+    assert (tags["model"], tags["route"], tags["cached"]) == ("ai.models.haiku", "hosted", "false")
+    assert metadata["mlflow.trace.user"] == "sam@example.com"  # the same owner Lakebase uses
+    assert trace.info.client_request_id == "req-123456" and "request" not in tags
+
+    client.post("/api/feedback", json={"request": "req-123456", "name": "useful", "value": True}, headers=sam)
+    observer.drain()
+    [assessment] = [a for a in mlflow.get_trace(trace.info.trace_id).info.assessments if a.name == "useful"]
+    assert assessment.source.source_type == "HUMAN" and assessment.source.source_id == "sam@example.com"
+
+
+def test_names_come_from_settings(monkeypatch):
+    from drill import mlflow_names
+
+    for name in ("DRILL_PROMPT_SCHEMA", "DRILL_ENVIRONMENT", "DATABRICKS_APP_NAME", "DRILL_MLFLOW_EXPERIMENT"):
+        monkeypatch.delenv(name, raising=False)
+    assert (mlflow_names.environment(), mlflow_names.experiment()) == ("local", "daily-drill")
+    assert mlflow_names.prompt_name("review") == "use_case_review"
+    assert mlflow_names.needs_prompt_schema("databricks") and not mlflow_names.needs_prompt_schema("http://localhost:5050")
+    monkeypatch.setenv("DRILL_PROMPT_SCHEMA", "main.daily_drill")
+    assert mlflow_names.prompt_name("challenge") == "main.daily_drill.use_case_challenge"
+    monkeypatch.setenv("DRILL_PROMPT_SCHEMA", "main")
+    with pytest.raises(ValueError):
+        mlflow_names.prompt_name("review")
+    assert mlflow_names.run_name("review eval", "review-v2") == "review-eval-review-v2"
+    assert mlflow_names.context_metadata("7246346-dirty") == {"mlflow.source.git.commit": "7246346"}
+    assert mlflow_names.context_metadata("0.1.0") == {}
+
+
+def test_the_answer_rules_scorer_reads_checks_as_a_dict_or_as_json_text():
+    from types import SimpleNamespace
+
+    from drill.trace_scoring import answer_rules
+
+    for outputs in ({"solution_leak": False, "over_word_limit": True, "words": 9},
+                    '{"solution_leak": false, "over_word_limit": true, "words": 9}'):
+        trace = SimpleNamespace(data=SimpleNamespace(spans=[SimpleNamespace(name="checks", outputs=outputs)]))
+        got = {f.name: f.value for f in answer_rules(trace=trace)}
+        assert got == {"no_solution_leak": True, "within_word_limit": False}  # True is a pass; counts are not rules
