@@ -113,6 +113,33 @@ b { font-weight: 600; }
 .recap li > .ic { margin-top: 3px; color: var(--pass); }
 .recap li.skip > .ic { color: var(--muted); }
 .recap .linkbtn { padding: 0; margin-left: 4px; }
+.keyidea .ours { display: block; margin-top: 10px; }
+/* Explain: say it yourself first, then compare */
+.sayback label { display: grid; gap: 2px; }
+.sayback textarea { width: 100%; min-height: 84px; resize: vertical; font: 17px/1.5 var(--body); background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.sayback textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.saynote { font-size: 14px; color: var(--muted); }
+.saynote:empty { display: none; }
+/* editor: keyword colour, blanks and line numbers, drawn under a see-through textarea */
+.editor { position: relative; background: var(--code-bg); border-radius: 10px; }
+.editor .hl { position: absolute; inset: 0; margin: 0; pointer-events: none; overflow: hidden; font: 15px/1.6 var(--mono); tab-size: 4; padding: 14px 14px 14px 44px; border: 1px solid transparent; white-space: pre; color: var(--fg); counter-reset: line; }
+.editor .hl .ln::before { counter-increment: line; content: counter(line); position: absolute; left: var(--sl, 0px); width: 32px; text-align: right; color: var(--muted); }
+.editor .hl .k { color: var(--accent); }
+.editor .hl .c { color: var(--muted); }
+.editor .hl .b { color: var(--hint); background: var(--hint-bg); border-radius: 3px; }
+.editor textarea#code { display: block; padding-left: 44px; position: relative; resize: none; overflow-y: hidden; }
+.editor.hl-on textarea#code { color: transparent; caret-color: var(--fg); background: transparent; }
+.editor.hl-on textarea#code::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); color: transparent; }
+@media (pointer: coarse) { .editor .hl { font-size: 16px; } }
+@media (pointer: coarse), (max-width: 560px) { .editor .hl { white-space: pre-wrap; overflow-wrap: anywhere; } }
+/* first visit */
+.howto { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.howto li::marker { font: 600 13px var(--mono); color: var(--accent); }
+/* no model running */
+.aioff p { color: var(--muted); }
+.aioff .linkbtn { justify-self: start; padding: 0; }
+/* task text: names stay in mono, without a box around each one */
+#taskPrompt code { background: none; border: 0; padding: 0; font-weight: 600; color: var(--fg); }
 .label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 500; }
 .label .ic { width: 18px; height: 18px; color: var(--accent); }
 .hintline { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
@@ -496,7 +523,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
       </div>
     </details>
     <details class="quiet" id="help"><summary>Python you'll need</summary><div><div id="blocksBody" class="pane"></div></div></details>
-    <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea>
+    <div class="editor" id="editor"><pre class="hl" id="codeHl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea></div>
     <div class="result idle" id="result">Write your code, then run the tests. Python runs right here in the page.</div>
     <pre class="out" id="stdout" hidden></pre>
     <div class="tools">
@@ -702,13 +729,26 @@ function reviewCard() {
   const first = due[0].text, short = first.length > 60 ? first.slice(0, 58) + "…" : first;
   return `<button class="rowcard" data-review><span class="tile gold">${ic("clock")}</span><span class="mt"><b>${due.length} ${due.length === 1 ? "thing" : "things"} due for review</b><span>${esc(short)}</span></span><span class="chev" aria-hidden="true">›</span></button>`;
 }
+// Set when the local server says no model is running: everything works except the tutor's replies.
+let aiOff = false;
+function aiOffNote() {
+  let hidden = false; try { hidden = sessionStorage.getItem("drill-aihide") === "1"; } catch {}
+  if (!aiOff || hidden) return "";
+  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload.</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
+}
 function renderHome() {
   renderTop();
   const nid = nextLesson();
   if (!openMods) openMods = new Set([nid ? phaseOf[modOf[nid].id].key : PHASES[0].key]);
   const doneToday = progress.days.includes(today()), wd = WEEKDAYS[new Date().getDay()];
+  const fresh = !progress.days.length && !Object.keys(progress.solved).length && !ORDER.some(started);
   let hello, card;
-  if (nid) {
+  if (nid && fresh) {  // first visit: say how it works, once; it goes away as soon as a lesson starts
+    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">AI engineering on Databricks, one short lesson a day. Nothing to install: your code runs right in this page.</p>`;
+    card = `<section class="next"><span class="eyebrow">How it works</span>
+      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with one question, build it in Python, then explain it in a sentence.</li><li><b>Stuck?</b> Hints come before answers, and the Notebook keeps what you save and brings it back for review.</li></ol>
+      <button class="btn primary" data-open="${nid}">Start the first lesson</button></section>`;
+  } else if (nid) {
     const m = modOf[nid], ph = phaseOf[m.id], i = m.lessons.indexOf(nid), s = lp(nid), go = started(nid);
     const leftInPhase = ph.modules.flatMap(mid => MOD[mid].lessons).filter(id => !isDoneL(id)).length;
     const why = [leftInPhase === 1 ? `Last one left in ${ph.name}.` : `${ph.name}, ${m.title}.`,
@@ -747,6 +787,7 @@ function renderHome() {
     ids.map(x => `<button class="row" data-practice="${x}">${markFor(x, false)}<span class="t">${esc(byId[x].title)}</span><span class="chev" aria-hidden="true">›</span></button>`).join(""));
   $("home").innerHTML = `<div class="hello">${hello}</div>
     ${card}
+    ${aiOffNote()}
     <div id="homeReview">${reviewCard()}</div>
     <div class="pathhead"><h2>Your path</h2><span>${PHASES.length} phases · ${ORDER.length} lessons</span></div>
     <div class="list">${phases}</div>
@@ -815,7 +856,7 @@ function renderFoot() {
     next.className = "btn primary"; next.innerHTML = `<span>${cur.after ? "Done for today" : "Back to the path"}</span>` + ic("check");
     return;
   }
-  prev.hidden = false; prev.className = "btn";
+  prev.hidden = false; prev.className = "btn"; next.disabled = false;
   prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
@@ -827,7 +868,7 @@ function renderFoot() {
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
   } else if (i === 0) label = "Next: Check";
   else if (i === 1) { if (lp(cur.id).checked === null) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
-  else { label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path"; icon = "check"; }
+  else { label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path"; icon = "check"; next.disabled = !canFinish(); }
   next.innerHTML = icon === "play" ? ic("play") + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
   next.className = quiet ? "btn quiet" : "btn primary";
 }
@@ -841,6 +882,7 @@ function goNext() {
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
+  if (!canFinish()) { $("sayIn").focus(); return; }
   const s = lp(cur.id); s.done = true; s.step = 3; markDay();
   const after = ORDER[ORDER.indexOf(cur.id) + 1];
   progress.current = after || null;
@@ -868,7 +910,7 @@ function showDone(id, after) {
     : `<section class="next"><span class="eyebrow">Path complete</span><h2>That was the last lesson.</h2></section>`;
   $("done").innerHTML = `<div class="donehead"><span class="donecheck">${ic("check")}</span><h1>${head}</h1><p>${sub}</p></div>
     <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
-    <div class="keyidea">${ic("quote")}<div><b>Say it like this</b><p>${md(L.angle[2])}</p></div></div>
+    <div class="keyidea">${ic("quote")}<div>${(s.said || "").trim() ? `<b>You said</b><p>${esc(s.said.trim())}</p><b class="ours">Ours</b>` : "<b>Say it like this</b>"}<p>${md(L.angle[2])}</p></div></div>
     ${next}`;
   renderTop(); show("done"); renderFoot();
 }
@@ -899,11 +941,27 @@ function checkPane() {
     : `<div class="verdict no">${ic("x")}<div><b>Not quite: it's ${"ABC"[ans]}.</b> ${md(why)}</div></div>`;
   return `<p class="q">${md(q)}</p><div class="opts">${buttons}</div>${verdict}${answered ? `<button class="linkbtn" data-retry>Try again</button>` : ""}`;
 }
+const SAY_WORDS = 4;  // "one sentence": enough words to be a thought, not a box ticked
+const words = t => (t || "").trim().split(/\s+/).filter(Boolean).length;
+const canFinish = () => lp(cur.id).done || words(lp(cur.id).said) >= SAY_WORDS;
+let sayTimer = null;
+document.addEventListener("input", e => {
+  if (e.target.id !== "sayIn" || !cur || cur.kind !== "lesson") return;
+  const s = lp(cur.id); s.said = e.target.value; const ready = words(s.said) >= SAY_WORDS;
+  $("sayNote").textContent = ready ? "" : "Write one sentence to finish the lesson.";
+  $("sayOurs").hidden = !ready; renderFoot();
+  clearTimeout(sayTimer); sayTimer = setTimeout(saveProgress, 600);
+});
 function anglePane() {
   const L = LESSONS[cur.id], p = cur.p, Ln = LEARN[cur.id] || {};
   const [pattern, text, say, classic] = L.angle;
   const gotchas = (Ln.gotchas || []).map(([h, t]) => `<li><b>${esc(h)}.</b> ${md(t)}</li>`).join("");
-  return `<section class="sec"><h3>The pattern you used</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p><p class="say">${md(say)}</p></section>
+  const said = lp(cur.id).said || "", ready = words(said) >= SAY_WORDS;
+  return `<section class="sec"><h3>The pattern you used</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p></section>
+    <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
+      <textarea id="sayIn" rows="3" maxlength="600" placeholder="I used … because …">${esc(said)}</textarea>
+      <div class="saynote" id="sayNote">${ready ? "" : "Write one sentence to finish the lesson."}</div>
+      <details class="quiet" id="sayOurs"${ready ? "" : " hidden"}><summary>Compare with ours</summary><div><p class="say">${md(say)}</p></div></details></section>
     ${p.realworld ? `<section class="sec"><h3>At work</h3><p>${md(p.realworld)}</p></section>` : ""}
     ${gotchaCard()}
     ${gotchas ? `<section class="sec"><h3>Watch out for</h3><ul class="gl">${gotchas}</ul></section>` : ""}
@@ -1678,6 +1736,35 @@ function editLines(fn) {
   ed.dispatchEvent(new Event("input"));
 }
 ed.addEventListener("input", () => { try { localStorage.setItem(draftKey(cur.p.id), ed.value); } catch {} });
+// Keyword colour, the ___ blanks and line numbers sit in a <pre> under the textarea, whose text is
+// see-through. The textarea grows with its code, so only sideways scrolling needs syncing. If drawing
+// ever fails, .hl-on is never set and the plain textarea shows as before.
+const PY_KW = new Set("and as assert break class continue def del elif else except False finally for from global if import in is lambda None nonlocal not or pass raise return True try while with yield".split(" "));
+function hlPython(src) {
+  const re = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(___)|([A-Za-z_][A-Za-z0-9_]*)|([^#"'A-Za-z_]+)/g;
+  let out = "", m;
+  while ((m = re.exec(src))) {
+    const [t, com, str, blank, word] = m;
+    if (com) out += `<span class="c">${esc(com)}</span>`;
+    else if (str) out += esc(str);
+    else if (blank) out += `<span class="b">___</span>`;
+    else if (word) out += PY_KW.has(word) ? `<span class="k">${word}</span>` : word;
+    else out += esc(t);
+  }
+  return out;
+}
+function syncCodeScroll() { const hl = $("codeHl"); hl.scrollLeft = ed.scrollLeft; hl.style.setProperty("--sl", ed.scrollLeft + "px"); }
+function drawCode() {
+  $("codeHl").innerHTML = hlPython(ed.value).split("\n").map(l => `<span class="ln">${l}</span>`).join("\n") + "\n";
+  ed.style.height = "auto"; ed.style.height = (ed.scrollHeight + 2) + "px";
+  syncCodeScroll(); $("editor").classList.add("hl-on");
+}
+{ // code set from script (a draft, the solution, Start over) redraws too
+  const d = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+  Object.defineProperty(ed, "value", { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v); drawCode(); } });
+}
+ed.addEventListener("input", drawCode); ed.addEventListener("scroll", syncCodeScroll);
+{ let w = 0; new ResizeObserver(([e]) => { const nw = Math.round(e.contentRect.width); if (nw && nw !== w) { w = nw; drawCode(); } }).observe($("editor")); }
 ed.addEventListener("keydown", e => {
   const multi = ed.value.slice(ed.selectionStart, ed.selectionEnd).includes("\n");
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); runTests(); return; }
@@ -1735,6 +1822,7 @@ $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.
 document.addEventListener("click", async e => {
   const t = e.target;
   if (t.closest("[data-review]")) { openNotebook("study"); return; }
+  if (t.closest("[data-aihide]")) { try { sessionStorage.setItem("drill-aihide", "1"); } catch {} t.closest(".aioff").remove(); return; }
   const tg = t.closest("[data-toggle]"); if (tg) { const id = tg.dataset.toggle, open = !openMods.has(id); if (open) openMods.add(id); else openMods.delete(id); tg.setAttribute("aria-expanded", String(open)); tg.nextElementSibling.hidden = !open; return; }
   const stg = t.closest("[data-stage]"); if (stg) { lifeSel = +stg.dataset.stage; const y = window.scrollY; renderHome(); window.scrollTo(0, y); return; }
   const jump = t.closest("[data-jump]"); if (jump) { openMods.add(jump.dataset.jump); if (phaseOf[jump.dataset.jump]) openMods.add(phaseOf[jump.dataset.jump].key); renderHome(); const el = $("m-" + jump.dataset.jump); if (el) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); return; }
@@ -1864,7 +1952,7 @@ async function localBackend() {
       }),
     }),
   };
-  return { s, db, user: { id: async () => health.user } };
+  return { s, db, user: { id: async () => health.user }, local: true };
 }
 
 // ---------- boot ----------
@@ -1879,6 +1967,7 @@ goHome();
   if (!backend) return;
   const { s, db, user } = backend;
   sample = s; sampleOff = !sample; document.body.classList.toggle("no-ai", !sample); updateHintBtn(); renderStudy();
+  aiOff = !!(backend.local && !s); if (aiOff && !cur) renderHome();
   if (db && user) {
     try {
       const id = await user.id();
@@ -1891,7 +1980,7 @@ goHome();
           const lessons = Object.assign({}, r.lessons || {});
           for (const [k, v] of Object.entries(progress.lessons)) {
             const o = lessons[k];
-            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done) };
+            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said };
           }
           progress = {
             solved: Object.assign({}, r.solved || {}, progress.solved),

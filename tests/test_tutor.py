@@ -78,3 +78,5 @@ def test_progress_from_two_copies_merges_like_the_page():
     merged = tutor.merge_progress(mac, phone)
     assert merged["lessons"]["x"] == {"step": 3, "checked": 2, "done": True} and "y" in merged["lessons"]
     assert merged["gotchas"] == {"x": 0, "y": 2} and merged["days"] == ["d1", "d2"] and merged["current"] == "y"
+    mac["lessons"]["x"]["said"] = "I used a set so each check is instant."
+    assert tutor.merge_progress(mac, phone)["lessons"]["x"]["said"] == mac["lessons"]["x"]["said"], "the sentence survives a merge"

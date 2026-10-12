@@ -196,6 +196,9 @@ def merge_progress(a: dict, b: dict) -> dict:
             "checked": theirs.get("checked") if theirs.get("checked") is not None else mine.get("checked"),
             "done": bool(mine.get("done") or theirs.get("done")),
         }
+        said = theirs.get("said") or mine.get("said")  # the Explain step's sentence, when there is one
+        if said:
+            lessons[lesson_id]["said"] = said
     return {
         "solved": {**(a.get("solved") or {}), **(b.get("solved") or {})},
         "days": sorted(set(a.get("days") or []) | set(b.get("days") or [])),

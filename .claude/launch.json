@@ -15,6 +15,7 @@
       "runtimeExecutable": "env",
       "runtimeArgs": [
         "DRILL_PORT=8788",
+        "DRILL_DATABASE_URL=sqlite:///.drill/preview.db",
         "uv",
         "run",
         "drill-server"
