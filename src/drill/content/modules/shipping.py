@@ -1,8 +1,240 @@
-"""Shipping models and agents: Registering, promoting and canarying on Databricks."""
+"""Shipping models and agents: Graduating, registering, promoting and canarying on Databricks."""
 
 from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
 
-MODULE = module('shipping', 'Shipping models and agents', 'Registering, promoting and canarying on Databricks.')
+MODULE = module('shipping', 'Shipping models and agents', 'Graduating, registering, promoting and canarying on Databricks.')
+
+lesson(MODULE, 'graduation_gate',
+    title='The graduation gate',
+    learn=[
+        'A common setup is a **shared experiment space**: one model deployment for everyone, with a spending limit and a rate limit for each person. That keeps trials cheap. But it is no place for an app people rely on: one busy experiment can use up the capacity, and nobody is named to fix things.',
+        '**Graduation** moves an app out of that space onto production capacity, with limits sized for it. An app that graduates on enthusiasm alone can hit rate limits, a surprise bill or quiet failures in its first week.',
+        'So graduate on **evidence the proof of concept (POC, a small trial build) measured**. Keep it in a **graduation pack**: a named owner, the eval pass rate, whether every must-pass question passes (ones it must never get wrong), the cost per success (the cost of all runs, failed ones included, divided by the runs that passed, in dollars), the tokens a minute it needs at its busiest, and monitoring (alerts that tell the owner when it breaks).',
+        "The **graduation gate** checks the pack against a bar (the limits it must meet), written down before the POC started. It lists every check that fails, not just the first, so the team can fix them all in one round. The platform team then sizes the app's capacity from the same numbers.",
+    ],
+    example=example('One pack, checked against the bar', """evidence = {
+  "owner": "ana",
+  "pass_rate": 0.86,        # bar 0.9
+  "must_pass_ok": True,
+  "cost_per_success": 0.12, # bar 0.1
+  "peak_tpm": 75000,        # bar 90000
+  "monitoring": True}
+# Not yet, for 2 reasons:
+# the pass rate is below 0.9,
+# and the cost per success is
+# above 0.1."""),
+    check=question(
+        'Before an app graduates, the platform team asks how many tokens a minute it needs at its busiest. Why?',
+        [
+            'To bill the team for the tokens its trial already used',
+            'To check that its answers are right before real users see them',
+            'To size the capacity it moves to so it is not rate limited on day one',
+        ],
+        answer=2,
+        why="Graduation moves the app onto capacity sized for it, and its busiest minute says how many tokens a minute that capacity must allow. Checking answers is the pass rate's job.",
+    ),
+    angle=angle(
+        pattern='Collect every failure',
+        text='Check each rule once, add a reason for every rule that fails, then sort so the answer comes out the same way every time. There is no early return: the point is the whole list.',
+        say='"I run every check and collect all the failing reasons instead of stopping at the first, so the team can fix everything in one round. Sorting keeps the output stable."',
+        classic=None,
+    ),
+    stack=stack('MLflow: log the pack on a run, read it back', """import mlflow
+
+# The POC and the gate share
+# one experiment.
+mlflow.set_experiment("/Shared/hr-bot")
+
+# The POC logs its pack on one run.
+# tpm means tokens a minute.
+# Count peak_tpm the way Foundry does:
+# prompt plus max_tokens per call.
+with mlflow.start_run(
+        run_name="grad-pack",
+        tags={"owner": "ana",
+              "must_pass_ok": "yes",
+              "monitoring": "yes"}):
+    mlflow.log_metrics({
+        "pass_rate": 0.86,
+        "cost_per_success": 0.12,
+        "peak_tpm": 75000})
+
+# The gate reads the newest pack back.
+runs = mlflow.search_runs(
+    experiment_names=["/Shared/hr-bot"],
+    filter_string="run_name = 'grad-pack'",
+    order_by=["start_time DESC"],
+    max_results=1)
+row = runs.iloc[0]   # one pandas row
+evidence = {
+    "owner": row["tags.owner"],
+    "pass_rate": row["metrics.pass_rate"],
+    "peak_tpm": row["metrics.peak_tpm"],
+    "monitoring":
+        row["tags.monitoring"] == "yes",
+    # ...the rest of the pack the same way
+}"""),
+    exercise=exercise(
+        title='Check the Graduation Pack',
+        topic='shipping',
+        difficulty='easy',
+        fn='graduation_gate',
+        prompt="""Your function gets two things:
+
+- `evidence`: what the POC measured, like `{"owner": "ana", "pass_rate": 0.86, "must_pass_ok": True, "cost_per_success": 0.12, "peak_tpm": 75000, "monitoring": True}`. `cost_per_success` is the cost of all runs, failed ones included, divided by the runs that passed, in dollars. `peak_tpm` is the tokens a minute (tpm) it needs at its busiest, bursts included.
+- `bar`: the limits to meet, like `{"min_pass_rate": 0.9, "max_cost_per_success": 0.1, "capacity_tpm": 90000}`. `capacity_tpm` is the most tokens a minute the platform can give it.
+
+Every rule that fails adds its reason:
+
+- `"no owner"`: the owner is `""`.
+- `"pass rate below the bar"`: `pass_rate` is below `min_pass_rate`.
+- `"a must-pass question fails"`: `must_pass_ok` is `False`.
+- `"cost per success above the bar"`: `cost_per_success` is above `max_cost_per_success`.
+- `"peak tokens a minute above capacity"`: `peak_tpm` is above `capacity_tpm`.
+- `"no monitoring"`: `monitoring` is `False`.
+
+Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list means it graduates.""",
+        pattern='Check every rule, add a reason for each one that fails, and sort at the end.',
+        target='one check per rule, then one sort',
+        realworld='A shared experiment space keeps trials cheap, but an app people rely on needs an owner, alerts and capacity sized for it. A written gate turns "is it ready?" into a list the team can work through, and the platform team sizes the app\'s capacity from the same numbers.',
+        starter="""def graduation_gate(evidence, bar):
+    # your code here
+    pass
+""",
+        solution="""def graduation_gate(evidence, bar):
+    reasons = []
+    if evidence["owner"] == "":
+        reasons.append("no owner")
+    if evidence["pass_rate"] < bar["min_pass_rate"]:
+        reasons.append("pass rate below the bar")
+    if not evidence["must_pass_ok"]:
+        reasons.append("a must-pass question fails")
+    if evidence["cost_per_success"] > bar["max_cost_per_success"]:
+        reasons.append("cost per success above the bar")
+    if evidence["peak_tpm"] > bar["capacity_tpm"]:
+        reasons.append("peak tokens a minute above capacity")
+    if not evidence["monitoring"]:
+        reasons.append("no monitoring")
+    return sorted(reasons)
+""",
+        cases=[
+            case({
+                'owner': 'ana', 'pass_rate': 0.86, 'must_pass_ok': True,
+                'cost_per_success': 0.12, 'peak_tpm': 75000, 'monitoring': True,
+            }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 90000},
+                expected=['cost per success above the bar', 'pass rate below the bar'], sample=True),
+            case({
+                'owner': 'li', 'pass_rate': 0.95, 'must_pass_ok': True,
+                'cost_per_success': 0.05, 'peak_tpm': 20000, 'monitoring': True,
+            }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 75000},
+                expected=[]),
+            case({
+                'owner': 'sam', 'pass_rate': 0.9, 'must_pass_ok': True,
+                'cost_per_success': 0.1, 'peak_tpm': 75000, 'monitoring': True,
+            }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 75000},
+                expected=[]),
+            case({
+                'owner': '', 'pass_rate': 0.5, 'must_pass_ok': False,
+                'cost_per_success': 0.4, 'peak_tpm': 90000, 'monitoring': False,
+            }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 75000},
+                expected=[
+                    'a must-pass question fails',
+                    'cost per success above the bar',
+                    'no monitoring',
+                    'no owner',
+                    'pass rate below the bar',
+                    'peak tokens a minute above capacity',
+                ]),
+            case({
+                'owner': '', 'pass_rate': 0.93, 'must_pass_ok': False,
+                'cost_per_success': 0.07, 'peak_tpm': 40000, 'monitoring': False,
+            }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 75000},
+                expected=['a must-pass question fails', 'no monitoring', 'no owner']),
+            case({
+                'owner': 'ana', 'pass_rate': 0.82, 'must_pass_ok': True,
+                'cost_per_success': 0.3, 'peak_tpm': 30001, 'monitoring': True,
+            }, {'min_pass_rate': 0.8, 'max_cost_per_success': 0.5, 'capacity_tpm': 30000},
+                expected=['peak tokens a minute above capacity']),
+        ],
+        guided="""def graduation_gate(evidence, bar):
+    # Replace every ___ with real code, then run the tests.
+
+    # Check every rule. Each one that fails adds a reason.
+    reasons = []
+    if evidence["owner"] == "":
+        reasons.append("no owner")
+    # Step 1: is pass_rate below the bar's min_pass_rate?
+    if ___:
+        reasons.append("pass rate below the bar")
+    if not evidence["must_pass_ok"]:
+        reasons.append("a must-pass question fails")
+    # Step 2: is cost_per_success above max_cost_per_success?
+    if ___:
+        reasons.append("cost per success above the bar")
+    if evidence["peak_tpm"] > bar["capacity_tpm"]:
+        reasons.append("peak tokens a minute above capacity")
+    if not evidence["monitoring"]:
+        reasons.append("no monitoring")
+    # Step 3: return the reasons, sorted A to Z.
+    return ___
+""",
+        fills=[
+            'evidence["pass_rate"] < bar["min_pass_rate"]',
+            'evidence["cost_per_success"] > bar["max_cost_per_success"]',
+            'sorted(reasons)',
+        ],
+        concepts=[
+            [
+                'Dict access',
+                '`evidence["pass_rate"]` gets one value from a dict by its key.',
+                """song = {"title": "Hey", "mins": 3}
+song["mins"]   # 3""",
+            ],
+            [
+                'Below and above',
+                '`<` means "below" and `>` means "above". A tie is neither, so a value exactly at the limit passes.',
+                """18 < 20   # True
+20 < 20   # False: a tie""",
+            ],
+            [
+                'not',
+                '`not` flips True and False. `if not done:` runs its block when `done` is False.',
+                """raining = False
+not raining   # True""",
+            ],
+            [
+                'Empty text',
+                '`""` is text with nothing in it. `name == ""` is True when there is no name.',
+                """name = ""
+name == ""   # True""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append("Ana")   # ["Ana"]""",
+            ],
+            [
+                'sorted',
+                '`sorted(a_list)` gives a new list in order. Text goes A to Z.',
+                """sorted(["pear", "apple"])
+# ["apple", "pear"]""",
+            ],
+        ],
+        byhand='The owner is "ana", so there is one. The pass rate 0.86 is below 0.9: add "pass rate below the bar". must_pass_ok is True: fine. The cost per success 0.12 is above 0.1: add "cost per success above the bar". The peak 75000 is not above 90000: fine. monitoring is True: fine. That makes two reasons. Sorted A to Z, "cost" comes before "pass". Return ["cost per success above the bar", "pass rate below the bar"].',
+        why='Six quick checks, then one sort of a short list.',
+        gotchas=[
+            [
+                'Stopping at the first failure',
+                'Return after the first reason and the team fixes one thing, comes back, and only then finds the next. List every reason at once.',
+            ],
+            [
+                'Setting the bar after the results',
+                'Write the bar down before the POC runs. A bar picked after seeing the numbers tends to move to fit them.',
+            ],
+        ],
+    ),
+)
 
 lesson(MODULE, 'promote_model',
     title='Model registry and promotion',

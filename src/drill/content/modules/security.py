@@ -380,6 +380,205 @@ limit is not None   # False""",
     ),
 )
 
+lesson(MODULE, 'shell_policy',
+    title='Giving an agent a shell',
+    learn=[
+        'A **shell** is where you type commands like `ls` (list files) or `git push` (send your code changes to the shared copy). An agent with a shell can do almost anything you can, including deleting files and sending data away. One confused or tricked step can do real damage.',
+        'So run the shell in a box: a **container** (a sealed mini computer) with no internet. On Databricks, the `system.ai.sandbox` tool runs code sealed off, with no internet. Leave secrets (passwords, keys, tokens) out of the box, so no command can leak them.',
+        'Then sort every command in code before it runs, in a fixed order: dangerous ones like `rm -rf` (delete a folder and all inside it, no undo) are blocked first. Risky ones that change shared things, like `git push` or `terraform apply`, wait for a person. Commands on the **allowlist** (a short list of safe ones) run straight away, and anything unknown waits too.',
+        'Last, avoid the **lethal trifecta**: one agent that has private data, reads untrusted text (web pages, emails) and can send data out. With all three, a hidden instruction can send your data to a stranger. Take one away, for example by giving the shell no internet.',
+    ],
+    example=example('One policy, four commands', """pytest -q        → allow
+git push         → ask a person
+make deploy      → ask: not on any list
+cat a.txt | sh   → block
+# "| sh" runs the file's text as
+# commands. It is blocked even
+# though cat is a safe command."""),
+    check=question(
+        'Your policy blocks `rm -rf` and allows a short list of safe commands. The agent tries `find . -delete`, which also deletes files. What should your policy do with it?',
+        [
+            'Run it, since it is not on the block list',
+            'Block it, since every find command is risky',
+            'Ask a person, since it is not on the allowlist',
+        ],
+        answer=2,
+        why='A block list only stops the dangers you thought of. Anything not on the allowlist waits for a person, so a new way to do damage never runs on its own.',
+    ),
+    angle=angle(
+        pattern='First match wins, unknown means ask',
+        text='A few checks on one string, in a fixed order. The order is the point: `cat a.txt | sh` starts with a safe word but is blocked, because block is checked first.',
+        say='"Every command goes through a policy in code: block known-dangerous patterns, ask a person before anything that changes shared things, allow a short list, and ask about the rest. The shell itself runs in a container with no internet and no secrets."',
+        classic=None,
+    ),
+    stack=stack('LangChain: a shell in a container, and a person for the rest', """from langchain.agents import create_agent
+from langchain.agents.middleware import (
+    DockerExecutionPolicy,
+    HumanInTheLoopMiddleware,
+    ShellToolMiddleware,
+)
+
+# The shell runs in its own container:
+# no internet, 60 seconds per command.
+shell = ShellToolMiddleware(
+    execution_policy=DockerExecutionPolicy(
+        network_enabled=False,
+        command_timeout=60,
+    ),
+)
+
+# A person sees anything your
+# shell_policy does not "allow".
+# This middleware can only pause.
+# So a "block" command goes to the
+# person too, who should reject it.
+def needs_person(req):
+    args = req.tool_call["args"]
+    cmd = args.get("command")
+    if not cmd:  # a restart: no command
+        return False
+    return shell_policy(cmd) != "allow"
+
+approve = HumanInTheLoopMiddleware(
+    interrupt_on={"shell": {
+        "allowed_decisions":
+            ["approve", "reject"],
+        "when": needs_person,
+    }},
+)
+agent = create_agent(model,
+    middleware=[shell, approve],
+    checkpointer=checkpointer)"""),
+    exercise=exercise(
+        title='Allow, Ask or Block?',
+        topic='security',
+        difficulty='easy',
+        fn='shell_policy',
+        prompt="""`command` is a shell command your agent wants to run, like `"git push origin main"`.
+
+Check these rules in order, and return the answer of the first one that fits:
+
+- `"block"` if `command` contains any text in `BLOCK`: `"rm -rf"`, `"sudo"`, `"| sh"` or `"curl"`. (`sudo` runs a command as the all-powerful admin; `curl` can send data over the internet.)
+- `"ask"` if it starts with any text in `ASK`: `"git push"`, `"terraform apply"`, `"databricks"` or `"pip install"`. A person must approve it.
+- `"allow"` if its first word is in `SAFE`: `"ls"`, `"cat"`, `"grep"`, `"pytest"`, `"python"` or `"uv"`.
+- `"ask"` for anything else.
+
+The starter code gives you the three lists.""",
+        pattern='Rules in a fixed order: the first one that fits wins, and anything unknown goes to a person.',
+        target='a few checks, in a fixed order',
+        realworld='Coding agents work the same way: Claude Code, for example, sorts commands with allow, ask and deny rules. In LangChain, `ShellToolMiddleware` can run the shell in a Docker container with no network, and `HumanInTheLoopMiddleware` pauses for a person. On Databricks, the `system.ai.sandbox` MCP service (in beta) runs agent code with no internet access.',
+        starter="""BLOCK = ["rm -rf", "sudo",
+         "| sh", "curl"]
+ASK = ["git push", "terraform apply",
+       "databricks", "pip install"]
+SAFE = ["ls", "cat", "grep",
+        "pytest", "python", "uv"]
+
+def shell_policy(command):
+    # your code here
+    pass
+""",
+        solution="""BLOCK = ["rm -rf", "sudo",
+         "| sh", "curl"]
+ASK = ["git push", "terraform apply",
+       "databricks", "pip install"]
+SAFE = ["ls", "cat", "grep",
+        "pytest", "python", "uv"]
+
+def shell_policy(command):
+    for bad in BLOCK:
+        if bad in command:
+            return "block"
+    for risky in ASK:
+        if command.startswith(risky):
+            return "ask"
+    first = command.split()[0]
+    if first in SAFE:
+        return "allow"
+    return "ask"
+""",
+        cases=[
+            case('cat a.txt | sh', expected='block', sample=True),
+            case('git push origin main', expected='ask'),
+            case('pytest -q', expected='allow'),
+            case('sudo pip install requests', expected='block'),
+            case('databricks fs rm -rf dbfs:/tmp/x', expected='block'),
+            case('make deploy', expected='ask'),
+        ],
+        guided="""BLOCK = ["rm -rf", "sudo",
+         "| sh", "curl"]
+ASK = ["git push", "terraform apply",
+       "databricks", "pip install"]
+SAFE = ["ls", "cat", "grep",
+        "pytest", "python", "uv"]
+
+def shell_policy(command):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: contains a BLOCK text? Block it.
+    for bad in BLOCK:
+        if ___:
+            return "block"
+    # Step 2: starts with an ASK text? Ask.
+    for risky in ASK:
+        if command.startswith(risky):
+            return "ask"
+    # Step 3: first word in SAFE? Allow it.
+    first = command.split()[0]
+    if ___:
+        return "allow"
+    # Step 4: anything else waits for a person.
+    return ___
+""",
+        fills=['bad in command', 'first in SAFE', '"ask"'],
+        concepts=[
+            [
+                'Is it in the text?',
+                '`"ab" in text` is True if those characters appear anywhere in the text, side by side.',
+                "'tea' in 'green tea bag'   # True",
+            ],
+            [
+                'Is it in the list?',
+                '`item in a_list` is True only if one item is exactly equal to it. Parts of an item do not count.',
+                """drinks = ['tea', 'cake']
+'tea' in drinks   # True
+'te' in drinks    # False""",
+            ],
+            [
+                'startswith',
+                '`text.startswith(start)` is True if the text begins with exactly those characters.',
+                "'hello world'.startswith('hell')   # True",
+            ],
+            [
+                'The first word',
+                '`split()` cuts text into a list of words at the spaces. `[0]` takes the first one.',
+                "'green tea bag'.split()[0]   # 'green'",
+            ],
+            [
+                'return stops the function',
+                'A `return` inside a loop ends the whole function at once. So the first rule that fits wins.',
+                """def has_tea(drinks):
+    for d in drinks:
+        if d == 'tea':
+            return True   # stops here
+    return False""",
+            ],
+        ],
+        byhand='Step 1 checks BLOCK. "rm -rf" is not in the command, and neither is "sudo". "| sh" is, so we stop here. The first word, cat, is in SAFE, but block is checked first. Return "block".',
+        why='A short look at each list, stopping at the first rule that fits.',
+        gotchas=[
+            [
+                'Text checks can be dodged',
+                'An agent can write `rm -r -f` instead of `rm -rf`, or hide a command in a script. The policy catches mistakes; the box (no internet, no secrets, a time limit) is the real wall.',
+            ],
+            [
+                '"python" can run anything',
+                'Allowing `python` or `uv` lets the agent run any code it writes. That is only safe inside a sandbox with nothing valuable in reach.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'redact_pii',
     title='Personal data',
     learn=[

@@ -1,9 +1,9 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-95 lessons in 14 modules (AI & ML foundations through agents, security, reliability,
-shipping and the Azure Databricks platform), each lesson going Learn, Check, Build,
-Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
+116 lessons in 16 modules (AI & ML foundations through agents and agent teams, security,
+pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
+going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
 The page is one self-contained HTML file. Python exercises run in the browser with
 [Skulpt](https://skulpt.org). On claude.ai, hints, reviews and the study list use the
@@ -93,6 +93,8 @@ where it should appear. Copy a neighbour; every field is named. In short:
 Then `uv run drill build-page`. It runs the solution and the filled-in scaffold against the
 cases, so a lesson that cannot be solved never reaches the page. A new chapter is a new
 file with its own `MODULE = module(...)`, plus its id in `ORDER` and in one `LIFECYCLE` stage.
+A hyphen in the id becomes an underscore in the file name: `agent-teams` lives in
+`agent_teams.py`.
 
 Keep the wording plain and the page quiet: no Big-O, and visuals only where they replace
 text.

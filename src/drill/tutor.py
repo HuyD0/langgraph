@@ -39,9 +39,12 @@ STEPS = ["Learn", "Check", "Build", "Explain"]
 
 
 def _plain(text: str) -> str:
-    """Markdown emphasis off, whitespace squeezed, for one-line cells and lists."""
+    """Markdown emphasis off, whitespace squeezed, for one-line list items.
+
+    Pipes stay as they are: lessons quote shell commands like `cat a.txt | sh`.
+    """
     text = re.sub(r"\*\*(.+?)\*\*", r"\1", str(text))
-    return " ".join(text.replace("|", "/").split())
+    return " ".join(text.split())
 
 
 def _short(text: str, limit: int) -> str:
