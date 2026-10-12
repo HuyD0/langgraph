@@ -180,6 +180,20 @@ Only use what the numbers show; do not guess at feelings or effort. No headings,
 points, no names."""
 
 
+def plain(text: str) -> str:
+    """The note as plain sentences: models add headings and bold even when asked not to,
+    and the dashboard shows text as it is, marks and all."""
+    import re
+
+    lines = []
+    for line in text.strip().splitlines():
+        line = re.sub(r"^\s*(#+|[-*]|\d+\.)\s+", "", line)  # headings, bullets, numbered points
+        line = line.replace("**", "").replace("__", "").strip()
+        if line and not (len(line) < 40 and not line.endswith((".", "!", "?"))):  # a heading left on its own line
+            lines.append(line)
+    return "\n\n".join(lines)
+
+
 def due(store: DocStore, now: float | None = None) -> list[str]:
     """Learners active in the last week whose note for this week is missing, or a day old with news since."""
     now = now or time.time()
@@ -207,7 +221,7 @@ async def write_summary(store: DocStore, router: Any, bank: Any, owner: str, now
     except Exception as exc:  # noqa: BLE001
         log.warning("No weekly summary for one learner: %s", exc)
         return None
-    note = answer.text.strip()
+    note = plain(answer.text)
     if not note:
         return None
     week = iso_week(now)
