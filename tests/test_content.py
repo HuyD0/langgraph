@@ -181,3 +181,38 @@ def test_every_build_it_for_real_card_points_at_a_real_notebook_section():
         cells = json.loads((root / f"{notebook}.ipynb").read_text())["cells"]
         headings = {line[3:].strip() for c in cells if c["cell_type"] == "markdown" for line in "".join(c["source"]).splitlines() if line.startswith("## ")}
         assert section in headings, f"{lesson_id}: {notebook} has no section {section!r}"
+
+
+def test_motion_effects_keep_their_promises():
+    """Every effect the script plays has its look, and the looks stay cheap: they never loop or blur,
+    each root ends with fx-end (when the script removes it), and the engine checks motion first."""
+    import re
+    from pathlib import Path
+
+    page = (Path(__file__).parent.parent / "src" / "drill" / "content" / "page.html").read_text()
+    fx = page.split("/* fx: start */")[1].split("/* fx: end */")[0]
+    assert "infinite" not in fx and "blur(" not in fx, "effects must end on their own and stay cheap to draw"
+    played = set(re.findall(r'fxScreen\("([a-z]+)"', page)) | set(re.findall(r'fxOn\(.*?, "([a-z]+)", FX\.', page))
+    assert played >= {"space", "merge", "spark", "turn", "curtain", "heal", "smoke", "seal", "unveil"}
+    for name in played:
+        assert f".fx-{name} " in fx, f"fx {name!r} is played but has no .fx-{name} rules"
+        assert re.search(rf"\b{name}: ", page.split("const FX = {")[1].split("};")[0]), f"FX.{name} has no markup"
+    defined = set(re.findall(r"@keyframes ([a-z-]+)", page))
+    used = {n for decl in re.findall(r"animation:([^;}]+)", fx) for n in re.findall(r"\b(fx-[a-z-]+)", decl)}
+    assert used <= defined, f"animations with no keyframes: {sorted(used - defined)}"
+    engine = page.split("// ---------- motion: short effects")[1].split("const FX = {")[0]
+    for fn in ("fxScreen", "fxOn", "fxMove"):
+        body = engine.split(f"function {fn}(")[1].split("\n}")[0]
+        assert "motionOn()" in body and "try {" in body, f"{fn} must check motion and never throw"
+    assert 'e.animationName !== "fx-end"' in engine and "FX_LIMIT" in engine
+
+
+def test_every_look_has_the_motion_tokens():
+    """Effects read their colours from tokens, so each theme must define them (light, dark twice, dusk)."""
+    from pathlib import Path
+
+    tokens = (Path(__file__).parent.parent / "src" / "drill" / "content" / "tokens.css").read_text()
+    for name in ("--fx-core", "--fx-glow", "--fx-veil", "--fx-red", "--fx-mix"):
+        assert tokens.count(name + ":") == 4, name
+    for name in ("--dur-tap", "--dur-step", "--dur-moment", "--dur-big", "--ease-out", "--ease-in", "--ease-pop"):
+        assert tokens.count(name + ":") == 1, name
