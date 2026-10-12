@@ -24,6 +24,16 @@ env:
     value: databricks
   - name: DRILL_MLFLOW_EXPERIMENT_ID
     valueFrom: experiment
+  # Traces kept in Unity Catalog need a SQL warehouse to attach feedback to them.
+  - name: MLFLOW_TRACING_SQL_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  # The answer checks stay tags and a span on every trace, but are not written as assessments
+  # one by one (each write would wake the warehouse); `drill traces score` adds them in a batch.
+  - name: DRILL_CHECKS_AS_FEEDBACK
+    value: "false"
+  # Upload traces in the background, so no answer waits on tracing.
+  - name: MLFLOW_ENABLE_ASYNC_LOGGING
+    value: "true"
 
   # An app can't scale to zero, so it stops itself after this many minutes with no
   # requests; `drill cloud start` brings it back. 0 keeps it running.

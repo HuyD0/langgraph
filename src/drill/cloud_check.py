@@ -14,7 +14,9 @@ runs as, against each thing it touches:
 | The model (a Unity Gateway model service) | ``USE CATALOG``, ``USE SCHEMA``, ``EXECUTE`` | the app's ``model`` resource |
 | Lakebase | a Postgres role on the branch | the app's ``postgres`` resource |
 | The MLflow experiment | ``CAN_EDIT`` | the app's ``experiment`` resource |
-| The trace tables in Unity Catalog | ``USE CATALOG``, ``USE SCHEMA``, ``SELECT`` and ``MODIFY`` on the span and log tables | nobody: grant it, or ``--fix`` |
+| The trace tables in Unity Catalog | ``USE CATALOG``, ``USE SCHEMA``, ``SELECT`` and ``MODIFY`` on the span, log and annotation tables | nobody: grant it, or ``--fix`` |
+| The SQL warehouse (to attach feedback to those traces) | ``CAN_USE`` | the app's ``sql-warehouse`` resource |
+| The prompts schema (to link traces to prompt versions) | ``USE CATALOG``, ``USE SCHEMA``, ``EXECUTE`` | nobody: grant it, or ``--fix`` |
 | Its own app (to stop itself when idle) | ``CAN_MANAGE`` | ``drill cloud deploy`` |
 
 Rights are read as *effective* rights, so a grant to a group the principal is in (such as
@@ -63,10 +65,12 @@ def has(privileges: set[str], *wanted: str) -> list[str]:
 
 
 def acl_levels(acl: Any, principal: str) -> set[str]:
-    """Permission levels ``principal`` (a user, group or service principal) holds in a workspace ACL."""
+    """Permission levels ``principal`` holds in a workspace ACL, directly or through the ``users`` group,
+    which every user and service principal in a workspace belongs to."""
     levels: set[str] = set()
     for entry in (acl or {}).get("access_control_list", []) if isinstance(acl, dict) else []:
-        if principal in (entry.get("service_principal_name"), entry.get("user_name"), entry.get("group_name")):
+        if principal in (entry.get("service_principal_name"), entry.get("user_name"), entry.get("group_name")) \
+                or entry.get("group_name") == "users":
             levels |= {p["permission_level"] for p in entry.get("all_permissions", [])}
     return levels
 
@@ -167,7 +171,8 @@ def check(target: str, profile: str | None, cli: Cli = cloud.cli, live: bool = T
         if destination:
             tcat, tschema = destination.split(".")[:2]
             tables = [tags[k] for k in ("mlflow.experiment.databricksTraceSpanStorageTable",
-                                        "mlflow.experiment.databricksTraceLogStorageTable") if k in tags]
+                                        "mlflow.experiment.databricksTraceLogStorageTable",
+                                        "mlflow.experiment.databricksTraceAnnotationStorageTable") if k in tags]
             need = [("catalog", tcat, ["USE_CATALOG"]), ("schema", f"{tcat}.{tschema}", ["USE_SCHEMA"])]
             need += [("table", t, ["SELECT", "MODIFY"]) for t in tables]
             for securable, name, privileges in need:
@@ -178,6 +183,36 @@ def check(target: str, profile: str | None, cli: Cli = cloud.cli, live: bool = T
                             grant_cmd(securable, name, who, gap) if deployed
                             else "Ask for MANAGE here (so you can grant the app), or have it granted to the app after deploy",
                             (securable, name, who, gap) if deployed and gap else None))
+
+    # -- the SQL warehouse (feedback on traces kept in Unity Catalog) -----------------
+    warehouse = settings.get("warehouse_id", "")
+    if not warehouse:
+        add(Finding("Traces", "a SQL warehouse for feedback", False, "none saved",
+                    f"uv run drill cloud setup --target {target}  (or --warehouse <id>)"))
+    else:
+        levels = acl_levels(cli("warehouses", "get-permissions", warehouse, "-o", "json", profile=profile, check=False), who)
+        ok = bool(levels & ({"CAN_USE", "CAN_MANAGE", "IS_OWNER"} if deployed else {"CAN_MANAGE", "IS_OWNER"}))
+        add(Finding("Traces", f"{whom}: {'CAN_USE' if deployed else 'CAN_MANAGE'} on warehouse {warehouse}", ok,
+                    ", ".join(sorted(levels)) or "none",
+                    f"uv run drill cloud deploy --target {target}  (the sql-warehouse resource grants it)" if deployed
+                    else "Ask the warehouse owner for CAN_MANAGE, or pick one you manage with --warehouse"))
+
+    # -- the prompts the app links its traces to ----------------------------------------
+    prompts = settings.get("prompt_schema", "")
+    if prompts:
+        # You register the prompts and the review cases (an evaluation dataset, a table) here.
+        need = ["USE_SCHEMA", "CREATE_FUNCTION", "CREATE_TABLE", "EXECUTE"]
+        gap = has(effective(cli, "schema", prompts, me, profile), *need)
+        add(Finding("Prompts", f"you: {', '.join(need)} on {prompts} (to register prompts and the eval set)", not gap,
+                    f"missing {', '.join(gap)}" if gap else "",
+                    f"Ask for these on {prompts}, or use a schema you own: drill cloud setup --prompt-schema <catalog.schema>"))
+    if prompts and deployed:
+        pcat = prompts.split(".")[0]
+        for securable, name, privileges in (("catalog", pcat, ["USE_CATALOG"]), ("schema", prompts, ["USE_SCHEMA", "EXECUTE"])):
+            gap = has(effective(cli, securable, name, sp, profile), *privileges)
+            add(Finding("Prompts", f"the app: {', '.join(privileges)} on {name}", not gap,
+                        f"missing {', '.join(gap)}" if gap else "", grant_cmd(securable, name, sp, gap),
+                        (securable, name, sp, gap) if gap else None))
 
     # -- stopping itself ------------------------------------------------------------
     if deployed:
