@@ -444,12 +444,12 @@ body.no-ai .ai-only { display: none; }
 .habit { font-size: 14px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
 .habit b { color: var(--fg); font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) {
-  .gcode.reveal .gln.del { animation: gl-del .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
-  .gcode.reveal .gln.add { animation: gl-add .45s ease-out both; animation-delay: calc(var(--i) * 70ms + 350ms); }
+  :root:not([data-motion="off"]) .gcode.reveal .gln.del { animation: gl-del .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+  :root:not([data-motion="off"]) .gcode.reveal .gln.add { animation: gl-add .45s ease-out both; animation-delay: calc(var(--i) * 70ms + 350ms); }
   @keyframes gl-del { from { background: transparent; color: var(--fg); text-decoration-color: transparent; } }
   @keyframes gl-add { from { opacity: 0; transform: translateX(-12px); } }
-  .gc-icon.squash .bug { animation: gc-squash .5s ease-in both; }
-  .gc-icon.squash .ok { animation: gc-pop .4s .4s ease-out both; }
+  :root:not([data-motion="off"]) .gc-icon.squash .bug { animation: gc-squash .5s ease-in both; }
+  :root:not([data-motion="off"]) .gc-icon.squash .ok { animation: gc-pop .4s .4s ease-out both; }
   @keyframes gc-squash { 0% { opacity: 1; transform: none; } 50% { opacity: 1; transform: scale(1.3) rotate(-14deg); } 100% { opacity: 0; transform: scale(.2) rotate(50deg); } }
   @keyframes gc-pop { 0% { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: none; } }
 }
@@ -481,9 +481,9 @@ details.ssec > summary:focus-visible { outline: 2px solid var(--accent); outline
 @media (pointer: coarse) { #selbar button { min-height: 44px; padding: 10px 14px; } }
 .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; }
 @media (prefers-reduced-motion: no-preference) {
-  .pane, .note, .result, .verdict { animation: rise .2s ease-out }
+  :root:not([data-motion="off"]) .pane, :root:not([data-motion="off"]) .note, :root:not([data-motion="off"]) .result, :root:not([data-motion="off"]) .verdict { animation: rise .2s ease-out }
   @keyframes rise { from { opacity: .4; transform: translateY(4px) } }
-  .drawer { animation: slide .22s ease-out } @keyframes slide { from { transform: translateX(24px); opacity: .6 } }
+  :root:not([data-motion="off"]) .drawer { animation: slide .22s ease-out } @keyframes slide { from { transform: translateX(24px); opacity: .6 } }
 }
 
 /* quiet pass: fewer boxes, fewer icons, one list for modules */
@@ -619,9 +619,35 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   61% { box-shadow: 0 0 6px rgba(91,140,255,.45), 0 -2px 6px rgba(125,160,255,.3); }
 }
 @media (prefers-reduced-motion: reduce) {
+  :root[data-theme="light"] .bdg.now, :root[data-theme="light"] .stk.next .stg { filter: drop-shadow(0 0 4px rgba(35,70,209,.45)); }
+  :root[data-theme="light"] .btn.primary:not([disabled]) { animation: none; }
   :root[data-theme="dusk"] .bdg.now { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
-  :root[data-theme="dusk"] .btn.primary:not([disabled]), :root[data-theme="dusk"] .stepbtn[aria-current="step"] i { animation: none; }
+  :root[data-theme="dusk"] .btn.primary:not([disabled]), :root[data-theme="dusk"] .stepbtn[aria-current="step"] i, :root[data-theme="dusk"] .ministk svg.now { animation: none; }
+  :root[data-theme="dusk"] .stk.next .stg { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
   :root[data-theme="dusk"] .stepbtn[aria-current="step"] i { box-shadow: 0 0 8px rgba(91,140,255,.55); }
+}
+:root[data-theme="dusk"] .stk.next .stg { filter: url(#aura); }
+:root[data-theme="dusk"] .stk.now:not(.next) .stg { filter: drop-shadow(0 0 4px rgba(91,140,255,.55)); }
+:root[data-theme="dusk"] .ministk svg.now { filter: drop-shadow(0 0 3px rgba(91,140,255,.8)); animation: dd-ember 2.6s ease-in-out infinite; }
+@keyframes dd-ember {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(91,140,255,.75)) drop-shadow(0 -2px 3px rgba(179,234,255,.35)); }
+  31% { filter: drop-shadow(0 0 5px rgba(91,140,255,.95)) drop-shadow(0 -3px 4px rgba(179,234,255,.55)); }
+  64% { filter: drop-shadow(0 0 2px rgba(91,140,255,.6)) drop-shadow(0 -1px 2px rgba(179,234,255,.3)); }
+}
+/* the machine's function box: dark glass with a blue rim that flares while a row passes through */
+:root[data-theme="dusk"] .mfn { background: rgba(19,18,28,.92); color: var(--fg); border: 1px solid rgba(91,140,255,.45); box-shadow: 0 0 16px rgba(91,140,255,.22), inset 0 1px 0 rgba(255,255,255,.06); }
+:root[data-theme="dusk"] .mfn.busy { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 28px rgba(91,140,255,.55), 0 -8px 24px -6px rgba(125,160,255,.45); }
+/* the light look burns too, in deep blue ink instead of light */
+:root[data-theme="light"] .bdg.now, :root[data-theme="light"] .stk.next .stg { filter: url(#aura-ink); }
+:root[data-theme="light"] .stk.now:not(.next) .stg { filter: drop-shadow(0 0 3px rgba(35,70,209,.35)); }
+:root[data-theme="light"] .btn.primary:not([disabled]) { animation: ink-flame 3.2s ease-in-out infinite; }
+:root[data-theme="light"] .stepbtn[aria-current="step"] i { box-shadow: 0 0 6px rgba(35,70,209,.45); }
+:root[data-theme="light"] .ministk svg.now { filter: drop-shadow(0 0 2px rgba(35,70,209,.55)); }
+@keyframes ink-flame {
+  0%, 100% { box-shadow: 0 0 12px rgba(35,70,209,.22), 0 -5px 16px -8px rgba(35,70,209,.30); }
+  17% { box-shadow: 0 0 18px rgba(35,70,209,.32), 0 -10px 22px -8px rgba(35,70,209,.40); }
+  29% { box-shadow: 0 0 10px rgba(35,70,209,.18), 0 -4px 14px -8px rgba(35,70,209,.24); }
+  58% { box-shadow: 0 0 20px rgba(35,70,209,.34), 0 -12px 24px -8px rgba(35,70,209,.44); }
 }
 :root[data-theme="dusk"] .callout.ahead { background: rgba(93,85,103,.18); border: 1px solid rgba(232,196,122,.30); }
 @media (prefers-reduced-transparency: reduce) {
@@ -801,15 +827,147 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .newstk .stk { pointer-events: none; }
 .newstk h2 { font: 800 22px/1.2 var(--display); margin: 0; }
 .newstk p { margin: 0; color: var(--muted); max-width: 46ch; }
-@media (prefers-reduced-motion: no-preference) { .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } } }
+@media (prefers-reduced-motion: no-preference) { :root:not([data-motion="off"]) .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } } }
 .themepick { display: flex; align-items: center; gap: 10px; padding: 2px 16px 10px; }
-.themepick > span { font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.prefs { display: flex; flex-wrap: wrap; column-gap: 4px; }
+.themepick > span { min-width: 4.5em; font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .themepick .seg button { padding: 8px 12px; }
-</style>
-<script>/* the saved look, applied before the page draws so it never flashes the default first */
-try { const t = localStorage.getItem("drill-theme"); if (t === "light" || t === "dark" || t === "dusk") document.documentElement.setAttribute("data-theme", t); } catch {}</script>
+/* ---------- motion: effects for real moments ----------
+   The script plays these through fxScreen (a moment over the whole screen), fxOn (inside one
+   element, clipped to it) and fxMove (the element itself, by the Web Animations API). The promises,
+   which tests/test_content.py checks: an effect never takes a tap; nothing in here loops or blurs;
+   each effect's root ends with fx-end, when the script removes it; nothing plays with reduced motion,
+   with Motion off in the Notebook, or in a hidden tab. Colours and timings are tokens (tokens.css).
+   When each one plays: docs/PAGE.md, "Motion". */
+/* fx: start */
+.fx-layer { position: fixed; inset: 0; z-index: 55; pointer-events: none; overflow: hidden; contain: strict; }
+.fx { --x: 50vw; --y: 45vh; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit; overflow: hidden; contain: layout paint; animation: fx-end var(--dur-tap) var(--hold, var(--dur-moment)) ease-in forwards; }
+.fx > i, .fx > svg { position: absolute; display: block; }
+.fx-host { position: relative; }
+@keyframes fx-end { to { opacity: 0; } }
+@keyframes fx-out { to { opacity: 0; } }
+@keyframes fx-wave { from { transform: scale(.2); opacity: .9; } to { transform: scale(7); opacity: 0; } }
+@keyframes fx-wave-sm { from { transform: scale(.8); opacity: .7; } to { transform: scale(1.8); opacity: 0; } }
 
-<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><!-- aura: the dusk theme's burning glow for whatever is current. The outline is thickened, blurred, lifted a little, torn into rising vertical streaks by moving noise and tinted blue, with a white-hot rim close in and the crisp shape on top. --><filter id="aura" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="3" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="20" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#5b8cff" flood-opacity="0.95"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.6" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1.2" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="6" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#d4f8ff" flood-opacity="0.85"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0z"/><path d="M12 10v8M8 13H4M20 13h-4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2M10 6L9 3M14 6l1-3"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><!-- lesson pictures: s-<lesson id>, drawn on a 24 grid centred on 0 --><symbol id="s-best_run" viewBox="-12 -12 24 24"><path d="M-9 -5h18M-9 0h18M-9 5h18"/><circle cx="-4" cy="-5" r="1.6"/><circle cx="3" cy="0" r="1.6"/><circle cx="-1" cy="5" r="1.6"/></symbol><symbol id="s-plan_gaps" viewBox="-12 -12 24 24"><rect x="-7" y="-9" width="14" height="18" rx="2"/><path d="M-4 -4h8M-4 0h8M-4 4h5"/></symbol><symbol id="s-param_grid" viewBox="-12 -12 24 24"><rect x="-9" y="-9" width="5" height="5"/><rect x="-2.5" y="-9" width="5" height="5"/><rect x="4" y="-9" width="5" height="5"/><rect x="-9" y="-2.5" width="5" height="5"/><rect x="-2.5" y="-2.5" width="5" height="5"/><rect x="4" y="-2.5" width="5" height="5"/><rect x="-9" y="4" width="5" height="5"/><rect x="-2.5" y="4" width="5" height="5"/><rect x="4" y="4" width="5" height="5"/></symbol><symbol id="s-cv_folds" viewBox="-12 -12 24 24"><path d="M-8 8v-14M-4 8v-14M0 8v-14M4 8v-14M8 8v-14"/><path d="M-1.5 8v-14" stroke-width="4"/></symbol><symbol id="s-examples_needed" viewBox="-12 -12 24 24"><circle cx="-6" cy="6" r="2"/><circle cx="0" cy="6" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="-3" cy="0" r="2"/><circle cx="3" cy="0" r="2"/><circle cx="0" cy="-6" r="2"/></symbol><symbol id="s-smoke_set" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="3"/><circle cx="-3" cy="0" r="1.6"/><circle cx="3" cy="0" r="1.6"/></symbol><symbol id="s-wilson_interval" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -5v10M9 -5v10"/><circle cx="2" cy="0" r="2.5"/></symbol><symbol id="s-clear_winner" viewBox="-12 -12 24 24"><path d="M-6 8v-8M2 8v-15"/><path d="M-9 8h18"/></symbol><symbol id="s-paired_verdict" viewBox="-12 -12 24 24"><path d="M-6 -8v16M6 -8v16M-6 -4L6 -4M-6 4L6 4"/></symbol><symbol id="s-biggest_gap" viewBox="-12 -12 24 24"><path d="M-9 -8h18L2 0v8h-4v-8z"/></symbol><symbol id="s-ablation_report" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="5" height="6"/><rect x="-2.5" y="-3" width="5" height="6"/><rect x="4" y="-3" width="5" height="6"/><path d="M-4 -7L4 7"/></symbol><symbol id="s-fluke_risk" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="3"/><circle cx="-3" cy="-3" r="1.4"/><circle cx="3" cy="3" r="1.4"/><circle cx="0" cy="0" r="1.4"/></symbol><symbol id="s-split_by_key" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="16" rx="3"/><path d="M0 -8v16"/><circle cx="-5" cy="-3" r="1.6"/><circle cx="-5" cy="3" r="1.6"/><circle cx="5" cy="0" r="1.6"/></symbol><symbol id="s-precision_recall" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><circle cx="3" cy="0" r="6"/></symbol><symbol id="s-best_threshold" viewBox="-12 -12 24 24"><path d="M-8 8v-6M-3 8v-11M2 8v-8M7 8v-14M-10 -2h20"/></symbol><symbol id="s-average_precision" viewBox="-12 -12 24 24"><path d="M-9 -9v18h18"/><path d="M-7 -6c4 0 6 2 8 6s4 6 7 7"/></symbol><symbol id="s-calibration_table" viewBox="-12 -12 24 24"><path d="M-9 9L9 -9"/><circle cx="-5" cy="4" r="1.5"/><circle cx="0" cy="-1" r="1.5"/><circle cx="5" cy="-4" r="1.5"/></symbol><symbol id="s-cost_per_finished_task" viewBox="-12 -12 24 24"><circle r="8"/><path d="M2.5 -4h-3a2 2 0 0 0 0 4h1.5a2 2 0 0 1 0 4h-3.5M0 -6.5v2.5M0 4v2.5"/></symbol><symbol id="s-run_tokens" viewBox="-12 -12 24 24"><path d="M-9 8h5v-5h5v-5h5v-5h4"/></symbol><symbol id="s-payback_plan" viewBox="-12 -12 24 24"><path d="M-9 0h18" stroke-dasharray="2 2"/><path d="M-9 7L9 -7"/><circle cx="0" cy="0" r="1.8"/></symbol><symbol id="s-biggest_swing" viewBox="-12 -12 24 24"><path d="M-9 -7h18M-6 -2h12M-4 3h8M-2 8h4"/></symbol><symbol id="s-peak_capacity" viewBox="-12 -12 24 24"><path d="M-9 6h5l2-2 3-12 3 12 2-2h3"/></symbol><symbol id="s-fill_template" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-4 -3c-2 0-2 3 0 3M4 -3c2 0 2 3 0 3M-4 5h8"/></symbol><symbol id="s-resolve_prompt" viewBox="-12 -12 24 24"><rect x="-9" y="-6" width="14" height="12" rx="2"/><rect x="-5" y="-9" width="14" height="12" rx="2"/><path d="M-6 0h6"/></symbol><symbol id="s-extract_code_block" viewBox="-12 -12 24 24"><path d="M-5 -8c-3 0-3 3-3 8s0 8 3 8M5 -8c3 0 3 3 3 8s0 8-3 8M-2 0h5M1 -2l2 2-2 2"/></symbol><symbol id="s-batch_items" viewBox="-12 -12 24 24"><rect x="-9" y="2" width="8" height="7"/><rect x="1" y="2" width="8" height="7"/><rect x="-4" y="-7" width="8" height="7"/></symbol><symbol id="s-backoff_delays" viewBox="-12 -12 24 24"><path d="M-9 8v-3M-4 8v-6M2 8v-10M8 8v-15"/></symbol><symbol id="s-parse_labels" viewBox="-12 -12 24 24"><path d="M-8 -6h9M-8 0h9M-8 6h9M4 -7l2 2 3-4M4 5l2 2 3-4"/></symbol><symbol id="s-chunk_text" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-11 -3h22M-11 3h22" stroke-dasharray="2 2"/></symbol><symbol id="s-dedupe_chunks" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="10" height="12" rx="1.5"/><rect x="-1" y="-5" width="10" height="12" rx="1.5"/><path d="M2 -2l5 6M7 -2l-5 6"/></symbol><symbol id="s-retrieve" viewBox="-12 -12 24 24"><path d="M-9 -7h8M-9 -3h6M-9 1h5"/><circle cx="3" cy="2" r="4.5"/><path d="M6.5 5.5l3 3"/></symbol><symbol id="s-recall_at_k" viewBox="-12 -12 24 24"><path d="M-9 -5q9 15 18 0"/><circle cx="-3" cy="0" r="1.4"/><circle cx="2" cy="2" r="1.4"/><circle cx="7" cy="-8" r="1.4"/></symbol><symbol id="s-ndcg_at_k" viewBox="-12 -12 24 24"><circle cx="-8" cy="-7" r="1.4"/><path d="M-4 -7h13M-4 -2h9M-4 3h6M-4 8h3"/></symbol><symbol id="s-rerank_check" viewBox="-12 -12 24 24"><path d="M-9 -6h5M-9 0h5M-9 6h5M4 -6h5M4 0h5M4 6h5"/><path d="M-3 -6L3 6M-3 6L3 -6"/></symbol><symbol id="s-abstention_rates" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-4 -1.5h8"/></symbol><symbol id="s-claim_gate" viewBox="-12 -12 24 24"><path d="M-9 9v-14M9 9v-14M-9 -5h18"/><path d="M-4 1l3 3 5-6"/></symbol><symbol id="s-pick_config" viewBox="-12 -12 24 24"><circle cx="-5" cy="-4" r="3"/><circle cx="5" cy="4" r="3"/><path d="M-5 -4l1.5-2M5 4l2 1M-9 8h7M2 -8h7"/></symbol><symbol id="s-rrf" viewBox="-12 -12 24 24"><path d="M-9 -7c6 0 6 7 9 7M-9 7c6 0 6-7 9-7M0 0h9M6 -3l3 3-3 3"/></symbol><symbol id="s-run_agent" viewBox="-12 -12 24 24"><path d="M7 -3a7 7 0 1 0 1 5"/><path d="M8 -8v5h-5"/></symbol><symbol id="s-trim_history" viewBox="-12 -12 24 24"><path d="M-8 -8h16M-8 -4h16" stroke-dasharray="2 2"/><path d="M-8 1h16M-8 5h16M-8 9h10"/></symbol><symbol id="s-stale_claims" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="12" height="15" rx="2"/><path d="M-6 -3h6M-6 1h3"/><circle cx="5" cy="4" r="5"/><path d="M5 1.5v2.5l2 1"/></symbol><symbol id="s-fact_history" viewBox="-12 -12 24 24"><path d="M-9 0h18"/><circle cx="-5" cy="0" r="2.2"/><circle cx="5" cy="0" r="2.2"/><path d="M-8 -5l6 10"/></symbol><symbol id="s-tool_schema" viewBox="-12 -12 24 24"><path d="M-4 -9c-3 0-3 2-3 5s-2 4-2 4 2 1 2 4 0 5 3 5M4 -9c3 0 3 2 3 5s2 4 2 4-2 1-2 4 0 5-3 5"/><path d="M-2 0h4"/></symbol><symbol id="s-tool_pairs" viewBox="-12 -12 24 24"><path d="M-9 -4h14M2 -7l3 3-3 3M9 4h-14M-2 1l-3 3 3 3"/></symbol><symbol id="s-agent_scorecard" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="17" rx="2"/><path d="M-3 -9h6v3h-6z"/><path d="M-4 1l2 2 4-4M-4 6h8"/></symbol><symbol id="s-pass_rates" viewBox="-12 -12 24 24"><path d="M-10 0l2 2 3-4M-2 0l2 2 3-4M6 0l2 2 3-4"/><path d="M-10 6h20"/></symbol><symbol id="s-tool_call_scores" viewBox="-12 -12 24 24"><path d="M-9 -6h7a2 2 0 1 1 4 0h7v12h-18z"/><path d="M-4 1l2 2 4-4"/></symbol><symbol id="s-trajectory_match" viewBox="-12 -12 24 24"><path d="M-9 7l5-6 4 3 5-8 4 2"/><path d="M-9 3l5-6 4 3 5-8 4 2" stroke-dasharray="2 2"/></symbol><symbol id="s-compare_designs" viewBox="-12 -12 24 24"><path d="M0 -9v17M-6 8h12M-9 -5h18M-9 -5l-2 6h4zM9 -5l-2 6h4z"/></symbol><symbol id="s-approval_run" viewBox="-12 -12 24 24"><circle cx="-3" cy="-5" r="3.5"/><path d="M-10 9c0-5 3-7 7-7 2 0 4 .5 5 2"/><path d="M3 4l2 2 4-5"/></symbol><symbol id="s-next_action" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-5 -3l3 3-3 3M0 4h5"/></symbol><symbol id="s-assemble_stream" viewBox="-12 -12 24 24"><path d="M-9 -5h3M-4 -5h3M1 -5h3M-9 3h18M6 0l3 3-3 3"/></symbol><symbol id="s-need_a_team" viewBox="-12 -12 24 24"><path d="M-5 -9v18M5 -9v18M-5 -5h10M-5 0h10M-5 5h10"/></symbol><symbol id="s-one_writer" viewBox="-12 -12 24 24"><path d="M-2 9l1-4 8-8 3 3-8 8z"/><circle cx="-7" cy="-4" r="2"/><circle cx="-1" cy="-8" r="2"/></symbol><symbol id="s-gather_results" viewBox="-12 -12 24 24"><circle cx="-8" cy="0" r="2"/><circle cx="8" cy="0" r="2"/><path d="M-6 0C-2 -7 2 -7 6 0M-6 0h12M-6 0C-2 7 2 7 6 0"/></symbol><symbol id="s-handoff_kept" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="8" height="6" rx="2"/><circle cx="-5" cy="0" r="1"/><path d="M-1 0h8M4 -3l3 3-3 3"/></symbol><symbol id="s-checker_loop" viewBox="-12 -12 24 24"><path d="M6 -4a7 7 0 1 0 0 8"/><path d="M6 -9v5h-5"/><path d="M-3 -1.5v3M0 -1.5v3M3 -1.5v3"/></symbol><symbol id="s-dollars_per_success" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><path d="M-1 -3h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3"/><path d="M4 2l2 2 4-5"/></symbol><symbol id="s-tokens_by_agent" viewBox="-12 -12 24 24"><circle cx="-8" cy="-5" r="1.5"/><circle cx="-8" cy="0" r="1.5"/><circle cx="-8" cy="5" r="1.5"/><path d="M-4 -5h12M-4 0h5M-4 5h8"/></symbol><symbol id="s-team_experiment" viewBox="-12 -12 24 24"><circle cx="-6" cy="0" r="3"/><path d="M-1 -6v12"/><circle cx="4" cy="-4" r="2"/><circle cx="8" cy="0" r="2"/><circle cx="4" cy="4" r="2"/></symbol><symbol id="s-token_bucket" viewBox="-12 -12 24 24"><path d="M-7 -3h14l-2 11h-10z"/><path d="M-3 -9v2M0 -10v2M3 -9v2"/></symbol><symbol id="s-retry_wait" viewBox="-12 -12 24 24"><path d="M-8 2a8 8 0 1 0 3-7"/><path d="M-6 -9l1 4-4 1"/><path d="M0 -2v3l2 1"/></symbol><symbol id="s-run_with_limit" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 0h18M-9 6h18"/><path d="M2 -9v18"/></symbol><symbol id="s-optimistic_writes" viewBox="-12 -12 24 24"><rect x="-3" y="-1" width="6" height="6"/><path d="M-10 -8l5 5M10 -8l-5 5M-8 -3h3v-3M8 -3h-3v-3"/></symbol><symbol id="s-upsert_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h8M-9 3h8M1 -1h8M-1 -5l2 4-2 4"/></symbol><symbol id="s-chunk_rows" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-3 -8v16M3 -8v16"/></symbol><symbol id="s-process_new" viewBox="-12 -12 24 24"><path d="M-9 -6h11M-9 -1h11"/><path d="M-9 5h11" stroke-width="3"/><path d="M5 5h5M8 3l2 2-2 2"/></symbol><symbol id="s-validate_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h10M-9 3h10"/><path d="M4 -7l2 2 3-4M4 1l5 5M9 1l-5 5"/></symbol><symbol id="s-skew_report" viewBox="-12 -12 24 24"><path d="M-8 8v-3M-4 8v-3M0 8v-16M4 8v-3M8 8v-3"/></symbol><symbol id="s-wrap_untrusted" viewBox="-12 -12 24 24"><path d="M-6 -9h-3v18h3M6 -9h3v18h-3"/><path d="M-4 -3h8M-4 1h8M-4 5h5"/></symbol><symbol id="s-is_safe_sql" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-6" rx="7" ry="3"/><path d="M-7 -6v11c0 2 3 3 7 3s7-1 7-3v-11"/><path d="M-3 2l2 2 4-4"/></symbol><symbol id="s-authorize_tool" viewBox="-12 -12 24 24"><circle cx="-4" cy="0" r="4"/><path d="M0 0h9M6 0v3M9 0v3"/></symbol><symbol id="s-shell_policy" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="12" rx="2"/><path d="M-6 -4l2 2-2 2"/><rect x="1" y="3" width="8" height="6" rx="1"/><path d="M3 3v-2a2 2 0 0 1 4 0v2"/></symbol><symbol id="s-memory_write_gate" viewBox="-12 -12 24 24"><path d="M-9 2l3-9h12l3 9v6h-18z"/><path d="M-9 2h5l1 3h6l1-3h5"/></symbol><symbol id="s-redact_pii" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 6h18"/><path d="M-6 0h12" stroke-width="4"/></symbol><symbol id="s-scrub_secrets" viewBox="-12 -12 24 24"><path d="M-6 -3v6M-8.6 -1.5l5.2 3M-8.6 1.5l5.2-3M6 -3v6M3.4 -1.5l5.2 3M3.4 1.5l5.2-3"/></symbol><symbol id="s-budget_check" viewBox="-12 -12 24 24"><path d="M-9 5a9 9 0 0 1 18 0"/><path d="M0 5l6-6"/><path d="M7 -6l2-2"/></symbol><symbol id="s-exact_match" viewBox="-12 -12 24 24"><path d="M-7 -3h14M-7 3h14"/></symbol><symbol id="s-assign_splits" viewBox="-12 -12 24 24"><path d="M-9 -1v8h5v-8M-2.5 -1v8h5v-8M4 -1v8h5v-8"/><circle cx="-6.5" cy="-5" r="1.3"/><circle cx="0" cy="-5" r="1.3"/><circle cx="6.5" cy="-5" r="1.3"/></symbol><symbol id="s-stable_split" viewBox="-12 -12 24 24"><path d="M-6 -8l-2 16M0 -8l-2 16M-9 -3h10M-10 3h10"/><path d="M3 0h6M7 -2l2 2-2 2"/></symbol><symbol id="s-weighted_score" viewBox="-12 -12 24 24"><path d="M0 -8v16M-6 8h12M-9 -4h18"/><rect x="-10" y="-4" width="4" height="4"/><rect x="4" y="-4" width="6" height="6"/></symbol><symbol id="s-must_pass_gate" viewBox="-12 -12 24 24"><path d="M0 -9l2.6 5.5 6 .8-4.4 4.2 1.1 6L0 4.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="s-first_bad_version" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -3v6M9 -3v6M0 -4v8"/><path d="M3 -8l4 4M7 -8l-4 4"/></symbol><symbol id="s-judge_agreement" viewBox="-12 -12 24 24"><path d="M-9 0l3 3 6-7M-1 4l3 3 7-8"/></symbol><symbol id="s-cohen_kappa" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M0 -8v16M-8 0h16M-5 -5l2 2M3 3l2 2"/></symbol><symbol id="s-checker_score" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6M-4 -4l4 4M0 -4l-4 4"/></symbol><symbol id="s-memory_update_score" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="11" height="15" rx="2"/><path d="M4 -3h5l-2-2M9 3h-5l2 2"/></symbol><symbol id="s-review_queue" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="14" height="10" rx="2"/><path d="M-7 -6h12M-5 -9h10M2 2l2 2 4-4"/></symbol><symbol id="s-change_report" viewBox="-12 -12 24 24"><path d="M-4 8v-15M-8 -3l4-4 4 4M4 -8v15M0 3l4 4 4-4"/></symbol><symbol id="s-sort_changes" viewBox="-12 -12 24 24"><path d="M-9 -6h10M-9 -1h7M-9 4h4"/><path d="M6 -8v15M3 4l3 3 3-3"/></symbol><symbol id="s-mix_shift" viewBox="-12 -12 24 24"><path d="M-10 6c3 0 3-10 6-10s3 10 6 10"/><path d="M-2 6c3 0 3-10 6-10s3 10 6 10" stroke-dasharray="2 2"/></symbol><symbol id="s-percentile" viewBox="-12 -12 24 24"><path d="M-10 7c4 0 5-12 9-12s6 9 11 11"/><path d="M5 -8v15" stroke-dasharray="2 2"/></symbol><symbol id="s-pareto_models" viewBox="-12 -12 24 24"><path d="M-9 -8c0 8 6 15 17 16"/><circle cx="-6" cy="-1" r="1.4"/><circle cx="1" cy="5" r="1.4"/><circle cx="4" cy="-3" r="1.4"/></symbol><symbol id="s-better_option" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="16" rx="2"/><path d="M-9 -2h18M-4 -9v4M4 -9v4M-2 4h4M0 2v4"/></symbol><symbol id="s-graduation_gate" viewBox="-12 -12 24 24"><path d="M-10 -3l10-5 10 5-10 5z"/><path d="M-5 0v5c3 2 7 2 10 0v-5M10 -3v6"/></symbol><symbol id="s-promote_model" viewBox="-12 -12 24 24"><rect x="-8" y="-1" width="16" height="9" rx="2"/><path d="M0 -9v8M-3 -6l3-3 3 3"/></symbol><symbol id="s-route_request" viewBox="-12 -12 24 24"><path d="M-9 0h6c4 0 5-6 12-6M-3 0c4 0 5 6 12 6"/><path d="M6 -8l3 2-3 2M6 4l3 2-3 2"/></symbol><symbol id="s-prompt_rollout" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4h10M-5 0h6"/><path d="M-5 5h10" stroke-dasharray="3 2"/></symbol><symbol id="s-summarize_plan" viewBox="-12 -12 24 24"><path d="M-8 -6h4M-6 -8v4M-8 1h4M-8 7h4"/><path d="M0 -6h8M0 1h8M0 7h8"/></symbol><symbol id="s-find_replacements" viewBox="-12 -12 24 24"><path d="M-7 3a7 7 0 0 1 11-8M7 -3a7 7 0 0 1-11 8"/><path d="M4 -8v3h-3M-4 8v-3h3"/></symbol><symbol id="s-guard_destroys" viewBox="-12 -12 24 24"><polygon points="-4,-9 4,-9 9,-4 9,4 4,9 -4,9 -9,4 -9,-4"/><path d="M-4 0h8"/></symbol><symbol id="s-lock_info" viewBox="-12 -12 24 24"><rect x="-7" y="-1" width="14" height="10" rx="2"/><path d="M-4 -1v-3a4 4 0 0 1 8 0v3"/></symbol><symbol id="s-missing_tags" viewBox="-12 -12 24 24"><path d="M-9 -1v-8h8l9 9-8 8z"/><circle cx="-5" cy="-5" r="1.4"/><path d="M-1 3h4" stroke-dasharray="1.5 1.5"/></symbol><symbol id="s-grants_to_revoke" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3.5"/><path d="M-1.5 -3h7M3 -3v2.5"/><path d="M2 3l5 5M7 3l-5 5"/></symbol><symbol id="s-count_shift" viewBox="-12 -12 24 24"><path d="M-9 -6h3M-9 0h3M-9 6h3"/><path d="M-2 -6h10M-2 0h10M-2 6h10"/><path d="M1 -9l3 3-3 3"/></symbol><symbol id="s-overlapping_subnets" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="11" height="10" rx="1"/><rect x="-2" y="-3" width="11" height="10" rx="1"/></symbol><symbol id="s-apply_order" viewBox="-12 -12 24 24"><path d="M-8 -6l8-4 8 4-8 4z"/><path d="M-8 0l8 4 8-4M-8 5l8 4 8-4"/></symbol><symbol id="s-plan_policy" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4l1.5 1.5 3-3M-5 3l1.5 1.5 3-3M2 -4h3M2 3h3"/></symbol><symbol id="s-allocate_capacity" viewBox="-12 -12 24 24"><circle r="8"/><path d="M0 0V-8M0 0L6.9 4"/><path d="M1.5 -5.5a4 4 0 0 1 3.5 6" /></symbol><symbol id="s-check_limits" viewBox="-12 -12 24 24"><path d="M-10 -5h20" stroke-dasharray="2 2"/><path d="M-6 8v-9M0 8v-12M6 8v-6"/></symbol><symbol id="s-summarize_by_tag" viewBox="-12 -12 24 24"><path d="M-9 -5v-4h4l5 5-4 4z"/><path d="M1 3h8M1 7h6"/></symbol><symbol id="s-slowest_chain" viewBox="-12 -12 24 24"><path d="M-9 -6h6M3 4h4"/><path d="M-5 -1h12" stroke-width="3"/></symbol><symbol id="s-trace_table_row" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="1"/><path d="M-9 -2h18M-9 3h18M-3 -7v14"/></symbol><symbol id="s-context_fill" viewBox="-12 -12 24 24"><rect x="-9" y="-5" width="16" height="10" rx="2"/><path d="M9 -2v4"/><path d="M-6 0h8" stroke-width="4"/></symbol><symbol id="s-summary_recall" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-5 -2h3M2 -2h3"/></symbol><symbol id="s-detect_loop" viewBox="-12 -12 24 24"><path d="M0 0c-3-4-8-4-8 0s5 4 8 0 8-4 8 0-5 4-8 0z"/></symbol><symbol id="s-failure_counts" viewBox="-12 -12 24 24"><path d="M-8 -6v12M-4 -6v12M0 -6v12M4 -6v12M-10 4l16-8"/></symbol><symbol id="s-token_cost" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-5" rx="7" ry="2.5"/><path d="M-7 -5v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 -1v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 3v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4"/></symbol><symbol id="s-estimate_vs_actual" viewBox="-12 -12 24 24"><path d="M-4 8v-12" stroke-dasharray="2 2"/><path d="M4 8v-16M-9 8h18"/></symbol><symbol id="s-cache_hits" viewBox="-12 -12 24 24"><path d="M2 -10l-8 11h6l-2 9 8-11h-6z"/></symbol><symbol id="s-plan_calls" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9c0 6 10 6 10 9s-10 3-10 9M5 -9c0 6-10 6-10 9s10 3 10 9"/></symbol><symbol id="s-circuit_breaker" viewBox="-12 -12 24 24"><path d="M-10 2h4M6 2h4"/><circle cx="-5" cy="2" r="1.5"/><circle cx="5" cy="2" r="1.5"/><path d="M-4 1l8-6"/></symbol><symbol id="s-burn_rate" viewBox="-12 -12 24 24"><path d="M0 9c-5 0-7-3-7-6 0-4 4-6 4-10 3 2 4 4 4 6 1-1 2-2 2-4 2 2 4 5 4 8 0 3-3 6-7 6z"/></symbol><symbol id="s-use_case_score" viewBox="-12 -12 24 24"><rect x="-10" y="-6" width="6" height="12" rx="1"/><rect x="-3" y="-6" width="6" height="12" rx="1"/><rect x="4" y="-6" width="6" height="12" rx="1"/><path d="M-1.5 0l1 1 2-2.5M-8.5 -2l3 4M-5.5 -2l-3 4"/></symbol><symbol id="s-use_case_card" viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2"/><circle cx="-5" cy="-1" r="2"/><path d="M-8 4h6M1 -3h6M1 1h6M1 4h4"/></symbol><symbol id="s-split_requirements" viewBox="-12 -12 24 24"><path d="M-9 -6h6M-9 0h6M-9 6h6"/><path d="M0 -9v18" stroke-dasharray="2 2"/><circle cx="6" cy="0" r="4"/><path d="M6 0l2-2"/></symbol><symbol id="s-well_architected" viewBox="-12 -12 24 24"><path d="M-10 -5l10-5 10 5z"/><path d="M-10 8h20M-7 -3v9M-2.5 -3v9M2.5 -3v9M7 -3v9"/></symbol><symbol id="s-fit_for_purpose" viewBox="-12 -12 24 24"><rect x="-10" y="-1" width="20" height="7" rx="1"/><path d="M-6 -1v3M-2 -1v2M2 -1v3M6 -1v2"/><path d="M-3 -8l2 2 4-4"/></symbol><symbol id="s-total_cost" viewBox="-12 -12 24 24"><path d="M-10 0h20"/><path d="M-4 0l4-7 4 7"/><path d="M-7 0l3 8h8l3-8" stroke-dasharray="2 2"/></symbol><symbol id="s-make_a_skill" viewBox="-12 -12 24 24"><path d="M-10 -6v14h20v-12h-9l-2-2z"/><path d="M-5 1h10M-5 4h6"/><path d="M-5 -2l1.5 1.5 3-3"/></symbol></svg>
+/* 1. finishing a lesson: a dark space opens from the button you pressed, rimmed with energy, then lifts */
+.fx-space { --hold: calc(var(--dur-big) * .7); animation-duration: var(--dur-step); }
+.fx-space .rim, .fx-space .veil { inset: 0; clip-path: circle(0 at var(--x) var(--y)); animation: fx-open calc(var(--dur-moment) * .8) var(--ease-out) both; }
+.fx-space .rim { background: var(--fx-glow); opacity: .75; }
+.fx-space .veil { background: var(--fx-veil); opacity: .94; animation-delay: 80ms; }
+@keyframes fx-open { to { clip-path: circle(150vmax at var(--x) var(--y)); } }
+.fx-space .lines { left: 50%; top: 40%; width: 280px; height: 280px; margin: -140px 0 0 -140px; border-radius: 50%; opacity: 0;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--fx-glow) 60%, transparent) 0 2deg, transparent 2deg 15deg);
+  -webkit-mask: radial-gradient(circle, transparent 30%, #000 32% 68%, transparent 70%); mask: radial-gradient(circle, transparent 30%, #000 32% 68%, transparent 70%);
+  animation: fx-spin var(--dur-big) calc(var(--dur-step) * .9) linear both; }
+@keyframes fx-spin { 0% { opacity: 0; transform: rotate(0) scale(.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(120deg) scale(1.15); } }
+
+/* 2. finishing a phase: energy from the left meets red from the right, and they make the mix colour */
+.fx-merge { --hold: var(--dur-big); }
+.fx-merge .orb { left: 50%; top: 40%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; }
+.fx-merge .b { background: radial-gradient(circle, var(--fx-core), var(--fx-glow) 45%, transparent 72%); animation: fx-from-left 650ms var(--ease-in) both, fx-out 100ms 650ms forwards; }
+.fx-merge .r { background: radial-gradient(circle, #fff, var(--fx-red) 45%, transparent 72%); animation: fx-from-right 650ms var(--ease-in) both, fx-out 100ms 650ms forwards; }
+@keyframes fx-from-left { from { transform: translateX(-45vw) scale(.6); opacity: 0; } 25% { opacity: 1; } }
+@keyframes fx-from-right { from { transform: translateX(45vw) scale(.6); opacity: 0; } 25% { opacity: 1; } }
+.fx-merge .p { width: 120px; height: 120px; margin: -60px 0 0 -60px; background: radial-gradient(circle, #fff, color-mix(in srgb, var(--fx-mix) 55%, #fff) 30%, var(--fx-mix) 55%, transparent 72%); animation: fx-burst var(--dur-moment) 650ms var(--ease-out) both; }
+@keyframes fx-burst { 0% { transform: scale(0); } 55% { transform: scale(1.5); } 100% { transform: scale(1.1); } }
+.fx-merge .w { width: 90px; height: 90px; margin: -45px 0 0 -45px; border: 3px solid color-mix(in srgb, var(--fx-mix) 60%, #fff); animation: fx-wave var(--dur-moment) 680ms ease-out both; }
+.fx-merge .flash { inset: 0; background: #fff; opacity: 0; animation: fx-flash 350ms 630ms ease-out both; }  /* one soft flash, never strobing */
+@keyframes fx-flash { 35% { opacity: .35; } }
+
+/* 3. every test passes on the first run, with no hints: a black burst and white-blue sparks at Run */
+.fx-spark { --hold: 650ms; }
+.fx-spark .burst { left: var(--x); top: var(--y); width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; background: radial-gradient(circle, #000 0 40%, transparent 70%); animation: fx-pop-out 500ms ease-out both; }
+@keyframes fx-pop-out { 0% { opacity: 0; transform: scale(.4); } 15% { opacity: 1; } 55% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.fx-spark .ring { left: var(--x); top: var(--y); width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%; border: 2px solid var(--fx-core); box-shadow: 0 0 20px var(--fx-glow); animation: fx-wave 600ms 20ms ease-out both; }
+.fx-spark svg { left: calc(var(--x) - 160px); top: calc(var(--y) - 160px); width: 320px; height: 320px; overflow: visible; animation: fx-bolt 600ms linear both; }
+.fx-spark polyline { fill: none; stroke: var(--fx-core); stroke-width: 3; stroke-linejoin: round; }
+.fx-spark polyline + polyline { stroke: var(--fx-glow); stroke-width: 2.5; }
+@keyframes fx-bolt { 0% { opacity: 0; } 10% { opacity: 1; } 25% { opacity: .2; } 38% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 4. moving between steps: a small orb at the step you go to (the pane itself turns in, see fxMove) */
+.fx-turn { --hold: var(--dur-step); }
+.fx-turn .orb { left: var(--x); top: var(--y); width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: radial-gradient(circle, var(--fx-core), var(--fx-glow) 45%, transparent 72%); animation: fx-blink var(--dur-step) ease-in-out both; }
+@keyframes fx-blink { 0%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+/* 5. your first keystroke in an exercise: a veil passes down the part of the editor you can see, edged with energy */
+.fx-curtain { --hold: calc(var(--dur-step) * 1.6); border-radius: 10px; }
+.fx-curtain .veil { inset: 0; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--fx-veil) 45%, transparent)); border-bottom: 2px solid var(--fx-glow); transform: translateY(-100%); animation: fx-drop calc(var(--dur-step) * 1.6) var(--ease-out) both; }
+@keyframes fx-drop { 80% { opacity: 1; } to { transform: none; opacity: 0; } }
+
+/* 6. a test run passes after one that failed: cracks show, then a sweep of energy heals them */
+.fx-heal { --hold: var(--dur-moment); }
+.fx-heal .wash { inset: 0; background: var(--fail-bg); animation: fx-wash var(--dur-moment) ease-out both; }
+@keyframes fx-wash { 0%, 45% { opacity: .85; } 100% { opacity: 0; } }
+.fx-heal .cracks { inset: 0; width: 100%; height: 100%; }
+.fx-heal polyline { fill: none; stroke: var(--fail); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-dasharray: 1; animation: fx-crack var(--dur-moment) ease-out both; }
+@keyframes fx-crack { 0% { stroke-dashoffset: 1; } 35%, 55% { stroke-dashoffset: 0; opacity: 1; } 75%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+.fx-heal .sweep { inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fx-core) 70%, transparent) 50%, transparent); transform: translateX(-100%); animation: fx-sweep var(--dur-step) 420ms ease-in-out both; }
+@keyframes fx-sweep { to { transform: translateX(100%); } }
+
+/* 7. you spot a gotcha: the bug's icon smokes away (the icon itself already squashes) */
+.fx-smoke { --hold: var(--dur-moment); }
+.fx-smoke i { left: var(--x); top: var(--y); width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--fx-glow) 80%, transparent), transparent 70%); animation: fx-puff var(--dur-moment) ease-out both; }
+@keyframes fx-puff { 0% { transform: translate(0, 0) scale(.4); opacity: 0; } 15% { opacity: .9; } 100% { transform: translate(var(--dx), var(--dy)) scale(1.8); opacity: 0; } }
+
+/* 10. a right answer in Check: a seal stamps onto its letter, leaving the answer readable */
+.fx-seal { --hold: var(--dur-moment); }
+.fx-seal .stamp, .fx-seal .ink { left: 4px; top: 50%; width: 34px; height: 34px; margin-top: -17px; border-radius: 50%; border: 2.5px solid var(--accent); }
+.fx-seal .stamp { display: grid; place-content: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); animation: fx-stamp 380ms var(--ease-in) both; }
+.fx-seal .stamp .ic { width: 18px; height: 18px; stroke-width: 2.6; }
+@keyframes fx-stamp { 0% { opacity: 0; transform: scale(2.4) rotate(-24deg); } 70% { opacity: 1; transform: scale(.92) rotate(-12deg); } 100% { opacity: 1; transform: rotate(-12deg); } }
+.fx-seal .ink { border-width: 2px; animation: fx-wave-sm 500ms 360ms ease-out both; }
+
+/* 12. a hint opens: a blindfold lifts off it, and an eye glints as it goes */
+.fx-unveil { --hold: var(--dur-moment); }
+.fx-unveil .band { inset: 0; display: grid; place-items: center; background: var(--fx-veil); border-bottom: 2px solid var(--fx-glow); animation: fx-lift 600ms 320ms cubic-bezier(.6, 0, .3, 1) both; }
+@keyframes fx-lift { to { transform: translateY(-105%); } }
+.fx-unveil .eye { width: 64px; height: 32px; animation: fx-open-eye 300ms ease-out both; }
+.fx-unveil .eye path { fill: color-mix(in srgb, var(--fx-veil) 55%, var(--fx-glow)); stroke: var(--fx-core); stroke-width: 1.5; }
+.fx-unveil .eye .iris { fill: var(--fx-glow); } .fx-unveil .eye .pupil { fill: var(--fx-veil); } .fx-unveil .eye .glint { fill: #fff; }
+@keyframes fx-open-eye { from { transform: scaleY(.05); } }
+
+/* 11. the machine: the row in flight glows and trails energy into the function box */
+.mtok.fly { box-shadow: 0 0 0 2px var(--fx-core), 0 0 14px var(--fx-glow); }
+.mtok.fly::after { content: ""; position: absolute; left: 50%; bottom: 100%; width: 3px; height: 24px; margin-left: -1.5px; border-radius: 2px; background: linear-gradient(transparent, var(--fx-glow)); pointer-events: none; }
+
+/* 8 and 9 are entrances on content that is already there: today's week dot lights up (day 7 of a
+   streak bursts), and the Grade badge on the done screen flips. Without motion they simply show. */
+.promo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.promo h2 { font: 800 20px/1.2 var(--display); margin: 2px 0; }
+.promo p { margin: 0; color: var(--muted); }
+.promo .badge { position: relative; width: 72px; height: 72px; perspective: 400px; }
+.promo .face { position: absolute; inset: 0; border-radius: 18px; display: grid; place-content: center; justify-items: center; backface-visibility: hidden; }
+.promo .face small { font: 600 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.promo .face b { font: 800 30px/1 var(--display); }
+.promo .was { background: var(--sunk); visibility: hidden; }
+.promo .was b { color: var(--muted); }
+.promo .now { background: var(--accent-soft); border: 1px solid var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+.promo .now b { color: var(--accent); }
+@keyframes fx-flip-out { to { transform: rotateY(-90deg); } }
+@keyframes fx-flip-in { from { transform: rotateY(90deg); } }
+@keyframes fx-ignite { 50% { transform: scale(1.9); background: var(--fx-core); box-shadow: 0 0 10px var(--fx-glow); } }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) .promo .was { visibility: visible; animation: fx-flip-out var(--dur-step) 300ms var(--ease-in) both; }
+  :root:not([data-motion="off"]) .promo .now { animation: fx-flip-in var(--dur-step) 700ms var(--ease-out) both; }
+  :root:not([data-motion="off"]) .week i.lit { animation: fx-ignite 500ms var(--ease-pop) both; }
+  :root:not([data-motion="off"]) .week i.burst { position: relative; }
+  :root:not([data-motion="off"]) .week i.burst::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--fx-core); animation: fx-wave var(--dur-moment) 300ms ease-out both; }
+}
+/* Motion off in the Notebook stills what the system setting stills: the ambient glow included */
+:root[data-motion="off"] .mtok, :root[data-motion="off"] .editor .codebar { transition: none; }
+:root[data-motion="off"][data-theme="dusk"] .btn.primary:not([disabled]), :root[data-motion="off"][data-theme="dusk"] .stepbtn[aria-current="step"] i, :root[data-motion="off"][data-theme="dusk"] .ministk svg.now, :root[data-motion="off"][data-theme="light"] .btn.primary:not([disabled]) { animation: none; }
+:root[data-motion="off"][data-theme="dusk"] .bdg.now, :root[data-motion="off"][data-theme="dusk"] .stk.next .stg { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
+:root[data-motion="off"][data-theme="dusk"] .stepbtn[aria-current="step"] i { box-shadow: 0 0 8px rgba(91,140,255,.55); }
+:root[data-motion="off"][data-theme="light"] .bdg.now, :root[data-motion="off"][data-theme="light"] .stk.next .stg { filter: drop-shadow(0 0 4px rgba(35,70,209,.45)); }
+/* fx: end */
+</style>
+<script>/* the look, applied before the page draws: Dusk unless Light was chosen on this device */
+let t = null; try { t = localStorage.getItem("drill-theme"); } catch {}
+document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dusk");
+let m = null; try { m = localStorage.getItem("drill-motion"); } catch {}
+document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on");</script>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><!-- aura: the dusk theme's burning glow for whatever is current. The outline is thickened, blurred, lifted a little, torn into rising vertical streaks by moving noise and tinted blue, with a white-hot rim close in and the crisp shape on top. --><filter id="aura" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="3" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="20" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#5b8cff" flood-opacity="0.95"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.6" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1.2" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="6" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#d4f8ff" flood-opacity="0.85"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><!-- aura-ink: the same flame for the light look, drawn in deep blue ink rather than light --><filter id="aura-ink" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="2.6" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="18" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#2346d1" flood-opacity="0.55"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.2" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="5" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#4f6ff0" flood-opacity="0.7"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0z"/><path d="M12 10v8M8 13H4M20 13h-4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2M10 6L9 3M14 6l1-3"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><!-- lesson pictures: s-<lesson id>, drawn on a 24 grid centred on 0 --><symbol id="s-best_run" viewBox="-12 -12 24 24"><path d="M-9 -5h18M-9 0h18M-9 5h18"/><circle cx="-4" cy="-5" r="1.6"/><circle cx="3" cy="0" r="1.6"/><circle cx="-1" cy="5" r="1.6"/></symbol><symbol id="s-plan_gaps" viewBox="-12 -12 24 24"><rect x="-7" y="-9" width="14" height="18" rx="2"/><path d="M-4 -4h8M-4 0h8M-4 4h5"/></symbol><symbol id="s-param_grid" viewBox="-12 -12 24 24"><rect x="-9" y="-9" width="5" height="5"/><rect x="-2.5" y="-9" width="5" height="5"/><rect x="4" y="-9" width="5" height="5"/><rect x="-9" y="-2.5" width="5" height="5"/><rect x="-2.5" y="-2.5" width="5" height="5"/><rect x="4" y="-2.5" width="5" height="5"/><rect x="-9" y="4" width="5" height="5"/><rect x="-2.5" y="4" width="5" height="5"/><rect x="4" y="4" width="5" height="5"/></symbol><symbol id="s-cv_folds" viewBox="-12 -12 24 24"><path d="M-8 8v-14M-4 8v-14M0 8v-14M4 8v-14M8 8v-14"/><path d="M-1.5 8v-14" stroke-width="4"/></symbol><symbol id="s-examples_needed" viewBox="-12 -12 24 24"><circle cx="-6" cy="6" r="2"/><circle cx="0" cy="6" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="-3" cy="0" r="2"/><circle cx="3" cy="0" r="2"/><circle cx="0" cy="-6" r="2"/></symbol><symbol id="s-smoke_set" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="3"/><circle cx="-3" cy="0" r="1.6"/><circle cx="3" cy="0" r="1.6"/></symbol><symbol id="s-wilson_interval" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -5v10M9 -5v10"/><circle cx="2" cy="0" r="2.5"/></symbol><symbol id="s-clear_winner" viewBox="-12 -12 24 24"><path d="M-6 8v-8M2 8v-15"/><path d="M-9 8h18"/></symbol><symbol id="s-paired_verdict" viewBox="-12 -12 24 24"><path d="M-6 -8v16M6 -8v16M-6 -4L6 -4M-6 4L6 4"/></symbol><symbol id="s-biggest_gap" viewBox="-12 -12 24 24"><path d="M-9 -8h18L2 0v8h-4v-8z"/></symbol><symbol id="s-ablation_report" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="5" height="6"/><rect x="-2.5" y="-3" width="5" height="6"/><rect x="4" y="-3" width="5" height="6"/><path d="M-4 -7L4 7"/></symbol><symbol id="s-fluke_risk" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="3"/><circle cx="-3" cy="-3" r="1.4"/><circle cx="3" cy="3" r="1.4"/><circle cx="0" cy="0" r="1.4"/></symbol><symbol id="s-split_by_key" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="16" rx="3"/><path d="M0 -8v16"/><circle cx="-5" cy="-3" r="1.6"/><circle cx="-5" cy="3" r="1.6"/><circle cx="5" cy="0" r="1.6"/></symbol><symbol id="s-precision_recall" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><circle cx="3" cy="0" r="6"/></symbol><symbol id="s-best_threshold" viewBox="-12 -12 24 24"><path d="M-8 8v-6M-3 8v-11M2 8v-8M7 8v-14M-10 -2h20"/></symbol><symbol id="s-average_precision" viewBox="-12 -12 24 24"><path d="M-9 -9v18h18"/><path d="M-7 -6c4 0 6 2 8 6s4 6 7 7"/></symbol><symbol id="s-calibration_table" viewBox="-12 -12 24 24"><path d="M-9 9L9 -9"/><circle cx="-5" cy="4" r="1.5"/><circle cx="0" cy="-1" r="1.5"/><circle cx="5" cy="-4" r="1.5"/></symbol><symbol id="s-cost_per_finished_task" viewBox="-12 -12 24 24"><circle r="8"/><path d="M2.5 -4h-3a2 2 0 0 0 0 4h1.5a2 2 0 0 1 0 4h-3.5M0 -6.5v2.5M0 4v2.5"/></symbol><symbol id="s-run_tokens" viewBox="-12 -12 24 24"><path d="M-9 8h5v-5h5v-5h5v-5h4"/></symbol><symbol id="s-payback_plan" viewBox="-12 -12 24 24"><path d="M-9 0h18" stroke-dasharray="2 2"/><path d="M-9 7L9 -7"/><circle cx="0" cy="0" r="1.8"/></symbol><symbol id="s-biggest_swing" viewBox="-12 -12 24 24"><path d="M-9 -7h18M-6 -2h12M-4 3h8M-2 8h4"/></symbol><symbol id="s-peak_capacity" viewBox="-12 -12 24 24"><path d="M-9 6h5l2-2 3-12 3 12 2-2h3"/></symbol><symbol id="s-fill_template" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-4 -3c-2 0-2 3 0 3M4 -3c2 0 2 3 0 3M-4 5h8"/></symbol><symbol id="s-resolve_prompt" viewBox="-12 -12 24 24"><rect x="-9" y="-6" width="14" height="12" rx="2"/><rect x="-5" y="-9" width="14" height="12" rx="2"/><path d="M-6 0h6"/></symbol><symbol id="s-extract_code_block" viewBox="-12 -12 24 24"><path d="M-5 -8c-3 0-3 3-3 8s0 8 3 8M5 -8c3 0 3 3 3 8s0 8-3 8M-2 0h5M1 -2l2 2-2 2"/></symbol><symbol id="s-batch_items" viewBox="-12 -12 24 24"><rect x="-9" y="2" width="8" height="7"/><rect x="1" y="2" width="8" height="7"/><rect x="-4" y="-7" width="8" height="7"/></symbol><symbol id="s-backoff_delays" viewBox="-12 -12 24 24"><path d="M-9 8v-3M-4 8v-6M2 8v-10M8 8v-15"/></symbol><symbol id="s-parse_labels" viewBox="-12 -12 24 24"><path d="M-8 -6h9M-8 0h9M-8 6h9M4 -7l2 2 3-4M4 5l2 2 3-4"/></symbol><symbol id="s-chunk_text" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-11 -3h22M-11 3h22" stroke-dasharray="2 2"/></symbol><symbol id="s-dedupe_chunks" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="10" height="12" rx="1.5"/><rect x="-1" y="-5" width="10" height="12" rx="1.5"/><path d="M2 -2l5 6M7 -2l-5 6"/></symbol><symbol id="s-retrieve" viewBox="-12 -12 24 24"><path d="M-9 -7h8M-9 -3h6M-9 1h5"/><circle cx="3" cy="2" r="4.5"/><path d="M6.5 5.5l3 3"/></symbol><symbol id="s-recall_at_k" viewBox="-12 -12 24 24"><path d="M-9 -5q9 15 18 0"/><circle cx="-3" cy="0" r="1.4"/><circle cx="2" cy="2" r="1.4"/><circle cx="7" cy="-8" r="1.4"/></symbol><symbol id="s-ndcg_at_k" viewBox="-12 -12 24 24"><circle cx="-8" cy="-7" r="1.4"/><path d="M-4 -7h13M-4 -2h9M-4 3h6M-4 8h3"/></symbol><symbol id="s-rerank_check" viewBox="-12 -12 24 24"><path d="M-9 -6h5M-9 0h5M-9 6h5M4 -6h5M4 0h5M4 6h5"/><path d="M-3 -6L3 6M-3 6L3 -6"/></symbol><symbol id="s-abstention_rates" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-4 -1.5h8"/></symbol><symbol id="s-claim_gate" viewBox="-12 -12 24 24"><path d="M-9 9v-14M9 9v-14M-9 -5h18"/><path d="M-4 1l3 3 5-6"/></symbol><symbol id="s-pick_config" viewBox="-12 -12 24 24"><circle cx="-5" cy="-4" r="3"/><circle cx="5" cy="4" r="3"/><path d="M-5 -4l1.5-2M5 4l2 1M-9 8h7M2 -8h7"/></symbol><symbol id="s-rrf" viewBox="-12 -12 24 24"><path d="M-9 -7c6 0 6 7 9 7M-9 7c6 0 6-7 9-7M0 0h9M6 -3l3 3-3 3"/></symbol><symbol id="s-run_agent" viewBox="-12 -12 24 24"><path d="M7 -3a7 7 0 1 0 1 5"/><path d="M8 -8v5h-5"/></symbol><symbol id="s-trim_history" viewBox="-12 -12 24 24"><path d="M-8 -8h16M-8 -4h16" stroke-dasharray="2 2"/><path d="M-8 1h16M-8 5h16M-8 9h10"/></symbol><symbol id="s-stale_claims" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="12" height="15" rx="2"/><path d="M-6 -3h6M-6 1h3"/><circle cx="5" cy="4" r="5"/><path d="M5 1.5v2.5l2 1"/></symbol><symbol id="s-fact_history" viewBox="-12 -12 24 24"><path d="M-9 0h18"/><circle cx="-5" cy="0" r="2.2"/><circle cx="5" cy="0" r="2.2"/><path d="M-8 -5l6 10"/></symbol><symbol id="s-tool_schema" viewBox="-12 -12 24 24"><path d="M-4 -9c-3 0-3 2-3 5s-2 4-2 4 2 1 2 4 0 5 3 5M4 -9c3 0 3 2 3 5s2 4 2 4-2 1-2 4 0 5-3 5"/><path d="M-2 0h4"/></symbol><symbol id="s-tool_pairs" viewBox="-12 -12 24 24"><path d="M-9 -4h14M2 -7l3 3-3 3M9 4h-14M-2 1l-3 3 3 3"/></symbol><symbol id="s-agent_scorecard" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="17" rx="2"/><path d="M-3 -9h6v3h-6z"/><path d="M-4 1l2 2 4-4M-4 6h8"/></symbol><symbol id="s-pass_rates" viewBox="-12 -12 24 24"><path d="M-10 0l2 2 3-4M-2 0l2 2 3-4M6 0l2 2 3-4"/><path d="M-10 6h20"/></symbol><symbol id="s-tool_call_scores" viewBox="-12 -12 24 24"><path d="M-9 -6h7a2 2 0 1 1 4 0h7v12h-18z"/><path d="M-4 1l2 2 4-4"/></symbol><symbol id="s-trajectory_match" viewBox="-12 -12 24 24"><path d="M-9 7l5-6 4 3 5-8 4 2"/><path d="M-9 3l5-6 4 3 5-8 4 2" stroke-dasharray="2 2"/></symbol><symbol id="s-compare_designs" viewBox="-12 -12 24 24"><path d="M0 -9v17M-6 8h12M-9 -5h18M-9 -5l-2 6h4zM9 -5l-2 6h4z"/></symbol><symbol id="s-approval_run" viewBox="-12 -12 24 24"><circle cx="-3" cy="-5" r="3.5"/><path d="M-10 9c0-5 3-7 7-7 2 0 4 .5 5 2"/><path d="M3 4l2 2 4-5"/></symbol><symbol id="s-next_action" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-5 -3l3 3-3 3M0 4h5"/></symbol><symbol id="s-assemble_stream" viewBox="-12 -12 24 24"><path d="M-9 -5h3M-4 -5h3M1 -5h3M-9 3h18M6 0l3 3-3 3"/></symbol><symbol id="s-need_a_team" viewBox="-12 -12 24 24"><path d="M-5 -9v18M5 -9v18M-5 -5h10M-5 0h10M-5 5h10"/></symbol><symbol id="s-one_writer" viewBox="-12 -12 24 24"><path d="M-2 9l1-4 8-8 3 3-8 8z"/><circle cx="-7" cy="-4" r="2"/><circle cx="-1" cy="-8" r="2"/></symbol><symbol id="s-gather_results" viewBox="-12 -12 24 24"><circle cx="-8" cy="0" r="2"/><circle cx="8" cy="0" r="2"/><path d="M-6 0C-2 -7 2 -7 6 0M-6 0h12M-6 0C-2 7 2 7 6 0"/></symbol><symbol id="s-handoff_kept" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="8" height="6" rx="2"/><circle cx="-5" cy="0" r="1"/><path d="M-1 0h8M4 -3l3 3-3 3"/></symbol><symbol id="s-checker_loop" viewBox="-12 -12 24 24"><path d="M6 -4a7 7 0 1 0 0 8"/><path d="M6 -9v5h-5"/><path d="M-3 -1.5v3M0 -1.5v3M3 -1.5v3"/></symbol><symbol id="s-dollars_per_success" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><path d="M-1 -3h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3"/><path d="M4 2l2 2 4-5"/></symbol><symbol id="s-tokens_by_agent" viewBox="-12 -12 24 24"><circle cx="-8" cy="-5" r="1.5"/><circle cx="-8" cy="0" r="1.5"/><circle cx="-8" cy="5" r="1.5"/><path d="M-4 -5h12M-4 0h5M-4 5h8"/></symbol><symbol id="s-team_experiment" viewBox="-12 -12 24 24"><circle cx="-6" cy="0" r="3"/><path d="M-1 -6v12"/><circle cx="4" cy="-4" r="2"/><circle cx="8" cy="0" r="2"/><circle cx="4" cy="4" r="2"/></symbol><symbol id="s-token_bucket" viewBox="-12 -12 24 24"><path d="M-7 -3h14l-2 11h-10z"/><path d="M-3 -9v2M0 -10v2M3 -9v2"/></symbol><symbol id="s-retry_wait" viewBox="-12 -12 24 24"><path d="M-8 2a8 8 0 1 0 3-7"/><path d="M-6 -9l1 4-4 1"/><path d="M0 -2v3l2 1"/></symbol><symbol id="s-run_with_limit" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 0h18M-9 6h18"/><path d="M2 -9v18"/></symbol><symbol id="s-optimistic_writes" viewBox="-12 -12 24 24"><rect x="-3" y="-1" width="6" height="6"/><path d="M-10 -8l5 5M10 -8l-5 5M-8 -3h3v-3M8 -3h-3v-3"/></symbol><symbol id="s-upsert_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h8M-9 3h8M1 -1h8M-1 -5l2 4-2 4"/></symbol><symbol id="s-chunk_rows" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-3 -8v16M3 -8v16"/></symbol><symbol id="s-process_new" viewBox="-12 -12 24 24"><path d="M-9 -6h11M-9 -1h11"/><path d="M-9 5h11" stroke-width="3"/><path d="M5 5h5M8 3l2 2-2 2"/></symbol><symbol id="s-validate_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h10M-9 3h10"/><path d="M4 -7l2 2 3-4M4 1l5 5M9 1l-5 5"/></symbol><symbol id="s-skew_report" viewBox="-12 -12 24 24"><path d="M-8 8v-3M-4 8v-3M0 8v-16M4 8v-3M8 8v-3"/></symbol><symbol id="s-wrap_untrusted" viewBox="-12 -12 24 24"><path d="M-6 -9h-3v18h3M6 -9h3v18h-3"/><path d="M-4 -3h8M-4 1h8M-4 5h5"/></symbol><symbol id="s-is_safe_sql" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-6" rx="7" ry="3"/><path d="M-7 -6v11c0 2 3 3 7 3s7-1 7-3v-11"/><path d="M-3 2l2 2 4-4"/></symbol><symbol id="s-authorize_tool" viewBox="-12 -12 24 24"><circle cx="-4" cy="0" r="4"/><path d="M0 0h9M6 0v3M9 0v3"/></symbol><symbol id="s-shell_policy" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="12" rx="2"/><path d="M-6 -4l2 2-2 2"/><rect x="1" y="3" width="8" height="6" rx="1"/><path d="M3 3v-2a2 2 0 0 1 4 0v2"/></symbol><symbol id="s-memory_write_gate" viewBox="-12 -12 24 24"><path d="M-9 2l3-9h12l3 9v6h-18z"/><path d="M-9 2h5l1 3h6l1-3h5"/></symbol><symbol id="s-redact_pii" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 6h18"/><path d="M-6 0h12" stroke-width="4"/></symbol><symbol id="s-scrub_secrets" viewBox="-12 -12 24 24"><path d="M-6 -3v6M-8.6 -1.5l5.2 3M-8.6 1.5l5.2-3M6 -3v6M3.4 -1.5l5.2 3M3.4 1.5l5.2-3"/></symbol><symbol id="s-budget_check" viewBox="-12 -12 24 24"><path d="M-9 5a9 9 0 0 1 18 0"/><path d="M0 5l6-6"/><path d="M7 -6l2-2"/></symbol><symbol id="s-exact_match" viewBox="-12 -12 24 24"><path d="M-7 -3h14M-7 3h14"/></symbol><symbol id="s-assign_splits" viewBox="-12 -12 24 24"><path d="M-9 -1v8h5v-8M-2.5 -1v8h5v-8M4 -1v8h5v-8"/><circle cx="-6.5" cy="-5" r="1.3"/><circle cx="0" cy="-5" r="1.3"/><circle cx="6.5" cy="-5" r="1.3"/></symbol><symbol id="s-stable_split" viewBox="-12 -12 24 24"><path d="M-6 -8l-2 16M0 -8l-2 16M-9 -3h10M-10 3h10"/><path d="M3 0h6M7 -2l2 2-2 2"/></symbol><symbol id="s-weighted_score" viewBox="-12 -12 24 24"><path d="M0 -8v16M-6 8h12M-9 -4h18"/><rect x="-10" y="-4" width="4" height="4"/><rect x="4" y="-4" width="6" height="6"/></symbol><symbol id="s-must_pass_gate" viewBox="-12 -12 24 24"><path d="M0 -9l2.6 5.5 6 .8-4.4 4.2 1.1 6L0 4.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="s-first_bad_version" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -3v6M9 -3v6M0 -4v8"/><path d="M3 -8l4 4M7 -8l-4 4"/></symbol><symbol id="s-judge_agreement" viewBox="-12 -12 24 24"><path d="M-9 0l3 3 6-7M-1 4l3 3 7-8"/></symbol><symbol id="s-cohen_kappa" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M0 -8v16M-8 0h16M-5 -5l2 2M3 3l2 2"/></symbol><symbol id="s-checker_score" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6M-4 -4l4 4M0 -4l-4 4"/></symbol><symbol id="s-memory_update_score" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="11" height="15" rx="2"/><path d="M4 -3h5l-2-2M9 3h-5l2 2"/></symbol><symbol id="s-review_queue" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="14" height="10" rx="2"/><path d="M-7 -6h12M-5 -9h10M2 2l2 2 4-4"/></symbol><symbol id="s-change_report" viewBox="-12 -12 24 24"><path d="M-4 8v-15M-8 -3l4-4 4 4M4 -8v15M0 3l4 4 4-4"/></symbol><symbol id="s-sort_changes" viewBox="-12 -12 24 24"><path d="M-9 -6h10M-9 -1h7M-9 4h4"/><path d="M6 -8v15M3 4l3 3 3-3"/></symbol><symbol id="s-mix_shift" viewBox="-12 -12 24 24"><path d="M-10 6c3 0 3-10 6-10s3 10 6 10"/><path d="M-2 6c3 0 3-10 6-10s3 10 6 10" stroke-dasharray="2 2"/></symbol><symbol id="s-percentile" viewBox="-12 -12 24 24"><path d="M-10 7c4 0 5-12 9-12s6 9 11 11"/><path d="M5 -8v15" stroke-dasharray="2 2"/></symbol><symbol id="s-pareto_models" viewBox="-12 -12 24 24"><path d="M-9 -8c0 8 6 15 17 16"/><circle cx="-6" cy="-1" r="1.4"/><circle cx="1" cy="5" r="1.4"/><circle cx="4" cy="-3" r="1.4"/></symbol><symbol id="s-better_option" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="16" rx="2"/><path d="M-9 -2h18M-4 -9v4M4 -9v4M-2 4h4M0 2v4"/></symbol><symbol id="s-graduation_gate" viewBox="-12 -12 24 24"><path d="M-10 -3l10-5 10 5-10 5z"/><path d="M-5 0v5c3 2 7 2 10 0v-5M10 -3v6"/></symbol><symbol id="s-promote_model" viewBox="-12 -12 24 24"><rect x="-8" y="-1" width="16" height="9" rx="2"/><path d="M0 -9v8M-3 -6l3-3 3 3"/></symbol><symbol id="s-route_request" viewBox="-12 -12 24 24"><path d="M-9 0h6c4 0 5-6 12-6M-3 0c4 0 5 6 12 6"/><path d="M6 -8l3 2-3 2M6 4l3 2-3 2"/></symbol><symbol id="s-prompt_rollout" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4h10M-5 0h6"/><path d="M-5 5h10" stroke-dasharray="3 2"/></symbol><symbol id="s-summarize_plan" viewBox="-12 -12 24 24"><path d="M-8 -6h4M-6 -8v4M-8 1h4M-8 7h4"/><path d="M0 -6h8M0 1h8M0 7h8"/></symbol><symbol id="s-find_replacements" viewBox="-12 -12 24 24"><path d="M-7 3a7 7 0 0 1 11-8M7 -3a7 7 0 0 1-11 8"/><path d="M4 -8v3h-3M-4 8v-3h3"/></symbol><symbol id="s-guard_destroys" viewBox="-12 -12 24 24"><polygon points="-4,-9 4,-9 9,-4 9,4 4,9 -4,9 -9,4 -9,-4"/><path d="M-4 0h8"/></symbol><symbol id="s-lock_info" viewBox="-12 -12 24 24"><rect x="-7" y="-1" width="14" height="10" rx="2"/><path d="M-4 -1v-3a4 4 0 0 1 8 0v3"/></symbol><symbol id="s-missing_tags" viewBox="-12 -12 24 24"><path d="M-9 -1v-8h8l9 9-8 8z"/><circle cx="-5" cy="-5" r="1.4"/><path d="M-1 3h4" stroke-dasharray="1.5 1.5"/></symbol><symbol id="s-grants_to_revoke" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3.5"/><path d="M-1.5 -3h7M3 -3v2.5"/><path d="M2 3l5 5M7 3l-5 5"/></symbol><symbol id="s-count_shift" viewBox="-12 -12 24 24"><path d="M-9 -6h3M-9 0h3M-9 6h3"/><path d="M-2 -6h10M-2 0h10M-2 6h10"/><path d="M1 -9l3 3-3 3"/></symbol><symbol id="s-overlapping_subnets" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="11" height="10" rx="1"/><rect x="-2" y="-3" width="11" height="10" rx="1"/></symbol><symbol id="s-apply_order" viewBox="-12 -12 24 24"><path d="M-8 -6l8-4 8 4-8 4z"/><path d="M-8 0l8 4 8-4M-8 5l8 4 8-4"/></symbol><symbol id="s-plan_policy" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4l1.5 1.5 3-3M-5 3l1.5 1.5 3-3M2 -4h3M2 3h3"/></symbol><symbol id="s-allocate_capacity" viewBox="-12 -12 24 24"><circle r="8"/><path d="M0 0V-8M0 0L6.9 4"/><path d="M1.5 -5.5a4 4 0 0 1 3.5 6" /></symbol><symbol id="s-check_limits" viewBox="-12 -12 24 24"><path d="M-10 -5h20" stroke-dasharray="2 2"/><path d="M-6 8v-9M0 8v-12M6 8v-6"/></symbol><symbol id="s-summarize_by_tag" viewBox="-12 -12 24 24"><path d="M-9 -5v-4h4l5 5-4 4z"/><path d="M1 3h8M1 7h6"/></symbol><symbol id="s-slowest_chain" viewBox="-12 -12 24 24"><path d="M-9 -6h6M3 4h4"/><path d="M-5 -1h12" stroke-width="3"/></symbol><symbol id="s-trace_table_row" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="1"/><path d="M-9 -2h18M-9 3h18M-3 -7v14"/></symbol><symbol id="s-context_fill" viewBox="-12 -12 24 24"><rect x="-9" y="-5" width="16" height="10" rx="2"/><path d="M9 -2v4"/><path d="M-6 0h8" stroke-width="4"/></symbol><symbol id="s-summary_recall" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-5 -2h3M2 -2h3"/></symbol><symbol id="s-detect_loop" viewBox="-12 -12 24 24"><path d="M0 0c-3-4-8-4-8 0s5 4 8 0 8-4 8 0-5 4-8 0z"/></symbol><symbol id="s-failure_counts" viewBox="-12 -12 24 24"><path d="M-8 -6v12M-4 -6v12M0 -6v12M4 -6v12M-10 4l16-8"/></symbol><symbol id="s-token_cost" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-5" rx="7" ry="2.5"/><path d="M-7 -5v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 -1v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 3v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4"/></symbol><symbol id="s-estimate_vs_actual" viewBox="-12 -12 24 24"><path d="M-4 8v-12" stroke-dasharray="2 2"/><path d="M4 8v-16M-9 8h18"/></symbol><symbol id="s-cache_hits" viewBox="-12 -12 24 24"><path d="M2 -10l-8 11h6l-2 9 8-11h-6z"/></symbol><symbol id="s-plan_calls" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9c0 6 10 6 10 9s-10 3-10 9M5 -9c0 6-10 6-10 9s10 3 10 9"/></symbol><symbol id="s-circuit_breaker" viewBox="-12 -12 24 24"><path d="M-10 2h4M6 2h4"/><circle cx="-5" cy="2" r="1.5"/><circle cx="5" cy="2" r="1.5"/><path d="M-4 1l8-6"/></symbol><symbol id="s-burn_rate" viewBox="-12 -12 24 24"><path d="M0 9c-5 0-7-3-7-6 0-4 4-6 4-10 3 2 4 4 4 6 1-1 2-2 2-4 2 2 4 5 4 8 0 3-3 6-7 6z"/></symbol><symbol id="s-use_case_score" viewBox="-12 -12 24 24"><rect x="-10" y="-6" width="6" height="12" rx="1"/><rect x="-3" y="-6" width="6" height="12" rx="1"/><rect x="4" y="-6" width="6" height="12" rx="1"/><path d="M-1.5 0l1 1 2-2.5M-8.5 -2l3 4M-5.5 -2l-3 4"/></symbol><symbol id="s-use_case_card" viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2"/><circle cx="-5" cy="-1" r="2"/><path d="M-8 4h6M1 -3h6M1 1h6M1 4h4"/></symbol><symbol id="s-split_requirements" viewBox="-12 -12 24 24"><path d="M-9 -6h6M-9 0h6M-9 6h6"/><path d="M0 -9v18" stroke-dasharray="2 2"/><circle cx="6" cy="0" r="4"/><path d="M6 0l2-2"/></symbol><symbol id="s-well_architected" viewBox="-12 -12 24 24"><path d="M-10 -5l10-5 10 5z"/><path d="M-10 8h20M-7 -3v9M-2.5 -3v9M2.5 -3v9M7 -3v9"/></symbol><symbol id="s-fit_for_purpose" viewBox="-12 -12 24 24"><rect x="-10" y="-1" width="20" height="7" rx="1"/><path d="M-6 -1v3M-2 -1v2M2 -1v3M6 -1v2"/><path d="M-3 -8l2 2 4-4"/></symbol><symbol id="s-total_cost" viewBox="-12 -12 24 24"><path d="M-10 0h20"/><path d="M-4 0l4-7 4 7"/><path d="M-7 0l3 8h8l3-8" stroke-dasharray="2 2"/></symbol><symbol id="s-make_a_skill" viewBox="-12 -12 24 24"><path d="M-10 -6v14h20v-12h-9l-2-2z"/><path d="M-5 1h10M-5 4h6"/><path d="M-5 -2l1.5 1.5 3-3"/></symbol></svg>
 <div id="selbar" hidden role="toolbar" aria-label="Selected text"><button id="selSave">Save to study list</button><button id="selExplain">Explain this</button></div>
 
 <header class="top">
@@ -899,7 +1057,8 @@ try { const t = localStorage.getItem("drill-theme"); if (t === "light" || t === 
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-label="Notebook" role="dialog" aria-modal="true">
   <div class="drawer-head"><h2>Notebook</h2><button class="btn quiet" id="nbClose">Close</button></div>
-  <div class="themepick"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="auto" aria-pressed="true">Auto</button><button data-theme-pick="light" aria-pressed="false">Light</button><button data-theme-pick="dark" aria-pressed="false">Dark</button><button data-theme-pick="dusk" aria-pressed="false">Dusk</button></div></div>
+  <div class="prefs"><div class="themepick"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
+  <div class="themepick"><span id="motionLabel">Motion</span><div class="seg" role="group" aria-labelledby="motionLabel"><button data-motion-pick="on" aria-pressed="true">On</button><button data-motion-pick="off" aria-pressed="false">Off</button></div></div></div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-nb="study" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-bookmark"/></svg>Study list</button>
     <button class="tab" role="tab" data-nb="gloss" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
@@ -950,15 +1109,92 @@ const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 const md = s => inline(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
 const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
-// The look: Auto follows the phone's light or dark setting; the others are kept on this device.
-const LOOKS = ["auto", "light", "dark", "dusk"];
+// The look: Dusk by default, Light if chosen; the choice is kept on this device.
+const LOOKS = ["dusk", "light"];
 function applyLook(look) {
-  if (look === "auto") document.documentElement.removeAttribute("data-theme");
-  else document.documentElement.setAttribute("data-theme", look);
+  document.documentElement.setAttribute("data-theme", look);
   document.querySelectorAll("[data-theme-pick]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themePick === look)));
 }
-applyLook(LOOKS.includes(store.get("drill-theme")) ? store.get("drill-theme") : "auto");
+applyLook(store.get("drill-theme") === "light" ? "light" : "dusk");
 document.querySelectorAll("[data-theme-pick]").forEach((b) => b.addEventListener("click", () => { store.set("drill-theme", b.dataset.themePick); applyLook(b.dataset.themePick); }));
+// ---------- motion: short effects for real moments ----------
+// Every effect goes through fxScreen, fxOn or fxMove, so they all keep the same promises: an effect
+// never takes a tap (it ignores the pointer) and never changes the lesson; it removes itself when its
+// root's fx-end animation ends, or after FX_LIMIT if that never comes; only one full-screen moment
+// plays at a time; and nothing plays with reduced motion, Motion off, or the tab hidden. Any error in
+// an effect is swallowed, so a broken effect can never break the step it decorates.
+// Looks: the "fx" rules in the style sheet. When each plays: docs/PAGE.md, "Motion".
+const FX_LIMIT = 4000;
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const motionOn = () => document.documentElement.dataset.motion !== "off" && !reducedMotion.matches && !document.hidden;
+function applyMotion(m) {
+  document.documentElement.dataset.motion = m;
+  document.querySelectorAll("[data-motion-pick]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.motionPick === m)));
+  if (m === "off" && fxLayer) fxLayer.replaceChildren();
+}
+const fxWaits = new WeakMap();  // element -> stop(), so a replay cancels the earlier clean-up
+function fxWhenDone(el, after) {
+  const prev = fxWaits.get(el); if (prev) prev();
+  let timer = 0;
+  const stop = () => { clearTimeout(timer); el.removeEventListener("animationend", end); fxWaits.delete(el); };
+  const end = e => { if (e && (e.target !== el || e.animationName !== "fx-end")) return; stop(); after(); };
+  el.addEventListener("animationend", end); timer = setTimeout(end, FX_LIMIT); fxWaits.set(el, stop);
+}
+function fxRoot(name, html, at) {
+  const root = document.createElement("div");
+  root.className = "fx fx-" + name; root.setAttribute("aria-hidden", "true"); root.innerHTML = html;
+  if (at) { const r = at.getBoundingClientRect(); root.style.setProperty("--x", r.left + r.width / 2 + "px"); root.style.setProperty("--y", r.top + r.height / 2 + "px"); }
+  return root;
+}
+let fxLayer = null;
+function fxScreen(name, html, at, cover) {  // a moment over the screen, centred on the element `at`; with cover, only over the part of `at` you can see
+  try {
+    if (!motionOn()) return;
+    if (!fxLayer) { fxLayer = document.createElement("div"); fxLayer.className = "fx-layer"; fxLayer.setAttribute("aria-hidden", "true"); document.body.append(fxLayer); }
+    const root = fxRoot(name, html, at);
+    if (cover && at) {
+      const r = at.getBoundingClientRect(), top = Math.max(0, r.top), bottom = Math.min(innerHeight, r.bottom);
+      if (bottom - top < 40) return;
+      Object.assign(root.style, { inset: "auto", left: r.left + "px", width: r.width + "px", top: top + "px", height: bottom - top + "px" });
+    }
+    fxWhenDone(root, () => root.remove());
+    fxLayer.replaceChildren(root);
+  } catch {}
+}
+function fxOn(el, name, html) {  // an effect inside one element, clipped to its box
+  try {
+    if (!el || !motionOn()) return;
+    el.querySelectorAll(":scope > .fx").forEach(x => x.remove());
+    const root = fxRoot(name, html);
+    fxWhenDone(root, () => { root.remove(); if (!el.querySelector(":scope > .fx")) el.classList.remove("fx-host"); });
+    el.classList.add("fx-host"); el.append(root);
+  } catch {}
+}
+function fxMove(el, frames, dur = "--dur-step") {  // the element itself moves, then is left exactly as it was
+  try {
+    if (!el || !el.animate || !motionOn()) return;
+    const css = getComputedStyle(document.documentElement);
+    el.animate(frames, { duration: parseFloat(css.getPropertyValue(dur)) || 300, easing: css.getPropertyValue("--ease-out").trim() || "ease-out" });
+  } catch {}
+}
+applyMotion(store.get("drill-motion") === "off" ? "off" : "on");
+document.querySelectorAll("[data-motion-pick]").forEach((b) => b.addEventListener("click", () => { store.set("drill-motion", b.dataset.motionPick); applyMotion(b.dataset.motionPick); }));
+// The effects' insides. Positions are in the effect's own box; nothing here reads the lesson.
+const FX = {
+  space: '<i class="rim"></i><i class="veil"></i><i class="lines"></i>',
+  merge: '<i class="orb b"></i><i class="orb r"></i><i class="flash"></i><i class="orb p"></i><i class="orb w"></i>',
+  spark: '<i class="burst"></i><i class="ring"></i><svg viewBox="0 0 320 320"><polyline points="160,160 135,120 151,110 115,62 133,52 93,8"/><polyline points="160,160 195,130 181,118 227,82 213,70 265,30"/><polyline points="160,160 85,170 101,182 45,190"/><polyline points="160,160 233,176 217,188 283,198"/></svg>',
+  turn: '<i class="orb"></i>',
+  curtain: '<i class="veil"></i>',
+  heal: '<i class="wash"></i><svg class="cracks" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline pathLength="1" points="62,0 57,12 63,19 54,30 58,40"/><polyline pathLength="1" points="57,12 47,15 43,9"/><polyline pathLength="1" points="54,30 68,33 72,26"/></svg><i class="sweep"></i>',
+  smoke: [[-38, -30], [30, -42], [44, 4], [-8, -54], [-46, 10], [14, 30]].map(([x, y]) => `<i style="--dx:${x}px;--dy:${y}px"></i>`).join(""),
+  seal: () => `<i class="stamp">${ic("check")}</i><i class="ink"></i>`,
+  unveil: '<i class="band"><svg class="eye" viewBox="0 0 120 60"><path d="M6 30 Q 60 -6 114 30 Q 60 66 6 30 Z"/><circle class="iris" cx="60" cy="30" r="15"/><circle class="pupil" cx="60" cy="30" r="6"/><circle class="glint" cx="54" cy="24" r="3"/></svg></i>',
+};
+// Grades: a rank that follows lessons done, so it needs no saving and can never disagree with progress.
+const GRADES = [[0, "4"], [10, "3"], [25, "2"], [50, "1"], [90, "Special"]];
+const gradeAt = n => GRADES.reduce((g, [from], i) => n >= from ? i : g, 0);
+const gradeName = i => GRADES[i][1] === "Special" ? "Special grade" : "Grade " + GRADES[i][1];
 const coarse = matchMedia("(pointer: coarse)");
 
 // ---------- Python literals and test harness ----------
@@ -1063,7 +1299,8 @@ let progressDoc = null;
 function loadLocal() { try { const raw = localStorage.getItem("drill-progress"); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch {} progress.lessons = progress.lessons || {}; progress.gotchas = progress.gotchas || {}; }
 function saveLocal() { try { localStorage.setItem("drill-progress", JSON.stringify(progress)); } catch {} }
 async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
-function markDay() { const t = today(); if (!progress.days.includes(t)) { progress.days.push(t); progress.days = progress.days.slice(-400); } }
+let fxNewDay = false;  // the next renderTop lights today's dot
+function markDay() { const t = today(); if (!progress.days.includes(t)) { progress.days.push(t); progress.days = progress.days.slice(-400); fxNewDay = true; } }
 function streak() {
   const days = new Set(progress.days); let n = 0; const d = new Date();
   const key = x => x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
@@ -1088,7 +1325,8 @@ function weekDays() {  // Monday to Sunday of this week
 function renderTop() {
   // The top bar counts this week, never the whole path: "0 of 95" is true for weeks, seven dots are true today.
   const days = new Set(progress.days), t = today(), week = weekDays(), n = week.filter(k => days.has(k)).length;
-  $("week").innerHTML = week.map(k => `<i class="${days.has(k) ? "on" : k === t ? "now" : k > t ? "later" : ""}"></i>`).join("");
+  const lit = fxNewDay ? (streak() % 7 === 0 ? " lit burst" : " lit") : ""; fxNewDay = false;
+  $("week").innerHTML = week.map(k => `<i class="${days.has(k) ? "on" + (k === t ? lit : "") : k === t ? "now" : k > t ? "later" : ""}"></i>`).join("");
   const label = `This week: ${n} of 7 days`;
   $("week").setAttribute("aria-label", label); $("week").title = label;
 }
@@ -1173,7 +1411,7 @@ const LESSON_PIC = new Set([...document.querySelectorAll('symbol[id^="s-"]')].ma
 function stickerSvg(id, st, r) {
   const k = phaseIdx(id), own = LESSON_PIC.has(id), size = r * (own ? 1.15 : .95);
   const pic = own ? `<use class="ico" href="#s-${id}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>` : shIcon(MOD_ICON[modOf[id].id] || "book", size);
-  return `<svg viewBox="${-r - 4} ${-r - 4} ${2 * r + 8} ${2 * r + 8}" aria-hidden="true">${phShape(k, r)}${pic}</svg>`;
+  return `<svg viewBox="${-r - 4} ${-r - 4} ${2 * r + 8} ${2 * r + 8}" aria-hidden="true"><g class="stg">${phShape(k, r)}${pic}</g></svg>`;
 }
 // A lesson's place on the path: phase number, then its position in the phase, like 2.11.
 const lessonNo = id => { const i = phaseIdx(id); return `${i + 1}.${phLessons(PHASES[i]).indexOf(id) + 1}`; };
@@ -1797,7 +2035,7 @@ function stepDone(i) {
   return s.done;
 }
 function setStep(i) {
-  cur.step = i;
+  const was = cur.step; cur.step = i;
   if (cur.kind === "lesson") { const s = lp(cur.id); if (!s.done) s.step = Math.max(s.step, i); saveProgress(); }
   $("stepper").innerHTML = STEPS.map((name, k) => `<button class="stepbtn${stepDone(k) ? " done" : ""}" data-step="${k}"${k === i ? ' aria-current="step"' : ""}><i></i><span>${ic(STEP_ICON[k])}${name}</span></button>`).join("");
   $("paneBuild").hidden = i !== 2;
@@ -1806,6 +2044,10 @@ function setStep(i) {
   if (i !== 2) $("paneText").innerHTML = i === 0 ? learnPane() : i === 1 ? checkPane() : anglePane();
   renderFoot();
   window.scrollTo(0, 0);
+  if (was != null && was !== i) {  // the next step turns in from the side you are heading to
+    fxMove(i === 2 ? $("paneBuild") : $("paneText"), [{ opacity: 0, transform: `scale(.92) rotate(${i > was ? -3 : 3}deg)` }, { opacity: 1, transform: "none" }]);
+    fxScreen("turn", FX.turn, $("stepper").children[i]);
+  }
 }
 // One primary action per step. On Build it is Run tests, in this bar; Skip is quiet, beside it.
 const building = () => cur.kind === "practice" || cur.step === 2;
@@ -1845,15 +2087,22 @@ function goNext() {
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
   if (!canFinish()) { $("sayIn").focus(); return; }
-  const s = lp(cur.id); s.done = true; s.step = 3; markDay();
-  const after = ORDER[ORDER.indexOf(cur.id) + 1];
+  const s = lp(cur.id), id = cur.id, fresh = !s.done; s.done = true; s.step = 3; markDay();
+  const after = ORDER[ORDER.indexOf(id) + 1];
   progress.current = after || null;
   saveProgress();
-  showDone(cur.id, after || null);
+  showDone(id, after || null, fresh);
+  const ph = phaseOf[modOf[id].id];
+  if (fresh && ph.modules.flatMap(m => MOD[m].lessons).every(isDoneL)) fxScreen("merge", FX.merge);
+  else fxScreen("space", FX.space, $("nextBtn"));
 }
 // The moment after Finish: what you did, the sentence to keep, what's next, and a primary that ends the day.
-function showDone(id, after) {
+function showDone(id, after, fresh) {
   cur = { kind: "done", id, after };
+  const total = ORDER.filter(isDoneL).length, g = gradeAt(total), up = fresh && g > gradeAt(total - 1);
+  const nextAt = GRADES[g + 1] ? GRADES[g + 1][0] : null;
+  const promo = !up ? "" : `<section class="promo"><span class="badge" aria-hidden="true"><span class="face was"><small>Grade</small><b>${GRADES[g - 1][1] === "Special" ? "S" : GRADES[g - 1][1]}</b></span><span class="face now"><small>Grade</small><b>${GRADES[g][1] === "Special" ? "S" : GRADES[g][1]}</b></span></span>
+    <div><span class="eyebrow">Promoted</span><h2>${gradeName(g)}</h2><p>${total} lessons done.${nextAt ? ` The next grade is at ${nextAt}.` : " That is the top grade."}</p></div></section>`;
   const L = LESSONS[id], s = lp(id), p = byId[id], ph = phaseOf[modOf[id].id];
   const ids = ph.modules.flatMap(mid => MOD[mid].lessons), doneN = ids.filter(isDoneL).length;
   const days = new Set(progress.days), weekN = weekDays().filter(k => days.has(k)).length;
@@ -1871,6 +2120,7 @@ function showDone(id, after) {
   const next = after ? `<section class="next"><span class="eyebrow">Next time · about 20 min</span><h2>${esc(LESSONS[after].title)}</h2><span class="meta">${esc(phaseOf[modOf[after].id].name)}, ${esc(modOf[after].title)}.</span></section>`
     : `<section class="next"><span class="eyebrow">Path complete</span><h2>That was the last lesson.</h2></section>`;
   $("done").innerHTML = `<div class="donehead"><span class="donecheck">${ic("check")}</span><h1>${head}</h1><p>${sub}</p></div>
+    ${promo}
     <section class="newstk"><span class="eyebrow">New sticker · ${doneN} of ${ids.length} in ${esc(ph.name)}</span><span class="stk done">${stickerSvg(id, "done", 24)}</span><h2>${esc(L.title)}</h2><p>${esc(modOf[id].title)}, in the ${esc(ph.name)} phase. Every sticker in ${esc(ph.name)} has this shape.</p></section>
     <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
     <div class="keyidea">${ic("quote")}<div>${(s.said || "").trim() ? `<b>You said</b><p>${esc(s.said.trim())}</p><b class="ours">Ours</b>` : "<b>Say it like this</b>"}<p>${md(L.angle[2])}</p></div></div>
@@ -1995,6 +2245,7 @@ function answerGotcha(k) {
   const g = GOTCHAS[cur.id]; if (!g) return;
   progress.gotchas[cur.id] = k; gotchaView = "diff"; saveProgress();
   renderGotcha({ reveal: true, squash: k === g.answer });
+  if (k === g.answer) fxScreen("smoke", FX.smoke, document.querySelector("#gotchaCard .gc-icon"));
 }
 async function saveGotcha() {
   const g = GOTCHAS[cur.id]; if (!g) return;
@@ -2119,8 +2370,9 @@ async function saveAsk(i) {
 let hintLevel = 0, lastRun = null, sample = null, sampleOff = true, busy = false, taskFolds = true;
 const runBtns = () => [...document.querySelectorAll("[data-run]")];
 const draftKey = id => "drill-draft-" + id;
+let runs = 0, failedRun = false, curtainDone = false;  // this exercise, since it was opened: for its effects
 function loadProblem(p) {
-  hintLevel = 0; lastRun = null;
+  hintLevel = 0; lastRun = null; runs = 0; failedRun = false; curtainDone = false;
   const Ln = LEARN[p.id] || {};
   $("taskTitle").textContent = p.title;
   $("taskBox").open = true; taskFolds = true;
@@ -2162,14 +2414,14 @@ async function runTests() {
     if (line.startsWith("@@J|")) { try { gotJson = { v: JSON.parse(line.slice(4)) }; } catch {} continue; }
     if (line.trim()) prints.push(line);
   }
-  showOutputs(p, gotJson);
+  showOutputs(p, gotJson); runs++;
   $("stdout").hidden = !prints.length; $("stdout").textContent = prints.length ? "Your print output:\n" + prints.join("\n") : "";
   markDay();
   if (error && !results.length) {
     let msg = error;
     if (/TimeLimitError/.test(error)) msg = "Your code ran longer than 4 seconds. Look for a loop that never ends.";
     if (/NameError: name '___'/.test(error)) msg = "There's still a ___ blank to fill in. Replace each ___ with real code.";
-    lastRun = { summary: "Did not run: " + error };
+    lastRun = { summary: "Did not run: " + error }; failedRun = true;
     setResult("fail", "Didn't run", msg);
     if (msg === error) $("result").insertAdjacentHTML("beforeend", habitLine("error"));
   } else {
@@ -2187,9 +2439,13 @@ async function runTests() {
       $("reviewBtn").onclick = review;
       if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
       renderFoot();
+      if (failedRun) fxOn($("result"), "heal", FX.heal);
+      else if (!prev && runs === 1 && !hintLevel) fxScreen("spark", FX.spark, $("nextBtn"));
+      failedRun = false;
     } else {
       const c = p.cases[firstBad], r = results[firstBad] || { status: "err", got: error || "did not finish" };
       const gotLabel = r.status === "err" ? "error" : "got";
+      failedRun = true;
       lastRun = { summary: `${passed}/${total} passed. First failing case: ${callText(p, c)} expected ${py(c.expected)}, ${gotLabel}: ${r.got}` };
       $("result").className = "result fail";
       $("result").innerHTML = `<div class="score">${passed}/${total} passed</div><div class="dots">${dots}</div>
@@ -2198,7 +2454,7 @@ async function runTests() {
     }
   }
   await saveProgress(); renderTop();
-  const smooth = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  const smooth = motionOn() ? "smooth" : "auto";
   if (M.p && gotJson) { $("machine").scrollIntoView({ block: "start", behavior: smooth }); machineRun(gotJson.v); }
   else $("result").scrollIntoView({ block: "nearest", behavior: smooth });
 }
@@ -2307,6 +2563,7 @@ function machineRender(fly) {
     t.style.transform = `translate(${x}px, ${y}px)`;
     const isLeak = M.leakField && i < M.k && leak.has(String(M.rows[i][M.leakField]));
     t.classList.toggle("cur", !!res && i === M.k - 1 && fly !== i && !isLeak);
+    t.classList.toggle("fly", fly === i);
     t.classList.toggle("leak", !!isLeak);
     t.classList.toggle("lost", !!res && i < M.k && b == null);
   });
@@ -2344,7 +2601,7 @@ function codeBar(n) {  // the yellow line behind the code that sent this row to 
 }
 function machineSet(v, fly) {
   M.k = Math.max(0, Math.min(M.rows.length, v)); $("mScrub").value = M.k;
-  if (fly && !matchMedia("(prefers-reduced-motion: reduce)").matches) { machineRender(M.k - 1); setTimeout(() => machineRender(false), 320); } else machineRender(false);
+  if (fly && motionOn()) { machineRender(M.k - 1); setTimeout(() => machineRender(false), 320); } else machineRender(false);
 }
 function machineStop() { clearInterval(M.timer); M.timer = null; $("mPlay").innerHTML = ic("play"); $("mPlay").setAttribute("aria-label", "Replay"); }
 function machinePlay(from, done) {
@@ -2395,9 +2652,9 @@ const LEARNER = "The student is new to programming and is learning AI engineerin
 async function hint() {
   if (busy) return;
   const p = cur.p;
-  if (sampleOff || !sample) { hintLevel = 1; updateHintBtn(); addNote("hint", "The pattern", p.pattern); return; }
+  if (sampleOff || !sample) { hintLevel = 1; updateHintBtn(); fxOn(addNote("hint", "The pattern", p.pattern), "unveil", FX.unveil); return; }
   const level = hintLevel + 1;
-  const note = addNote("hint", `Hint ${level} of 3`, "Thinking…");
+  const note = addNote("hint", `Hint ${level} of 3`, "Thinking…"); fxOn(note, "unveil", FX.unveil);
   const para = note.querySelector("p");
   busy = true; $("hintBtn").disabled = true;
   const prompt = `You are a patient tutor. ${LEARNER} Give hint ${level} of 3 for this exercise.
@@ -2869,7 +3126,10 @@ function editLines(fn) {
   else ed.setSelectionRange(start, start + text.length);
   ed.dispatchEvent(new Event("input"));
 }
-ed.addEventListener("input", () => { try { localStorage.setItem(draftKey(cur.p.id), ed.value); } catch {} });
+ed.addEventListener("input", () => {
+  try { localStorage.setItem(draftKey(cur.p.id), ed.value); } catch {}
+  if (!curtainDone) { curtainDone = true; fxScreen("curtain", FX.curtain, $("editor"), true); }
+});
 // Keyword colour, the ___ blanks and line numbers sit in a <pre> under the textarea, whose text is
 // see-through. The textarea grows with its code, so only sideways scrolling needs syncing. If drawing
 // ever fails, .hl-on is never set and the plain textarea shows as before.
@@ -3029,7 +3289,7 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-aihide]")) { try { sessionStorage.setItem("drill-aihide", "1"); } catch {} t.closest(".aioff").remove(); return; }
   const tg = t.closest("[data-toggle]"); if (tg) { const id = tg.dataset.toggle, open = !openMods.has(id); if (open) openMods.add(id); else openMods.delete(id); tg.setAttribute("aria-expanded", String(open)); tg.nextElementSibling.hidden = !open; return; }
   const stg = t.closest("[data-stage]"); if (stg) { lifeSel = +stg.dataset.stage; const y = window.scrollY; renderHome(); window.scrollTo(0, y); return; }
-  const jump = t.closest("[data-jump]"); if (jump) { openMods.add(jump.dataset.jump); if (phaseOf[jump.dataset.jump]) openMods.add(phaseOf[jump.dataset.jump].key); renderHome(); const el = $("m-" + jump.dataset.jump); if (el) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); return; }
+  const jump = t.closest("[data-jump]"); if (jump) { openMods.add(jump.dataset.jump); if (phaseOf[jump.dataset.jump]) openMods.add(phaseOf[jump.dataset.jump].key); renderHome(); const el = $("m-" + jump.dataset.jump); if (el) el.scrollIntoView({ behavior: motionOn() ? "smooth" : "auto", block: "start" }); return; }
   const open = t.closest("[data-open]"); if (open) { openLesson(open.dataset.open); return; }
   const bld = t.closest("[data-build]"); if (bld) { openLesson(bld.dataset.build, 2); return; }
   const pr = t.closest("[data-practice]"); if (pr) { openPractice(pr.dataset.practice, null); return; }
@@ -3041,7 +3301,11 @@ document.addEventListener("click", async e => {
   const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
   if (t.closest("[data-gotcha-retry]")) { delete progress.gotchas[cur.id]; saveProgress(); renderGotcha(); return; }
   if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
-  const op = t.closest("[data-opt]"); if (op && !op.disabled) { lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1); return; }
+  const op = t.closest("[data-opt]"); if (op && !op.disabled) {
+    lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1);
+    if (+op.dataset.opt === LESSONS[cur.id].check[2]) fxOn($("paneText").querySelector(".opt.right"), "seal", FX.seal());
+    return;
+  }
   if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1); return; }
   const tag = t.closest("[data-tag], [data-explain]");
   if (tag && tag.matches("[data-tag]")) { const ex = studyItems.find(i => i.text === tag.dataset.text); if (ex) removeItem(ex.id); else { addItem(tag.dataset.text, tag.dataset.src, "text"); toast("Saved to your study list"); } return; }

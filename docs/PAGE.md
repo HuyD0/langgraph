@@ -182,6 +182,53 @@ cd scripts/skulpt-check && npm install && node check_in_browser_python.js
 Then ask Claude Code to publish `dist/daily-drill.html` to the URL above. Publishing to the
 same URL keeps learners' progress, which lives in the artifact's database, not in the HTML.
 
+## Motion
+
+Short effects mark real moments: finishing something, getting something right, fixing a bug.
+They decorate what already happened and never change a lesson's order, wording or difficulty.
+
+| # | Effect | Plays when | Length | Where in `page.html` |
+|---|---|---|---|---|
+| 1 | Space opens | You finish a lesson | about 1.5 s | `goNext` → `fxScreen("space")` |
+| 2 | Merge | You finish a whole phase (six times on the path) | about 1.7 s | `goNext` → `fxScreen("merge")` |
+| 3 | Spark | Every test passes on your first run, with no hints, the first time you solve it | under 1 s | `runTests` → `fxScreen("spark")` |
+| 4 | Step turn | You move between Learn, Check, Build and Explain | 0.4 s | `setStep` → `fxMove` + `fxScreen("turn")` |
+| 5 | Curtain | Your first keystroke in an exercise | 0.6 s | editor input → `fxScreen("curtain", …, cover)` |
+| 6 | Heal | Tests pass after a run that failed | about 1 s | `runTests` → `fxOn(result, "heal")` |
+| 7 | Smoke | You spot a gotcha | about 1 s | `answerGotcha` → `fxScreen("smoke")` |
+| 8 | Charge | Your first practice of the day lights today's dot; day 7 of a streak bursts | 0.5 s | `renderTop` (`.week i.lit`, `.burst`) |
+| 9 | Grade | Every few lessons the done screen promotes you (Grade 4, 3 at 10, 2 at 25, 1 at 50, Special at 90) | 1.2 s | `showDone` (`.promo`), `GRADES` |
+| 10 | Seal | A right answer in Check | 0.5 s | the Check click → `fxOn(option, "seal")` |
+| 11 | Energy flow | A row travels into the machine's function box | with each row | `machineRender` (`.mtok.fly`) |
+| 12 | Unveil | A hint opens | about 1 s | `hint` → `fxOn(note, "unveil")` |
+
+Grades are worked out from lessons done, so nothing new is saved and they can't disagree with progress.
+
+**How it's built.** Timings (`--dur-*`), curves (`--ease-*`) and effect colours (`--fx-*`) are
+tokens in `tokens.css`, set for every look. The looks are the rules between `/* fx: start */`
+and `/* fx: end */` in `page.html`. Every effect is played by one of three functions:
+
+- `fxScreen(name, html, at, cover)`: over the screen, centred on the element `at` (or, with
+  `cover`, only over the part of `at` you can see). One at a time: a new one replaces the last.
+- `fxOn(el, name, html)`: inside one element, clipped to its box.
+- `fxMove(el, frames)`: the element itself moves, with the Web Animations API, and is left as it was.
+
+**The promises,** checked by `tests/test_content.py`:
+
+- An effect never takes a tap (it ignores the pointer) and never blocks the next step: the
+  page has already moved on underneath it.
+- It removes itself when its root's `fx-end` animation ends, or after 4 seconds if that never
+  comes (a hidden tab, say). Nothing is left behind: no elements, timers or listeners.
+- Nothing loops or blurs, and moving parts use transform and opacity, which phones draw cheaply.
+- Nothing plays when the phone asks for reduced motion, when **Motion** is Off in the Notebook
+  (which also stills the glow on the next step), or when the tab is hidden.
+- An error inside an effect is caught, so it can't break the step it decorates.
+
+**Adding an effect:** put its markup in `FX`, its rules (`.fx-<name>`, keyframes named `fx-…`)
+in the fx block with a `--hold` for how long it stays, and call `fxScreen` or `fxOn` at the
+moment. Add a row to the table above. To look at one frame by frame, pause it partway with
+`document.getAnimations()` in the browser console.
+
 ## Adding a lesson
 
 Open the module's file in `src/drill/content/modules/` and add a `lesson(MODULE, ...)` call
