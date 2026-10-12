@@ -95,7 +95,7 @@ def machine(*, bins: list[str], who: list[str], label_field: str | None = None,
     name is itself an argument (``key`` in split_by_key). ``leak_arg`` turns on the leak check:
     a value of that field found in more than one bin is flagged.
     """
-    assert len(bins) == len(who) and 2 <= len(bins) <= 3, "a machine has 2 or 3 bins, each with a who"
+    assert len(bins) == len(who) and 2 <= len(bins) <= 4, "a machine has 2 to 4 bins, each with a who; 4 make a 2 by 2 map"
     assert (label_field is None) != (label_arg is None), "label pills by a field or by an argument, not both"
     return {"bins": bins, "who": who, "label_field": label_field, "label_arg": label_arg, "leak_arg": leak_arg}
 

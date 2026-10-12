@@ -65,7 +65,12 @@ The graded exercises in Use case and fit, and Total cost of ownership, use the H
 every test has a known answer. After each one the Build step offers the same thing for your own
 idea, ungraded:
 
-- **Write the use case down**: your own card, with the open lines listed as you type.
+- **Is this a good AI use case?**: your problem, the use case in one line ("Help [who] [do
+  what] so [a number] improves"), the three gates, automate or augment, and value and doable,
+  which place your idea on a small 2 by 2 map. "Challenge my use case" asks the model to argue
+  against it.
+- **Write the use case down**: your own card (shaped like the AI Canvas: the decision, the
+  action, feedback), with the open lines listed as you type.
 - **Functional and non-functional requirements**: your requirements, one per line, sorted live.
 - **A well-architected review**: "Ask the model to draft the review" sends your card (or the HR
   card, until you write yours) with a review prompt like the one you built.
@@ -162,7 +167,7 @@ where it should appear. Copy a neighbour; every field is named. In short:
   a list of dicts, and the sample case returns one list per group holding exactly those
   rows). `machine(bins=[...], who=[...], label_field=... or label_arg=..., leak_arg=...)`
   draws the Build step's "Watch the rows" card: the example's rows travel through the
-  function into named bins, with a replay slider, a table per bin and, with `leak_arg`, a
+  function into named bins (four bins make a 2 by 2 map), with a replay slider, a table per bin and, with `leak_arg`, a
   check that no value of that field lands in two bins. `split_by_key` and `validate_rows`
   use it; `tests/test_content.py` checks each machine fits its example.
 
