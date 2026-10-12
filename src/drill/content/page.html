@@ -269,6 +269,7 @@ body.pk-on #home { padding-bottom: 96px; }
 .duechip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 13px var(--body); cursor: pointer; }
 .duechip[hidden] { display: none; }
 .duechip .ic { width: 15px; height: 15px; }
+.duechip .n { font: 600 12px var(--mono); color: var(--fg); background: var(--sunk); border-radius: 999px; padding: 0 7px; }
 .duechip.due { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--accent-soft); }
 .duechip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 :root:not([data-motion="off"]) .duechip .dot { animation: pk-pulse 1.8s ease-in-out infinite; }
@@ -3305,7 +3306,7 @@ const dueList = () => studyItems.filter(isDue).sort((a, b) => (a.reviewAt || 0) 
 const learnList = () => studyItems.filter(it => it.status !== "got");
 const gotList = () => studyItems.filter(it => it.status === "got" && !isDue(it)).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
 const tabOf = it => isDue(it) ? "due" : it.status === "got" ? "got" : "learn";
-const pkLabel = { due: "Due", learn: "Learning", got: "Got it" };
+const pkLabel = { due: "To review", learn: "Still learning", got: "Got it" };
 function pkShape(it) {
   const id = it.problemId && modOf[it.problemId] ? it.problemId : null;
   return id ? `<svg class="pk-shape" viewBox="-12 -12 24 24" aria-hidden="true">${phShape(phaseIdx(id), 9)}</svg>` : `<svg class="pk-shape" viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh" r="9" stroke-dasharray="3 3"/></svg>`;
@@ -3364,16 +3365,19 @@ function renderPocket() {
   $("pkToggle").setAttribute("aria-expanded", String(pkOpen));
   $("pkNum").textContent = due.length || learn.length || got.length;
   $("pkRing").style.setProperty("--p", total ? Math.round(100 * got.length / total) : 0);
-  $("pkTitle").textContent = due.length ? `${due.length} to review` : learn.length ? `${learn.length} to learn` : "All caught up";
-  $("studySub").textContent = due.length ? `about ${Math.max(1, Math.round(due.length * .7))} min · ${learn.length} learning · ${got.length} got it`
-    : got.length ? `Next review ${whenText(got[0].reviewAt)} · ${got.length} got it` : "Select text in a lesson to save it here";
+  // Say what this is in words: "Study list", and what the numbers count.
+  const things = n => `${n} ${n === 1 ? "thing" : "things"}`;
+  $("pkTitle").textContent = due.length ? `Study list · ${due.length} to review` : "Study list";
+  $("studySub").textContent = due.length ? `${things(due.length)} you saved to look at again · about ${Math.max(1, Math.round(due.length * .7))} min`
+    : learn.length ? `${things(learn.length)} you saved and are still learning`
+    : got.length ? `All learned · next review ${whenText(got[0].reviewAt)}` : "Select text in a lesson to save it here";
   $("pkStart").hidden = !due.length;
   // the header chip, on pages where the tray is not waiting at the bottom
   const chip = $("dueChip");
   chip.hidden = !total || onHome;
   document.body.classList.toggle("chip-on", !chip.hidden);
   chip.classList.toggle("due", due.length > 0);
-  chip.innerHTML = due.length ? `<span class="dot"></span>${due.length} due` : `${ic("bookmark")}${learn.length || total}`;
+  chip.innerHTML = due.length ? `<span class="dot"></span>${due.length} to review` : `Study list <b class="n">${learn.length || total}</b>`;
   chip.setAttribute("aria-label", due.length ? `${due.length} due for review: open your study list` : "Open your study list");
 }
 function renderStudy() {
