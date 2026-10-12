@@ -137,7 +137,7 @@ The magnifier in the top bar, or the `/` key, opens search. As you type it finds
 - **Lessons** whose title, text or function name holds every word typed, title matches first.
   Each shows its phase shape, its number (like 2.11), its module and whether it's done.
 - **Your study list** items whose text, note or explanation match; choosing one opens it in
-  the Notebook.
+  the study list's tray.
 
 With nothing typed it offers the six phases to jump to, the lessons you're in the middle of,
 and a few example searches. Enter opens the first lesson; Escape or Close goes back to where
@@ -145,17 +145,28 @@ you were.
 
 ## The study list
 
-Select any text in a lesson, or a line of your code, to save it to the study list in the
-Notebook. Each item shows as one line until you open it, grouped by the lesson it came from in
-path order, under three headings:
+Select any text in a lesson, or a line of your code, to save it to the study list. It lives in
+a **tray**: on the path it waits at the bottom, one line tall, saying what's due; on any other
+page a chip in the header opens it (glowing, with a count, when something is due). Tap the tray
+to slide it up. Three tabs:
 
-- **Review now**: items you marked "Got it" whose review has come round. Try to recall it, check
-  what you saved, then say whether you remembered. Remembering pushes the next review further
-  out (3 days, then 10, 30 and 90); forgetting puts it back on To learn.
-- **To learn**: everything still being learned, with its explanation, quiz and follow-ups inside.
-- **Got it**: closed by default, each with its next review date.
+- **Due**: items you marked "Got it" whose review has come round.
+- **Learning**: everything still being learned.
+- **Got it**: each waiting for its next review.
 
-The search box looks through the text, your notes, the explanations and the lesson names.
+Each row is one line: the item, the shape of the phase it came from, and four **seals** for the
+reviews after 3, 10, 30 and 90 days (filled once passed, ringed for the one it's waiting for).
+Opening an item shows it with its review ladder and **one** main step, which changes as you go:
+**Explain it to me**, then **Quiz me**, then **Got it**. Notes, follow-up questions and a new
+quiz are small links; removing it is under "⋯".
+
+**Reviewing** happens in the focus field. **Start review** opens it, with the page's "space"
+effect: one card at a time. Try to recall it first, then **Show what I saved**, then say whether
+you remembered. Remembering stamps a seal (and a spark) and pushes the next review further out
+(3, 10, 30, 90 days); forgetting puts it back on Learning. It ends with how many you sealed. With
+Motion off the effects don't play; everything else is the same.
+
+The search button in the tray looks through the text, your notes, the explanations and the lesson names.
 
 **Two copies.** On claude.ai the list lives in the artifact's database; served by `drill-server`
 it lives in `.drill/drill.db`. The two cannot reach each other, so they don't sync by themselves.
