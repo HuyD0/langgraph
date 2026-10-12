@@ -24,8 +24,6 @@ Everything is in the package, under `src/drill/content/`:
 | `page.html` | The page: layout, styles and all the JavaScript. `/*DATA*/` is replaced with the content at build time |
 | `build.py` | Puts it together: `build_data()` is the content as one dict, `render_page()` embeds it |
 
-The money & health track comes from `drill.mine` (`drill.mine.export`), with made-up data.
-
 ## The study list
 
 Select any text in a lesson, or a line of your code, to save it to the study list in the

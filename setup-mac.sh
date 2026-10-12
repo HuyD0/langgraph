@@ -60,7 +60,10 @@ if [[ -z "$(git config --global user.name || true)" ]]; then
   read "GIT_NAME?Your name for git commits: "
   git config --global user.name "$GIT_NAME"
 fi
-git config --global user.email  "huyydo@gmail.com"
+if [[ -z "$(git config --global user.email || true)" ]]; then
+  read "GIT_EMAIL?Your email for git commits: "
+  git config --global user.email "$GIT_EMAIL"
+fi
 git config --global init.defaultBranch main
 git config --global pull.rebase true
 git config --global core.editor "code --wait"
@@ -70,7 +73,7 @@ echo "ok: $(git config --global user.name) <$(git config --global user.email)>"
 step "SSH key"
 if [[ ! -f ~/.ssh/id_ed25519 ]]; then
   mkdir -p ~/.ssh && chmod 700 ~/.ssh
-  ssh-keygen -t ed25519 -C "huyydo@gmail.com" -f ~/.ssh/id_ed25519
+  ssh-keygen -t ed25519 -C "$(git config --global user.email)" -f ~/.ssh/id_ed25519
   cat > ~/.ssh/config <<'SSHCFG'
 Host *
   AddKeysToAgent yes

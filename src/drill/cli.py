@@ -6,7 +6,6 @@
     uv run drill list
     uv run drill stats
     uv run drill check <file.py> --problem two_sum   # just run the tests, no tutor
-    uv run drill mine list                           # problems on your own money & health data
     uv run drill build-page                          # the Daily Drill page -> dist/daily-drill.html
 """
 
@@ -273,11 +272,6 @@ def build_page_cmd(
 
     raise typer.Exit(build_main(["--out", str(out)]))
 
-
-# Problems about your own money and health data: `drill mine --help`.
-from drill.mine.cli import mine_app  # noqa: E402
-
-app.add_typer(mine_app, name="mine")
 
 tutor_app = typer.Typer(add_completion=False, help="Material for a chat tutor (a Claude Project): the curriculum map and a snapshot of your progress.")
 app.add_typer(tutor_app, name="tutor")
