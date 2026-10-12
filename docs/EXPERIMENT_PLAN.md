@@ -384,3 +384,126 @@ no_result:      keep gemma3 (faster), and add cases until the set has 100
 The size check is the honest part: with 27 cases, this experiment can only find a
 big difference. That is still worth knowing, and the plan says in advance what a
 small or no difference will mean.
+
+## A worked example: one agent or a team?
+
+The help-center assistant from [END_TO_END.md](END_TO_END.md) answers with one
+agent today. Someone suggests a team: a supervisor, two research helpers that
+each search one part of the help center, and a checker. Is it worth it? Agents
+vary from run to run, and a team costs more, so this plan adds two lines to the
+template (`baseline` and `variants`) and reports a few more numbers. The lesson
+**One agent or a team: the experiment** practises the decision rule.
+
+```yaml
+question:       Does a team answer help-center questions more reliably than one agent, at a cost we accept?
+change:         the design: one agent, or a supervisor with two research helpers and a checker
+fixed:          model and version, temperature, tools, step limit of 15, scorers, price table
+baseline:       one agent, the design that runs today
+variants:       one-agent, team-v1, and team-v1 without its checker (the ablation)
+eval_set:       help-center-agent, version of 2026-10-12 (50 questions, most from real failures)
+split:          dev (we are still building the team)
+groups:         one-article questions, two-article questions, questions the help center can't answer
+metric:         passed every time: the share of questions passed on all 4 tries, the answer checked by code
+also_report:    pass rate, steps per run, hand-off facts kept, tokens per agent, failure labels
+guardrails:     dollars per success at most 0.50; a run that hits the step limit counts as failed
+runs:           4 per question for each design, so 200 runs per design
+size_check:     50 questions -> margin about plus or minus 14 points, so the rule asks for 15.
+                20 to 50 is enough to start; with 20, only a very large gap would show.
+test:           paired by question, McNemar rule
+decision_rule:  switch to team-v1 only if its "passed every time" beats one-agent's by 0.15 or more
+                AND its dollars per success stays at most 0.50
+no_result:      keep one agent; label the failures and add them to the set
+```
+
+The ablation answers a different question: what does the checker buy? If
+team-v1 without its checker passes as often, the checker is only cost. The
+decision rule is about one-agent against team-v1; the ablation explains it.
+[Ablations: what each part is worth]
+
+### Each part, and where it lives in MLflow
+
+- **eval_set.** A versioned evaluation dataset:
+  `mlflow.genai.datasets.create_dataset(name=...)`, then `merge_records`. See
+  [Building the eval set from labelled traces](#building-the-eval-set-from-labelled-traces).
+- **variants.** Give each design a name with
+  `mlflow.set_active_model(name="one-agent")` (and `"team-v1"`,
+  `"team-v1-no-checker"`). It returns the model; pass its `model_id` to
+  evaluate, so every trace knows which design made it.
+- **runs.** `mlflow.genai.evaluate(data=..., predict_fn=..., scorers=[...], model_id=...)`
+  runs each question once. It has no repeat option, so call it 4 times for
+  each design. [Reliable every time (pass hat k)]
+- **metric.** A `@scorer` from `mlflow.genai.scorers` that checks the answer
+  with code (the expected facts are in it), not the agent's word that it
+  answered. [Evaluating agents]
+- **hand-off facts kept.** A `@scorer` that takes `trace`. It finds a helper's
+  span with `trace.search_spans(span_type=SpanType.AGENT, name="researcher")`,
+  reads the facts in its output, and returns the share that reach the final
+  answer. [Did the hand-off lose it?]
+- **steps and tool calls.** The built-in `ToolCallCorrectness()` and
+  `ToolCallEfficiency()` scorers. Both are LLM judges, so check them against a
+  few labels of your own. Count the steps from the spans, and count the runs
+  that hit the limit as failed. [Right tool, right arguments] [Guardrails for agents]
+- **tokens per agent.** Give each helper its own named span:
+  `mlflow.start_span(name="researcher", span_type=SpanType.AGENT)`, or the node
+  names when LangGraph autolog traces it. Then add up
+  `span.get_attribute("mlflow.chat.tokenUsage")` (a dict with `input_tokens`,
+  `output_tokens` and `total_tokens`) for the model spans under each helper.
+  [Which helper costs the most?]
+- **dollars per success.** Each trace's `t.info.token_usage`, times your price
+  table, added up over all runs, failed ones included, then divided by the runs
+  that passed. See [Measuring tokens from the POC's traces](#measuring-tokens-from-the-pocs-traces).
+  [Dollars per success]
+- **failure labels.** A person reads each failed trace and logs one cause, such
+  as "repeated steps" or "never checked", with
+  `mlflow.log_feedback(trace_id=..., name="failure", value="repeated steps")`.
+  Count the labels and fix the biggest group first. [Label failures, then count]
+- **the results table.** `mlflow.search_traces(model_id=..., return_type="list")`
+  for each design, grouped by question, gives "passed every time".
+
+The runs and the table, in short. `one_agent`, `team` and `team_no_checker`
+are your three designs. Each one tags its trace with the question's id, using
+`mlflow.update_current_trace(tags={"question_id": ...})`. `end_state` and
+`handoff` are the two `@scorer` functions above. The one agent has no helper,
+so it gets only `end_state`.
+
+```python
+import mlflow
+from mlflow.genai.datasets import get_dataset
+
+dataset = get_dataset(name="help-center-agent")
+designs = {
+    "one-agent": one_agent,
+    "team-v1": team,
+    "team-v1-no-checker": team_no_checker,
+}
+
+every_time = {}
+for name, predict in designs.items():
+    model = mlflow.set_active_model(name=name)
+    scorers = [end_state]
+    if name != "one-agent":  # has helpers
+        scorers.append(handoff)
+    for _ in range(4):  # no repeat option
+        mlflow.genai.evaluate(
+            data=dataset,
+            predict_fn=predict,
+            scorers=scorers,
+            model_id=model.model_id,
+        )
+    traces = mlflow.search_traces(
+        model_id=model.model_id,
+        return_type="list",
+    )
+    tries = {}  # question id -> passes
+    for t in traces:
+        q = t.info.tags["question_id"]
+        a = t.search_assessments("end_state")
+        ok = bool(a) and a[0].value is True
+        tries.setdefault(q, []).append(ok)
+    kept = [q for q in tries if all(tries[q])]
+    every_time[name] = len(kept) / len(tries)
+```
+
+Then apply the rule you wrote above, and only that rule. If the team wins on
+"passed every time" but costs more than 0.50 per success, the answer is still
+one agent.

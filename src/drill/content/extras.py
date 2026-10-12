@@ -730,6 +730,69 @@ data = create_agent(model, tools=[
 # shell: its own agent, no internet""",
         'shell_policy',
     ],
+    [
+        'Pass findings on word for word',
+        "The main agent sees only a helper's final message. If it retells that in its own words, details like an order number fall out. Have helpers put every finding in their final message, and pass it on word for word.",
+        """research = create_agent(llm,
+    tools=[search_orders],
+    system_prompt="Find the facts.")
+main = create_agent(llm,
+    tools=[ask_research],
+    system_prompt="Sum up the "
+    "research in your own words.")""",
+        """research = create_agent(llm,
+    tools=[search_orders],
+    system_prompt="Put every finding "
+    "in your final message.")
+main = create_agent(llm,
+    tools=[ask_research],
+    system_prompt="Pass the research "
+    "report on word for word.")""",
+        'handoff_kept',
+    ],
+    [
+        'Name every helper\'s span',
+        "If every helper's span has the same name, the trace adds their tokens into one total, and you can't tell which helper to make cheaper. Give each helper a span with its own name.",
+        """def researcher(state):
+    with mlflow.start_span(name="agent"):
+        return research(state)
+
+def writer(state):
+    with mlflow.start_span(name="agent"):
+        return write(state)""",
+        """def researcher(state):
+    with mlflow.start_span(
+            name="researcher",
+            span_type=SpanType.AGENT):
+        return research(state)
+
+def writer(state):
+    with mlflow.start_span(
+            name="writer",
+            span_type=SpanType.AGENT):
+        return write(state)""",
+        'tokens_by_agent',
+    ],
+    [
+        'Run each design several times',
+        'Agents vary from try to try, so a team that passes 2 more questions on one run may just be lucky. Run each design 3 to 5 times on the same questions, and compare "passed every time".',
+        """for name in designs:
+    m = mlflow.set_active_model(name=name)
+    mlflow.genai.evaluate(
+        data=data,
+        predict_fn=designs[name],
+        scorers=[end_state],
+        model_id=m.model_id)""",
+        """for name in designs:
+    m = mlflow.set_active_model(name=name)
+    for k in range(3):  # 3 to 5 runs
+        mlflow.genai.evaluate(
+            data=data,
+            predict_fn=designs[name],
+            scorers=[end_state],
+            model_id=m.model_id)""",
+        'team_experiment',
+    ],
 ]
 
 IAC_GOTCHAS = [
