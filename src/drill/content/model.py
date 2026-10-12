@@ -95,7 +95,7 @@ def question(text: str, options: list[str], *, answer: int, why: str) -> dict:
 
 
 def angle(*, pattern: str, text: str, say: str, classic: str | None = None) -> dict:
-    """The Interview step: the pattern, why it matters, a sentence to say out loud, and the
+    """The Explain step: the pattern, why it matters, a sentence to say out loud, and the
     classic interview problem (from :mod:`drill.problems`) that uses the same idea."""
     return {"pattern": pattern, "text": text, "say": say, "classic": classic}
 

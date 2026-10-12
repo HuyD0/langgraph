@@ -3,7 +3,7 @@
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
 95 lessons in 14 modules (AI & ML foundations through agents, security, reliability,
 shipping and the Azure Databricks platform), each lesson going Learn, Check, Build,
-Interview. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
+Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
 The page is one self-contained HTML file. Python exercises run in the browser with
 [Skulpt](https://skulpt.org). On claude.ai, hints, reviews and the study list use the
@@ -20,7 +20,7 @@ Everything is in the package, under `src/drill/content/`:
 | `modules/__init__.py` | `ORDER`, the order of the chapters, and `LIFECYCLE`, the strip at the top of the page |
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
-| `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Interview step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
+| `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Explain step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
 | `page.html` | The page: layout, styles and all the JavaScript. `/*DATA*/` is replaced with the content at build time |
 | `build.py` | Puts it together: `build_data()` is the content as one dict, `render_page()` embeds it |
 

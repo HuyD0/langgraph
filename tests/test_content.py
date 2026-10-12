@@ -39,6 +39,7 @@ def test_modules_are_in_order_and_lessons_are_unique(loaded):
     assert len(ids) == len(set(ids)), "a lesson id appears twice"
     lifecycle_modules = [mid for _, _, ms in modules.LIFECYCLE for mid in ms]
     assert sorted(lifecycle_modules) == sorted(modules.ORDER), "every module belongs to one lifecycle stage"
+    assert lifecycle_modules == modules.ORDER, "the path teaches the stages in order, so ORDER follows LIFECYCLE"
 
 
 def test_every_lesson_has_an_exercise_and_every_classic_is_real(data):

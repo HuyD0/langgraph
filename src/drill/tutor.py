@@ -30,7 +30,7 @@ MAP_PATH = PROJECT_ROOT / "docs" / "tutor" / "CURRICULUM_MAP.md"
 SNAPSHOT_PATH = Path.home() / "Documents" / "daily-drill" / "tutor-snapshot.md"
 EXPORT_DIR = PROJECT_ROOT / ".drill" / "export"  # where exports from the claude.ai page go (git ignores .drill/)
 LOCAL_PROGRESS = "data/users/local/progress"
-STEPS = ["Learn", "Check", "Build", "Interview"]
+STEPS = ["Learn", "Check", "Build", "Explain"]
 
 
 # ---------------------------------------------------------------------------
@@ -102,8 +102,8 @@ def curriculum_map(data: dict | None = None) -> str:
         f"The learning path has {total} lessons in {len(data['modules'])} modules, in the order below. "
         "Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), "
         "Build (a small Python exercise that runs in the browser, with a starting scaffold that has "
-        f"blanks to fill) and Interview (the pattern used and what to say). {len(cards)} of the "
-        f"{total} lessons also have a \"Spot the gotcha\" card in the Interview step: risky code, pick "
+        f"blanks to fill) and Explain (the pattern used and what to say). {len(cards)} of the "
+        f"{total} lessons also have a \"Spot the gotcha\" card in the Explain step: risky code, pick "
         "the rule it breaks, then see the fix. The learner saves things to a study list that brings "
         "them back for review after 3, 10, 30 and 90 days.",
         "",
@@ -130,7 +130,7 @@ def curriculum_map(data: dict | None = None) -> str:
                 "",
                 f"- **Check:** {_plain(question)} Right answer: {_plain(options[right])}. Why: {_plain(why)}",
                 f"- **Exercise:** {_plain(problem['title'])}, writing `{problem['fn']}`. Approach: {_plain(problem['pattern'])}",
-                f"- **Interview:** the pattern is {_plain(pattern)}. Why this pattern: {_plain(pattern_text)} "
+                f"- **Explain:** the pattern is {_plain(pattern)}. Why this pattern: {_plain(pattern_text)} "
                 f"What to say: {_plain(say)}",
             ]
             if lesson_id in cards:
