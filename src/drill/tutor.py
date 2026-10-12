@@ -316,6 +316,15 @@ def snapshot(progress: dict, study_items: list[dict], data: dict | None = None, 
     own = progress.get("mine") or {}
     card = own.get("card") or {}
     own_rows = []
+    idea = own.get("idea") or {}
+    if any(str(idea.get(k) or "").strip() for k in ("problem", "who", "what", "measure")):
+        gates = [label for key, label in (("rule", "a rule could do it"), ("nodata", "no examples to test on"), ("harm", "unchecked harm")) if idea.get(key)]
+        own_rows.append(
+            f"- Their idea: problem \"{_short(idea.get('problem') or 'not written', 120)}\"; use case \"Help {idea.get('who') or '?'} {idea.get('what') or '?'} so {idea.get('measure') or '?'}\""
+            + (f"; failed gates: {', '.join(gates)}" if gates else "")
+            + (f"; {idea['mode']}" if idea.get("mode") else "")
+            + (f"; rated {idea.get('value') or '?'} value, {idea.get('doable') or '?'} doable" if idea.get("value") or idea.get("doable") else "") + "."
+        )
     if any((v or "").strip() for v in card.values()):
         own_rows.append("- Their use case card: " + "; ".join(f"{k.replace('_', ' ')}: {_short(v.strip(), 120)}" for k, v in card.items() if (v or "").strip()) + ".")
     reqs = [r.strip() for r in (own.get("reqs") or "").splitlines() if r.strip()]

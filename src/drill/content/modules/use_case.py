@@ -7,151 +7,158 @@ MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing
 lesson(MODULE, 'use_case_score',
     title='Is this a good AI use case?',
     learn=[
-        'Most AI projects that fail go wrong before any code: they picked the wrong problem. So the first skill is judging an idea. A good first **use case** (one job you want AI to help with) has five things going for it.',
-        '**Volume**: the task happens often, so small savings add up. **Judgement**: it needs reading or writing language, so a simple rule or a lookup cannot do it. **Examples**: you have real past cases with right answers to test on. **Safe to be wrong**: a wrong answer is cheap, or a person checks before it matters. **Owner**: someone in the business wants it and will decide.',
-        'Three of these are **stoppers**. If a rule can do the job, write the rule, it is cheaper and always right. If there are no examples, you cannot tell whether it works. If a wrong answer causes real harm and nobody checks, do not let AI decide it.',
-        'Score each idea from 0 to 2 on all five, rule out any idea with a 0 on a stopper, and start with the highest score. The rest of this phase then measures that one idea and prices it.',
+        "Most AI projects that fail went wrong before any code: they started from the technology (\"we need an agent\") instead of a problem. Microsoft's Cloud Adoption Framework starts with **business problems**: where results miss expectations, or people repeat the same work. Then write the use case in one line, **\"Help [who] [do what] so [a number] improves\"**, and check the task happens often enough to matter.",
+        "Next, three **gates**. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it. Also choose **automate or augment**: Google's People + AI Guidebook automates tasks that are tedious, need scale and have an agreed right answer, and keeps people in charge where they value the work or disagree on the answer. Most good first projects augment: AI drafts, a person decides.",
+        "Ideas that pass the gates go on a **map** with two axes, as in Microsoft's business, experience and technology framework. **Value**: what the problem costs and how much the business cares. **Doable**: the data is ready, AI suits the task, and the team can change how it works. High value and doable: **accelerate** to a pilot. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Neither, or failed a gate: **shelve**.",
+        "Keep the two axes apart rather than adding scores together: a risky, valuable idea and a safe, trivial one can add up to the same total. Where an idea lands tells you what to do next.",
     ],
-    example=example('Four ideas, scored 0 to 2', """# volume, judgement, examples, safe, owner
-hr_answers = [2, 2, 2, 1, 2]  # 9: start here
-loan_yes_no = [2, 2, 2, 0, 2]  # safe 0: stop
-date_format = [2, 0, 2, 2, 2]  # judgement 0:
-                               # a rule does it
-meeting_notes = [1, 2, 1, 2, 1]  # 7"""),
+    example=example('Six ideas on the map', """             hard to do       doable
+high value   research:        accelerate:
+             contract review  HR policy answers
+low value    shelve:          incubate:
+             staffing         meeting summaries
+             forecast
+failed a gate, so shelved:
+  loan approvals (harm, nobody checks)
+  date formats (a rule does it)"""),
     check=question(
-        'A team wants AI to turn dates like 12/10/2026 into 2026-10-12. Is it a good first AI use case?',
+        'Reviewing contracts for risk would save a lot of lawyer time, but past contracts are not labelled and the legal team has not agreed what "risky" means. Where does it go?',
         [
-            'Yes: it happens thousands of times a day',
-            'No: a simple rule does it, exactly and for free',
-            'Yes, as long as they use a large model',
+            'Accelerate: the value is high',
+            'Research: valuable, but the data and the definition are not ready',
+            'Shelve: AI cannot read contracts',
         ],
         answer=1,
-        why='Changing a date format needs no judgement. A few lines of ordinary code do it perfectly every time, so AI only adds cost and mistakes.',
+        why='The value is real, but it is not doable yet: there is nothing labelled to test on and no agreed right answer. Research means fixing that first, then looking again.',
     ),
     angle=angle(
-        pattern='Rule out, then pick the best',
-        text='The big idea: judge an AI idea on five things, volume, judgement, examples, safe to be wrong and an owner, and rule it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked. Your code walks through the ideas. It skips any idea with a 0 for judgement, examples or safe. For the rest it adds the five scores and keeps the idea with the highest total so far, so on a tie the first one wins. If every idea is ruled out it returns None. It is like a job shortlist: anyone missing a must-have is out, then the best of the rest.',
-        say='"Before building, I check the idea needs judgement, has examples to test on and is safe to get wrong, then I score volume and ownership and start with the best."',
+        pattern='Gates first, then the map',
+        text='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. Your code makes four empty lists, one per corner of the map. For each idea it first checks the gate: any reason written there sends it to shelve. Otherwise it reads value and doable: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It returns the lists in map order, top left to bottom right. It is like sorting post into four trays by two questions, after binning the junk.',
+        say='"I start from a business problem and write the use case in one line. I rule it out if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked. Then I place it by value and how doable it is, and pilot the valuable, doable ones first."',
         classic=None,
     ),
     exercise=exercise(
-        title='Pick the First Use Case',
+        title='Put the Ideas on the Map',
         topic='use cases',
         difficulty='easy',
-        fn='best_use_case',
-        prompt="""Your function gets `ideas`, a list of dicts. Each idea has a `"name"` and five scores from 0 to 2:
+        fn='place_use_cases',
+        prompt="""Your function gets `ideas`, a list of dicts. Each idea has:
 
-- `"volume"`: how often the task happens.
-- `"judgement"`: how much it needs reading or writing language. 0 means a simple rule could do it.
-- `"examples"`: real past cases with right answers to test on. 0 means none.
-- `"safe"`: how safe a wrong answer is. 0 means real harm with nobody checking.
-- `"owner"`: how much someone in the business wants it.
+- `"id"` and `"name"`.
+- `"value"`: `"high"` or `"low"`.
+- `"doable"`: `"high"` or `"low"`.
+- `"gate"`: `""` if it passed every gate, or the reason it failed, like `"a rule does it"`.
 
-Skip any idea with a 0 for `"judgement"`, `"examples"` or `"safe"`. For the others, add up all five scores.
+Put each idea in one corner of the map:
 
-Return the `"name"` of the idea with the highest total. On a tie, return the one that comes first. If every idea is skipped, or the list is empty, return `None`.""",
-        pattern='Skip the ruled-out ideas, keep the best total so far.',
+- Failed a gate (`"gate"` is not `""`): **shelve**.
+- High value and high doable: **accelerate**.
+- High value, low doable: **research**.
+- Low value, high doable: **incubate**.
+- Low value, low doable: **shelve**.
+
+Return the four lists in map order, top left to bottom right: `[research, accelerate, shelve, incubate]`. Keep the ideas in the order they came in.""",
+        pattern='Check the gate first, then two questions pick one of four lists.',
         target='one pass over the ideas',
-        realworld='Teams that score ideas before building drop the ones a rule could do, the ones they cannot test and the risky ones, and start where a pilot can succeed.',
-        starter="""def best_use_case(ideas):
+        realworld="Microsoft's business, experience and technology framework and most practitioner guides prioritise AI ideas on a value-by-feasibility map, with risky ideas gated or held to strong controls.",
+        starter="""def place_use_cases(ideas):
     # your code here
     pass
 """,
-        solution="""def best_use_case(ideas):
-    best = None
-    best_score = -1
+        solution="""def place_use_cases(ideas):
+    research = []
+    accelerate = []
+    shelve = []
+    incubate = []
     for idea in ideas:
-        if idea["judgement"] == 0:
-            continue
-        if idea["examples"] == 0 or idea["safe"] == 0:
-            continue
-        score = (idea["volume"] + idea["judgement"]
-                 + idea["examples"] + idea["safe"]
-                 + idea["owner"])
-        if score > best_score:
-            best = idea["name"]
-            best_score = score
-    return best
+        if idea["gate"] != "":
+            shelve.append(idea)
+        elif idea["value"] == "high" and idea["doable"] == "high":
+            accelerate.append(idea)
+        elif idea["value"] == "high":
+            research.append(idea)
+        elif idea["doable"] == "high":
+            incubate.append(idea)
+        else:
+            shelve.append(idea)
+    return [research, accelerate, shelve, incubate]
 """,
         cases=[
-            case([
-                {"name": "HR answers", "volume": 2, "judgement": 2, "examples": 2, "safe": 1, "owner": 2},
-                {"name": "Loan yes or no", "volume": 2, "judgement": 2, "examples": 2, "safe": 0, "owner": 2},
-                {"name": "Date format", "volume": 2, "judgement": 0, "examples": 2, "safe": 2, "owner": 2},
-                {"name": "Meeting notes", "volume": 1, "judgement": 2, "examples": 1, "safe": 2, "owner": 1},
-            ], expected="HR answers", sample=True),
-            case([], expected=None),
-            case([
-                {"name": "No examples", "volume": 2, "judgement": 2, "examples": 0, "safe": 2, "owner": 2},
-                {"name": "Rule does it", "volume": 2, "judgement": 0, "examples": 2, "safe": 2, "owner": 2},
-            ], expected=None),
-            case([
-                {"name": "First", "volume": 1, "judgement": 2, "examples": 2, "safe": 2, "owner": 1},
-                {"name": "Second", "volume": 2, "judgement": 1, "examples": 2, "safe": 1, "owner": 2},
-            ], expected="First"),
-            case([
-                {"name": "Small", "volume": 0, "judgement": 1, "examples": 1, "safe": 1, "owner": 0},
-                {"name": "Big", "volume": 2, "judgement": 1, "examples": 1, "safe": 2, "owner": 2},
-            ], expected="Big"),
+            case([{'id': 'A', 'name': 'HR policy answers', 'value': 'high', 'doable': 'high', 'gate': ''}, {'id': 'B', 'name': 'Loan approvals', 'value': 'high', 'doable': 'high', 'gate': 'harm, nobody checks'}, {'id': 'C', 'name': 'Date formats', 'value': 'low', 'doable': 'high', 'gate': 'a rule does it'}, {'id': 'D', 'name': 'Contract risk review', 'value': 'high', 'doable': 'low', 'gate': ''}, {'id': 'E', 'name': 'Meeting summaries', 'value': 'low', 'doable': 'high', 'gate': ''}, {'id': 'F', 'name': 'Staffing forecast', 'value': 'low', 'doable': 'low', 'gate': ''}],
+                 expected=[[{'id': 'D', 'name': 'Contract risk review', 'value': 'high', 'doable': 'low', 'gate': ''}], [{'id': 'A', 'name': 'HR policy answers', 'value': 'high', 'doable': 'high', 'gate': ''}], [{'id': 'B', 'name': 'Loan approvals', 'value': 'high', 'doable': 'high', 'gate': 'harm, nobody checks'}, {'id': 'C', 'name': 'Date formats', 'value': 'low', 'doable': 'high', 'gate': 'a rule does it'}, {'id': 'F', 'name': 'Staffing forecast', 'value': 'low', 'doable': 'low', 'gate': ''}], [{'id': 'E', 'name': 'Meeting summaries', 'value': 'low', 'doable': 'high', 'gate': ''}]], sample=True),
+            case([],
+                 expected=[[], [], [], []]),
+            case([{'id': 'X', 'name': 'Ticket triage', 'value': 'high', 'doable': 'high', 'gate': ''}, {'id': 'Y', 'name': 'Invoice totals', 'value': 'high', 'doable': 'high', 'gate': 'a rule does it'}],
+                 expected=[[], [{'id': 'X', 'name': 'Ticket triage', 'value': 'high', 'doable': 'high', 'gate': ''}], [{'id': 'Y', 'name': 'Invoice totals', 'value': 'high', 'doable': 'high', 'gate': 'a rule does it'}], []]),
+            case([{'id': 'P', 'name': 'Code review hints', 'value': 'high', 'doable': 'low', 'gate': ''}, {'id': 'Q', 'name': 'Alt text for images', 'value': 'low', 'doable': 'high', 'gate': ''}, {'id': 'R', 'name': 'Churn calls', 'value': 'high', 'doable': 'low', 'gate': 'no examples'}],
+                 expected=[[{'id': 'P', 'name': 'Code review hints', 'value': 'high', 'doable': 'low', 'gate': ''}], [], [{'id': 'R', 'name': 'Churn calls', 'value': 'high', 'doable': 'low', 'gate': 'no examples'}], [{'id': 'Q', 'name': 'Alt text for images', 'value': 'low', 'doable': 'high', 'gate': ''}]]),
         ],
-        guided="""def best_use_case(ideas):
+        guided="""def place_use_cases(ideas):
     # Replace every ___ with real code, then run the tests.
-    best = None
-    best_score = -1
+    research = []
+    accelerate = []
+    shelve = []
+    incubate = []
     for idea in ideas:
-        # Step 1: a rule could do it, so skip it.
-        if idea["judgement"] == 0:
-            continue
-        # Step 2: no examples, or unsafe to get wrong: skip.
-        if idea["examples"] == 0 or ___:
-            continue
-        # Step 3: add up all five scores.
-        score = (idea["volume"] + idea["judgement"]
-                 + idea["examples"] + idea["safe"]
-                 + idea["owner"])
-        # Step 4: keep it only if it beats the best so far.
+        # Step 1: a failed gate shelves it, whatever its value.
         if ___:
-            best = idea["name"]
-            best_score = score
-    return best
+            shelve.append(idea)
+        # Step 2: high value and doable: pilot it.
+        elif idea["value"] == "high" and idea["doable"] == "high":
+            accelerate.append(idea)
+        # Step 3: high value, not doable yet.
+        elif idea["value"] == "high":
+            research.append(idea)
+        # Step 4: doable, but low value.
+        elif ___:
+            incubate.append(idea)
+        else:
+            shelve.append(idea)
+    # Map order: top left, top right, bottom left, bottom right.
+    return [research, accelerate, shelve, incubate]
 """,
-        fills=['idea["safe"] == 0', 'score > best_score'],
+        fills=['idea["gate"] != ""', 'idea["doable"] == "high"'],
         concepts=[
             [
-                'Reading a dict',
-                'A dict holds named values. `idea["volume"]` reads the value named volume.',
-                """idea = {"name": "HR", "volume": 2}
-idea["volume"]   # 2""",
+                'if, elif, else',
+                'Python checks each test in order and runs only the first one that is true. `else` catches everything left.',
+                """size = 7
+if size > 10:
+    print("big")
+elif size > 5:
+    print("medium")   # this one
+else:
+    print("small")""",
             ],
             [
-                'continue',
-                '`continue` skips the rest of this turn of the loop and moves on to the next item.',
-                """for n in [1, 0, 3]:
-    if n == 0:
-        continue
-    print(n)   # prints 1, then 3""",
+                'One of several lists',
+                'Start with empty lists and `append` each item to the one it belongs in.',
+                """odd, even = [], []
+for n in [1, 2, 3]:
+    if n % 2:
+        odd.append(n)
+    else:
+        even.append(n)""",
             ],
             [
-                'Keeping the best so far',
-                'Start with a value every real score beats, then replace it whenever you find a bigger one. Using `>` (not `>=`) keeps the first on a tie.',
-                """best = -1
-for s in [4, 9, 9]:
-    if s > best:
-        best = s   # 4, then 9""",
+                'and',
+                '`a and b` is true only when both are true.',
+                '"high" == "high" and "low" == "high"   # False',
             ],
         ],
-        byhand='HR answers: no 0 on a stopper, total 2 + 2 + 2 + 1 + 2 = 9, the best so far. Loan yes or no: safe is 0, skip. Date format: judgement is 0, skip. Meeting notes: 1 + 2 + 1 + 2 + 1 = 7, less than 9. Return "HR answers".',
-        why='It looks at each idea once, so the work grows with the number of ideas.',
+        byhand='A passes the gate, high and high: accelerate. B failed a gate: shelve. C failed a gate: shelve. D is high value, low doable: research. E is low value, high doable: incubate. F is low and low: shelve. Return [[D], [A], [B, C, F], [E]].',
+        why='Each idea is looked at once, so the work grows with the number of ideas.',
         gotchas=[
             [
-                'Using AI where a rule would do',
-                'If the right answer follows a fixed rule, like a date format or a tax table, ordinary code is cheaper, faster and never wrong. Save AI for tasks that need judgement.',
+                'Starting from the technology',
+                '"We need an agent" is not a use case. Start from a problem people already feel, and the one-line statement with a number in it.',
             ],
             [
-                'Starting with the riskiest idea',
-                'A first project that makes unchecked, high-stakes decisions can do real harm and lose trust. Start where a wrong answer is cheap or a person checks it.',
+                'One score for everything',
+                'Adding value, ease and risk into one total hides the trade-off. Keep value and doable as two axes, and treat harm as a gate.',
             ],
         ],
+        machine=machine(bins=['research', 'accelerate', 'shelve', 'incubate'], who=['high value, hard to do yet', 'high value, doable: pilot it', 'low value, or failed a gate', 'doable but small: learn on it'], label_field='id'),
     ),
 )
 
@@ -159,19 +166,20 @@ lesson(MODULE, 'use_case_card',
     title='Write the use case down',
     learn=[
         'Before building, write the use case on one page, a **use case card**. It makes everyone agree on the same job, and it lists what the trial must measure.',
-        'A card answers nine questions. **Who** uses it, and the **task** it helps with. The **input** and the **output**. How it is done **today**, and what that costs. What **success** looks like, as a number. What a **wrong answer** costs, and who catches it. The **data** to test on. And the **owner** who will decide.',
+        "A card answers ten questions, shaped like the **AI Canvas** from the economists behind *Prediction Machines*, which treats AI as cheap prediction inside a decision. **Who** uses it and the **task**. The **decision**: what the AI predicts or drafts, from what input. The **action**: what happens next, and who does it. How it is done **today**, and its cost. **Success**, as a number. What a **wrong answer** costs, and who catches it. The **data** to test on. The **feedback**: how real outcomes flow back to improve it. And the **owner** who decides.",
         'Vague cards fail. "Use AI for HR" cannot be tested. "Draft answers to employee policy questions in Teams; an HR person approves each one before it is sent; success is 80 in 100 drafts approved without edits on last month\'s 200 questions" can.',
         'A blank line on the card is an open question. Answer it before you build, because a missing owner or a missing test set will stop the project later anyway.',
     ],
     example=example('A card for the HR assistant', """card = {
   "user": "HR team",
   "task": "answer policy questions",
-  "input": "an employee's question",
-  "output": "a draft answer with a source",
+  "decision": "a draft answer from the policy pages",
+  "action": "HR approves or edits it before sending",
   "today": "15 minutes by hand, $8",
   "success": "80 in 100 approved unedited",
   "wrong_answer": "HR catches it before sending",
   "data": "last month's 200 questions",
+  "feedback": "every edit goes into the eval set",
   "owner": "Head of HR operations",
 }"""),
     check=question(
@@ -186,8 +194,8 @@ lesson(MODULE, 'use_case_card',
     ),
     angle=angle(
         pattern='Check every field, then the number',
-        text='The big idea: a use case card answers nine questions on one page, and a blank line, or a success line with no number, is an open question to settle before building. Your code goes through the nine field names in order. For each it reads the card\'s value, or an empty string if the field is missing, and strips spaces. A blank value is a gap. For the success field it also checks the text has at least one digit, because success you cannot count is a gap too. It returns the gaps in the same order. It is like checking a form before you post it: every box filled, and the amount written as a number.',
-        say='"I write the use case on one page: who, the task, input and output, today\'s cost, success as a number, the cost of a wrong answer, the test data and the owner. Any blank is a question to answer first."',
+        text='The big idea: a use case card answers ten questions on one page, and a blank line, or a success line with no number, is an open question to settle before building. Your code goes through the ten field names in order. For each it reads the card\'s value, or an empty string if the field is missing, and strips spaces. A blank value is a gap. For the success field it also checks the text has at least one digit, because success you cannot count is a gap too. It returns the gaps in the same order. It is like checking a form before you post it: every box filled, and the amount written as a number.',
+        say='"I write the use case on one page: who and the task, the decision the AI makes and the action that follows, today\'s cost, success as a number, the cost of a wrong answer, the test data, how feedback improves it, and the owner. Any blank is a question to answer first."',
         classic=None,
     ),
     exercise=exercise(
@@ -197,10 +205,10 @@ lesson(MODULE, 'use_case_card',
         fn='card_gaps',
         prompt="""Your function gets `card`, a dict of text fields.
 
-A full card has these nine fields, in this order:
+A full card has these ten fields, in this order:
 
-- `"user"`, `"task"`, `"input"`, `"output"`, `"today"`
-- `"success"`, `"wrong_answer"`, `"data"`, `"owner"`
+- `"user"`, `"task"`, `"decision"`, `"action"`, `"today"`
+- `"success"`, `"wrong_answer"`, `"data"`, `"feedback"`, `"owner"`
 
 A field is a gap if it is missing, or its text is blank after removing spaces from both ends.
 
@@ -208,15 +216,15 @@ The `"success"` field is also a gap if its text has no digit in it, because succ
 
 Return a list of the gap field names, in the order above. A complete card gives `[]`.""",
         pattern='Walk the field list in order and collect the gaps.',
-        target='one pass over the nine fields',
+        target='one pass over the ten fields',
         realworld='A use case card is the first page of most AI project proposals. Reviewers send it back when the success line has no number or nobody owns the decision.',
         starter="""def card_gaps(card):
     # your code here
     pass
 """,
         solution="""def card_gaps(card):
-    fields = ["user", "task", "input", "output", "today",
-              "success", "wrong_answer", "data", "owner"]
+    fields = ["user", "task", "decision", "action", "today",
+              "success", "wrong_answer", "data", "feedback", "owner"]
     gaps = []
     for field in fields:
         value = card.get(field, "").strip()
@@ -232,15 +240,15 @@ Return a list of the gap field names, in the order above. A complete card gives 
     return gaps
 """,
         cases=[
-            case({"user": "HR team", "task": "answer policy questions", "input": "a question", "output": "a draft answer", "today": "15 minutes, $8", "success": "faster answers", "wrong_answer": "", "data": "200 past questions"}, expected=["success", "wrong_answer", "owner"], sample=True),
-            case({"user": "HR team", "task": "answer policy questions", "input": "a question", "output": "a draft answer", "today": "15 minutes, $8", "success": "80 in 100 approved", "wrong_answer": "HR checks first", "data": "200 past questions", "owner": "Head of HR"}, expected=[]),
-            case({}, expected=["user", "task", "input", "output", "today", "success", "wrong_answer", "data", "owner"]),
-            case({"user": "  ", "task": "triage tickets", "input": "a ticket", "output": "a team name", "today": "2 minutes each", "success": "90% routed right", "wrong_answer": "rerouted by hand", "data": "", "owner": "IT lead"}, expected=["user", "data"]),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it before sending', 'today': '15 minutes, $8', 'success': 'faster answers', 'wrong_answer': '', 'data': '200 past questions', 'feedback': 'edits are logged and added to the eval set'}, expected=['success', 'wrong_answer', 'owner'], sample=True),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it', 'today': '15 minutes, $8', 'success': '80 in 100 approved', 'wrong_answer': 'HR checks first', 'data': '200 past questions', 'feedback': 'edits go into the eval set', 'owner': 'Head of HR'}, expected=[]),
+            case({}, expected=['user', 'task', 'decision', 'action', 'today', 'success', 'wrong_answer', 'data', 'feedback', 'owner']),
+            case({'user': '  ', 'task': 'triage tickets', 'decision': 'which team gets the ticket', 'action': 'the ticket is routed; the team can bounce it back', 'today': '2 minutes each', 'success': '90% routed right', 'wrong_answer': 'rerouted by hand', 'data': '', 'feedback': 'bounced tickets are relabelled', 'owner': 'IT lead'}, expected=['user', 'data']),
         ],
         guided="""def card_gaps(card):
     # Replace every ___ with real code, then run the tests.
-    fields = ["user", "task", "input", "output", "today",
-              "success", "wrong_answer", "data", "owner"]
+    fields = ["user", "task", "decision", "action", "today",
+              "success", "wrong_answer", "data", "feedback", "owner"]
     gaps = []
     for field in fields:
         # Step 1: the value, or "" if the field is missing.
@@ -280,8 +288,8 @@ for ch in "80 in 100":
         seen = True   # True""",
             ],
         ],
-        byhand='user, task, input, output and today are filled. success is "faster answers": not blank, but no digit, so it is a gap. wrong_answer is blank: a gap. data is filled. owner is missing: a gap. Return ["success", "wrong_answer", "owner"].',
-        why='Nine fields, each checked once, so the work stays small and fixed.',
+        byhand='user, task, decision, action and today are filled. success is "faster answers": not blank, but no digit, so it is a gap. wrong_answer is blank: a gap. data and feedback are filled. owner is missing: a gap. Return ["success", "wrong_answer", "owner"].',
+        why='Ten fields, each checked once, so the work stays small and fixed.',
         gotchas=[
             [
                 'Success with no number',

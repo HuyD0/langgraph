@@ -98,4 +98,9 @@ def test_their_own_use_case_reaches_the_snapshot_and_survives_a_merge():
     older = dict(own, updatedAt=1, card={"user": "old"})
     assert tutor.merge_progress({"mine": own}, {"mine": older})["mine"]["card"]["user"] == "Platform team", "the newer copy wins"
     assert "Not written yet." in tutor.snapshot({"lessons": {}}, [], data, today="2026-10-12")
+    idea = {"updatedAt": 1, "idea": {"problem": "people wait a day for answers", "who": "platform users", "what": "get answers from runbooks",
+                                     "measure": "wait under 1 hour", "harm": True, "mode": "augment", "value": "high", "doable": "high"}}
+    text = tutor.snapshot({"lessons": {}, "mine": idea}, [], data, today="2026-10-12")
+    assert 'use case "Help platform users get answers from runbooks so wait under 1 hour"' in text
+    assert "failed gates: unchecked harm" in text and "rated high value, high doable" in text
 
