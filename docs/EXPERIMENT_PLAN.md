@@ -23,13 +23,16 @@ eval_set:       # Name and version, e.g. faq-v4. Never compare runs on different
 split:          # dev, test or holdout. Holdout only for a final decision.
 groups:         # The groups you report separately, e.g. billing / shipping / refunds.
 metric:         # The main metric, and how it is scored (rule, or judge + its kappa).
-guardrails:     # Must-not-get-worse numbers: p95 latency, cost per request, refusals...
+guardrails:     # Must-not-get-worse numbers: p95 latency, cost per request or per finished task, refusals...
 runs:           # Runs per example (3 or more for anything with randomness in it).
 size_check:     # n examples -> margin about 100 / sqrt(n) points. Is it smaller than the change you expect?
 test:           # How you compare: paired (McNemar) for pass/fail on the same examples.
 decision_rule:  # What you will do for each outcome, decided now.
 no_result:      # What "too close to call" means you will do.
 ```
+
+If the work will run on a paid model, or someone must decide whether it is worth
+building, add the [cost and capacity](#cost-and-capacity) lines too.
 
 ## How to fill in each line
 
@@ -47,15 +50,17 @@ of real traffic. [Report each group, weighted by real traffic]
 
 **metric and guardrails.** Start from the failure that hurts most: a made-up
 answer, a missed fraud, a leaked solution. Pair the main metric with guardrails
-so a quality gain cannot hide a cost or speed loss. If an LLM judge scores the
-metric, check it against human labels first, on passes and failures separately,
-and with Cohen's kappa. [Checking your LLM judge] [Agreement beyond chance]
+so a quality gain cannot hide a cost or speed loss. When the change is meant to
+cut cost, it works the other way round: the quality metric is the guardrail
+(see [cost guardrails](#cost-guardrails-next-to-the-quality-metric)). If an LLM
+judge scores the metric, check it against human labels first, on passes and
+failures separately, and with Cohen's kappa. [Checking your LLM judge] [Agreement beyond chance]
 
 For RAG, score retrieval and answers separately: recall@k and nDCG for the
 ranking [Ranking quality: nDCG], and include questions your documents cannot
 answer, tracking missed refusals and over-refusals [Knowing when not to answer].
-For agents, run each task k times and report pass^k next to the success rate
-[Reliable every time: pass^k], and score the tool calls and the path where you
+For agents, run each task k times and report pass hat k (passed on every one of
+the k tries) next to the success rate [Reliable every time (pass hat k)], and score the tool calls and the path where you
 know the right ones [Right tool, right arguments] [Did it take a sensible path?].
 For a classifier with rare positives, report PR-AUC rather than ROC-AUC
 [Quality across every threshold: PR-AUC], and check calibration before a
@@ -90,6 +95,194 @@ winner, but it misses real ones.
 example "switch to B if it wins clearly and p95 stays under 10 seconds; if it is
 too close to call, keep A and grow the eval set to 100 cases". Then follow it.
 
+## Cost and capacity
+
+Add this block to `plan.yaml` when the work will run on a paid model, or when
+someone must decide whether it is worth building. Fill it in before you build,
+for the same reason you write the metric before the runs. The comment on each
+line says who gives you the number. The method, with a worked example for an HR
+help desk, is in [research/LLM_COST_AND_SIZING.md](research/LLM_COST_AND_SIZING.md).
+
+```yaml
+cost_and_capacity:
+  # Today, without AI
+  tasks_per_month:     # the business owner
+  minutes_per_task:    # the business owner
+  hourly_rate:         # the business owner
+  # With AI
+  share_ai_handles:    # the business owner, then the POC
+  share_staff_use_it:  # the business owner, then the POC
+  real_money_share:    # the business owner
+  input_tokens_per_task:   # measured by the POC
+  output_tokens_per_task:  # measured by the POC
+  price_in_per_million:    # the price list, with its date
+  price_out_per_million:   # the price list, with its date
+  # Shares of all the AI's answers
+  right_answer_share:  # right; measured by the POC
+  caught_share:        # wrong but caught; measured by the POC
+  check_share:         # checked by a person; the business owner
+  check_minutes:       # the business owner
+  redo_cost:           # today's cost for one task; the business owner
+  error_cost:          # one wrong answer that slips through; the business owner
+  fixed_monthly:       # the price list
+  build_cost:          # the engineers
+  # Capacity
+  busiest_minute:      # measured by the POC
+  tpm_limit:           # the platform team
+  gateway_limits:      # the platform team
+  # Guardrails
+  cost_guardrail:      # you, before the runs
+  switch_off_rule:     # you and the business owner
+```
+
+**Today, without AI.** Tasks a month, minutes for each, and the hourly rate with
+the employer's extra costs on top of pay. They come from system records, not
+memory. Today's cost for one task is the minutes divided by 60, times the
+hourly rate.
+
+**With AI.** How many tasks the AI can take, how many staff will use it, and how
+much of the freed time is real money: hiring avoided, less overtime, fewer
+contractors. Time saved that nobody stops paying for is not a saving. The
+business owner guesses these first; the POC (proof of concept) swaps each guess
+for a measured number.
+
+Tokens in and tokens out are separate lines because output costs about 5 to 6
+times as much as input. The model cost for one task is the input tokens times
+the input price, plus the output tokens times the output price, divided by a
+million. The three answer shares are out of all the AI's answers. Whatever is
+neither right nor caught slips through: in 100 answers with 80 right and 15
+caught, 5 slip through.
+
+**Cost per finished task.** The model cost, plus a person checking some answers,
+plus redoing the wrong answers that get caught, plus the cost of the wrong ones
+that slip through. Work out each part for one task:
+
+- **Model**: the model cost above.
+- **Checking**: `check_share` times `check_minutes`, divided by 60, times
+  `hourly_rate`.
+- **Redo**: `caught_share` times `redo_cost`. A person redoes each caught answer
+  by hand, so one redo costs the same as today's cost for one task.
+- **Slip-through**: the share that is neither right nor caught, times
+  `error_cost`.
+
+Add the four parts. In the HR help desk example that is 6.5 cents of model, 60
+cents of checking, $1.20 of redo and 50 cents of slip-through: $2.365 a ticket.
+The token bill is usually the smallest part. The **Cost per finished task**
+lesson adds up only the first three parts ($1.865) and keeps slip-through
+apart; the real saving below comes out the same either way.
+
+**Real saving per task.** The monthly net, payback and break-even come from this
+number, not from the cost per finished task. Work it out in two steps:
+
+1. Staff time freed: today's cost, minus checking, minus redo. In the example,
+   $8 minus 60 cents minus $1.20 is $6.20.
+2. Real saving: the staff time freed, times `real_money_share`, minus the model
+   cost, minus the cost of the errors that slip through. In the example all the
+   freed time is real money, so $6.20 minus 6.5 cents minus 50 cents is $5.635.
+
+The share shrinks only the freed staff time, because the model and the errors
+are paid either way. Only when the share is 1 does the real saving equal
+today's cost minus the cost per finished task. From the real saving:
+
+- **Monthly net**: tasks through the AI (tasks a month, times the share the AI
+  handles, times the share of staff who use it), times the real saving, minus
+  `fixed_monthly`.
+- **Payback**: `build_cost` divided by the monthly net, in months.
+- **Break-even**: `fixed_monthly` divided by the real saving: the tasks a month
+  needed just to cover the running costs.
+
+Then change one guess at a time: the one that moves the answer most is the one
+to measure hardest. [Payback and break-even] [Which guess matters most]
+
+**Capacity.** Size for the busiest minute, not the daily average, with room for
+bursts. Check it against the Foundry deployment's tokens-per-minute limit and
+the gateway's rate limits; the platform team knows both. Foundry's limit check
+counts the prompt plus the longest answer you allow (`max_tokens`), not the
+tokens used. Start on pay-as-you-go, and reserve capacity only once traffic is
+steady. [Size for the busiest minute]
+
+### Measuring tokens from the POC's traces
+
+Take the token numbers from real POC runs, not from one short test. MLflow 3
+records input and output tokens on each trace, so read them back and price them
+with a dated table you write yourself:
+
+```python
+import mlflow
+
+# Example prices, dollars per million
+# tokens, checked 2026-10-11. Check yours.
+PRICE_IN = 2.00
+PRICE_OUT = 10.00
+
+# Your POC's experiment id: it is on
+# the experiment's page in MLflow.
+EXPERIMENT_ID = "<your experiment id>"
+
+traces = mlflow.search_traces(
+    locations=[EXPERIMENT_ID],
+    return_type="list",
+)
+costs = []
+for t in traces:
+    use = t.info.token_usage
+    if use is None:  # not recorded
+        continue
+    inp = use["input_tokens"] * PRICE_IN
+    out = use["output_tokens"] * PRICE_OUT
+    costs.append((inp + out) / 1_000_000)
+
+if not costs:
+    print("no token usage recorded")
+else:
+    costs.sort()
+    n = len(costs)
+    # 1 in 10 cost less than low,
+    # 1 in 10 cost more than high
+    low = costs[n // 10]
+    typical = costs[n // 2]
+    high = costs[n * 9 // 10]
+```
+
+- A trace's `token_usage` already adds up every model call inside it. So when
+  one trace covers a whole agent run, its cost is the cost of the task. If one
+  task is spread over several traces (say, one per chat turn), give them the
+  same tag when they are made, for example
+  `mlflow.update_current_trace(tags={"task_id": ...})`. Then add up the costs
+  of the traces that share a `t.info.tags["task_id"]` before working out low,
+  typical and high.
+- An agent sends everything so far again at every step, so measure whole runs.
+  [Tokens grow every step]
+- Put each trace's cost next to its scorer result. All the cost, failed runs
+  included, divided by the runs that passed, is the cost of one success.
+  [Dollars per success]
+- `system.ai_gateway.usage` is a second source. The gateway logs every call with
+  its tokens and request tags, even for traces you did not keep. Tag the POC's
+  and the eval's requests so their cost shows up on its own.
+- MLflow can add a dollar cost itself (from 3.10, through LiteLLM), but on
+  Databricks-managed MLflow only if your app installs LiteLLM or you set it. The
+  bill of record is Azure Cost Management.
+
+### Cost guardrails next to the quality metric
+
+- **Cost sits next to the metric.** Put cost per finished task (for agents,
+  dollars per success) in `guardrails`. A cheaper model that fails more tasks
+  can cost more for each success.
+- **A cost cut needs the eval too.** A smaller model, a shorter prompt or less
+  context can each lower quality. Run the eval set before and after, and keep
+  the change only if quality holds: in a cost cut, the eval score is your
+  guardrail, and it must not drop past the tolerance you wrote down.
+- **Stopped runs are failures.** A run that hits its step or token limit did not
+  finish the task, so count it as failed, not as missing.
+- **Write the switch-off rule now**: for example a cost ceiling, or too few
+  people using it, that pauses the work when crossed.
+- **In production, use three layers.** A budget alert tells you, a rate limit
+  slows one caller, a loop cap stops a runaway run. An alert alone stops
+  nothing.
+
+Once it runs, put the estimate next to the real bill, and carry what the gap
+teaches into the next plan. [Estimate against actual]
+
 ## After the runs: reading what happened
 
 The comparison says *whether* the change helped. These steps, done in this order
@@ -105,7 +298,7 @@ runs are decided in Design, and the tags they rely on are added in Build and tra
 6. **Read them.** Open both traces for each improvement and regression, find where they diverge, label the cause, count the causes. [Reading regressions and improvements]
 7. **Component checks.** For example, what the reranker did on the same candidates, and how many misses were out of reach. [Did the reranker help?]
 8. **Ablations.** Is each part worth its cost? [Ablations: what each part is worth]
-9. **Guardrails.** Time and cost per request.
+9. **Guardrails.** Time, and cost per request or per finished task. [Cost per finished task]
 10. **Decide by the rule, then confirm once on the holdout.** [Testing many variants]
 
 ## Log the plan with the run

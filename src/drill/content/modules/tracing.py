@@ -177,6 +177,7 @@ lesson(MODULE, 'slowest_chain',
     learn=[
         'A **trace** records one agent run as nested **spans**: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their **parent**; the spans directly inside it are its **children**.',
         "To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. The answer is usually one tool or one model call.",
+        "An agent team makes the same kind of tree when each helper is traced under its own name: one span on top for the whole team run, one span for each helper agent, and each helper's tool calls inside its span. Following the slowest child then shows which helper held the run up.",
     ],
     example=example('Spans form a tree', """agent_run      4200 ms
 ├─ plan           600 ms
@@ -342,18 +343,530 @@ for p in [{"age": 4}, {"age": 9}]:
     ),
 )
 
+lesson(MODULE, 'trace_table_row',
+    title='Traces to a table',
+    learn=[
+        'Reading traces one at a time stops working after a few dozen runs. Turn each trace into **one row** of a few numbers: steps (model calls), tool errors, the biggest prompt and total tokens. Then sort and filter the rows, like a spreadsheet, to find the runs worth reading.',
+        'Rows with many steps or many tool errors are the runs to open first. The biggest prompt (the most input tokens in one call) shows how close a run came to filling the context window, the most a model can read in one call.',
+        'On Databricks, production traces can be stored as tables in **Unity Catalog**, so you can query them with SQL. Keep every trace (with personal data hidden first, as in Security), and save money by judging only a **sample** of them, say 1 in 10. Recording fewer traces can throw away exactly the failing runs you need.',
+    ],
+    example=example('Three traces as three rows', """trace  steps  errors   peak  total
+t-01       3       1   2100   5090
+t-02       2       0    900   1950
+t-03       9       4  14800  61200
+# read t-03 first: most steps and errors"""),
+    check=question(
+        'Your agent handles 5,000 runs a day, and judging every trace with a model costs too much. What should you do?',
+        [
+            'Record only 1 run in 10, and judge those',
+            'Judge only the runs users complained about',
+            'Record every run, and judge only 1 in 10',
+        ],
+        answer=2,
+        why='Runs you never record are gone, failures included, and many failures get no complaint. Keep every trace, and save money by judging a sample.',
+    ),
+    angle=angle(
+        pattern='One pass, several totals',
+        text='One walk over the spans updates four numbers at once: two counts, a running biggest and a running total. Interviewers like problems that want several answers from a single walk.',
+        say='"I walk the spans once and update all four numbers as I go, so each trace becomes one row in a single pass."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: one row per trace', """import mlflow
+from mlflow.entities import SpanType
+
+# A DataFrame with one row per trace.
+# Columns include trace_id, state,
+# execution_duration, tags and spans.
+df = mlflow.search_traces(max_results=500)
+# Traces kept in Unity Catalog: add
+# locations=["catalog.schema"]
+
+# Add your own numbers from the spans:
+traces = mlflow.search_traces(
+    max_results=500, return_type="list")
+for t in traces:
+    tools = t.search_spans(
+        span_type=SpanType.TOOL)
+    bad = [s for s in tools
+           if s.status.status_code == "ERROR"]
+    # token_usage: input, output and total
+    print(t.info.trace_id, len(bad),
+          t.info.token_usage)"""),
+    exercise=exercise(
+        title='Turn a Trace into a Row',
+        topic='agentops',
+        difficulty='easy',
+        fn='trace_table_row',
+        prompt="""A trace is a list of spans, one for each step of an agent run. Your function gets one input, `spans`: a list of dicts like `{"type": "llm", "input_tokens": 1200, "output_tokens": 80, "error": False}`. `type` is `"llm"` for a model call or `"tool"` for a tool call. `error` is True if that step failed.
+
+Turn the trace into one row of a table. Return a dict with four keys:
+
+- `"steps"`: how many spans have type `"llm"`.
+- `"tool_errors"`: how many spans have type `"tool"` and error True.
+- `"peak_input_tokens"`: the biggest `input_tokens` of any span.
+- `"total_tokens"`: every span's `input_tokens` and `output_tokens`, all added up.
+
+If `spans` is empty, all four numbers are 0.""",
+        pattern='One pass over the spans, updating two counts, a running biggest and a running total as you go.',
+        target='one pass over the spans',
+        realworld='The first step in looking at agents at scale: one row per run, then sort by tool errors or tokens to choose which traces to read. On Databricks the same numbers can come straight from traces stored in Unity Catalog tables.',
+        starter="""def trace_table_row(spans):
+    # your code here
+    pass
+""",
+        solution="""def trace_table_row(spans):
+    steps = 0
+    tool_errors = 0
+    peak = 0
+    total = 0
+    for span in spans:
+        if span["type"] == "llm":
+            steps += 1
+        if span["type"] == "tool" and span["error"]:
+            tool_errors += 1
+        if span["input_tokens"] > peak:
+            peak = span["input_tokens"]
+        total += span["input_tokens"] + span["output_tokens"]
+    return {
+        "steps": steps,
+        "tool_errors": tool_errors,
+        "peak_input_tokens": peak,
+        "total_tokens": total,
+    }
+""",
+        cases=[
+            case([
+                {'type': 'llm', 'input_tokens': 1200, 'output_tokens': 80, 'error': False},
+                {'type': 'tool', 'input_tokens': 0, 'output_tokens': 0, 'error': True},
+                {'type': 'llm', 'input_tokens': 1500, 'output_tokens': 60, 'error': False},
+                {'type': 'tool', 'input_tokens': 0, 'output_tokens': 0, 'error': False},
+                {'type': 'llm', 'input_tokens': 2100, 'output_tokens': 150, 'error': False},
+            ], expected={'steps': 3, 'tool_errors': 1, 'peak_input_tokens': 2100, 'total_tokens': 5090}, sample=True),
+            case([], expected={'steps': 0, 'tool_errors': 0, 'peak_input_tokens': 0, 'total_tokens': 0}),
+            case([
+                {'type': 'llm', 'input_tokens': 500, 'output_tokens': 20, 'error': True},
+                {'type': 'tool', 'input_tokens': 0, 'output_tokens': 0, 'error': True},
+                {'type': 'tool', 'input_tokens': 0, 'output_tokens': 0, 'error': True},
+            ], expected={'steps': 1, 'tool_errors': 2, 'peak_input_tokens': 500, 'total_tokens': 520}),
+            case([
+                {'type': 'llm', 'input_tokens': 3000, 'output_tokens': 100, 'error': False},
+                {'type': 'llm', 'input_tokens': 2500, 'output_tokens': 50, 'error': False},
+            ], expected={'steps': 2, 'tool_errors': 0, 'peak_input_tokens': 3000, 'total_tokens': 5650}),
+            case([
+                {'type': 'tool', 'input_tokens': 0, 'output_tokens': 0, 'error': False},
+            ], expected={'steps': 0, 'tool_errors': 0, 'peak_input_tokens': 0, 'total_tokens': 0}),
+        ],
+        guided="""def trace_table_row(spans):
+    # Replace every ___ with real code, then run the tests.
+
+    steps = 0         # model calls
+    tool_errors = 0   # tool calls that failed
+    peak = 0          # biggest input_tokens so far
+    total = 0         # all tokens, in and out
+    for span in spans:
+        # Step 1: count the model calls.
+        if span["type"] == "llm":
+            steps += 1
+        # Step 2: a tool call that failed? Count it.
+        if ___:
+            tool_errors += 1
+        # Step 3: a bigger prompt than any so far? Keep it.
+        if span["input_tokens"] > peak:
+            peak = ___
+        # Step 4: add this span's input and output tokens.
+        total += ___
+    return {
+        "steps": steps,
+        "tool_errors": tool_errors,
+        "peak_input_tokens": peak,
+        "total_tokens": total,
+    }
+""",
+        fills=['span["type"] == "tool" and span["error"]', 'span["input_tokens"]', 'span["input_tokens"] + span["output_tokens"]'],
+        concepts=[
+            [
+                'Adding with +=',
+                '`n += x` adds x to `n`, so `n += 1` adds one. Start each count at 0 before the loop.',
+                """apples = 0
+apples += 1
+apples += 5   # apples is now 6""",
+            ],
+            [
+                'and, with True or False',
+                '`a and b` is True only when both are True. A value that is already True or False, like `span["error"]`, can go straight into an `if`.',
+                """done = True
+paid = False
+if done and paid:
+    print("ship it")   # not printed""",
+            ],
+            [
+                'Keeping the biggest so far',
+                'Start at 0, then replace it whenever an item is bigger.',
+                """best = 0
+for n in [4, 9, 2]:
+    if n > best: best = n
+# best is 9""",
+            ],
+            [
+                'Making a dict to return',
+                'Curly braces with `key: value` pairs build a dict in one go.',
+                """pet = {"name": "Rex", "age": 3}
+pet["age"]   # 3""",
+            ],
+        ],
+        byhand='Span 1 is a model call, so steps is 1. Its 1200 input tokens are the biggest so far, and the total is 1200 plus 80, which is 1280. Span 2 is a tool call that failed, so tool_errors is 1. It has no tokens. Span 3 is a model call, so steps is 2. 1500 beats 1200, so the peak is 1500, and the total grows by 1560 to 2840. Span 4 is a tool call that worked, so nothing changes. Span 5 is a model call, so steps is 3. The peak becomes 2100, and the total grows by 2250 to 5090. Return {"steps": 3, "tool_errors": 1, "peak_input_tokens": 2100, "total_tokens": 5090}.',
+        why='One pass over the spans. Each span updates at most four numbers.',
+        gotchas=[
+            [
+                'Blaming a tool for a model error',
+                'Model calls fail too, for example when one times out. Check the span type as well as the error flag, or a model timeout gets counted as a broken tool.',
+            ],
+            [
+                'Mixing up peak and total',
+                "Each model call re-reads the whole run so far, so input tokens grow every step. The total says what the run cost. The peak says how close it came to filling the context window. They answer different questions.",
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'context_fill',
+    title='How full is the context?',
+    learn=[
+        "Answers get worse as the prompt gets longer, even when the right fact is in it. A model's **context window** is the most tokens it can read in one call. This drop is called **context rot**, and a model with a bigger window does not fix it.",
+        'An agent sends its whole history again on every call, so each call reads more than the last. Measure the **fill** of each call: its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).',
+        'Three habits keep the context small and useful. Put the question after the retrieved text, and keep a short goal and plan near the end of the prompt, where models pay the most attention. Fewer, better chunks often beat more: try 5 retrieved chunks against 50 and compare the eval scores.',
+    ],
+    example=example('The fill grows on every call', """window: 128000 tokens
+call 0:  12000 tokens   9%
+call 1:  41000 tokens  32%
+call 2:  77000 tokens  60%
+call 3: 108000 tokens  84%
+# first over 80: index 3"""),
+    check=question(
+        'Your agent gets worse on long runs, even though the right fact is in its prompt. A teammate suggests a model with a window twice as big. What happens?',
+        [
+            'It still slips as the prompt grows, so keep the context short',
+            'The problem goes away, because the fact fits more easily',
+            'It slips sooner, because bigger windows read less carefully',
+        ],
+        answer=0,
+        why='Quality drops as the prompt grows, whatever the window size. The fix is a shorter, more focused context, not more room.',
+    ),
+    angle=angle(
+        pattern='Running biggest and first match',
+        text='One walk keeps the biggest value so far and notes the first position that crosses a line. Many "find the first" problems have this shape: check each item once and remember the first one that passes.',
+        say='"I work out each call\'s fill as I walk the list, keep the biggest, and note the first index over 80 percent the moment I see it."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: input tokens per model call', """import mlflow
+from mlflow.entities import SpanType
+
+WINDOW = 128000   # your model's limit
+trace = mlflow.get_trace(trace_id)
+calls = trace.search_spans(
+    span_type=SpanType.CHAT_MODEL)
+for s in calls:
+    use = s.get_attribute(
+        "mlflow.chat.tokenUsage")
+    if use:
+        tokens = use["input_tokens"]
+        pct = tokens * 100 // WINDOW
+        print(s.name, pct)"""),
+    exercise=exercise(
+        title='Watch the Context Fill Up',
+        topic='memory',
+        difficulty='easy',
+        fn='context_fill',
+        prompt="""Your function gets two things:
+
+- `input_tokens`: how many tokens each model call read, in order, like `[2500, 5200, 8300]`.
+- `window`: the most tokens the model can read in one call, like `10000`.
+
+A call's fill is its tokens as a percent of the window: `tokens * 100 / window`.
+
+Return a list of two things:
+
+- the biggest fill of any call, rounded to a whole number;
+- the index (position, from 0) of the first call with a fill over 80. Exactly 80 does not count. If no call is over 80, use `None`.
+
+If `input_tokens` is empty, return `[0, None]`.""",
+        pattern='Work out each fill in one walk. Keep the biggest, and note the first index over 80.',
+        target='one pass over the calls',
+        realworld='Agents re-read their whole history on every call, so long runs creep toward a full context. Tracking the fill of each call shows when to clear old tool results or summarise, before the answers start to slip.',
+        starter="""def context_fill(input_tokens, window):
+    # your code here
+    pass
+""",
+        solution="""def context_fill(input_tokens, window):
+    peak = 0
+    first_over = None
+    for i, tokens in enumerate(input_tokens):
+        fill = tokens * 100 / window
+        if fill > peak:
+            peak = fill
+        if fill > 80 and first_over is None:
+            first_over = i
+    return [int(round(peak)), first_over]
+""",
+        cases=[
+            case([2500, 5200, 8300, 9100], 10000, expected=[91, 2], sample=True),
+            case([], 10000, expected=[0, None]),
+            case([800, 790], 1000, expected=[80, None]),
+            case([1000, 2000, 2500], 3000, expected=[83, 2]),
+            case([9000, 4000, 8500], 10000, expected=[90, 0]),
+            case([1000, 2000], 3000, expected=[67, None]),
+        ],
+        guided="""def context_fill(input_tokens, window):
+    # Replace every ___ with real code, then run the tests.
+
+    peak = 0            # biggest fill so far
+    first_over = None   # first call over 80, not found yet
+    for i, tokens in enumerate(input_tokens):
+        # Step 1: tokens as a percent of the window.
+        fill = ___
+        # Step 2: keep the biggest fill.
+        if fill > peak:
+            peak = fill
+        # Step 3: over 80, and none noted before? Note i.
+        if ___:
+            first_over = i
+    # Step 4: round the peak to a whole number.
+    return [int(round(peak)), first_over]
+""",
+        fills=['tokens * 100 / window', 'fill > 80 and first_over is None'],
+        concepts=[
+            [
+                'enumerate',
+                'Gives you the index (position, from 0) along with each item.',
+                """for i, day in enumerate(["mon", "tue"]):
+    print(i, day)   # 0 mon, then 1 tue""",
+            ],
+            [
+                'None as "not found yet"',
+                'Start with `None`, and check it with `is None`. Once you store a value, `is None` is False, so it is never overwritten.',
+                """first_big = None
+for n in [2, 7, 9]:
+    if n > 5 and first_big is None:
+        first_big = n
+# first_big is 7""",
+            ],
+            [
+                'Rounding to a whole number',
+                '`round(x)` rounds to the nearest whole number. Wrapping it in `int(...)` makes sure you get 67, not 67.0.',
+                """int(round(66.67))   # 67
+int(round(83.3))    # 83""",
+            ],
+            [
+                'Keeping the biggest so far',
+                'Start at 0, then replace it whenever an item is bigger.',
+                """best = 0
+for n in [4, 9, 2]:
+    if n > best: best = n
+# best is 9""",
+            ],
+        ],
+        byhand='The window is 10000. Call 0 read 2500 tokens: 2500 times 100, divided by 10000, is 25. Call 1 is 52. Call 2 is 83, the first fill over 80, so note index 2. Call 3 is 91, the biggest fill. It is over 80 too, but index 2 is already noted, so keep 2. Return [91, 2].',
+        why='One pass over the calls, keeping two values up to date.',
+        gotchas=[
+            [
+                'Only checking the last call',
+                'After a cleanup or a summary the context shrinks, so the last call is not always the fullest. Look at every call.',
+            ],
+            [
+                'Buying a bigger window',
+                'A bigger window lets a run go on longer before it errors, but answers still get worse as the prompt grows. Keep the context short and focused instead.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'summary_recall',
+    title='What a summary forgets',
+    learn=[
+        'When the context gets too full, agents **compact** it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.',
+        'Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.',
+        'To test a summary, **plant facts**: put a few details you will ask about later, like a table name, into a long run. Compact it, then ask **probe questions** about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.',
+    ],
+    example=example('A probe question after compaction', """planted: goal, table, ticket_id
+summary: "Fix the HR tickets.
+          Next: rerun the job."
+probe:   Which table did we write to?
+agent:   "I'm not sure."  (forgotten)"""),
+    check=question(
+        'After you add a summary step, runs are shorter, but the agent sometimes rewrites a table it already wrote. Which test catches this?',
+        [
+            'Check that each summary is under 500 words',
+            'Ask the model whether its summary looks complete',
+            'Plant facts, compact, then ask probe questions',
+        ],
+        answer=2,
+        why="A summary's length and the model's own opinion say nothing about what was lost. Probe questions check whether the agent still knows the facts it needs to finish.",
+    ),
+    angle=angle(
+        pattern='Look-up in a set',
+        text='Turn `answered` into a set once, then check each planted fact against it. Two Sum uses the same trick: keep what you have seen in a set or dict, so each "is it there?" check is instant.',
+        say='"I turn the answers into a set, walk the planted facts once, count the hits, and sort the misses at the end."',
+        classic='two_sum',
+    ),
+    stack=stack('LangChain: clear tool results, then summarise', """from langchain.agents import create_agent
+from langchain.agents.middleware import (
+    ClearToolUsesEdit,
+    ContextEditingMiddleware,
+    SummarizationMiddleware,
+)
+
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    middleware=[
+        # Cheap fix: past 60000 tokens, the
+        # model sees "[cleared]" in place of
+        # all but the 3 newest tool results.
+        ContextEditingMiddleware(edits=[
+            ClearToolUsesEdit(
+                trigger=60000, keep=3)]),
+        # Past 100000 tokens, summarise, and
+        # keep the last 20 messages as they are.
+        SummarizationMiddleware(
+            model=llm,
+            trigger=("tokens", 100000),
+            keep=("messages", 20),
+            summary_prompt=MY_PROMPT,
+        ),
+    ],
+)
+# MY_PROMPT asks for the goal, decisions,
+# exact names, ids and the next step.
+# It must contain {messages}."""),
+    exercise=exercise(
+        title='Score a Summary with Planted Facts',
+        topic='memory',
+        difficulty='easy',
+        fn='summary_recall',
+        prompt="""Your function gets two things:
+
+- `planted`: short names for the facts you hid in a long agent run before it was summarised, like `["goal", "table", "next_step"]`.
+- `answered`: the facts the agent still got right when you asked about them afterwards, like `["goal", "next_step"]`.
+
+Return a dict with two keys:
+
+- `"kept"`: how many planted facts are in `answered`, divided by how many were planted, rounded to 2 decimal places.
+- `"forgotten"`: the planted facts that are not in `answered`, sorted A to Z.
+
+Ignore any name in `answered` that was not planted. `planted` always has at least one fact.""",
+        pattern='Look each planted fact up in a set of the answers. Count the hits and collect the misses.',
+        target='one pass over the planted facts',
+        realworld='Teams test compaction like this before they ship it: plant facts such as a table name or a ticket id, let the run compact, then ask probe questions. A low share kept means the summary prompt needs required sections.',
+        starter="""def summary_recall(planted, answered):
+    # your code here
+    pass
+""",
+        solution="""def summary_recall(planted, answered):
+    found = set(answered)
+    hits = 0
+    forgotten = []
+    for fact in planted:
+        if fact in found:
+            hits += 1
+        else:
+            forgotten.append(fact)
+    share = round(hits / len(planted), 2)
+    return {"kept": share, "forgotten": sorted(forgotten)}
+""",
+        cases=[
+            case(['goal', 'table', 'ticket_id', 'next_step', 'error_code'], ['goal', 'next_step', 'ticket_id'], expected={'kept': 0.6, 'forgotten': ['error_code', 'table']}, sample=True),
+            case(['table', 'goal'], ['goal', 'table'], expected={'kept': 1.0, 'forgotten': []}),
+            case(['table', 'file', 'goal'], [], expected={'kept': 0.0, 'forgotten': ['file', 'goal', 'table']}),
+            case(['table', 'goal', 'next_step'], ['goal', 'weather', 'user_name'], expected={'kept': 0.33, 'forgotten': ['next_step', 'table']}),
+            case(['ticket_id', 'error_code', 'table'], ['table', 'ticket_id'], expected={'kept': 0.67, 'forgotten': ['error_code']}),
+        ],
+        guided="""def summary_recall(planted, answered):
+    # Replace every ___ with real code, then run the tests.
+
+    found = set(answered)   # quick "is it in?" checks
+    hits = 0                # planted facts still answered
+    forgotten = []
+    for fact in planted:
+        # Step 1: did the agent still answer this fact?
+        if ___:
+            hits += 1
+        else:
+            forgotten.append(fact)
+    # Step 2: the share kept, out of all planted facts.
+    share = round(___, 2)
+    # Step 3: the forgotten facts, A to Z.
+    return {"kept": share, "forgotten": sorted(forgotten)}
+""",
+        fills=['fact in found', 'hits / len(planted)'],
+        concepts=[
+            [
+                'Sets',
+                'A set is a group of values with no repeats. Checking `x in some_set` is instant. `x in some_list` checks every item.',
+                """colors = set(["red", "blue"])
+"red" in colors     # True
+"green" in colors   # False""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append("Ana")   # ["Ana"]""",
+            ],
+            [
+                'Dividing',
+                '`/` always gives a decimal, even when both numbers are whole.',
+                """3 / 5   # 0.6
+4 / 2   # 2.0""",
+            ],
+            [
+                'round',
+                '`round(x, 2)` keeps 2 decimal places.',
+                'round(2 / 3, 2)   # 0.67',
+            ],
+            [
+                'len',
+                '`len(items)` is how many items a list has.',
+                'len(["a", "b", "c"])   # 3',
+            ],
+            [
+                'sorted',
+                '`sorted(items)` gives a new list in order: A to Z for words.',
+                """sorted(["pear", "fig", "apple"])
+# ["apple", "fig", "pear"]""",
+            ],
+        ],
+        byhand='Five facts were planted. goal is in answered: 1 hit. table is not, so forgotten is ["table"]. ticket_id is in: 2 hits. next_step is in: 3 hits. error_code is not, so forgotten is ["table", "error_code"]. That is 3 hits out of 5, and 3 divided by 5 is 0.6. Sorted A to Z, the forgotten facts are ["error_code", "table"]. Return {"kept": 0.6, "forgotten": ["error_code", "table"]}.',
+        why='One pass over the planted facts. Each check is a quick set look-up.',
+        gotchas=[
+            [
+                'A generic summary prompt',
+                'A prompt that just says "summarise the conversation" keeps the gist and drops the exact names. Require sections for table names, ids, error codes and the next step.',
+            ],
+            [
+                'Judging a summary by its length',
+                'A short summary looks efficient but can drop the one fact the agent needs. Judge it by whether the agent can still answer the probe questions and finish the task.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'detect_loop',
     title='Guardrails for agents',
     learn=[
         'Agents in production need **guardrails**: limits that stop a run before it does damage or burns money. The simplest catches the same call repeated again and again.',
         'Production systems also cap total steps, tokens and time, and tell the model why it was stopped.',
+        "In LangGraph, the step cap is `recursion_limit`. Its default in langgraph 1.2.11 is 10,007 steps, far too many to stop a stuck agent early. Always pass your own small limit, like 25.",
     ],
     example=example('A loop in a trace', """search('weather paris')
 search('weather paris')
 search('weather paris')   # stop here"""),
     check=question(
         'An agent alternates between two calls forever: A, B, A, B. Does a "same call 3 times in a row" check catch it?',
-        ['Yes', 'No, so you also need a total step limit', 'Only with limit 2'],
+        [
+            'Yes, it sees the same calls coming back',
+            'No, so you also need a total step limit',
+            'Only if you lower the limit to 2 calls',
+        ],
         answer=1,
         why='No call repeats back to back, so you need other limits too.',
     ),
@@ -376,7 +889,11 @@ search('weather paris')   # stop here"""),
     ]
     if len(calls) >= 3 and len(set(calls[-3:])) == 1:
         return "stop"
-    return "tools\""""),
+    return "tools"
+
+# And always set your own step limit:
+graph.invoke(inputs,
+    config={"recursion_limit": 25})"""),
     exercise=exercise(
         title='Stop a Looping Agent',
         topic='agentops',
@@ -427,7 +944,6 @@ Go through the calls and count how many times in a row the same call (same tool 
             case([], 3, expected=-1),
             case([['search', 'paris']], 1, expected=0),
             case([['search', 'paris'], ['search', 'rome'], ['search', 'paris']], 2, expected=-1),
-            case([['search', 'q'], ['search', 'q']], 2, expected=1),
             case([['search', 'q'], ['search', 'q'], ['search', 'q'], ['search', 'q']], 2, expected=1),
         ],
         guided="""def detect_loop(calls, limit):
@@ -485,6 +1001,186 @@ score += 1   # score is now 1""",
             [
                 'Tell the model why it stopped',
                 'Returning a clear message ("stopped: repeated the same search 3 times") lets the agent change approach instead of failing silently.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'failure_counts',
+    title='Label failures, then count',
+    learn=[
+        'With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one **failure label**: a short name for what went wrong. Then count the labels and fix the biggest group first.',
+        'Use a fixed list of labels, so the same problem always gets the same name. A research list called **MAST** names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.',
+        'A person labels the first batch by hand. A judge model can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.',
+    ],
+    example=example('Failed runs, counted by label', """label           count  read first
+repeated step      41  t-193, t-207
+never stopped      22  t-150, t-311
+ignored task        9  t-402, t-417
+# fix repeated step first"""),
+    check=question(
+        'You have 300 failed runs and one week to improve the agent. What should you do first?',
+        [
+            'Label a sample, count the labels, fix the biggest group',
+            'Fix the newest failure, then the one before it, and so on',
+            'Rewrite the whole system prompt, then rerun every task',
+        ],
+        answer=0,
+        why='Counting labels shows which single fix helps the most runs. Going one by one, or rewriting everything, uses up the week without knowing what mattered.',
+    ),
+    angle=angle(
+        pattern='Group, count, then sort',
+        text='Group items by a key in a dict of lists, then sort the groups by size. Group Anagrams has the same group-by-key shape.',
+        say='"I group the failure ids by label in one pass, build one row per label, then sort by count with the label as the tie-break."',
+        classic='group_anagrams',
+    ),
+    stack=stack('MLflow 3: save labels on traces, then look them up', """import mlflow
+from mlflow.entities import AssessmentSource
+
+# A person's label, saved on the trace
+mlflow.log_feedback(
+    trace_id=trace_id,
+    name="failure_label",
+    value="repeated step",
+    source=AssessmentSource(
+        source_type="HUMAN",
+        source_id="reviewer"),
+    rationale="Same search 4 times",
+)
+
+# Later: every trace with that label
+df = mlflow.search_traces(filter_string=
+    "feedback.failure_label = 'repeated step'")
+print(len(df))"""),
+    exercise=exercise(
+        title='Count Failures by Label',
+        topic='agentops',
+        difficulty='medium',
+        fn='failure_counts',
+        prompt="""Your function gets two things:
+
+- `failures`: a list of failed traces, each already given a label, like `{"id": "t1", "label": "repeated step"}`.
+- `n`: how many example ids to keep for each label, like `2`.
+
+Group the failures by label. For each label, make a list of three things: the label, how many failures have it, and the ids of its first `n` failures in the order they appear (all of them, if there are fewer).
+
+Return these lists sorted with the biggest count first. If two labels have the same count, put them A to Z by label. If `failures` is empty, return `[]`.""",
+        pattern='Group the ids by label in a dict of lists, make one row per label, then sort by count with the label as the tie-break.',
+        target='one pass to group, then one sort of the labels',
+        realworld='This is error analysis for agents: label a sample of failed traces, count, and fix the biggest group first. Then rerun the evals and count again to check that the fix worked.',
+        starter="""def failure_counts(failures, n):
+    # your code here
+    pass
+""",
+        solution="""def failure_counts(failures, n):
+    groups = {}
+    for failure in failures:
+        label = failure["label"]
+        if label not in groups:
+            groups[label] = []
+        groups[label].append(failure["id"])
+    rows = []
+    for label in groups:
+        ids = groups[label]
+        rows.append([label, len(ids), ids[:n]])
+    rows.sort(key=lambda row: (-row[1], row[0]))
+    return rows
+""",
+        cases=[
+            case([
+                {'id': 't1', 'label': 'repeated step'},
+                {'id': 't2', 'label': 'ignored task'},
+                {'id': 't3', 'label': 'repeated step'},
+                {'id': 't4', 'label': 'never stopped'},
+                {'id': 't5', 'label': 'repeated step'},
+            ], 2, expected=[['repeated step', 3, ['t1', 't3']], ['ignored task', 1, ['t2']], ['never stopped', 1, ['t4']]], sample=True),
+            case([], 2, expected=[]),
+            case([
+                {'id': 'a1', 'label': 'weak check'},
+                {'id': 'a2', 'label': 'ignored task'},
+            ], 3, expected=[['ignored task', 1, ['a2']], ['weak check', 1, ['a1']]]),
+            case([
+                {'id': 'x1', 'label': 'weak check'},
+                {'id': 'x2', 'label': 'never stopped'},
+                {'id': 'x3', 'label': 'never stopped'},
+                {'id': 'x4', 'label': 'never stopped'},
+                {'id': 'x5', 'label': 'weak check'},
+            ], 1, expected=[['never stopped', 3, ['x2']], ['weak check', 2, ['x1']]]),
+            case([
+                {'id': 'r1', 'label': 'repeated step'},
+                {'id': 'r2', 'label': 'repeated step'},
+                {'id': 'r3', 'label': 'repeated step'},
+                {'id': 'r4', 'label': 'repeated step'},
+            ], 3, expected=[['repeated step', 4, ['r1', 'r2', 'r3']]]),
+            case([{'id': 'b1', 'label': 'never stopped'}], 5, expected=[['never stopped', 1, ['b1']]]),
+        ],
+        guided="""def failure_counts(failures, n):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: group the ids by label, in order.
+    groups = {}   # label: list of its ids
+    for failure in failures:
+        label = failure["label"]
+        if label not in groups:
+            groups[label] = []
+        groups[label].append(failure["id"])
+
+    # Step 2: one row per label: label, count, first n ids.
+    rows = []
+    for label in groups:
+        ids = groups[label]
+        rows.append([label, ___, ___])
+
+    # Step 3: biggest count first, then label A to Z.
+    rows.sort(key=lambda row: (___, row[0]))
+    return rows
+""",
+        fills=['len(ids)', 'ids[:n]', '-row[1]'],
+        concepts=[
+            [
+                'A dict of lists',
+                'Start an empty list the first time a key shows up, then append to that list.',
+                """pets = {}
+if "cats" not in pets: pets["cats"] = []
+pets["cats"].append("Tom")""",
+            ],
+            [
+                'Looping over a dict',
+                '`for key in d:` gives you each key in turn. Use `d[key]` to get its value.',
+                """ages = {"ann": 30, "bob": 25}
+for name in ages:
+    print(name, ages[name])""",
+            ],
+            [
+                'Slicing to a limit',
+                '`items[:3]` gives at most the first 3 items. If the list is shorter, you get all of it.',
+                """[1, 2, 3, 4][:2]   # [1, 2]
+[1][:2]            # [1]""",
+            ],
+            [
+                'len',
+                '`len(items)` is how many items a list has.',
+                'len(["a", "b", "c"])   # 3',
+            ],
+            [
+                'Sorting with a tie-break',
+                '`key=` says what to compare. `lambda p: ...` is a tiny function that gives back what to compare. `(-p[1], p[0])` compares the number first, with a minus sign so the biggest comes first. Equal numbers then go by name, A to Z.',
+                """pets = [["cat", 3], ["dog", 9],
+        ["ant", 9]]
+pets.sort(key=lambda p: (-p[1], p[0]))
+# ant 9, dog 9, cat 3""",
+            ],
+        ],
+        byhand='Group by label. repeated step gets t1, t3 and t5. ignored task gets t2. never stopped gets t4. repeated step has 3 failures, so keep its first 2 ids, t1 and t3. ignored task and never stopped have 1 each, a tie, so they go A to Z: ignored task first. Return [["repeated step", 3, ["t1", "t3"]], ["ignored task", 1, ["t2"]], ["never stopped", 1, ["t4"]]].',
+        why='One pass over the failures to group them, then one sort of the labels.',
+        gotchas=[
+            [
+                'Labels that drift',
+                '"loop", "looping" and "repeated step" count as three different labels, so the biggest group looks smaller than it is. Pick labels from a fixed list.',
+            ],
+            [
+                'Trusting a tool to find the broken step',
+                'A judge model can name the kind of failure fairly well, but tools that claim to find the exact step where a run went wrong are still unreliable. A person checks before you act on it.',
             ],
         ],
     ),

@@ -9,6 +9,7 @@ lesson(MODULE, 'run_agent',
     learn=[
         'An **agent** is a loop: the model picks a tool, your code runs it, the result goes back to the model, repeat until it gives a final answer.',
         'Two rules keep it safe: a **hard step limit**, and turning tool errors into messages the model can read instead of crashes.',
+        "Don't count on LangGraph's built-in limit. It is about 10,000 steps, so a stuck agent can spend money for a long time first. Always set your own small limit.",
     ],
     example=example('The shape of every agent', """for step in range(MAX_STEPS):
     action = model(history)
@@ -18,12 +19,12 @@ lesson(MODULE, 'run_agent',
     check=question(
         'Why must an agent loop have a maximum number of steps?',
         [
-            'To make answers shorter',
-            'A confused model can loop forever and keep spending tokens',
-            'The API requires it',
+            'To keep each answer short and to the point',
+            'The model API refuses runs that have no limit',
+            'A confused model can loop forever, spending money',
         ],
-        answer=1,
-        why="Nothing else stops a model that keeps calling the same tool. LangGraph's recursion_limit exists for this.",
+        answer=2,
+        why="Nothing else stops a model that keeps calling the same tool. LangGraph's own default limit is about 10,000 steps, so pass your own small recursion_limit.",
     ),
     angle=angle(
         pattern='Bounded iteration',
@@ -32,8 +33,15 @@ lesson(MODULE, 'run_agent',
         classic=None,
     ),
     stack=stack('LangGraph: a hard step limit', """graph = builder.compile()
-graph.invoke({"messages": messages}, config={"recursion_limit": 10})
-# Raises GraphRecursionError instead of looping forever."""),
+# The default limit is 10,007 steps:
+# far too many to protect your bill.
+graph.invoke(
+    {"messages": messages},
+    config={"recursion_limit": 25})
+# A model call, then its tool calls, is
+# 2 steps (tools run together count as
+# one), so 25 allows about 12 rounds.
+# At the limit: GraphRecursionError."""),
     exercise=exercise(
         title='Run an Agent Loop',
         topic='agents',
@@ -151,7 +159,7 @@ names.append('Ana')   # ['Ana']""",
         gotchas=[
             [
                 'No step limit',
-                'A model that keeps calling the same tool will loop forever and spend money the whole time. LangGraph has recursion_limit for exactly this reason.',
+                "A model that keeps calling the same tool will loop and spend money the whole time. LangGraph's default recursion_limit is about 10,000 steps, so pass your own, like 25.",
             ],
             [
                 'Crashing on bad tool calls',
@@ -1240,9 +1248,10 @@ sorted(['a', 'b'])   # ['a', 'b']
 lesson(MODULE, 'compare_designs',
     title='Comparing agent designs',
     learn=[
-        'There are several ways to build the same agent: **ReAct** (think, call a tool, look, repeat), **plan then execute** (write the plan first, then follow it), or a **supervisor** handing parts of the task to specialist sub-agents. In LangGraph each is a different graph. Which is better depends on your tasks, so measure it.',
-        'Run every design on **the same tasks**, several times each, and compare three things side by side: how often a run succeeds, how many tasks succeed on **every** try (the pass^k idea), and the **cost per success**, which spreads the cost of failed runs over the successful ones.',
-        'Then read the regressions and improvements (tasks one design fails and another passes), trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
+        'There are several ways to build the same agent. **ReAct**: think, call a tool, look, repeat. **Plan then execute**: write the plan first, then follow it.',
+        'A **supervisor** is a main agent whose tools are specialist helper agents. In LangGraph each design is a different graph. Which is better depends on your tasks, so measure it instead of guessing.',
+        'Run every design on **the same tasks**, several times each. Compare how often a run succeeds, and how many tasks succeed on **every** try (the pass^k idea). Also compare the **cost per success**: the cost of all runs, failed ones included, spread over the runs that worked.',
+        'Then read the tasks one design fails and another passes, trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
     ],
     example=example('Three designs, same 20 tasks, 3 tries each', """design            success   reliable tasks   cost per success
 react               80%          65%             $0.040
@@ -1250,14 +1259,14 @@ plan_execute        78%          75%             $0.028
 supervisor          83%          70%             $0.090
 → plan_execute: almost as successful, the most reliable, the cheapest"""),
     check=question(
-        'Supervisor succeeds 3 points more often than ReAct but costs more than twice as much per success. What do you need to decide?',
+        'Supervisor succeeds 3 points more often than ReAct but costs more than twice as much per success. What should you do next?',
         [
-            'Always pick the higher success rate',
-            "Whether 3 extra points (if they are real) are worth the cost: it's a value question, decided by the rule you wrote first",
-            'Always pick the cheaper one',
+            'Check the gap is real, then weigh it against cost',
+            'Pick Supervisor, since it solves the most tasks',
+            'Pick ReAct, since it costs less per success',
         ],
-        answer=1,
-        why='Check the 3 points are more than noise, then weigh them against cost using the decision rule from your plan.',
+        answer=0,
+        why='First check the 3 points are more than the normal ups and downs between repeat runs. Then decide if they are worth paying more than twice as much per success.',
     ),
     angle=angle(
         pattern='Group by key, then summarise',
@@ -1265,12 +1274,40 @@ supervisor          83%          70%             $0.090
         say='"I compare agent designs on the same tasks with repeat runs, on success, reliability and cost per success, then read the traces to see why."',
         classic='group_anagrams',
     ),
-    stack=stack('LangGraph: the same tasks through each graph, tagged', """designs = {"react": build_react(), "plan_execute": build_planner(), "supervisor": build_supervisor()}
-for name, graph in designs.items():
-    mlflow.set_active_model(name=f"support-agent-{name}")
+    stack=stack('LangChain: build a supervisor, then compare', '''from langchain.agents import create_agent
+from langchain.tools import tool
+
+# create_agent builds a LangGraph graph.
+# The supervisor sees only a helper's
+# last message, so put everything there.
+researcher = create_agent(
+    llm, tools=[search],
+    system_prompt="Put every finding "
+                  "in your final answer.")
+
+@tool
+def research(question: str) -> str:
+    """Research a question and report."""
+    out = researcher.invoke(
+        {"messages": [("user", question)]})
+    return out["messages"][-1].text
+
+# Rewording a helper's answer loses
+# details, so pass it on as it is.
+supervisor = create_agent(
+    llm, tools=[research, refunds],
+    system_prompt="Pass helper answers "
+                  "on word for word.")
+# (langgraph-supervisor is archived.)
+
+# react: a plain create_agent with the
+# same tools. Same tasks, 3 tries each.
+for agent in [react, supervisor]:
     for task in tasks:
         for attempt in range(3):
-            run_and_score(graph, task, tags={"design": name, "attempt": str(attempt)})"""),
+            agent.invoke(task)
+# Log success and cost for each run,
+# then score them as in the exercise.'''),
     exercise=exercise(
         title='Score Each Agent Design',
         topic='agents',
@@ -1412,7 +1449,7 @@ if best is None:
     print('nothing yet')""",
             ],
         ],
-        byhand='Group by design. react has 3 runs, and 2 succeeded: 2 out of 3 rounds to 0.67. Its costs add up to 0.04 + 0.05 + 0.03 = 0.12, and 0.12 divided by 2 successes is 0.06 each. plan has 1 run, and it succeeded: 1 out of 1 is 1. It cost 0.02 for 1 success, so 0.02 each. Return {"react": {"success_rate": 0.67, "cost_per_success": 0.06}, "plan": {"success_rate": 1, "cost_per_success": 0.02}}.',
+        byhand='Group by design. react has 3 runs, and 2 succeeded: 2 out of 3 rounds to 0.67. Its costs, 0.04, 0.05 and 0.03, add up to 0.12, and 0.12 divided by 2 successes is 0.06 each. plan has 1 run, and it succeeded: 1 out of 1 is 1.0. It cost 0.02 for 1 success, so 0.02 each. Return {"react": {"success_rate": 0.67, "cost_per_success": 0.06}, "plan": {"success_rate": 1.0, "cost_per_success": 0.02}}.',
         why='One step per run, then one per design.',
         gotchas=[
             [
@@ -1557,6 +1594,179 @@ names.append('Ana')   # ['Ana']""",
             [
                 "Show the person what they're approving",
                 'Pass the action and its arguments to the interrupt, so the reviewer sees "refund $250 on A-1042", not just "approve?".',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'next_action',
+    title='An agent that runs code',
+    learn=[
+        'Code a model writes often fails on the first try. A **coding agent** runs its code, reads the error, writes a fix and runs it again. Each run ends with an **exit code**: 0 means no error, and anything else means it failed.',
+        'Give the loop a **round limit**: the most tries it gets, such as 3. Without one, a stuck agent keeps spending money.',
+        "Some errors are **setup errors**, not bugs in the code, so rewriting the code rarely helps. A package that isn't installed (code someone else wrote, like pandas) or a **permission error** (the code isn't allowed to touch that file) fails the same way every round. Send those to a person instead of retrying.",
+        "Run the code in a **sandbox**: a locked-down computer of its own, with a time limit and no internet, so a bad run can't touch real data. When the agent says \"done\", check the real result yourself: run the tests, or read the table. Agents often report success that never happened.",
+    ],
+    example=example('Four separate runs, with 3 rounds allowed', """exit  round  last line         next
+0     1      3 passed          done
+1     1      NameError: ...    fix
+1     2      PermissionError   ask
+1     3      KeyError: 'id'    stop"""),
+    check=question(
+        "A run fails with `PermissionError: [Errno 13] Permission denied: 'out.csv'`. Why should the agent ask a person instead of writing a fix?",
+        [
+            'Permission errors often clear up if you just run the code again',
+            'Asking a person is cheaper than one more call to the model',
+            'The file is blocked, and changing the code can only work around that',
+        ],
+        answer=2,
+        why='No rewrite grants access. An agent that tries anyway tends to work around the block, for example by writing somewhere else, so a person should decide.',
+    ),
+    angle=angle(
+        pattern='Rules checked in order',
+        text='The rules can overlap, so their order is the design: a run that passes on its last round must say "done", not "stop". The round limit also comes before the setup check: on the last round there is nothing left to retry, so the run stops, and the stop step reports the last error to a person.',
+        say='"After each run I route on the result: success goes to a real check, the round limit stops it, setup and permission errors go to a person, and only code errors loop back for a fix."',
+        classic=None,
+    ),
+    stack=stack('LangGraph: route after each run', '''# startswith can take a tuple: it is
+# True if the line starts with any one.
+SETUP = ("PermissionError",
+         "ModuleNotFoundError")
+
+def route(state):
+    line = state["last_line"]
+    if state["exit_code"] == 0:
+        return "check_result"
+    if state["round"] >= 3:
+        return "stop"
+    if line.startswith(SETUP):
+        return "ask_human"   # interrupt()
+    if "Permission denied" in line:
+        return "ask_human"
+    return "write_fix"
+
+builder.add_conditional_edges(
+    "run_code", route)
+# run_code calls a sandbox. On
+# Databricks, the system.ai.sandbox MCP
+# service (a tool server the agent can
+# call) runs Python, SQL or shell with
+# no internet (it needs the Unity
+# Gateway beta).'''),
+    exercise=exercise(
+        title='Pick the Next Step',
+        topic='agents',
+        difficulty='easy',
+        fn='next_action',
+        prompt="""A coding agent just ran its code. Decide what it does next.
+
+Your function gets four things:
+
+- `exit_code`: how the run ended. `0` means no error; anything else, like `1`, means it failed.
+- `last_line`: the last line the run printed, like `"NameError: name 'totl' is not defined"`.
+- `round_number`: which round just ran, counting from 1, like `2`.
+- `max_rounds`: the most rounds allowed, like `3`.
+
+Check these rules in order, and return at the first one that matches:
+
+- `exit_code` is 0: return `"done"`.
+- `round_number` is at least `max_rounds`: return `"stop"`.
+- `last_line` starts with `"PermissionError"` or `"ModuleNotFoundError"`, or contains `"Permission denied"`: return `"ask"`.
+- Otherwise, return `"fix"`.""",
+        pattern='Rules checked in order: return at the first one that matches.',
+        target='a few checks, one after another, with no loop',
+        realworld='This is the routing step after each run in a coding agent, like a LangGraph conditional edge after a `run_code` node, with a sandbox running the code. "done" should lead to a real check (run the tests, read the table), not straight to "finished", because agents often report success that never happened.',
+        starter="""def next_action(exit_code, last_line,
+                round_number, max_rounds):
+    # your code here
+    pass
+""",
+        solution="""def next_action(exit_code, last_line,
+                round_number, max_rounds):
+    if exit_code == 0:
+        return "done"
+    if round_number >= max_rounds:
+        return "stop"
+    if last_line.startswith("PermissionError"):
+        return "ask"
+    if last_line.startswith("ModuleNotFoundError"):
+        return "ask"
+    if "Permission denied" in last_line:
+        return "ask"
+    return "fix"
+""",
+        cases=[
+            case(1, "NameError: name 'totl' is not defined", 2, 3, expected='fix', sample=True),
+            case(0, '3 passed in 0.12s', 3, 3, expected='done'),
+            case(1, "ModuleNotFoundError: No module named 'pandas'", 3, 3, expected='stop'),
+            case(1, "ModuleNotFoundError: No module named 'pandas'", 1, 3, expected='ask'),
+            case(1, "PermissionError: [Errno 1] Operation not permitted: 'out.csv'", 2, 3, expected='ask'),
+            case(126, 'bash: ./run.sh: Permission denied', 1, 5, expected='ask'),
+        ],
+        guided="""def next_action(exit_code, last_line,
+                round_number, max_rounds):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: exit code 0 means no error.
+    if exit_code == 0:
+        return "done"
+
+    # Step 2: is round_number at least max_rounds?
+    if ___:
+        return "stop"
+
+    # Step 3: setup errors go to a person.
+    if last_line.startswith("PermissionError"):
+        return "ask"
+    # Same again, for "ModuleNotFoundError".
+    if ___:
+        return "ask"
+    # Step 4: does last_line contain
+    #         "Permission denied"?
+    if ___:
+        return "ask"
+
+    # Step 5: any other error is a bug to fix.
+    return "fix"
+""",
+        fills=['round_number >= max_rounds', 'last_line.startswith("ModuleNotFoundError")', '"Permission denied" in last_line'],
+        concepts=[
+            [
+                'Returning early',
+                '`return` ends the function right there, so the checks after it never run. That is why the order of the checks matters.',
+                """def size(n):
+    if n > 100:
+        return 'big'
+    return 'small'""",
+            ],
+            [
+                'Comparing numbers',
+                '`a >= b` is True when a is b or more, so it means "at least".',
+                """4 >= 4   # True
+3 >= 4   # False""",
+            ],
+            [
+                'startswith',
+                '`text.startswith(x)` is True when the text begins with x. Capital letters must match too.',
+                """'Hi Ana'.startswith('Hi')   # True
+'hi'.startswith('Hi')       # False""",
+            ],
+            [
+                '`in` with text',
+                '`x in text` is True when x appears anywhere in the text.',
+                "'tea' in 'green tea'   # True",
+            ],
+        ],
+        byhand='exit_code is 1, not 0, so the run failed: not "done". round_number is 2 and max_rounds is 3, and 2 is not at least 3: not "stop". last_line starts with "NameError", not "PermissionError" or "ModuleNotFoundError", and it doesn\'t contain "Permission denied": not "ask". No rule matched, so return "fix".',
+        why='A few checks one after another, with nothing to loop over.',
+        gotchas=[
+            [
+                'Retrying setup errors',
+                'A package that isn\'t installed or a blocked file fails the same way every round, so the agent burns all its rounds. Worse, it may "fix" it by working around the block. Send these to a person.',
+            ],
+            [
+                'Trusting "done"',
+                'Exit code 0 only means nothing crashed. Before you call the task finished, check the real result: the tests pass, or the table has the new rows.',
             ],
         ],
     ),

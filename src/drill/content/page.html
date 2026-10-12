@@ -556,7 +556,7 @@ const ORDER = D.modules.flatMap(m => m.lessons);
 const modOf = {}; D.modules.forEach(m => m.lessons.forEach(id => { modOf[id] = m; }));
 const STEPS = ["Learn", "Check", "Build", "Explain"];
 const STEP_ICON = ["book", "help", "code", "quote"];
-const MOD_ICON = { foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", platform: "cloud", classics: "trophy", money: "activity" };
+const MOD_ICON = { foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", platform: "cloud", classics: "trophy", money: "activity" };
 const STAGE_ICON = ["target", "compass", "wrench", "clipcheck", "rocket", "activity"];
 const ic = (n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const tile = (n, cls) => `<span class="tile${cls ? " " + cls : ""}">${ic(n)}</span>`;

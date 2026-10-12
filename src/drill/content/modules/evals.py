@@ -1030,6 +1030,194 @@ round(0.8 * 0.9 + 0.2 * 0.1, 2)   # 0.74""",
     ),
 )
 
+lesson(MODULE, 'checker_score',
+    title='Testing the checker with planted mistakes',
+    learn=[
+        'A **checker** is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on **planted mistakes**: runs where you put a fault in on purpose, so you already know which ones should fail.',
+        'Plant more than wrong answers. Plant **false successes** too: the agent says "I\'ve closed the ticket", but the ticket is still open. A judge that reads only the agent\'s last message is easily fooled by a confident claim like that.',
+        'Add a **do-nothing agent**: it changes nothing and just replies "Done!". It must score 0. If the checker passes even one of its runs, the checker has a bug.',
+        'The fix is a **code check of the real end state**: read the ticket table, not the reply. Run it next to the judge. For each checker, count what it caught, what it missed, and its **false alarms** (good runs it failed by mistake).',
+    ],
+    example=example('Two checkers on the same planted runs', """planted: wrong-1 claim-1 idle-1
+  wrong = ticket closed, reply wrong
+  claim = says done, ticket still open
+  idle  = the do-nothing agent
+  ok    = a good run, nothing planted
+  flagged = marked as failing
+
+judge (reads the reply)
+  flagged wrong-1 ok-2
+  caught 1 of 3, 1 false alarm
+code (reads the ticket table)
+  flagged claim-1 idle-1
+  caught 2 of 3, 0 false alarms
+together (fail if either flags):
+  caught 3 of 3, 1 false alarm"""),
+    check=question(
+        'Every task in your eval asks the agent to close an open ticket. A do-nothing agent (it changes nothing, then replies "Done!") passes 4 of 10 runs. What does that tell you?',
+        [
+            'Four of those tickets needed no work to close',
+            'The checker trusts the reply instead of the ticket',
+            'The real agent only has to beat 4 out of 10',
+        ],
+        answer=1,
+        why='Nothing changed, so all 10 runs should fail. A checker that passes any of them is reading the claim, not the real end state.',
+    ),
+    angle=angle(
+        pattern='Compare two lists both ways',
+        text='Walk the planted ids and look each one up in the flagged ids: that gives the catches and the misses. Then walk the flagged ids and look each one up in the planted ids: that gives the false alarms.',
+        say='"Before I trust a checker, I run it on planted mistakes, including false successes and a do-nothing agent, and I report what it caught, what it missed and what it wrongly failed."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: a code check next to the judge', """import mlflow
+from mlflow.genai.scorers import (
+    Guidelines, scorer)
+
+# Code check: read the real ticket.
+# get_ticket is your own lookup.
+@scorer
+def ticket_closed(inputs):
+    t = get_ticket(inputs["ticket_id"])
+    return t["status"] == "closed"
+
+# Judge: reads the request and reply,
+# never the ticket.
+resolved = Guidelines(
+    name="resolved",
+    guidelines="The reply resolves "
+    "the user's request.")
+
+# planted: recorded runs (inputs and
+# outputs), including do-nothing runs
+res = mlflow.genai.evaluate(
+    data=planted,
+    scorers=[ticket_closed, resolved])
+
+# One row per run, one column per
+# checker: compare with what you planted
+res.result_df[["ticket_closed/value",
+               "resolved/value"]]"""),
+    exercise=exercise(
+        title='Score the Checker',
+        topic='evals',
+        difficulty='easy',
+        fn='checker_score',
+        prompt="""You planted mistakes in some agent runs, then ran your checker over every run. Now score the checker.
+
+Your function gets two things:
+
+- `planted`: ids of the runs where you planted a mistake, like `["wrong-1", "claim-1"]`. It always has at least one id.
+- `flagged`: ids of the runs the checker marked as failing, like `["wrong-1", "ok-2"]`.
+
+Return a dict with three keys:
+
+- `"caught"`: the share of planted ids that are also in `flagged`, rounded to 2 decimal places. 1 out of 3 gives `0.33`.
+- `"missed"`: the planted ids that are not in `flagged`, sorted A to Z.
+- `"false_alarms"`: the flagged ids that are not in `planted`, sorted A to Z. These are good runs the checker failed by mistake.""",
+        pattern='Check each list against the other: planted but not flagged is a miss, and flagged but not planted is a false alarm.',
+        target='for each id, check the other list',
+        realworld="Agents often claim a success that never happened, and LLM judges, even ones that read the whole conversation, mostly can't tell. Keep a small planted set and run it again whenever the judge's prompt or model changes.",
+        starter="""def checker_score(planted, flagged):
+    # your code here
+    pass
+""",
+        solution="""def checker_score(planted, flagged):
+    caught = 0
+    missed = []
+    for run in planted:
+        if run in flagged:
+            caught += 1
+        else:
+            missed.append(run)
+    alarms = []
+    for run in flagged:
+        if run not in planted:
+            alarms.append(run)
+    return {
+        "caught": round(caught / len(planted), 2),
+        "missed": sorted(missed),
+        "false_alarms": sorted(alarms),
+    }
+""",
+        cases=[
+            case(['wrong-1', 'claim-1', 'idle-1'], ['wrong-1', 'ok-2'],
+                 expected={'caught': 0.33, 'missed': ['claim-1', 'idle-1'], 'false_alarms': ['ok-2']}, sample=True),
+            case(['claim-1', 'wrong-2'], ['wrong-2', 'claim-1'],
+                 expected={'caught': 1.0, 'missed': [], 'false_alarms': []}),
+            case(['idle-2', 'claim-3', 'idle-1'], [],
+                 expected={'caught': 0.0, 'missed': ['claim-3', 'idle-1', 'idle-2'], 'false_alarms': []}),
+            case(['wrong-1'], ['ok-3', 'wrong-1', 'ok-1'],
+                 expected={'caught': 1.0, 'missed': [], 'false_alarms': ['ok-1', 'ok-3']}),
+            case(['wrong-3', 'claim-2', 'wrong-1'], ['wrong-3', 'ok-4', 'claim-2'],
+                 expected={'caught': 0.67, 'missed': ['wrong-1'], 'false_alarms': ['ok-4']}),
+            case(['claim-1', 'idle-1', 'claim-2', 'wrong-1'], ['claim-2', 'ok-1'],
+                 expected={'caught': 0.25, 'missed': ['claim-1', 'idle-1', 'wrong-1'], 'false_alarms': ['ok-1']}),
+        ],
+        guided="""# Replace every ___ with real code, then run the tests.
+
+def checker_score(planted, flagged):
+    caught = 0
+    missed = []
+    for run in planted:
+        # Step 1: did the checker flag this
+        # planted run?
+        if ___:
+            caught += 1
+        else:
+            missed.append(run)
+
+    alarms = []
+    for run in flagged:
+        # Step 2: flagged, but nothing was
+        # planted here: a false alarm.
+        if ___:
+            alarms.append(run)
+
+    # Step 3: caught divided by how many
+    # were planted, rounded to 2 places.
+    return {
+        "caught": round(___, 2),
+        "missed": sorted(missed),
+        "false_alarms": sorted(alarms),
+    }
+""",
+        fills=['run in flagged', 'run not in planted', 'caught / len(planted)'],
+        concepts=[
+            [
+                '`in` with a list',
+                '`x in items` is True when the list holds x. `not in` is the opposite.',
+                """pets = ["cat", "dog"]
+"cat" in pets       # True
+"cow" not in pets   # True""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append("Ana")   # ["Ana"]""",
+            ],
+            [
+                'sorted',
+                '`sorted(items)` gives a new list in order: A to Z for text.',
+                'sorted(["pear", "fig"])   # ["fig", "pear"]',
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
+        ],
+        byhand='Walk the planted ids first. wrong-1 is in flagged, so it was caught. claim-1 is not in flagged: missed. idle-1 is not in flagged: missed. That is 1 caught out of 3 planted, and 1 divided by 3 is 0.333..., which rounds to 0.33. Now walk the flagged ids. wrong-1 was planted, so that flag was right. ok-2 was not planted, so it is a false alarm. Sorted, missed is ["claim-1", "idle-1"]. Return {"caught": 0.33, "missed": ["claim-1", "idle-1"], "false_alarms": ["ok-2"]}.',
+        why='For each id in one list, we check whether the other list holds it. The lists are short, so this is quick.',
+        gotchas=[
+            [
+                'Planting only wrong answers',
+                'A judge can catch a wrong answer and still believe "I\'ve closed the ticket" when nothing changed. Plant false successes and do-nothing runs too, or the test is too easy.',
+            ],
+            [
+                'Ignoring false alarms',
+                'A checker that fails every run catches 100 percent of the planted mistakes. Count its false alarms too, or the "best" checker is one that blocks everything.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'review_queue',
     title='Drafted labels, expert-confirmed',
     learn=[

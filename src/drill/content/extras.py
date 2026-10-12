@@ -62,6 +62,10 @@ GLOSSARY = [
                 'A cap on how many requests or tokens you can send per minute. Going over returns error 429.',
             ],
             ['backoff', 'Waiting longer after each failed retry.'],
+            ['cost per finished task', 'What one task really costs with AI: the model bill, plus a person checking some answers, plus redoing the ones that came out wrong. The model is often the smallest part.'],
+            ['payback', 'How many months of savings it takes to earn back what the project cost to build: the build cost divided by the monthly net saving.'],
+            ['break-even', 'How many tasks a month the AI must handle for its savings to cover the fixed monthly costs, like hosting and monitoring. Below that, it loses money every month.'],
+            ['busiest minute / burst factor', 'Limits are checked every minute or faster, so size capacity for the busiest minute, not the daily average. The burst factor is how many times busier that minute is than an average minute of the busiest hour: guess 3, then measure it.'],
             ['leakage', 'When test data sneaks into training data, so scores look better than they really are.'],
             ['dev, test and holdout sets', 'The three parts of an eval set: dev to tune on freely, test to check before a release, holdout locked away for big decisions.'],
             ['stratify', 'Split or sample group by group, so every part gets every kind of example in the same proportions.'],
@@ -91,10 +95,15 @@ GLOSSARY = [
             ['ReAct', 'An agent design that loops: think, call a tool, look at the result, repeat until done.'],
             ['plan then execute', 'An agent design that writes a plan first, then carries it out step by step.'],
             ['supervisor', 'An agent design where one agent hands parts of a task to specialist sub-agents and combines their results.'],
+            ['fan-out / gather', 'Sending parts of a job to several workers at once, then collecting all their results. In LangGraph, Send starts the workers and a reducer collects the results; the gather step waits for the slowest worker.'],
+            ['one-writer rule', 'In an agent team, helpers only read and report back, and one agent or node makes every change. Two writers on the same table or file overwrite each other.'],
             ['hash split', 'Deciding each example\'s split from its id alone, by turning the id into a number. The same id always lands in the same split, however much the set grows.'],
             ['drafted label', 'An expected answer written by an LLM from the source document, then confirmed or corrected by an expert. Faster than writing every label from scratch.'],
             ['smoke set', 'A small, stratified sample of the eval set, with the must-pass cases in it, used to screen ideas quickly before running the full set.'],
             ['claim gate', 'A check at request time that labels each statement in an answer supported, unsupported or contradicted by its source, then releases, revises or withholds the answer.'],
+            ['compaction', 'Shrinking a long agent history so it still fits: first clear old tool results, then summarise if it is still too long. Test it by asking questions the agent must still be able to answer afterwards.'],
+            ['planted mistake', 'A fault you add on purpose, like a wrong answer or a claim that a task was done when it was not, to see whether a checker or judge catches it.'],
+            ['graduation gate', 'The checks a project must pass to leave the shared experiment space for its own production setup: an owner, a passing eval, a known cost per success, measured peak traffic and monitoring.'],
             ['fine-tuning', 'Training an existing model a bit more on your own examples.'],
         ],
     ],
@@ -192,6 +201,14 @@ GLOSSARY = [
             [
                 'stack dependency',
                 'Tells Spacelift to run one stack after another and can pass outputs along, such as a workspace URL.',
+            ],
+            [
+                'provisioned throughput (PTU)',
+                'Model capacity in Azure AI Foundry that you rent by the hour, month or year, counted in PTUs. You pay for it busy or idle, so it pays off only when it is busy nearly all the time.',
+            ],
+            [
+                'spillover',
+                'Sending the requests that overflow a provisioned deployment to a pay-as-you-go deployment instead of failing them. Reserve the steady baseline and spill the peaks.',
             ],
         ],
     ],
@@ -301,6 +318,10 @@ GLOSSARY = [
             [
                 'partial update',
                 "A node returns only the keys it changed, like {'attempts': 2}. LangGraph merges it into the state.",
+            ],
+            [
+                'reducer',
+                'A rule for combining several updates to one state key, like Annotated[list, operator.add], which joins the lists together. Without one, two updates to the same key in one step stop the run with an error.',
             ],
             [
                 'node',
@@ -534,6 +555,181 @@ client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])""",
 answer = chain.invoke(q)   # full trace saved""",
         'summarize_by_tag',
     ],
+    # New cards go at the end of a list: the page works out each card's right answer from its
+    # position, and the learner's saved answers depend on it.
+    [
+        'Add checking and redoing to the cost',
+        'The token bill is usually the smallest part. Add the time a person spends checking some answers and redoing the wrong ones before you compare with what the task costs today.',
+        """# cost of one ticket with AI
+cost = model_cost   # $0.065""",
+        """# cost of one ticket with AI
+hourly = 60  # a checker's pay, $ an hour
+per_min = hourly / 60  # $1 a minute
+# 30% checked, 2 minutes each
+check = 0.30 * 2 * per_min  # $0.60
+# 15% redone by a person, $8 each
+redo = 0.15 * 8             # $1.20
+cost = model_cost + check + redo""",
+        'cost_per_finished_task',
+    ],
+    [
+        'Price the whole run, not one call',
+        'An agent sends everything so far again on every step, so one task costs far more than one test call. Price it from the token total of a whole run, which its MLflow trace adds up for you.',
+        """# priced from one test call
+cost = 4000 * PRICE_IN + 500 * PRICE_OUT""",
+        """trace = mlflow.get_trace(trace_id)
+use = trace.info.token_usage  # all steps
+cost = (use["input_tokens"] * PRICE_IN
+        + use["output_tokens"] * PRICE_OUT)""",
+        'run_tokens',
+    ],
+    [
+        'Size for the busiest minute, not the day',
+        "Requests bunch up in busy hours and in bursts, and limits are checked minute by minute or faster. Start from the busiest hour, allow for bursts, then compare with the deployment's tokens-per-minute limit.",
+        """per_min = daily_tasks / (24 * 60)
+tpm = per_min * tokens_per_task""",
+        """busy_hour = daily_tasks * busy_share
+per_min = busy_hour / 60 * burst
+tpm = per_min * tokens_per_task""",
+        'peak_capacity',
+    ],
+    [
+        'Use the simplest design that works',
+        'When every task follows the same steps, a fixed workflow is cheaper, faster and easier to test than an agent that picks its own tools. Move up to an agent, then a team, only for a problem you can name.',
+        """# every ticket: lookup, draft, reply
+agent = create_agent(
+    model,
+    tools=[lookup, draft, reply],
+)""",
+        """# every ticket: lookup, draft, reply
+g = StateGraph(State)
+g.add_sequence([lookup, draft, reply])
+g.add_edge(START, "lookup")
+app = g.compile()""",
+        'need_a_team',
+    ],
+    [
+        'Keep one writer',
+        "When two helpers save the same thing, like a ticket's tags, one quietly overwrites the other. Let helpers report back, and give one node the job of saving.",
+        """# these two run at the same time
+def triage(state):
+    save_tags(ticket_tags(state))
+
+def billing(state):
+    save_tags(billing_tags(state))""",
+        """def billing(state):  # reports only
+    return {"notes": billing_tags(state)}
+
+# triage runs after: the one writer
+def triage(state):
+    tags = ticket_tags(state)
+    save_tags(tags + state["notes"])""",
+        'one_writer',
+    ],
+    [
+        'Give a shared key a reducer',
+        "Workers started with Send finish in the same step, and two writes to one plain key stop the run with InvalidUpdateError. A reducer such as Annotated[list, operator.add] joins every worker's result into one list.",
+        """class State(TypedDict):
+    question: str
+    result: str
+
+def worker(task):
+    return {"result": search(task)}""",
+        """class State(TypedDict):
+    question: str
+    results: Annotated[list, operator.add]
+
+def worker(task):
+    return {"results": [search(task)]}""",
+        'gather_results',
+    ],
+    [
+        "Don't let it grade its own homework",
+        'A model asked about its own answer, with its own reasoning still in view, usually says yes. Give a separate checker a fresh context: only the finished work and a written checklist.',
+        """draft = writer.invoke(msgs)
+msgs.append(draft)
+msgs.append(("user", "Is it right?"))
+verdict = writer.invoke(msgs)""",
+        """draft = writer.invoke(msgs)
+verdict = checker.invoke([
+    ("system", CHECKLIST),
+    ("user", draft.content),
+])""",
+        'checker_loop',
+    ],
+    [
+        'Divide by successes, not by runs',
+        'Failed runs cost money too. A design that is cheap per run but often fails can cost more for each task it actually finishes.',
+        """cost = sum(r["cost"] for r in runs)
+per_run = cost / len(runs)""",
+        """cost = sum(r["cost"] for r in runs)
+wins = sum(r["passed"] for r in runs)
+per_success = cost / wins if wins else None""",
+        'dollars_per_success',
+    ],
+    [
+        'Check the real end state, not the claim',
+        'An agent can say "I\'ve closed the ticket" when nothing changed, and a check that reads only its last message believes it. Look up the real result with code: read the ticket or query the table.',
+        """@scorer
+def ticket_closed(outputs):
+    return "I've closed" in outputs""",
+        '''@scorer
+def ticket_closed(inputs):
+    t = get_ticket(inputs["ticket_id"])
+    return t["status"] == "closed"''',
+        'checker_score',
+    ],
+    [
+        'Tell the summary what it must keep',
+        'A plain "summarise the chat" drops the exact details the agent needs next, like which table it wrote to. List the sections the summary must keep, then test it with a question such as "Which table did we write to?"',
+        '''SUMMARY_PROMPT = """Summarise the chat.
+{messages}"""''',
+        '''SUMMARY_PROMPT = """Summarise under:
+- Goal
+- Decisions made
+- Exact table names and file paths
+- IDs and error codes
+- Open tasks and the next step
+{messages}"""''',
+        'summary_recall',
+    ],
+    [
+        'Hand environment errors to a person',
+        "Editing the code can't fix a missing permission or package, so the agent burns its rounds or reaches for sudo. When the error is about the machine, not the code, stop and ask a person.",
+        """for _ in range(MAX_ROUNDS):
+    out = run(code)
+    if out.returncode == 0:
+        break
+    code = fix(code, out.stderr)""",
+        """SETUP = ("PermissionError",
+         "Permission denied",
+         "ModuleNotFoundError")
+for _ in range(MAX_ROUNDS):
+    out = run(code)
+    if out.returncode == 0:
+        break
+    if any(s in out.stderr for s in SETUP):
+        return ask_human(out.stderr)
+    code = fix(code, out.stderr)""",
+        'next_action',
+    ],
+    [
+        'Never put all three risks in one agent',
+        'Untrusted text, private data and a way to send data out, all in one agent (the lethal trifecta), let one planted instruction leak your data. Split the work so no agent has all three.',
+        """agent = create_agent(model, tools=[
+    read_web_page,    # untrusted input
+    query_customers,  # private data
+    run_shell,        # can curl data out
+])""",
+        """web = create_agent(model, tools=[
+    read_web_page,    # untrusted input
+])  # no private data, no shell
+data = create_agent(model, tools=[
+    query_customers,  # private data
+])  # no web pages, no shell
+# shell: its own agent, no internet""",
+        'shell_policy',
+    ],
 ]
 
 IAC_GOTCHAS = [
@@ -673,5 +869,49 @@ terraform init -upgrade""",
 Plan: 1 to add, 1 to change, 1 to destroy.
 # the 1 to destroy is the workspace itself: stop and fix it""",
         'summarize_plan',
+    ],
+    # New cards go at the end, as in AI_GOTCHAS.
+    [
+        'Give each user a limit below the shared one',
+        'With one limit for the whole space, one busy user can use it all, and everyone else gets error 429. Add a per-user limit, a slice well below the space one.',
+        """# a serving endpoint's AI gateway;
+# key "endpoint" is the whole space
+ai_gateway {
+  rate_limits {
+    tokens         = 100000
+    key            = "endpoint"
+    renewal_period = "minute"
+  }
+}""",
+        """# a serving endpoint's AI gateway;
+# key "endpoint" is the whole space
+ai_gateway {
+  rate_limits {
+    tokens         = 100000
+    key            = "endpoint"
+    renewal_period = "minute"
+  }
+  rate_limits {
+    tokens         = 20000
+    key            = "user"
+    renewal_period = "minute"
+  }
+}""",
+        'check_limits',
+    ],
+    [
+        'Give the sandbox its own deployment',
+        "If the sandbox calls production's Foundry deployment, one big eval run uses up the tokens a minute that real users need, and they get error 429. A separate deployment gives the sandbox its own quota.",
+        """# the sandbox endpoint's external model
+openai_config {
+  openai_deployment_name = "chat-prod"
+  ...
+}""",
+        """# the sandbox endpoint's external model
+openai_config {
+  openai_deployment_name = "chat-sandbox"
+  ...
+}""",
+        'allocate_capacity',
     ],
 ]

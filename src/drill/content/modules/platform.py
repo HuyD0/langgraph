@@ -1500,3 +1500,465 @@ if task['done']: print('finished')""",
         ],
     ),
 )
+
+lesson(MODULE, 'allocate_capacity',
+    title="Who gets capacity when it's scarce",
+    learn=[
+        'When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide **who comes first** before it happens, by putting each app in a **tier**: a group with its own rule, served most important first.',
+        'Once its traffic is steady, a **critical** app moves to **provisioned throughput**: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.',
+        '**Graduated** apps proved themselves in the **sandbox**, the shared experiment space. They get standard pay-as-you-go deployments, sized from the busiest minute they measured. The sandbox gets a deployment of its own.',
+        "Critical apps come first and get what they ask for. Each graduated app gets what it asked for, capped at an even share of the rest, so one big app can't crowd out the others. This simple plan does not share out the spare a second time: it all drops to the sandbox, even if a graduated app is still short.",
+    ],
+    example=example('Sharing 60,000 tokens a minute', """help-center (critical) wants 25,000
+  gets 25,000, so 35,000 left
+2 graduated apps: up to 17,500 each
+  hr-bot wants 5,000: gets 5,000
+  doc-search wants 30,000: gets 17,500
+  so 12,500 left
+the sandbox apps split the 12,500"""),
+    check=question(
+        'Two graduated apps share 60,000 tokens a minute. One wants 10,000 and the other wants 50,000. Each gets its even share or what it wants, whichever is less. In this plan, where do the spare 20,000 go?',
+        [
+            'Down to the sandbox tier',
+            'To the app that wanted 50,000',
+            'Nowhere, they stay unused',
+        ],
+        answer=0,
+        why="The even share of 30,000 is a cap, and this plan does not share the spare a second time. So the 20,000 the smaller app didn't need drop to the next tier, the sandbox.",
+    ),
+    angle=angle(
+        pattern='Priority tiers, then fair shares',
+        text='Serve the tiers in order of importance. Each graduated app gets up to an even share, so one big app cannot crowd out the others, and the spare drops to the sandbox.',
+        say='"Critical apps get what they need first. Each graduated app gets up to an even share, so no one app crowds out the rest, and the spare drops to the sandbox. A fuller plan would first offer that spare to graduated apps still short."',
+        classic=None,
+    ),
+    stack=stack('Terraform: a PTU deployment with spillover (azapi provider)', """# The critical app's reserved capacity,
+# added once its traffic is steady.
+# Requests it can't take spill over to
+# a pay-as-you-go (Global Standard)
+# deployment of the same model in the
+# same resource.
+resource "azapi_resource" "help_center" {
+  type      = "Microsoft.CognitiveServices/accounts/deployments@2025-06-01"
+  name      = "help-center-ptu"
+  parent_id = azurerm_cognitive_account.foundry.id
+  body = {
+    sku = {
+      name     = "GlobalProvisionedManaged"
+      capacity = 15 # PTUs: Global starts at 15
+    }
+    properties = {
+      model = {
+        format  = "OpenAI"
+        name    = var.model_name
+        version = var.model_version
+      }
+      spilloverDeploymentName = "help-center-paygo"
+    }
+  }
+}"""),
+    exercise=exercise(
+        title='Share Out Scarce Capacity',
+        topic='platform',
+        difficulty='medium',
+        fn='allocate_capacity',
+        prompt="""Your function gets two things:
+
+- `total_tpm`: tokens per minute to hand out, like `100000`.
+- `apps`: a list of dicts like `{"name": "hr-bot", "tier": "graduated", "wants": 10000}`. `tier` is `"critical"`, `"graduated"` or `"sandbox"`.
+
+Hand it out in three rounds. Skip a round with no apps.
+
+- Critical apps, in list order: each gets what it wants, or all that is left if less.
+- Graduated apps: divide what is left by how many there are, with `//`. Each gets that share, or what it wants if less.
+- Sandbox apps: divide what is still left the same way. Each gets the full share, even if it wanted less.
+
+Return a dict of every app's name and its tokens per minute, even when it is 0 (`{}` if no apps).""",
+        pattern='Priority, then fair shares: serve the most important tier first, then split what is left evenly, capping graduated apps at what they asked for.',
+        target='one pass to group the apps by tier, then one pass over each tier',
+        realworld="When Foundry quota is tight, this is the plan a platform team writes down: critical apps on provisioned throughput with spillover once their traffic is steady, graduated apps on standard deployments sized from their busiest minute, and the sandbox on its own deployment with what is left. Agreeing the order ahead of time beats arguing about it during an outage. Real schedulers often give the spare to graduated apps still short before the sandbox.",
+        starter="""def allocate_capacity(total_tpm, apps):
+    # your code here
+    pass
+""",
+        solution="""def allocate_capacity(total_tpm, apps):
+    tiers = {"critical": [], "graduated": [],
+             "sandbox": []}
+    for app in apps:
+        tiers[app["tier"]].append(app)
+
+    given = {}
+    left = total_tpm
+    for app in tiers["critical"]:
+        amount = min(app["wants"], left)
+        given[app["name"]] = amount
+        left = left - amount
+
+    graduated = tiers["graduated"]
+    if graduated:
+        share = left // len(graduated)
+        for app in graduated:
+            amount = min(app["wants"], share)
+            given[app["name"]] = amount
+            left = left - amount
+
+    sandbox = tiers["sandbox"]
+    if sandbox:
+        share = left // len(sandbox)
+        for app in sandbox:
+            given[app["name"]] = share
+    return given
+""",
+        cases=[
+            case(100000, [
+                {'name': 'help-center', 'tier': 'critical', 'wants': 40000},
+                {'name': 'hr-bot', 'tier': 'graduated', 'wants': 10000},
+                {'name': 'doc-search', 'tier': 'graduated', 'wants': 40000},
+                {'name': 'chat-poc', 'tier': 'sandbox', 'wants': 30000},
+                {'name': 'summary-poc', 'tier': 'sandbox', 'wants': 30000},
+            ], expected={
+                'help-center': 40000,
+                'hr-bot': 10000,
+                'doc-search': 30000,
+                'chat-poc': 10000,
+                'summary-poc': 10000,
+            }, sample=True),
+            case(50000, [
+                {'name': 'hr-bot', 'tier': 'graduated', 'wants': 10000},
+                {'name': 'help-center', 'tier': 'critical', 'wants': 30000},
+                {'name': 'order-status', 'tier': 'critical', 'wants': 30000},
+                {'name': 'chat-poc', 'tier': 'sandbox', 'wants': 5000},
+            ], expected={'hr-bot': 0, 'help-center': 30000, 'order-status': 20000, 'chat-poc': 0}),
+            case(60000, [
+                {'name': 'help-center', 'tier': 'critical', 'wants': 20000},
+                {'name': 'poc-a', 'tier': 'sandbox', 'wants': 5000},
+                {'name': 'poc-b', 'tier': 'sandbox', 'wants': 5000},
+                {'name': 'poc-c', 'tier': 'sandbox', 'wants': 5000},
+            ], expected={'help-center': 20000, 'poc-a': 13333, 'poc-b': 13333, 'poc-c': 13333}),
+            case(100000, [
+                {'name': 'hr-bot', 'tier': 'graduated', 'wants': 50000},
+                {'name': 'doc-search', 'tier': 'graduated', 'wants': 50000},
+                {'name': 'claims-helper', 'tier': 'graduated', 'wants': 50000},
+            ], expected={'hr-bot': 33333, 'doc-search': 33333, 'claims-helper': 33333}),
+            case(100000, [], expected={}),
+            case(80000, [
+                {'name': 'help-center', 'tier': 'critical', 'wants': 10000},
+                {'name': 'hr-bot', 'tier': 'graduated', 'wants': 5000},
+                {'name': 'doc-search', 'tier': 'graduated', 'wants': 5000},
+                {'name': 'poc-a', 'tier': 'sandbox', 'wants': 1000},
+            ], expected={'help-center': 10000, 'hr-bot': 5000, 'doc-search': 5000, 'poc-a': 60000}),
+        ],
+        guided="""def allocate_capacity(total_tpm, apps):
+    # Replace every ___ with real code, then run the tests.
+
+    # Group the apps into their three tiers.
+    tiers = {"critical": [], "graduated": [],
+             "sandbox": []}
+    for app in apps:
+        tiers[app["tier"]].append(app)
+
+    given = {}
+    left = total_tpm
+
+    # Round 1: critical apps, in list order.
+    for app in tiers["critical"]:
+        # Step 1: what it wants, or all that is left if less.
+        amount = ___
+        given[app["name"]] = amount
+        left = left - amount
+
+    # Round 2: graduated apps split what is left evenly.
+    graduated = tiers["graduated"]
+    if graduated:
+        # Step 2: what is left, divided by how many, with //.
+        share = ___
+        for app in graduated:
+            # Step 3: its share, or what it wants if smaller.
+            amount = ___
+            given[app["name"]] = amount
+            left = left - amount
+
+    # Round 3: sandbox apps split the rest, with no cap.
+    sandbox = tiers["sandbox"]
+    if sandbox:
+        share = left // len(sandbox)
+        for app in sandbox:
+            given[app["name"]] = share
+
+    return given
+""",
+        fills=['min(app["wants"], left)', 'left // len(graduated)', 'min(app["wants"], share)'],
+        concepts=[
+            [
+                'A dict of lists',
+                'Start each key with an empty list, then append each item to the list for its key.',
+                """by_colour = {'red': [], 'green': []}
+by_colour['red'].append('apple')
+# {'red': ['apple'], 'green': []}""",
+            ],
+            [
+                'min',
+                '`min(a, b)` gives the smaller of two numbers.',
+                'min(5, 3)   # 3',
+            ],
+            [
+                'Splitting evenly',
+                '`len(a_list)` counts its items. `//` divides and drops anything after the point, so the answer is a whole number.',
+                """len(['ana', 'bo'])   # 2
+7 // 2               # 3
+10000 // 3           # 3333""",
+            ],
+            [
+                'An empty list counts as False',
+                '`if a_list:` runs its block only when the list has at least one item. Here it also stops you dividing by 0.',
+                """guests = []
+if guests: print('party')   # prints nothing""",
+            ],
+            [
+                'Adding to a dict',
+                '`a_dict[key] = value` stores a value under a key.',
+                """ages = {}
+ages['ana'] = 30   # {'ana': 30}""",
+            ],
+        ],
+        byhand='There are 100000 tokens a minute to hand out. Round 1: help-center is critical and wants 40000, so it gets 40000, and 60000 are left. Round 2: two graduated apps, so each can have up to half of 60000, which is 30000. hr-bot wants 10000, which is smaller, so it gets 10000. doc-search wants 40000, so it gets its share of 30000. hr-bot and doc-search took 10000 plus 30000, so 20000 are left. doc-search is still short, but the spare is not shared a second time. Round 3: two sandbox apps split 20000, so 10000 each. Return {"help-center": 40000, "hr-bot": 10000, "doc-search": 30000, "chat-poc": 10000, "summary-poc": 10000}.',
+        why='One pass to group the apps into tiers, then one pass over each tier.',
+        gotchas=[
+            [
+                'Reserving for the peak',
+                'PTUs cost the same every hour, busy or idle. Reserve the steady baseline for critical apps and let spillover carry the peaks to pay-as-you-go.',
+            ],
+            [
+                'Spillover needs its partner first',
+                'Spillover only goes to a pay-as-you-go deployment of the same model and version, in the same Foundry resource, so create that one first. Models from other providers, such as DeepSeek or Llama, cannot spill over.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'check_limits',
+    title='A shared space with fair limits',
+    learn=[
+        'In a shared experiment space (the **sandbox**), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A **per-user limit** stops that: each person gets a slice, well below the whole.',
+        'The Databricks AI gateway (now called Unity Gateway) sets limits on a **service** (the whole space), a default for each **user**, and custom ones for a **group**. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.',
+        "Give the sandbox its own Foundry deployment. If it shares a production deployment, experiments eat the capacity live apps need. An app that proves itself **graduates** out of the space onto capacity of its own.",
+    ],
+    example=example('A fair space, and two mistakes', """space:   100,000 tokens a minute
+user:     20,000 each, a slice
+team-a:   50,000 shared, replaces
+          the 20,000 for members
+sandbox: "sandbox-gpt", its own
+
+Mistakes:
+user:    100,000, the whole space
+team-b:  120,000, more than the space"""),
+    check=question(
+        'The space limit is 100,000 tokens a minute, and the per-user limit is also 100,000. What goes wrong?',
+        [
+            'Nothing, because users can never go past the space limit anyway',
+            'Every request fails, because the two limits are the same number',
+            'One busy user can use the whole space, so everyone else gets 429s',
+        ],
+        answer=2,
+        why='A per-user limit only helps when it is a slice of the whole. Set it well below the space limit, so one script can never block everyone.',
+    ),
+    angle=angle(
+        pattern='Rules over a config',
+        text='Check each rule on its own, in a fixed order, and add a fixed message for each one that fails.',
+        say='"I check each rule separately and add a fixed message when one fails, so a reviewer sees every problem at once, not just the first."',
+        classic=None,
+    ),
+    stack=stack('Unity Gateway (AI gateway): limits for the space, each user and a group', """# Rate limits on the sandbox's model
+# service, in tokens a minute. Terraform
+# keeps them in the config of a
+# databricks_ai_gateway_model_service.
+databricks ai-gateway update-model-service \\
+  model-services/main.sandbox.chat \\
+  config.rate_limits --json '{
+  "config": {"rate_limits": [
+    {"key": "RATE_LIMIT_KEY_SERVICE",
+     "tokens": 100000,
+     "renewal_period":
+       "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
+    {"key": "RATE_LIMIT_KEY_USER_DEFAULT",
+     "tokens": 20000,
+     "renewal_period":
+       "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
+    {"key": "RATE_LIMIT_KEY_USER_GROUP",
+     "principal": "team-a",
+     "tokens": 50000,
+     "renewal_period":
+       "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"}
+  ]}
+}'"""),
+    exercise=exercise(
+        title='Check the Shared Space Limits',
+        topic='platform',
+        difficulty='easy',
+        fn='check_limits',
+        prompt="""`config` is a dict for the sandbox, a shared experiment space. Limits are tokens per minute.
+
+- `space_tpm`: the whole space's limit, like `100000`.
+- `user_tpm`: each user's limit, like `20000`, or `None`.
+- `group_tpm`: each group's name and shared limit, like `{"team-a": 50000}`, or `{}`.
+- `sandbox_deployment`: the sandbox's deployment, like `"sandbox-gpt"`.
+- `production_deployments`: deployments live apps use, like `["prod-gpt"]`.
+
+Each rule below that fails adds its message once:
+
+- `user_tpm` is `None`, or equal to or above `space_tpm` (that is no slice): `"user limit missing or too high"`
+- any group's limit is equal to or above `space_tpm`: `"group limit too high"`
+- `sandbox_deployment` is in `production_deployments`: `"sandbox shares a production deployment"`
+
+Return the messages in the order above, or `[]` if all pass.""",
+        pattern='Check each rule on its own, in order, and add a fixed message for each one that fails.',
+        target='one look at each setting',
+        realworld="This is the review a platform team runs before opening a shared space: a service limit for the whole space, a default per-user limit well below it, a few group limits, each below it too (the gateway allows at most 5 per service), and a sandbox deployment that no production app uses.",
+        starter="""def check_limits(config):
+    # your code here
+    pass
+""",
+        solution="""def check_limits(config):
+    problems = []
+    space = config["space_tpm"]
+    user = config["user_tpm"]
+    if user is None or user >= space:
+        problems.append("user limit missing or too high")
+
+    group_too_high = False
+    for limit in config["group_tpm"].values():
+        if limit >= space:
+            group_too_high = True
+    if group_too_high:
+        problems.append("group limit too high")
+
+    sandbox = config["sandbox_deployment"]
+    production = config["production_deployments"]
+    if sandbox in production:
+        problems.append("sandbox shares a production deployment")
+    return problems
+""",
+        cases=[
+            case({
+                'space_tpm': 100000,
+                'user_tpm': 100000,
+                'group_tpm': {'team-a': 50000, 'team-b': 120000},
+                'sandbox_deployment': 'sandbox-gpt',
+                'production_deployments': ['prod-gpt'],
+            }, expected=['user limit missing or too high', 'group limit too high'], sample=True),
+            case({
+                'space_tpm': 100000,
+                'user_tpm': 20000,
+                'group_tpm': {'team-a': 50000},
+                'sandbox_deployment': 'sandbox-gpt',
+                'production_deployments': ['prod-gpt'],
+            }, expected=[]),
+            case({
+                'space_tpm': 80000,
+                'user_tpm': None,
+                'group_tpm': {},
+                'sandbox_deployment': 'shared-gpt',
+                'production_deployments': ['help-center-gpt', 'shared-gpt'],
+            }, expected=['user limit missing or too high', 'sandbox shares a production deployment']),
+            case({
+                'space_tpm': 100000,
+                'user_tpm': 10000,
+                'group_tpm': {'team-a': 150000, 'team-b': 200000},
+                'sandbox_deployment': 'sandbox-gpt',
+                'production_deployments': [],
+            }, expected=['group limit too high']),
+            case({
+                'space_tpm': 50000,
+                'user_tpm': 10000,
+                'group_tpm': {'team-a': 50000},
+                'sandbox_deployment': 'sandbox-gpt',
+                'production_deployments': ['prod-gpt'],
+            }, expected=['group limit too high']),
+            case({
+                'space_tpm': 100000,
+                'user_tpm': 200000,
+                'group_tpm': {'team-a': 30000, 'team-b': 100001},
+                'sandbox_deployment': 'prod-gpt',
+                'production_deployments': ['prod-gpt'],
+            }, expected=['user limit missing or too high', 'group limit too high', 'sandbox shares a production deployment']),
+        ],
+        guided="""def check_limits(config):
+    # Replace every ___ with real code, then run the tests.
+
+    problems = []
+    space = config["space_tpm"]
+    user = config["user_tpm"]
+
+    # Step 1: no user limit, or one at or above the space.
+    if user is None or ___:
+        problems.append("user limit missing or too high")
+
+    # Step 2: is any group's limit at or above the space?
+    group_too_high = False
+    for limit in config["group_tpm"].values():
+        if ___:
+            group_too_high = True
+    if group_too_high:
+        problems.append("group limit too high")
+
+    # Step 3: the sandbox is one of the production ones.
+    sandbox = config["sandbox_deployment"]
+    production = config["production_deployments"]
+    if ___:
+        problems.append("sandbox shares a production deployment")
+
+    return problems
+""",
+        fills=['user >= space', 'limit >= space', 'sandbox in production'],
+        concepts=[
+            [
+                'None and is None',
+                "`None` is Python's value for \"nothing\". Test for it with `is None`.",
+                """phone = None
+phone is None   # True""",
+            ],
+            [
+                'Comparing numbers',
+                '`a > b` is True when a is above b. `a >= b` is True when a is equal to or above b.',
+                """3 > 3    # False
+3 >= 3   # True""",
+            ],
+            [
+                'or stops early',
+                '`a or b` is True when either side is True. If `a` is already True, Python never looks at `b`, so `user >= space` never runs on `None`.',
+                """age = None
+age is None or age > 18   # True""",
+            ],
+            [
+                'Looping over dict values',
+                '`.values()` gives just the values of a dict, without the keys.',
+                """for price in {'tea': 2, 'cake': 4}.values():
+    print(price)   # 2, then 4""",
+            ],
+            [
+                'A flag variable',
+                "A True/False variable that remembers whether you've seen something. Set it once, check it after the loop.",
+                """found_cake = False
+for item in ['tea', 'cake']:
+    if item == 'cake': found_cake = True""",
+            ],
+            [
+                'in on a list',
+                '`x in a_list` is True when x is anywhere in the list.',
+                "'tea' in ['coffee', 'tea']   # True",
+            ],
+        ],
+        byhand='The space limit is 100000. The user limit is also 100000, equal to the space, so add "user limit missing or too high". team-a\'s 50000 is below 100000, but team-b\'s 120000 is above it, so add "group limit too high". "sandbox-gpt" is not in ["prod-gpt"], so that rule passes. Return ["user limit missing or too high", "group limit too high"].',
+        why='Each setting is looked at once, and each group limit once.',
+        gotchas=[
+            [
+                'A group limit is shared',
+                "A group's limit is one pool for all its members, not a limit for each person. It also replaces the per-user default for its members, so one person in team-a could use all 50,000. Ten busy people in that group get about 5,000 each.",
+            ],
+            [
+                'Bursts slip through, then pause',
+                'The gateway counts usage after each answer, so requests arriving together can all get through. Later ones get 429 until usage drops back. Retry with a wait that grows each time.',
+            ],
+        ],
+    ),
+)
