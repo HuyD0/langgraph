@@ -244,7 +244,7 @@ lesson(MODULE, 'param_grid',
     title='Planning what to vary',
     learn=[
         "A good experiment varies a few things on purpose and holds everything else fixed: the same eval set, the same judge, the same prompt unless the prompt is what you're testing.",
-        'Every value you add multiplies the number of runs. 3 chunk sizes times 4 values of k (how many pieces to fetch for each question) times 2 models is 24 runs, each paying for eval and judge calls. Count the runs, and their cost, before you start.',
+        'Trying every combination of values is called a **grid search**. Every value you add multiplies the number of runs. 3 chunk sizes times 4 values of k (how many pieces to fetch for each question) times 2 models is 24 runs, each paying for eval and judge calls. Count the runs, and their cost, before you start.',
     ],
     example=example('2 chunk sizes times 2 values of k: 4 runs', """chunk_size   k
 256          3    run 1
@@ -273,7 +273,7 @@ try 3 models as well: 4 times 3 is 12 runs"""),
         topic='experiments',
         difficulty='medium',
         fn='param_grid',
-        prompt="""`settings` is a list of settings to try. Each setting is a pair, `[name, values]`, like `["k", [3, 5]]`.
+        prompt="""`settings` is a list of settings to try. Each setting (a **parameter**, in MLflow's words) is a pair, `[name, values]`, like `["k", [3, 5]]`.
 
 Return every combination, with one value for each setting, as a list of dicts like `{"chunk_size": 256, "k": 3}`.
 
@@ -388,7 +388,7 @@ lesson(MODULE, 'cv_folds',
     title='Experiments for classic ML',
     learn=[
         'For a classifier (spam, churn, fraud), one train/test split can be lucky or unlucky. **Cross-validation** splits the data into a few equal groups called **folds** (often 5) and trains once per fold: each time it tests on that fold and trains on all the others.',
-        'You get one score per fold instead of one overall: report the average and how much they vary. Compare models on the same folds, and log every model as an MLflow run so the comparison is reproducible.',
+        'You get one score per fold instead of one overall: report the average and how much they vary (the **standard deviation**). Compare models on the same folds, and log every model as an MLflow run so the comparison is reproducible.',
     ],
     example=example('10 examples, 5 folds, 5 rounds', """fold 0: examples 0, 5
 fold 1: examples 1, 6
@@ -408,8 +408,8 @@ round 5: test on fold 4, train on folds 0, 1, 2, 3
         why='Same average, but B swings widely depending on the data it sees. Production data will swing too.',
     ),
     angle=angle(
-        pattern='Deal examples out like cards',
-        text='The big idea: one train and test split can be lucky or unlucky, so cross-validation splits the data into folds and tests on each one in turn. Your code makes one empty list per fold. Then it deals the example numbers out in turn, like dealing cards around a table. `i % num_folds` is the remainder after dividing, so with 3 folds, examples 0, 1 and 2 go to folds 0, 1 and 2, and example 3 starts again at fold 0. The folds end up differing in size by at most one.',
+        pattern='Round-robin: deal examples out like cards',
+        text='The big idea: one train and test split can be lucky or unlucky, so cross-validation splits the data into folds and tests on each one in turn. Your code makes one empty list per fold. Then it deals the example numbers out in turn, like dealing cards around a table. Programmers call this **round-robin**. `i % num_folds` is the remainder after dividing, so with 3 folds, examples 0, 1 and 2 go to folds 0, 1 and 2, and example 3 starts again at fold 0. The folds end up differing in size by at most one.',
         say='"I deal examples into folds in turn, so the folds are nearly equal. I train once per fold and report the average score and how much it varies."',
         classic=None,
     ),
@@ -434,7 +434,7 @@ with mlflow.start_run(run_name="logreg-5fold"):
 Deal the examples out like cards: example `i` goes into fold number `i % num_folds`, the remainder when you divide `i` by `num_folds`.
 
 Return a list with one inner list per fold, fold 0 first. Each fold holds its example numbers, smallest first. If there are fewer examples than folds, some folds stay empty.""",
-        pattern='Deal the examples out in turn, like dealing cards to players.',
+        pattern='Round-robin: deal the examples out in turn, like dealing cards to players.',
         target='one step per example',
         realworld="This is how a classifier gets a more trustworthy score: train 5 times, test on 5 different folds, and report both the average and how much it varied. `scikit-learn`'s `cross_val_score` does this, and MLflow can log every fold.",
         starter="""def cv_folds(num_examples, num_folds):
@@ -494,7 +494,7 @@ groups[1].append(7)   # [[], [7]]""",
         gotchas=[
             [
                 'Shuffle first, but split by group',
-                'Real data is often sorted (by date, by customer), so shuffle before dealing. If the same customer appears many times, keep all their rows in one fold, the same leakage rule as before.',
+                'Real data is often sorted (by date, by customer), so shuffle before dealing. If the same customer appears many times, keep all their rows in one fold (scikit-learn\'s `GroupKFold` does this), the same data leakage rule as before.',
             ],
             [
                 'Report the spread, not just the average',
@@ -507,8 +507,8 @@ groups[1].append(7)   # [[], [7]]""",
 lesson(MODULE, 'examples_needed',
     title='How many examples do you need?',
     learn=[
-        'A pass rate measured on an eval set is an estimate, not the truth. Score 70% on 25 questions and the real rate could easily be anywhere from 50% to 90%. The fewer the examples, the wider that **margin of error**.',
-        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of n**, in percentage points, where n is the number of examples. That is a 95% range: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
+        'A pass rate measured on an eval set is an estimate, not the truth. Score 70% on 25 questions and the real rate could easily be anywhere from 50% to 90%. The fewer the examples (the smaller the **sample size**), the wider that **margin of error**.',
+        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of n**, in percentage points, where n is the number of examples. That is a 95% **confidence interval**: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
         "Use it backwards before you run anything: if the improvement you hope to see is smaller than the margin, your eval set can't show it. Add examples first, or compare on the same examples (later in this module), which is more sensitive.",
         'For scores near 0% or 100% (like 49 out of 50) this simple rule breaks down; statisticians use a **Wilson interval** there (two lessons from now). For metrics with no simple formula, use the **bootstrap**: rebuild the eval set 1,000 times by drawing examples at random with repeats allowed, score each, and keep the middle 95% of the scores.',
     ],
@@ -773,7 +773,7 @@ mlflow.log_metrics({"pass_rate_low": low, "pass_rate_high": high})"""),
 
 Work out the Wilson range with these lines of Python:
 
-- `z = 1.96`, which gives a 95% range
+- `z = 1.96`, which gives a 95% confidence interval
 - `n = total`
 - `p = passed / n`
 - `bottom = 1 + z * z / n`
@@ -858,7 +858,7 @@ lesson(MODULE, 'clear_winner',
     learn=[
         'LLM outputs and LLM judges vary from run to run. A single comparison of 0.82 against 0.80 may just be luck.',
         'Run each setup several times (3 to 5 is common), and only call a winner when the results clearly separate. If they overlap, choose on cost or speed, or test on more examples.',
-        "This rule is deliberately cautious: it rarely crowns a fake winner (about 1 time in 10 with 3 runs each, far less with 5), but it can miss a real one, because overlapping ranges don't prove there is no difference. When both setups ran on the same examples, a **paired comparison** is the standard check, and it is more sensitive. That is the next lesson.",
+        "This rule is deliberately cautious: it rarely crowns a fake winner, a **false positive** (about 1 time in 10 with 3 runs each, far less with 5), but it can miss a real one, a **false negative**, because overlapping ranges don't prove there is no difference. When both setups ran on the same examples, a **paired comparison** is the standard check, and it is more sensitive. That is the next lesson.",
     ],
     example=example('Three runs each: compare the ranges', """     run 1   run 2   run 3    range
 A    0.78    0.80    0.79     0.78 to 0.80
@@ -959,7 +959,7 @@ lesson(MODULE, 'paired_verdict',
     learn=[
         'The best way to compare two setups is to run both on **the same examples** and look example by example. This is a **paired comparison**. It is much more sensitive than comparing two overall scores, because the hard examples are hard for both setups and that difficulty cancels out.',
         'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: how often A passed where B failed, and the other way round. If the disagreements split about evenly, the difference is noise.',
-        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
+        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
         'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples. For scores that are not pass/fail, the paired versions are a **paired bootstrap** or a **permutation test** (on each example, randomly swap the A and B scores, do that many times, and see how often luck alone makes a gap that big).',
     ],
     example=example('Only disagreements count', """example   A   B
@@ -1109,7 +1109,7 @@ if adult and age < 65:
             ],
             [
                 'Why 2?',
-                "It is a rounded version of 1.96, the number behind a 95% range. That rounding makes the rule slightly stricter than the quick version of McNemar's test. With fewer than about 25 disagreements, use the exact version, which is stricter: this rule calls 5 to 0 a win, but the exact test calls it too close.",
+                "It is a rounded version of 1.96, the number behind a 95% confidence interval. That rounding makes the rule slightly stricter than the quick version of McNemar's test. With fewer than about 25 disagreements, use the exact version, which is stricter: this rule calls 5 to 0 a win, but the exact test calls it too close.",
             ],
         ],
     ),
@@ -1350,8 +1350,8 @@ pets.sort(key=lambda p: p[1], reverse=True)
 lesson(MODULE, 'fluke_risk',
     title='Testing many variants',
     learn=[
-        'Each comparison has a small chance of declaring a winner by luck. With the usual 95% standard, that is 5%. Test one variant and a fluke is unlikely; test twenty, and the chance that at least one "wins" by luck is about 64%.',
-        'This is how teams fool themselves: try many prompts, keep the best, report its score. The best of many is partly luck, so its score on the same eval set is too optimistic.',
+        'Each comparison has a small chance of declaring a winner by luck, a **false positive**. With the usual 95% standard, that is 5%. Test one variant and a fluke is unlikely; test twenty, and the chance that at least one "wins" by luck is about 64%.',
+        'This is the **multiple comparisons problem**, and it is how teams fool themselves: try many prompts, keep the best, report its score. The best of many is partly luck, so its score on the same eval set is too optimistic.',
         "Two guards. In **Design**, limit how many variants you test, and for a strict check divide the 5% by the number of comparisons (the **Bonferroni** correction). In **Evaluate**, confirm the winner **once** on the holdout set, the examples kept aside that it has never seen. That confirmation is the reason the holdout set exists.",
     ],
     example=example('The chance of at least one fluke', """variants tested    chance one wins by luck    stricter threshold
@@ -1386,7 +1386,7 @@ with mlflow.start_run(run_name=f"{winner}-holdout"):
         fn='fluke_risk',
         prompt="""`num_variants` is how many variants you try, like `20`. A variant is one version of your app, such as a different prompt. Each variant is compared once against your current version.
 
-Each comparison has a 5% chance of a fluke: a winner picked by luck. So one comparison is clean 95% of the time, written in Python as `0.95`. To get the chance that all of them are clean, start at `1` and multiply by `0.95` once for each variant. For 2 variants that is `0.95 * 0.95`, about 0.90.
+Each comparison has a 5% chance of a fluke: a winner picked by luck (a false positive). So one comparison is clean 95% of the time, written in Python as `0.95`. To get the chance that all of them are clean, start at `1` and multiply by `0.95` once for each variant. For 2 variants that is `0.95 * 0.95`, about 0.90.
 
 Return the chance of at least one fluke: 1 minus the chance that all are clean, rounded to 2 decimal places (as a decimal, like `0.64`).""",
         pattern='Multiply the chance of a clean result once per variant, then take it away from 1.',

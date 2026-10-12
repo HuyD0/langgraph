@@ -7,7 +7,7 @@ MODULE = module('agent-teams', 'Agent teams', "When one agent isn't enough: whet
 lesson(MODULE, 'need_a_team',
     title='Do you need a team?',
     learn=[
-        "Most tasks don't need a **team** of agents (several agents that split up the work). Teams use several times more tokens, and in one large study every team design did worse on step-by-step tasks.",
+        "Most tasks don't need a **team** of agents (a **multi-agent system**: several agents that split up the work). Teams use several times more tokens, and in one large study every team design did worse on step-by-step tasks.",
         'Picture a **ladder**: one model call, then a **fixed workflow** (steps your code runs in a set order), then one agent with tools, then a team. Climb a step only for a problem you can name, like a prompt full of if-then branches.',
         "Before adding a second agent, fix the first one's tool names and descriptions, then run your evals again. A team fits work that splits into **independent parts**: pieces you could hand to people who never talk to each other.",
         'One rough hint from that study: once one agent passed about 45 percent of the tasks, more agents helped little or made it worse. Treat it as a hint, and check it on your own eval.',
@@ -172,9 +172,9 @@ lesson(MODULE, 'one_writer',
     title='Split by what each agent needs to know',
     learn=[
         'Splitting agents by job title (a planner, a coder, a tester) loses details at every hand-off, like a game of telephone. Split by **context** instead: what each agent needs to know to do its piece.',
-        'Give each thing that changes **one writer**: the final answer, a table, a file. Helpers that share it only read it and report back. When two agents change the same thing, one quietly overwrites the other.',
+        'Give each thing that changes **one writer** (the **single-writer** rule): the final answer, a table, a file. Helpers that share it only read it and report back. When two agents change the same thing, one quietly overwrites the other, which is called a **lost update**.',
         'Give each helper a short **brief**: the goal, what is out of scope, what its report should look like, and which tools to use. Vague briefs lead to helpers doing the same work twice.',
-        'In LangChain, the helpers become tools of one main agent made with `create_agent`. The older langgraph-supervisor package is archived, so skip tutorials built on it.',
+        'In LangChain, the helpers (often called **subagents**) become tools of one main agent, the **supervisor** (also called the **orchestrator**), made with `create_agent`. This is often called **agents as tools**. The older langgraph-supervisor package is archived, so skip tutorials built on it.',
     ],
     example=example('Who reads and who writes', """tasks = {
   "triage":  {"reads": ["tickets"],
@@ -360,7 +360,7 @@ fruit.append('kiwi')
 lesson(MODULE, 'gather_results',
     title='Fan out, then gather',
     learn=[
-        'When a job splits into independent parts, like searching five sources, helpers can work at the same time. This is **fan-out**: send each part to its own worker, then **gather** the results in one place.',
+        'When a job splits into independent parts, like searching five sources, helpers can work at the same time. This is **fan-out**: send each part to its own worker, then **gather** the results in one place (**fan-in**). the LangGraph docs call the whole pattern **map-reduce**.',
         'In LangGraph, `Send` starts one worker per part. A **reducer** (a rule for combining updates; here `operator.add`, which joins lists) lets every worker add to the same list. Without one, two workers writing the same key make the run fail with an error.',
         'Keep the workers **read-only**: they change nothing outside the graph, and one step after the gather does any writing.',
         'The gather waits for the slowest worker, so one stuck search holds up the whole run. Give each worker a **timeout**, and carry on with whatever came back in time.',
@@ -733,8 +733,8 @@ len([])                # 0""",
 lesson(MODULE, 'checker_loop',
     title='A checker with a round limit',
     learn=[
-        'Ask an agent to grade its own work and it tends to say the work is fine. A **checker** is a second agent that starts fresh: it sees only the finished work and a written **checklist** of pass or fail rules, not the chat that made it.',
-        'The loop is: check, fix what the checker found, check again. Without concrete rules, a checker runs one or two tests and declares victory, so write the checklist first and include checks that can really fail.',
+        'Ask an agent to grade its own work and it tends to say the work is fine. A **checker** (often called a **verifier** or **critic**) is a second agent that starts fresh: it sees only the finished work and a written **checklist** of pass or fail rules, not the chat that made it.',
+        'The loop is: check, fix what the checker found, check again. Anthropic calls this the **evaluator-optimizer** pattern. Without concrete rules, a checker runs one or two tests and declares victory, so write the checklist first and include checks that can really fail.',
         'Cap the rounds, for example at 3, and decide in advance what happens at the cap: return the best attempt with a warning, or hand it to a person. Where you can, the checker looks at real evidence, like running the query, rather than at the agent\'s own explanation.',
     ],
     example=example('A help-center answer, at most 3 rounds', """Checklist: answers the question;
@@ -885,7 +885,7 @@ lesson(MODULE, 'dollars_per_success',
     learn=[
         'A team can pass a few more tasks and still be the worse choice. In one company\'s research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.',
         'You already know **dollars per success** from Evaluating agents: the whole bill, failed runs included, divided by the runs that passed. It says what one passed task costs. It does not say whether the team\'s extra passes are worth their price.',
-        'For that, work out what each **extra pass** costs: how many more dollars the team spends, divided by how many more tasks it passes. If one more passed task is worth less than that to you, keep one agent.',
+        'For that, work out what each **extra pass** costs, its **marginal cost**: how many more dollars the team spends, divided by how many more tasks it passes. If one more passed task is worth less than that to you, keep one agent.',
         'Put this number next to the pass rate every time a team is compared with one agent. More spending often buys little extra accuracy, and sometimes less.',
     ],
     example=example('Same 10 tasks, two designs', """one agent: $0.50, passed 6 of 10

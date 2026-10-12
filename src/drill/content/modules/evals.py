@@ -8,7 +8,7 @@ lesson(MODULE, 'exact_match',
     title='Evaluating model answers',
     learn=[
         "An **eval** is a test set of inputs with expected outputs, plus a way to score answers. It's how you know whether a prompt or model change helped.",
-        'Normalise (clean) both sides before comparing, or formatting differences ("Paris." vs "paris") count as wrong. In the exercise, cleaning means: make it lowercase, remove `.` `,` `!` and `?`, and trim spaces off both ends. For open-ended answers, teams use an **LLM judge** (a second model that grades each answer) with a clear **rubric** (written grading rules), and check it against human labels.',
+        'Normalise (clean) both sides before comparing, or formatting differences ("Paris." vs "paris") count as wrong. In the exercise, cleaning means: make it lowercase, remove `.` `,` `!` and `?`, and trim spaces off both ends. For open-ended answers, teams use **LLM-as-a-judge**: a second model, the **judge**, grades each answer with a clear **rubric** (written grading rules), and check it against human labels.',
     ],
     example=example('Cleaning one answer', """'Paris.'.replace('.', '')   # 'Paris'
 'Paris'.lower()             # 'paris'
@@ -633,7 +633,7 @@ lesson(MODULE, 'first_bad_version',
     title='Finding regressions',
     learn=[
         'A **regression** is a change that made things worse. With many prompt or model versions, re-running every eval is slow and costs money.',
-        'If versions pass up to a point and fail after it, **bisect**: test the middle, keep the half that contains the change.',
+        'If versions pass up to a point and fail after it, **bisect**: test the middle, keep the half that contains the change. Bisecting is a **binary search** over versions.',
     ],
     example=example('Bisecting 40 versions', """# test v20: passes -> problem is in v21..v40
 # test v30: fails  -> problem is in v21..v30
@@ -745,7 +745,7 @@ lesson(MODULE, 'judge_agreement',
     title='Checking your LLM judge',
     learn=[
         'An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.',
-        'Check passes and failures separately. A judge that passes everything looks accurate when most answers are good, and catches nothing.',
+        'Check passes and failures separately: the share of human passes the judge also passed is its **true positive rate** (TPR), and the share of human failures it also failed is its **true negative rate** (TNR). A judge that passes everything looks accurate when most answers are good, and catches nothing.',
     ],
     example=example('Agreement on each side', """humans passed 8, failed 2
 judge passed all 10
@@ -1033,10 +1033,10 @@ round(0.8 * 0.9 + 0.2 * 0.1, 2)   # 0.74""",
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
     learn=[
-        'A **checker** is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on **planted mistakes**: runs where you put a fault in on purpose, so you already know which ones should fail.',
+        'A **checker** (usually called a **grader**, or in MLflow a **scorer**) is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on **planted mistakes**: runs where you put a fault in on purpose, so you already know which ones should fail. Testers call this **fault injection**.',
         'Plant more than wrong answers. Plant **false successes** too: the agent says "I\'ve closed the ticket", but the ticket is still open. A judge that reads only the agent\'s last message is easily fooled by a confident claim like that.',
-        'Add a **do-nothing agent**: it changes nothing and just replies "Done!". It must score 0. If the checker passes even one of its runs, the checker has a bug.',
-        'The fix is a **code check of the real end state**: read the ticket table, not the reply. Run it next to the judge. For each checker, count what it caught, what it missed, and its **false alarms** (good runs it failed by mistake).',
+        'Add a **do-nothing agent** (a **no-op baseline**): it changes nothing and just replies "Done!". It must score 0. If the checker passes even one of its runs, the checker has a bug.',
+        'The fix is a **code-based grader** that checks the real end state: read the ticket table, not the reply. Run it next to the judge. For each checker, count what it caught (its **recall**), what it missed, and its **false alarms**, also called **false positives** (good runs it failed by mistake).',
     ],
     example=example('Two checkers on the same planted runs', """planted: wrong-1 claim-1 idle-1
   wrong = ticket closed, reply wrong
@@ -1432,7 +1432,7 @@ for name in ages:
 lesson(MODULE, 'review_queue',
     title='Drafted labels, expert-confirmed',
     learn=[
-        'With hundreds of questions, experts can\'t write every expected answer from scratch. Instead an LLM **drafts** the expected facts from the question and its source article, and experts **confirm or correct** the drafts. The drafter may also see the articles the app found, from the **trace** (the saved record of each step the app took for that question), but never the app\'s own answer. Checking a draft is several times faster than writing one.',
+        'With hundreds of questions, experts can\'t write every expected answer from scratch. Instead an LLM **drafts** the expected facts from the question and its source article, and experts **confirm or correct** the drafts. This is called **pre-labelling** (or model-assisted labelling). The drafter may also see the articles the app found, from the **trace** (the saved record of each step the app took for that question), but never the app\'s own answer. Checking a draft is several times faster than writing one.',
         "Expert time is still the scarce part, so decide which drafts they see first. Highest: **must-pass** questions, where a wrong label is costly. Next: drafts where two independent drafting runs **disagree**, which usually means the question is ambiguous. Then: questions from **rare groups**, where each label carries more weight. Everything else can wait, or be spot-checked.",
         'Track how often experts change a draft. If they rarely do, you can send fewer drafts for review; if they often do, the drafting prompt needs work before it saves anyone time.',
     ],
@@ -1740,7 +1740,7 @@ lesson(MODULE, 'sort_changes',
     title='Sorting changes before reading them',
     learn=[
         'With a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.',
-        'The most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the answer step, or the **same articles** and the answer changed anyway? The first points at retrieval, the second at the prompt, the model or the scorer.',
+        'The most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.',
         'Then read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.',
     ],
     example=example('Two buckets, from the traces alone', """question      old articles          new articles          bucket
@@ -1752,7 +1752,7 @@ refund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, differe
         [
             'Retrieval settings',
             'The eval set size',
-            'The answer step: the prompt, the model or the scorer',
+            'The generation step: the prompt, the model or the scorer',
         ],
         answer=2,
         why='If both versions got the same articles, retrieval did not cause the change. Something after it did.',
@@ -1850,7 +1850,7 @@ lesson(MODULE, 'mix_shift',
     learn=[
         'Your eval set is a snapshot. Real questions change: new products, new policies, new kinds of users.',
         'Watch the mix of production traffic against the eval set. When it shifts, eval scores stop predicting real quality, and the eval set needs refreshing.',
-        '**Drift** is when the mix of real questions moves away from your eval set. One simple measure: turn both into shares, add up the gap for each category, and halve it. 0 means the same mix, 1 means completely different.',
+        '**Drift** (also called **data drift** or **distribution shift**) is when the mix of real questions moves away from your eval set. One simple measure: turn both into shares, add up the gap for each category, and halve it. That is the **total variation distance**: 0 means the same mix, 1 means completely different.',
     ],
     example=example('The mix moved', """eval set:   billing 50% · shipping 30% · refunds 20%
 production: billing 20% · shipping 30% · refunds 50%
