@@ -40,6 +40,7 @@ def test_the_snapshot_says_what_to_work_on():
         "solved": {"best_threshold": {"count": 1, "hints": 3}},
         "gotchas": {"run_agent": 1, "split_by_key": tutor.gotcha_cards(data)["split_by_key"]["answer"]},
         "days": ["2026-10-10", "2026-09-01"],
+        "current": "precision_recall",
     }
     study = [
         {"id": "a", "text": "pass^k", "status": "got", "reviewAt": 0},
@@ -68,7 +69,9 @@ def test_next_lesson_resumes_the_lesson_in_progress_like_the_page():
              "current": "precision_recall"}
     assert "Next lesson: Precision, recall and why accuracy lies (AI & ML foundations), not started." in tutor.snapshot(empty, [], data, today="2026-10-11")
     gone = {"lessons": {"no_such_lesson": {"step": 1}}, "current": "no_such_lesson"}
-    assert "Next lesson: Train, validation and test data" in tutor.snapshot(gone, [], data, today="2026-10-11")
+    # With no lesson to resume, the next lesson is the first one not done: the start of the path.
+    first = data["lessons"][data["modules"][0]["lessons"][0]]["title"]
+    assert f"Next lesson: {first}" in tutor.snapshot(gone, [], data, today="2026-10-11")
 
 
 def test_progress_from_two_copies_merges_like_the_page():

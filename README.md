@@ -63,8 +63,8 @@ missing, `drill start` names the variable.
 
 ## The Daily Drill page, and the tutor as a local service
 
-The repo also holds a second way to learn: the **Daily Drill** page, 123 lessons in 16
-modules on AI engineering (foundations, RAG, agents and agent teams, security, pricing
+The repo also holds a second way to learn: the **Daily Drill** page, 129 lessons in 17
+modules on AI engineering (use cases and fit, foundations, RAG, agents and agent teams, security, pricing
 and sizing, production, the Azure Databricks platform), each going Learn, Check, Build,
 Interview. It is published on claude.ai
 and can be served from your own machine, with Ollama answering and your progress in SQLite:

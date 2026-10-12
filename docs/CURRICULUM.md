@@ -143,18 +143,22 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 123 lessons in
-16 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
+Or use the published page on claude.ai. Either way the path is the same: 129 lessons in
+17 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
 The list itself runs roughly from foundations to shipping, and any module can be opened
 at any time.
 
-Two modules look past a single experiment. **Pricing and sizing** works out what an AI
-task really costs, what it saves and how much capacity it needs, before you build; it
-goes with the cost and capacity lines of [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md). It
-sits later in the list, but it belongs to the Frame stage: do it first if you are
-deciding whether an idea is worth building.
+The path opens with the Frame stage, which decides whether an idea is worth building.
+**Use case and fit** comes first: judging whether an idea suits AI at all, writing the
+use case down on one page, splitting functional from non-functional requirements,
+reviewing the design against the Well-Architected pillars (Microsoft's five, plus
+Databricks' governance and interoperability), and deciding go, fix or stop against bars
+agreed before the pilot. **AI & ML foundations** then teaches how to measure it honestly,
+and **Pricing and sizing** works out the total cost of ownership, what it saves and how much
+capacity it needs, before you build; it goes with the cost and capacity lines of
+[EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md).
 **Agent teams** starts with whether you need a team at all, then covers splitting the
 work, fanning out, hand-offs, checking, and what a team costs. It ends with the
 experiment that decides between one agent and a team; [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md)
