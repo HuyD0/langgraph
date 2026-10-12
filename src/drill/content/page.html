@@ -2289,7 +2289,7 @@ function renderFoot() {
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
   if (building() && sorting() && !solvedNow()) {
-    label = "Place one for me"; icon = "bulb"; quiet = true;
+    label = "Show me where it goes"; icon = "bulb"; quiet = true;
     if (cur.kind === "lesson") { mid.hidden = false; mid.textContent = "Skip"; mid.dataset.act = "skip"; }
   } else if (building() && sorting()) {
     mid.hidden = false; mid.textContent = "Sort again"; mid.dataset.act = "resort";
@@ -2785,7 +2785,7 @@ function sortPlace(i, binId, byHint) {
   if (binId === it.bin || byHint) {
     if (!(i in SO.first)) SO.first[i] = !byHint;
     SO.placed[i] = it.bin; SO.skip = SO.skip.filter(x => x !== i);
-    SO.note = { kind: "ok", html: `<b>${byHint ? "Placed for you" : ic("check") + " Right"}: ${esc(right.label)}.</b> ${esc(it.why)}` };
+    SO.note = { kind: "ok", html: `<b>${byHint ? "It goes in" : ic("check") + " Right"}: ${esc(right.label)}.</b> ${esc(it.why)}` };
   } else {
     SO.first[i] = false;
     const wrong = t.bins.find(b => b.id === binId);
