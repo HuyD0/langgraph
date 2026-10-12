@@ -182,6 +182,27 @@ cd scripts/skulpt-check && npm install && node check_in_browser_python.js
 Then ask Claude Code to publish `dist/daily-drill.html` to the URL above. Publishing to the
 same URL keeps learners' progress, which lives in the artifact's database, not in the HTML.
 
+## Ask about this lesson
+
+When an AI tutor is available, Learn, Check (once answered) and Explain end with a short
+conversation about the lesson. Its suggested questions are built from that lesson, by
+`askChips()` in `page.html`, so they change from lesson to lesson:
+
+| Step | Questions |
+|---|---|
+| Learn | how the lesson's two key terms differ ("How is “training” different from “test”?"); when the rule stops working (LLM and RAG apps, data that changes, little data); how you'd spot it going wrong; Quiz me |
+| Check | "Why not …?" for each wrong option; a harder question like it |
+| Explain | "Is my sentence right?" (once you've written one); Quiz me; how to say the pattern in an interview; why the lesson's gotcha matters |
+
+"Apply it to my situation…" puts "In my situation, " in the box for the learner to finish, so the
+tutor answers for their real setup rather than an invented one. The choice follows what learners
+ask most: the questions saved to the study list ("does this still hold for an LLM app?") and
+common questions online (how is X different from Y, how do I tell it's gone wrong, why is this
+answer wrong). Quiz me is retrieval practice, the study technique with the strongest evidence.
+
+Each question carries its own instruction to the tutor. None of them asks about the exercise,
+and two guards still stop any answer from writing the exercise's code.
+
 ## Motion
 
 Short effects mark real moments: finishing something, getting something right, fixing a bug.
