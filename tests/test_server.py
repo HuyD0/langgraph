@@ -473,3 +473,71 @@ def test_feedback_is_accepted_and_logged_as_activity(store, bank):
     assert r.status_code == 200 and r.json()["ok"]
     assert client.post("/api/feedback", json={"request": "x", "name": "n" * 61, "value": 1}).status_code == 422
 
+
+
+# ---------------------------------------------------------------------------
+# As a Databricks App: one server, everyone signed in, each with their own progress
+# ---------------------------------------------------------------------------
+
+
+def test_in_an_app_each_signed_in_person_gets_their_own_progress(store, bank, monkeypatch):
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    client = client_with(store, bank, "ok")
+    sam, kim = {"x-forwarded-email": "Sam@Example.com"}, {"x-forwarded-email": "kim@example.com"}
+    client.put("/api/docs/data/users/me/progress", json={"lesson": "a"}, headers=sam)
+    client.put("/api/docs/data/users/me/progress", json={"lesson": "b"}, headers=kim)
+    assert client.get("/api/docs/data/users/me/progress", headers=sam).json()["data"] == {"lesson": "a"}
+    assert client.get("/api/docs/data/users/me/progress", headers=kim).json()["data"] == {"lesson": "b"}
+    assert client.get("/api/health", headers=sam).json()["owner"] == "sam@example.com"
+    assert store.for_owner("sam@example.com").get("data/users/me/progress") == {"lesson": "a"}
+
+
+def test_outside_an_app_the_identity_header_is_not_believed(store, bank, monkeypatch):
+    monkeypatch.delenv("DATABRICKS_APP_NAME", raising=False)
+    monkeypatch.delenv("DRILL_TRUST_USER_HEADER", raising=False)
+    client = client_with(store, bank, "ok")
+    client.put("/api/docs/study/x", json={"text": "mine"}, headers={"x-forwarded-email": "boss@example.com"})
+    assert store.get("study/x") == {"text": "mine"}  # saved as this machine's owner, not as "boss"
+    assert store.for_owner("boss@example.com").get("study/x") is None
+
+
+def test_an_apps_lakebase_resource_is_enough_to_find_the_database(monkeypatch):
+    from drill.server.store import database_url, db_schema, lakebase_endpoint
+
+    for name in ("DRILL_DATABASE_URL", "DRILL_LAKEBASE_ENDPOINT", "PGPORT", "PGSSLMODE"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("PGHOST", "ep-1.database.example.com")
+    monkeypatch.setenv("PGDATABASE", "databricks_postgres")
+    monkeypatch.setenv("LAKEBASE_ENDPOINT", "projects/p/branches/production/endpoints/primary")
+    monkeypatch.setenv("DRILL_DB_SCHEMA", "drill")
+    assert database_url() == "postgresql+psycopg://ep-1.database.example.com:5432/databricks_postgres?sslmode=require"
+    assert lakebase_endpoint() == "projects/p/branches/production/endpoints/primary"
+    assert db_schema() == "drill"
+    monkeypatch.setenv("DRILL_DB_SCHEMA", "drill; drop table docs")
+    with pytest.raises(ValueError):
+        db_schema()
+
+
+def test_an_idle_app_stops_itself_and_a_busy_one_does_not():
+    from drill.server.api import IdleStop
+
+    now = [0.0]
+    stopped: list[str] = []
+    idle = IdleStop("daily-drill", minutes=30, stop=stopped.append, clock=lambda: now[0])
+    now[0] = 29 * 60
+    assert not idle.check()
+    idle.seen()  # someone opened a lesson
+    now[0] = 58 * 60
+    assert not idle.check() and stopped == []
+    now[0] = 60 * 60
+    assert idle.check() and stopped == ["daily-drill"]
+
+
+def test_idle_stop_only_runs_inside_an_app(monkeypatch):
+    from drill.server.api import IdleStop
+
+    monkeypatch.setenv("DRILL_IDLE_STOP_MINUTES", "30")
+    monkeypatch.delenv("DATABRICKS_APP_NAME", raising=False)
+    assert IdleStop.from_env() is None
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    assert IdleStop.from_env().seconds == 1800

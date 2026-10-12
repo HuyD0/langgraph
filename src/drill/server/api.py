@@ -10,6 +10,11 @@ is mounted on the same server at ``/mcp``, so Claude Code can use the tools over
 
 Settings: ``DRILL_HOST`` (default 0.0.0.0, so the phone can reach it; use 127.0.0.1 to keep
 it to this machine, which is the default when the store is Lakebase), ``DRILL_PORT`` (default 8787).
+
+In a Databricks App the platform picks the port (``DATABRICKS_APP_PORT``) and signs people in
+before they reach us, saying who they are in ``x-forwarded-email``; each request then reads
+and writes that person's progress. The header is only believed behind such a login
+(:func:`behind_login`), so nobody on the home Wi-Fi can claim to be someone else.
 """
 
 from __future__ import annotations
@@ -83,6 +88,64 @@ def user_id(request: Request) -> str:
     return hashlib.sha1(value.encode("utf-8")).hexdigest()[:16]
 
 
+def behind_login() -> bool:
+    """Is a login proxy in front of us? Always in a Databricks App; elsewhere only if ``DRILL_TRUST_USER_HEADER=1``."""
+    return bool(os.getenv("DATABRICKS_APP_NAME", "").strip()) or os.getenv("DRILL_TRUST_USER_HEADER", "") == "1"
+
+
+def owner_for(request: Request, default: str) -> str:
+    """Whose rows this request reads and writes: the signed-in person behind a login, else ``default``."""
+    if not behind_login():
+        return default
+    value = request.headers.get(os.getenv("DRILL_USER_HEADER", "x-forwarded-email"), "").strip().lower()
+    return value or default
+
+
+class IdleStop:
+    """Stops this Databricks App after ``minutes`` with no requests, so it stops billing.
+
+    An app can't scale to zero (it bills about 0.5 DBU an hour while running, whether anyone
+    is studying or not), so the next best thing is to switch itself off. Progress is in
+    Lakebase, so nothing is lost; ``drill cloud start`` brings it back. The app's service
+    principal needs CAN_MANAGE on the app, which ``drill cloud deploy`` grants.
+    """
+
+    def __init__(self, name: str, minutes: float, stop: Any = None, clock: Any = None):
+        import time
+
+        self.name, self.seconds = name, minutes * 60
+        self.clock = clock or time.monotonic
+        self.last = self.clock()
+        self._stop = stop
+
+    @classmethod
+    def from_env(cls) -> "IdleStop | None":
+        name = os.getenv("DATABRICKS_APP_NAME", "").strip()
+        minutes = float(os.getenv("DRILL_IDLE_STOP_MINUTES", "0") or 0)
+        return cls(name, minutes) if name and minutes > 0 else None
+
+    def seen(self) -> None:
+        self.last = self.clock()
+
+    def check(self) -> bool:
+        """Stop the app if it has been idle long enough; True when it asked to stop."""
+        if self.clock() - self.last < self.seconds:
+            return False
+        log.info("No requests for %.0f minutes: stopping %s to save money", self.seconds / 60, self.name)
+        try:
+            if self._stop:
+                self._stop(self.name)
+            else:
+                from databricks.sdk import WorkspaceClient
+
+                WorkspaceClient().apps.stop(self.name)  # returns once asked; the platform does the rest
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Could not stop the app (%s); does its service principal have CAN_MANAGE on it?", exc)
+            self.last = self.clock()  # try again after another quiet spell, not every minute
+            return False
+        return True
+
+
 def create_app(
     store: DocStore | None = None,
     router: ModelRouter | None = None,
@@ -102,18 +165,45 @@ def create_app(
         mcp_door.configure(store=store, router=router, bank=bank)
         mcp_app = mcp_door.http_app(port)
 
+    idle = IdleStop.from_env()
+
+    async def watch_idle() -> None:
+        import asyncio
+
+        while True:
+            await asyncio.sleep(60)
+            if idle.check():
+                return
+
     @contextlib.asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        if mcp_app is None:
-            yield
-            return
-        from drill.server import mcp as mcp_door
+        import asyncio
 
-        async with mcp_door.server.session_manager.run():
-            yield
+        watcher = asyncio.create_task(watch_idle()) if idle else None
+        try:
+            if mcp_app is None:
+                yield
+            else:
+                from drill.server import mcp as mcp_door
+
+                async with mcp_door.server.session_manager.run():
+                    yield
+        finally:
+            if watcher:
+                watcher.cancel()
 
     app = FastAPI(title="Daily Drill", lifespan=lifespan)
     app.state.store, app.state.router, app.state.bank = store, router, bank
+
+    if idle:
+        @app.middleware("http")
+        async def note_activity(request: Request, call_next):
+            idle.seen()
+            return await call_next(request)
+
+    def mine(request: Request) -> DocStore:
+        """The store as whoever is asking: the signed-in person in an app, ``store.owner`` elsewhere."""
+        return store.for_owner(owner_for(request, store.owner))
 
     # -- the page ------------------------------------------------------------
 
@@ -130,7 +220,7 @@ def create_app(
             "models": router.describe(),
             "store": store.kind,
             "store_fallback": store.fallback,
-            "owner": store.owner,
+            "owner": owner_for(request, store.owner),
             "lessons": len(bank.lessons),
         }
 
@@ -149,7 +239,7 @@ def create_app(
             raise HTTPException(503, NO_MODEL)
         context = {**(body.trace or {}), "door": "page", "user": user_id(request)}
         trace = body.trace or {}
-        store.log("asked", str(trace.get("lesson_id") or ""),
+        mine(request).log("asked", str(trace.get("lesson_id") or ""),
                   **{k: trace[k] for k in ("feature", "step", "hint_level", "chip") if trace.get(k) is not None})
 
         if body.json_mode:
@@ -196,7 +286,7 @@ def create_app(
         from drill.server.observe import default_observer
 
         user = user_id(request)
-        store.log("feedback", "", name=body.name, value=str(body.value)[:60])
+        mine(request).log("feedback", "", name=body.name, value=str(body.value)[:60])
         observer = default_observer()
         logged = bool(observer and observer.human_feedback(body.request, body.name, body.value, body.rationale, user))
         return {"ok": True, "logged": logged}
@@ -209,40 +299,40 @@ def create_app(
         return path
 
     @app.get("/api/docs/{path:path}")
-    def get_doc(path: str) -> dict:
-        doc = store.get(_check(path))
+    def get_doc(path: str, request: Request) -> dict:
+        doc = mine(request).get(_check(path))
         return {"exists": doc is not None, "data": doc}
 
-    def _log_progress(before: dict | None, after: dict) -> None:
+    def _log_progress(docs, before: dict | None, after: dict) -> None:
         for kind, lesson_id, detail in activity.progress_events(before, after):
-            store.log(kind, lesson_id, **detail)
+            docs.log(kind, lesson_id, **detail)
 
     @app.put("/api/docs/{path:path}")
-    def set_doc(path: str, doc: dict[str, Any]) -> dict:
-        path = _check(path)
-        before = store.get(path) if activity.is_progress(path) else None
-        saved = store.set(path, doc)
+    def set_doc(path: str, doc: dict[str, Any], request: Request) -> dict:
+        path, docs = _check(path), mine(request)
+        before = docs.get(path) if activity.is_progress(path) else None
+        saved = docs.set(path, doc)
         if activity.is_progress(path):
-            _log_progress(before, saved)
+            _log_progress(docs, before, saved)
         return {"data": saved}
 
     @app.patch("/api/docs/{path:path}")
-    def update_doc(path: str, patch: dict[str, Any]) -> dict:
-        path = _check(path)
-        before = store.get(path) if activity.is_progress(path) else None
-        saved = store.update(path, patch)
+    def update_doc(path: str, patch: dict[str, Any], request: Request) -> dict:
+        path, docs = _check(path), mine(request)
+        before = docs.get(path) if activity.is_progress(path) else None
+        saved = docs.update(path, patch)
         if activity.is_progress(path):
-            _log_progress(before, saved)
+            _log_progress(docs, before, saved)
         return {"data": saved}
 
     @app.delete("/api/docs/{path:path}")
-    def delete_doc(path: str) -> dict:
-        store.delete(_check(path))
+    def delete_doc(path: str, request: Request) -> dict:
+        mine(request).delete(_check(path))
         return {"ok": True}
 
     @app.get("/api/collections/{name:path}")
-    def list_collection(name: str) -> dict:
-        return {"docs": [{"id": doc_id, "data": doc} for doc_id, doc in store.list(_check(name))]}
+    def list_collection(name: str, request: Request) -> dict:
+        return {"docs": [{"id": doc_id, "data": doc} for doc_id, doc in mine(request).list(_check(name))]}
 
     # Everything that is not a page or /api route goes to the MCP app, which answers at /mcp.
     if mcp_app is not None:
@@ -259,8 +349,14 @@ def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     # A work laptop on Lakebase keeps the server to itself; at home the phone may reach it.
-    host = os.getenv("DRILL_HOST", "").strip() or ("127.0.0.1" if lakebase_endpoint() else "0.0.0.0")
-    port = int(os.getenv("DRILL_PORT", "8787"))
+    # A Databricks App must listen on every address, on the port the platform gives it.
+    in_app = os.getenv("DATABRICKS_APP_PORT", "").strip()
+    host = os.getenv("DRILL_HOST", "").strip() or ("0.0.0.0" if in_app or not lakebase_endpoint() else "127.0.0.1")
+    port = int(os.getenv("DRILL_PORT", "").strip() or in_app or "8787")
     app = create_app(port=port)
     log.info("Daily Drill at http://localhost:%s  (MCP at http://localhost:%s/mcp)", port, port)
     uvicorn.run(app, host=host, port=port, log_level="warning")
+
+
+if __name__ == "__main__":
+    main()

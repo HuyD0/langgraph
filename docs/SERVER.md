@@ -72,7 +72,11 @@ The Claude desktop app takes the same command in its MCP settings. Tools: `next_
 to this machine (`localhost`, `127.0.0.1`), a defence against DNS rebinding; add hosts with
 `DRILL_ALLOWED_HOSTS` if you need to.
 
-## Later, in the cloud
+## In the cloud
+
+It runs as a Databricks App today: `uv run drill cloud setup --create-lakebase`, then
+`uv run drill cloud deploy`. See [DATABRICKS_APP.md](DATABRICKS_APP.md) for what it costs, how it
+stops itself when idle, and how to move it to work.
 
 Everything is configuration: `DRILL_DATABASE_URL` for Postgres (Neon on Azure, Lakebase on
 Databricks), `DRILL_HOSTED_*` for a model behind Unity Gateway, and the same server
