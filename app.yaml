@@ -4,10 +4,11 @@
 command: ["python", "-m", "drill.server.api"]
 
 env:
-  # The tutor's model: the serving endpoint attached as "serving-endpoint" (Haiku).
+  # The tutor's model: the Unity Gateway model service attached as "model", by its
+  # three-part name, so requests go through the gateway and its limits and usage reports.
   # The app signs its requests as its own service principal; no key to keep.
   - name: DRILL_HOSTED_MODEL
-    valueFrom: serving-endpoint
+    valueFrom: model
   - name: DRILL_HOSTED_AUTH
     value: databricks
 

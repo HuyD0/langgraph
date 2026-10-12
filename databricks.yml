@@ -36,8 +36,8 @@ variables:
     description: The app's name in the workspace (lowercase letters, digits and hyphens, at most 26).
     default: daily-drill
   model:
-    description: The serving endpoint the tutor talks to. At work, the Haiku endpoint AI Gateway gives you.
-    default: databricks-claude-haiku-4-5
+    description: The Unity Gateway model service the tutor talks to, catalog.schema.name. Each workspace sets its own.
+    default: system.ai.claude-haiku-4-5
   lakebase_branch:
     description: The Lakebase branch, projects/<project>/branches/<branch>.
   lakebase_database:
@@ -53,10 +53,13 @@ resources:
       source_code_path: .
       # Attaching a resource grants the app's service principal the permission named here.
       resources:
-        - name: serving-endpoint
-          serving_endpoint:
-            name: ${var.model}
-            permission: CAN_QUERY
+        # A Unity Gateway model service: attaching it grants the app EXECUTE on it, plus
+        # USE CATALOG and USE SCHEMA on its parents, and hands the app its three-part name.
+        - name: model
+          uc_securable:
+            securable_full_name: ${var.model}
+            securable_type: MODEL_SERVICE
+            permission: EXECUTE
         - name: postgres
           postgres:
             branch: ${var.lakebase_branch}
