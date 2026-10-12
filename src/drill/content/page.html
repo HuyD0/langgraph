@@ -101,6 +101,18 @@ b { font-weight: 600; }
 .keyidea { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; font-size: 17px; }
 .keyidea .ic { color: var(--accent); width: 24px; height: 24px; margin-top: 2px; }
 .keyidea p { margin: 0; }
+/* the screen after Finish lesson */
+#done { padding-block: 28px calc(96px + env(safe-area-inset-bottom, 0px)); }
+.donehead { display: grid; gap: 10px; justify-items: start; }
+.donecheck { width: 48px; height: 48px; border-radius: 50%; background: var(--pass); color: var(--surface); display: grid; place-items: center; }
+.donecheck .ic { width: 26px; height: 26px; stroke-width: 2.4; }
+.donehead h1 { font: 800 clamp(26px, 5vw, 32px)/1.1 var(--display); margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
+.donehead p { margin: 0; color: var(--muted); }
+.recap { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.recap li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
+.recap li > .ic { margin-top: 3px; color: var(--pass); }
+.recap li.skip > .ic { color: var(--muted); }
+.recap .linkbtn { padding: 0; margin-left: 4px; }
 .label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 500; }
 .label .ic { width: 18px; height: 18px; color: var(--accent); }
 .hintline { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
@@ -502,6 +514,8 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   </section>
 </main>
 
+<main id="done" class="wrap" hidden aria-live="polite"></main>
+
 <nav class="foot" id="foot" hidden aria-label="Lesson navigation"><div class="wrap"><button class="btn" id="prevBtn">Back</button><span class="grow"></span><button class="btn quiet" id="midBtn" hidden></button><button class="btn primary" id="nextBtn">Next</button></div></nav>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -746,7 +760,8 @@ let cur = null;   // { kind: "lesson" | "practice", id, p, step, from }
 function show(view) {
   $("home").hidden = view !== "home";
   $("lesson").hidden = view !== "lesson";
-  $("foot").hidden = view !== "lesson";
+  $("done").hidden = view !== "done";
+  $("foot").hidden = view !== "lesson" && view !== "done";
   window.scrollTo(0, 0);
 }
 function goHome() { cur = null; show("home"); renderHome(); }
@@ -794,6 +809,13 @@ const building = () => cur.kind === "practice" || cur.step === 2;
 const solvedNow = () => !!(cur.p && progress.solved[cur.p.id]);
 function renderFoot() {
   const prev = $("prevBtn"), next = $("nextBtn"), mid = $("midBtn"), i = cur.step;
+  if (cur.kind === "done") {  // stopping is the primary; a daily habit should end on purpose
+    mid.hidden = true; next.hidden = false; delete next.dataset.run;
+    prev.hidden = !cur.after; prev.className = "btn quiet"; prev.innerHTML = "Keep going";
+    next.className = "btn primary"; next.innerHTML = `<span>${cur.after ? "Done for today" : "Back to the path"}</span>` + ic("check");
+    return;
+  }
+  prev.hidden = false; prev.className = "btn";
   prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
@@ -810,18 +832,45 @@ function renderFoot() {
   next.className = quiet ? "btn quiet" : "btn primary";
 }
 function goPrev() {
+  if (cur.kind === "done") { if (cur.after) openLesson(cur.after, 0); return; }
   if (cur.kind === "practice") { if (cur.from) openLesson(cur.from, 3); else goHome(); return; }
   if (cur.step === 0) goHome(); else setStep(cur.step - 1);
 }
 function goNext() {
+  if (cur.kind === "done") { goHome(); return; }
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
   const s = lp(cur.id); s.done = true; s.step = 3; markDay();
   const after = ORDER[ORDER.indexOf(cur.id) + 1];
   progress.current = after || null;
-  saveProgress(); toast("Lesson done");
-  if (after) openLesson(after, 0); else goHome();
+  saveProgress();
+  showDone(cur.id, after || null);
+}
+// The moment after Finish: what you did, the sentence to keep, what's next, and a primary that ends the day.
+function showDone(id, after) {
+  cur = { kind: "done", id, after };
+  const L = LESSONS[id], s = lp(id), p = byId[id], ph = phaseOf[modOf[id].id];
+  const ids = ph.modules.flatMap(mid => MOD[mid].lessons), doneN = ids.filter(isDoneL).length;
+  const days = new Set(progress.days), weekN = weekDays().filter(k => days.has(k)).length;
+  const head = doneN === ids.length ? `Done. ${ph.name} is finished.` : `Done. That’s ${doneN} of ${ids.length} in ${ph.name}.`;
+  const left = ids.length - doneN;
+  const sub = `${weekN === 1 ? "Your first day" : weekN + " days"} this week.` + (left === 1 ? ` One more and ${ph.name} is finished.` : "");
+  const sol = progress.solved[p.id], [, , ans] = L.check;
+  const item = (ok, html) => `<li class="${ok ? "" : "skip"}">${ic(ok ? "check" : "arrowr")}<span>${html}</span></li>`;
+  const recap = [
+    s.checked === null ? item(false, "You skipped the check.") : item(true, s.checked === ans ? "Got the check right first time." : "Worked through the check."),
+    sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
+        : item(false, `Skipped <b>${esc(p.title)}</b>.<button class="linkbtn" data-build="${id}">Try it now</button>`),
+    item(true, `Learned the pattern: <b>${esc(L.angle[0])}</b>.`),
+  ].join("");
+  const next = after ? `<section class="next"><span class="eyebrow">Next time · about 20 min</span><h2>${esc(LESSONS[after].title)}</h2><span class="meta">${esc(phaseOf[modOf[after].id].name)}, ${esc(modOf[after].title)}.</span></section>`
+    : `<section class="next"><span class="eyebrow">Path complete</span><h2>That was the last lesson.</h2></section>`;
+  $("done").innerHTML = `<div class="donehead"><span class="donecheck">${ic("check")}</span><h1>${head}</h1><p>${sub}</p></div>
+    <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
+    <div class="keyidea">${ic("quote")}<div><b>Say it like this</b><p>${md(L.angle[2])}</p></div></div>
+    ${next}`;
+  renderTop(); show("done"); renderFoot();
 }
 let toastTimer = null;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 1800); }
@@ -1560,7 +1609,7 @@ let pendingSel = null, lastPointer = null;
 const ed = $("code");
 function sourceFor(node) {
   const el = node && (node.nodeType === 1 ? node : node.parentElement);
-  const t = cur ? (cur.kind === "lesson" ? LESSONS[cur.id].title : cur.p.title) : "";
+  const t = cur ? (cur.kind === "practice" ? cur.p.title : LESSONS[cur.id].title) : "";
   if (!el) return t || "Daily Drill";
   if (el.closest("#code")) return "My code · " + t;
   if (el.closest(".task")) return "Task · " + t;
@@ -1690,6 +1739,7 @@ document.addEventListener("click", async e => {
   const stg = t.closest("[data-stage]"); if (stg) { lifeSel = +stg.dataset.stage; const y = window.scrollY; renderHome(); window.scrollTo(0, y); return; }
   const jump = t.closest("[data-jump]"); if (jump) { openMods.add(jump.dataset.jump); if (phaseOf[jump.dataset.jump]) openMods.add(phaseOf[jump.dataset.jump].key); renderHome(); const el = $("m-" + jump.dataset.jump); if (el) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); return; }
   const open = t.closest("[data-open]"); if (open) { openLesson(open.dataset.open); return; }
+  const bld = t.closest("[data-build]"); if (bld) { openLesson(bld.dataset.build, 2); return; }
   const pr = t.closest("[data-practice]"); if (pr) { openPractice(pr.dataset.practice, null); return; }
   const cl = t.closest("[data-classic]"); if (cl) { openPractice(cl.dataset.classic, cur.id); return; }
   const aq = t.closest("[data-askq]"); if (aq) { if (!aq.disabled) askLesson(aq.textContent, ASK_INSTRUCTIONS[aq.dataset.askq]); return; }
