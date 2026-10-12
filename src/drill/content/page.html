@@ -389,6 +389,7 @@ dl.gloss dd { margin: 2px 0 0; }
 .mini { font: 500 13px var(--body); background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 12px; min-height: 34px; cursor: pointer; }
 .mini.on { color: var(--accent); border-color: var(--accent); }
 .minis { display: flex; flex-wrap: wrap; gap: 8px; }
+.mini.fill { border-style: dashed; }
 body.no-ai [data-explain] { display: none; }
 .items { display: grid; gap: 12px; }
 .item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
@@ -2264,26 +2265,30 @@ function habitLine(kind) {  // a working habit, shown in the Build step at the m
 // Answers stream into place without re-rendering the pane, so typing is never interrupted.
 const askThreads = {};   // lesson id -> [{ q, a, streaming, failed, saved }]
 let askBusy = false;
-// The suggested questions come from the lesson itself: its key terms, its example, its stack
-// snippet, the Check's wrong options, its gotcha, and the learner's own sentence. Each carries
-// how the tutor should answer it. Never the exercise: that is what Build's hints are for.
+// The suggested questions make the learner think, not just read more. They follow what learners ask
+// most (the learner's own saved questions, and common questions online): how two terms differ, when
+// the rule stops holding, how to spot it going wrong, why a wrong option is wrong, and recall
+// (Quiz me), plus feedback on their own sentence. "Apply it to my situation…" fills the box for them to finish,
+// so the tutor works from their real setup rather than an invented one. Never the exercise:
+// that is what Build's hints are for. Each question carries how the tutor should answer it.
 const quoted = t => "“" + short(t.replace(/\*\*|`/g, ""), 48) + "”";
+const QUIZ = { q: "Quiz me", how: "Ask ONE short question that makes them recall or use this lesson's main idea: not trivia, and not the coding exercise. Do not give the answer. Tell them to reply in the box below and you will check it. When they reply, say what is right, fix what is not, then offer one more question." };
 function askChips() {
   const L = LESSONS[cur.id], s = lp(cur.id), chips = [], add = (q, how) => chips.push({ q, how });
   if (cur.step === 0) {
     // the lesson's bold terms, if they are terms: up to three words, no quotes or brackets
     const terms = [...new Set((L.learn.join(" ").match(/\*\*([^*]+)\*\*/g) || []).map(t => t.slice(2, -2)))]
       .filter(t => t.split(/\s+/).length <= 3 && t.length <= 28 && !/["“”\[\]()]/.test(t)).slice(0, 2);
-    if (terms.length) add(`Explain ${terms.map(quoted).join(" and ")} another way`,
-      `Explain ${terms.join(" and ")} as this lesson uses ${terms.length > 1 ? "them" : "it"}: start with an everyday comparison, then point at where ${terms.length > 1 ? "they appear" : "it appears"} in the lesson's example.`);
-    add("Walk me through the example step by step",
-      "Walk through the lesson's example from top to bottom, one line or row at a time, saying in plain words what each part does and why. Use its real values.");
-    if (L.stack) add(`How does this look in ${short(L.stack[0].split(":")[0], 44)}?`,
-      "Explain the lesson's 'In your stack' snippet: what each part does, when they would reach for it at work, and how it connects to the idea of the lesson.");
-    else add("Where would I meet this at work?",
-      "Describe one concrete moment in their work (Azure Databricks, MLflow, LangGraph, Terraform) where this idea decides what they do, and what they would check.");
-    add("What goes wrong if a team skips this?",
-      "Tell one short, realistic story of a team that ignored this lesson's idea: what they did, what broke, and how they found out. Then the one habit that would have prevented it.");
+    if (terms.length === 2) add(`How is ${quoted(terms[0])} different from ${quoted(terms[1])}?`,
+      `Contrast ${terms[0]} and ${terms[1]} as this lesson uses them: what each one is, how they differ, and how they work together, with an everyday comparison and the lesson's example.`);
+    else if (terms.length) add(`What does ${quoted(terms[0])} mean here?`,
+      `Explain ${terms[0]} as this lesson uses it: an everyday comparison first, then where it appears in the lesson's example.`);
+    else add("Why does this matter?", "Explain why this lesson's idea matters: what goes wrong without it, in one short, realistic example. Plain words.");
+    add("When does this stop working?",
+      "Give 2 or 3 concrete situations where this lesson's rule or method changes, breaks, or needs extra care: for example an LLM or RAG app instead of a trained model, data that changes over time, very little data, or a much bigger system. For each, say what to do instead. Keep each to two or three sentences. No code.");
+    add("How would I spot it going wrong?",
+      "Describe the warning signs that this lesson's idea was skipped or done wrong: what they would see in their numbers, logs, traces or results (for example a score that looks too good and then drops in real use). Then the quickest check to confirm it. No code.");
+    chips.push(QUIZ);
   } else if (cur.step === 1 && s.checked !== null) {
     const [q, opts, ans] = L.check;
     opts.forEach((o, k) => { if (k !== ans) add(`Why not ${quoted(o)}?`,
@@ -2294,24 +2299,26 @@ function askChips() {
     const [pattern] = L.angle, g = GOTCHAS[cur.id];
     if (words(s.said) >= SAY_WORDS) add("Is my sentence right?",
       `Their own sentence for this lesson: "${s.said.trim()}". Say what it gets right, then the one most important thing it misses or gets wrong, if any, and suggest one small change. Do not rewrite it for them in full.`);
+    chips.push(QUIZ);
     add(`How do I explain ${quoted(pattern)} in an interview?`,
       "Give a 30-second spoken answer in three short parts: the problem, the idea, and one trade-off or edge case. Then one follow-up question an interviewer might ask, with a hint at a strong answer.");
     if (g) add(`Why does ${quoted(g.title)} matter?`,
       `This lesson's gotcha is "${g.title}": ${g.why} Explain in plain words what goes wrong in real work when it is ignored, with one small example.`);
-    add(`Where else does ${quoted(pattern)} show up?`,
-      "Name 3 other places this same pattern shows up, at work on their stack or in classic interview problems, one sentence each.");
   }
   return chips.slice(0, 4);
 }
+const ASK_FILL = "In my situation, ";  // the learner finishes it: their real setup, not an invented one
 let askChipList = [];
 function askPanel() {
   if (!cur || cur.kind !== "lesson") return "";
   askChipList = askChips();
-  const chips = askChipList.map((c, i) => `<button class="mini" data-askq="${i}"${askBusy ? " disabled" : ""}>${esc(c.q)}</button>`).join("");
+  const off = askBusy ? " disabled" : "";
+  const chips = askChipList.map((c, i) => `<button class="mini" data-askq="${i}"${off}>${esc(c.q)}</button>`).join("")
+    + (cur.step !== 1 ? `<button class="mini fill" data-askfill${off}>Apply it to my situation…</button>` : "");
   return `<section class="asklesson ai-only" aria-label="Ask about this lesson"><h3>Ask about this lesson</h3>
     ${chips ? `<div class="minis" role="group" aria-label="Suggested questions">${chips}</div>` : ""}
     <div class="thread" id="askThread" aria-live="polite">${askThreadHtml()}</div>
-    <form class="ask" id="askForm"><input class="field" id="askInput" placeholder="Ask your own question" aria-label="Ask a question about this lesson" autocomplete="off"${askBusy ? " disabled" : ""}><button class="btn" type="submit"${askBusy ? " disabled" : ""}>Ask</button></form></section>`;
+    <form class="ask" id="askForm"><input class="field" id="askInput" placeholder="Ask your own question" aria-label="Ask a question about this lesson" autocomplete="off"${off}><button class="btn" type="submit"${off}>Ask</button></form></section>`;
 }
 function askThreadHtml() {
   return (askThreads[cur.id] || []).map((turn, i) => {
@@ -2323,7 +2330,7 @@ function askThreadHtml() {
 function renderAskThread() { const el = $("askThread"); if (el) el.innerHTML = askThreadHtml(); }
 function setAskBusy(on) {
   askBusy = on;
-  for (const el of document.querySelectorAll("[data-askq], #askForm button, #askInput")) el.disabled = on;
+  for (const el of document.querySelectorAll("[data-askq], [data-askfill], #askForm button, #askInput")) el.disabled = on;
 }
 function askContext() {
   const L = LESSONS[cur.id], p = cur.p;
@@ -2366,6 +2373,9 @@ ${instruction ? "How to answer: " + instruction + "\n" : ""}
 Rules:
 - Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.
 - Never write code for the lesson's coding exercise (\`${cur.p.fn}\`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a \`\`\`python block.
+- If your last message asked them a question, their message is their answer: say what is right, fix what is not, then ask one more question.
+- If they describe their own situation, answer for that situation, and say which part of the lesson applies and which part changes.
+- Only add a code example if it makes the answer clearer, and make sure it matches what you said.
 - Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.
 - Reply with the answer only.`;
   try {
@@ -3323,6 +3333,7 @@ document.addEventListener("click", async e => {
   const pr = t.closest("[data-practice]"); if (pr) { openPractice(pr.dataset.practice, null); return; }
   const cl = t.closest("[data-classic]"); if (cl) { openPractice(cl.dataset.classic, cur.id); return; }
   const aq = t.closest("[data-askq]"); if (aq) { const c = askChipList[+aq.dataset.askq]; if (!aq.disabled && c) askLesson(c.q, c.how); return; }
+  if (t.closest("[data-askfill]")) { const box = $("askInput"); if (box && !box.disabled) { box.value = ASK_FILL; box.focus(); box.setSelectionRange(ASK_FILL.length, ASK_FILL.length); } return; }
   const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
   const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
   const gq = t.closest("[data-gotcha]"); if (gq && !gq.disabled) { answerGotcha(+gq.dataset.gotcha); return; }
