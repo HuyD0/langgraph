@@ -1,6 +1,6 @@
 """Production patterns: Rate limits, retries, concurrency, race conditions, idempotency and data at scale: the habits that keep AI systems up."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, stack
 
 MODULE = module('production', 'Production patterns', 'Rate limits, retries, concurrency, race conditions, idempotency and data at scale: the habits that keep AI systems up.')
 
@@ -911,6 +911,7 @@ WHERE ticket_id IS NULL OR minutes < 0;"""),
         topic='production',
         difficulty='medium',
         fn='validate_rows',
+        machine=machine(bins=['good', 'bad'], who=['rows that keep the contract', 'rows for quarantine'], label_field='id'),
         prompt="""A **data contract** says which columns each row needs, and what kind of value each one holds. Rows that break it go to **quarantine** (set aside to look at later) instead of stopping the whole job.
 
 Your function gets two things:

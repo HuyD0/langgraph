@@ -63,6 +63,7 @@ def exercise(
     gotchas: list | None = None,
     fills: list[str] | None = None,
     unordered: bool = False,
+    machine: dict | None = None,
 ) -> dict:
     """The Build step of a lesson.
 
@@ -78,9 +79,25 @@ def exercise(
         "title": title, "topic": topic, "difficulty": difficulty, "fn": fn,
         "prompt": prompt, "pattern": pattern, "target": target, "realworld": realworld,
         "starter": starter, "solution": solution, "cases": cases, "unordered": unordered,
-        "guided": guided, "fills": fills,
+        "guided": guided, "fills": fills, "machine": machine,
         "concepts": concepts, "byhand": byhand, "why": why, "gotchas": gotchas,
     }
+
+
+def machine(*, bins: list[str], who: list[str], label_field: str | None = None,
+            label_arg: int | None = None, leak_arg: int | None = None) -> dict:
+    """The Build step's machine: the example's rows travel through the function into bins.
+
+    Only for exercises that sort rows into groups: the first argument is a list of rows (dicts)
+    and the sample case returns one list per bin, together holding exactly those rows.
+    ``bins`` are the returned lists' names in order, ``who`` says in a few words who belongs in
+    each. Each row's pill shows ``row[label_field]``, or ``row[args[label_arg]]`` when the field
+    name is itself an argument (``key`` in split_by_key). ``leak_arg`` turns on the leak check:
+    a value of that field found in more than one bin is flagged.
+    """
+    assert len(bins) == len(who) and 2 <= len(bins) <= 3, "a machine has 2 or 3 bins, each with a who"
+    assert (label_field is None) != (label_arg is None), "label pills by a field or by an argument, not both"
+    return {"bins": bins, "who": who, "label_field": label_field, "label_arg": label_arg, "leak_arg": leak_arg}
 
 
 def example(caption: str, code: str) -> dict:
