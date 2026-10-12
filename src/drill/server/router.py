@@ -25,12 +25,15 @@ Configuration (all optional, all in .env):
 
 With no DRILL_HOSTED_* set, the Azure settings from drill.config are the hosted model.
 
-At work, the hosted model is a Databricks AI Gateway endpoint and there is no key to keep:
+At work, the hosted model is behind Databricks Unity Gateway and there is no key to keep:
 ``DRILL_HOSTED_AUTH=databricks`` signs each request with the login already on the machine
 (``databricks auth login``, which goes through Entra on Azure), renewed as it runs out. It
 is also what happens when a Databricks address is set with no key. Without
-``DRILL_HOSTED_BASE_URL`` the address is the workspace's own ``/serving-endpoints``, so
-``DRILL_HOSTED_MODEL`` (the endpoint's name) is the only other line needed.
+``DRILL_HOSTED_BASE_URL`` the address comes from the workspace and the model's name, so
+``DRILL_HOSTED_MODEL`` is the only other line needed: a Unity Gateway model service is named
+``catalog.schema.service`` (``system.ai.<model>`` for the ready-made ones) and is reached at
+``/ai-gateway/mlflow/v1``; any other name is a serving endpoint, at ``/serving-endpoints``
+(the older route, which Databricks now calls legacy).
 """
 
 from __future__ import annotations
@@ -196,6 +199,17 @@ def databricks_config() -> Any:
     return Config()
 
 
+def is_model_service(model: str) -> bool:
+    """A Unity Gateway model service (``catalog.schema.service``) rather than a serving endpoint name."""
+    return len(model.split(".")) == 3 and all(model.split("."))
+
+
+def gateway_base_url(host: str, model: str) -> str:
+    """Where to send a model's requests in a workspace: Unity Gateway for a model service, else the serving endpoints."""
+    path = "/ai-gateway/mlflow/v1" if is_model_service(model) else "/serving-endpoints"
+    return host.rstrip("/") + path
+
+
 def hosted_auth(base: str, key: str) -> str:
     """``key`` or ``databricks``: ``DRILL_HOSTED_AUTH`` if set, else ``databricks`` for a Databricks address with no key."""
     wanted = os.getenv("DRILL_HOSTED_AUTH", "").strip().lower()
@@ -220,7 +234,7 @@ def hosted_route(config_factory=databricks_config, transport: Any = None) -> Rou
         except Exception as exc:  # noqa: BLE001
             log.warning("No Databricks login for the hosted model (%s). Run `databricks auth login`.", exc)
             return None
-        base = base or f"{config.host.rstrip('/')}/serving-endpoints"
+        base = base or gateway_base_url(config.host, model)
         auth = DatabricksAuth(config)
         chat = ChatOpenAI(
             base_url=base, model=model, api_key="databricks", timeout=120, max_retries=1, stream_usage=True,
