@@ -83,6 +83,8 @@ fail it the next time. The research behind this is in
 | Cost per success: the cost of all runs, failed ones included, divided by the runs that passed | A design that is cheaper per run but fails more can cost more per success | Dollars per success · Comparing agent designs |
 | Steps per run, and how many runs hit the step limit | Repeating steps and not knowing when to stop are common failures; a run stopped by the limit counts as failed | The agent loop · Guardrails for agents |
 | How full the context gets | Answers get worse as the context fills, even when the right fact is in it | How full is the context? · What a summary forgets |
+| For a team: hand-off facts kept | A supervisor that rewords a helper's report can drop a fact for good, like a game of telephone | Did the hand-off lose it? |
+| For a team: tokens per agent | Name each helper's span, and the trace shows which one to make cheaper | Which helper costs the most? |
 
 Grade the end state, not the agent's word for it: query the table, read the
 ticket. A judge that reads only "I've updated the ticket" can be fooled.
@@ -92,8 +94,15 @@ practise this.
 Before building a team, ask **Do you need a team?** Start with one agent, move up
 only for a problem you can name, and compare the team with that one agent on the
 same questions, by cost per success. The **Agent teams** module goes on with
-**Split by what each agent needs to know**, **Fan out, then gather**, **A checker
-with a round limit** and **Dollars per success**. One note on tools: build a
+**Split by what each agent needs to know**, **Fan out, then gather**, **Did the
+hand-off lose it?**, **A checker with a round limit**, **Dollars per success**
+and **Which helper costs the most?**. It ends with **One agent or a team: the
+experiment**, which puts it all in one place: the same questions for both
+designs, 3 to 5 runs each, one agent as the baseline, and a rule written before
+any run. The team must win on "passed every time" by a set margin and stay under
+a cost per success limit. The plan template has this experiment filled in, with
+where each part lives in MLflow:
+[A worked example: one agent or a team?](EXPERIMENT_PLAN.md#a-worked-example-one-agent-or-a-team). One note on tools: build a
 supervisor as a main agent made with `create_agent`, with the helper agents as its
 tools. The langgraph-supervisor package is no longer maintained, and on
 Databricks, Supervisor Agent and the Supervisor API are listed as legacy.
@@ -168,5 +177,8 @@ measured number. The method, with a worked example, is in
 - Deciding whether an AI idea is worth building? Start with the **Pricing and
   sizing** module and the [cost and capacity](EXPERIMENT_PLAN.md#cost-and-capacity)
   lines of the plan.
-- Building with agents? Measure the four things in the agent table above, and
-  ask **Do you need a team?** before adding a second agent.
+- Building with agents? Measure the things in the agent table above, and
+  ask **Do you need a team?** before adding a second agent. Comparing a team
+  with one agent? Copy the
+  [one agent or a team](EXPERIMENT_PLAN.md#a-worked-example-one-agent-or-a-team)
+  plan.

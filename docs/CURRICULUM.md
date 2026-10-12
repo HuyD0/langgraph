@@ -142,7 +142,7 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 116 lessons in
+Or use the published page on claude.ai. Either way the path is the same: 119 lessons in
 16 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
@@ -155,7 +155,9 @@ goes with the cost and capacity lines of [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md
 sits later in the list, but it belongs to the Frame stage: do it first if you are
 deciding whether an idea is worth building.
 **Agent teams** starts with whether you need a team at all, then covers splitting the
-work, fanning out, checking, and what a team costs.
+work, fanning out, hand-offs, checking, and what a team costs. It ends with the
+experiment that decides between one agent and a team; [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md)
+has that plan filled in.
 
 Each lesson is four steps. **Learn** is a short read with one worked example. **Check**
 is a single question, to find out whether the read landed. **Build** is a small Python

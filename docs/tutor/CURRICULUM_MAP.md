@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 116 lessons in 16 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 41 of the 116 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 119 lessons in 16 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 44 of the 119 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -879,7 +879,42 @@ The gather waits for the slowest worker, so one stuck search holds up the whole 
       return {"results": [search(task)]}
   ```
 
-### 54. A checker with a round limit (`checker_loop`)
+### 54. Did the hand-off lose it? (`handoff_kept`)
+
+In a team, the main agent sees only each helper's final message. If it retells that message in its own words, details fall out, like a game of telephone. The answer can still read well while the one fact that mattered, like an order number, is gone.
+So check the hand-off (the moment one agent passes its work to another): list the facts a helper found, and see which ones reach the final answer word for word. The share kept says how much the hand-off loses, and the lost list says what.
+The fix is in the prompts. Helpers put every finding in their final message, and the main agent passes it on word for word. In LangChain's tests, passing helper answers on unchanged, instead of rewording them, made the answers nearly 50 percent better.
+Grade the final answer first. Then add hand-off checks, because hand-offs are where teams lose information.
+
+- **Check:** Your team's answers often leave out the order number, yet the trace shows the research helper found it. What should you try first? Right answer: Have helpers report every finding, passed on word for word. Why: The fact was found, then lost at the hand-off. Another helper or a bigger model pays more for the same leak; passing the report on unchanged closes it.
+- **Exercise:** What Got Lost, writing `handoff_kept`. Approach: Check each fact against the text, and keep the misses in a list.
+- **Explain:** the pattern is Check each, keep the misses. Why this pattern: One pass over the facts: test each one against the final text with `in`, and keep the misses in a list. The count of misses gives the share kept. What to say: "I grade the final answer first, then check the hand-offs: I list what each helper found and measure how much reaches the answer. Helpers report everything, and the main agent passes it on word for word."
+- **Spot the gotcha:** "Pass findings on word for word". The main agent sees only a helper's final message. If it retells that in its own words, details like an order number fall out. Have helpers put every finding in their final message, and pass it on word for word. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  research = create_agent(llm,
+      tools=[search_orders],
+      system_prompt="Find the facts.")
+  main = create_agent(llm,
+      tools=[ask_research],
+      system_prompt="Sum up the "
+      "research in your own words.")
+  ```
+
+  The fix:
+
+  ```
+  research = create_agent(llm,
+      tools=[search_orders],
+      system_prompt="Put every finding "
+      "in your final message.")
+  main = create_agent(llm,
+      tools=[ask_research],
+      system_prompt="Pass the research "
+      "report on word for word.")
+  ```
+
+### 55. A checker with a round limit (`checker_loop`)
 
 Ask an agent to grade its own work and it tends to say the work is fine. A checker is a second agent that starts fresh: it sees only the finished work and a written checklist of pass or fail rules, not the chat that made it.
 The loop is: check, fix what the checker found, check again. Without concrete rules, a checker runs one or two tests and declares victory, so write the checklist first and include checks that can really fail.
@@ -907,7 +942,7 @@ Cap the rounds, for example at 3, and decide in advance what happens at the cap:
   ])
   ```
 
-### 55. Dollars per success (`dollars_per_success`)
+### 56. Dollars per success (`dollars_per_success`)
 
 A team can pass a few more tasks and still be the worse choice. In one company's research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.
 You already know dollars per success from Evaluating agents: the whole bill, failed runs included, divided by the runs that passed. It says what one passed task costs. It does not say whether the team's extra passes are worth their price.
@@ -932,11 +967,83 @@ Put this number next to the pass rate every time a team is compared with one age
   per_success = cost / wins if wins else None
   ```
 
+### 57. Which helper costs the most? (`tokens_by_agent`)
+
+A team's bill is the sum of every helper's model calls. If the trace shows only one total, you can't tell which helper to make cheaper.
+Give each helper its own named span (a labelled box in the trace), like "researcher" or "writer". Then the model calls inside each box add up to tokens per agent: the input tokens you sent plus the output tokens that came back.
+Start with the biggest one. It is often a helper that reads long documents. Try a smaller model for just that helper, and keep the change only if your eval still passes.
+
+- **Check:** Your team's traces show 50,000 tokens a run, and every helper's span is called "agent". What should you do first to cut the cost? Right answer: Give each helper's span its own name, then see who uses most. Why: With every span called "agent" you are guessing. Named spans show which helper uses the tokens, so you change one helper and leave the rest alone.
+- **Exercise:** Tokens per Helper, writing `tokens_by_agent`. Approach: Total by key in a dict, then keep the biggest.
+- **Explain:** the pattern is Total by key, then pick the biggest. Why this pattern: One pass adds each call's tokens to its agent's total in a dict. A second pass over the names, A to Z, keeps the biggest, so a tie goes to the name that comes first. What to say: "I name every helper's span so the trace shows tokens per agent. Then I work on the biggest one first, and try a smaller model there only if my eval still passes."
+- **Spot the gotcha:** "Name every helper's span". If every helper's span has the same name, the trace adds their tokens into one total, and you can't tell which helper to make cheaper. Give each helper a span with its own name. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  def researcher(state):
+      with mlflow.start_span(name="agent"):
+          return research(state)
+  
+  def writer(state):
+      with mlflow.start_span(name="agent"):
+          return write(state)
+  ```
+
+  The fix:
+
+  ```
+  def researcher(state):
+      with mlflow.start_span(
+              name="researcher",
+              span_type=SpanType.AGENT):
+          return research(state)
+  
+  def writer(state):
+      with mlflow.start_span(
+              name="writer",
+              span_type=SpanType.AGENT):
+          return write(state)
+  ```
+
+### 58. One agent or a team: the experiment (`team_experiment`)
+
+This lesson puts the module together. To find out whether a team beats one agent, run an experiment: both designs answer the same questions, and one agent is the baseline, the design you compare against.
+Agents give different answers on different tries, so run each question 3 to 5 times. As in Reliable every time (pass hat k), a question counts as passed every time only if every try passed.
+Write the decision rule before any run, so a lucky result can't move the goalposts. For example: the team wins only if it passes every time on at least 10 percent more of the questions, and one success costs at most 50 cents.
+Add a third design: the team without its checker. Comparing the two teams shows what the checker buys you. Taking one part out to see what changes is called an ablation.
+
+- **Check:** You run one agent and a team once each on 20 questions. The team passes 14 and one agent passes 12. What is the main problem with picking the team? Right answer: One run each: agents vary, so 2 more passes may be luck. Why: The same agent can pass a question on one try and fail it on the next. Run each question 3 to 5 times and compare "passed every time", using a rule you wrote before the runs.
+- **Exercise:** Who Wins the Experiment, writing `team_verdict`. Approach: Score each design with a small helper, then apply a rule written in advance.
+- **Explain:** the pattern is Score each side, then apply a rule. Why this pattern: A small helper scores one design in one pass over its questions, using `all`. Then two checks written in advance give the verdict. What to say: "I compare a team with a one-agent baseline on the same questions, 3 to 5 runs each, and I write the decision rule first: the team must win on passed every time by a set margin and stay under a cost per success."
+- **Spot the gotcha:** "Run each design several times". Agents vary from try to try, so a team that passes 2 more questions on one run may just be lucky. Run each design 3 to 5 times on the same questions, and compare "passed every time". The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  for name in designs:
+      m = mlflow.set_active_model(name=name)
+      mlflow.genai.evaluate(
+          data=data,
+          predict_fn=designs[name],
+          scorers=[end_state],
+          model_id=m.model_id)
+  ```
+
+  The fix:
+
+  ```
+  for name in designs:
+      m = mlflow.set_active_model(name=name)
+      for k in range(3):  # 3 to 5 runs
+          mlflow.genai.evaluate(
+              data=data,
+              predict_fn=designs[name],
+              scorers=[end_state],
+              model_id=m.model_id)
+  ```
+
 ## Production patterns (stage: Build and trace)
 
 Rate limits, retries, concurrency, race conditions, idempotency and data at scale: the habits that keep AI systems up.
 
-### 56. Rate limiting before the 429 (`token_bucket`)
+### 59. Rate limiting before the 429 (`token_bucket`)
 
 Model endpoints limit how many requests (and tokens) you can send per minute. Hitting the limit (the server answers with error 429, "too many requests") and retrying works, but it wastes calls and adds delay for everyone.
 A token bucket keeps you under the limit on your side: a budget of tokens that refills at a steady rate, with room for a short burst. Here a token is just a permit to send one request, not a piece of text.
@@ -945,7 +1052,7 @@ A token bucket keeps you under the limit on your side: a budget of tokens that r
 - **Exercise:** Rate-Limit Before the 429, writing `token_bucket`. Approach: Keep two numbers: the tokens left and the time of the previous request. Before each request, top up for the time that passed, but never above the bucket size.
 - **Explain:** the pattern is Token bucket. Why this pattern: Two numbers, tokens and last time checked; top up for the time that passed, then spend one. One walk through the requests. "Design a rate limiter" is a common system design interview question. What to say: "A token bucket refills at a fixed rate up to a burst size; each request spends a token or waits, which smooths traffic but allows short bursts."
 
-### 57. Retries done right (`retry_wait`)
+### 60. Retries done right (`retry_wait`)
 
 Retry only errors that can succeed later (429 rate limits, 503 overload, timeouts). If the server says how long to wait (a Retry-After value), wait that long.
 Otherwise wait longer each time, with jitter: a random wait inside a growing window, so many clients don't all retry at the same moment. Always stop after a few attempts.
@@ -954,7 +1061,7 @@ Otherwise wait longer each time, with jitter: a random wait inside a growing win
 - **Exercise:** Retries With Jitter, writing `retry_wait`. Approach: Prefer what the server tells you. Otherwise grow the window and pick a random point inside it.
 - **Explain:** the pattern is Testable randomness. Why this pattern: A few steps per attempt. The engineering lesson is passing randomness in as an argument, so the function gives the same answer every time in a test. What to say: "I honour Retry-After when present, otherwise use capped exponential backoff (the wait window doubles each time, up to a cap) with full jitter, and inject the random source so it's testable."
 
-### 58. Many calls at once (`run_with_limit`)
+### 61. Many calls at once (`run_with_limit`)
 
 Calling a model is mostly waiting. Running calls concurrently (several in flight at once) finishes a batch far sooner than one at a time.
 But unlimited concurrency triggers rate limits and overloads services. Use a cap: a semaphore lets at most a set number (say 8) run at once, and the next starts the moment one finishes.
@@ -963,7 +1070,7 @@ But unlimited concurrency triggers rate limits and overloads services. Use a cap
 - **Exercise:** Many Calls, a Few at a Time, writing `run_with_limit`. Approach: Keep one "free at" time per slot. Each call goes into the slot that is free first.
 - **Explain:** the pattern is Bounded worker pool. Why this pattern: Repeatedly finish the earliest running call and start the next one: one step per call. With a large limit, a heap (a structure that always hands back the smallest number quickly) finds the earliest faster than sorting. "Meeting Rooms II" is a classic interview problem that uses the same heap of finish times. What to say: "A semaphore caps calls in flight; when one finishes the next starts, so many calls finish per minute without exceeding the rate limit."
 
-### 59. Race conditions (`optimistic_writes`)
+### 62. Race conditions (`optimistic_writes`)
 
 A race condition happens when the result depends on timing. The classic one: two workers read the same record, both change it, both save, and the first change is silently lost.
 Optimistic concurrency prevents this: each write says which version it read, and is rejected if the record changed since. The loser re-reads and tries again.
@@ -972,7 +1079,7 @@ Optimistic concurrency prevents this: each write says which version it read, and
 - **Exercise:** Two Writers, One Record, writing `optimistic_writes`. Approach: Compare-and-set: change only if the value is still what you saw.
 - **Explain:** the pattern is Compare-and-set. Why this pattern: One walk through the writes, accepting only those that saw the current version. What to say: "I use optimistic concurrency: writes carry the version they read and fail if it changed, so the loser re-reads and retries instead of overwriting."
 
-### 60. Idempotent writes (`upsert_rows`)
+### 63. Idempotent writes (`upsert_rows`)
 
 Jobs get retried: a cluster dies, a notebook is re-run, a scheduler fires twice. Idempotent means running it twice leaves the same result as running it once.
 Appending rows is not idempotent; each retry duplicates them. Upsert on a stable key (a field that names the row and never changes, like a ticket id) is: matching rows are updated, new ones inserted. In Delta this is `MERGE INTO`.
@@ -981,7 +1088,7 @@ Appending rows is not idempotent; each retry duplicates them. Upsert on a stable
 - **Exercise:** Safe to Run Twice, writing `upsert_rows`. Approach: Make a dict from each key to its row's position. Then each update either replaces the row at that position or goes on the end.
 - **Explain:** the pattern is Index, then update or insert. Why this pattern: Build a key-to-position map in one walk, then each update is an instant lookup. The same "hash map (a Python dict) of what exists" idea as Two Sum. What to say: "I index existing rows by key, replace on match and append otherwise, so re-running the same batch changes nothing."
 
-### 61. Transforming data at scale with Spark (`chunk_rows`)
+### 64. Transforming data at scale with Spark (`chunk_rows`)
 
 Spark splits a table into partitions and runs your code on each partition in parallel across the cluster. That only works if your function handles one row at a time and doesn't depend on other rows or on shared state.
 Give every output a stable id built from its inputs, so re-running the job produces the same ids and a MERGE overwrites instead of duplicating.
@@ -990,7 +1097,7 @@ Give every output a stable id built from its inputs, so re-running the job produ
 - **Exercise:** Chunking at Scale, writing `chunk_rows`. Approach: Turn each input row into zero or more output rows, using only that row. Build every id from the data, so it is the same on every run.
 - **Explain:** the pattern is Map, then flatten. Why this pattern: Each input row produces zero or more output rows, independently: one step per piece. This independence is what lets the work spread across machines. What to say: "I write a per-row function that uses only its own row, with ids built from the data so they are the same every run; Spark can then spread it across machines, and re-runs are idempotent."
 
-### 62. Incremental processing (`process_new`)
+### 65. Incremental processing (`process_new`)
 
 Reprocessing a whole table every night gets slow and expensive as it grows. Incremental jobs remember where they got to (an offset in a checkpoint) and process only what's new.
 Events can arrive late. A watermark decides how late is too late to count.
@@ -999,7 +1106,7 @@ Events can arrive late. A watermark decides how late is too late to count.
 - **Exercise:** Process Only What's New, writing `process_new`. Approach: Remember where you got to; resume from there; decide what's too late.
 - **Explain:** the pattern is Resume from a checkpoint. Why this pattern: One walk through the events. What to say: "I persist the last processed offset, read only past it, and use a watermark to bound how long I wait for late data."
 
-### 63. Data contracts (`validate_rows`)
+### 66. Data contracts (`validate_rows`)
 
 Pipelines break when data changes shape: a number arrives as text, a column disappears, a new one appears.
 Check rows against a contract (the agreed list of columns each row must have, and what kind of value goes in each), quarantine the bad ones (set them aside to look at later) instead of failing the whole load, and decide on purpose whether new columns are allowed in.
@@ -1008,7 +1115,7 @@ Check rows against a contract (the agreed list of columns each row must have, an
 - **Exercise:** Data Contracts, writing `validate_rows`. Approach: Check each row against the contract. Set failures aside instead of crashing.
 - **Explain:** the pattern is Validate and route. Why this pattern: One walk through the rows, checking each column. What to say: "I validate each row against the schema, route failures to a quarantine table with alerts, and surface unexpected columns for review."
 
-### 64. Data skew in Spark (`skew_report`)
+### 67. Data skew in Spark (`skew_report`)
 
 Spark puts rows with the same key in the same partition. If one key has most of the rows (a hot key), one task (a task is one worker's share of the job) does most of the work while the others wait.
 Watch for it in the Spark UI (one task far slower than the rest). Fixes: turn on Adaptive Query Execution (AQE: Spark re-plans the job while it runs and can split a skewed join), handle the hot key separately, or salt it (add a random ending to the hot key so its rows spread over several partitions).
@@ -1021,7 +1128,7 @@ Watch for it in the Spark UI (one task far slower than the rest). Fixes: turn on
 
 The biggest security risks for LLM apps (from the OWASP Top 10, a well-known list), in practice: prompt injection, unsafe output, agents with too much power, personal data, secrets and runaway cost.
 
-### 65. Prompt injection (`wrap_untrusted`)
+### 68. Prompt injection (`wrap_untrusted`)
 
 Prompt injection is text that tries to give your model new instructions. It can come from the user, or hide inside documents, emails and web pages your agent reads.
 No single fix stops it. Layer defences: fence untrusted text and tell the model it's data, flag suspicious content, and, most importantly, limit what the agent can do if it's fooled.
@@ -1045,7 +1152,7 @@ No single fix stops it. Layer defences: fence untrusted text and tell the model 
   )
   ```
 
-### 66. Never trust model output (`is_safe_sql`)
+### 69. Never trust model output (`is_safe_sql`)
 
 Anything the model writes is untrusted input: SQL (database queries), code, URLs, file paths, HTML. Running it unchecked is how a chat feature becomes a data breach.
 Validate against an allowlist (a list of what is allowed; everything else is rejected), and run what passes with the smallest possible permissions, so the permissions catch what the checks miss.
@@ -1054,7 +1161,7 @@ Validate against an allowlist (a list of what is allowed; everything else is rej
 - **Exercise:** Check Model-Written SQL, writing `is_safe_sql`. Approach: Allowlist, not blocklist: say what's permitted and reject everything else.
 - **Explain:** the pattern is Allowlist checking. Why this pattern: One pass over the words, checking each table name against the allowlist. What to say: "I validate model output against an allowlist and execute it with least-privilege credentials, so validation and permissions both have to fail."
 
-### 67. Least privilege for agents (`authorize_tool`)
+### 70. Least privilege for agents (`authorize_tool`)
 
 Give an agent only the tools it needs, only for the roles that should use them, and put a human in front of anything risky: refunds, deletes, emails to customers.
 Enforce this in code outside the model. A prompt that says "don't refund over $100" is a suggestion; a policy check is a rule.
@@ -1063,7 +1170,7 @@ Enforce this in code outside the model. A prompt that says "don't refund over $1
 - **Exercise:** Who May Run This Tool?, writing `authorize_tool`. Approach: Deny by default; allow only what the policy names; send risky actions to a person to approve.
 - **Explain:** the pattern is Deny by default. Why this pattern: A couple of dict lookups. Interviewers like hearing "deny by default, allow explicitly". What to say: "Every tool call goes through a policy check: unknown tools or roles are denied, and high-risk arguments escalate to a human."
 
-### 68. Giving an agent a shell (`shell_policy`)
+### 71. Giving an agent a shell (`shell_policy`)
 
 A shell is where you type commands like `ls` (list files) or `git push` (send your code changes to the shared copy). An agent with a shell can do almost anything you can, including deleting files and sending data away. One confused or tricked step can do real damage.
 So run the shell in a box: a container (a sealed mini computer) with no internet. On Databricks, the `system.ai.sandbox` tool runs code sealed off, with no internet. Leave secrets (passwords, keys, tokens) out of the box, so no command can leak them.
@@ -1095,7 +1202,7 @@ Last, avoid the lethal trifecta: one agent that has private data, reads untruste
   # shell: its own agent, no internet
   ```
 
-### 69. Personal data (`redact_pii`)
+### 72. Personal data (`redact_pii`)
 
 Prompts, logs and traces (step-by-step records of each request) collect personal data (PII, short for personally identifiable information) fast: emails, phone numbers, card numbers, addresses. Every copy is a liability.
 Mask it at the boundary, before it's stored or sent to a model, and limit who can read traces.
@@ -1104,7 +1211,7 @@ Mask it at the boundary, before it's stored or sent to a model, and limit who ca
 - **Exercise:** Hide Personal Data, writing `redact_pii`. Approach: Split into words, check each one against a couple of clear rules, then join them back.
 - **Explain:** the pattern is Split, check each word, join back. Why this pattern: One pass over the words, with a couple of rules for each. What to say: "I mask PII at the boundary with clear rules for things like emails and phone numbers, and restrict who can read traces as a second layer."
 
-### 70. Secrets (`scrub_secrets`)
+### 73. Secrets (`scrub_secrets`)
 
 API tokens (passwords your app uses to call another service) and other passwords leak through logs, traces, notebooks, Git history and error messages more than through hacks.
 Keep them in a secret store (a locked place for secrets, like a Databricks secret scope), read them at run time, and scrub anything that might be logged.
@@ -1125,7 +1232,7 @@ Keep them in a secret store (a locked place for secrets, like a Databricks secre
   client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
   ```
 
-### 71. Runaway cost (`budget_check`)
+### 74. Runaway cost (`budget_check`)
 
 LLMs charge per token: a small piece of text the model reads or writes. (Not the same as an API token, which is a password.) One user, one script or one looping agent can spend a month's LLM budget in a night.
 Set limits per user and per endpoint, track usage, and decide in advance what happens when someone hits the limit.
@@ -1138,7 +1245,7 @@ Set limits per user and per endpoint, track usage, and decide in advance what ha
 
 Measuring whether a change made your AI better or worse.
 
-### 72. Evaluating model answers (`exact_match`)
+### 75. Evaluating model answers (`exact_match`)
 
 An eval is a test set of inputs with expected outputs, plus a way to score answers. It's how you know whether a prompt or model change helped.
 Normalise (clean) both sides before comparing, or formatting differences ("Paris." vs "paris") count as wrong. In the exercise, cleaning means: make it lowercase, remove `.` `,` `!` and `?`, and trim spaces off both ends. For open-ended answers, teams use an LLM judge (a second model that grades each answer) with a clear rubric (written grading rules), and check it against human labels.
@@ -1158,7 +1265,7 @@ Normalise (clean) both sides before comparing, or formatting differences ("Paris
   normalize(pred) == normalize(gold)
   ```
 
-### 73. Dev, test and holdout sets (`assign_splits`)
+### 76. Dev, test and holdout sets (`assign_splits`)
 
 An eval set for an LLM app is split three ways, and each part has one job. The dev set is for iterating: look at it as often as you like while you tune prompts. The test set is checked before a release, rarely, and you never tune against it. The holdout set is locked away for big decisions. Once you have looked at it and changed things because of what you saw, it is no longer honest, so replace it.
 Build the examples from three places: a fixed golden set you checked by hand, a sample of recent real traffic, and past failures you never want to see again. Give every version a name, like `faq-v4`, so results stay comparable.
@@ -1169,7 +1276,7 @@ Keep anything that must stay together, like all the questions from one user or a
 - **Exercise:** Deal the Eval Set, writing `assign_splits`. Approach: Count per group as you go, and use the count to pick the next slot in the pattern.
 - **Explain:** the pattern is A counter per group. Why this pattern: Keep a dict from each group to how many of its examples you have placed so far. Each example looks up its group, takes the next slot in the pattern (3 dev, 1 test, 1 holdout), and bumps the count. One walk through the examples. What to say: "I stratify the eval set by question type, so every split has every type in proportion, and I keep one user's questions in one split to avoid leakage."
 
-### 74. Splits that don't move (`stable_split`)
+### 77. Splits that don't move (`stable_split`)
 
 Dealing questions into dev, test and holdout by position works for a fixed set. But real eval sets grow every week, and re-dealing would move old questions between splits: a question you tuned on could land in the holdout and quietly inflate it.
 So at scale, each question's split is decided by its id alone: turn the id into a number with a hash, take the remainder after dividing that number by 100 (`% 100`), and give 0 to 59 to dev, 60 to 79 to test and 80 to 99 to holdout. The same id always lands in the same split, however many questions are added later.
@@ -1179,7 +1286,7 @@ Hash the right id. To keep one customer or one conversation out of two splits (t
 - **Exercise:** A Split That Never Moves, writing `stable_split`. Approach: Turn the id into a number, keep a bucket from 0 to 99, then pick the split by range.
 - **Explain:** the pattern is Hashing to a bucket. Why this pattern: Walk the characters once, folding each into a running number, then take the remainder. The same text always gives the same number. What to say: "For a growing eval set I assign splits by hashing the id, and I hash the conversation id when questions from one conversation must stay together."
 
-### 75. Report each group, weighted by real traffic (`weighted_score`)
+### 78. Report each group, weighted by real traffic (`weighted_score`)
 
 One overall score hides problems: billing can be at 95% while refunds fail half the time, and the average still looks fine. Report a score for each group, with how many examples it is based on.
 For the headline number, weight each group by its share of real traffic, not its share of the eval set. You deliberately gave small but important groups extra examples, which is right for measuring them, but it would distort a plain average.
@@ -1189,7 +1296,7 @@ If a group shows up in traffic but not in the eval set, that is a blind spot, no
 - **Exercise:** The Honest Headline Number, writing `weighted_score`. Approach: Two running totals: pass rate times share, and the shares. Divide at the end.
 - **Explain:** the pattern is Weighted average. Why this pattern: Multiply each score by its weight, add those up, and divide by the total weight. Two running totals in one walk through the groups. Dividing by the total weight means the weights do not have to add up to exactly 1. What to say: "I report every group with its count, and I weight the headline number by production traffic, not by how I sampled the eval set."
 
-### 76. A must-pass set (`must_pass_gate`)
+### 79. A must-pass set (`must_pass_gate`)
 
 A new version can win on average and still break the one answer that matters most: the refund policy, the fraud warning, the medical disclaimer. An average can't see that.
 So keep a small must-pass set: the cases that can never get worse, chosen in the Frame stage (the first step of a project, where you decide the question and what success means), before any experiment, from what would be costly or embarrassing to get wrong. Add every serious production failure you fix, so it can't quietly come back.
@@ -1199,7 +1306,7 @@ In Evaluate (the stage where you score each version on the eval set) and again a
 - **Exercise:** Check the Release Gate, writing `must_pass_gate`. Approach: Walk the must-pass ids, look each one up, and treat missing as failed.
 - **Explain:** the pattern is Membership check over a short list. Why this pattern: Walk the must-pass ids and look each one up in the results dict. A missing result counts as a failure, because "not tested" is not "passed". What to say: "I keep a must-pass set as a release gate, checked before the overall score, and every fixed production failure gets added to it."
 
-### 77. Finding regressions (`first_bad_version`)
+### 80. Finding regressions (`first_bad_version`)
 
 A regression is a change that made things worse. With many prompt or model versions, re-running every eval is slow and costs money.
 If versions pass up to a point and fail after it, bisect: test the middle, keep the half that contains the change.
@@ -1208,7 +1315,7 @@ If versions pass up to a point and fail after it, bisect: test the middle, keep 
 - **Exercise:** Find the Change That Broke It, writing `first_bad_version`. Approach: The list is sorted (passes, then fails), so check the middle and throw away the half that can't contain the answer.
 - **Explain:** the pattern is Binary search. Why this pattern: Each check throws away half of what's left, so 1,000 versions take about 10 checks and a million take about 20. The classic bug is the boundary: whether you move to the middle or one past it. What to say: "The passing versions all come before the failing ones, so I check the middle and throw away half each time. That needs only a handful of evals."
 
-### 78. Checking your LLM judge (`judge_agreement`)
+### 81. Checking your LLM judge (`judge_agreement`)
 
 An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.
 Check passes and failures separately. A judge that passes everything looks accurate when most answers are good, and catches nothing.
@@ -1217,7 +1324,7 @@ Check passes and failures separately. A judge that passes everything looks accur
 - **Exercise:** Can You Trust Your Judge?, writing `judge_agreement`. Approach: Split by the human label, then measure agreement on each side separately.
 - **Explain:** the pattern is Split by label. Why this pattern: One walk through the pairs with four counters. What to say: "I check how often the judge agrees with humans on the answers they passed, and separately on the ones they failed, and require both to be high."
 
-### 79. Agreement beyond chance (`cohen_kappa`)
+### 82. Agreement beyond chance (`cohen_kappa`)
 
 Agreement can be high by luck. If 90% of answers are good, and a judge that never reads anything says "pass" 90% of the time at random, the two still agree on about 82% of answers (0.9 times 0.9 for both saying pass, plus 0.1 times 0.1 for both saying fail).
 Cohen's kappa takes away the agreement you would expect by chance. Kappa is (observed agreement minus chance agreement) divided by (1 minus chance agreement). 1 means perfect agreement, 0 means no better than luck, and below 0 means worse than luck.
@@ -1227,7 +1334,7 @@ Chance agreement comes from how often each side says pass: the judge's pass rate
 - **Exercise:** Cohen's Kappa, writing `cohen_kappa`. Approach: Count agreements and passes in one walk through the labels, then a few lines of arithmetic.
 - **Explain:** the pattern is Count once, then a formula. Why this pattern: One walk through the labels counts the agreements and each side's passes. Everything else is arithmetic on those three counts. In real code, add a guard for the case where chance agreement is already 1. What to say: "I don't trust raw agreement for an LLM judge. I check Cohen's kappa so that agreement by luck doesn't count."
 
-### 80. Testing the checker with planted mistakes (`checker_score`)
+### 83. Testing the checker with planted mistakes (`checker_score`)
 
 A checker is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on planted mistakes: runs where you put a fault in on purpose, so you already know which ones should fail.
 Plant more than wrong answers. Plant false successes too: the agent says "I've closed the ticket", but the ticket is still open. A judge that reads only the agent's last message is easily fooled by a confident claim like that.
@@ -1254,7 +1361,7 @@ The fix is a code check of the real end state: read the ticket table, not the re
       return t["status"] == "closed"
   ```
 
-### 81. Drafted labels, expert-confirmed (`review_queue`)
+### 84. Drafted labels, expert-confirmed (`review_queue`)
 
 With hundreds of questions, experts can't write every expected answer from scratch. Instead an LLM drafts the expected facts from the question and its source article, and experts confirm or correct the drafts. The drafter may also see the articles the app found, from the trace (the saved record of each step the app took for that question), but never the app's own answer. Checking a draft is several times faster than writing one.
 Expert time is still the scarce part, so decide which drafts they see first. Highest: must-pass questions, where a wrong label is costly. Next: drafts where two independent drafting runs disagree, which usually means the question is ambiguous. Then: questions from rare groups, where each label carries more weight. Everything else can wait, or be spot-checked.
@@ -1264,7 +1371,7 @@ Track how often experts change a draft. If they rarely do, you can send fewer dr
 - **Exercise:** Build the Review Queue, writing `review_queue`. Approach: A score from simple rules, then sort by score, with the id to break ties.
 - **Explain:** the pattern is Score, then sort. Why this pattern: Give each item a priority from a few simple rules, then sort by priority with a tie-break, and take the first few. What to say: "I let an LLM draft expected answers and route expert review by risk: must-pass first, then disputed drafts, then rare groups."
 
-### 82. Reading regressions and improvements (`change_report`)
+### 85. Reading regressions and improvements (`change_report`)
 
 When you compare two versions on the same questions, most questions get the same result from both. The informative ones are where they disagree: a regression is a question the new version gets wrong that the old one got right; an improvement is the reverse. Statisticians call these discordant pairs.
 Counting them decides the comparison (that is McNemar's test, from the Experiment design module). Reading them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words.
@@ -1274,7 +1381,7 @@ Count the causes in each direction. "6 improvements, mostly *moved the right doc
 - **Exercise:** Count Regressions, Improvements and Their Causes, writing `change_report`. Approach: One walk through the ids, counting each change into one of two dicts of causes.
 - **Explain:** the pattern is Walking two dicts by the same keys, then counting. Why this pattern: Go through the question ids once, compare the two results for each, and count regressions, improvements and their causes in dicts of running totals. What to say: "I don't stop at the score: I read every regression and improvement, label why it changed, and count the causes each way. That tells me what the change really did."
 
-### 83. Sorting changes before reading them (`sort_changes`)
+### 86. Sorting changes before reading them (`sort_changes`)
 
 With a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.
 The most useful first cut for RAG comes straight from the traces: did the two versions send different articles to the answer step, or the same articles and the answer changed anyway? The first points at retrieval, the second at the prompt, the model or the scorer.
@@ -1284,7 +1391,7 @@ Then read a handful from each bucket and label causes as usual. You get the erro
 - **Exercise:** Bucket the Changes, writing `sort_changes`. Approach: Compare the two lists as sets, then file the qid.
 - **Explain:** the pattern is Compare as sets, then bucket. Why this pattern: Turn each article list into a set so the order does not matter, compare the two sets, and file the question in one of two lists. What to say: "Before reading regressions I bucket them by whether retrieval changed, using the traces, then read a sample per bucket."
 
-### 84. Drift monitoring (`mix_shift`)
+### 87. Drift monitoring (`mix_shift`)
 
 Your eval set is a snapshot. Real questions change: new products, new policies, new kinds of users.
 Watch the mix of production traffic against the eval set. When it shifts, eval scores stop predicting real quality, and the eval set needs refreshing.
@@ -1298,7 +1405,7 @@ Drift is when the mix of real questions moves away from your eval set. One simpl
 
 Quality, cost and latency, and which option pays for itself.
 
-### 85. Latency that users feel (`percentile`)
+### 88. Latency that users feel (`percentile`)
 
 Latency is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. p95 is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.
 Measure the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A trace is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.
@@ -1330,7 +1437,7 @@ Measure the whole request (retrieval, tools, model calls), which is what a trace
       return best
   ```
 
-### 86. Comparing LLMs for a task (`pareto_models`)
+### 89. Comparing LLMs for a task (`pareto_models`)
 
 To choose a model for a task, run each candidate on the same eval set, with the same judge, and record quality, cost and p95 latency as one MLflow run per model.
 Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the Pareto front.
@@ -1339,7 +1446,7 @@ Throw out any model that another model beats: at least as good on quality, cost 
 - **Exercise:** Keep the Models Nothing Beats, writing `pareto_models`. Approach: Compare every pair: keep a model only if no other model beats it.
 - **Explain:** the pattern is Compare every pair. Why this pattern: Compare every pair and keep the models nothing beats. Fine for a handful of models. What to say: "A model is out if another is at least as good on quality, cost and latency and better on one. What's left, the models nothing beats, is called the Pareto front."
 
-### 87. Net value per month (`better_option`)
+### 90. Net value per month (`better_option`)
 
 Every experiment ends with a decision, and the decision is about value: what does a success earn or save, and what does each call cost?
 Net monthly value is what good answers earn (volume times success rate times value per success) minus what the calls cost (volume times cost per call). A cheaper model can end up making less money if it succeeds less often, and an expensive one can pay for itself many times over.
@@ -1353,7 +1460,7 @@ People often call this the return on investment (ROI) question. Strictly, ROI is
 
 Graduating, registering, promoting and canarying on Databricks.
 
-### 88. The graduation gate (`graduation_gate`)
+### 91. The graduation gate (`graduation_gate`)
 
 A common setup is a shared experiment space: one model deployment for everyone, with a spending limit and a rate limit for each person. That keeps trials cheap. But it is no place for an app people rely on: one busy experiment can use up the capacity, and nobody is named to fix things.
 Graduation moves an app out of that space onto production capacity, with limits sized for it. An app that graduates on enthusiasm alone can hit rate limits, a surprise bill or quiet failures in its first week.
@@ -1364,7 +1471,7 @@ The graduation gate checks the pack against a bar (the limits it must meet), wri
 - **Exercise:** Check the Graduation Pack, writing `graduation_gate`. Approach: Check every rule, add a reason for each one that fails, and sort at the end.
 - **Explain:** the pattern is Collect every failure. Why this pattern: Check each rule once, add a reason for every rule that fails, then sort so the answer comes out the same way every time. There is no early return: the point is the whole list. What to say: "I run every check and collect all the failing reasons instead of stopping at the first, so the team can fix everything in one round. Sorting keeps the output stable."
 
-### 89. Model registry and promotion (`promote_model`)
+### 92. Model registry and promotion (`promote_model`)
 
 A model registry (such as MLflow's on Databricks) stores every trained version with its metrics. Aliases like `@champion` point at the version serving traffic.
 Promote a challenger (a newer version that wants the job) only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.
@@ -1373,7 +1480,7 @@ Promote a challenger (a newer version that wants the job) only when it beats the
 - **Exercise:** Promote a Challenger, writing `promote_model`. Approach: Keep the best so far, and let a challenger replace it only if it clears the bar.
 - **Explain:** the pattern is Running best with a rule. Why this pattern: One walk through the versions, keeping the best candidate so far, with a clear rule for ties. Maximum Subarray uses the same keep-the-best-so-far bookkeeping. What to say: "One pass with a running best. Only candidates that clear the minimum gain can replace it, and ties go to the earlier version."
 
-### 90. Canary releases (`route_request`)
+### 93. Canary releases (`route_request`)
 
 Never switch all traffic to a new agent at once. In a canary release, you send a small share (say 10%) to the new version (the canary), compare its traces and evals with the old one, then move the split.
 A Databricks serving endpoint can serve several versions and split traffic between them by percentage. Rolling back is just setting the new version to 0%.
@@ -1382,7 +1489,7 @@ A Databricks serving endpoint can serve several versions and split traffic betwe
 - **Exercise:** Canary a New Agent Version, writing `route_request`. Approach: A running total: stop at the first route where the total is bigger than the bucket.
 - **Explain:** the pattern is Running total. Why this pattern: Walk the routes adding percentages and stop at the first total that is bigger than the bucket. One walk through the routes. What to say: "I bucket the user id into 0 to 99, so one person always gets the same version, and walk the routes with a running total; the first route whose total exceeds the bucket wins."
 
-### 91. Rolling out a new prompt (`prompt_rollout`)
+### 94. Rolling out a new prompt (`prompt_rollout`)
 
 Before a new prompt version gets the `production` alias, first score it on your saved test questions (before any real user sees it) with `mlflow.genai.evaluate`, then give it a small share of real traffic.
 Tag every trace with the prompt version it used. Then you can compare versions on real questions and decide with a rule you wrote down first: promote, keep testing, or roll back.
@@ -1395,7 +1502,7 @@ Tag every trace with the prompt version it used. Then you can compare versions o
 
 The Terraform and Spacelift work behind the platform.
 
-### 92. What a Terraform plan really says (`summarize_plan`)
+### 95. What a Terraform plan really says (`summarize_plan`)
 
 `terraform plan` compares your code with state (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy.
 `terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.
@@ -1420,7 +1527,7 @@ The Terraform and Spacelift work behind the platform.
   # the 1 to destroy is the workspace itself: stop and fix it
   ```
 
-### 93. Spotting dangerous replacements (`find_replacements`)
+### 96. Spotting dangerous replacements (`find_replacements`)
 
 Some attributes can't change in place. Changing them forces replacement: Terraform destroys the resource and creates a new one.
 On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan's mark for a replacement) before approving.
@@ -1451,7 +1558,7 @@ On an Azure Databricks workspace, that means a new URL and losing everything ins
   }
   ```
 
-### 94. Policies as guardrails (`guard_destroys`)
+### 97. Policies as guardrails (`guard_destroys`)
 
 A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
 Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
@@ -1478,7 +1585,7 @@ Start with the resources you can't rebuild: workspaces, storage accounts, metast
   }
   ```
 
-### 95. State and locking (`lock_info`)
+### 98. State and locking (`lock_info`)
 
 State is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a lock first.
 A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead.
@@ -1508,7 +1615,7 @@ A crashed run can leave the lock behind. Before `terraform force-unlock`, check 
   # and commit .terraform.lock.hcl
   ```
 
-### 96. Tagging for cost and policy (`missing_tags`)
+### 99. Tagging for cost and policy (`missing_tags`)
 
 Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
 The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
@@ -1517,7 +1624,7 @@ The azurerm provider (Terraform's plugin for Azure) has no provider-wide default
 - **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
 - **Explain:** the pattern is Dict of results. Why this pattern: One walk through the plan; each missing-tag check is an instant dict lookup. What to say: "I only check resources that support tags, and return a dict from each address to its missing tag names."
 
-### 97. Unity Catalog grants (`grants_to_revoke`)
+### 100. Unity Catalog grants (`grants_to_revoke`)
 
 Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
 Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
@@ -1544,7 +1651,7 @@ Grants added by hand in Catalog Explorer disappear at the next apply. Put them i
   }
   ```
 
-### 98. count vs for_each (`count_shift`)
+### 101. count vs for_each (`count_shift`)
 
 `count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).
 Remove the first item from a `count` list and every later item shifts position. Terraform sees changed names and replaces them, and for storage containers that deletes their data. Use `for_each`, and `moved` blocks to migrate.
@@ -1572,7 +1679,7 @@ Remove the first item from a `count` list and every later item shifts position. 
   }
   ```
 
-### 99. Networking for Databricks (`overlapping_subnets`)
+### 102. Networking for Databricks (`overlapping_subnets`)
 
 VNet injection puts a Databricks workspace's clusters in your own virtual network, using a host and a container subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.
 A subnet's addresses are written as a CIDR block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.
@@ -1607,7 +1714,7 @@ Each node (one machine in a cluster) uses an address in each subnet, and Azure r
   }
   ```
 
-### 100. Dependencies and stacks (`apply_order`)
+### 103. Dependencies and stacks (`apply_order`)
 
 Terraform builds a dependency graph (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.
 A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks (a stack is one set of Terraform code with its own state, planned and applied on its own), with a stack dependency between them.
@@ -1632,7 +1739,7 @@ A Databricks provider configured from a workspace that doesn't exist yet can't p
   }
   ```
 
-### 101. Policy as code (`plan_policy`)
+### 104. Policy as code (`plan_policy`)
 
 Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
 Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.
@@ -1659,7 +1766,7 @@ Start with the rules that prevent real incidents: never destroy resources that h
   terraform init -upgrade
   ```
 
-### 102. Who gets capacity when it's scarce (`allocate_capacity`)
+### 105. Who gets capacity when it's scarce (`allocate_capacity`)
 
 When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide who comes first before it happens, by putting each app in a tier: a group with its own rule, served most important first.
 Once its traffic is steady, a critical app moves to provisioned throughput: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on spillover: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.
@@ -1689,7 +1796,7 @@ Critical apps come first and get what they ask for. Each graduated app gets what
   }
   ```
 
-### 103. A shared space with fair limits (`check_limits`)
+### 106. A shared space with fair limits (`check_limits`)
 
 In a shared experiment space (the sandbox), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A per-user limit stops that: each person gets a slice, well below the whole.
 The Databricks AI gateway (now called Unity Gateway) sets limits on a service (the whole space), a default for each user, and custom ones for a group. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.
@@ -1735,7 +1842,7 @@ Give the sandbox its own Foundry deployment. If it shares a production deploymen
 
 Traces that answer your questions, slow steps and runaway agents.
 
-### 104. Designing traces for experiments (`summarize_by_tag`)
+### 107. Designing traces for experiments (`summarize_by_tag`)
 
 A trace records one request: every model call, retrieval and tool, with timings, inputs, outputs and token counts. Design traces before you need them.
 Tag every trace with the things you'll want to split your results by later (for example, comparing two models): config, model, prompt version, environment. A trace is made of spans, one for each step inside it (a model call, a retrieval, a tool). Mark spans with their type (RETRIEVER, TOOL, CHAT_MODEL) so evaluation and analysis can find them, and put per-request details in span attributes (extra details saved on a span).
@@ -1757,7 +1864,7 @@ Give each version you compare a name with `mlflow.set_active_model(name=...)`, l
   answer = chain.invoke(q)   # full trace saved
   ```
 
-### 105. Reading agent traces (`slowest_chain`)
+### 108. Reading agent traces (`slowest_chain`)
 
 A trace records one agent run as nested spans: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their parent; the spans directly inside it are its children.
 To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. The answer is usually one tool or one model call.
@@ -1767,7 +1874,7 @@ An agent team makes the same kind of tree when each helper is traced under its o
 - **Exercise:** Find the Slow Path in a Trace, writing `slowest_chain`. Approach: List each span's children in one pass, then walk down from the root, always into the slowest child.
 - **Explain:** the pattern is Tree traversal. Why this pattern: Build a parent-to-children map in one walk, then follow one path down the tree. Number of Islands also starts at one square and keeps stepping into neighbours until there are none left. What to say: "I group spans by parent in one pass, then keep stepping into the slowest child until there are none."
 
-### 106. Traces to a table (`trace_table_row`)
+### 109. Traces to a table (`trace_table_row`)
 
 Reading traces one at a time stops working after a few dozen runs. Turn each trace into one row of a few numbers: steps (model calls), tool errors, the biggest prompt and total tokens. Then sort and filter the rows, like a spreadsheet, to find the runs worth reading.
 Rows with many steps or many tool errors are the runs to open first. The biggest prompt (the most input tokens in one call) shows how close a run came to filling the context window, the most a model can read in one call.
@@ -1777,7 +1884,7 @@ On Databricks, production traces can be stored as tables in Unity Catalog, so yo
 - **Exercise:** Turn a Trace into a Row, writing `trace_table_row`. Approach: One pass over the spans, updating two counts, a running biggest and a running total as you go.
 - **Explain:** the pattern is One pass, several totals. Why this pattern: One walk over the spans updates four numbers at once: two counts, a running biggest and a running total. Interviewers like problems that want several answers from a single walk. What to say: "I walk the spans once and update all four numbers as I go, so each trace becomes one row in a single pass."
 
-### 107. How full is the context? (`context_fill`)
+### 110. How full is the context? (`context_fill`)
 
 Answers get worse as the prompt gets longer, even when the right fact is in it. A model's context window is the most tokens it can read in one call. This drop is called context rot, and a model with a bigger window does not fix it.
 An agent sends its whole history again on every call, so each call reads more than the last. Measure the fill of each call: its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).
@@ -1787,7 +1894,7 @@ Three habits keep the context small and useful. Put the question after the retri
 - **Exercise:** Watch the Context Fill Up, writing `context_fill`. Approach: Work out each fill in one walk. Keep the biggest, and note the first index over 80.
 - **Explain:** the pattern is Running biggest and first match. Why this pattern: One walk keeps the biggest value so far and notes the first position that crosses a line. Many "find the first" problems have this shape: check each item once and remember the first one that passes. What to say: "I work out each call's fill as I walk the list, keep the biggest, and note the first index over 80 percent the moment I see it."
 
-### 108. What a summary forgets (`summary_recall`)
+### 111. What a summary forgets (`summary_recall`)
 
 When the context gets too full, agents compact it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.
 Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.
@@ -1815,7 +1922,7 @@ To test a summary, plant facts: put a few details you will ask about later, like
   {messages}"""
   ```
 
-### 109. Guardrails for agents (`detect_loop`)
+### 112. Guardrails for agents (`detect_loop`)
 
 Agents in production need guardrails: limits that stop a run before it does damage or burns money. The simplest catches the same call repeated again and again.
 Production systems also cap total steps, tokens and time, and tell the model why it was stopped.
@@ -1825,7 +1932,7 @@ In LangGraph, the step cap is `recursion_limit`. Its default in langgraph 1.2.11
 - **Exercise:** Stop a Looping Agent, writing `detect_loop`. Approach: Keep a count of identical calls in a row; start again at 1 when the call changes.
 - **Explain:** the pattern is Run-length counting. Why this pattern: One walk, counting the current run of identical calls and starting again at 1 when the call changes. Maximum Subarray also keeps a running value in one walk and starts it again when that helps. What to say: "One pass with a counter for the current run of identical calls, reset whenever the call changes."
 
-### 110. Label failures, then count (`failure_counts`)
+### 113. Label failures, then count (`failure_counts`)
 
 With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one failure label: a short name for what went wrong. Then count the labels and fix the biggest group first.
 Use a fixed list of labels, so the same problem always gets the same name. A research list called MAST names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.
@@ -1839,7 +1946,7 @@ A person labels the first batch by hand. A judge model can help label more later
 
 Cost and caching in production.
 
-### 111. Tokens and cost (`token_cost`)
+### 114. Tokens and cost (`token_cost`)
 
 LLM providers bill per token (roughly three quarters of a word), with separate prices for input and output. Output usually costs several times more. Prices are quoted in dollars per million tokens.
 Track cost per model, per feature and per user from day one. When the bill jumps, that breakdown tells you why.
@@ -1848,7 +1955,7 @@ Track cost per model, per feature and per user from day one. When the bill jumps
 - **Exercise:** Cost per Model, writing `token_cost`. Approach: Group by model: add each call's cost to that model's total in a dict.
 - **Explain:** the pattern is Group and sum. Why this pattern: One walk through the calls, adding each cost into a dict where each key is a model name. Group Anagrams has the same group-by-key shape. What to say: "I add each cost into a dict where each key is a model name, in one walk through the calls, and round only at the end so rounding errors don't pile up."
 
-### 112. Estimate against actual (`estimate_vs_actual`)
+### 115. Estimate against actual (`estimate_vs_actual`)
 
 Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.
 So each month, set the estimate (what the plan said a project would cost) next to the actual (what it really cost). Percent over is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.
@@ -1859,7 +1966,7 @@ Flag only projects over by a set margin, such as 20 percent, and look at the big
 - **Exercise:** Projects Over Estimate, writing `estimate_vs_actual`. Approach: Filter and rank: work out each project's percent over, keep the ones at or above the threshold, then sort biggest first with the name breaking ties.
 - **Explain:** the pattern is Filter, then rank with a tie-break. Why this pattern: One pass over the rows works out each percent and keeps the ones at or above the threshold. Then one sort puts the biggest first, with names breaking ties so the report always comes out the same. What to say: "I compare each project with its own estimate as a percent, keep the ones at or above the threshold, and sort biggest first with the name as a tie-break."
 
-### 113. Caching responses (`cache_hits`)
+### 116. Caching responses (`cache_hits`)
 
 Many requests repeat. A cache returns a stored answer instead of calling the model again, which saves money and time. It looks answers up by a key, usually the prompt text.
 Caches have a size limit. LRU (least recently used) removes whatever hasn't been used for the longest time.
@@ -1872,7 +1979,7 @@ Caches have a size limit. LRU (least recently used) removes whatever hasn't been
 
 Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't.
 
-### 114. Timeouts and deadlines (`plan_calls`)
+### 117. Timeouts and deadlines (`plan_calls`)
 
 Every call that can wait forever eventually will. Set a timeout on every model and HTTP call.
 Better still, give the whole request a deadline and pass the remaining time down, so no step starts work it can't finish.
@@ -1881,7 +1988,7 @@ Better still, give the whole request a deadline and pass the remaining time down
 - **Exercise:** Work Within a Deadline, writing `plan_calls`. Approach: Carry the time left forward and check it before each step.
 - **Explain:** the pattern is Carry a budget forward. Why this pattern: One walk through the steps. What to say: "I propagate a deadline: each step gets the remaining budget and is skipped or degraded if it can't finish in time."
 
-### 115. Circuit breakers and fallbacks (`circuit_breaker`)
+### 118. Circuit breakers and fallbacks (`circuit_breaker`)
 
 When a service you depend on (a dependency, like a reranker or model endpoint) is down, calling it again and again makes everything slower and the outage worse.
 A circuit breaker stops calling after repeated failures, fails fast to a fallback (a cheaper model, a cached answer), and tries again after a cooldown.
@@ -1890,7 +1997,7 @@ A circuit breaker stops calling after repeated failures, fails fast to a fallbac
 - **Exercise:** Stop Calling a Failing Service, writing `circuit_breaker`. Approach: Keep two things as you go: failures in a row, and when the breaker opened. Decide each call from those.
 - **Explain:** the pattern is State machine. Why this pattern: One walk through the calls with a couple of state variables. "Design a circuit breaker" is a common system design question. What to say: "After a set number of failures in a row (say, five), the breaker opens and fails fast to a fallback; after a cooldown one trial call decides whether to close it."
 
-### 116. SLOs and error budgets (`burn_rate`)
+### 119. SLOs and error budgets (`burn_rate`)
 
 An SLO (service level objective) is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your error budget.
 Alert on how fast you're using up the budget (the burn rate), not on every error. That pages people (sends an urgent alert to whoever is on call) only when it matters.

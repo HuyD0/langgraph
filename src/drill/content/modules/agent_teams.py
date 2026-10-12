@@ -553,6 +553,183 @@ fruit.append('kiwi')
     ),
 )
 
+lesson(MODULE, 'handoff_kept',
+    title='Did the hand-off lose it?',
+    learn=[
+        "In a team, the main agent sees only each helper's **final message**. If it retells that message in its own words, details fall out, like a game of telephone. The answer can still read well while the one fact that mattered, like an order number, is gone.",
+        'So check the **hand-off** (the moment one agent passes its work to another): list the facts a helper found, and see which ones reach the final answer word for word. The share kept says how much the hand-off loses, and the lost list says what.',
+        'The fix is in the prompts. Helpers put every finding in their final message, and the main agent passes it on word for word. In LangChain\'s tests, passing helper answers on unchanged, instead of rewording them, made the answers nearly 50 percent better.',
+        'Grade the final answer first. Then add hand-off checks, because hand-offs are where teams lose information.',
+    ],
+    example=example('One helper, one final answer', """The researcher found:
+  order 4412
+  refund approved
+  card ends 0099
+Final answer:
+  "Order 4412: refund approved.
+   It reaches you in 5 days."
+kept: 2 of 3, about 0.67
+lost: card ends 0099"""),
+    check=question(
+        "Your team's answers often leave out the order number, yet the trace shows the research helper found it. What should you try first?",
+        [
+            'Add one more helper that looks up the order number again',
+            'Give the main agent a bigger model, so it remembers more',
+            'Have helpers report every finding, passed on word for word',
+        ],
+        answer=2,
+        why='The fact was found, then lost at the hand-off. Another helper or a bigger model pays more for the same leak; passing the report on unchanged closes it.',
+    ),
+    angle=angle(
+        pattern='Check each, keep the misses',
+        text='One pass over the facts: test each one against the final text with `in`, and keep the misses in a list. The count of misses gives the share kept.',
+        say='"I grade the final answer first, then check the hand-offs: I list what each helper found and measure how much reaches the answer. Helpers report everything, and the main agent passes it on word for word."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: a scorer that checks the hand-off', """from mlflow.entities import (
+    Feedback, SpanType)
+from mlflow.genai.scorers import scorer
+
+# The researcher runs inside
+# mlflow.start_span(name="researcher",
+#   span_type=SpanType.AGENT)
+# and sets its outputs to
+# {"facts": [...]}.
+
+@scorer
+def handoff(trace, outputs):
+    helper = trace.search_spans(
+        span_type=SpanType.AGENT,
+        name="researcher")[0]
+    facts = helper.outputs["facts"]
+    final = str(outputs).lower()
+    kept = []
+    for f in facts:
+        if f.lower() in final:
+            kept.append(f)
+    share = len(kept) / len(facts)
+    return Feedback(
+        value=round(share, 2),
+        rationale="kept " + str(kept))
+
+# mlflow.genai.evaluate(data=data,
+#   predict_fn=run_team,
+#   scorers=[end_state, handoff])"""),
+    exercise=exercise(
+        title='What Got Lost',
+        topic='agents',
+        difficulty='easy',
+        fn='handoff_kept',
+        prompt="""Your function gets two things:
+
+- `found`: the facts a helper reported, as short strings, like `["order 4412", "refund approved"]`.
+- `final`: the text of the final answer, like `"Order 4412: refund approved."`.
+
+A fact is kept if it appears inside `final`, ignoring upper and lower case. Return a dict:
+
+- `"kept"`: the share of facts kept, from 0 to 1, rounded to 2 decimal places.
+- `"lost"`: the facts that were not kept, sorted A to Z.
+
+If `found` is empty, return `{"kept": 1.0, "lost": []}`.""",
+        pattern='Check each fact against the text, and keep the misses in a list.',
+        target='one pass over the facts',
+        realworld="LangChain found its simple supervisor lost quality by rewording its helpers' answers. Passing them on unchanged made answers nearly 50 percent better, and a hand-off check is how you spot the leak.",
+        starter="""def handoff_kept(found, final):
+    # your code here
+    pass
+""",
+        solution="""def handoff_kept(found, final):
+    if len(found) == 0:
+        return {"kept": 1.0, "lost": []}
+    text = final.lower()
+    lost = []
+    for fact in found:
+        if fact.lower() not in text:
+            lost.append(fact)
+    kept = len(found) - len(lost)
+    share = kept / len(found)
+    return {"kept": round(share, 2),
+            "lost": sorted(lost)}
+""",
+        cases=[
+            case(['order 4412', 'refund approved', 'card ends 0099'],
+                 'Order 4412: refund approved. It reaches you in 5 days.',
+                 expected={'kept': 0.67, 'lost': ['card ends 0099']}, sample=True),
+            case(['Refund Approved', '5 days'], 'refund approved, back in 5 days',
+                 expected={'kept': 1.0, 'lost': []}),
+            case([], 'Anything at all.', expected={'kept': 1.0, 'lost': []}),
+            case(['order 77', 'late fee'], 'Sorry, I could not find that.',
+                 expected={'kept': 0.0, 'lost': ['late fee', 'order 77']}),
+            case(['refund approved', 'order 4412', 'ships monday'],
+                 'We approved the refund for order 4412.',
+                 expected={'kept': 0.33, 'lost': ['refund approved', 'ships monday']}),
+        ],
+        guided="""def handoff_kept(found, final):
+    # Replace every ___ with real code, then run the tests.
+
+    # No facts? Nothing could be lost.
+    if len(found) == 0:
+        return {"kept": 1.0, "lost": []}
+    # Step 1: the final answer in lower case.
+    text = ___
+    lost = []
+    for fact in found:
+        # Step 2: this fact, in lower case,
+        #         is not inside text?
+        if ___:
+            lost.append(fact)
+    kept = len(found) - len(lost)
+    share = kept / len(found)
+    # Step 3: share rounded to 2 places.
+    return {"kept": ___,
+            "lost": sorted(lost)}
+""",
+        fills=['final.lower()', 'fact.lower() not in text', 'round(share, 2)'],
+        concepts=[
+            [
+                'lower',
+                '`s.lower()` gives a copy of the text in lower case, so "Order" and "order" match.',
+                """"Hello World".lower()
+# 'hello world'""",
+            ],
+            [
+                'in and not in, on text',
+                '`a in b` is True when the text `a` appears somewhere inside `b`. `not in` is the opposite.',
+                """"cat" in "a black cat"     # True
+"dog" not in "a black cat" # True""",
+            ],
+            [
+                'len',
+                '`len(items)` gives how many items a list holds. An empty list has length 0.',
+                """len(['a', 'b', 'c'])   # 3
+len([])                # 0""",
+            ],
+            [
+                'round',
+                '`round(x, 2)` keeps 2 decimal places.',
+                'round(2 / 3, 2)   # 0.67',
+            ],
+            [
+                'sorted',
+                '`sorted(items)` gives a new list in order, A to Z for words.',
+                "sorted(['pear', 'apple'])   # ['apple', 'pear']",
+            ],
+        ],
+        byhand='In lower case, final is "order 4412: refund approved. it reaches you in 5 days." "order 4412" is inside it: kept. "refund approved" is inside it: kept. "card ends 0099" is not: lost. That is 2 kept out of 3, and 2 divided by 3 is about 0.667, which rounds to 0.67. Return {"kept": 0.67, "lost": ["card ends 0099"]}.',
+        why='One look at each fact.',
+        gotchas=[
+            [
+                'Forgetting lower case',
+                '"Order 4412" is not inside "order 4412" for Python, because capitals count. Lower both sides before you compare.',
+            ],
+            [
+                'Grading only the final answer',
+                'An answer can read well and still drop a fact a helper found. The hand-off check shows where it fell out.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'checker_loop',
     title='A checker with a round limit',
     learn=[
@@ -853,6 +1030,442 @@ if best is None:
             [
                 'Dividing by all the team\'s passes',
                 'The team\'s 8 passes include the 6 one agent gets anyway. Divide the extra cost by the 2 extra passes, not by 8.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'tokens_by_agent',
+    title='Which helper costs the most?',
+    learn=[
+        "A team's bill is the sum of every helper's model calls. If the trace shows only one total, you can't tell which helper to make cheaper.",
+        'Give each helper its own **named span** (a labelled box in the trace), like "researcher" or "writer". Then the model calls inside each box add up to **tokens per agent**: the input tokens you sent plus the output tokens that came back.',
+        'Start with the biggest one. It is often a helper that reads long documents. Try a smaller model for just that helper, and keep the change only if your eval still passes.',
+    ],
+    example=example('One team run, three model calls', """researcher  3000 in, 400 out
+writer       900 in, 300 out
+researcher  2500 in, 500 out
+
+researcher: 3400 plus 3000, 6400
+writer:     1200
+→ look at the researcher first"""),
+    check=question(
+        'Your team\'s traces show 50,000 tokens a run, and every helper\'s span is called "agent". What should you do first to cut the cost?',
+        [
+            'Give each helper\'s span its own name, then see who uses most',
+            'Move every helper to a smaller model, then rerun the eval',
+            'Cut the team down to one agent, so it spends fewer tokens',
+        ],
+        answer=0,
+        why='With every span called "agent" you are guessing. Named spans show which helper uses the tokens, so you change one helper and leave the rest alone.',
+    ),
+    angle=angle(
+        pattern='Total by key, then pick the biggest',
+        text='One pass adds each call\'s tokens to its agent\'s total in a dict. A second pass over the names, A to Z, keeps the biggest, so a tie goes to the name that comes first.',
+        say='"I name every helper\'s span so the trace shows tokens per agent. Then I work on the biggest one first, and try a smaller model there only if my eval still passes."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: tokens per named helper', """import mlflow
+from mlflow.entities import SpanType
+from mlflow.tracing.constant import (
+    SpanAttributeKey)
+
+# 1. Name each helper's span. Under
+# mlflow.langchain.autolog(), each
+# LangGraph node's span is already
+# named after the node.
+def researcher(state):
+    with mlflow.start_span(
+            name="researcher",
+            span_type=SpanType.AGENT):
+        return research(state)
+
+# 2. A model call's span holds its
+# tokens, like {"input_tokens": 3000,
+# "output_tokens": 400,
+# "total_tokens": 3400}. Add each to
+# the span it sits in.
+USAGE = SpanAttributeKey.CHAT_USAGE
+totals = {}
+for t in mlflow.search_traces(
+        return_type="list"):
+    names = {}
+    for s in t.data.spans:
+        names[s.span_id] = s.name
+    for s in t.data.spans:
+        u = s.get_attribute(USAGE)
+        if u:
+            who = names.get(s.parent_id)
+            used = (u["input_tokens"]
+                    + u["output_tokens"])
+            totals[who] = (
+                totals.get(who, 0) + used)
+print(totals)"""),
+    exercise=exercise(
+        title='Tokens per Helper',
+        topic='agents',
+        difficulty='easy',
+        fn='tokens_by_agent',
+        prompt="""`calls` is a list of the model calls in one team run. Each is a dict like `{"agent": "researcher", "input_tokens": 3000, "output_tokens": 400}`: the helper that made the call, the tokens it sent, and the tokens that came back. There is at least one call.
+
+Add up each agent's tokens: input plus output, over all of its calls.
+
+Return a list of two things:
+
+- the name of the agent with the most tokens. If two agents tie, pick the name that comes first A to Z.
+- a dict of each agent's total, like `{"researcher": 6400, "writer": 1200}`.""",
+        pattern='Total by key in a dict, then keep the biggest.',
+        target='one pass over the calls, then one over the names',
+        realworld="Teams that run agents in production track cost per agent, not just per run. Anthropic's research team found that token use alone explained most of the differences in its results, so knowing which helper spends them matters.",
+        starter="""def tokens_by_agent(calls):
+    # your code here
+    pass
+""",
+        solution="""def tokens_by_agent(calls):
+    totals = {}
+    for c in calls:
+        used = c["input_tokens"] + c["output_tokens"]
+        name = c["agent"]
+        totals[name] = totals.get(name, 0) + used
+    top = None
+    for name in sorted(totals):
+        if top is None or totals[name] > totals[top]:
+            top = name
+    return [top, totals]
+""",
+        cases=[
+            case([
+                {'agent': 'researcher', 'input_tokens': 3000, 'output_tokens': 400},
+                {'agent': 'writer', 'input_tokens': 900, 'output_tokens': 300},
+                {'agent': 'researcher', 'input_tokens': 2500, 'output_tokens': 500},
+            ], expected=['researcher', {'researcher': 6400, 'writer': 1200}], sample=True),
+            case([
+                {'agent': 'solo', 'input_tokens': 100, 'output_tokens': 20},
+            ], expected=['solo', {'solo': 120}]),
+            case([
+                {'agent': 'writer', 'input_tokens': 500, 'output_tokens': 100},
+                {'agent': 'checker', 'input_tokens': 400, 'output_tokens': 200},
+            ], expected=['checker', {'writer': 600, 'checker': 600}]),
+            case([
+                {'agent': 'a', 'input_tokens': 1000, 'output_tokens': 0},
+                {'agent': 'b', 'input_tokens': 200, 'output_tokens': 900},
+            ], expected=['b', {'a': 1000, 'b': 1100}]),
+            case([
+                {'agent': 'planner', 'input_tokens': 200, 'output_tokens': 50},
+                {'agent': 'search', 'input_tokens': 1500, 'output_tokens': 100},
+                {'agent': 'search', 'input_tokens': 1500, 'output_tokens': 100},
+                {'agent': 'writer', 'input_tokens': 800, 'output_tokens': 900},
+                {'agent': 'planner', 'input_tokens': 300, 'output_tokens': 50},
+            ], expected=['search', {'planner': 600, 'search': 3200, 'writer': 1700}]),
+        ],
+        guided="""def tokens_by_agent(calls):
+    # Replace every ___ with real code, then run the tests.
+
+    totals = {}
+    for c in calls:
+        # Step 1: this call's tokens, input plus output.
+        used = ___
+        name = c["agent"]
+        # Step 2: add them to this agent's total
+        #         (it starts at 0).
+        totals[name] = ___ + used
+    # Names A to Z, so a tie keeps the first name.
+    top = None
+    for name in sorted(totals):
+        # Step 3: first name, or more than top's total?
+        if top is None or ___:
+            top = name
+    return [top, totals]
+""",
+        fills=['c["input_tokens"] + c["output_tokens"]', 'totals.get(name, 0)', 'totals[name] > totals[top]'],
+        concepts=[
+            [
+                'Adding up with a dict',
+                '`d.get(k, 0)` gives the total so far for `k`, or 0 if `k` is not there yet. Add the new amount to it.',
+                """spent = {}
+for item, cost in [('tea', 2), ('tea', 3)]:
+    spent[item] = spent.get(item, 0) + cost
+# spent is {'tea': 5}""",
+            ],
+            [
+                'sorted on a dict',
+                '`sorted(d)` gives the dict\'s keys as a list, A to Z.',
+                """ages = {'bo': 25, 'ann': 30}
+sorted(ages)   # ['ann', 'bo']""",
+            ],
+            [
+                'None and is None',
+                '`None` means "nothing yet". `x is None` checks for it.',
+                """best = None
+best is None   # True""",
+            ],
+            [
+                'or',
+                '`a or b` is True when either side is True. Python stops at the first True side, so the right side never runs when the left is True.',
+                """n = 0
+n == 0 or 10 / n > 1   # True, no error""",
+            ],
+            [
+                'A list of two things',
+                'A list can hold different kinds of things, like a word and a dict.',
+                """pair = ['tea', {'tea': 5}]
+pair[0]   # 'tea'""",
+            ],
+        ],
+        byhand='researcher\'s first call: 3000 plus 400 is 3400. writer: 900 plus 300 is 1200. researcher\'s second call: 2500 plus 500 is 3000, so researcher is now 3400 plus 3000, which is 6400. Now the names A to Z: researcher comes first, so it is the top so far. writer has 1200, which is not more than 6400. Return ["researcher", {"researcher": 6400, "writer": 1200}].',
+        why='Each call is added once, then each name is looked at once.',
+        gotchas=[
+            [
+                'Counting only input tokens',
+                'Output tokens usually cost several times more than input tokens. A helper that writes long reports can be the expensive one even if it reads little.',
+            ],
+            [
+                'Every helper called "agent"',
+                'If all the helper spans share one name, the trace adds them into one total, and you can\'t tell which helper to make cheaper.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'team_experiment',
+    title='One agent or a team: the experiment',
+    learn=[
+        'This lesson puts the module together. To find out whether a team beats one agent, run an **experiment**: both designs answer the same questions, and one agent is the **baseline**, the design you compare against.',
+        'Agents give different answers on different tries, so run each question 3 to 5 times. As in Reliable every time (pass hat k), a question counts as **passed every time** only if every try passed.',
+        'Write the **decision rule** before any run, so a lucky result can\'t move the goalposts. For example: the team wins only if it passes every time on at least 10 percent more of the questions, and one success costs at most 50 cents.',
+        'Add a third design: the team without its checker. Comparing the two teams shows what the checker buys you. Taking one part out to see what changes is called an **ablation**.',
+    ],
+    example=example('20 questions, 3 tries each', """Rule, written first: the team must
+gain at least 0.1 on "passed every
+time", at $0.50 a success or less.
+
+           every time   $ a success
+one agent  12 of 20     $0.04
+team       15 of 20     $0.35
+team, no
+checker    12 of 20     $0.30
+
+team gain: 0.75 minus 0.6 is 0.15
+→ the team wins, and the checker
+  is what wins it"""),
+    check=question(
+        'You run one agent and a team once each on 20 questions. The team passes 14 and one agent passes 12. What is the main problem with picking the team?',
+        [
+            'Twenty questions is too few to compare any two designs',
+            'One run each: agents vary, so 2 more passes may be luck',
+            'The team should have been run on harder questions only',
+        ],
+        answer=1,
+        why='The same agent can pass a question on one try and fail it on the next. Run each question 3 to 5 times and compare "passed every time", using a rule you wrote before the runs.',
+    ),
+    angle=angle(
+        pattern='Score each side, then apply a rule',
+        text='A small helper scores one design in one pass over its questions, using `all`. Then two checks written in advance give the verdict.',
+        say='"I compare a team with a one-agent baseline on the same questions, 3 to 5 runs each, and I write the decision rule first: the team must win on passed every time by a set margin and stay under a cost per success."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: the experiment, k runs per design', """import mlflow
+from mlflow.genai.scorers import scorer
+
+# The same questions for every design
+data = []
+for q in QUESTIONS:
+    data.append({"inputs": {"question": q}})
+
+@scorer
+def end_state(inputs, outputs):
+    # look up the real result in code
+    return refund_done(inputs["question"])
+
+designs = {"one-agent": run_one,
+           "team-v1": run_team,
+           "team-no-checker": run_bare}
+
+def tries(model_id):
+    # each question's tries, like the
+    # "runs" dict in the exercise
+    runs = {}
+    for t in mlflow.search_traces(
+            model_id=model_id,
+            return_type="list"):
+        q = t.data.request
+        a = t.search_assessments(
+            name="end_state")[0]
+        runs.setdefault(q, [])
+        runs[q].append(a.value)
+    return runs
+
+for name in designs:
+    m = mlflow.set_active_model(name=name)
+    # no repeat option: loop 3 times
+    for k in range(3):
+        mlflow.genai.evaluate(
+            data=data,
+            predict_fn=designs[name],
+            scorers=[end_state],
+            model_id=m.model_id)
+    print(name, tries(m.model_id))
+# cost: each trace's t.info.token_usage
+# times your price list"""),
+    exercise=exercise(
+        title='Who Wins the Experiment',
+        topic='agents',
+        difficulty='medium',
+        fn='team_verdict',
+        prompt="""Your function gets three things:
+
+- `one`: how one agent did, like `{"runs": {"q1": [True, False, True]}, "cost": 0.5}`. `runs` lists each question's tries (True means passed). `cost` is the dollars for all the tries.
+- `team`: how the team did, in the same shape, on the same questions.
+- `rule`: your decision rule, like `{"min_gain": 0.1, "max_cost_per_success": 0.5}`.
+
+For each design, "every time" is the share of its questions passed on every try.
+
+Return `"team"` if both of these hold:
+
+- the team's "every time" minus one agent's "every time", rounded to 2 places, is at least `min_gain`.
+- the team's cost divided by its passed tries is at most `max_cost_per_success`. With no passed tries, the team can't win.
+
+Otherwise return `"one agent"`.""",
+        pattern='Score each design with a small helper, then apply a rule written in advance.',
+        target='one pass over each design\'s tries',
+        realworld='Agent researchers now compare every team with a one-agent baseline on the same tasks, with repeat runs and cost next to accuracy. Teams often look better on one run than they are.',
+        starter="""def team_verdict(one, team, rule):
+    # your code here
+    pass
+""",
+        solution="""def team_verdict(one, team, rule):
+    team_rate = every_time(team["runs"])
+    one_rate = every_time(one["runs"])
+    gain = round(team_rate - one_rate, 2)
+    wins = 0
+    for q in team["runs"]:
+        wins += team["runs"][q].count(True)
+    if wins == 0:
+        return "one agent"
+    per_success = team["cost"] / wins
+    if gain < rule["min_gain"]:
+        return "one agent"
+    if per_success > rule["max_cost_per_success"]:
+        return "one agent"
+    return "team"
+
+
+def every_time(runs):
+    passed = 0
+    for q in runs:
+        if all(runs[q]):
+            passed += 1
+    return passed / len(runs)
+""",
+        cases=[
+            case(
+                {'runs': {'q1': [True, True, True], 'q2': [True, False, True]}, 'cost': 0.5},
+                {'runs': {'q1': [True, True, True], 'q2': [True, True, True]}, 'cost': 1.8},
+                {'min_gain': 0.1, 'max_cost_per_success': 0.5},
+                expected='team', sample=True),
+            case(
+                {'runs': {'q1': [True, True, True], 'q2': [True, False, True]}, 'cost': 0.5},
+                {'runs': {'q1': [True, True, True], 'q2': [False, True, True]}, 'cost': 1.0},
+                {'min_gain': 0.1, 'max_cost_per_success': 0.5},
+                expected='one agent'),
+            case(
+                {'runs': {'q1': [True, False, True], 'q2': [False, False, True]}, 'cost': 0.3},
+                {'runs': {'q1': [True, True, True], 'q2': [True, True, True]}, 'cost': 6.0},
+                {'min_gain': 0.1, 'max_cost_per_success': 0.5},
+                expected='one agent'),
+            case(
+                {'runs': {'a': [True, True], 'b': [True, True], 'c': [True, False], 'd': [False, False], 'e': [False, True]}, 'cost': 1.0},
+                {'runs': {'a': [True, True], 'b': [True, True], 'c': [True, True], 'd': [False, True], 'e': [True, False]}, 'cost': 2.0},
+                {'min_gain': 0.2, 'max_cost_per_success': 0.5},
+                expected='team'),
+            case(
+                {'runs': {'q1': [False, False], 'q2': [False, False]}, 'cost': 0.4},
+                {'runs': {'q1': [False, False], 'q2': [False, False]}, 'cost': 1.0},
+                {'min_gain': 0.0, 'max_cost_per_success': 1.0},
+                expected='one agent'),
+            case(
+                {'runs': {'q1': [False, False], 'q2': [True, True]}, 'cost': 0.2},
+                {'runs': {'q1': [True, True], 'q2': [True, True]}, 'cost': 2.0},
+                {'min_gain': 0.5, 'max_cost_per_success': 0.5},
+                expected='team'),
+        ],
+        guided="""def team_verdict(one, team, rule):
+    # Replace every ___ with real code, then run the tests.
+
+    # every_time is the helper below.
+    team_rate = every_time(team["runs"])
+    one_rate = every_time(one["runs"])
+    gain = round(team_rate - one_rate, 2)
+    # Step 1: count the team's passed tries.
+    wins = 0
+    for q in team["runs"]:
+        wins += ___
+    if wins == 0:
+        return "one agent"
+    per_success = team["cost"] / wins
+    # Step 2: either check fails? One agent.
+    if gain < rule["min_gain"]:
+        return "one agent"
+    if ___:
+        return "one agent"
+    return "team"
+
+
+def every_time(runs):
+    # Share of questions passed on every try.
+    passed = 0
+    for q in runs:
+        # Step 3: did every try of q pass?
+        if ___:
+            passed += 1
+    return passed / len(runs)
+""",
+        fills=['team["runs"][q].count(True)', 'per_success > rule["max_cost_per_success"]', 'all(runs[q])'],
+        concepts=[
+            [
+                'A helper function',
+                'You can write your own small function and call it from another, so the same work is written once. It can sit below the function that uses it.',
+                """def double(n):
+    return n * 2
+
+double(4) + double(1)   # 10""",
+            ],
+            [
+                'all',
+                '`all(items)` is True only if every item in the list is True.',
+                """all([True, True])    # True
+all([True, False])   # False""",
+            ],
+            [
+                'count',
+                '`items.count(x)` says how many times `x` is in the list.',
+                """['a', 'b', 'a'].count('a')   # 2""",
+            ],
+            [
+                'round',
+                '`round(x, 2)` keeps 2 decimal places. Rounding first makes 0.6 minus 0.4 compare as 0.2, not 0.19999999999999996.',
+                """0.6 - 0.4             # 0.19999999999999996
+round(0.6 - 0.4, 2)   # 0.2""",
+            ],
+            [
+                'Returning early',
+                '`return` ends the function right there, so the checks after it never run.',
+                """def grade(score):
+    if score < 50:
+        return 'fail'
+    return 'pass'""",
+            ],
+        ],
+        byhand='One agent: q1 passed all 3 tries, q2 failed one, so 1 of its 2 questions passed every time: 0.5. The team: q1 and q2 both passed all 3 tries, so 2 of 2: 1.0. The gain is 1.0 minus 0.5, which is 0.5, and that is at least 0.1. The team passed 6 tries for $1.80, so one success cost 1.8 divided by 6, which is 0.3, and that is at most 0.5. Both checks hold. Return "team".',
+        why='Each try is looked at once, then two checks.',
+        gotchas=[
+            [
+                'Writing the rule after the runs',
+                'Once you have seen the numbers, it is easy to pick a rule the team happens to meet. Write the rule down first.',
+            ],
+            [
+                'One run per design',
+                'Agents vary from try to try, so one run each can crown a lucky design. Run each question 3 to 5 times and compare "passed every time".',
             ],
         ],
     ),
