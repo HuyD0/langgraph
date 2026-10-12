@@ -191,13 +191,25 @@ textarea#code:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-m
 .keys::-webkit-scrollbar { display: none; }
 .keys button { flex: none; font: 600 15px var(--mono); min-width: 44px; height: 44px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; cursor: pointer; }
 @media (pointer: coarse) { textarea#code { font-size: 16px; min-height: 34vh; } body.editing .keys { display: grid; } body.editing .foot { display: none; } }
-.buildbar { display: grid; gap: 6px; }
+/* The build bar only holds the typing keys, shown on touch while editing (the step bar is hidden then, so Run lives in the keys). */
+.buildbar { display: none; gap: 6px; }
+@media (pointer: coarse) { body.editing .buildbar { display: grid; } }
+/* The task folds to one line after the first run; tap to read it again. */
+details.task > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 32px; }
+details.task > summary::-webkit-details-marker { display: none; }
+details.task > summary h2 { flex: 1 1 auto; min-width: 0; }
+details.task > summary::after { content: "−"; font: 600 18px var(--mono); color: var(--muted); }
+details.task:not([open]) > summary::after { content: "+"; }
+details.task .taskbody { display: grid; gap: 14px; margin-top: 14px; }
+details.task .taskbody > * { min-width: 0; }
+@media (max-width: 400px) { .stepbtn .ic { display: none; } }
 .bb-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .keys { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .krow { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .krow::-webkit-scrollbar { display: none; }
 .keys button { min-width: 40px; height: 40px; }
-.keys .knext { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-family: var(--body); }
+.keys .knext { color: var(--accent); font-family: var(--body); }
+.keys .krun { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-family: var(--body); }
 .keys .kname { color: var(--accent); font-size: 14px; }
 .keys .ksnip { font-size: 14px; }
 .keys .ksep { flex: none; width: 1px; background: var(--line); margin-inline: 2px; }
@@ -460,19 +472,22 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   <nav class="stepper" id="stepper" aria-label="Lesson steps"></nav>
   <section class="pane" id="paneText" aria-live="polite"></section>
   <section class="pane" id="paneBuild" hidden>
-    <div class="buildbar"><div class="bb-row"><span class="t" id="buildTitle"></span><button class="btn primary" id="runTop"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span>Run tests</span></button></div><div class="keys" id="keys" role="toolbar" aria-label="Typing shortcuts"></div></div>
-    <div class="card task">
-      <h2 id="taskTitle"></h2>
+    <div class="buildbar"><div class="keys" id="keys" role="toolbar" aria-label="Typing shortcuts"></div></div>
+    <details class="card task" id="taskBox" open>
+      <summary><h2 id="taskTitle"></h2></summary>
+      <div class="taskbody">
       <div id="taskPrompt"></div>
       <div class="example"><span class="meta">Example. More tests stay hidden until you run your code.</span><pre class="code" id="taskExample"></pre></div>
       <p class="byhand" id="taskByhand" hidden></p>
       <div class="goal" id="taskGoal"></div>
       <div class="callout" id="moneyNote" hidden><b>Made-up data</b><p>These numbers are invented, shaped like your finance tracker's. To run this on your real data, on your Mac: <code id="moneyCmd"></code></p></div>
-    </div>
+      </div>
+    </details>
     <details class="quiet" id="help"><summary>Python you'll need</summary><div><div id="blocksBody" class="pane"></div></div></details>
     <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Your code"></textarea>
+    <div class="result idle" id="result">Write your code, then run the tests. Python runs right here in the page.</div>
+    <pre class="out" id="stdout" hidden></pre>
     <div class="tools">
-      <button class="btn primary" id="run"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span>Run tests</span></button>
       <button class="btn" id="hintBtn"><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg><span>Get a hint</span></button>
       <button class="btn quiet" id="moreBtn" aria-expanded="false" aria-controls="morePanel">More</button>
     </div>
@@ -484,12 +499,10 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
     <div class="confirm" id="guideConfirm" hidden><span id="guideMsg">This replaces your code.</span><button class="btn" id="guideYes">Replace my code</button><button class="btn quiet" id="guideNo">Keep my code</button></div>
     <div class="confirm" id="solConfirm" hidden><span>Try a hint first? Seeing the answer too early teaches less.</span><button class="btn" id="solYes">Show it anyway</button><button class="btn quiet" id="solNo">Keep trying</button></div>
     <div class="feed" id="feed"></div>
-    <div class="result idle" id="result">Write your code, then run the tests. Python runs right here in the page.</div>
-    <pre class="out" id="stdout" hidden></pre>
   </section>
 </main>
 
-<nav class="foot" id="foot" hidden aria-label="Lesson navigation"><div class="wrap"><button class="btn" id="prevBtn">Back</button><span class="grow"></span><button class="btn primary" id="nextBtn">Next</button></div></nav>
+<nav class="foot" id="foot" hidden aria-label="Lesson navigation"><div class="wrap"><button class="btn" id="prevBtn">Back</button><span class="grow"></span><button class="btn quiet" id="midBtn" hidden></button><button class="btn primary" id="nextBtn">Next</button></div></nav>
 
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-label="Notebook" role="dialog" aria-modal="true">
@@ -527,8 +540,8 @@ const BANK = D.bank, LEARN = D.learn, LESSONS = D.lessons;
 const byId = Object.fromEntries(BANK.map(p => [p.id, p]));
 const ORDER = D.modules.flatMap(m => m.lessons);
 const modOf = {}; D.modules.forEach(m => m.lessons.forEach(id => { modOf[id] = m; }));
-const STEPS = ["Learn", "Check", "Build", "Interview"];
-const STEP_ICON = ["book", "help", "code", "mic"];
+const STEPS = ["Learn", "Check", "Build", "Explain"];
+const STEP_ICON = ["book", "help", "code", "quote"];
 const MOD_ICON = { foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", platform: "cloud", classics: "trophy", money: "activity" };
 const STAGE_ICON = ["target", "compass", "wrench", "clipcheck", "rocket", "activity"];
 const ic = (n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
@@ -776,29 +789,33 @@ function setStep(i) {
   renderFoot();
   window.scrollTo(0, 0);
 }
+// One primary action per step. On Build it is Run tests, in this bar; Skip is quiet, beside it.
+const building = () => cur.kind === "practice" || cur.step === 2;
+const solvedNow = () => !!(cur.p && progress.solved[cur.p.id]);
 function renderFoot() {
-  const prev = $("prevBtn"), next = $("nextBtn"), i = cur.step;
-  if (cur.kind === "practice") {
-    prev.innerHTML = ic("arrowl") + (cur.from ? "Back to lesson" : "Path");
-    next.hidden = true; return;
-  }
-  next.hidden = false;
-  prev.innerHTML = ic(i === 0 ? "home" : "arrowl") + (i === 0 ? "Path" : "Back");
-  const L = LESSONS[cur.id], s = lp(cur.id);
-  let label, quiet = false;
-  if (i === 0) label = "Next: Check";
-  else if (i === 1) { if (s.checked === null) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
-  else if (i === 2) { if (progress.solved[cur.id]) label = "Next: Interview"; else { label = "Skip for now"; quiet = true; } }
-  else label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path";
-  next.innerHTML = label + ic(i === 3 ? "check" : "arrowr");
-  next.className = quiet ? "btn" : "btn primary";
+  const prev = $("prevBtn"), next = $("nextBtn"), mid = $("midBtn"), i = cur.step;
+  prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
+  mid.hidden = true; next.hidden = false; delete next.dataset.run;
+  let label, icon = "arrowr", quiet = false;
+  if (building() && !solvedNow()) {
+    label = "Run tests"; icon = "play"; next.dataset.run = "";
+    if (cur.kind === "lesson") { mid.hidden = false; mid.textContent = "Skip"; mid.dataset.act = "skip"; }
+  } else if (building()) {
+    mid.hidden = false; mid.textContent = "Run again"; mid.dataset.act = "run";
+    label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
+  } else if (i === 0) label = "Next: Check";
+  else if (i === 1) { if (lp(cur.id).checked === null) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
+  else { label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path"; icon = "check"; }
+  next.innerHTML = icon === "play" ? ic("play") + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
+  next.className = quiet ? "btn quiet" : "btn primary";
 }
 function goPrev() {
   if (cur.kind === "practice") { if (cur.from) openLesson(cur.from, 3); else goHome(); return; }
   if (cur.step === 0) goHome(); else setStep(cur.step - 1);
 }
 function goNext() {
-  if (cur.kind !== "lesson") return;
+  if (building() && !solvedNow()) { runTests(); return; }
+  if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
   const s = lp(cur.id); s.done = true; s.step = 3; markDay();
   const after = ORDER[ORDER.indexOf(cur.id) + 1];
@@ -845,7 +862,7 @@ function anglePane() {
     ${askPanel()}`;
 }
 
-// ---------- spot the gotcha: one challenge per lesson, in its Interview step ----------
+// ---------- spot the gotcha: one challenge per lesson, in its Explain step ----------
 // Each card in extras.py names its lesson. You see the risky code, pick the rule it breaks,
 // then watch it turn into the fix. Habits about how you work show in the Build step instead.
 const GOTCHAS = {}, HABITS = {};
@@ -1029,13 +1046,14 @@ async function saveAsk(i) {
 }
 
 // ---------- build step ----------
-let hintLevel = 0, lastRun = null, sample = null, sampleOff = true, busy = false;
+let hintLevel = 0, lastRun = null, sample = null, sampleOff = true, busy = false, taskFolds = true;
+const runBtns = () => [...document.querySelectorAll("[data-run]")];
 const draftKey = id => "drill-draft-" + id;
 function loadProblem(p) {
   hintLevel = 0; lastRun = null;
   const Ln = LEARN[p.id] || {};
-  $("buildTitle").textContent = p.title;
   $("taskTitle").textContent = p.title;
+  $("taskBox").open = true; taskFolds = true;
   $("taskPrompt").innerHTML = p.prompt.split("\n\n").map(x => /^\s*[-*]\s/m.test(x) ? blockHtml(x) : "<p>" + md(x) + "</p>").join("");
   const ex = p.cases.find(c => c.sample) || p.cases[0];
   $("taskExample").textContent = exampleText(p, ex);
@@ -1060,10 +1078,11 @@ function setResult(kind, head, body) { $("result").className = "result " + kind;
 async function runTests() {
   if (busy) return;
   if (typeof Sk === "undefined") { setResult("fail", "The Python engine didn't load", "Check your connection and reload the page."); return; }
-  busy = true; for (const b of [$("run"), $("runTop")]) { b.disabled = true; setLabel(b, "Running…"); }
+  if (taskFolds) { $("taskBox").open = false; taskFolds = false; }  // read once; it folds so the code and results sit together
+  busy = true; for (const b of runBtns()) { b.disabled = true; b.dataset.was = b.textContent.trim(); setLabel(b, "Running…"); }
   const code = $("code").value, p = cur.p;
   const { out, error } = await runPython(harness(p, code));
-  busy = false; for (const b of [$("run"), $("runTop")]) { b.disabled = false; setLabel(b, "Run tests"); }
+  busy = false; for (const b of runBtns()) { b.disabled = false; setLabel(b, b.dataset.was); }
   const results = [], prints = [];
   for (const line of out.split("\n")) {
     const m = line.match(/^@@(\d+)\|(ok|fail|err)\|(.*)$/);
@@ -1087,13 +1106,12 @@ async function runTests() {
       const prev = progress.solved[p.id];
       progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: hintLevel };
       $("result").className = "result pass";
-      const nextLabel = cur.kind === "lesson" ? "Next: Interview" : (cur.from ? "Back to lesson" : "Back to path");
       $("result").innerHTML = `<div class="score">${ic("check")} ${total}/${total} passed</div><div class="dots">${dots}</div>
         <div>Solved. The pattern: <em>${md(p.pattern)}</em></div>${habitLine("pass")}
-        <div class="tools"><button class="btn primary" id="afterPass">${nextLabel}${ic("arrowr")}</button><button class="btn" id="reviewBtn"${sampleOff ? " hidden" : ""}>Review my code</button></div>`;
-      $("afterPass").onclick = () => { if (cur.kind === "lesson") setStep(3); else goPrev(); };
+        <div class="tools"><button class="btn" id="reviewBtn"${sampleOff ? " hidden" : ""}>Review my code</button></div>`;
       $("reviewBtn").onclick = review;
-      if (cur.kind === "lesson") { $("stepper").querySelector('[data-step="2"]').classList.add("done"); renderFoot(); }
+      if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
+      renderFoot();
     } else {
       const c = p.cases[firstBad], r = results[firstBad] || { status: "err", got: error || "did not finish" };
       const gotLabel = r.status === "err" ? "error" : "got";
@@ -1233,6 +1251,7 @@ function renderKeys(p) {
   const { names, keys, methods } = vocab(p);
   const b = (cls, attr, val, label) => `<button class="${cls}" ${attr}="${esc(val)}">${esc(label)}</button>`;
   $("keys").innerHTML = `<div class="krow">
+      <button class="krun" data-kact="run" data-run aria-label="Run tests"><span>Run</span></button>
       <button class="knext" data-kact="next" aria-label="Go to the next blank">Next ___</button>
       <button data-kact="dedent" aria-label="Indent less">⇤</button><button data-kact="indent" aria-label="Indent more">⇥</button>
       <span class="ksep"></span>${names.map(n => b("kname", "data-snip", n, n)).join("")}
@@ -1634,6 +1653,7 @@ $("keys").addEventListener("pointerdown", e => { if (e.target.closest("button"))
 $("keys").addEventListener("click", e => {
   const k = e.target.closest("button"); if (!k) return;
   ed.focus();
+  if (k.dataset.kact === "run") { runTests(); return; }
   if (k.dataset.kact === "next") { if (!nextBlank(false)) toast("No blanks left"); return; }
   if (k.dataset.kact === "dedent") { editLines(lines => lines.map(l => l.replace(/^ {1,4}/, ""))); return; }
   if (k.dataset.kact === "indent") { insertSnippet("    "); return; }
@@ -1648,7 +1668,7 @@ $("homeBtn").onclick = goHome;
 $("backPath").onclick = () => { if (cur && cur.kind === "practice" && cur.from) openLesson(cur.from, 3); else goHome(); };
 $("prevBtn").onclick = goPrev;
 $("nextBtn").onclick = goNext;
-$("run").onclick = runTests; $("runTop").onclick = runTests;
+$("midBtn").onclick = () => { if ($("midBtn").dataset.act === "run") runTests(); else setStep(3); };
 $("hintBtn").onclick = hint;
 for (const b of document.querySelectorAll("[data-mode]")) b.onclick = () => setMode(b.dataset.mode);
 $("guideYes").onclick = applyStart; $("guideNo").onclick = () => { $("guideConfirm").hidden = true; startMode = startMode === "scaffold" ? "blank" : "scaffold"; store.set("drill-start", startMode); renderMode(); };

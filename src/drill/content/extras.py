@@ -326,7 +326,7 @@ GLOSSARY = [
 
 # [title, explanation, before, after, where it appears]
 #
-# Each card is a "Spot the gotcha" challenge in the Interview step of the lesson named last:
+# Each card is a "Spot the gotcha" challenge in the Explain step of the lesson named last:
 # the learner sees `before`, picks the rule it breaks, and watches it turn into `after`.
 # A few habits are about how you work rather than about code; they appear in the Build step
 # instead, at the moment they apply: "build:error" under an error, "build:fail" under failing

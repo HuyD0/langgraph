@@ -1,4 +1,4 @@
-"""The learning path, one file per module. ORDER is the order the page shows them."""
+"""The learning path, one file per module. ORDER is the order the page teaches them in."""
 
 from __future__ import annotations
 
@@ -6,21 +6,14 @@ import importlib
 
 from drill.content.model import Module
 
+# Phase by phase, as LIFECYCLE below lists them, so "next lesson" never jumps ahead a phase.
 ORDER = [
-    'foundations',
-    'experiments',
-    'llm-apps',
-    'rag',
-    'agents',
-    'security',
-    'evals',
-    'models',
-    'tracing',
-    'llmops',
-    'production',
-    'reliability',
-    'shipping',
-    'platform',
+    'foundations',                                          # Frame
+    'experiments',                                          # Design
+    'llm-apps', 'rag', 'agents', 'production', 'security',  # Build and trace
+    'evals', 'models',                                      # Evaluate
+    'shipping', 'platform',                                 # Ship
+    'tracing', 'llmops', 'reliability',                     # Monitor
 ]
 
 # The ML lifecycle strip at the top of the page: which modules belong to which stage.
