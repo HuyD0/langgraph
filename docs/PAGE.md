@@ -30,14 +30,17 @@ The money & health track comes from `drill.mine` (`drill.mine.export`), with mad
 
 Home shows the path as a sticker book, with the six phases always in view:
 
-- **The phase rail** sits at the top of Home and of every lesson: the six phases in order, done
-  phases filled, the current one large. Tap it to open the album.
+- **The phase rail** shows the six phases in order, done phases filled, the current one large and
+  blue. On Home each phase is a button: tap one to see its page of stickers, and "Back to today"
+  returns to the current phase. Above every lesson the rail is a reminder only, so a tap never
+  leaves the lesson.
 - **One shape per phase**: circle (Frame), rounded square (Design), hexagon (Build and trace),
   diamond (Evaluate), shield (Ship), pentagon (Monitor). Every lesson is a sticker in its phase's
   shape, with its module's icon inside, so one sticker tells you where an idea lives.
-- **Today's phase** is a page of stickers, one scene per module. The scene holding the next lesson
-  is open; the rest fold to a row of small shapes. The next phase is previewed below it.
-- **The album** lists all six phases with their stickers. Finishing a lesson shows its new sticker.
+- **A phase's page** holds its stickers, one scene per module. Small phases open in full; in a big
+  one, the scene with the next lesson is open and the rest fold to a row of small shapes. Today's
+  page previews the next phase below it.
+- **Finishing a lesson** shows its new sticker.
 
 Shape and position carry the phases, not colour: colour stays for passed, failed and the next
 step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so

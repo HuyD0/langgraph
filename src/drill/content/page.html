@@ -550,17 +550,28 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .savestate { justify-content: center; padding-top: 8px; }
 
 /* the sticker book: six phases, one shape each, always in view */
-.rail { display: block; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px 6px; cursor: pointer; color: var(--fg); }
-.rail:focus-visible, .stk:focus-visible, .albumhead:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.rail svg { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; overflow: visible; }
-.rail.mini svg { max-width: 360px; margin: 0; }
-.rail.mini { border: 0; border-radius: 10px; background: none; padding: 4px 0 2px; }
-.rail .track { stroke: var(--line); stroke-width: 3; }
-.rail .track.on { stroke: var(--pass); }
-.rail text { font: 11px var(--body); fill: var(--muted); }
-.rail text.now { fill: var(--accent); font-weight: 600; }
-.rail text.done { fill: var(--fg); font-weight: 600; }
-.rail text.n { font: 10px var(--mono); fill: var(--accent); }
+.rail { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px 4px; }
+.rail::before, .rail .fill { content: ""; position: absolute; left: calc(4px + (100% - 8px) / 12); top: 31px; height: 3px; background: var(--line); border-radius: 2px; }
+.rail::before { right: calc(4px + (100% - 8px) / 12); }
+.rail .fill { background: var(--pass); }
+.rail .ph { position: relative; z-index: 1; display: grid; grid-template-rows: 46px auto auto; justify-items: center; align-items: center; align-content: start; gap: 1px; background: none; border: 0; border-radius: 10px; padding: 0 0 4px; cursor: pointer; color: var(--muted); min-height: 44px; font: inherit; }
+.rail .ph svg { display: block; overflow: visible; }
+.rail .nm { font-size: 12px; line-height: 1.3; padding-bottom: 2px; border-bottom: 2px solid transparent; }
+.rail .cnt { font: 10px var(--mono); color: var(--accent); min-height: 13px; }
+.rail .ph.done .nm { color: var(--fg); }
+.rail .ph.now .nm { color: var(--accent); font-weight: 600; }
+.rail .ph[aria-pressed="true"] .nm { color: var(--fg); font-weight: 600; border-bottom-color: var(--fg); }
+.rail .ph.now[aria-pressed="true"] .nm { color: var(--accent); border-bottom-color: var(--accent); }
+.rail .ph[aria-pressed="true"] .cnt { color: var(--muted); }
+.rail .ph.now[aria-pressed="true"] .cnt { color: var(--accent); }
+.rail .ph:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) { .rail button.ph:hover .nm { color: var(--fg); } }
+.rail.mini { border: 0; background: none; padding: 2px 0 0; max-width: 340px; }
+.rail.mini::before, .rail.mini .fill { top: 20px; }
+.rail.mini .ph { cursor: default; min-height: 0; }
+.rail.mini .ph { grid-template-rows: 36px; }
+.railcap { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bdg .sh { stroke-width: 2; fill: var(--surface); stroke: var(--muted); }
 .bdg .ico { fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .bdg.done .sh { fill: var(--fg); stroke: var(--fg); }
@@ -586,7 +597,8 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .stk { display: grid; justify-items: center; align-content: start; gap: 4px; background: none; border: 0; border-radius: 10px; padding: 4px 2px 6px; cursor: pointer; color: var(--fg); min-height: 44px; }
 .stk svg { width: 56px; height: 56px; overflow: visible; }
 .stk .lbl { font-size: 11.5px; line-height: 1.25; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
-.stk .sh { stroke-width: 2; fill: none; stroke: var(--line); stroke-dasharray: 4 4; }
+.stk .sh { stroke-width: 1.6; fill: none; stroke: var(--muted); stroke-dasharray: 4 4; opacity: .7; }
+.stk.done .sh, .stk.now .sh { opacity: 1; }
 .stk .ico { fill: none; stroke: var(--fg); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .stk.done .sh { fill: var(--surface); stroke: var(--fg); stroke-dasharray: none; }
 .stk.done .lbl { color: var(--fg); }
@@ -605,19 +617,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .upnext .top-row { display: flex; align-items: center; gap: 10px; }
 .upnext .top-row svg { width: 26px; height: 26px; flex: none; }
 .upnext p { margin: 0; font-size: 14px; color: var(--muted); }
-#album { padding-block: 16px 48px; }
-.albumlist { display: grid; gap: 10px; }
-.albumhead { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; text-align: left; color: var(--fg); }
-.albumhead[aria-expanded="true"] { border-radius: 14px 14px 0 0; }
-.albumhead > svg { width: 48px; height: 48px; overflow: visible; }
-.albumhead .mt { display: grid; gap: 4px; min-width: 0; }
-.albumhead .mt b { font-weight: 600; }
-.albumhead .mt span { font-size: 13px; color: var(--muted); }
-.albumhead .n { font: 13px var(--mono); color: var(--muted); }
-.albumhead .n.full { color: var(--pass); }
-.albumhead.now { border-color: var(--accent); }
-.albumbody { background: var(--surface); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; padding: 4px 12px 12px; display: grid; gap: 10px; }
-.loopnote { font-size: 13px; color: var(--muted); padding: 2px 4px; }
 .railbar { margin-bottom: 4px; }
 .lessonhead { display: flex; align-items: flex-start; gap: 12px; }
 .lessonhead .lesson-title { flex: 1; min-width: 0; }
@@ -644,8 +643,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 </header>
 
 <main id="home" class="wrap"></main>
-
-<main id="album" class="wrap" hidden></main>
 
 <main id="lesson" class="wrap" hidden>
   <div class="railbar" id="lessonRail"></div>
@@ -907,7 +904,7 @@ function markFor(id, isLesson) {
   }
   return progress.solved[id] ? '<span class="mark done" aria-label="Solved">✓</span>' : '<span class="mark" aria-label="Not solved"></span>';
 }
-let openMods = null, lifeSel = null;
+let openMods = null, lifeSel = null, viewPh = null;
 // The six phases of the path, in order; every module belongs to exactly one (test_content checks it).
 const PHASES = D.lifecycle.map((st, i) => Object.assign({ key: "p" + i }, st));
 const phaseOf = Object.fromEntries(PHASES.flatMap(ph => ph.modules.map(mid => [mid, ph])));
@@ -944,27 +941,27 @@ function phState(i) {
 function badge(i, r, st) {
   return `<g class="bdg ${st}">${st === "now" ? phShape(i, r + 6).replace('class="sh"', 'class="halo"') : ""}${phShape(i, r)}${shIcon(PH_ICON[i], r * 1.1)}</g>`;
 }
-const badgeSvg = (i, r, st, cls) => `<svg${cls ? ` class="${cls}"` : ""} viewBox="${-r - 8} ${-r - 8} ${2 * r + 16} ${2 * r + 16}" aria-hidden="true">${badge(i, r, st)}</svg>`;
-// The rail: the six phases in order. Big on Home with names, small above every lesson; it opens the album.
-function railHtml(mini, focus) {
-  const W = 360, xs = PHASES.map((_, i) => 26 + i * 61.6), y = mini ? 18 : 24;
+const badgeSvg = (i, r, st, cls) => `<svg${cls ? ` class="${cls}"` : ""} width="${2 * r + 16}" height="${2 * r + 16}" viewBox="${-r - 8} ${-r - 8} ${2 * r + 16} ${2 * r + 16}" aria-hidden="true">${badge(i, r, st)}</svg>`;
+// The rail: the six phases in order. On Home each phase is a button that shows its page of stickers;
+// above a lesson it is a reminder only, so a stray tap never leaves the lesson.
+function railHtml(mini, focus, viewing) {
   const sts = PHASES.map((_, i) => phState(i));
   const lastDone = sts.lastIndexOf("done");
-  let out = `<path class="track" d="M${xs[0]} ${y}H${xs[5]}"/>` + (lastDone >= 0 ? `<path class="track on" d="M${xs[0]} ${y}H${xs[Math.min(lastDone + 1, 5)]}"/>` : "");
-  const parts = [];
-  PHASES.forEach((ph, i) => {
-    const st = focus === i && sts[i] !== "done" ? "now" : (focus != null && focus !== i && sts[i] === "now" ? "" : sts[i]);
-    const r = mini ? (st === "now" ? 11 : 8.5) : (st === "now" ? 16 : 12);
-    out += `<g transform="translate(${xs[i].toFixed(1)} ${y})">${badge(i, r, st)}</g>`;
+  const items = PHASES.map((ph, i) => {
+    const st = focus != null ? (sts[i] === "done" ? "done" : focus === i ? "now" : "") : sts[i];
+    const r = mini ? (st === "now" ? 10 : 8) : (st === "now" ? 15 : 12);
     const ids = phLessons(ph), d = ids.filter(isDoneL).length;
-    if (!mini) {
-      out += `<text x="${xs[i].toFixed(1)}" y="${y + 34}" text-anchor="middle" class="${st}">${esc(ph.name.split(" ")[0])}</text>`;
-      if (st === "now") out += `<text x="${xs[i].toFixed(1)}" y="${y + 47}" text-anchor="middle" class="n">${d}/${ids.length}</text>`;
-    }
-    parts.push(`${ph.name}: ${st === "done" ? "done" : d + " of " + ids.length}`);
-  });
-  const h = mini ? 36 : 78;
-  return `<button class="rail${mini ? " mini" : ""}" data-album aria-label="The six phases. ${esc(parts.join(", "))}. Open the album."><svg viewBox="0 0 ${W} ${h}" aria-hidden="true">${out}</svg></button>`;
+    const say = `${ph.name}, ${st === "done" ? "done" : d + " of " + ids.length}${st === "now" ? ", you are here" : ""}`;
+    const pic = badgeSvg(i, r, st);
+    if (mini) return `<span class="ph">${pic}</span>`;
+    return `<button class="ph ${st}" data-phase="${i}" aria-pressed="${viewing === i}" aria-label="${esc(say)}">${pic}<span class="nm">${esc(ph.name.split(" ")[0])}</span><span class="cnt">${st === "now" || viewing === i ? d + "/" + ids.length : ""}</span></button>`;
+  }).join("");
+  const fill = lastDone >= 0 ? `<i class="fill" style="width: calc((100% - 8px) / 6 * ${Math.min(lastDone + 1, 5)})"></i>` : "";
+  if (mini) {
+    const ph = PHASES[focus];
+    return `<div class="rail mini" role="img" aria-label="Phase ${focus + 1} of 6, ${esc(ph.name)}">${fill}${items}</div><div class="railcap">${esc(ph.name)} · phase ${focus + 1} of ${PHASES.length}</div>`;
+  }
+  return `<nav class="rail" aria-label="The six phases">${fill}${items}</nav>`;
 }
 function stickerState(id) {
   if (isDoneL(id)) return "done";
@@ -989,7 +986,9 @@ function phasePage(i, prefix) {
   const ph = PHASES[i], ids = phLessons(ph), d = ids.filter(isDoneL).length, nid = nextLesson();
   const scenes = ph.modules.map(mid => {
     const m = MOD[mid], md_ = m.lessons.filter(isDoneL).length, key = prefix + mid;
-    const open = openMods.has(key) || (!openMods.has("x" + key) && (ph.modules.length === 1 || m.lessons.includes(nid)));
+    // Open by default: a small phase in full; in a big one, the scene with the next lesson, else the first.
+    const here = ph.modules.find(x => MOD[x].lessons.includes(nid)) || ph.modules[0];
+    const open = openMods.has(key) || (!openMods.has("x" + key) && (ids.length <= 16 || mid === here));
     return `<div class="scene"><button class="scenehead" data-scene="${key}" aria-expanded="${open}">${ic(MOD_ICON[mid] || "book")}<b>${esc(m.title)}</b><span class="n${md_ === m.lessons.length ? " full" : ""}">${md_}/${m.lessons.length}</span>${ic("chevron", "chev")}</button>
       ${open ? `<div class="stickers">${m.lessons.map(sticker).join("")}</div>` : minis(m.lessons)}</div>`;
   }).join("");
@@ -1038,10 +1037,12 @@ function renderHome() {
     hello = `<h1>${wd}.</h1><p class="meta">AI engineering on Databricks.</p>`;
     card = `<section class="next"><span class="eyebrow">Path complete</span><h2>You've finished every lesson.</h2></section>`;
   }
-  const nidx = nid ? phaseIdx(nid) : PHASES.length - 1, nph = PHASES[nidx];
+  const today_ = nid ? phaseIdx(nid) : PHASES.length - 1;
+  const nidx = viewPh != null ? viewPh : today_, nph = PHASES[nidx], st_ = phState(nidx);
   const pg = phasePage(nidx, "h");
-  const book = `<section class="book" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}"><div class="bookhead">${badgeSvg(nidx, 13, nid ? "now" : "done")}<span class="mt"><span class="eyebrow" style="color: var(--accent)">Phase ${nidx + 1} of ${PHASES.length}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
-  const after = PHASES[nidx + 1];
+  const where = nidx === today_ && nid ? "You are here" : st_ === "done" ? "Done" : nidx < today_ ? "Earlier" : "Coming up";
+  const book = `<section class="book" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}"><div class="bookhead">${badgeSvg(nidx, 13, st_)}<span class="mt"><span class="eyebrow"${st_ === "now" ? ' style="color: var(--accent)"' : ""}>Phase ${nidx + 1} of ${PHASES.length} · ${where}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
+  const after = nidx === today_ ? PHASES[nidx + 1] : null;
   const upnext = after ? `<section class="upnext"><div class="top-row">${badgeSvg(nidx + 1, 10, "")}<span class="eyebrow">Next · ${esc(after.name)}</span></div><p>${esc(after.modules.map(mid => MOD[mid].title).join(" · "))}</p>${minis(phLessons(after))}</section>` : "";
   const block = (id, icon, title, done, total, rows) => {
     const open = openMods.has(id);
@@ -1051,11 +1052,11 @@ function renderHome() {
   const set = (id, title, ids) => block(id, MOD_ICON[id], title, ids.filter(x => progress.solved[x]).length, ids.length,
     ids.map(x => `<button class="row" data-practice="${x}">${markFor(x, false)}<span class="t">${esc(byId[x].title)}</span><span class="chev" aria-hidden="true">›</span></button>`).join(""));
   $("home").innerHTML = `<div class="hello">${hello}</div>
-    ${railHtml(false)}
     ${card}
     ${aiOffNote()}
     <div id="homeReview">${reviewCard()}</div>
-    <div class="pathhead"><h2>Your path</h2><button class="linkbtn" data-album>See all ${PHASES.length} phases</button></div>
+    <div class="pathhead"><h2>Your path</h2>${nidx !== today_ ? `<button class="linkbtn" data-phase="${today_}">Back to today</button>` : `<span>Tap a phase to see its stickers</span>`}</div>
+    ${railHtml(false, null, nidx)}
     ${book}
     ${upnext}
     <div class="sets"><h3>Practice sets</h3></div>
@@ -1063,34 +1064,16 @@ function renderHome() {
     <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
 }
 
-// ---------- the album: all six phases ----------
-function renderAlbum() {
-  renderTop();
-  const rows = PHASES.map((ph, i) => {
-    const st = phState(i), pg = phasePage(i, "a"), key = "al" + i;
-    const open = openMods.has(key) || (st === "now" && !openMods.has("x" + key));
-    return `<section><button class="albumhead${st === "now" ? " now" : ""}" data-albumph="${key}" aria-expanded="${open}">${badgeSvg(i, 18, st)}<span class="mt"><b>${i + 1} · ${esc(ph.name)}</b><span>${esc(ph.text)}</span>${open ? "" : minis(phLessons(ph))}</span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></button>
-      ${open ? `<div class="albumbody">${pg.scenes}</div>` : ""}</section>`;
-  }).join("");
-  $("album").innerHTML = `<div class="crumbs"><button class="btn quiet" data-home>${ic("arrowl")}Path</button></div>
-    <div class="hello"><h1>Your album</h1><p>Six phases, one shape each. Every sticker carries its phase’s shape.</p></div>
-    ${railHtml(false)}
-    <div class="albumlist">${rows}</div>
-    <p class="loopnote">${ic("reset")} After Monitor, its failures become the next round’s questions, back at Frame.</p>`;
-}
-function openAlbum() { cur = null; show("album"); renderAlbum(); }
-
 // ---------- views ----------
 let cur = null;   // { kind: "lesson" | "practice", id, p, step, from }
 function show(view) {
   $("home").hidden = view !== "home";
-  $("album").hidden = view !== "album";
   $("lesson").hidden = view !== "lesson";
   $("done").hidden = view !== "done";
   $("foot").hidden = view !== "lesson" && view !== "done";
   window.scrollTo(0, 0);
 }
-function goHome() { cur = null; show("home"); renderHome(); }
+function goHome() { cur = null; viewPh = null; show("home"); renderHome(); }
 function openLesson(id, step) {
   const s = lp(id);
   cur = { kind: "lesson", id, p: byId[id], from: null };
@@ -2311,13 +2294,19 @@ $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.
 document.addEventListener("click", async e => {
   const t = e.target;
   if (t.closest("[data-review]")) { openNotebook("study"); return; }
-  if (t.closest("[data-album]")) { openAlbum(); return; }
-  if (t.closest("[data-home]")) { goHome(); return; }
-  const sc = t.closest("[data-scene], [data-albumph]");
-  if (sc) {  // fold or open a scene or an album phase; "x" remembers a fold of something open by default
-    const key = sc.dataset.scene || sc.dataset.albumph, open = sc.getAttribute("aria-expanded") === "true";
+  const phb = t.closest("[data-phase]");
+  if (phb) {  // show one phase's page of stickers; today's phase is the default
+    const i = +phb.dataset.phase, nid = nextLesson();
+    viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i;
+    const y = window.scrollY; renderHome(); window.scrollTo(0, y);
+    const f = document.querySelector(`.rail [data-phase="${i}"]`); if (f) f.focus({ preventScroll: true });
+    return;
+  }
+  const sc = t.closest("[data-scene]");
+  if (sc) {  // fold or open a scene; "x" remembers a fold of a scene that is open by default
+    const key = sc.dataset.scene, open = sc.getAttribute("aria-expanded") === "true";
     if (open) { openMods.delete(key); openMods.add("x" + key); } else { openMods.add(key); openMods.delete("x" + key); }
-    const y = window.scrollY; if (!$("album").hidden) renderAlbum(); else renderHome(); window.scrollTo(0, y); return;
+    const y = window.scrollY; renderHome(); window.scrollTo(0, y); return;
   }
   if (t.closest("[data-aihide]")) { try { sessionStorage.setItem("drill-aihide", "1"); } catch {} t.closest(".aioff").remove(); return; }
   const tg = t.closest("[data-toggle]"); if (tg) { const id = tg.dataset.toggle, open = !openMods.has(id); if (open) openMods.add(id); else openMods.delete(id); tg.setAttribute("aria-expanded", String(open)); tg.nextElementSibling.hidden = !open; return; }
