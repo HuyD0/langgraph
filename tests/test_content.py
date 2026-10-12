@@ -249,3 +249,18 @@ def test_phase_tabs_are_one_piece_with_their_room():
     for rule in (".phasebox {", ".phasebox.here {", ".rail.phtabs {", ".rail.phtabs .sleeve {", ".book.room {"):
         assert rule in page, rule
     assert 'class="phasebox' in page and "data-showing=" in page, "the box must not carry data-phase, or any tap inside it would switch phase"
+
+
+def test_every_look_is_readable():
+    """Text, results, the primary button and code colours meet contrast minimums in light, dark and dusk."""
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).parent.parent / "scripts" / "contrast.py"
+    spec = importlib.util.spec_from_file_location("contrast", path)
+    contrast = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contrast)
+    rows = contrast.check()
+    assert len(rows) == 3 * len(contrast.PAIRS), "every pair checked in every look"
+    bad = [f"{look}: {fg} on {bg} is {r:.2f}:1, needs {m}" for look, fg, bg, r, m, _ in rows if r < m]
+    assert not bad, bad
