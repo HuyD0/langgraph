@@ -111,39 +111,49 @@ It records whole conversations, including any file contents Claude read. Turn it
 
 ### Sending traces to Databricks instead
 
-Traces can go to your Databricks workspace's MLflow instead of this Mac's. Put two lines in
-`.env` and restart the server:
+Traces can go to your Databricks workspace's MLflow instead of this Mac's. There are two
+places Databricks can keep them, and the choice matters:
+
+| | Traces kept in the experiment | Traces kept in Unity Catalog |
+|---|---|---|
+| How they get there | MLflow on your Mac uploads each trace's data straight to the workspace's storage account | MLflow sends the spans to the Databricks API, and Databricks writes them into Delta tables |
+| Workspace storage firewall on | **Blocked** (403 `AuthorizationFailure`) | Works |
+| Reading them (UI or `mlflow.search_traces`) | No SQL warehouse needed | Needs a SQL warehouse, which costs compute while it runs |
+| Limit | 100,000 traces per experiment | None |
+
+If your workspace has its storage firewall on (`defaultStorageFirewall: Enabled`), use Unity
+Catalog. Set it up once, with a schema to hold the tables and a new experiment linked to it
+(the link can only be made when the experiment is created):
+
+```bash
+databricks schemas create drill_traces <catalog> --profile DEFAULT
+MLFLOW_TRACKING_URI=databricks DATABRICKS_CONFIG_PROFILE=DEFAULT \
+  uv run drill tracing check --uc-schema <catalog>.drill_traces
+```
+
+Then put these in `.env` and restart the server:
 
 ```bash
 MLFLOW_TRACKING_URI=databricks
-DATABRICKS_CONFIG_PROFILE=DEFAULT   # the CLI profile for your workspace
+DATABRICKS_CONFIG_PROFILE=DEFAULT            # the CLI profile for your workspace
+MLFLOW_TRACING_SQL_WAREHOUSE_ID=<warehouse>  # only for reading traces back
 ```
 
-The experiment becomes `/Users/<you>/daily-drill` (Databricks needs a workspace path; set
-`DRILL_MLFLOW_EXPERIMENT=/Shared/...` to choose another). Check it first:
+The experiment is `/Users/<you>/daily-drill` (Databricks needs a workspace path; set
+`DRILL_MLFLOW_EXPERIMENT` to choose another). `uv run drill tracing check` says where traces go
+and how they are stored, writes one test trace and reads it back. Pick the smallest serverless
+warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 
-```bash
-uv run drill tracing check
-```
+**Good to know:**
 
-It says where traces go, creates the experiment, writes one test trace and reads it back.
-
-**Before you switch:**
-
-- **A storage firewall stops it working from your Mac.** Traces are written to the
-  workspace's own storage account. If the workspace has its default storage firewall on
-  (`defaultStorageFirewall: Enabled`), only the workspace's own networks may write there.
-  Your Mac can still create the experiment, but every trace's data is refused (403
-  `AuthorizationFailure`), and `drill tracing check` says so. Keep tracing on this Mac then,
-  or log from code that runs inside Databricks.
-- **Experiment storage is free to browse; Unity Catalog storage is not.** By default traces
-  are kept in the experiment itself, up to 100,000 per experiment, and reading them in the
-  UI or with `mlflow.search_traces` needs no SQL warehouse. If an experiment stores its
-  traces in Unity Catalog tables, every read needs a SQL warehouse, which costs compute;
-  `drill tracing check` tells you which kind you have.
-- **What does cost money:** built-in LLM judges (they call a Databricks-hosted model),
+- **What else costs money:** built-in LLM judges (they call a Databricks-hosted model),
   production monitoring (serverless compute), and model calls through the gateway.
-- Old traces stay on this Mac; nothing is copied over. To go back, set
+- **Claude Code's own traces stay on this Mac.** MLflow's Claude Code plugin (0.2.0) always
+  uploads trace data straight to storage, even for a Unity Catalog experiment, so a storage
+  firewall blocks it.
+- **Processes started by Claude Code** (such as `drill-mcp`) inherit its
+  `MLFLOW_TRACKING_URI`, which wins over `.env`.
+- Old traces stay where they were; nothing is copied over. To go back, set
   `MLFLOW_TRACKING_URI` to your local server again.
 - The notebooks always use their own local stores, whatever `.env` says.
 
