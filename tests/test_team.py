@@ -146,3 +146,8 @@ def test_the_managers_dashboard_hangs_together():
                         if column != "associative_filter_predicate_group":
                             assert re.search(rf"\b{column}\b", sql[name]), f"{name} has no column {column}"
     assert [p["displayName"] for p in board["pages"]] == ["Team", "Where they're stuck", "Questions", "Weekly notes"]
+
+
+def test_notes_are_plain_sentences():
+    raw = "**This week**\nThey studied on 1 day.\n\n## What is going well\n- It is early days.\n1. Ask about **use cases**."
+    assert team.plain(raw) == "They studied on 1 day.\n\nIt is early days.\n\nAsk about use cases."
