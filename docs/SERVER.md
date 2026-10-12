@@ -58,6 +58,93 @@ user's identity in a header (`DRILL_USER_HEADER`, default `x-forwarded-email`) s
 person gets their own progress. The package carries its own content and page, so the
 container needs nothing but `pip install .`.
 
+## Moving progress to Lakebase
+
+At home, progress stays in one SQLite file. At work, the same code keeps everyone's
+progress in Lakebase (Postgres on Databricks) so a manager can see how the team is doing.
+Nothing changes in the page; it is settings, plus a one-off setup in the workspace.
+
+**What is stored.** Every row has an `owner`: `local` at home, the person's work email in
+Lakebase. Next to the documents (progress, study list) there is an `events` table with one
+row per thing that happened, which is what a dashboard counts:
+
+| kind | when | detail |
+|---|---|---|
+| `step` | reached a lesson's next step (Learn 0, Check 1, Build 2, Interview 3) | `step` |
+| `checked` | answered the check question | `answer` |
+| `lesson_done` | finished a lesson | |
+| `solved` | passed an exercise's tests | `hints`, `count` |
+| `asked` | asked something in the page | `feature`, `step`, `hint_level`, `chip` |
+| `tests_run`, `hint_used`, `saved_to_study` | the same, through Claude's tools | `door: mcp` |
+
+**Setting up the workspace (once, by an admin).** Create the project; it comes with a
+`production` branch and a `databricks_postgres` database:
+
+```bash
+databricks postgres create-project daily-drill --json '{"spec": {"display_name": "Daily Drill"}}' --profile <work-profile>
+databricks postgres list-endpoints projects/daily-drill/branches/production --profile <work-profile>
+```
+
+Give each learner a Lakebase role for their Databricks identity (`databricks postgres
+create-role -h` shows how). Then connect (`databricks psql --project daily-drill`) and
+create the tables, with row-level security so each person only sees their own rows:
+
+```sql
+CREATE TABLE IF NOT EXISTS docs (
+  owner varchar(320), path varchar(512), body text NOT NULL, updated_at double precision NOT NULL,
+  PRIMARY KEY (owner, path));
+CREATE TABLE IF NOT EXISTS events (
+  id varchar(32) PRIMARY KEY, owner varchar(320) NOT NULL, at double precision NOT NULL,
+  kind varchar(40) NOT NULL, lesson_id varchar(120) NOT NULL DEFAULT '', detail text NOT NULL DEFAULT '{}');
+CREATE INDEX IF NOT EXISTS ix_events_owner ON events (owner);
+
+-- Each person reads and writes only their own rows. In Lakebase current_user is the
+-- person's Databricks user name, which is the owner the app writes.
+ALTER TABLE docs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY own_docs ON docs USING (owner = current_user) WITH CHECK (owner = current_user);
+CREATE POLICY own_events ON events USING (owner = current_user) WITH CHECK (owner = current_user);
+
+-- Two Postgres group roles: grant one to each person's role.
+CREATE ROLE drill_learners NOLOGIN;
+CREATE ROLE drill_managers NOLOGIN;
+GRANT SELECT, INSERT, UPDATE, DELETE ON docs, events TO drill_learners;
+GRANT SELECT ON docs, events TO drill_managers;
+CREATE POLICY managers_read_docs ON docs FOR SELECT TO drill_managers USING (true);
+CREATE POLICY managers_read_events ON events FOR SELECT TO drill_managers USING (true);
+
+GRANT drill_learners TO "sam@example.com";   -- one line per person
+```
+
+**On each work laptop.** Install with the Postgres driver, sign in through Entra, and add
+two lines to `.env` (the host comes from `list-endpoints` above):
+
+```bash
+uv sync --extra lakebase
+databricks auth login --host https://adb-<id>.azuredatabricks.net
+```
+
+```bash
+DRILL_DATABASE_URL=postgresql+psycopg://<host>/databricks_postgres?sslmode=require
+DRILL_LAKEBASE_ENDPOINT=projects/daily-drill/branches/production/endpoints/<endpoint-id>
+```
+
+There is no password to set: the app asks Databricks for a one-hour Lakebase password
+each time it connects, using the login on the machine. With Lakebase set, the server
+listens on `127.0.0.1` only unless `DRILL_HOST` says otherwise. `uv run drill store status`
+says where progress is going and as whom.
+
+**When Lakebase is out of reach** (no VPN, on a plane), the server starts on the local
+SQLite file instead and the health check shows `store_fallback: true`. Once it is back,
+`uv run drill store push` sends that work up; the newer copy of each document wins and
+events already sent are skipped. The same command brings your home history (saved as
+`local`) to work, if you copy `drill.db` over first.
+
+**The manager's view.** Turn on Lakehouse Sync for the `public` schema (the branch's
+"Lakehouse sync" tab, or `databricks postgres -h` for the `*-cdf-config` commands) and
+Lakebase copies both tables into Unity Catalog as `lb_docs_history` and
+`lb_events_history`. Build an AI/BI dashboard on those, not on Lakebase itself.
+
 ## What gets measured
 
 Every request is one MLflow trace, in experiment `daily-drill` (in `.drill/mlflow.db` unless
@@ -172,8 +259,11 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `DRILL_HOST` / `DRILL_PORT` | `0.0.0.0` / `8787` | Where the server listens; `127.0.0.1` keeps it to this machine |
+| `DRILL_HOST` / `DRILL_PORT` | `0.0.0.0` (`127.0.0.1` with Lakebase) / `8787` | Where the server listens; `127.0.0.1` keeps it to this machine |
 | `DRILL_DATABASE_URL` | `sqlite:///.drill/drill.db` | Where progress and the study list live |
+| `DRILL_LAKEBASE_ENDPOINT` | *(unset)* | The Lakebase endpoint to get passwords for; set it with a Lakebase `DRILL_DATABASE_URL` |
+| `DRILL_HOME` | `.drill/` in the repo | The folder for the SQLite file and local MLflow traces, e.g. `~/Library/Application Support/DailyDrill` |
+| `DRILL_OWNER` | `local` | Whose rows a local store reads and writes (Lakebase uses your Databricks user name) |
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
 | `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on hosted usage (about four characters per token) |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
