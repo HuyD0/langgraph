@@ -224,9 +224,6 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .btn .ic { width: 18px; height: 18px; }
 .tab { display: inline-flex; align-items: center; gap: 6px; }
 .tab .ic { width: 17px; height: 17px; }
-.savestate { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.savestate i { width: 8px; height: 8px; border-radius: 50%; background: var(--hint); display: inline-block; }
-.savestate.cloud i { background: var(--pass); }
 .mlbox { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; }
 .mlbox b { font-weight: 600; }
 .sets h3 { font: 800 18px/1.2 var(--display); margin: 8px 0 0; }
@@ -548,7 +545,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .morepanel { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .morepanel .kbd { font: 12px var(--mono); color: var(--muted); }
 @media (pointer: coarse) { .morepanel .kbd { display: none; } }
-.savestate { justify-content: center; padding-top: 8px; }
 
 /* the sticker book: six phases, one shape each, always in view */
 .rail { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px 4px; }
@@ -1661,8 +1657,7 @@ function renderHome() {
     <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(false, null, nidx)}${book}</div>
     ${upnext}
     <div class="sets"><h3>Practice sets</h3></div>
-    <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>
-    <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
+    <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
   if (!pathOpened) { pathOpened = true; requestAnimationFrame(() => phaseFx(null)); }
 }
