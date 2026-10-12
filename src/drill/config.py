@@ -291,3 +291,26 @@ def uc_trace_location(experiment) -> str | None:
     storage needs none (up to 100,000 traces per experiment).
     """
     return (getattr(experiment, "tags", None) or {}).get(UC_TRACE_TAG) or None
+
+
+LOCAL_TRACKING_URI = "http://localhost:5050"
+
+
+def set_tracking_target(env_path: Path, target: str, local_uri: str = LOCAL_TRACKING_URI) -> str:
+    """Point MLFLOW_TRACKING_URI in a .env file at ``local`` or ``databricks``; return the new value.
+
+    Only that one line changes: the first ``MLFLOW_TRACKING_URI=`` line that isn't a comment is
+    replaced (or one is added at the end). Everything else in the file stays as it is.
+    """
+    if target not in {"local", "databricks"}:
+        raise ValueError(f"target must be 'local' or 'databricks', not {target!r}")
+    value = "databricks" if target == "databricks" else local_uri
+    lines = env_path.read_text().splitlines() if env_path.exists() else []
+    for i, line in enumerate(lines):
+        if line.strip().startswith("MLFLOW_TRACKING_URI="):
+            lines[i] = f"MLFLOW_TRACKING_URI={value}"
+            break
+    else:
+        lines.append(f"MLFLOW_TRACKING_URI={value}")
+    env_path.write_text("\n".join(lines) + "\n")
+    return value
