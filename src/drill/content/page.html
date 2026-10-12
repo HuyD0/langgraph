@@ -129,6 +129,13 @@ b { font-weight: 600; }
 .editor .hl .n { color: var(--syn-num); }
 .editor .hl .f { color: var(--syn-fn); font-weight: 600; }
 .editor .hl .bi { color: var(--syn-bi); }
+.syn .k { color: var(--syn-kw); font-weight: 600; }
+.syn .s { color: var(--syn-str); }
+.syn .n { color: var(--syn-num); }
+.syn .c { color: var(--syn-com); font-style: italic; }
+.syn .f { color: var(--syn-fn); font-weight: 600; }
+.syn .bi { color: var(--syn-bi); }
+.syn .b { color: var(--hint); background: var(--hint-bg); border-radius: 3px; }
 .editor .codebar { position: absolute; left: 0; right: 0; background: var(--hint-bg); pointer-events: none; transition: top .25s; }
 /* data tables: the example's rows, and what your code returned */
 .dtwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-width: 0; }
@@ -2008,24 +2015,47 @@ ed.addEventListener("input", () => { try { localStorage.setItem(draftKey(cur.p.i
 // ever fails, .hl-on is never set and the plain textarea shows as before.
 const PY_KW = new Set("and as assert break class continue def del elif else except False finally for from global if import in is lambda None nonlocal not or pass raise return True try while with yield".split(" "));
 const PY_BI = new Set("set list dict tuple len range enumerate print sorted reversed str int float bool sum min max abs round zip map filter any all isinstance".split(" "));
+// SQL keywords count only in capitals, so Python names like `select` or `count` stay plain.
+const SQL_KW = new Set("SELECT FROM WHERE AND OR NOT IN IS NULL AS JOIN LEFT RIGHT INNER OUTER FULL ON GROUP BY ORDER HAVING LIMIT WITH CASE WHEN THEN ELSE END CREATE TABLE VIEW INSERT INTO VALUES UPDATE SET DELETE MERGE USING MATCHED DISTINCT UNION ALL OVER PARTITION DESC ASC BETWEEN LIKE EXISTS REPLACE ALTER GRANT REVOKE TO SHOW DESCRIBE IF TRUE FALSE PRIMARY KEY INTERVAL DAY DAYS HOUR MINUTE".split(" "));
+const SQL_FN = new Set("COUNT SUM AVG MIN MAX COALESCE CAST DATE_TRUNC CURRENT_TIMESTAMP CURRENT_DATE ROW_NUMBER RANK NOW".split(" "));
+// Terraform block words count only at the start of a line, followed by a quote or a brace.
+const HCL_KW = new Set("resource variable module provider output locals terraform data".split(" "));
+// One highlighter for the editor and every code box: Python, SQL and Terraform, even mixed in one box.
 function hlPython(src) {
-  const re = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(___)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^#"'A-Za-z_0-9]+|\d)/g;
+  const re = /(#[^\n]*|--\s[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(___)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|(-|[^#"'A-Za-z_0-9-]+|\d)/g;
   let out = "", m, afterDef = false;
   while ((m = re.exec(src))) {
     const [t, com, str, blank, num, word] = m;
+    if (com && com.startsWith("--") && m.index > 0 && !/\s/.test(src[m.index - 1])) {  // a CLI flag like --json, not a SQL comment
+      out += "-"; re.lastIndex = m.index + 1; continue;
+    }
     if (com) out += `<span class="c">${esc(com)}</span>`;
     else if (str) out += `<span class="s">${esc(str)}</span>`;
     else if (blank) out += `<span class="b">___</span>`;
     else if (num) out += `<span class="n">${num}</span>`;
     else if (word) {
+      const lineStart = src.lastIndexOf("\n", m.index - 1) + 1;
       if (afterDef) { out += `<span class="f">${word}</span>`; afterDef = false; }
       else if (PY_KW.has(word)) { out += `<span class="k">${word}</span>`; afterDef = word === "def"; }
-      else if (PY_BI.has(word)) out += `<span class="bi">${word}</span>`;
+      else if (PY_BI.has(word) || SQL_FN.has(word)) out += `<span class="bi">${word}</span>`;
+      else if (SQL_KW.has(word)) out += `<span class="k">${word}</span>`;
+      else if (HCL_KW.has(word) && !src.slice(lineStart, m.index).trim() && /^\s*["{]/.test(src.slice(re.lastIndex))) out += `<span class="k">${word}</span>`;
       else out += word;
     } else out += esc(t);
   }
   return out;
 }
+// Colour every read-only code box (Learn, In your stack, Python you'll need, the example, hints, tutor
+// answers) as it appears or changes. A box is redrawn only when its text changes, so this never loops.
+const CODE_BOXES = "pre.code, .ai pre, .aa pre, .note pre, .quote.code";
+function colourCode() {
+  document.querySelectorAll(CODE_BOXES).forEach(pre => {
+    const t = pre.textContent;
+    if (pre.dataset.hl === String(t.length)) return;
+    pre.innerHTML = hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
+  });
+}
+{ let queued = false; new MutationObserver(() => { if (queued) return; queued = true; setTimeout(() => { queued = false; colourCode(); }, 0); }).observe(document.body, { childList: true, subtree: true, characterData: true }); colourCode(); }
 function syncCodeScroll() { const hl = $("codeHl"); hl.scrollLeft = ed.scrollLeft; hl.style.setProperty("--sl", ed.scrollLeft + "px"); }
 function drawCode() {
   $("codeHl").innerHTML = hlPython(ed.value).split("\n").map(l => `<span class="ln">${l}</span>`).join("\n") + "\n";
