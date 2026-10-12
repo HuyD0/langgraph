@@ -20,9 +20,9 @@ lesson(MODULE, 'exact_match',
         why='Clean both strings the same way before comparing.',
     ),
     angle=angle(
-        pattern='Pairwise comparison',
-        text='zip the two lists and compare each pair once. Check for the empty case before dividing.',
-        say='"I clean both sides with the same function, compare pairs with zip, and return 0 for an empty set instead of dividing by zero."',
+        pattern='Clean both sides, then compare',
+        text='The big idea: clean both the answer and the expected answer before comparing, so "Paris." and "paris" count as a match. Your code has one helper, `normalize`, that removes the marks, makes the text lowercase and trims spaces. `zip` pairs each prediction with its answer, like matching left and right shoes. The code counts the pairs that match after cleaning and divides by the number of answers. It checks for an empty list first, because dividing by zero would crash.',
+        say='"I clean both sides with the same function, compare each pair, and return the share that match. An empty set returns 0 instead of dividing by zero."',
         classic=None,
     ),
     stack=stack('MLflow: Correctness with expected answers', """from mlflow.genai.scorers import Correctness
@@ -153,8 +153,8 @@ every set gets billing, shipping and refunds in the same proportions"""),
     ),
     angle=angle(
         pattern='A counter per group',
-        text='Keep a dict from each group to how many of its examples you have placed so far. Each example looks up its group, takes the next slot in the pattern (3 dev, 1 test, 1 holdout), and bumps the count. One walk through the examples.',
-        say='"I stratify the eval set by question type, so every split has every type in proportion, and I keep one user\'s questions in one split to avoid leakage."',
+        text="The big idea: deal each group's examples across dev, test and holdout, so every set gets every group in the same proportions. Your code keeps a dict from each group to how many of its examples it has placed so far. Each example looks up its group's count and takes that slot in the pattern: 3 dev, 1 test, 1 holdout. `count % 5` is the remainder after dividing by 5, so the 6th example starts again at dev. It is like dealing cards, with a separate deck for each group.",
+        say='"I stratify the eval set by group, so every split has every group in proportion. I keep one user\'s questions in one split to avoid leakage."',
         classic='group_anagrams',
     ),
     stack=stack('Spark: a stratified sample of every group', """# 20% of every group goes to test; the rest stays for dev and holdout
@@ -290,9 +290,9 @@ bucket("ticket-1001") = 72  -> still test"""),
         why='The holdout is only honest if nothing in it was ever looked at while tuning. A split that depends only on the id never moves.',
     ),
     angle=angle(
-        pattern='Hashing to a bucket',
-        text='Walk the characters once, folding each into a running number, then take the remainder. The same text always gives the same number.',
-        say='"For a growing eval set I assign splits by hashing the id, and I hash the conversation id when questions from one conversation must stay together."',
+        pattern='Turn the id into a bucket',
+        text="The big idea: decide each question's split from its id alone, so old questions never move when new ones are added. Your code calls `hash_id`, which turns the id into a big number. The same id always gives the same number. `% 100` keeps the remainder after dividing by 100, a bucket from 0 to 99. Buckets under 60 go to dev, 60 to 79 go to test, and the rest go to holdout. It is like sorting letters by the last two digits of a house number.",
+        say='"For a growing eval set I pick the split by hashing the id. I hash the conversation id when its questions must stay together."',
         classic=None,
     ),
     stack=stack('Spark: a stable split column on a Delta table', """from pyspark.sql import functions as F
@@ -431,9 +431,9 @@ weighted by real traffic:        78%
         why='The headline should reflect what users experience. The per-group scores still show that refunds need work.',
     ),
     angle=angle(
-        pattern='Weighted average',
-        text='Multiply each score by its weight, add those up, and divide by the total weight. Two running totals in one walk through the groups. Dividing by the total weight means the weights do not have to add up to exactly 1.',
-        say='"I report every group with its count, and I weight the headline number by production traffic, not by how I sampled the eval set."',
+        pattern='A weighted average',
+        text="The big idea: the headline score should count each group as much as real users meet it, not as much as your eval set happens to test it. Your code multiplies each group's score by its share of traffic, adds those up, and divides by the total traffic. It is like a school average where bigger classes count for more. Dividing by the total means the traffic can be given as shares like 0.7 or as counts like 700.",
+        say='"I report a score for every group, and I weight the overall number by each group\'s share of real traffic, not by how many eval examples it has."',
         classic=None,
     ),
     stack=stack('MLflow: a metric per group, plus the weighted one', """with mlflow.start_run(run_name="faq-v4-eval"):
@@ -538,9 +538,9 @@ verdict:    do not ship B until fraud-03 passes again"""),
         why='The must-pass set exists exactly for this. Moving a case out of it because it failed defeats the purpose.',
     ),
     angle=angle(
-        pattern='Membership check over a short list',
-        text='Walk the must-pass ids and look each one up in the results dict. A missing result counts as a failure, because "not tested" is not "passed".',
-        say='"I keep a must-pass set as a release gate, checked before the overall score, and every fixed production failure gets added to it."',
+        pattern='Look up each must-pass case',
+        text="The big idea: a version can win on average and still break the one answer that matters most, so must-pass cases are checked on their own. Your code goes through the `must_pass` ids in order and looks each one up in the `results` dict. `results.get(qid, False)` gives False when an id is missing, because not tested is not passed. Every id that didn't pass goes on the failing list. An empty list means the version can ship, like a checklist where every box must be ticked.",
+        say='"I keep a must-pass set as a release gate, checked before the overall score. Every serious production failure I fix gets added to it."',
         classic=None,
     ),
     stack=stack('MLflow: gate a release on the must-pass slice', """result = mlflow.genai.evaluate(data=must_pass_set, predict_fn=app_b, scorers=[correct])
@@ -645,9 +645,9 @@ lesson(MODULE, 'first_bad_version',
         why='Each eval halves what is left: 64, then 32, 16, 8, 4, 2 and 1. That is 6 halvings, so about 6 evals.',
     ),
     angle=angle(
-        pattern='Binary search',
-        text="Each check throws away half of what's left, so 1,000 versions take about 10 checks and a million take about 20. The classic bug is the boundary: whether you move to the middle or one past it.",
-        say='"The passing versions all come before the failing ones, so I check the middle and throw away half each time. That needs only a handful of evals."',
+        pattern='Check the middle, drop half',
+        text='The big idea: each eval run costs money, so instead of testing every version you test the middle one and keep the half that holds the change. This is called bisecting. Your code keeps `low` and `high`, the two ends of the part still in question. If the middle version passes, the first failure must be later. If it fails, the code remembers it and looks earlier. Each check throws away half, so 1,000 versions need only about 10 checks, like finding a word in a dictionary by opening it in the middle.',
+        say='"The passing versions all come before the failing ones, so I check the middle and throw away half each time. That needs only a handful of eval runs."',
         classic='binary_search',
     ),
     stack=stack('MLflow: one named run per version', """with mlflow.start_run(run_name="prompt-v17"):
@@ -757,9 +757,9 @@ judge passed all 10
         why='Overall agreement hides a judge that never fails anything.',
     ),
     angle=angle(
-        pattern='Split by label',
-        text='One walk through the pairs with four counters.',
-        say='"I check how often the judge agrees with humans on the answers they passed, and separately on the ones they failed, and require both to be high."',
+        pattern='Count passes and fails separately',
+        text="The big idea: a judge that passes everything looks accurate when most answers are good, so you check its passes and its failures separately. Your code pairs each human label with the judge's label using `zip`. It keeps four counts: answers the human passed, how many of those the judge passed too, and the same two for failures. Dividing gives two shares. A judge that passes everything scores 1 on the first but 0 on the second, which shows it catches nothing.",
+        say='"I check how often the judge agrees with humans on the answers they passed, and separately on the ones they failed. Both need to be high."',
         classic=None,
     ),
     stack=stack('scikit-learn: judge vs human labels', """from sklearn.metrics import confusion_matrix
@@ -892,9 +892,9 @@ kappa = (0.90 - 0.74) / (1 - 0.74)   # about 0.62"""),
         why='When almost everything passes, a judge that also says pass almost every time agrees a lot without catching anything.',
     ),
     angle=angle(
-        pattern='Count once, then a formula',
-        text='One walk through the labels counts the agreements and each side\'s passes. Everything else is arithmetic on those three counts. In real code, add a guard for the case where chance agreement is already 1.',
-        say='"I don\'t trust raw agreement for an LLM judge. I check Cohen\'s kappa so that agreement by luck doesn\'t count."',
+        pattern='Count, then use the formula',
+        text="The big idea: a judge and a human can agree a lot just by luck, so Cohen's kappa takes away the agreement you would expect by chance. Your code goes through the pairs once and counts three things: how often they agree, how often the human says pass, and how often the judge says pass. It turns each count into a share, works out chance agreement from the two pass rates, and puts it all into the kappa formula. 1 means perfect, and 0 means no better than luck.",
+        say='"I don\'t trust raw agreement for an LLM judge. I use Cohen\'s kappa, so agreement that would happen by luck doesn\'t count."',
         classic=None,
     ),
     stack=stack('scikit-learn and MLflow', """from sklearn.metrics import cohen_kappa_score
@@ -1065,8 +1065,8 @@ together (fail if either flags):
     ),
     angle=angle(
         pattern='Compare two lists both ways',
-        text='Walk the planted ids and look each one up in the flagged ids: that gives the catches and the misses. Then walk the flagged ids and look each one up in the planted ids: that gives the false alarms.',
-        say='"Before I trust a checker, I run it on planted mistakes, including false successes and a do-nothing agent, and I report what it caught, what it missed and what it wrongly failed."',
+        text='The big idea: a checker that misses mistakes looks just like one that works, so you test it on runs where you planted mistakes on purpose. Your code first goes through the planted ids and asks if each one was flagged. Yes is a catch, and no is a miss. Then it goes through the flagged ids and asks if each one was planted. A no there is a false alarm: a good run failed by mistake. It is like hiding errors in an essay to see if a proofreader finds them.',
+        say='"Before I trust a checker, I run it on planted mistakes, including false successes and a do-nothing agent. I report what it caught, missed and wrongly failed."',
         classic=None,
     ),
     stack=stack('MLflow 3: a code check next to the judge', """import mlflow
@@ -1244,9 +1244,9 @@ question: "Where is my office?"
         why='Grounded means "matches what was looked up", not "true". The old memory was looked up, so the answer matches it. Only a planted change, where you know the right answer, catches this.',
     ),
     angle=angle(
-        pattern='Label each item, then count the labels',
-        text='One pass over the answers, checking the worst outcome first. The order is the point: an answer that mentions both facts must land in stale.',
-        say='"I change a source on purpose, ask questions that depend on it, and score three outcomes: current, unsure and stale, where mentioning the old fact counts as stale. I add a code check of the store and two baselines: a memory that never updates, and no memory at all."',
+        pattern='Label each answer, then count',
+        text="The big idea: an agent with memory can keep giving an old fact after it changed, so you plant a change and score each answer as current, unsure or stale. Your code makes the answer lowercase and checks for the old fact first. If it's there, the answer is stale, even if the new fact is there too, because the user can't tell which is right. Otherwise it checks for the new fact. If neither is there, the answer is unsure. Last, each count is divided by the number of answers.",
+        say='"I change a fact on purpose and score answers as current, unsure or stale. Any answer that mentions the old fact counts as stale."',
         classic=None,
     ),
     stack=stack('MLflow 3: a code scorer with three labels', """import mlflow
@@ -1454,8 +1454,8 @@ shipping-08    no          yes       shipping      0
     ),
     angle=angle(
         pattern='Score, then sort',
-        text='Give each item a priority from a few simple rules, then sort by priority with a tie-break, and take the first few.',
-        say='"I let an LLM draft expected answers and route expert review by risk: must-pass first, then disputed drafts, then rare groups."',
+        text='The big idea: expert time is scarce, so the riskiest drafts get reviewed first. Your code gives each item points: 4 for must-pass, 2 if the two drafts disagree, and 1 for a rare group. It stores each item as a pair: minus its points, then its id. Sorting puts smaller numbers first, so the minus sign brings the most points to the top, and items with equal points fall into A to Z order by id. It is like a hospital waiting room, where the most urgent go first.',
+        say='"I let an LLM draft expected answers, then send them to experts by risk: must-pass first, then disputed drafts, then rare groups."',
         classic=None,
     ),
     stack=stack('MLflow: drafts as expectations, then an expert labelling session', """mlflow.log_expectation(trace_id=tid, name="expected_facts", value=draft_facts,
@@ -1615,9 +1615,9 @@ improvements: {"moved right doc up": 2}     regressions: {"pushed worse doc up":
         why='When every improvement shares a cause unrelated to the change you made, the measurement is often the thing that changed. Reading them is how you catch it.',
     ),
     angle=angle(
-        pattern='Walking two dicts by the same keys, then counting',
-        text='Go through the question ids once, compare the two results for each, and count regressions, improvements and their causes in dicts of running totals.',
-        say='"I don\'t stop at the score: I read every regression and improvement, label why it changed, and count the causes each way. That tells me what the change really did."',
+        pattern='Find what changed, count the causes',
+        text="The big idea: the questions where two versions disagree are the ones that explain a change, so you label why each one changed and count the causes. Your code goes through every question id. If the old version failed and the new one passed, it is an improvement. If the old passed and the new failed, it is a regression. For each one it looks up the cause and adds 1 to that cause's count in a dict, a lookup table, like keeping tally marks. Questions with the same result are skipped.",
+        say='"I don\'t stop at the score. I read every regression and improvement, label why it changed, and count the causes each way."',
         classic='group_anagrams',
     ),
     stack=stack('MLflow: pull both traces for one question', """old = mlflow.search_traces(filter_string="tags.variant = 'v1' AND tags.qid = 'return-label'", return_type="list")[0]
@@ -1759,8 +1759,8 @@ refund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, differe
     ),
     angle=angle(
         pattern='Compare as sets, then bucket',
-        text='Turn each article list into a set so the order does not matter, compare the two sets, and file the question in one of two lists.',
-        say='"Before reading regressions I bucket them by whether retrieval changed, using the traces, then read a sample per bucket."',
+        text="The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.",
+        say='"Before reading regressions, I bucket them by whether retrieval changed, using the traces. Then I read a sample from each bucket."',
         classic=None,
     ),
     stack=stack('MLflow: the articles each version sent, from the traces', """def sent(trace):
@@ -1866,9 +1866,9 @@ shift:      gaps 0.3 + 0 + 0.3 = 0.6, halved = 0.3"""),
         why='The eval set no longer represents what users ask.',
     ),
     angle=angle(
-        pattern='Compare two mixes',
-        text='One walk through the categories.',
-        say='"I compare category shares between baseline and production and alert when the shift passes a threshold, then refresh the eval set."',
+        pattern='Compare shares, add up the gaps',
+        text='The big idea: when real questions move away from your eval set, its scores stop predicting real quality, so you measure that drift. Your code first adds up each list with `sum`. Then for each category it turns both counts into shares of their own total and takes the gap between them, using `abs` so the gap is never negative. It adds up the gaps and halves the result. 0 means the same mix, and 1 means completely different. Shares let you compare a list of 10 questions with one of 10,000.',
+        say='"I compare category shares between the eval set and real traffic. When the shift gets too big, I refresh the eval set."',
         classic=None,
     ),
     stack=stack('Databricks SQL: category mix this week', """SELECT category, count(*) / sum(count(*)) OVER () AS share

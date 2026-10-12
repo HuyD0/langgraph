@@ -32,9 +32,9 @@ and one agent passes 30 percent
         why="Overlapping tools are a problem you can fix on the step you're on, for free. A team costs several times more tokens, and 70 percent is past the point where extra agents tended to help.",
     ),
     angle=angle(
-        pattern='Rules in order',
-        text='A short chain of if checks where the first one that fits gives the answer, so the order of the checks is the logic. No loop needed.',
-        say='"I start with the simplest design that works, and only move up from one call to a workflow, to one agent, to a team, when I can name the problem the next step fixes and my eval shows it."',
+        pattern='Climb the ladder',
+        text="The big idea: most tasks don't need a team, so pick the lowest step on the ladder that does the job. Your code checks four rules in order and returns the first that fits. Fixed steps mean a workflow. No tools needed means one model call. A team wins only if the work splits into at least 2 independent parts and one agent passes less than 0.45 of your eval. Everything else gets one agent. There is no loop here, just a few questions asked in order.",
+        say='"I start with the simplest design and climb from one call to a workflow, one agent, then a team, only for a problem I can name and my eval confirms."',
         classic=None,
     ),
     stack=stack('LangGraph and LangChain: the four steps', """from langchain.agents import create_agent
@@ -198,9 +198,9 @@ lesson(MODULE, 'one_writer',
         why='Two writers on one thing means one quietly overwrites the other. With one writer, the helpers can still run side by side, and every change has a single owner.',
     ),
     angle=angle(
-        pattern='Count by key',
-        text='Count how many tasks write each resource in a dict, then keep the counts above one. Group Anagrams builds the same kind of dict, keyed by something you work out.',
-        say='"I split helpers by what they need to know and give each shared thing one writer, so nothing gets overwritten and each change has a clear owner."',
+        pattern='Count the writers of each thing',
+        text="The big idea: give each thing that changes one writer, because when two agents change the same thing, one quietly overwrites the other. Your code goes through every task's `writes` list and counts how many tasks write each resource. The counts live in a dict, a lookup table from each resource's name to its count. Reads are ignored, since sharing what you read is fine. Then it keeps every resource with a count above 1 and returns them sorted A to Z.",
+        say='"I split helpers by what they need to know, and I give each shared thing one writer, so nothing gets quietly overwritten."',
         classic='group_anagrams',
     ),
     stack=stack('LangChain: helpers as tools, one writer', """from langchain.agents import create_agent
@@ -383,9 +383,9 @@ billing  30 seconds   stopped at 10
         why='The gather waits for every worker it started, so the slowest one sets the pace. A timeout on each worker caps that wait.',
     ),
     angle=angle(
-        pattern='Fan out, then gather',
-        text='Each worker is looked at on its own, then one step combines them: a running biggest value plus two lists, in a single pass.',
-        say='"I fan read-only workers out with Send, gather their results through a reducer, and give each worker a timeout so one slow source can\'t hold up the whole answer."',
+        pattern='Wait for the slowest, with a limit',
+        text='The big idea: workers run at the same time and the gather waits for the slowest one, so each worker needs a timeout. Your code goes through the workers once. For each, it works out how long you would wait: its time, but never more than `timeout`. It keeps the biggest of those, which is how long the gather waits. Workers within the timeout add their result. Late ones add their name to the timed-out list. It is like waiting for friends at a restaurant, but only until a set time.',
+        say='"I fan out read-only workers, gather what they find, and give each one a timeout, so one slow source can\'t hold up the whole answer."',
         classic=None,
     ),
     stack=stack('LangGraph: Send, a reducer and a timeout', """import asyncio, operator
@@ -581,9 +581,9 @@ lost: card ends 0099"""),
         why='The fact was found, then lost at the hand-off. Another helper or a bigger model pays more for the same leak; passing the report on unchanged closes it.',
     ),
     angle=angle(
-        pattern='Check each, keep the misses',
-        text='One pass over the facts: test each one against the final text with `in`, and keep the misses in a list. The count of misses gives the share kept.',
-        say='"I grade the final answer first, then check the hand-offs: I list what each helper found and measure how much reaches the answer. Helpers report everything, and the main agent passes it on word for word."',
+        pattern='Check each fact against the answer',
+        text="The big idea: hand-offs lose details when the main agent rewords a helper's message, so check which facts reach the final answer. Your code turns the final answer into lower case once. Then for each fact, it uses `in` to ask whether the text contains the lower-case fact anywhere. Missing facts go into the lost list. The share kept is the facts found divided by all the facts, and the lost list comes back sorted A to Z. With no facts at all, nothing was lost, so it returns 1.0.",
+        say='"I grade the final answer first, then check the hand-offs: which facts each helper found actually reach the answer, and which got lost."',
         classic=None,
     ),
     stack=stack('MLflow 3: a scorer that checks the hand-off', """from mlflow.entities import (
@@ -756,9 +756,9 @@ round 3: 1 issue  → limit reached
         why='Without concrete rules a checker declares victory early. More rounds change nothing if every round passes, and an agent grading its own work skews positive.',
     ),
     angle=angle(
-        pattern='A loop with a cap',
-        text='A loop with two ways out: the work is clean, or the cap is reached. Saying what happens at the cap is what interviewers listen for.',
-        say='"My checker gets a written checklist and a fresh context, and the fix loop stops after three rounds. At the cap it returns the best attempt with a warning, or hands it to a person."',
+        pattern='A loop with two ways out',
+        text='The big idea: an agent that grades its own work says it is fine, so a fresh checker reviews it, and the fix loop needs a round cap decided in advance. Your code goes round by round, up to `max_rounds`. If a round finds 0 issues, it stops right away and reports clean, with the number of rounds it took. If the last allowed round still finds issues, it stops at the limit and reports how many that round found. Saying what happens at the cap is the part interviewers listen for.',
+        say='"My checker starts fresh with a written checklist, and the fix loop has a round cap. At the cap I warn or hand it to a person."',
         classic=None,
     ),
     stack=stack('LangGraph: check, fix, and a round cap', """from langchain.agents import create_agent
@@ -909,9 +909,9 @@ team's is only about $0.74."""),
         why='$6 more for 2 more passes is $3 each, and that is more than the $2 a pass is worth to you. The team\'s low cost per success hides this, because it counts the 6 passes one agent gets anyway.',
     ),
     angle=angle(
-        pattern='Subtract, then divide',
-        text='Subtract to find what the team adds in cost and in passes, then divide one by the other, with a guard for when it adds no passes. No loop needed.',
-        say='"I price the team\'s extra passes: the extra dollars divided by the extra passes. If one more pass is worth less than that, I keep one agent."',
+        pattern='Extra dollars over extra passes',
+        text="The big idea: a team that passes a few more tasks may not be worth its price, so work out what each extra pass costs. Your code subtracts one agent's passes from the team's. If the team passes no more, it returns `None`, since there is nothing extra to pay for. Otherwise it subtracts the costs too and divides the extra dollars by the extra passes. In the example, $5.40 more for 2 more passes is $2.70 each. If one more pass is worth less than that to you, keep one agent.",
+        say='"I price the team\'s extra passes: extra dollars divided by extra passes. If one more pass is worth less than that, I keep one agent."',
         classic=None,
     ),
     stack=stack('MLflow 3: tokens per design from traces', """import mlflow
@@ -1060,9 +1060,9 @@ writer:     1200
         why='With every span called "agent" you are guessing. Named spans show which helper uses the tokens, so you change one helper and leave the rest alone.',
     ),
     angle=angle(
-        pattern='Total by key, then pick the biggest',
-        text='One pass adds each call\'s tokens to its agent\'s total in a dict. A second pass over the names, A to Z, keeps the biggest, so a tie goes to the name that comes first.',
-        say='"I name every helper\'s span so the trace shows tokens per agent. Then I work on the biggest one first, and try a smaller model there only if my eval still passes."',
+        pattern='Total per helper, then pick the biggest',
+        text="The big idea: give each helper its own named span, so you can see which one costs the most and work on that first. Your code goes through the calls and adds each call's input plus output tokens to its agent's total. The totals live in a dict, a lookup table from agent name to tokens. Then it goes through the names in A to Z order and keeps the biggest total. It only swaps for a bigger total, never an equal one, so a tie goes to the name that comes first.",
+        say='"I name every helper\'s span so I can see tokens per agent. I work on the biggest first, and try a smaller model there only if my eval still passes."',
         classic=None,
     ),
     stack=stack('MLflow 3: tokens per named helper', """import mlflow
@@ -1259,9 +1259,9 @@ team gain: 0.75 minus 0.6 is 0.15
         why='The same agent can pass a question on one try and fail it on the next. Run each question 3 to 5 times and compare "passed every time", using a rule you wrote before the runs.',
     ),
     angle=angle(
-        pattern='Score each side, then apply a rule',
-        text='A small helper scores one design in one pass over its questions, using `all`. Then two checks written in advance give the verdict.',
-        say='"I compare a team with a one-agent baseline on the same questions, 3 to 5 runs each, and I write the decision rule first: the team must win on passed every time by a set margin and stay under a cost per success."',
+        pattern='Score both designs, then apply the rule',
+        text="The big idea: test a team against one agent with a decision rule written before any run, so a lucky result can't move the goalposts. A small helper scores each design. It uses Python's `all` to ask whether every try of a question passed, then divides that count by the number of questions. Your code subtracts the two scores and rounds to 2 places. It divides the team's cost by its passed tries. The team wins only if it has passed tries, reaches the gain in the rule, and stays within the cost limit.",
+        say='"I write the decision rule before any run. The team must beat one agent on passed every time by a set margin and stay under a cost per success."',
         classic=None,
     ),
     stack=stack('MLflow 3: the experiment, k runs per design', """import mlflow
