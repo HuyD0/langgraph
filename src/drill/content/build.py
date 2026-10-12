@@ -104,7 +104,17 @@ def build_data(loaded: list[Module] | None = None) -> dict:
         "classics": [p.id for p in ALL_PROBLEMS],
         "review": review.data(),
         "real": real.data(),
+        "skill": skill_files(),
     }, ensure_ascii=False))
+
+
+SKILL_DIR = Path(__file__).resolve().parents[3] / ".claude" / "skills" / "vet-ai-use-case"
+
+
+def skill_files() -> dict:
+    """The repo's vet-ai-use-case skill, file by file, for the lesson "Turn your vetting into a skill"."""
+    files = {str(p.relative_to(SKILL_DIR)): p.read_text(encoding="utf-8") for p in sorted(SKILL_DIR.rglob("*")) if p.is_file() and "__pycache__" not in p.parts}
+    return {"name": "vet-ai-use-case", "path": ".claude/skills/vet-ai-use-case", "files": files}
 
 
 def render_page(data: dict) -> str:

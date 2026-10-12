@@ -920,3 +920,172 @@ big = 7 <= 3   # False""",
         ],
     ),
 )
+
+lesson(MODULE, 'make_a_skill',
+    title='Turn your vetting into a skill',
+    learn=[
+        "Everything in Frame so far, from the one-line use case and the gates to the review, the cost and the bars, is a routine you will repeat for every new idea. A **Claude skill** packages a routine so Claude follows it the same way every time: a folder holding a **SKILL.md** file of instructions, plus any reference files and scripts it needs.",
+        "SKILL.md starts with two lines of settings between `---` markers. The **name** is lowercase letters, numbers and hyphens, at most 64 characters, and may not contain \"claude\" or \"anthropic\". The **description**, up to 1,024 characters, says what the skill does and when to use it, in the third person (\"Vets a proposed AI use case. Use when...\"). Claude reads only the name and description of every skill up front, and loads the rest when a request matches: so the description decides whether your skill is ever used.",
+        "The body holds the steps and an output format, kept short (Anthropic suggests under 500 lines), with details in reference files it opens only when needed. Anything that must be exact, like adding up the total cost of ownership, goes in a **script** the skill runs, because a model can get sums wrong and a script cannot. This repository ships one: `.claude/skills/vet-ai-use-case`, whose `scripts/tco.py` prints the cost table.",
+        "To use it in Claude Code, put the folder in `~/.claude/skills/` (just for you) or a project's `.claude/skills/` (for everyone on the project), then ask Claude to assess an idea or type `/vet-ai-use-case`. On claude.ai, zip the folder and upload it in Settings, with code execution turned on. Then test it like any prompt: run it on a few use cases with known gaps, read what it misses, and change the instructions.",
+    ],
+    example=example('The top of a SKILL.md', """---
+name: vet-ai-use-case
+description: Vets a proposed AI use case before
+  anything is built. Use when someone asks whether
+  an AI idea is worth doing, or wants it costed.
+---
+
+# Vet an AI use case
+
+1. Write the use case in one line.
+2. Check the three gates.
+8. Run python scripts/tco.py inputs.json
+   and report its table."""),
+    check=question(
+        'Your skill must report the total cost of ownership. What is the most reliable way?',
+        [
+            'Ask Claude in the instructions to add up the costs carefully',
+            'Put a script in the skill that works out the total, and have the skill run it',
+            'Write the current prices into the description',
+        ],
+        answer=1,
+        why='Sums must be exact, and a script is exact every time. Prices also change, so the skill asks for them instead of storing them.',
+    ),
+    angle=angle(
+        pattern='Check the rules, then write the file',
+        text='The big idea: a skill is a SKILL.md file whose name and description Claude reads first, so the file must follow the rules exactly or it will not load. Your code first collects every rule the name or description breaks: characters, length, the reserved words, an empty or too-long description, angle brackets. If there are any, it returns them all, so they can be fixed in one go. Otherwise it builds the file line by line: the settings between --- markers, a title made from the name, and the steps numbered from 1. It is like filling in a form that is checked before it is sent.',
+        say='"I package a routine I repeat, like vetting a use case, as a Claude skill: a SKILL.md with a name, a description that says what it does and when to use it, short steps, and scripts for anything that must be exact, like the cost sums. Then I test it on cases with known answers."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Write a Valid SKILL.md',
+        topic='pricing',
+        difficulty='medium',
+        fn='make_skill',
+        prompt="""Your function gets three things: `name`, `description` (both text) and `steps`, a list of step texts.
+
+First collect every problem, in this order:
+
+- The name is empty, longer than 64 characters, or has a character that is not a lowercase letter, a digit or `-`: add `"name: lowercase letters, numbers and hyphens, 1 to 64 characters"`.
+- The name contains `"claude"` or `"anthropic"`: add `"name: may not contain claude or anthropic"`.
+- The description is blank (after stripping spaces) or longer than 1024 characters: add `"description: 1 to 1024 characters"`.
+- The description contains `<` or `>`: add `"description: no angle brackets"`.
+
+If there are problems, return `{"ok": False, "problems": [...]}`.
+
+Otherwise return `{"ok": True, "text": ...}`, where the text is these lines joined with new lines, plus a new line at the end:
+
+- `---`, then `name: ` and the name, then `description: ` and the description, then `---`
+- an empty line, then `# ` and the title, then an empty line. The title is the name with each `-` turned into a space and its first letter in capitals.
+- each step as `1. `, `2. ` and so on, then the step.""",
+        pattern='Collect every problem first; build the file only when there are none.',
+        target='one pass over the name, one over the steps',
+        realworld='Claude Code and the Skills API refuse a skill whose name or description breaks these rules. Teams that share skills check them in code before publishing, the same way they lint code.',
+        starter="""def make_skill(name, description, steps):
+    # your code here
+    pass
+""",
+        solution="""def make_skill(name, description, steps):
+    problems = []
+    allowed = "abcdefghijklmnopqrstuvwxyz0123456789-"
+    ok_chars = True
+    for ch in name:
+        if ch not in allowed:
+            ok_chars = False
+    if name == "" or len(name) > 64 or not ok_chars:
+        problems.append("name: lowercase letters, numbers and hyphens, 1 to 64 characters")
+    if "claude" in name or "anthropic" in name:
+        problems.append("name: may not contain claude or anthropic")
+    if description.strip() == "" or len(description) > 1024:
+        problems.append("description: 1 to 1024 characters")
+    if "<" in description or ">" in description:
+        problems.append("description: no angle brackets")
+    if problems:
+        return {"ok": False, "problems": problems}
+    title = name.replace("-", " ")
+    title = title[:1].upper() + title[1:]
+    lines = ["---", "name: " + name, "description: " + description, "---", "", "# " + title, ""]
+    for i in range(len(steps)):
+        lines.append(str(i + 1) + ". " + steps[i])
+    return {"ok": True, "text": "\\n".join(lines) + "\\n"}
+""",
+        cases=[
+            case('vet-ai-use-case', 'Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.', ['Write the use case in one line.', 'Check the three gates.', 'Run scripts/tco.py for the cost.'],
+                 expected={'ok': True, 'text': '---\nname: vet-ai-use-case\ndescription: Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.\n---\n\n# Vet ai use case\n\n1. Write the use case in one line.\n2. Check the three gates.\n3. Run scripts/tco.py for the cost.\n'}, sample=True),
+            case('Vet_AI', 'Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.', ['x'],
+                 expected={'ok': False, 'problems': ['name: lowercase letters, numbers and hyphens, 1 to 64 characters']}),
+            case('claude-helper', '', ['x'],
+                 expected={'ok': False, 'problems': ['name: may not contain claude or anthropic', 'description: 1 to 1024 characters']}),
+            case('tco', 'Works out <cost>', [],
+                 expected={'ok': False, 'problems': ['description: no angle brackets']}),
+            case('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.', ['x'],
+                 expected={'ok': False, 'problems': ['name: lowercase letters, numbers and hyphens, 1 to 64 characters']})
+        ],
+        guided="""def make_skill(name, description, steps):
+    # Replace every ___ with real code, then run the tests.
+    problems = []
+    allowed = "abcdefghijklmnopqrstuvwxyz0123456789-"
+    # Step 1: is every character of the name allowed?
+    ok_chars = True
+    for ch in name:
+        if ch not in allowed:
+            ok_chars = False
+    if name == "" or len(name) > 64 or not ok_chars:
+        problems.append("name: lowercase letters, numbers and hyphens, 1 to 64 characters")
+    # Step 2: the reserved words.
+    if "claude" in name or "anthropic" in name:
+        problems.append("name: may not contain claude or anthropic")
+    # Step 3: the description's length.
+    if ___:
+        problems.append("description: 1 to 1024 characters")
+    if "<" in description or ">" in description:
+        problems.append("description: no angle brackets")
+    if problems:
+        return {"ok": False, "problems": problems}
+    # Step 4: the title, then the file, line by line.
+    title = name.replace("-", " ")
+    title = title[:1].upper() + title[1:]
+    lines = ["---", "name: " + name, "description: " + description, "---", "", "# " + title, ""]
+    for i in range(len(steps)):
+        lines.append(___)
+    return {"ok": True, "text": "\\n".join(lines) + "\\n"}
+""",
+        fills=['description.strip() == "" or len(description) > 1024', 'str(i + 1) + ". " + steps[i]'],
+        concepts=[
+            [
+                'Collecting problems in a list',
+                'Check every rule and append each problem, instead of stopping at the first one, so they can all be fixed at once.',
+                """problems = []
+if len("ab") > 1:
+    problems.append("too long")
+problems   # ["too long"]""",
+            ],
+            [
+                'Checking every character',
+                'Loop over a string to look at each character; `in` checks it is one of the allowed ones.',
+                """ok = True
+for ch in "ab-1":
+    if ch not in "abc-1":
+        ok = False""",
+            ],
+            [
+                'Slices for a capital letter',
+                '`title[:1]` is the first character and `title[1:]` the rest; `.upper()` makes it a capital.',
+                '"vet it"[:1].upper() + "vet it"[1:]   # "Vet it"',
+            ],
+        ],
+        byhand='Name "vet-ai-use-case": every character allowed, 15 long, no reserved word. The description is filled and short, with no angle brackets. No problems, so build: ---, the name line, the description line, ---, an empty line, "# Vet ai use case", an empty line, then "1. Write the use case in one line.", "2. Check the three gates.", "3. Run scripts/tco.py for the cost.", joined with new lines and one at the end.',
+        why='Each character of the name and each step is looked at once.',
+        gotchas=[
+            [
+                'A vague description',
+                'Claude decides whether to use a skill from its description alone. "Helps with AI" never triggers; "Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing" does.',
+            ],
+            [
+                'Letting the model do the sums',
+                'Models can get arithmetic wrong, and quietly. Put exact work, like the cost total, in a script the skill runs, and report the script\'s output.',
+            ],
+        ],
+    ),
+)
