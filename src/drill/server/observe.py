@@ -208,7 +208,7 @@ class MlflowObserver:
             experiment = experiment_path(experiment, uri, databricks_user(uri))
         where = uc_trace_location(mlflow.set_experiment(experiment))
         if where:
-            log.warning("Traces for %s are stored in Unity Catalog (%s): reading them needs a SQL warehouse", experiment, where)
+            log.info("Traces for %s go to Unity Catalog (%s); reading them needs a SQL warehouse", experiment, where)
         mlflow.set_active_model(name=f"daily-drill-{app_version()}")
 
     def _off(self, exc: Exception) -> None:

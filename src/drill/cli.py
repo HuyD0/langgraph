@@ -319,13 +319,20 @@ app.add_typer(tracing_app, name="tracing")
 @tracing_app.command("check")
 def tracing_check_cmd(
     experiment: str = typer.Option(None, "--experiment", "-e", help="Experiment to check (default DRILL_MLFLOW_EXPERIMENT or daily-drill)."),
+    uc_schema: str = typer.Option(None, "--uc-schema", help="Databricks only: create the experiment with its traces in this Unity Catalog schema (catalog.schema)."),
 ) -> None:
     """Say where traces go, check the connection, create the experiment if needed, and log one test trace."""
     import os
 
     import mlflow
 
-    from drill.config import databricks_profile, databricks_user, experiment_path, is_databricks_uri, uc_trace_location
+    from drill.config import (
+        databricks_profile,
+        databricks_user,
+        experiment_path,
+        is_databricks_uri,
+        uc_trace_location,
+    )
 
     os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
     uri = os.getenv("MLFLOW_TRACKING_URI", "").strip()
@@ -343,7 +350,21 @@ def tracing_check_cmd(
     else:
         host = None
         console.print(f"Traces go to MLflow on this Mac: {uri}")
-    exp = mlflow.set_experiment(name)
+    if uc_schema and host:
+        # Traces in Unity Catalog travel through the Databricks API, so a workspace storage
+        # firewall doesn't block them. The link can only be made when the experiment is created.
+        from mlflow.entities.trace_location import UnityCatalog
+
+        existing = mlflow.get_experiment_by_name(name)
+        if existing and not uc_trace_location(existing):
+            console.print(f"[red]{name} already exists with its traces in the experiment.[/red] "
+                          "A Unity Catalog link can only be set when an experiment is created: pick another name with -e.")
+            raise typer.Exit(1)
+        catalog, _, schema = uc_schema.partition(".")
+        prefix = "".join(ch if ch.isalnum() else "_" for ch in name.rsplit("/", 1)[-1])
+        exp = mlflow.set_experiment(name, trace_location=None if existing else UnityCatalog(catalog, schema, table_prefix=prefix))
+    else:
+        exp = mlflow.set_experiment(name)
     where = uc_trace_location(exp)
     console.print(f"Experiment: {name}")
     console.print(
@@ -354,6 +375,10 @@ def tracing_check_cmd(
         span.set_inputs({"check": "can this machine write a trace here?"})
         span.set_outputs({"ok": True})
     mlflow.flush_trace_async_logging()
+    if where and not os.getenv("MLFLOW_TRACING_SQL_WAREHOUSE_ID"):
+        console.print("Test trace sent. To read it back here, set MLFLOW_TRACING_SQL_WAREHOUSE_ID to a SQL warehouse id.")
+        console.print(f"Open it: {host}/ml/experiments/{exp.experiment_id}/traces")
+        return
     try:
         found = mlflow.search_traces(locations=[exp.experiment_id], max_results=1, return_type="list")
     except Exception as exc:
@@ -361,8 +386,9 @@ def tracing_check_cmd(
             console.print(
                 "[red]The trace's data could not be saved or read.[/red] The workspace's storage account "
                 "refused this machine (403 AuthorizationFailure). That usually means the workspace's "
-                "storage firewall is on, so only the workspace's own networks may write there. Keep "
-                "traces on this Mac's MLflow, or log from inside Databricks. See docs/SERVER.md."
+                "storage firewall is on, so only the workspace's own networks may write there. Store the "
+                "traces in Unity Catalog instead (they go through the Databricks API): rerun with "
+                "--uc-schema catalog.schema and a new -e name. See docs/SERVER.md."
             )
             raise typer.Exit(1) from None
         raise
