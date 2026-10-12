@@ -100,6 +100,17 @@ idea, ungraded:
   groundedness judge; it must quote the review word for word and code drops anything else, but
   it was tuned on these same cases, so check it against your own labels before trusting it.
   Run it before changing a prompt, and bump the version.
+- **Labels and the judge**: `uv run drill review label` shows recent reviews from MLflow, one at a
+  time, and asks whether each invented a fact; your answer goes on the trace as HUMAN feedback
+  (`grounded`). `uv run drill review calibrate` runs the judge on everything you labelled, logs
+  its verdicts (`grounded_judge`), and reports agreement and Cohen's kappa as an MLflow run.
+  Label about ten a week; lean on the judge only once kappa stays above about 0.6 on 20 or more.
+- **The pilot's outcome**: when you enter pilot results in "Is it fit for purpose?", the go, fix
+  or stop call is attached to the review and challenge drafts that vetted that idea
+  (`pilot_outcome`), so you can later see whether the vetting predicted the pilot.
+- **The prompt registry**: `uv run drill review register` puts both prompts in MLflow's prompt
+  registry (`drill-use-case-review`, `drill-use-case-challenge`), a new version only when the
+  text changed, with the `production` alias on the current one.
 
 It is saved in your own progress only (`mine` in the progress document; on claude.ai under
 `data/users/<you>`, which nobody else can read) and the tutor snapshot includes it.

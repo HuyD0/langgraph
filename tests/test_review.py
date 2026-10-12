@@ -91,3 +91,33 @@ def test_the_judge_keeps_only_real_quoted_inventions():
 
     ok, kept = review_eval.judge_grounded(FakeRouter(), review_eval.FULL, review_text, "default")
     assert not ok and kept == ["The system encrypts every answer with AES-256 keys"]
+
+
+def test_agreement_and_kappa_for_judge_calibration():
+    from drill.review_ops import agreement
+
+    r = agreement([True, True, False, False], [True, False, False, False])
+    assert r["agreement"] == 0.75 and r["kappa"] == 0.5 and r["judge_false_alarm"] == 1 and r["judge_missed"] == 0
+    assert agreement([True, True], [True, True])["kappa"] is None, "no variety: kappa cannot be worked out"
+    assert agreement([], [])["n"] == 0
+
+
+def test_the_registered_template_is_the_prompt_and_the_card_reads_back():
+    card = {"user": "IT", "owner": "", "success": "90% routed right"}
+    prompt = review.review_prompt(card)
+    assert review.review_template().replace("{{card}}", review.card_lines(card)) == prompt
+    assert "{{card}}" in review.review_template() and "{{problem}}" in review.challenge_template()
+    back = review.parse_card(prompt)
+    assert back["user"] == "IT" and back["owner"] == "" and back["success"] == "90% routed right" and len(back) == len(review.CARD_FIELDS)
+
+
+def test_the_pilot_outcome_and_ratings_reach_the_snapshot():
+    from drill import tutor
+
+    own = {"updatedAt": 1, "outcome": {"call": "fix"},
+           "feedback": [{"name": "useful", "value": False}, {"name": "missed_a_risk", "value": True}, {"name": "useful", "value": True}]}
+    text = tutor.snapshot({"lessons": {}, "mine": own}, [], build_data(), today="2026-10-12")
+    assert "Their pilot's call, by their own bars: fix." in text
+    assert "1 useful, 1 not; reasons given: missed a risk" in text
+    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    assert 'sendFeedback(request, feature, "pilot_outcome", call)' in page

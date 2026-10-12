@@ -58,15 +58,42 @@ CHALLENGE_ASKS = [
 CHALLENGE_CLOSE = "Plain words, short bullets, under 220 words. Do not say whether to build it; they decide."
 
 
-def review_prompt(card: dict) -> str:
-    """The review prompt for a card. The page builds exactly this text from data()."""
-    lines = ["Review this AI use case against the Well-Architected pillars.", "", "Use case card:"]
-    for key, _label, _example in CARD_FIELDS:
-        lines.append(f"- {key}: {(card.get(key) or '').strip() or 'not written'}")
+def card_lines(card: dict) -> str:
+    return "\n".join(f"- {key}: {(card.get(key) or '').strip() or 'not written'}" for key, _l, _e in CARD_FIELDS)
+
+
+def review_template() -> str:
+    """The review prompt with the card left as {{card}}: what goes in MLflow's prompt registry."""
+    lines = ["Review this AI use case against the Well-Architected pillars.", "", "Use case card:", "{{card}}"]
     for pillar, questions in PILLARS.items():
         lines += ["", "## " + pillar] + ["- " + q for q in questions]
     lines += ["", *RULES, "", ANSWER_FORMAT]
     return "\n".join(lines)
+
+
+def review_prompt(card: dict) -> str:
+    """The review prompt for a card. The page builds exactly this text from data()."""
+    return review_template().replace("{{card}}", card_lines(card))
+
+
+def challenge_template() -> str:
+    """The challenge prompt as the page builds it, with what it fills in left as {{placeholders}}."""
+    return "\n".join([
+        "You are a sceptical reviewer helping someone vet an AI use case before any money is spent. {{learner}}", "",
+        "The problem: {{problem}}", "The use case: {{use_case}}", "They plan to {{mode}}.", "They rate it {{value}} value and {{doable}} to do.", "",
+        "Argue against it, kindly but honestly:", *CHALLENGE_ASKS, CHALLENGE_CLOSE,
+    ])
+
+
+def parse_card(prompt: str) -> dict:
+    """The card back out of a review prompt (as stored on a trace)."""
+    part = prompt.split("Use case card:", 1)[-1].split("\n## ", 1)[0]
+    card = {}
+    for line in part.splitlines():
+        if line.startswith("- ") and ": " in line:
+            key, value = line[2:].split(": ", 1)
+            card[key.strip()] = "" if value.strip() == "not written" else value.strip()
+    return card
 
 
 def blank_fields(card: dict) -> list[str]:

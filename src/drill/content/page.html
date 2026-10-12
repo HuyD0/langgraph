@@ -1338,6 +1338,15 @@ function feedbackBar(feature, request) {
     <button class="chipbtn" data-fb="yes">${ic("check")}Yes</button><button class="chipbtn" data-fb="no">${ic("x")}No</button><div class="fbwhy" hidden></div></div>`;
 }
 const draftState = feature => JSON.stringify(feature === "use_case_challenge" ? (({ value, doable, mode, rule, nodata, harm }) => ({ value, doable, mode, rule, nodata, harm }))(mine().idea || {}) : (mine().card || {}));
+// The slow, true signal: what the pilot decided. It goes onto the drafts that vetted the idea,
+// so their traces can be read later against what really happened.
+function linkOutcome(call) {
+  const m = mine(); if ((m.outcome || {}).call === call) return;
+  m.outcome = { call, at: Date.now() };
+  for (const [request, feature] of [[m.challengeRequest, "use_case_challenge"], [m.reviewRequest, "use_case_review"]])
+    if (request) sendFeedback(request, feature, "pilot_outcome", call);
+  saveMine();
+}
 function noticeChange() {  // an implicit signal: the draft moved you to change your rating, gates or card
   if (!lastDraft || lastDraft.sent || draftState(lastDraft.feature) === lastDraft.before) return;
   lastDraft.sent = true;
@@ -1469,6 +1478,7 @@ function updateMine() {
         if (num(b.rc) > num(b.cost)) { missed.push("cost"); if (num(b.rc) > num(b.cost) * 1.2) close = false; }
         call = !missed.length ? "go" : missed.length === 1 && close ? "fix" : "stop";
       }
+      linkOutcome(call);
       const why = fails > 0 ? `${fails} must-pass ${fails === 1 ? "case" : "cases"} failed.` : !missed.length ? "Every bar met." : `Missed: ${missed.join(", ")}${call === "fix" ? ", only just" : ""}.`;
       line += `<div class="verdict ${call === "go" ? "ok" : call === "stop" ? "no" : ""}"><b>${call === "go" ? "Go" : call === "fix" ? "Fix, then test again" : "Stop"}</b>${why} A person still makes the final call.</div>`;
     }
@@ -1498,6 +1508,7 @@ async function challengeIdea() {
       { feature: "use_case_challenge", lesson_id: cur.id, request, prompt_version: RV.challengeVersion }));
     out.innerHTML = fmt(text) + feedbackBar("use_case_challenge", request);
     lastDraft = { feature: "use_case_challenge", request, before: draftState("use_case_challenge") };
+    mine().challengeRequest = request;
     d.challenge = text; mine().idea = d; saveMine();
   } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a reply just now. Try again in a moment.</p>`; }
   btn.disabled = false;
@@ -1515,6 +1526,7 @@ async function draftReview() {
       { feature: "use_case_review", lesson_id: cur.id, own_card: filled, request, prompt_version: RV.reviewVersion, blank_fields: blank }));
     out.innerHTML = fmt(text) + feedbackBar("use_case_review", request);
     lastDraft = { feature: "use_case_review", request, before: draftState("use_case_review") };
+    mine().reviewRequest = request;
     if (filled) { mine().review = text; saveMine(); }
   } catch (err) { out.innerHTML = `<p class="meta">Couldn't get a draft just now. Try again in a moment.</p>`; }
   btn.disabled = false;
