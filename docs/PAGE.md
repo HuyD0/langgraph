@@ -26,6 +26,40 @@ Everything is in the package, under `src/drill/content/`:
 
 The money & health track comes from `drill.mine` (`drill.mine.export`), with made-up data.
 
+## The path: a sticker book
+
+Home shows the path as a sticker book, with the six phases always in view:
+
+- **The phase rail** shows the six phases in order, done phases filled, the current one large and
+  blue. On Home each phase is a button: tap one to see its page of stickers, and "Back to today"
+  returns to the current phase. Above every lesson the rail is a reminder only, so a tap never
+  leaves the lesson.
+- **One shape per phase**: circle (Frame), rounded square (Design), hexagon (Build and trace),
+  diamond (Evaluate), shield (Ship), pentagon (Monitor). Every lesson is a sticker in its phase's
+  shape, with its module's icon inside, so one sticker tells you where an idea lives.
+- **A phase's page** holds its stickers, one scene per module. Small phases open in full; in a big
+  one, the scene with the next lesson is open and the rest fold to a row of small shapes. Today's
+  page previews the next phase below it.
+- **Each phase page opens with a title card**: the phase's shape large, a "You are here", "Done",
+  "Earlier" or "Coming up" label, and what you come out with. The page is printed on the phase's
+  own paper, matched to its shape: dots, graph paper, a lattice, ruled lines, hatching, dashes.
+- **Lesson pictures**: a lesson with its own picture shows it on its sticker, faded until you get
+  there; the others show their module's icon. Frame, Design and Building with LLMs have pictures so
+  far. To add one, put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` in the sprite at the
+  top of `page.html`, drawn as strokes on a 24 grid centred on 0.
+- **Order**: each sticker carries its place, like 2.11 (phase 2, lesson 11), and a dotted trail
+  links stickers in reading order, turning at the end of each row. The first lesson not yet done
+  is tagged Next. Opening a lesson further on shows a gentle note naming the next one in order,
+  with "Go to the next one" and "Stay here"; it never blocks.
+- **Hover card**: hovering a sticker, or reaching it with the keyboard, shows its place, a one-line
+  idea from its first Learn paragraph, the function you build, and where you are with it. On a
+  phone a long press shows the same card; a tap still opens the lesson.
+- **Finishing a lesson** shows its new sticker.
+
+Shape and position carry the phases, not colour: colour stays for passed, failed and the next
+step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
+`tests/test_content.py` keeps the path at six phases.
+
 ## The study list
 
 Select any text in a lesson, or a line of your code, to save it to the study list in the

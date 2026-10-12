@@ -42,6 +42,34 @@ def test_modules_are_in_order_and_lessons_are_unique(loaded):
     assert lifecycle_modules == modules.ORDER, "the path teaches the stages in order, so ORDER follows LIFECYCLE"
 
 
+def test_the_path_has_six_phases_one_sticker_shape_each():
+    # The page gives each phase its own sticker shape and rail icon, six of each (phShape, PH_ICON).
+    assert len(modules.LIFECYCLE) == 6, "a seventh phase needs a seventh sticker shape and icon in page.html"
+
+
+def test_every_module_has_an_icon_for_its_stickers():
+    # Each sticker shows its module's icon inside its phase's shape.
+    import re
+    from pathlib import Path
+    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    icons = page.split("const MOD_ICON = {", 1)[1].split("};", 1)[0]
+    named = set(re.findall(r'"?([a-z-]+)"?\s*:', icons))
+    missing = [mid for mid in modules.ORDER if mid not in named]
+    assert not missing, f"MOD_ICON has no icon for {missing}"
+
+
+def test_every_lesson_picture_belongs_to_a_real_lesson():
+    # A lesson's own sticker picture is a sprite symbol "s-<lesson id>"; a typo would silently fall back.
+    import re
+    from pathlib import Path
+    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    pictures = re.findall(r'<symbol id="s-([a-z0-9_]+)"', page)
+    lessons = {lid for m in modules.load(modules.ORDER) for lid in m.lesson_ids}
+    assert pictures, "no lesson pictures found"
+    assert len(pictures) == len(set(pictures)), "a lesson has two pictures"
+    assert not set(pictures) - lessons, f"pictures for lessons that don't exist: {set(pictures) - lessons}"
+
+
 def test_every_lesson_has_an_exercise_and_every_classic_is_real(data):
     bank = {p["id"] for p in data["bank"]}
     assert set(data["lessons"]) <= bank
