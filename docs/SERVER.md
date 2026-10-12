@@ -24,6 +24,22 @@ in [SETUP.md](SETUP.md), or any OpenAI-compatible endpoint named with `DRILL_HOS
 `DRILL_HOSTED_DAILY_TOKENS` a day. Every answer is cached by its exact prompt, so asking the
 same hint twice is free.
 
+**At work, through Databricks AI Gateway.** No key to create or keep: sign in once with
+`databricks auth login --host https://adb-<id>.azuredatabricks.net` (it goes through Entra),
+and put two lines in `.env`:
+
+```bash
+DRILL_HOSTED_AUTH=databricks
+DRILL_HOSTED_MODEL=<the gateway endpoint's name>
+```
+
+Each request is signed with that login, and the token is renewed as it runs out, so a
+server left running all day keeps working. The address defaults to the workspace's
+`/serving-endpoints`; set `DRILL_HOSTED_BASE_URL` if your gateway lives elsewhere. A
+Databricks address with no `DRILL_HOSTED_API_KEY` uses the login too. With no Ollama on the
+laptop, every question goes to the gateway, and your gateway's own limits and usage
+reports apply per person.
+
 ## From your phone
 
 **At home.** Same Wi-Fi, nothing to install: open `http://<your-mac-name>.local:8787` in
@@ -265,6 +281,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_HOME` | `.drill/` in the repo | The folder for the SQLite file and local MLflow traces, e.g. `~/Library/Application Support/DailyDrill` |
 | `DRILL_OWNER` | `local` | Whose rows a local store reads and writes (Lakebase uses your Databricks user name) |
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
+| `DRILL_HOSTED_AUTH` | `key` (`databricks` for a Databricks address with no key) | `databricks` signs requests with the Databricks login instead of a key |
 | `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on hosted usage (about four characters per token) |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |

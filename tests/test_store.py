@@ -151,3 +151,4 @@ def test_push_sends_documents_and_events_up_once(tmp_path):
     assert work.get("study/s1") == {"text": "MERGE"} and work.get("study/s2") == {"text": "newer at work"}
     assert [e["owner"] for e in work.events()] == ["sam@example.com"]
     assert here.push_to(work) == {"docs": 0, "skipped": 2, "events": 0}  # running it twice is harmless
+

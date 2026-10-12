@@ -990,6 +990,7 @@ dev = [
     { name = "jupyterlab" },
     { name = "nbclient" },
     { name = "nbformat" },
+    { name = "psycopg", extra = ["binary"] },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -1023,6 +1024,7 @@ dev = [
     { name = "jupyterlab", specifier = ">=4.6.4" },
     { name = "nbclient", specifier = ">=0.10" },
     { name = "nbformat", specifier = ">=5.10" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-cov", specifier = ">=5.0" },
 ]
