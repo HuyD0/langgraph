@@ -3,26 +3,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: one reading column for everything (path, then a lesson in four steps); the Notebook slides in from the side. */
-:root {
-  --bg: #eef1f4; --surface: #ffffff; --sunk: #e4e8ee; --fg: #17202b; --muted: #5b6878; --line: #d3d9e1;
-  --accent: #2346d1; --accent-ink: #ffffff; --accent-soft: #e6ebfd;
-  --pass: #157347; --pass-bg: #e3f4ea; --fail: #b42318; --fail-bg: #fdecea; --hint: #8a5a00; --hint-bg: #fdf3dc;
-  --code-bg: #f6f8fb; --scrim: rgba(15, 20, 27, 0.35);
-  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
-  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --col: 760px;
-}
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f141b; --surface: #171e27; --sunk: #0b0f15; --fg: #e6ebf2; --muted: #93a0b1; --line: #2a3441;
-  --accent: #7f9bff; --accent-ink: #0b1020; --accent-soft: #1c2440;
-  --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
-  --code-bg: #0d1218; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #0f141b; --surface: #171e27; --sunk: #0b0f15; --fg: #e6ebf2; --muted: #93a0b1; --line: #2a3441;
-  --accent: #7f9bff; --accent-ink: #0b1020; --accent-soft: #1c2440;
-  --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
-  --code-bg: #0d1218; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
+/* Tokens: src/drill/content/tokens.css, inlined by build.py. Edit that file, not this block. */
+/*TOKENS*/
 
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }

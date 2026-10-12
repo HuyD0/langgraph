@@ -70,6 +70,21 @@ def test_page_embeds_the_content(data):
     assert json.dumps(data["modules"][0]["title"]) in html
 
 
+def test_page_embeds_the_design_tokens(data):
+    """tokens.css is the one place colors and fonts live; the page must use only names it defines."""
+    import re
+    from pathlib import Path
+
+    here = Path(__file__).parent.parent / "src" / "drill" / "content"
+    tokens, page = (here / "tokens.css").read_text(), (here / "page.html").read_text()
+    defined = set(re.findall(r"(--[a-z][a-z0-9-]*)\s*:", tokens))
+    used = set(re.findall(r"var\((--[a-z][a-z0-9-]*)", page))
+    page_local = set(re.findall(r"(?<!var\()(--[a-z][a-z0-9-]*)", page))  # e.g. --toph, set by the script
+    assert used <= defined | page_local, f"used but never defined: {sorted(used - defined - page_local)}"
+    html = build_page(data)
+    assert "/*TOKENS*/" not in html and "--accent: #2346d1" in html
+
+
 def test_every_gotcha_has_a_lesson_and_code_to_spot(data):
     """Each card is a "Spot the gotcha" challenge in one lesson, or a Build-step habit."""
     lessons = set(data["lessons"])

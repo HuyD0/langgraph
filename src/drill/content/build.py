@@ -29,6 +29,7 @@ from drill.content.model import Module
 
 HERE = Path(__file__).resolve().parent
 PAGE_TEMPLATE = HERE / "page.html"
+TOKENS = HERE / "tokens.css"  # the design tokens, inlined into the page at /*TOKENS*/
 
 _EXERCISE_FIELDS = ("title", "topic", "difficulty", "fn", "prompt", "pattern", "target",
                     "realworld", "starter", "solution", "cases", "unordered")
@@ -115,10 +116,14 @@ def build_data(loaded: list[Module] | None = None) -> dict:
 
 
 def render_page(data: dict) -> str:
-    """page.html with the content embedded."""
+    """page.html with the design tokens and the content embedded: still one HTML file."""
     template = PAGE_TEMPLATE.read_text(encoding="utf-8")
     assert "/*DATA*/" in template, "page.html has lost its /*DATA*/ marker"
-    return template.replace("/*DATA*/", json.dumps(data, ensure_ascii=False))
+    assert "/*TOKENS*/" in template, "page.html has lost its /*TOKENS*/ marker"
+    tokens = TOKENS.read_text(encoding="utf-8")
+    return (template
+            .replace("/*TOKENS*/", tokens, 1)
+            .replace("/*DATA*/", json.dumps(data, ensure_ascii=False)))
 
 
 def build_page(data: dict | None = None) -> str:
