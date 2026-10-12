@@ -39,3 +39,6 @@ mlflow.db
 # Personal tutor material: snapshots and exports from the claude.ai page
 *tutor-snapshot*.md
 .drill/export/
+
+# written by `drill cloud deploy`: the commit a Databricks App runs, since it has no git history
+.drill-version

@@ -558,5 +558,94 @@ def store_push_cmd() -> None:
                       f"{counts['events']} events sent.")
 
 
+
+cloud_app = typer.Typer(add_completion=False, help="Run the server as a Databricks App: setup, deploy, start, stop, status.")
+app.add_typer(cloud_app, name="cloud")
+
+TARGET = typer.Option("personal", "--target", "-t", help="Which workspace, from databricks.yml: personal or work.")
+PROFILE = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target).")
+
+
+def _cloud(step):
+    """Run one cloud step, turning its errors into a red line instead of a traceback."""
+    from drill.cloud import CloudError
+
+    try:
+        return step()
+    except CloudError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+
+
+def _show_status(info: dict) -> None:
+    console.print(f"{info['name']}: [bold]{info['state']}[/bold]" + (f"  {info['url']}" if info.get("url") else ""))
+
+
+@cloud_app.command("setup")
+def cloud_setup_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    project: str = typer.Option("daily-drill", "--lakebase-project", help="The Lakebase project that keeps progress."),
+    create_lakebase: bool = typer.Option(False, "--create-lakebase", help="Create the Lakebase project if it is not there."),
+    experiment: str = typer.Option(None, "--experiment", help="MLflow experiment path for traces (default /Users/<you>/daily-drill)."),
+    model: str = typer.Option(None, "--model", help="Serving endpoint for the tutor (default databricks-claude-haiku-4-5)."),
+    name: str = typer.Option(None, "--name", help="The app's name in the workspace (default daily-drill)."),
+) -> None:
+    """Once per workspace: find or create the Lakebase project and experiment, and save their values for deploy."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    info = _cloud(lambda: cloud.setup(target, prof, project, create_lakebase, experiment, model, name))
+    console.print(f"Lakebase: {info['lakebase_database']}\nTraces: {info['experiment']} ({info['experiment_id']})")
+    console.print(f"Saved to {info['file']} (git ignores it). Next: uv run drill cloud deploy --target {target}")
+
+
+@cloud_app.command("deploy")
+def cloud_deploy_cmd(target: str = TARGET, profile: str = PROFILE) -> None:
+    """Upload the code and start the app on it. Takes a few minutes; the app bills while it runs."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    console.print(f"Deploying to {target}. Installing packages in the app takes a few minutes...")
+    info = _cloud(lambda: cloud.deploy(target, prof))
+    _show_status(info)
+    console.print(f"Running code {info['version']}. Stop it when you're done: uv run drill cloud stop --target {target}")
+
+
+@cloud_app.command("start")
+def cloud_start_cmd(target: str = TARGET, profile: str = PROFILE) -> None:
+    """Start the app again (it bills about 0.5 DBU an hour while running)."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    _show_status(_cloud(lambda: cloud.start(target, prof)))
+
+
+@cloud_app.command("stop")
+def cloud_stop_cmd(target: str = TARGET, profile: str = PROFILE) -> None:
+    """Stop the app so it stops billing. Progress stays in Lakebase."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    _show_status(_cloud(lambda: cloud.stop(target, prof)))
+
+
+@cloud_app.command("status")
+def cloud_status_cmd(target: str = TARGET, profile: str = PROFILE) -> None:
+    """Is the app running, and where."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    _show_status(_cloud(lambda: cloud.status(target, prof)))
+
+
+@cloud_app.command("requirements")
+def cloud_requirements_cmd() -> None:
+    """Rewrite requirements.txt from uv.lock. Run it after changing dependencies, before deploying."""
+    from drill import cloud
+
+    path = cloud.requirements()
+    console.print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
+
 if __name__ == "__main__":
     app()

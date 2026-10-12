@@ -19,6 +19,12 @@ a fresh one-hour password whenever it opens a connection::
     DRILL_DATABASE_URL=postgresql+psycopg://<host>/databricks_postgres?sslmode=require
     DRILL_LAKEBASE_ENDPOINT=projects/<project>/branches/<branch>/endpoints/<endpoint>
 
+In a Databricks App none of that is set by hand: the app's Lakebase resource gives it
+``PGHOST``, ``PGDATABASE``, ``PGUSER`` (the app's service principal) and ``LAKEBASE_ENDPOINT``,
+and the tables go in their own schema (``DRILL_DB_SCHEMA``, ``drill`` in the app), which the
+service principal creates and owns. One app serves everyone, so each request reads and
+writes as the signed-in person (:meth:`DocStore.for_owner`).
+
 If Lakebase cannot be reached when the server starts, it keeps going on the local SQLite
 file and says so; ``drill store push`` sends that work up later.
 
@@ -29,9 +35,11 @@ counts. See :mod:`drill.server.activity`.
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -94,12 +102,30 @@ def local_url() -> str:
 
 
 def database_url() -> str:
-    """Where documents live: ``DRILL_DATABASE_URL`` if set, else the SQLite file in :func:`data_dir`."""
-    return os.getenv("DRILL_DATABASE_URL", "").strip() or local_url()
+    """Where documents live: ``DRILL_DATABASE_URL`` if set, else the Lakebase a Databricks App
+    was given (``PGHOST``), else the SQLite file in :func:`data_dir`."""
+    url = os.getenv("DRILL_DATABASE_URL", "").strip()
+    if url:
+        return url
+    host = os.getenv("PGHOST", "").strip()
+    if host:
+        port = os.getenv("PGPORT", "").strip() or "5432"
+        database = os.getenv("PGDATABASE", "").strip() or "databricks_postgres"
+        return f"postgresql+psycopg://{host}:{port}/{database}?sslmode={os.getenv('PGSSLMODE', '').strip() or 'require'}"
+    return local_url()
 
 
 def lakebase_endpoint() -> str:
-    return os.getenv("DRILL_LAKEBASE_ENDPOINT", "").strip()
+    """The Lakebase endpoint to get passwords for: ours, or the one a Databricks App's resource names."""
+    return os.getenv("DRILL_LAKEBASE_ENDPOINT", "").strip() or os.getenv("LAKEBASE_ENDPOINT", "").strip()
+
+
+def db_schema() -> str:
+    """The Postgres schema for the tables (``DRILL_DB_SCHEMA``); empty means the database's default."""
+    schema = os.getenv("DRILL_DB_SCHEMA", "").strip()
+    if schema and not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", schema):
+        raise ValueError(f"DRILL_DB_SCHEMA must be lowercase letters, digits and underscores, not {schema!r}")
+    return schema
 
 
 class LakebaseLogin:
@@ -120,9 +146,10 @@ class LakebaseLogin:
 
     @property
     def user(self) -> str:
-        """The signed-in person's Databricks user name: their work email, and their Lakebase role."""
+        """The Lakebase role to sign in as: the person's Databricks user name (their work email)
+        on a laptop, or ``PGUSER`` (the app's service principal) in a Databricks App."""
         if not self._user:
-            self._user = self.client.current_user.me().user_name
+            self._user = os.getenv("PGUSER", "").strip() or self.client.current_user.me().user_name
         return self._user
 
     def password(self) -> str:
@@ -140,8 +167,10 @@ class DocStore:
     code does not care which one it is talking to.
     """
 
-    def __init__(self, url: str | None = None, owner: str | None = None, login: LakebaseLogin | None = None):
+    def __init__(self, url: str | None = None, owner: str | None = None, login: LakebaseLogin | None = None,
+                 schema: str | None = None):
         self.url = url or database_url()
+        self.schema = "" if self.url.startswith("sqlite") else (db_schema() if schema is None else schema)
         self.login = login
         self.fallback = False  # set by open_store when Lakebase was wanted but could not be reached
         kwargs: dict[str, Any] = {}
@@ -160,10 +189,27 @@ class DocStore:
                 cparams["user"] = login.user
                 cparams["password"] = login.password()
 
+        if self.schema:
+            # Every connection looks in our own schema first, so the tables are created and found there.
+            @event.listens_for(self.engine, "do_connect")
+            def _use_schema(dialect, conn_rec, cargs, cparams):  # noqa: ARG001
+                cparams["options"] = f"-csearch_path={self.schema}"
+
+            with self.engine.begin() as conn:
+                conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{self.schema}"'))
+
         self.owner = owner or (login.user if login else os.getenv("DRILL_OWNER", "").strip() or LOCAL_OWNER)
         if self.url.startswith("sqlite"):
             _add_owner_column(self.engine)
         metadata.create_all(self.engine)
+
+    def for_owner(self, owner: str) -> "DocStore":
+        """The same database, reading and writing ``owner``'s rows: one per signed-in person in an app."""
+        if not owner or owner == self.owner:
+            return self
+        view = copy.copy(self)
+        view.owner = owner
+        return view
 
     @property
     def kind(self) -> str:

@@ -76,6 +76,7 @@ uv run drill build-page    # the page as one HTML file, in dist/
 
 [docs/PAGE.md](docs/PAGE.md) is the content and how to add a lesson; [docs/SERVER.md](docs/SERVER.md)
 is the server, the phone, Claude Code and the cloud.
+[docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md) runs it as a Databricks App (`uv run drill cloud deploy`).
 
 ## Commands
 
