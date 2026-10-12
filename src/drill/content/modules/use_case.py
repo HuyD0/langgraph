@@ -447,143 +447,169 @@ lesson(MODULE, 'well_architected',
     learn=[
         "Before you build, check the design against a **well-architected framework**: a checklist of what good systems need, from the cloud providers. Microsoft's has five **pillars**. **Reliability**: it keeps working when a model or a service fails. **Security**: data and actions are protected. **Cost Optimization**: you know what drives the cost and pay only for what you use. **Operational Excellence**: you can see what it does, test it and release safely. **Performance Efficiency**: it stays fast as use grows.",
         "Microsoft's guidance for AI workloads applies every pillar to both the functional and the non-functional requirements. For AI that means questions like: what happens when the model endpoint is down or out of quota? Can a prompt injection make it leak data? Do you trace every answer? Can it handle the busiest minute? Databricks adds two pillars of its own, **data and AI governance** (who may use which data and models) and **interoperability and usability**.",
-        'The framework also says a system should be "just as reliable as it needs to be" and "just as secure as it needs to be". So answer each checklist question yes or no, and treat the no answers as a risk list: the pillar with the most gaps is where to look first, and some gaps are fine for a pilot if you write them down.',
+        'A quick way to start a review is to ask a model to draft it from your use case card. A good **review prompt** gives the whole card, asks each pillar\'s questions in turn, and sets rules: back every finding with a line from the card, write "Unknown" and a question when the card does not say, give each pillar a risk, and leave the decision to a person.',
+        "Then read the draft like a reviewer, not a fan. Check every claim against the card, because a model will fill gaps with confident guesses. The Unknowns are your next questions for the owner. The framework itself says a system only needs to be \"just as reliable\" and \"just as secure\" as it needs to be, so a person decides which risks are fine for a pilot.",
     ],
-    example=example('A short review of the HR assistant', """review = [
-  ["Reliability", "Fallback if the model is down?", False],
-  ["Reliability", "Retries with a limit?", True],
-  ["Security", "Injection tested?", False],
-  ["Security", "Only HR can read answers?", False],
-  ["Operational Excellence", "Every answer traced?", True],
-]
-# Security has 2 gaps, Reliability 1:
-# look at Security first"""),
+    example=example('The shape of a review prompt', """Review this AI use case against the Well-Architected pillars.
+
+Use case card:
+- user: HR team
+- owner: not written
+
+## Reliability
+- What happens if the model is down?
+
+Rules:
+- Base every finding on the card ...
+- If the card does not say, write Unknown ..."""),
     check=question(
-        'Which pillar asks what happens when the model endpoint runs out of quota during the busiest minute?',
+        'A model drafts a review that says "Security: low risk, data is encrypted". The card never mentions encryption. What should you do?',
         [
-            'Reliability, with Performance Efficiency',
-            'Data and AI governance',
-            'Interoperability and usability',
+            'Accept it: the model knows how these systems are usually built',
+            'Treat it as unknown and ask the owner how data is protected',
+            'Drop the Security pillar from the review',
         ],
-        answer=0,
-        why='Keeping it working when a dependency fails is Reliability, and coping with the busiest minute is Performance Efficiency. Governance is about who may use which data and models.',
+        answer=1,
+        why='The claim is not backed by the card, so it is a guess. A good review prompt asks the model to write Unknown in that case, and the open question goes to the owner.',
     ),
     angle=angle(
-        pattern='Count the gaps per pillar',
-        text='The big idea: a well-architected review asks yes-or-no questions under each pillar, and the no answers, counted per pillar, show where the design is weakest. Your code walks through the review rows. For every row answered no it adds one to that pillar\'s count, remembering pillars in the order they first appear. Then it turns the counts into [pillar, gaps] pairs, keeps only pillars with at least one gap, and sorts them with the most gaps first. It is like a car inspection sheet: count the fails in each section and fix the worst section first.',
-        say='"Before building I review the design against the Well-Architected pillars: reliability, security, cost, operations and performance, plus governance on Databricks. Each no is a risk, and the pillar with the most gaps goes first."',
+        pattern='Card, then pillars, then rules',
+        text='The big idea: an AI-drafted review is only as good as its prompt, so the prompt gives the whole use case card, asks each pillar\'s questions, and sets rules that stop the model guessing or deciding. Your code builds the prompt as a list of lines. It starts with the task and the card, writing "not written" for any blank field so the gap is visible. Then for each pillar it adds a heading and its questions, and at the end the rules. It joins the lines with new lines. It is like a briefing pack for a reviewer: the facts, the questions to answer, and how to answer them.',
+        say='"I draft a well-architected review by giving a model the whole use case card, each pillar\'s questions and strict rules: back findings with the card, mark unknowns as questions, rate the risk, and leave the decision to a person. Then I check every claim myself."',
         classic=None,
     ),
     exercise=exercise(
-        title='Find the Weakest Pillar',
+        title='Build the Review Prompt',
         topic='use cases',
         difficulty='medium',
-        fn='review_gaps',
-        prompt="""Your function gets `review`, a list of rows. Each row is a list of three things: the pillar's name, the question, and `True` (yes) or `False` (no).
+        fn='review_prompt',
+        prompt="""Your function gets two dicts:
 
-Count the `False` answers for each pillar.
+- `card`: the use case card, field name to text, like `{"user": "HR team", "owner": ""}`.
+- `pillars`: pillar name to a list of questions, like `{"Reliability": ["What happens if the model is down?"]}`.
 
-Return a list of `[pillar, gaps]` pairs, one for each pillar with at least one gap, with the most gaps first. Pillars with no gaps are left out. An empty review gives `[]`.
+Build a list of lines, then return them joined with `"\\n"`:
 
-(The tests never have two pillars with the same number of gaps.)""",
-        pattern='Count per name, then sort the counts, biggest first.',
-        target='one pass to count, then one sort',
-        realworld="Microsoft's Well-Architected assessment and the AWS lenses work this way: questions per pillar, then a list of risks per pillar to work through.",
-        starter="""def review_gaps(review):
+1. `"Review this AI use case against the Well-Architected pillars."`, then `""`, then `"Use case card:"`.
+2. For each card field, in order: `"- field: text"`, with the text stripped of spaces at both ends. If the text is blank, write `not written` instead.
+3. For each pillar, in order: `""`, then `"## "` and the pillar name, then `"- "` and each question.
+4. `""`, then every line of `RULES`, which is already written for you above the function.""",
+        pattern='Collect lines in a list, then join them once.',
+        target='one pass over the card, one over the pillars',
+        realworld='Teams increasingly draft design reviews with a model and then check them. The quality of the draft comes from the prompt: full context, one question at a time, and rules against guessing.',
+        starter="""RULES = [
+    'Rules:',
+    '- Base every finding on the card, and quote the line you used.',
+    '- If the card does not say, write Unknown, then the question to ask the owner.',
+    '- Give each pillar a risk: low, medium or high.',
+    '- Do not say whether to build it. A person decides.',
+]
+
+
+def review_prompt(card, pillars):
     # your code here
     pass
 """,
-        solution="""def review_gaps(review):
-    counts = {}
-    order = []
-    for pillar, question, ok in review:
-        if pillar not in counts:
-            counts[pillar] = 0
-            order.append(pillar)
-        if not ok:
-            counts[pillar] += 1
-    pairs = []
-    for pillar in order:
-        if counts[pillar] > 0:
-            pairs.append([pillar, counts[pillar]])
-    pairs.sort(key=lambda pair: pair[1], reverse=True)
-    return pairs
+        solution="""RULES = [
+    'Rules:',
+    '- Base every finding on the card, and quote the line you used.',
+    '- If the card does not say, write Unknown, then the question to ask the owner.',
+    '- Give each pillar a risk: low, medium or high.',
+    '- Do not say whether to build it. A person decides.',
+]
+
+
+def review_prompt(card, pillars):
+    lines = ["Review this AI use case against the Well-Architected pillars.",
+             "", "Use case card:"]
+    for field in card:
+        value = card[field].strip()
+        if value == "":
+            value = "not written"
+        lines.append("- " + field + ": " + value)
+    for pillar in pillars:
+        lines.append("")
+        lines.append("## " + pillar)
+        for q in pillars[pillar]:
+            lines.append("- " + q)
+    lines.append("")
+    for rule in RULES:
+        lines.append(rule)
+    return "\\n".join(lines)
 """,
         cases=[
-            case([
-                ["Reliability", "Fallback if the model is down?", False],
-                ["Reliability", "Retries with a limit?", True],
-                ["Security", "Injection tested?", False],
-                ["Security", "Only HR can read answers?", False],
-                ["Operational Excellence", "Every answer traced?", True],
-            ], expected=[["Security", 2], ["Reliability", 1]], sample=True),
-            case([], expected=[]),
-            case([["Security", "Secrets in a vault?", True], ["Cost Optimization", "Budget alert set?", True]], expected=[]),
-            case([
-                ["Cost Optimization", "Cost model written?", False],
-                ["Performance Efficiency", "Load tested?", False],
-                ["Performance Efficiency", "Quota for the busiest minute?", False],
-                ["Performance Efficiency", "Latency target set?", False],
-                ["Reliability", "Fallback model?", False],
-                ["Reliability", "Timeouts set?", False],
-            ], expected=[["Performance Efficiency", 3], ["Reliability", 2], ["Cost Optimization", 1]]),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'owner': ''}, {'Reliability': ['What happens if the model is down?'], 'Security': ['Who can read the answers?', 'Is prompt injection tested?']},
+                 expected='Review this AI use case against the Well-Architected pillars.\n\nUse case card:\n- user: HR team\n- task: answer policy questions\n- owner: not written\n\n## Reliability\n- What happens if the model is down?\n\n## Security\n- Who can read the answers?\n- Is prompt injection tested?\n\nRules:\n- Base every finding on the card, and quote the line you used.\n- If the card does not say, write Unknown, then the question to ask the owner.\n- Give each pillar a risk: low, medium or high.\n- Do not say whether to build it. A person decides.', sample=True),
+            case({'task': 'triage tickets'}, {'Cost Optimization': ['What drives the monthly cost?']},
+                 expected='Review this AI use case against the Well-Architected pillars.\n\nUse case card:\n- task: triage tickets\n\n## Cost Optimization\n- What drives the monthly cost?\n\nRules:\n- Base every finding on the card, and quote the line you used.\n- If the card does not say, write Unknown, then the question to ask the owner.\n- Give each pillar a risk: low, medium or high.\n- Do not say whether to build it. A person decides.'),
+            case({}, {},
+                 expected='Review this AI use case against the Well-Architected pillars.\n\nUse case card:\n\nRules:\n- Base every finding on the card, and quote the line you used.\n- If the card does not say, write Unknown, then the question to ask the owner.\n- Give each pillar a risk: low, medium or high.\n- Do not say whether to build it. A person decides.'),
+            case({'user': '  IT  ', 'data': '   '}, {'Operational Excellence': ['Is every answer traced?'], 'Performance Efficiency': ['Can it handle the busiest minute?']},
+                 expected='Review this AI use case against the Well-Architected pillars.\n\nUse case card:\n- user: IT\n- data: not written\n\n## Operational Excellence\n- Is every answer traced?\n\n## Performance Efficiency\n- Can it handle the busiest minute?\n\nRules:\n- Base every finding on the card, and quote the line you used.\n- If the card does not say, write Unknown, then the question to ask the owner.\n- Give each pillar a risk: low, medium or high.\n- Do not say whether to build it. A person decides.'),
         ],
-        guided="""def review_gaps(review):
+        guided="""RULES = [
+    'Rules:',
+    '- Base every finding on the card, and quote the line you used.',
+    '- If the card does not say, write Unknown, then the question to ask the owner.',
+    '- Give each pillar a risk: low, medium or high.',
+    '- Do not say whether to build it. A person decides.',
+]
+
+
+def review_prompt(card, pillars):
     # Replace every ___ with real code, then run the tests.
-    counts = {}
-    order = []
-    for pillar, question, ok in review:
-        # Step 1: first time we see a pillar, start it at 0.
-        if pillar not in counts:
-            counts[pillar] = 0
-            order.append(pillar)
-        # Step 2: a no answer is a gap.
+    lines = ["Review this AI use case against the Well-Architected pillars.",
+             "", "Use case card:"]
+    # Step 1: every card field, with blanks made visible.
+    for field in card:
+        value = card[field].strip()
         if ___:
-            counts[pillar] += 1
-    # Step 3: keep pillars with at least one gap.
-    pairs = []
-    for pillar in order:
-        if counts[pillar] > 0:
-            pairs.append([pillar, counts[pillar]])
-    # Step 4: most gaps first.
-    pairs.sort(key=___, reverse=True)
-    return pairs
+            value = "not written"
+        lines.append("- " + field + ": " + value)
+    # Step 2: each pillar's heading, then its questions.
+    for pillar in pillars:
+        lines.append("")
+        lines.append(___)
+        for q in pillars[pillar]:
+            lines.append("- " + q)
+    # Step 3: the rules at the end.
+    lines.append("")
+    for rule in RULES:
+        lines.append(rule)
+    return "\\n".join(lines)
 """,
-        fills=['not ok', 'lambda pair: pair[1]'],
+        fills=['value == ""', '"## " + pillar'],
         concepts=[
             [
-                'Counting with a dict',
-                'Start a name at 0 the first time you see it, then add 1 each time it counts.',
-                """counts = {}
-for w in ["a", "b", "a"]:
-    if w not in counts:
-        counts[w] = 0
-    counts[w] += 1   # {"a": 2, "b": 1}""",
+                'Building text from lines',
+                'Collect lines in a list with `append`, then join them once with `"\\n".join(lines)`, which puts a new line between each.',
+                """lines = ["a", "b"]
+"\\n".join(lines)   # a, then b on the next line""",
             ],
             [
-                'Unpacking a row',
-                '`for pillar, question, ok in review:` gives each of the row\'s three parts its own name.',
-                """for name, age in [["Ana", 30]]:
-    print(name)   # Ana""",
+                'A constant above the function',
+                '`RULES` is defined once, outside the function, and the function reads it. Capitals are the usual sign that a value never changes.',
+                """GREETING = "Hi"
+def hello(name):
+    return GREETING + " " + name""",
             ],
             [
-                'Sorting by one part',
-                '`key=lambda pair: pair[1]` sorts by the second item; `reverse=True` puts the biggest first.',
-                """p = [["a", 1], ["b", 3]]
-p.sort(key=lambda x: x[1], reverse=True)
-# [["b", 3], ["a", 1]]""",
+                'Looping over a dict in order',
+                'A dict keeps the order its keys were added, so `for pillar in pillars:` gives them in the order written.',
+                """d = {"b": 1, "a": 2}
+list(d)   # ["b", "a"]""",
             ],
         ],
-        byhand='Reliability: one no, one yes, so 1 gap. Security: two no answers, 2 gaps. Operational Excellence: a yes, 0 gaps, left out. Sorted, most first: [["Security", 2], ["Reliability", 1]].',
-        why='One pass to count every answer, then a sort of a handful of pillars.',
+        byhand='Start with the three opening lines. Card: user is "HR team", task is "answer policy questions", owner is blank so it becomes "not written". Reliability: a blank line, "## Reliability", its one question. Security: a blank line, "## Security", two questions. Then a blank line and the five rules. Join them all with new lines.',
+        why='Each card field and each question is added once, so the work grows with the size of the card and the review.',
         gotchas=[
             [
-                'Reviewing only the happy path',
-                'An AI design that works when everything is up can still fail on the first quota limit or model outage. Ask what happens when each dependency fails.',
+                'Trusting the draft',
+                'A model fills gaps with confident guesses, like "data is encrypted" when the card never says so. Check every finding against the card and turn guesses into questions.',
             ],
             [
-                'Fixing every gap before a pilot',
-                'The framework says just as reliable and as secure as it needs to be. Some gaps are fine for a small pilot, as long as they are written down and closed before going live.',
+                'Letting the model decide',
+                'Whether a risk is fine for a pilot is a business call. Ask the model for findings and questions, and leave go or no-go to a person.',
             ],
         ],
     ),

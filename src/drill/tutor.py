@@ -213,6 +213,8 @@ def merge_progress(a: dict, b: dict) -> dict:
         "lessons": lessons,
         "gotchas": {**(a.get("gotchas") or {}), **(b.get("gotchas") or {})},
         "current": b.get("current") or a.get("current"),
+        # the learner's own use case, bars and numbers: the newer copy wins, b on a tie
+        "mine": b.get("mine") if ((b.get("mine") or {}).get("updatedAt") or 0) >= ((a.get("mine") or {}).get("updatedAt") or 0) else a.get("mine"),
     }
 
 
@@ -311,6 +313,23 @@ def snapshot(progress: dict, study_items: list[dict], data: dict | None = None, 
         [f"- {_short(text_of(it), 160)}" + (f" (their note: {_short(it['note'], 120)})" if it.get("note") else "") for it in learning],
         "Nothing on the list.",
     )
+    own = progress.get("mine") or {}
+    card = own.get("card") or {}
+    own_rows = []
+    if any((v or "").strip() for v in card.values()):
+        own_rows.append("- Their use case card: " + "; ".join(f"{k.replace('_', ' ')}: {_short(v.strip(), 120)}" for k, v in card.items() if (v or "").strip()) + ".")
+    reqs = [r.strip() for r in (own.get("reqs") or "").splitlines() if r.strip()]
+    if reqs:
+        own_rows.append("- Their requirements: " + "; ".join(_short(r, 100) for r in reqs[:12]) + ".")
+    bars = own.get("bars") or {}
+    if any(str(bars.get(k) or "").strip() for k in ("quality", "seconds", "cost")):
+        own_rows.append(f"- Their fit-for-purpose bars: {bars.get('quality') or '?'} in 100 right, under {bars.get('seconds') or '?'} seconds, under ${bars.get('cost') or '?'} a task"
+                        + (f", must never: {_short(bars['mustpass'], 100)}" if (bars.get("mustpass") or "").strip() else "") + ".")
+    summary = (own.get("costs") or {}).get("summary") or {}
+    if summary.get("total"):
+        top = "; ".join(f"{name} ${value:,}" for name, value in (summary.get("items") or [])[:5])
+        own_rows.append(f"- Their total cost of ownership: ${summary['total']:,} over {summary.get('years', '?')} years, ${summary.get('perMonth', 0):,} a month to run. Biggest items: {top}.")
+    section("Their own use case (from the Use case and fit lessons)", own_rows, "Not written yet.")
     focus = (
         [f"review \"{_short(text_of(it), 60)}\"" for it in due[:3]]
         + [f"the gotcha \"{cards[lid]['title']}\"" for lid in missed[:2]]

@@ -59,6 +59,42 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
+## Your own use case
+
+The graded exercises in Use case and fit, and Total cost of ownership, use the HR assistant, so
+every test has a known answer. After each one the Build step offers the same thing for your own
+idea, ungraded:
+
+- **Write the use case down**: your own card, with the open lines listed as you type.
+- **Functional and non-functional requirements**: your requirements, one per line, sorted live.
+- **A well-architected review**: "Ask the model to draft the review" sends your card (or the HR
+  card, until you write yours) with a review prompt like the one you built.
+- **Is it fit for purpose?**: your bars, and later your pilot's results, with the go, fix or
+  stop call worked out by the exercise's rule.
+- **Total cost of ownership**: a worksheet laid out like the bill of a RAG pipeline on Azure: LLM
+  calls (answers and embeddings, pay as you go or provisioned), retrieval (Azure AI Search or
+  Databricks Vector Search), Databricks compute (the chunk-and-embed jobs, and serving), storage,
+  people and one-off costs. The page ships no prices; each group links to the Azure pricing page
+  to take them from.
+
+It is saved in your own progress only (`mine` in the progress document; on claude.ai under
+`data/users/<you>`, which nobody else can read) and the tutor snapshot includes it.
+
+## Search
+
+The magnifier in the top bar, or the `/` key, opens search. As you type it finds:
+
+- **Words** from the glossary, each with its meaning and a "Where it's taught" list of the
+  lessons that use it.
+- **Lessons** whose title, text or function name holds every word typed, title matches first.
+  Each shows its phase shape, its number (like 2.11), its module and whether it's done.
+- **Your study list** items whose text, note or explanation match; choosing one opens it in
+  the Notebook.
+
+With nothing typed it offers the six phases to jump to, the lessons you're in the middle of,
+and a few example searches. Enter opens the first lesson; Escape or Close goes back to where
+you were.
+
 ## The study list
 
 Select any text in a lesson, or a line of your code, to save it to the study list in the
