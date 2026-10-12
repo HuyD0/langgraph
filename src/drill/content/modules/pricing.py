@@ -34,9 +34,9 @@ total = model + check + redo
         why="The model is a few percent of the total. People's time checking and redoing answers is most of it, so a cheaper model barely moves the total.",
     ),
     angle=angle(
-        pattern='Add up the parts',
-        text='Each part is how often something happens times what it costs when it does. Adding the parts gives the full cost of one finished task, not just one model call.',
-        say='"I price a finished task, not a call: the model cost, plus the share checked times the cost of a check, plus the share that fails times the cost of a redo."',
+        pattern='Add up the three costs',
+        text="The big idea: an AI task costs more than the model's bill, so you price a finished task: the model, plus a person checking, plus redoing failures. Your code works out each part. Checking is the share checked times the minutes per check, divided by 60 to make hours, times the hourly rate. Failures are the share that fails times the cost of a redo. It adds both to the model cost and rounds to cents. It is like a meal's real cost: the food, plus the cook's time.",
+        say='"I price a finished task, not a model call: the model cost, plus people checking answers, plus redoing the answers that fail."',
         classic=None,
     ),
     stack=stack('MLflow 3: model cost per task from traces', """import mlflow
@@ -181,9 +181,9 @@ for out, tool in steps:
         why='Every step adds its answer and tool result to the context, and the next call reads all of it. So each step costs more than the one before.',
     ),
     angle=angle(
-        pattern='Running total',
-        text='Keep the context size as a running total, and add it to the input count before each step grows it. One pass over the steps gives the whole bill.',
-        say='"I keep a running context size. Each step first adds the whole context to the input count, then the context grows by that step\'s output and tool result."',
+        pattern='A running total that grows',
+        text="The big idea: an agent resends everything so far on every step, so the input grows and one task costs far more than one call. Your code keeps the context size in a variable, starting with the first input. For each step it first adds the whole context to the input total, and the step's output to the output total. Only after that does the context grow by the step's output and tool result. It is like an email thread where every reply quotes everything above it.",
+        say='"I price an agent from whole runs, not one call. Each step resends the whole context so far, so the input bill grows every step."',
         classic=None,
     ),
     stack=stack('LangChain: tokens for a whole agent run', """from langchain_core.callbacks import (
@@ -323,9 +323,9 @@ even = fixed / saving   # 1774.6
         why="Below break-even the savings don't even cover the running costs. The monthly net is below zero, so nothing is left over to pay back the build.",
     ),
     angle=angle(
-        pattern='Guard before you divide',
-        text='Work out the net first, and divide by it only when it is above zero. A plan that loses money has no payback, so return None instead of a negative number or a crash.',
-        say='"I compute the monthly net first. If it is zero or less there is no payback, so I return None instead of dividing, and I round break-even up because you can\'t do part of a task."',
+        pattern='Check before you divide',
+        text="The big idea: a task that saves money each time can still lose money once monthly costs and the build are counted. Your code works out the monthly net: saving per task times tasks a month, minus fixed costs. Only if the net is above zero does it divide the build cost by it to get payback months. Otherwise payback is `None`, Python's word for no value. Break-even is fixed costs divided by saving per task, rounded up to a whole task, because you can't do part of a task.",
+        say='"I work out the monthly net first. If it is zero or less there is no payback, so I return None. I round break-even up to a whole task."',
         classic=None,
     ),
     stack=stack('MLflow: keep the business case next to the POC', """import mlflow
@@ -492,9 +492,9 @@ swing = high - low              # 18900
         why='The guess with the biggest swing decides whether the plan pays. The token price barely moves the answer, so measuring it hard tells you little.',
     ),
     angle=angle(
-        pattern='Try each option, keep the biggest',
-        text='Change one input at a time, measure the effect, and keep the largest so far. Walking the names in alphabetical order and replacing only on a strictly bigger swing settles ties.',
-        say='"For each guess I work out the value at its low and its high with everything else at base, take the gap as a positive number, and keep the biggest. Ties go to the name that comes first alphabetically."',
+        pattern='Move one guess, keep the biggest',
+        text="The big idea: change one guess at a time, and the one that moves the answer most is the one to measure hardest. Your code copies the base values into a dict: a lookup table from each guess's name to its value. It works out the value with one guess at its low, then at its high. The swing is the gap between them, made positive with `abs`. It keeps the biggest, going through names in alphabetical order so a tie goes to the name that comes first.",
+        say='"I move one guess at a time from its low to its high, keep the others at expected values, and measure the guess with the biggest swing first."',
         classic=None,
     ),
     stack=stack('MLflow 3: measure the guess that matters most', """import mlflow
@@ -670,9 +670,9 @@ peak = 270 * 0.2 / 60 * 3 * tokens
         why='Requests bunch up at busy times. The limit is checked over a few seconds at a time, so the busiest minute, not the daily average, decides whether you fit.',
     ),
     angle=angle(
-        pattern='Size for the peak',
-        text='Turn a daily count into the busiest minute with the busy-hour share and a burst factor, then compare it with a per-minute limit. The same thinking sizes any shared resource, from servers to support staff.',
-        say='"I size for the busiest minute, not the daily average: daily tasks times the busy-hour share, divided by 60, times a burst factor, times tokens per task, checked against the deployment\'s TPM and the gateway\'s limits."',
+        pattern='Daily count to busiest minute',
+        text='The big idea: traffic is never even, so you size for the busiest minute, not the daily average, or users hit error 429. Your code takes tasks a day times the busy-hour share and divides by 60 to get tasks a minute. It multiplies by the burst factor, then by tokens per task, and rounds to a whole number of tokens. Then it checks that number is at or below the tokens-per-minute limit, and returns the number and that true or false answer. It is like staffing a café for the lunch rush.',
+        say='"I size for the busiest minute, not the daily average, and check it against every limit on the path, so users don\'t get error 429."',
         classic=None,
     ),
     stack=stack("Databricks: the busiest minutes in the gateway's usage table", """-- the 5 busiest minutes last week
