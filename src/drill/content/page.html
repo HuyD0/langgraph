@@ -548,6 +548,88 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .morepanel .kbd { font: 12px var(--mono); color: var(--muted); }
 @media (pointer: coarse) { .morepanel .kbd { display: none; } }
 .savestate { justify-content: center; padding-top: 8px; }
+
+/* the sticker book: six phases, one shape each, always in view */
+.rail { display: block; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px 6px; cursor: pointer; color: var(--fg); }
+.rail:focus-visible, .stk:focus-visible, .albumhead:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rail svg { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; overflow: visible; }
+.rail.mini svg { max-width: 360px; margin: 0; }
+.rail.mini { border: 0; border-radius: 10px; background: none; padding: 4px 0 2px; }
+.rail .track { stroke: var(--line); stroke-width: 3; }
+.rail .track.on { stroke: var(--pass); }
+.rail text { font: 11px var(--body); fill: var(--muted); }
+.rail text.now { fill: var(--accent); font-weight: 600; }
+.rail text.done { fill: var(--fg); font-weight: 600; }
+.rail text.n { font: 10px var(--mono); fill: var(--accent); }
+.bdg .sh { stroke-width: 2; fill: var(--surface); stroke: var(--muted); }
+.bdg .ico { fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bdg.done .sh { fill: var(--fg); stroke: var(--fg); }
+.bdg.done .ico { stroke: var(--surface); }
+.bdg.now .sh { fill: var(--accent-soft); stroke: var(--accent); }
+.bdg.now .ico { stroke: var(--accent); }
+.bdg .halo { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: .35; }
+.book { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px 12px; display: grid; gap: 12px; }
+.bookhead { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
+.bookhead > svg { width: 34px; height: 34px; flex: none; }
+.bookhead .mt { flex: 1; min-width: 0; display: grid; }
+.bookhead .mt b { font-weight: 600; }
+.bookhead .mt span { font-size: 13px; color: var(--muted); }
+.bookhead .n, .scene .n { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bookhead .n.full, .scene .n.full { color: var(--pass); }
+.scene { display: grid; gap: 8px; }
+.scenehead { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 4px 2px; cursor: pointer; text-align: left; color: var(--fg); min-height: 44px; }
+.scenehead b { flex: 1; font-weight: 600; font-size: 14px; }
+.scenehead .ic { width: 16px; height: 16px; color: var(--muted); }
+.scenehead .chev { transition: transform .15s; }
+.scenehead[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px 4px; }
+.stk { display: grid; justify-items: center; align-content: start; gap: 4px; background: none; border: 0; border-radius: 10px; padding: 4px 2px 6px; cursor: pointer; color: var(--fg); min-height: 44px; }
+.stk svg { width: 56px; height: 56px; overflow: visible; }
+.stk .lbl { font-size: 11.5px; line-height: 1.25; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
+.stk .sh { stroke-width: 2; fill: none; stroke: var(--line); stroke-dasharray: 4 4; }
+.stk .ico { fill: none; stroke: var(--fg); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.stk.done .sh { fill: var(--surface); stroke: var(--fg); stroke-dasharray: none; }
+.stk.done .lbl { color: var(--fg); }
+.stk.now .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-dasharray: 5 4; }
+.stk.now .ico { stroke: var(--accent); }
+.stk.now .lbl { color: var(--accent); font-weight: 600; }
+.stk.ahead .ico { display: none; }
+.stk.done:nth-child(3n+1) svg { transform: rotate(-3deg); }
+.stk.done:nth-child(3n+2) svg { transform: rotate(2deg); }
+.minis { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 4px; }
+.minis svg { width: 16px; height: 16px; overflow: visible; }
+.minis .sh { stroke-width: 1.6; fill: none; stroke: var(--muted); stroke-dasharray: 2 2; }
+.minis .done .sh { fill: var(--fg); stroke: var(--fg); stroke-dasharray: none; }
+.minis .now .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-dasharray: none; }
+.upnext { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 8px; }
+.upnext .top-row { display: flex; align-items: center; gap: 10px; }
+.upnext .top-row svg { width: 26px; height: 26px; flex: none; }
+.upnext p { margin: 0; font-size: 14px; color: var(--muted); }
+#album { padding-block: 16px 48px; }
+.albumlist { display: grid; gap: 10px; }
+.albumhead { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; text-align: left; color: var(--fg); }
+.albumhead[aria-expanded="true"] { border-radius: 14px 14px 0 0; }
+.albumhead > svg { width: 48px; height: 48px; overflow: visible; }
+.albumhead .mt { display: grid; gap: 4px; min-width: 0; }
+.albumhead .mt b { font-weight: 600; }
+.albumhead .mt span { font-size: 13px; color: var(--muted); }
+.albumhead .n { font: 13px var(--mono); color: var(--muted); }
+.albumhead .n.full { color: var(--pass); }
+.albumhead.now { border-color: var(--accent); }
+.albumbody { background: var(--surface); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; padding: 4px 12px 12px; display: grid; gap: 10px; }
+.loopnote { font-size: 13px; color: var(--muted); padding: 2px 4px; }
+.railbar { margin-bottom: 4px; }
+.lessonhead { display: flex; align-items: flex-start; gap: 12px; }
+.lessonhead .lesson-title { flex: 1; min-width: 0; }
+.earn { flex: none; display: grid; justify-items: center; gap: 2px; font-size: 11px; color: var(--accent); }
+.earn svg { width: 44px; height: 44px; overflow: visible; }
+.earn.done { color: var(--pass); }
+.newstk { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; justify-items: center; gap: 8px; text-align: center; }
+.newstk svg { width: 112px; height: 112px; overflow: visible; }
+.newstk .stk { pointer-events: none; }
+.newstk h2 { font: 800 22px/1.2 var(--display); margin: 0; }
+.newstk p { margin: 0; color: var(--muted); max-width: 46ch; }
+@media (prefers-reduced-motion: no-preference) { .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } } }
 </style>
 
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0z"/><path d="M12 10v8M8 13H4M20 13h-4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2M10 6L9 3M14 6l1-3"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol></svg>
@@ -563,9 +645,12 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 
 <main id="home" class="wrap"></main>
 
+<main id="album" class="wrap" hidden></main>
+
 <main id="lesson" class="wrap" hidden>
+  <div class="railbar" id="lessonRail"></div>
   <div class="crumbs"><button class="btn quiet" id="backPath"><svg class="ic" aria-hidden="true"><use href="#i-arrowl"/></svg>Path</button><span class="eyebrow" id="lessonWhere"></span></div>
-  <h1 class="lesson-title" id="lessonTitle"></h1>
+  <div class="lessonhead"><h1 class="lesson-title" id="lessonTitle"></h1><span class="earn" id="lessonEarn"></span></div>
   <nav class="stepper" id="stepper" aria-label="Lesson steps"></nav>
   <section class="pane" id="paneText" aria-live="polite"></section>
   <section class="pane" id="paneBuild" hidden>
@@ -829,6 +914,87 @@ const phaseOf = Object.fromEntries(PHASES.flatMap(ph => ph.modules.map(mid => [m
 const MOD = Object.fromEntries(D.modules.map(m => [m.id, m]));
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const isDoneL = id => !!(progress.lessons[id] && progress.lessons[id].done);
+// The sticker book. Each phase has one shape (circle, rounded square, hexagon, diamond, shield, pentagon),
+// carried by every sticker in it, so even one sticker says which phase an idea lives in. Shape and
+// position do the work, not colour: colour stays for passed, failed and the next step.
+const PH_ICON = ["target", "compass", "code", "clipcheck", "rocket", "eye"];
+const phIndex = Object.fromEntries(PHASES.map((ph, i) => [ph.key, i]));
+const phaseIdx = id => phIndex[phaseOf[modOf[id].id].key];
+const phLessons = ph => ph.modules.flatMap(mid => MOD[mid].lessons);
+function phShape(k, r) {
+  const poly = (n, rr) => Array.from({ length: n }, (_, i) => { const a = (-90 + i * 360 / n) * Math.PI / 180; return (rr * Math.cos(a)).toFixed(1) + "," + (rr * Math.sin(a)).toFixed(1); }).join(" ");
+  const f = v => (v * r).toFixed(1);
+  switch (k % 6) {
+    case 0: return `<circle class="sh" r="${r}"/>`;
+    case 1: return `<rect class="sh" x="${f(-.9)}" y="${f(-.9)}" width="${f(1.8)}" height="${f(1.8)}" rx="${f(.32)}"/>`;
+    case 2: return `<polygon class="sh" points="${poly(6, r * 1.04)}" stroke-linejoin="round"/>`;
+    case 3: return `<rect class="sh" x="${f(-.8)}" y="${f(-.8)}" width="${f(1.6)}" height="${f(1.6)}" rx="${f(.18)}" transform="rotate(45)"/>`;
+    case 4: return `<path class="sh" d="M${f(-.9)} ${f(-.85)}H${f(.9)}V${f(.05)}Q${f(.9)} ${f(.7)} 0 ${f(1.02)}Q${f(-.9)} ${f(.7)} ${f(-.9)} ${f(.05)}Z" stroke-linejoin="round"/>`;
+    default: return `<polygon class="sh" points="${poly(5, r * 1.06)}" stroke-linejoin="round"/>`;
+  }
+}
+// An icon from the sprite, drawn inside a shape at a given size.
+const shIcon = (name, size) => `<use class="ico" href="#i-${name}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>`;
+function phState(i) {
+  const ids = phLessons(PHASES[i]), done = ids.filter(isDoneL).length, nid = nextLesson();
+  if (done === ids.length) return "done";
+  if (nid ? phaseIdx(nid) === i : false) return "now";
+  return "";
+}
+function badge(i, r, st) {
+  return `<g class="bdg ${st}">${st === "now" ? phShape(i, r + 6).replace('class="sh"', 'class="halo"') : ""}${phShape(i, r)}${shIcon(PH_ICON[i], r * 1.1)}</g>`;
+}
+const badgeSvg = (i, r, st, cls) => `<svg${cls ? ` class="${cls}"` : ""} viewBox="${-r - 8} ${-r - 8} ${2 * r + 16} ${2 * r + 16}" aria-hidden="true">${badge(i, r, st)}</svg>`;
+// The rail: the six phases in order. Big on Home with names, small above every lesson; it opens the album.
+function railHtml(mini, focus) {
+  const W = 360, xs = PHASES.map((_, i) => 26 + i * 61.6), y = mini ? 18 : 24;
+  const sts = PHASES.map((_, i) => phState(i));
+  const lastDone = sts.lastIndexOf("done");
+  let out = `<path class="track" d="M${xs[0]} ${y}H${xs[5]}"/>` + (lastDone >= 0 ? `<path class="track on" d="M${xs[0]} ${y}H${xs[Math.min(lastDone + 1, 5)]}"/>` : "");
+  const parts = [];
+  PHASES.forEach((ph, i) => {
+    const st = focus === i && sts[i] !== "done" ? "now" : (focus != null && focus !== i && sts[i] === "now" ? "" : sts[i]);
+    const r = mini ? (st === "now" ? 11 : 8.5) : (st === "now" ? 16 : 12);
+    out += `<g transform="translate(${xs[i].toFixed(1)} ${y})">${badge(i, r, st)}</g>`;
+    const ids = phLessons(ph), d = ids.filter(isDoneL).length;
+    if (!mini) {
+      out += `<text x="${xs[i].toFixed(1)}" y="${y + 34}" text-anchor="middle" class="${st}">${esc(ph.name.split(" ")[0])}</text>`;
+      if (st === "now") out += `<text x="${xs[i].toFixed(1)}" y="${y + 47}" text-anchor="middle" class="n">${d}/${ids.length}</text>`;
+    }
+    parts.push(`${ph.name}: ${st === "done" ? "done" : d + " of " + ids.length}`);
+  });
+  const h = mini ? 36 : 78;
+  return `<button class="rail${mini ? " mini" : ""}" data-album aria-label="The six phases. ${esc(parts.join(", "))}. Open the album."><svg viewBox="0 0 ${W} ${h}" aria-hidden="true">${out}</svg></button>`;
+}
+function stickerState(id) {
+  if (isDoneL(id)) return "done";
+  if (id === nextLesson() || started(id)) return "now";
+  return "ahead";
+}
+function stickerSvg(id, st, r) {
+  const k = phaseIdx(id);
+  return `<svg viewBox="${-r - 4} ${-r - 4} ${2 * r + 8} ${2 * r + 8}" aria-hidden="true">${phShape(k, r)}${st === "ahead" ? "" : shIcon(MOD_ICON[modOf[id].id] || "book", r * .95)}</svg>`;
+}
+function sticker(id) {
+  const st = stickerState(id), t = LESSONS[id].title;
+  const say = st === "done" ? "done" : st === "now" ? (started(id) ? "in progress" : "next") : "not started";
+  return `<button class="stk ${st}" data-open="${id}" title="${esc(t)}" aria-label="${esc(t)}, ${say}">${stickerSvg(id, st, 24)}<span class="lbl">${esc(t)}</span></button>`;
+}
+function minis(ids) {
+  return `<div class="minis" aria-hidden="true">${ids.map(id => { const st = stickerState(id); return `<svg class="${st}" viewBox="-9 -9 18 18">${phShape(phaseIdx(id), 7)}</svg>`; }).join("")}</div>`;
+}
+// One phase as a page of stickers, one scene per module. The scene holding the next lesson is open;
+// the others fold to a row of small shapes, so a 55-lesson phase stays short.
+function phasePage(i, prefix) {
+  const ph = PHASES[i], ids = phLessons(ph), d = ids.filter(isDoneL).length, nid = nextLesson();
+  const scenes = ph.modules.map(mid => {
+    const m = MOD[mid], md_ = m.lessons.filter(isDoneL).length, key = prefix + mid;
+    const open = openMods.has(key) || (!openMods.has("x" + key) && (ph.modules.length === 1 || m.lessons.includes(nid)));
+    return `<div class="scene"><button class="scenehead" data-scene="${key}" aria-expanded="${open}">${ic(MOD_ICON[mid] || "book")}<b>${esc(m.title)}</b><span class="n${md_ === m.lessons.length ? " full" : ""}">${md_}/${m.lessons.length}</span>${ic("chevron", "chev")}</button>
+      ${open ? `<div class="stickers">${m.lessons.map(sticker).join("")}</div>` : minis(m.lessons)}</div>`;
+  }).join("");
+  return { d, n: ids.length, scenes };
+}
 function reviewCard() {
   const due = studyItems.filter(isDue).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
   if (!due.length) return "";
@@ -872,18 +1038,11 @@ function renderHome() {
     hello = `<h1>${wd}.</h1><p class="meta">AI engineering on Databricks.</p>`;
     card = `<section class="next"><span class="eyebrow">Path complete</span><h2>You've finished every lesson.</h2></section>`;
   }
-  const C = 75.4;  // the ring's circumference, 2 × π × 12
-  const ring = (done, total) => `<svg class="ring" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12"/>${done ? `<circle class="on" cx="15" cy="15" r="12" stroke-dasharray="${C}" stroke-dashoffset="${(C * (1 - done / total)).toFixed(1)}"/>` : ""}</svg>`;
-  const lessonRows = ids => ids.map(id => `<button class="row" data-open="${id}">${markFor(id, true)}<span class="t">${esc(LESSONS[id].title)}</span><span class="chev" aria-hidden="true">›</span></button>`).join("");
-  const phases = PHASES.map(ph => {
-    const ids = ph.modules.flatMap(mid => MOD[mid].lessons), done = ids.filter(isDoneL).length, open = openMods.has(ph.key);
-    const subs = ph.modules.map(mid => {
-      const m = MOD[mid], d = m.lessons.filter(isDoneL).length;
-      return `<div class="submod" id="m-${mid}"><div class="subhead">${ic(MOD_ICON[mid])}<b>${esc(m.title)}</b><span class="n${d === m.lessons.length ? " full" : ""}">${d}/${m.lessons.length}</span></div><div class="rows">${lessonRows(m.lessons)}</div></div>`;
-    }).join("");
-    return `<section class="module phase" id="${ph.key}"><button class="modhead" data-toggle="${ph.key}" aria-expanded="${open}">${ring(done, ids.length)}<span class="mt"><b>${esc(ph.name)}</b><span>${esc(ph.text)}</span></span><span class="n${done === ids.length ? " full" : ""}">${done}/${ids.length}</span>${ic("chevron", "chev")}</button>
-      <div class="modbody"${open ? "" : " hidden"}>${subs}</div></section>`;
-  }).join("");
+  const nidx = nid ? phaseIdx(nid) : PHASES.length - 1, nph = PHASES[nidx];
+  const pg = phasePage(nidx, "h");
+  const book = `<section class="book" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}"><div class="bookhead">${badgeSvg(nidx, 13, nid ? "now" : "done")}<span class="mt"><span class="eyebrow" style="color: var(--accent)">Phase ${nidx + 1} of ${PHASES.length}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
+  const after = PHASES[nidx + 1];
+  const upnext = after ? `<section class="upnext"><div class="top-row">${badgeSvg(nidx + 1, 10, "")}<span class="eyebrow">Next · ${esc(after.name)}</span></div><p>${esc(after.modules.map(mid => MOD[mid].title).join(" · "))}</p>${minis(phLessons(after))}</section>` : "";
   const block = (id, icon, title, done, total, rows) => {
     const open = openMods.has(id);
     return `<section class="module" id="m-${id}"><button class="modhead" data-toggle="${id}" aria-expanded="${open}">${ic(icon)}<span class="mt"><b>${esc(title)}</b></span><span class="n${done === total ? " full" : ""}">${done}/${total}</span>${ic("chevron", "chev")}</button>
@@ -892,20 +1051,40 @@ function renderHome() {
   const set = (id, title, ids) => block(id, MOD_ICON[id], title, ids.filter(x => progress.solved[x]).length, ids.length,
     ids.map(x => `<button class="row" data-practice="${x}">${markFor(x, false)}<span class="t">${esc(byId[x].title)}</span><span class="chev" aria-hidden="true">›</span></button>`).join(""));
   $("home").innerHTML = `<div class="hello">${hello}</div>
+    ${railHtml(false)}
     ${card}
     ${aiOffNote()}
     <div id="homeReview">${reviewCard()}</div>
-    <div class="pathhead"><h2>Your path</h2><span>${PHASES.length} phases · ${ORDER.length} lessons</span></div>
-    <div class="list">${phases}</div>
+    <div class="pathhead"><h2>Your path</h2><button class="linkbtn" data-album>See all ${PHASES.length} phases</button></div>
+    ${book}
+    ${upnext}
     <div class="sets"><h3>Practice sets</h3></div>
     <div class="list">${set("classics", "Classic interview problems", D.classics)}${set("money", "My money & health", D.money)}</div>
     <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
 }
 
+// ---------- the album: all six phases ----------
+function renderAlbum() {
+  renderTop();
+  const rows = PHASES.map((ph, i) => {
+    const st = phState(i), pg = phasePage(i, "a"), key = "al" + i;
+    const open = openMods.has(key) || (st === "now" && !openMods.has("x" + key));
+    return `<section><button class="albumhead${st === "now" ? " now" : ""}" data-albumph="${key}" aria-expanded="${open}">${badgeSvg(i, 18, st)}<span class="mt"><b>${i + 1} · ${esc(ph.name)}</b><span>${esc(ph.text)}</span>${open ? "" : minis(phLessons(ph))}</span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></button>
+      ${open ? `<div class="albumbody">${pg.scenes}</div>` : ""}</section>`;
+  }).join("");
+  $("album").innerHTML = `<div class="crumbs"><button class="btn quiet" data-home>${ic("arrowl")}Path</button></div>
+    <div class="hello"><h1>Your album</h1><p>Six phases, one shape each. Every sticker carries its phase’s shape.</p></div>
+    ${railHtml(false)}
+    <div class="albumlist">${rows}</div>
+    <p class="loopnote">${ic("reset")} After Monitor, its failures become the next round’s questions, back at Frame.</p>`;
+}
+function openAlbum() { cur = null; show("album"); renderAlbum(); }
+
 // ---------- views ----------
 let cur = null;   // { kind: "lesson" | "practice", id, p, step, from }
 function show(view) {
   $("home").hidden = view !== "home";
+  $("album").hidden = view !== "album";
   $("lesson").hidden = view !== "lesson";
   $("done").hidden = view !== "done";
   $("foot").hidden = view !== "lesson" && view !== "done";
@@ -919,6 +1098,11 @@ function openLesson(id, step) {
   const m = modOf[id];
   $("lessonWhere").textContent = m.title + " · " + (m.lessons.indexOf(id) + 1) + " of " + m.lessons.length;
   $("lessonTitle").textContent = LESSONS[id].title;
+  $("lessonRail").innerHTML = railHtml(true, phaseIdx(id));
+  const est = isDoneL(id) ? "done" : "now";
+  $("lessonEarn").className = "earn" + (isDoneL(id) ? " done" : "");
+  $("lessonEarn").innerHTML = `<span class="stk ${est}">${stickerSvg(id, est, 18)}</span><span>${isDoneL(id) ? "earned" : "earning"}</span>`;
+  $("lessonEarn").hidden = false; $("lessonRail").hidden = false;
   $("stepper").hidden = false;
   loadProblem(cur.p);
   show("lesson");
@@ -928,6 +1112,7 @@ function openPractice(pid, from) {
   cur = { kind: "practice", id: pid, p: byId[pid], from };
   $("lessonWhere").textContent = D.money.includes(pid) ? "Practice · My money & health" : "Practice · Classic interview problems";
   $("lessonTitle").textContent = byId[pid].title;
+  $("lessonRail").hidden = true; $("lessonEarn").hidden = true;
   $("stepper").hidden = true;
   loadProblem(cur.p);
   show("lesson");
@@ -1015,6 +1200,7 @@ function showDone(id, after) {
   const next = after ? `<section class="next"><span class="eyebrow">Next time · about 20 min</span><h2>${esc(LESSONS[after].title)}</h2><span class="meta">${esc(phaseOf[modOf[after].id].name)}, ${esc(modOf[after].title)}.</span></section>`
     : `<section class="next"><span class="eyebrow">Path complete</span><h2>That was the last lesson.</h2></section>`;
   $("done").innerHTML = `<div class="donehead"><span class="donecheck">${ic("check")}</span><h1>${head}</h1><p>${sub}</p></div>
+    <section class="newstk"><span class="eyebrow">New sticker · ${doneN} of ${ids.length} in ${esc(ph.name)}</span><span class="stk done">${stickerSvg(id, "done", 24)}</span><h2>${esc(L.title)}</h2><p>${esc(modOf[id].title)}, in the ${esc(ph.name)} phase. Every sticker in ${esc(ph.name)} has this shape.</p></section>
     <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
     <div class="keyidea">${ic("quote")}<div>${(s.said || "").trim() ? `<b>You said</b><p>${esc(s.said.trim())}</p><b class="ours">Ours</b>` : "<b>Say it like this</b>"}<p>${md(L.angle[2])}</p></div></div>
     ${next}`;
@@ -2125,6 +2311,14 @@ $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.
 document.addEventListener("click", async e => {
   const t = e.target;
   if (t.closest("[data-review]")) { openNotebook("study"); return; }
+  if (t.closest("[data-album]")) { openAlbum(); return; }
+  if (t.closest("[data-home]")) { goHome(); return; }
+  const sc = t.closest("[data-scene], [data-albumph]");
+  if (sc) {  // fold or open a scene or an album phase; "x" remembers a fold of something open by default
+    const key = sc.dataset.scene || sc.dataset.albumph, open = sc.getAttribute("aria-expanded") === "true";
+    if (open) { openMods.delete(key); openMods.add("x" + key); } else { openMods.add(key); openMods.delete("x" + key); }
+    const y = window.scrollY; if (!$("album").hidden) renderAlbum(); else renderHome(); window.scrollTo(0, y); return;
+  }
   if (t.closest("[data-aihide]")) { try { sessionStorage.setItem("drill-aihide", "1"); } catch {} t.closest(".aioff").remove(); return; }
   const tg = t.closest("[data-toggle]"); if (tg) { const id = tg.dataset.toggle, open = !openMods.has(id); if (open) openMods.add(id); else openMods.delete(id); tg.setAttribute("aria-expanded", String(open)); tg.nextElementSibling.hidden = !open; return; }
   const stg = t.closest("[data-stage]"); if (stg) { lifeSel = +stg.dataset.stage; const y = window.scrollY; renderHome(); window.scrollTo(0, y); return; }

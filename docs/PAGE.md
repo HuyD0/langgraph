@@ -26,6 +26,23 @@ Everything is in the package, under `src/drill/content/`:
 
 The money & health track comes from `drill.mine` (`drill.mine.export`), with made-up data.
 
+## The path: a sticker book
+
+Home shows the path as a sticker book, with the six phases always in view:
+
+- **The phase rail** sits at the top of Home and of every lesson: the six phases in order, done
+  phases filled, the current one large. Tap it to open the album.
+- **One shape per phase**: circle (Frame), rounded square (Design), hexagon (Build and trace),
+  diamond (Evaluate), shield (Ship), pentagon (Monitor). Every lesson is a sticker in its phase's
+  shape, with its module's icon inside, so one sticker tells you where an idea lives.
+- **Today's phase** is a page of stickers, one scene per module. The scene holding the next lesson
+  is open; the rest fold to a row of small shapes. The next phase is previewed below it.
+- **The album** lists all six phases with their stickers. Finishing a lesson shows its new sticker.
+
+Shape and position carry the phases, not colour: colour stays for passed, failed and the next
+step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
+`tests/test_content.py` keeps the path at six phases.
+
 ## The study list
 
 Select any text in a lesson, or a line of your code, to save it to the study list in the
