@@ -190,6 +190,123 @@ table.dt .pdot { display: inline-block; width: 9px; height: 9px; border-radius: 
 .editor.hl-on textarea#code::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); color: transparent; }
 @media (pointer: coarse) { .editor .hl { font-size: 16px; } }
 @media (pointer: coarse), (max-width: 560px) { .editor .hl { white-space: pre-wrap; overflow-wrap: anywhere; } }
+
+/* ---------- the pocket: the study list as a tray, and review as a focus field ---------- */
+/* On the path it waits at the bottom, 60px tall; elsewhere a chip in the header opens it. */
+.pocket { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 38;
+  width: min(560px, calc(100% - 20px)); max-height: min(78vh, 640px); display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 -6px 26px rgba(0, 0, 0, .16); }
+.pocket[hidden] { display: none; }
+.pocket.open { box-shadow: 0 -18px 60px rgba(0, 0, 0, .34); z-index: 44; }
+.pk-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-height: 60px; }
+.pk-toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.pk-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 12px; }
+.pk-ring { position: relative; flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font: 800 15px var(--display);
+  background: conic-gradient(var(--finish, var(--pass)) calc(var(--p, 0) * 1%), var(--line) 0); }
+.pk-ring::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--surface); }
+.pk-ring span { position: relative; z-index: 1; }
+.pk-t { display: grid; min-width: 0; }
+.pk-t b { font-size: 15px; }
+.pk-t span { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk-chev { flex: none; color: var(--muted); transition: transform .2s; }
+.pocket.open .pk-chev { transform: rotate(180deg); }
+.pk-head .btn { flex: none; min-height: 40px; }
+.pk-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.pk-body[hidden] { display: none; }
+.pk-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+.pk-tab { min-height: 32px; border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 999px; padding: 4px 11px; font: 600 12.5px var(--body); cursor: pointer; }
+.pk-tab[aria-selected="true"] { color: var(--fg); border-color: var(--accent); background: var(--accent-soft); }
+.pk-tab.srch { margin-left: auto; display: grid; place-items: center; padding: 4px 9px; }
+.pk-tab .ic { width: 15px; height: 15px; }
+.pocket .search { margin: 0 0 4px; }
+.pocket .items { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.pk-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid transparent;
+  background: var(--sunk); color: inherit; font: 14px var(--body); text-align: left; cursor: pointer; }
+.pk-row:hover { border-color: var(--line); }
+.pk-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pk-row .tx { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk-row .tx.code { font: 13px var(--mono); color: var(--syn-kw); }
+.pk-row.due { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.pk-row.got { opacity: .7; }
+.pk-shape { flex: none; width: 15px; height: 15px; overflow: visible; }
+.pk-shape .sh { fill: none; stroke: var(--muted); stroke-width: 2.6; }
+.pk-row.due .pk-shape .sh { stroke: var(--accent); }
+.pk-empty { color: var(--muted); font-size: 14px; margin: 4px 2px; }
+/* seals: the 3, 10, 30 and 90-day reviews, one stamp each */
+.seals { flex: none; display: inline-flex; gap: 3px; align-items: center; }
+.seals i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--line); display: block; }
+.seals i.on { background: var(--finish, var(--pass)); border-color: var(--finish, var(--pass)); }
+.seals i.now { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+/* one item, opened in the tray */
+.pk-item { display: grid; gap: 10px; min-width: 0; }
+.pk-back { justify-self: start; }
+.pk-paper { position: relative; margin: 0; padding: 12px 12px 12px 18px; border-radius: 6px 12px 12px 6px; background: var(--sunk); border: 1px solid var(--line); font-weight: 500; overflow-wrap: anywhere; }
+.pk-paper::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
+.pk-paper.code { font: 13px/1.5 var(--mono); white-space: pre-wrap; }
+.pk-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+.pk-meta b { color: var(--fg); font-weight: 600; }
+.pk-ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pk-ladder span { border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px; text-align: center; font: 600 11px var(--mono); color: var(--muted); }
+.pk-ladder span.on { border-color: var(--finish, var(--pass)); color: var(--finish, var(--pass)); }
+.pk-ladder span.now { border-color: var(--accent); color: var(--fg); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent); }
+.pk-next { display: flex; gap: 8px; align-items: center; }
+.pk-next .btn.primary { flex: 1; }
+.pk-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.pk-links .linkbtn { padding: 4px 0; font-size: 13.5px; }
+.pk-menu { position: relative; }
+.pk-menu > summary { list-style: none; cursor: pointer; }
+.pk-menu > summary::-webkit-details-marker { display: none; }
+.pk-menu > div { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 2; display: grid; min-width: 170px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
+.pk-menu > div button { text-align: left; background: none; border: 0; color: var(--fg); font: 14px var(--body); padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.pk-menu > div button:hover { background: var(--sunk); }
+.pk-menu > div button.danger { color: var(--fail); }
+.pk-scrim { position: fixed; inset: 0; z-index: 43; background: var(--scrim); }
+.pk-scrim[hidden] { display: none; }
+body.pk-on #home { padding-bottom: 96px; }
+.top .brand { white-space: nowrap; }
+@media (max-width: 420px) { body.chip-on .top .week { display: none; } }
+/* the header chip: glows only when something is due */
+.duechip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 13px var(--body); cursor: pointer; }
+.duechip[hidden] { display: none; }
+.duechip .ic { width: 15px; height: 15px; }
+.duechip.due { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--accent-soft); }
+.duechip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+:root:not([data-motion="off"]) .duechip .dot { animation: pk-pulse 1.8s ease-in-out infinite; }
+@keyframes pk-pulse { 50% { box-shadow: 0 0 2px var(--accent); opacity: .6; } }
+/* the aura on a tray with something due (dusk theme) */
+:root[data-theme="dusk"] .pocket.burn { border-color: rgba(91, 140, 255, .5); }
+:root[data-theme="dusk"]:not([data-motion="off"]) .pocket.burn:not(.open) { animation: pk-aura 2.8s ease-in-out infinite; }
+@keyframes pk-aura {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(91, 140, 255, .4), 0 -4px 16px rgba(91, 140, 255, .42), 0 0 34px rgba(139, 92, 246, .2); }
+  35% { box-shadow: 0 0 0 1px rgba(212, 248, 255, .5), 0 -7px 22px rgba(91, 140, 255, .56), 0 0 44px rgba(139, 92, 246, .3); }
+  70% { box-shadow: 0 0 0 1px rgba(139, 92, 246, .5), 0 -3px 14px rgba(139, 92, 246, .46), 0 0 30px rgba(91, 140, 255, .24); } }
+/* the focus field: reviewing what's due, one card at a time */
+.focus { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 18px; background: rgba(3, 3, 8, .88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow-y: auto; }
+.focus[hidden] { display: none; }
+.focus::before { content: ""; position: fixed; left: 50%; top: 46%; width: 760px; height: 760px; margin: -380px 0 0 -380px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(91, 140, 255, .16), rgba(139, 92, 246, .08) 42%, transparent 64%); border: 1px solid rgba(91, 140, 255, .14); }
+:root:not([data-motion="off"]) .focus::before { animation: pk-field .7s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes pk-field { from { transform: scale(.1); opacity: 0; } }
+.fc-wrap { position: relative; width: min(520px, 100%); display: grid; gap: 14px; }
+.fc-top { display: flex; align-items: center; gap: 10px; color: #c3b5ff; font: 600 12px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.fc-dots { display: flex; gap: 5px; margin-left: auto; }
+.fc-dots i { width: 22px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .14); }
+.fc-dots i.done { background: var(--finish, var(--pass)); }
+.fc-dots i.cur { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.fc-close { color: #c3b5ff; }
+.fc-card { position: relative; display: grid; gap: 12px; padding: 20px; border-radius: 18px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0, 0, 0, .5); }
+:root:not([data-motion="off"]) .fc-card { animation: pk-rise .35s ease both; }
+@keyframes pk-rise { from { opacity: 0; transform: translateY(10px); } }
+.fc-from { font-size: 12.5px; color: var(--muted); }
+.fc-card h3 { margin: 0; font: 800 clamp(22px, 5vw, 28px)/1.15 var(--display); overflow-wrap: anywhere; }
+.fc-card .quote.code { font-size: 14px; }
+.fc-ask { margin: 0; color: var(--muted); line-height: 1.5; }
+.fc-answer { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; gap: 8px; }
+.fc-answer > p { margin: 0; }
+.fc-acts { display: flex; gap: 8px; }
+.fc-acts .btn { flex: 1; min-height: 46px; }
+.fc-done { text-align: center; justify-items: center; }
+.fc-done b { font: 800 26px var(--display); }
 /* first visit */
 .howto { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
 .howto li::marker { font: 600 13px var(--mono); color: var(--accent); }
@@ -455,7 +572,7 @@ body.no-ai .ai-only { display: none; }
   @keyframes gc-pop { 0% { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: none; } }
 }
 /* study list: sections, lesson groups, one line per item until opened */
-#items { gap: 18px; }
+#items { gap: 6px; }
 .ssec, .sgroup, .srows { display: grid; gap: 6px; min-width: 0; }
 .ssec { gap: 10px; }
 .ssec h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
@@ -515,7 +632,6 @@ details.quiet > div { display: grid; gap: 14px; padding-top: 8px; }
 .next .steps i.now { background: var(--accent); }
 .next .btn.primary { min-height: 48px; }
 @media (max-width: 560px) { .next .btn { justify-self: stretch; } }
-#homeReview:empty { display: none; }
 .rowcard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-height: 64px; cursor: pointer; }
 .rowcard .mt { display: grid; min-width: 0; }
 .rowcard .mt b { font-weight: 600; }
@@ -1014,8 +1130,9 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <div class="wrap">
     <button class="brand" id="homeBtn" aria-label="Daily Drill: go to your learning path">Daily Drill</button>
     <div class="week" id="week" role="img" aria-label="This week"></div>
+    <button class="duechip" id="dueChip" hidden aria-controls="pocket"></button>
     <button class="btn" id="searchBtn" aria-label="Search lessons, words and your study list" title="Search ( / )"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
-    <button class="btn" id="nbBtn" aria-controls="drawer"><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16l-4-2-4 2-4-2-3 2V5a2 2 0 0 1 2-2z"/></svg><span class="nblabel">Notebook</span><span class="count" id="studyCount"></span></button>
+    <button class="btn" id="nbBtn" aria-controls="drawer"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg><span class="nblabel">Notebook</span></button>
   </div>
 </header>
 
@@ -1097,22 +1214,33 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
 <nav class="foot" id="foot" hidden aria-label="Lesson navigation"><div class="wrap"><button class="btn" id="prevBtn">Back</button><span class="grow"></span><button class="btn quiet" id="midBtn" hidden></button><button class="btn primary" id="nextBtn">Next</button></div></nav>
 
 <div class="scrim" id="scrim" hidden></div>
+<div class="pk-scrim" id="pkScrim" hidden></div>
+<section class="pocket" id="pocket" hidden aria-label="Study list">
+  <div class="pk-head">
+    <button class="pk-toggle" id="pkToggle" aria-expanded="false" aria-controls="pkBody">
+      <span class="pk-ring" id="pkRing"><span id="pkNum">0</span></span>
+      <span class="pk-t"><b id="pkTitle">Study list</b><span id="studySub"></span></span>
+      <svg class="ic pk-chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+    </button>
+    <button class="btn primary" id="pkStart" hidden>Start review</button>
+  </div>
+  <div class="pk-body" id="pkBody" hidden>
+    <div class="pk-tabs" role="tablist" id="pkTabs"></div>
+    <input class="search" id="studySearch" type="search" placeholder="Search your study list" aria-label="Search your study list" hidden>
+    <div class="items" id="items"></div>
+  </div>
+</section>
+<div class="focus" id="focus" hidden role="dialog" aria-modal="true" aria-label="Review"><div class="fc-wrap" id="focusBody"></div></div>
 <aside class="drawer" id="drawer" hidden aria-label="Notebook" role="dialog" aria-modal="true">
   <div class="drawer-head"><h2>Notebook</h2><button class="btn quiet" id="nbClose">Close</button></div>
   <div class="prefs"><div class="themepick"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
   <div class="themepick"><span id="motionLabel">Motion</span><div class="seg" role="group" aria-labelledby="motionLabel"><button data-motion-pick="on" aria-pressed="true">On</button><button data-motion-pick="off" aria-pressed="false">Off</button></div></div></div>
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-nb="study" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-bookmark"/></svg>Study list</button>
-    <button class="tab" role="tab" data-nb="gloss" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
+    <button class="tab" role="tab" data-nb="gloss" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
     <button class="tab" role="tab" data-nb="speed" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>How fast is it?</button>
   </div>
   <div class="drawer-body">
-    <div id="nb-study" class="pane">
-      <p class="lede" id="studySub">Things you saved to understand better. Select any text in a lesson, or a line of your code, to add it. Once you've got one, it comes back for a quick review after 3 days, then 10, 30 and 90.</p>
-      <input class="search" id="studySearch" type="search" placeholder="Search your study list" aria-label="Search your study list">
-      <div class="items" id="items"></div>
-    </div>
-    <div id="nb-gloss" class="pane" hidden>
+    <div id="nb-gloss" class="pane">
       <input class="search" id="glossSearch" type="search" placeholder="Search terms" aria-label="Search the glossary">
       <div id="glossBody"></div>
     </div>
@@ -1537,12 +1665,6 @@ function phasePage(i, prefix) {
   }).join("");
   return { d, n: ids.length, scenes };
 }
-function reviewCard() {
-  const due = studyItems.filter(isDue).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
-  if (!due.length) return "";
-  const first = due[0].text, short = first.length > 60 ? first.slice(0, 58) + "…" : first;
-  return `<button class="rowcard" data-review><span class="tile gold">${ic("clock")}</span><span class="mt"><b>${due.length} ${due.length === 1 ? "thing" : "things"} due for review</b><span>${esc(short)}</span></span><span class="chev" aria-hidden="true">›</span></button>`;
-}
 // Set when the local server says no model is running: everything works except the tutor's replies.
 let aiOff = false;
 function aiOffNote() {
@@ -1598,7 +1720,7 @@ function renderHome() {
   $("home").innerHTML = `<div class="hello">${hello}</div>
     ${card}
     ${aiOffNote()}
-    <div id="homeReview">${reviewCard()}</div>
+
     <div class="pathhead"><h2>Your path</h2>${nidx !== today_ ? `<button class="linkbtn" data-phase="${today_}">Back to today</button>` : `<span>Tap a phase</span>`}</div>
     ${railHtml(false, null, nidx)}
     ${book}
@@ -2035,6 +2157,8 @@ function show(view) {
   $("search").hidden = view !== "search";
   $("foot").hidden = view !== "lesson" && view !== "done";
   window.scrollTo(0, 0);
+  if (pkOpen) { pkOpen = false; pkItem = null; }
+  renderPocket();
 }
 function goHome() { cur = null; viewPh = null; show("home"); renderHome(); }
 function openLesson(id, step) {
@@ -2962,13 +3086,12 @@ function insertSnippet(t) {
 }
 
 // ---------- notebook ----------
-let nbTab = "study";
+let nbTab = "gloss";
 function openNotebook(tab) {
   if (tab) nbTab = tab;
-  if (!$("nb-" + nbTab)) nbTab = "study";  // a tab that no longer exists falls back to the study list
+  if (!$("nb-" + nbTab)) nbTab = "gloss";  // the study list lives in the pocket now
   for (const t of document.querySelectorAll("[data-nb]")) t.setAttribute("aria-selected", String(t.dataset.nb === nbTab));
   for (const t of document.querySelectorAll("[data-nb]")) $("nb-" + t.dataset.nb).hidden = t.dataset.nb !== nbTab;
-  if (nbTab === "study") renderStudy();
   $("drawer").hidden = false; $("scrim").hidden = false;
   document.body.style.overflow = "hidden";
   $("nbClose").focus();
@@ -3030,8 +3153,7 @@ function markSaved() {
   const saved = new Set(studyItems.map(i => i.text));
   for (const b of document.querySelectorAll("[data-tag]")) { const on = saved.has(b.dataset.text); b.classList.toggle("on", on); b.textContent = on ? "Saved" : "Save"; }
   const open = studyItems.filter(i => i.status !== "got" || isDue(i)).length;
-  $("studyCount").textContent = open ? String(open) : "";
-  const hr = document.getElementById("homeReview"); if (hr) hr.innerHTML = reviewCard();
+  void open;
 }
 async function addItem(text, source, kind) {
   text = text.trim();
@@ -3052,7 +3174,7 @@ async function removeItem(id) {
   studyItems = studyItems.filter(i => i.id !== id); saveStudyLocal(); renderStudy();
   if (studyCol) { try { await studyCol.doc(id).delete(); } catch {} }
 }
-function flashStudy(msg) { $("studySub").textContent = msg; }
+function flashStudy(msg) { toast(msg); }
 // Model replies: code blocks, paragraphs, bullet and numbered lists, headings, **bold**, *italics*, `code`.
 const emph = s => md(s).replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1<i>$2</i>");
 function blockHtml(block) {
@@ -3080,12 +3202,12 @@ function fmt(text) {
 }
 function gotIt(it) { openItems.delete(it.id); return updateItem(it.id, { status: "got", stage: 0, reviewAt: Date.now() + REVIEW_DAYS[0] * DAY_MS }); }
 function backToLearning(it) { return updateItem(it.id, { status: "open", stage: 0, reviewAt: null }); }
-async function reviewed(it, remembered) {
+async function reviewed(it, remembered, quiet) {
   revealed.delete(it.id); openItems.delete(it.id);
-  if (!remembered) { await backToLearning(it); toast("Back on your To learn list"); return; }
+  if (!remembered) { await backToLearning(it); if (!quiet) toast("Back on your To learn list"); return; }
   const stage = Math.min((it.stage || 0) + 1, REVIEW_DAYS.length - 1);
   await updateItem(it.id, { stage, reviewAt: Date.now() + REVIEW_DAYS[stage] * DAY_MS });
-  toast("Next review in " + REVIEW_DAYS[stage] + " days");
+  if (!quiet) toast("Next review in " + REVIEW_DAYS[stage] + " days");
 }
 let lessonOrder = null;
 function studyGroup(it) {  // the lesson an item came from, in path order
@@ -3107,13 +3229,6 @@ function itemMarks(it) {
   if (it.note) marks.push("your note");
   return marks.join(" · ") || esc(it.source || "");
 }
-function itemRow(it) {
-  const open = openItems.has(it.id) || !!streaming[it.id], code = it.kind === "code";
-  return `<article class="item${it.status === "got" && !isDue(it) ? " got" : ""}${open ? " open" : ""}">
-    <button class="itemrow" data-act="open" data-id="${it.id}" aria-expanded="${open}"><span class="t${code ? " code" : ""}">${esc(code ? it.text.split("\n")[0] : it.text)}</span><span class="m">${itemMarks(it)}</span></button>
-    ${open ? `<div class="itembody">${isDue(it) ? reviewBody(it) : itemBody(it)}</div>` : ""}
-  </article>`;
-}
 function quizBlock(it) {
   if (!it.quiz) return "";
   return `<div class="ai"><h4>Quiz</h4><p>${md(it.quiz.question)}</p>${revealed.has(it.id) ? `<div>${fmt(it.quiz.answer)}</div>` : `<p><button class="mini" data-act="reveal" data-id="${it.id}">Think first, then show the answer</button></p>`}</div>`;
@@ -3124,53 +3239,173 @@ function threadBlock(it) {
   const live = s.field === "thread" ? `<div class="ai"><h4>You asked</h4><p>${esc(s.q)}</p>${fmt(s.text || "Thinking…")}</div>` : "";
   return thread + live;
 }
-function itemBody(it) {
-  const s = streaming[it.id] || {}, got = it.status === "got";
+// ---------- the pocket: the study list as a tray, and review as a focus field ----------
+// On the path the tray waits at the bottom; on other pages the header chip opens it as a sheet.
+// Three tabs: Due (reviews), Learning, Got it. One item at a time opens inside the tray.
+let pkOpen = false, pkTab = null, pkItem = null, pkSearch = false, pkNote = null, pkAsk = null;
+const dueList = () => studyItems.filter(isDue).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
+const learnList = () => studyItems.filter(it => it.status !== "got");
+const gotList = () => studyItems.filter(it => it.status === "got" && !isDue(it)).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
+const tabOf = it => isDue(it) ? "due" : it.status === "got" ? "got" : "learn";
+const pkLabel = { due: "Due", learn: "Learning", got: "Got it" };
+function pkShape(it) {
+  const id = it.problemId && modOf[it.problemId] ? it.problemId : null;
+  return id ? `<svg class="pk-shape" viewBox="-12 -12 24 24" aria-hidden="true">${phShape(phaseIdx(id), 9)}</svg>` : `<svg class="pk-shape" viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh" r="9" stroke-dasharray="3 3"/></svg>`;
+}
+function pkSeals(it) {  // passed reviews filled, the one it's waiting for ringed
+  const stage = it.status === "got" ? (it.stage || 0) : -1;
+  const say = stage < 0 ? "Not reviewed yet" : `Review ${stage + 1} of 4`;
+  return `<span class="seals" role="img" aria-label="${say}">${REVIEW_DAYS.map((_, k) => `<i class="${k < stage ? "on" : k === stage ? "now" : ""}"></i>`).join("")}</span>`;
+}
+function pkRow(it) {
+  const code = it.kind === "code", line = code ? (it.text.split("\n").find(l => l.trim()) || it.text).trim() : it.text;
+  return `<button class="pk-row${isDue(it) ? " due" : it.status === "got" ? " got" : ""}" data-act="open" data-id="${it.id}">${pkShape(it)}<span class="tx${code ? " code" : ""}">${esc(line)}</span>${pkSeals(it)}</button>`;
+}
+function pkNext(it) {  // one main step, depending on where the item is
+  const dis = busyItems.has(it.id) ? " disabled" : "";
+  if (isDue(it)) return `<button class="btn primary" data-act="review1" data-id="${it.id}">Review it now</button>`;
+  if (it.status === "got") return `<span class="meta">Next review ${whenText(it.reviewAt)}</span>`;
+  if (sample && !it.explanation) return `<button class="btn primary" data-act="explain" data-id="${it.id}"${dis}>Explain it to me</button><button class="btn" data-act="got" data-id="${it.id}">Got it</button>`;
+  if (sample && !it.quiz) return `<button class="btn primary" data-act="quiz" data-id="${it.id}"${dis}>Quiz me</button><button class="btn" data-act="got" data-id="${it.id}">Got it</button>`;
+  return `<button class="btn primary" data-act="got" data-id="${it.id}">Got it</button>`;
+}
+function pkDetail(it) {
+  const s = streaming[it.id] || {}, got = it.status === "got", stage = got ? (it.stage || 0) : -1;
   const expl = s.field === "explanation" ? s.text : it.explanation;
   const dis = busyItems.has(it.id) ? " disabled" : "";
-  const aiBtns = sample ? `<button class="mini" data-act="explain" data-id="${it.id}"${dis}>${it.explanation ? "Explain again, simpler" : "Explain"}</button><button class="mini" data-act="quiz" data-id="${it.id}"${dis}>${it.quiz ? "New quiz question" : "Quiz me"}</button>` : "";
-  return `<div class="item-top"><span>${esc(it.source || "")} · ${new Date(it.createdAt).toLocaleDateString()}</span><span class="status${got ? " got" : ""}">${got ? "Next review " + whenText(it.reviewAt) : "To learn"}</span></div>
-      ${it.kind === "code" ? `<p class="quote code">${esc(it.text)}</p>` : ""}
-      <input class="field" data-note="${it.id}" id="note-${it.id}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">
-      ${expl ? `<div class="ai"><h4>Explanation</h4>${fmt(expl)}</div>` : ""}
-      ${quizBlock(it)}${threadBlock(it)}
-      ${sample ? `<form class="ask" data-ask="${it.id}"><input class="field" id="ask-${it.id}" placeholder="Ask a follow-up question" aria-label="Ask a follow-up question"${dis}><button class="btn" type="submit"${dis}>Ask</button></form>` : ""}
-      <div class="minis">${aiBtns}<button class="mini" data-act="${got ? "unlearn" : "got"}" data-id="${it.id}">${got ? "Back to learning" : "Got it"}</button><button class="mini" data-act="remove" data-id="${it.id}">Remove</button></div>`;
+  const g = studyGroup(it);
+  const status = isDue(it) ? "<b>Due for review</b>" : got ? "Next review " + whenText(it.reviewAt) : "Learning";
+  const links = [
+    `<button class="linkbtn" data-act="note" data-id="${it.id}">${it.note ? "Edit your note" : "+ Add a note"}</button>`,
+    sample ? `<button class="linkbtn" data-act="askshow" data-id="${it.id}">Ask a question</button>` : "",
+    sample && it.explanation ? `<button class="linkbtn" data-act="explain" data-id="${it.id}"${dis}>Explain again, simpler</button>` : "",
+    sample && it.quiz ? `<button class="linkbtn" data-act="quiz" data-id="${it.id}"${dis}>A different quiz question</button>` : "",
+  ].join("");
+  const menu = `<details class="pk-menu"><summary class="btn" aria-label="More">⋯</summary><div>${got ? `<button data-act="unlearn" data-id="${it.id}">Back to learning</button>` : ""}<button class="danger" data-act="remove" data-id="${it.id}">Remove from the list</button></div></details>`;
+  const showNote = it.note || pkNote === it.id;
+  return `<div class="pk-item">
+    <button class="linkbtn pk-back" data-act="back">${ic("arrowl")}${pkLabel[pkTab] || "Back"}</button>
+    ${it.kind === "code" ? `<pre class="pk-paper code">${esc(it.text)}</pre>` : `<p class="pk-paper">${esc(it.text)}</p>`}
+    <div class="pk-meta"><span>${it.problemId && modOf[it.problemId] ? lessonNo(it.problemId) + " " : ""}${esc(g.title)}</span>${it.source ? `<span>from ${esc(it.source.split(" · ")[0])}</span>` : ""}${got ? `<span>${status}</span>` : ""}</div>
+    <div class="pk-ladder" role="img" aria-label="Reviews after 3, 10, 30 and 90 days">${REVIEW_DAYS.map((d, k) => `<span class="${k < stage ? "on" : k === stage ? "now" : ""}">${d} days</span>`).join("")}</div>
+    <div class="pk-next">${pkNext(it)}${menu}</div>
+    ${showNote ? `<input class="field" data-note="${it.id}" id="note-${it.id}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">` : ""}
+    ${expl ? `<div class="ai"><h4>Explanation</h4>${fmt(expl)}</div>` : ""}
+    ${quizBlock(it)}${threadBlock(it)}
+    ${sample && (pkAsk === it.id || s.field === "thread") ? `<form class="ask" data-ask="${it.id}"><input class="field" id="ask-${it.id}" placeholder="Ask a follow-up question" aria-label="Ask a follow-up question"${dis}><button class="btn" type="submit"${dis}>Ask</button></form>` : ""}
+    <div class="pk-links">${links}</div>
+  </div>`;
 }
-function reviewBody(it) {  // recall first, then check, then say how it went
-  const dis = busyItems.has(it.id) ? " disabled" : "";
-  const ask = it.quiz ? quizBlock(it) : `<p class="meta">Can you explain this in your own words? Try it, then check what you saved.</p>`;
-  const quizBtn = sample ? `<button class="mini" data-act="quiz" data-id="${it.id}"${dis}>${it.quiz ? "A different question" : "Quiz me instead"}</button>` : "";
-  const saved = it.explanation || (it.thread || []).length ? `<details class="quiet"><summary>Check what you saved</summary><div>${it.explanation ? fmt(it.explanation) : ""}${threadBlock(it)}</div></details>` : "";
-  return `${it.kind === "code" ? `<p class="quote code">${esc(it.text)}</p>` : ""}${ask}${saved}
-      <div class="minis">${quizBtn}<button class="mini on" data-act="remembered" data-id="${it.id}">I remembered</button><button class="mini" data-act="forgot" data-id="${it.id}">I'd forgotten</button></div>`;
-}
-function groupRows(items) {
-  const groups = new Map();
-  for (const it of items) { const g = studyGroup(it); if (!groups.has(g.key)) groups.set(g.key, Object.assign({ items: [] }, g)); groups.get(g.key).items.push(it); }
-  return [...groups.values()].sort((a, b) => a.order - b.order).map(g =>
-    `<div class="sgroup"><h4>${esc(g.title)} <span>${g.items.length}</span></h4><div class="srows">${g.items.map(itemRow).join("")}</div></div>`).join("");
+function renderPocket() {
+  const due = dueList(), learn = learnList(), got = gotList(), total = studyItems.length;
+  const onHome = !$("home").hidden;
+  const show = total > 0 && (onHome || pkOpen) && $("focus").hidden;
+  document.body.classList.toggle("pk-on", total > 0 && onHome);
+  $("pocket").hidden = !show; $("pocket").classList.toggle("open", pkOpen); $("pocket").classList.toggle("burn", due.length > 0);
+  $("pkScrim").hidden = !(pkOpen && show);
+  $("pkToggle").setAttribute("aria-expanded", String(pkOpen));
+  $("pkNum").textContent = due.length || learn.length || got.length;
+  $("pkRing").style.setProperty("--p", total ? Math.round(100 * got.length / total) : 0);
+  $("pkTitle").textContent = due.length ? `${due.length} to review` : learn.length ? `${learn.length} to learn` : "All caught up";
+  $("studySub").textContent = due.length ? `about ${Math.max(1, Math.round(due.length * .7))} min · ${learn.length} learning · ${got.length} got it`
+    : got.length ? `Next review ${whenText(got[0].reviewAt)} · ${got.length} got it` : "Select text in a lesson to save it here";
+  $("pkStart").hidden = !due.length;
+  // the header chip, on pages where the tray is not waiting at the bottom
+  const chip = $("dueChip");
+  chip.hidden = !total || onHome;
+  document.body.classList.toggle("chip-on", !chip.hidden);
+  chip.classList.toggle("due", due.length > 0);
+  chip.innerHTML = due.length ? `<span class="dot"></span>${due.length} due` : `${ic("bookmark")}${learn.length || total}`;
+  chip.setAttribute("aria-label", due.length ? `${due.length} due for review: open your study list` : "Open your study list");
 }
 function renderStudy() {
   markSaved();
   const box = $("items");
   if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") { renderPending = true; return; }
   renderPending = false;
-  if (!studyItems.length) { box.innerHTML = `<p class="empty">Nothing saved yet. Select any text in a lesson, or a line of your code, and choose <b>Save to study list</b>. Each saved item can be explained, turned into a quiz question, or asked about.</p>`; return; }
+  renderPocket();
+  $("pkBody").hidden = !pkOpen;
+  if (!pkOpen) return;
+  const open = pkItem && studyItems.find(i => i.id === pkItem);
+  const lists = { due: dueList(), learn: learnList(), got: gotList() };
+  if (!pkTab || (!lists[pkTab].length && !open)) pkTab = lists.due.length ? "due" : lists.learn.length ? "learn" : "got";
+  $("pkTabs").hidden = !!open;
+  $("pkTabs").innerHTML = ["due", "learn", "got"].map(k => `<button class="pk-tab" role="tab" data-ptab="${k}" aria-selected="${k === pkTab && !studyQuery}">${pkLabel[k]} ${lists[k].length}</button>`).join("")
+    + `<button class="pk-tab srch" data-ptab="search" aria-label="Search your study list" aria-pressed="${pkSearch}">${ic("search")}</button>`;
+  $("studySearch").hidden = !pkSearch || !!open;
+  if (open) { box.innerHTML = pkDetail(open); return; }
+  if (!studyItems.length) { box.innerHTML = `<p class="pk-empty">Nothing saved yet. Select any text in a lesson, or a line of your code, and choose <b>Save to study list</b>.</p>`; return; }
   const q = studyQuery.trim().toLowerCase();
-  const list = studyItems.filter(it => studyMatches(it, q));
-  if (!list.length) { box.innerHTML = `<p class="empty">Nothing in your study list matches "${esc(studyQuery.trim())}".</p>`; return; }
-  const due = list.filter(isDue).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
-  const learn = list.filter(it => it.status !== "got");
-  const got = list.filter(it => it.status === "got" && !isDue(it)).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
-  const head = (title, n) => `<h3>${title} <span>${n}</span></h3>`;
-  let html = "";
-  if (due.length) html += `<section class="ssec">${head("Review now", due.length)}<div class="srows">${due.map(itemRow).join("")}</div></section>`;
-  if (learn.length) html += `<section class="ssec">${head("To learn", learn.length)}${groupRows(learn)}</section>`;
-  else if (!q) html += `<section class="ssec">${head("To learn", 0)}<p class="empty">Nothing left to learn. Select any text in a lesson to add more.</p></section>`;
-  if (got.length) html += `<details class="ssec gotsec"${q || gotOpen ? " open" : ""}><summary>${head("Got it", got.length)}</summary><div class="srows">${got.map(itemRow).join("")}</div></details>`;
-  box.innerHTML = html;
+  const list = q ? studyItems.filter(it => studyMatches(it, q)) : lists[pkTab];
+  if (!list.length) { box.innerHTML = `<p class="pk-empty">${q ? `Nothing matches "${esc(studyQuery.trim())}".` : pkTab === "due" ? "Nothing due. Items you've got come back after 3, 10, 30 and 90 days." : "Nothing here yet."}</p>`; return; }
+  box.innerHTML = list.map(pkRow).join("");
 }
+function openPocket(id) {
+  pkOpen = true;
+  if (id) { const it = studyItems.find(i => i.id === id); if (it) { pkItem = id; pkTab = tabOf(it); } }
+  renderStudy();
+  const target = id ? $("items").querySelector(".pk-back") : $("pkTabs").querySelector('[aria-selected="true"]');
+  if (target) target.focus({ preventScroll: true });
+}
+function closePocket() { pkOpen = false; pkItem = null; pkNote = null; pkAsk = null; renderStudy(); }
+
+// Review in the focus field: recall first, then check what you saved, then say how it went.
+let rv = null;
+function startReview(ids, from) {
+  ids = ids || dueList().map(it => it.id);
+  if (!ids.length) return;
+  rv = { ids, i: 0, shown: false, kept: 0, lost: 0 };
+  pkOpen = false; pkItem = null;
+  $("focus").hidden = false; document.body.style.overflow = "hidden";
+  renderStudy(); renderFocus();
+  fxScreen("space", FX.space, from || $("pkStart"));
+  const b = $("focusBody").querySelector(".fc-acts .btn"); if (b) b.focus({ preventScroll: true });
+}
+function endReview() { rv = null; $("focus").hidden = true; document.body.style.overflow = ""; renderStudy(); }
+function renderFocus() {
+  if (!rv) return;
+  const dots = `<div class="fc-dots">${rv.ids.map((_, k) => `<i class="${k < rv.i ? "done" : k === rv.i ? "cur" : ""}"></i>`).join("")}</div>`;
+  const top = `<div class="fc-top"><span>Review</span>${dots}<button class="linkbtn fc-close" data-rv="close">Close</button></div>`;
+  if (rv.i >= rv.ids.length) {
+    $("focusBody").innerHTML = `${top}<div class="fc-card fc-done"><b>${rv.kept ? `${rv.kept} sealed` : "Done"}</b><p class="fc-ask">${rv.kept ? `You remembered ${rv.kept} of ${rv.ids.length}. They come back later, further apart each time.` : ""}${rv.lost ? ` ${rv.lost} went back to Learning, to look at again.` : ""}</p><div class="fc-acts"><button class="btn primary" data-rv="close">Done</button></div></div>`;
+    return;
+  }
+  const it = studyItems.find(i => i.id === rv.ids[rv.i]);
+  if (!it) { rv.i++; renderFocus(); return; }
+  const g = studyGroup(it), code = it.kind === "code";
+  const ask = it.quiz ? `<p class="fc-ask"><b>${md(it.quiz.question)}</b></p>` : `<p class="fc-ask">Say it in your own words first: what is it, and where would you use it?</p>`;
+  const saved = [it.quiz ? `<div class="ai"><h4>Answer</h4>${fmt(it.quiz.answer)}</div>` : "", it.explanation ? `<div class="ai"><h4>What you saved</h4>${fmt(it.explanation)}</div>` : "",
+    it.note ? `<p><b>Your note:</b> ${esc(it.note)}</p>` : ""].join("") || `<p class="fc-ask">You saved this without an explanation. Open it in your study list and ask for one.</p>`;
+  $("focusBody").innerHTML = `${top}<div class="fc-card" id="fcCard">
+    <span class="fc-from">From ${esc(g.title)}${it.source ? " · " + esc(it.source.split(" · ")[0]) : ""}</span>
+    ${code ? `<p class="quote code">${esc(it.text)}</p>` : `<h3>${esc(it.text)}</h3>`}
+    ${ask}
+    ${rv.shown ? `<div class="fc-answer">${saved}</div>` : ""}
+    <div class="fc-acts">${rv.shown ? `<button class="btn" data-rv="no">I'd forgotten</button><button class="btn primary" data-rv="yes">I remembered</button>` : `<button class="btn primary" data-rv="show">Show what I saved</button>`}</div>
+  </div>`;
+}
+async function rate(remembered, btn) {
+  const it = studyItems.find(i => i.id === rv.ids[rv.i]); if (!it) return;
+  if (remembered) { rv.kept++; fxScreen("spark", FX.spark, btn); fxOn($("fcCard"), "seal", FX.seal()); } else rv.lost++;
+  await reviewed(it, remembered, true);
+  setTimeout(() => { if (!rv) return; rv.i++; rv.shown = false; renderFocus(); const b = $("focusBody").querySelector(".fc-acts .btn"); if (b) b.focus({ preventScroll: true }); }, remembered && motionOn() ? 650 : 0);
+}
+$("focus").addEventListener("click", e => {
+  const b = e.target.closest("[data-rv]"); if (!b || !rv) return;
+  const act = b.dataset.rv;
+  if (act === "close") endReview();
+  else if (act === "show") { rv.shown = true; renderFocus(); const y = $("focusBody").querySelector('[data-rv="yes"]'); if (y) y.focus({ preventScroll: true }); }
+  else if (act === "yes" || act === "no") { b.disabled = true; rate(act === "yes", b); }
+});
+$("pkToggle").onclick = () => { if (pkOpen) closePocket(); else openPocket(); };
+$("pkScrim").onclick = closePocket;
+$("pkStart").onclick = e => startReview(null, e.currentTarget);
+$("dueChip").onclick = () => openPocket();
+$("pkTabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-ptab]"); if (!b) return;
+  if (b.dataset.ptab === "search") { pkSearch = !pkSearch; if (!pkSearch) studyQuery = $("studySearch").value = ""; renderStudy(); if (pkSearch) $("studySearch").focus(); return; }
+  pkTab = b.dataset.ptab; studyQuery = $("studySearch").value = ""; renderStudy();
+});
 function tutorFrame(it) {
   const prob = byId[it.problemId];
   return `${LEARNER}
@@ -3298,7 +3533,7 @@ $("selSave").onclick = async () => { if (!pendingSel) return; await addItem(pend
 $("selExplain").onclick = async () => {
   if (!pendingSel) return;
   const it = await addItem(pendingSel.text, pendingSel.source, pendingSel.kind);
-  hideSelbar(); openItems.add(it.id); openNotebook("study"); explainItem(it.id);
+  hideSelbar(); openPocket(it.id); explainItem(it.id);
 };
 
 // ---------- editor: auto-indent, Tab/Shift+Tab, comments, symbol keys ----------
@@ -3431,7 +3666,7 @@ $("studySearch").oninput = e => { studyQuery = e.target.value; renderStudy(); };
 $("items").addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("gotsec")) gotOpen = e.target.open; }, true);
 document.addEventListener("click", async e => {
   const t = e.target;
-  if (t.closest("[data-review]")) { openNotebook("study"); return; }
+  if (t.closest("[data-review]")) { startReview(null, t.closest("[data-review]")); return; }
   if (t.closest("[data-mine-review]")) { draftReview(); return; }
   if (t.closest("[data-mine-challenge]")) { challengeIdea(); return; }
   if (t.closest("[data-skill-run]")) { runSkill(); return; }
@@ -3457,7 +3692,7 @@ document.addEventListener("click", async e => {
   const tr = t.closest("[data-try]"); if (tr) { $("searchIn").value = tr.dataset.try; renderSearch(); $("searchIn").focus(); return; }
   const wd = t.closest("[data-word]"); if (wd) { wordOpen = wordOpen === wd.dataset.word ? null : wd.dataset.word; renderSearch(); return; }
   const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
-  const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openItems.add(sn.dataset.snote); openNotebook("study"); return; }
+  const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openPocket(sn.dataset.snote); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
@@ -3497,21 +3732,25 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1); return; }
   const tag = t.closest("[data-tag], [data-explain]");
   if (tag && tag.matches("[data-tag]")) { const ex = studyItems.find(i => i.text === tag.dataset.text); if (ex) removeItem(ex.id); else { addItem(tag.dataset.text, tag.dataset.src, "text"); toast("Saved to your study list"); } return; }
-  if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); openItems.add(it.id); openNotebook("study"); if (!it.explanation) explainItem(it.id); }
+  if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); openPocket(it.id); if (!it.explanation) explainItem(it.id); }
 });
 $("items").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const id = b.dataset.id, it = studyItems.find(i => i.id === id); if (!it) return;
   const act = b.dataset.act;
-  if (act === "open") { if (openItems.has(id)) openItems.delete(id); else openItems.add(id); renderStudy(); }
+  if (act === "open") { pkItem = id; pkNote = pkAsk = null; renderStudy(); const bk = $("items").querySelector(".pk-back"); if (bk) bk.focus({ preventScroll: true }); }
+  else if (act === "note") { pkNote = id; renderStudy(); const n = $("note-" + id); if (n) n.focus(); }
+  else if (act === "askshow") { pkAsk = id; renderStudy(); const a = $("ask-" + id); if (a) a.focus(); }
+  else if (act === "review1") startReview([id], b);
   else if (act === "explain") explainItem(id);
   else if (act === "quiz") quizItem(id);
   else if (act === "reveal") { revealed.add(id); renderStudy(); }
   else if (act === "got") gotIt(it);
   else if (act === "unlearn") backToLearning(it);
   else if (act === "remembered" || act === "forgot") reviewed(it, act === "remembered");
-  else if (act === "remove") removeItem(id);
+  else if (act === "remove") { pkItem = null; removeItem(id); toast("Removed from your study list"); }
 });
+$("items").addEventListener("click", e => { if (e.target.closest('[data-act="back"]')) { pkItem = pkNote = pkAsk = null; renderStudy(); } });
 $("paneText").addEventListener("submit", e => {
   if (e.target.id !== "askForm") return;
   e.preventDefault();
@@ -3527,6 +3766,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest("input, textarea, [contenteditable]")) { e.preventDefault(); openSearch(); return; }
   if (e.key !== "Escape") return;
   if (!$("selbar").hidden) { hideSelbar(); return; }
+  if (!$("focus").hidden) { endReview(); return; }
+  if (pkOpen) { if (pkItem) { pkItem = pkNote = pkAsk = null; renderStudy(); } else { closePocket(); $("pkToggle").focus(); } return; }
   if (!$("drawer").hidden) { closeNotebook(); return; }
   if (!$("search").hidden && !tipFor) closeSearch();
 });
