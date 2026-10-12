@@ -68,6 +68,8 @@ def test_every_lesson_picture_belongs_to_a_real_lesson():
     assert pictures, "no lesson pictures found"
     assert len(pictures) == len(set(pictures)), "a lesson has two pictures"
     assert not set(pictures) - lessons, f"pictures for lessons that don't exist: {set(pictures) - lessons}"
+    missing = sorted(lessons - set(pictures))
+    assert not missing, f"lessons without a sticker picture (add a s-<id> symbol to page.html): {missing}"
 
 
 def test_every_lesson_has_an_exercise_and_every_classic_is_real(data):
