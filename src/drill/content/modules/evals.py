@@ -1030,6 +1030,405 @@ round(0.8 * 0.9 + 0.2 * 0.1, 2)   # 0.74""",
     ),
 )
 
+lesson(MODULE, 'checker_score',
+    title='Testing the checker with planted mistakes',
+    learn=[
+        'A **checker** is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on **planted mistakes**: runs where you put a fault in on purpose, so you already know which ones should fail.',
+        'Plant more than wrong answers. Plant **false successes** too: the agent says "I\'ve closed the ticket", but the ticket is still open. A judge that reads only the agent\'s last message is easily fooled by a confident claim like that.',
+        'Add a **do-nothing agent**: it changes nothing and just replies "Done!". It must score 0. If the checker passes even one of its runs, the checker has a bug.',
+        'The fix is a **code check of the real end state**: read the ticket table, not the reply. Run it next to the judge. For each checker, count what it caught, what it missed, and its **false alarms** (good runs it failed by mistake).',
+    ],
+    example=example('Two checkers on the same planted runs', """planted: wrong-1 claim-1 idle-1
+  wrong = ticket closed, reply wrong
+  claim = says done, ticket still open
+  idle  = the do-nothing agent
+  ok    = a good run, nothing planted
+  flagged = marked as failing
+
+judge (reads the reply)
+  flagged wrong-1 ok-2
+  caught 1 of 3, 1 false alarm
+code (reads the ticket table)
+  flagged claim-1 idle-1
+  caught 2 of 3, 0 false alarms
+together (fail if either flags):
+  caught 3 of 3, 1 false alarm"""),
+    check=question(
+        'Every task in your eval asks the agent to close an open ticket. A do-nothing agent (it changes nothing, then replies "Done!") passes 4 of 10 runs. What does that tell you?',
+        [
+            'Four of those tickets needed no work to close',
+            'The checker trusts the reply instead of the ticket',
+            'The real agent only has to beat 4 out of 10',
+        ],
+        answer=1,
+        why='Nothing changed, so all 10 runs should fail. A checker that passes any of them is reading the claim, not the real end state.',
+    ),
+    angle=angle(
+        pattern='Compare two lists both ways',
+        text='Walk the planted ids and look each one up in the flagged ids: that gives the catches and the misses. Then walk the flagged ids and look each one up in the planted ids: that gives the false alarms.',
+        say='"Before I trust a checker, I run it on planted mistakes, including false successes and a do-nothing agent, and I report what it caught, what it missed and what it wrongly failed."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: a code check next to the judge', """import mlflow
+from mlflow.genai.scorers import (
+    Guidelines, scorer)
+
+# Code check: read the real ticket.
+# get_ticket is your own lookup.
+@scorer
+def ticket_closed(inputs):
+    t = get_ticket(inputs["ticket_id"])
+    return t["status"] == "closed"
+
+# Judge: reads the request and reply,
+# never the ticket.
+resolved = Guidelines(
+    name="resolved",
+    guidelines="The reply resolves "
+    "the user's request.")
+
+# planted: recorded runs (inputs and
+# outputs), including do-nothing runs
+res = mlflow.genai.evaluate(
+    data=planted,
+    scorers=[ticket_closed, resolved])
+
+# One row per run, one column per
+# checker: compare with what you planted
+res.result_df[["ticket_closed/value",
+               "resolved/value"]]"""),
+    exercise=exercise(
+        title='Score the Checker',
+        topic='evals',
+        difficulty='easy',
+        fn='checker_score',
+        prompt="""You planted mistakes in some agent runs, then ran your checker over every run. Now score the checker.
+
+Your function gets two things:
+
+- `planted`: ids of the runs where you planted a mistake, like `["wrong-1", "claim-1"]`. It always has at least one id.
+- `flagged`: ids of the runs the checker marked as failing, like `["wrong-1", "ok-2"]`.
+
+Return a dict with three keys:
+
+- `"caught"`: the share of planted ids that are also in `flagged`, rounded to 2 decimal places. 1 out of 3 gives `0.33`.
+- `"missed"`: the planted ids that are not in `flagged`, sorted A to Z.
+- `"false_alarms"`: the flagged ids that are not in `planted`, sorted A to Z. These are good runs the checker failed by mistake.""",
+        pattern='Check each list against the other: planted but not flagged is a miss, and flagged but not planted is a false alarm.',
+        target='for each id, check the other list',
+        realworld="Agents often claim a success that never happened, and LLM judges, even ones that read the whole conversation, mostly can't tell. Keep a small planted set and run it again whenever the judge's prompt or model changes.",
+        starter="""def checker_score(planted, flagged):
+    # your code here
+    pass
+""",
+        solution="""def checker_score(planted, flagged):
+    caught = 0
+    missed = []
+    for run in planted:
+        if run in flagged:
+            caught += 1
+        else:
+            missed.append(run)
+    alarms = []
+    for run in flagged:
+        if run not in planted:
+            alarms.append(run)
+    return {
+        "caught": round(caught / len(planted), 2),
+        "missed": sorted(missed),
+        "false_alarms": sorted(alarms),
+    }
+""",
+        cases=[
+            case(['wrong-1', 'claim-1', 'idle-1'], ['wrong-1', 'ok-2'],
+                 expected={'caught': 0.33, 'missed': ['claim-1', 'idle-1'], 'false_alarms': ['ok-2']}, sample=True),
+            case(['claim-1', 'wrong-2'], ['wrong-2', 'claim-1'],
+                 expected={'caught': 1.0, 'missed': [], 'false_alarms': []}),
+            case(['idle-2', 'claim-3', 'idle-1'], [],
+                 expected={'caught': 0.0, 'missed': ['claim-3', 'idle-1', 'idle-2'], 'false_alarms': []}),
+            case(['wrong-1'], ['ok-3', 'wrong-1', 'ok-1'],
+                 expected={'caught': 1.0, 'missed': [], 'false_alarms': ['ok-1', 'ok-3']}),
+            case(['wrong-3', 'claim-2', 'wrong-1'], ['wrong-3', 'ok-4', 'claim-2'],
+                 expected={'caught': 0.67, 'missed': ['wrong-1'], 'false_alarms': ['ok-4']}),
+            case(['claim-1', 'idle-1', 'claim-2', 'wrong-1'], ['claim-2', 'ok-1'],
+                 expected={'caught': 0.25, 'missed': ['claim-1', 'idle-1', 'wrong-1'], 'false_alarms': ['ok-1']}),
+        ],
+        guided="""# Replace every ___ with real code, then run the tests.
+
+def checker_score(planted, flagged):
+    caught = 0
+    missed = []
+    for run in planted:
+        # Step 1: did the checker flag this
+        # planted run?
+        if ___:
+            caught += 1
+        else:
+            missed.append(run)
+
+    alarms = []
+    for run in flagged:
+        # Step 2: flagged, but nothing was
+        # planted here: a false alarm.
+        if ___:
+            alarms.append(run)
+
+    # Step 3: caught divided by how many
+    # were planted, rounded to 2 places.
+    return {
+        "caught": round(___, 2),
+        "missed": sorted(missed),
+        "false_alarms": sorted(alarms),
+    }
+""",
+        fills=['run in flagged', 'run not in planted', 'caught / len(planted)'],
+        concepts=[
+            [
+                '`in` with a list',
+                '`x in items` is True when the list holds x. `not in` is the opposite.',
+                """pets = ["cat", "dog"]
+"cat" in pets       # True
+"cow" not in pets   # True""",
+            ],
+            [
+                'Adding to a list',
+                '`items.append(x)` puts x on the end of the list.',
+                """names = []
+names.append("Ana")   # ["Ana"]""",
+            ],
+            [
+                'sorted',
+                '`sorted(items)` gives a new list in order: A to Z for text.',
+                'sorted(["pear", "fig"])   # ["fig", "pear"]',
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
+        ],
+        byhand='Walk the planted ids first. wrong-1 is in flagged, so it was caught. claim-1 is not in flagged: missed. idle-1 is not in flagged: missed. That is 1 caught out of 3 planted, and 1 divided by 3 is 0.333..., which rounds to 0.33. Now walk the flagged ids. wrong-1 was planted, so that flag was right. ok-2 was not planted, so it is a false alarm. Sorted, missed is ["claim-1", "idle-1"]. Return {"caught": 0.33, "missed": ["claim-1", "idle-1"], "false_alarms": ["ok-2"]}.',
+        why='For each id in one list, we check whether the other list holds it. The lists are short, so this is quick.',
+        gotchas=[
+            [
+                'Planting only wrong answers',
+                'A judge can catch a wrong answer and still believe "I\'ve closed the ticket" when nothing changed. Plant false successes and do-nothing runs too, or the test is too easy.',
+            ],
+            [
+                'Ignoring false alarms',
+                'A checker that fails every run catches 100 percent of the planted mistakes. Count its false alarms too, or the "best" checker is one that blocks everything.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'memory_update_score',
+    title='Testing memory with planted changes',
+    learn=[
+        'An agent with memory can keep giving an old fact after its source has changed. An ordinary eval never notices, because nothing changes while it runs. So **plant a change**: update a source on purpose (the office moves from Leeds to York), then ask a question that depends on it.',
+        'Score each answer as one of three outcomes: **current** (it used the new fact), **unsure** (it said it can\'t confirm, which is honest) or **stale** (it used the old fact). Be strict: an answer that mentions the old fact counts as stale, even if it gives the new one too, because the user cannot tell which is right. The price: a correct answer like "you moved from Silver to Gold" also scores as stale, so read a few of the stale ones by hand.',
+        'Watch for two scoring traps. A judge that passes any answer containing "York" also passes "Leeds or York". And MLflow\'s `RetrievalGroundedness` only checks the answer against what the agent looked up, so an answer built on a stale memory still passes.',
+        'Then add checks that catch lazy scoring. A code check reads the memory store itself: was the old fact marked as replaced? Two **baselines** (simple stand-ins to compare with) must do badly: a memory that never updates must fail the changed facts, and no memory at all must fail the facts that did not change.',
+    ],
+    example=example('One planted change, four answers', """change: office Leeds → York
+question: "Where is my office?"
+
+"Your office is in York."  current
+"I can't confirm that."    unsure
+"It's in Leeds."           stale
+"York, or maybe Leeds."    stale"""),
+    check=question(
+        'The office moved to York last week. Your agent answers "Your office is in Leeds" from an old memory it looked up, and `RetrievalGroundedness` passes it. Why?',
+        [
+            'It trusts any memory saved less than a month ago',
+            'It compares the answer with what was looked up',
+            'It only fails answers that sound unsure of themselves',
+        ],
+        answer=1,
+        why='Grounded means "matches what was looked up", not "true". The old memory was looked up, so the answer matches it. Only a planted change, where you know the right answer, catches this.',
+    ),
+    angle=angle(
+        pattern='Label each item, then count the labels',
+        text='One pass over the answers, checking the worst outcome first. The order is the point: an answer that mentions both facts must land in stale.',
+        say='"I change a source on purpose, ask questions that depend on it, and score three outcomes: current, unsure and stale, where mentioning the old fact counts as stale. I add a code check of the store and two baselines: a memory that never updates, and no memory at all."',
+        classic=None,
+    ),
+    stack=stack('MLflow 3: a code scorer with three labels', """import mlflow
+from mlflow.genai.scorers import scorer
+
+# One label per answer: the same
+# rule as your exercise.
+@scorer
+def memory_update(outputs,
+                  expectations):
+    text = outputs.lower()
+    old = expectations["old"].lower()
+    new = expectations["new"].lower()
+    if old in text:
+        return "stale"
+    if new in text:
+        return "current"
+    return "unsure"
+
+# Answers recorded after you changed
+# the source on purpose.
+planted = [{
+    "inputs": {"question":
+        "Where is my office?"},
+    "outputs": "York, or maybe Leeds.",
+    "expectations": {"new": "York",
+                     "old": "Leeds"},
+}]
+
+res = mlflow.genai.evaluate(
+    data=planted,
+    scorers=[memory_update])
+
+# The share of each label
+col = res.result_df[
+    "memory_update/value"]
+print(col.value_counts(normalize=True))"""),
+    exercise=exercise(
+        title='Score the Memory Test',
+        topic='evals',
+        difficulty='easy',
+        fn='memory_update_score',
+        prompt="""You changed some facts on purpose, then asked your agent questions about them. Now score its answers.
+
+`answers` is a list with at least one item. Each item is a dict like `{"answer": "It's in York.", "new": "York", "old": "Leeds"}`: the agent's answer, the fact after your change, and the fact before it.
+
+Label each answer, ignoring upper and lower case:
+
+- `"stale"` if the answer contains `old`. This counts even if it contains `new` too.
+- `"current"` if it contains `new` (and not `old`).
+- `"unsure"` otherwise.
+
+Return a dict with the share of answers for each label, like `{"current": 0.5, "unsure": 0.0, "stale": 0.5}`. A share is that label's count divided by the number of answers, rounded to 2 decimal places.""",
+        pattern='Give each answer one label, checking the worst outcome first, then turn the counts into shares.',
+        target='one pass over the answers',
+        realworld='Research tests of agent memory (LongMemEval, STALE) are built on planted changes too, and find that agents often fail to use the updated fact. Run your planted set a few times and report the counts with how many questions there were. In MLflow 3, a code `@scorer` can return the label for each answer.',
+        starter="""def memory_update_score(answers):
+    # your code here
+    pass
+""",
+        solution="""def memory_update_score(answers):
+    counts = {"current": 0, "unsure": 0,
+              "stale": 0}
+    for a in answers:
+        text = a["answer"].lower()
+        if a["old"].lower() in text:
+            counts["stale"] += 1
+        elif a["new"].lower() in text:
+            counts["current"] += 1
+        else:
+            counts["unsure"] += 1
+    n = len(answers)
+    shares = {}
+    for label in counts:
+        shares[label] = round(
+            counts[label] / n, 2)
+    return shares
+""",
+        cases=[
+            case([
+                {'answer': 'Your office is in York.', 'new': 'York', 'old': 'Leeds'},
+                {'answer': "It's in Leeds.", 'new': 'York', 'old': 'Leeds'},
+                {'answer': 'York, or maybe Leeds.', 'new': 'York', 'old': 'Leeds'},
+                {'answer': "I can't confirm that.", 'new': 'York', 'old': 'Leeds'},
+            ], expected={'current': 0.25, 'unsure': 0.25, 'stale': 0.5}, sample=True),
+            case([
+                {'answer': 'Refunds take 3 days.', 'new': '3 days', 'old': '5 days'},
+            ], expected={'current': 1.0, 'unsure': 0.0, 'stale': 0.0}),
+            case([
+                {'answer': 'The policy now says 3 DAYS.', 'new': '3 days', 'old': '5 days'},
+                {'answer': "Sorry, I don't know.", 'new': '3 days', 'old': '5 days'},
+                {'answer': 'Still 5 Days.', 'new': '3 days', 'old': '5 days'},
+            ], expected={'current': 0.33, 'unsure': 0.33, 'stale': 0.33}),
+            case([
+                {'answer': 'Your manager is Priya.', 'new': 'Priya', 'old': 'Sam'},
+                {'answer': 'You are on the Gold plan.', 'new': 'Gold', 'old': 'Silver'},
+                {'answer': 'Gold, or maybe still Silver.', 'new': 'Gold', 'old': 'Silver'},
+            ], expected={'current': 0.67, 'unsure': 0.0, 'stale': 0.33}),
+            case([
+                {'answer': "I don't have a current record of that.", 'new': 'York', 'old': 'Leeds'},
+                {'answer': 'Please check with HR.', 'new': 'Priya', 'old': 'Sam'},
+            ], expected={'current': 0.0, 'unsure': 1.0, 'stale': 0.0}),
+            case([
+                {'answer': 'Leeds.', 'new': 'York', 'old': 'Leeds'},
+                {'answer': 'leeds, I think', 'new': 'York', 'old': 'Leeds'},
+            ], expected={'current': 0.0, 'unsure': 0.0, 'stale': 1.0}),
+        ],
+        guided="""def memory_update_score(answers):
+    # Replace every ___ with real code, then run the tests.
+
+    counts = {"current": 0, "unsure": 0,
+              "stale": 0}
+    for a in answers:
+        text = a["answer"].lower()
+        # Step 1: mentions the old fact? Stale,
+        # even if it says the new one too.
+        if ___ in text:
+            counts["stale"] += 1
+        # Step 2: says the new fact? Current.
+        elif a["new"].lower() in text:
+            counts["current"] += 1
+        else:
+            counts["unsure"] += 1
+    # Step 3: each count divided by how
+    # many answers, rounded to 2 places.
+    n = len(answers)
+    shares = {}
+    for label in counts:
+        shares[label] = round(
+            ___, 2)
+    return shares
+""",
+        fills=['a["old"].lower()', 'counts[label] / n'],
+        concepts=[
+            [
+                'lower and in',
+                '`lower()` gives a lowercase copy of the text. `"ab" in text` is True if those characters appear anywhere in the text. Lowercase both sides so "York" and "york" match.',
+                """'Green TEA'.lower()           # 'green tea'
+'tea' in 'green tea'          # True""",
+            ],
+            [
+                'if, elif, else',
+                'Python tries each test from the top and runs only the first one that is True. `else` runs when none were.',
+                """size = 7
+if size > 10:
+    print('big')
+elif size > 5:
+    print('medium')   # this one
+else:
+    print('small')""",
+            ],
+            [
+                'Counting with a dict',
+                'Start each label at 0, then add 1 with `+= 1` each time you see it.',
+                """votes = {'yes': 0, 'no': 0}
+votes['yes'] += 1
+votes   # {'yes': 1, 'no': 0}""",
+            ],
+            [
+                'Looping over a dict',
+                '`for key in a_dict:` gives you each key in turn. Use `a_dict[key]` to get its value.',
+                """ages = {'ana': 30, 'bo': 25}
+for name in ages:
+    print(name, ages[name])""",
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
+        ],
+        byhand='All four answers are about the office: old is Leeds, new is York. Answer 1, "Your office is in York.", has no "leeds" but has "york": current. Answer 2, "It\'s in Leeds.", has "leeds": stale. Answer 3, "York, or maybe Leeds.", has "leeds", so it is stale even though it says York too. Answer 4, "I can\'t confirm that.", has neither: unsure. That is 1 current, 1 unsure and 2 stale out of 4. 1 divided by 4 is 0.25, and 2 divided by 4 is 0.5. Return {"current": 0.25, "unsure": 0.25, "stale": 0.5}.',
+        why='One pass over the answers, then one step per label.',
+        gotchas=[
+            [
+                'Passing answers that give both',
+                'A judge that only looks for the new fact passes "Leeds or York". The user still can\'t tell which is right, so score it stale.',
+            ],
+            [
+                'Counting "unsure" as wrong',
+                'An honest "I can\'t confirm that" beats a confident old fact. Report it as its own number. If you count it as wrong, an agent that guesses scores better than one that admits it doesn\'t know.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'review_queue',
     title='Drafted labels, expert-confirmed',
     learn=[

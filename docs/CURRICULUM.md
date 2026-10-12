@@ -97,6 +97,7 @@ your code to work on something real.
 | 9b | `m9b_plan_and_run.ipynb` | Framing and designing a RAG experiment: the plan, oracle and ablation variants, tags and typed spans, a robust reranker parser | Not deciding yet |
 | 9c | `m9c_analyse_and_decide.ipynb` | The Evaluate stage in order: must-pass gate, oracle headroom, groups, flaky questions, the paired test, reading regressions and improvements, the reranker check, the ablation, the time guardrail, the holdout | Doing the steps in order |
 | 9d | `m9d_ship_monitor_grow.ipynb` | Shipping behind a gate, a monitoring signal, tracing a production failure to its cause, growing the eval set as a new version | Closing the loop |
+| 10 | `m10_one_agent_or_a_team.ipynb` | One agent against a team on the help center: parallel researchers with `Send` and a reducer, a supervisor made with `create_agent`, one writer, a checker with a round limit; 3 runs per question through `mlflow.genai.evaluate`; passed every time, dollars per success, hand-off facts kept, tokens per agent, failure labels, and the verdict by a rule written first | Applying the rule when the team looks better |
 
 Milestones 1–4 are ordinary Python and transfer directly to interviews.
 Milestone 5 is the one senior engineers will want to talk about — running code you
@@ -142,9 +143,22 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 14 modules in
-the order of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor),
-and the page keeps track of which lessons are done. One lesson is 15 to 30 minutes.
+Or use the published page on claude.ai. Either way the path is the same: 123 lessons in
+16 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
+minutes. "How the path is organised", on the home page, groups the modules by
+stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
+The list itself runs roughly from foundations to shipping, and any module can be opened
+at any time.
+
+Two modules look past a single experiment. **Pricing and sizing** works out what an AI
+task really costs, what it saves and how much capacity it needs, before you build; it
+goes with the cost and capacity lines of [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md). It
+sits later in the list, but it belongs to the Frame stage: do it first if you are
+deciding whether an idea is worth building.
+**Agent teams** starts with whether you need a team at all, then covers splitting the
+work, fanning out, hand-offs, checking, and what a team costs. It ends with the
+experiment that decides between one agent and a team; [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md)
+has that plan filled in.
 
 Each lesson is four steps. **Learn** is a short read with one worked example. **Check**
 is a single question, to find out whether the read landed. **Build** is a small Python

@@ -224,9 +224,70 @@ class DrillSettings:
             max_attempts=_env_int("DRILL_MAX_ATTEMPTS", 3),
             sandbox_timeout=_env_int("DRILL_SANDBOX_TIMEOUT", 10),
             progress_path=Path(progress) if progress else DEFAULT_PROGRESS_PATH,
-            # Unset means MLflow writes to ./mlruns, which `mlflow ui` reads by default.
+            # Unset means a local store; `databricks` (with DATABRICKS_CONFIG_PROFILE) means
+            # the workspace's managed MLflow. See docs/SERVER.md.
             mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI"),
             # Its own variable, not MLFLOW_EXPERIMENT_NAME: Claude Code's MLflow tracing sets that
             # for everything it starts, and would move these traces into its experiment.
             mlflow_experiment=os.getenv("DRILL_MLFLOW_EXPERIMENT") or "daily-drill",
         )
+
+
+# -- MLflow on Databricks -------------------------------------------------------
+#
+# Setting MLFLOW_TRACKING_URI=databricks sends traces to the workspace in the CLI profile
+# (DATABRICKS_CONFIG_PROFILE, or `databricks://<profile>`). Two things differ from a local
+# server: an experiment name must be a workspace path, and there is no /health URL to ask
+# before connecting. Nothing here runs at import time.
+
+
+def is_databricks_uri(uri: str | None) -> bool:
+    """True for ``databricks`` and ``databricks://<profile>``."""
+    return bool(uri) and (uri == "databricks" or uri.startswith("databricks://"))
+
+
+def databricks_profile(uri: str | None) -> str | None:
+    """The CLI profile named in the URI, else DATABRICKS_CONFIG_PROFILE, else None (the SDK's default)."""
+    if uri and uri.startswith("databricks://"):
+        return uri.split("://", 1)[1].split(":", 1)[0] or None
+    return os.getenv("DATABRICKS_CONFIG_PROFILE") or None
+
+
+def experiment_path(name: str, uri: str | None, user: str | None = None) -> str:
+    """The experiment name MLflow needs: on Databricks a plain name becomes ``/Users/<user>/<name>``.
+
+    Names that already start with ``/`` (``/Users/...``, ``/Shared/...``) are kept as they are,
+    and so is every name on a local store.
+    """
+    if not is_databricks_uri(uri) or name.startswith("/"):
+        return name
+    if not user:
+        raise ValueError(f"need the workspace user to turn {name!r} into /Users/<user>/{name}")
+    return f"/Users/{user}/{name}"
+
+
+def databricks_user(uri: str | None, timeout: float = 5.0) -> str:
+    """Ask the workspace who we are, giving up after ``timeout`` seconds.
+
+    Doubles as the reachability check: a stopped network or an expired login fails here, fast,
+    instead of inside MLflow's own retries (which can take minutes).
+    """
+    from databricks.sdk import WorkspaceClient
+    from databricks.sdk.config import Config
+
+    cfg = Config(
+        profile=databricks_profile(uri), http_timeout_seconds=timeout, retry_timeout_seconds=timeout
+    )
+    return WorkspaceClient(config=cfg).current_user.me().user_name
+
+
+UC_TRACE_TAG = "mlflow.experiment.databricksTraceDestinationPath"
+
+
+def uc_trace_location(experiment) -> str | None:
+    """The Unity Catalog place an experiment's traces go to, or None for experiment storage.
+
+    Reading traces from Unity Catalog needs a SQL warehouse, which costs compute; experiment
+    storage needs none (up to 100,000 traces per experiment).
+    """
+    return (getattr(experiment, "tags", None) or {}).get(UC_TRACE_TAG) or None

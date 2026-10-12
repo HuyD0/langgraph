@@ -8,25 +8,25 @@ from drill.content.model import Module
 
 # Phase by phase, as LIFECYCLE below lists them, so "next lesson" never jumps ahead a phase.
 ORDER = [
-    'foundations',                                          # Frame
-    'experiments',                                          # Design
-    'llm-apps', 'rag', 'agents', 'production', 'security',  # Build and trace
-    'evals', 'models',                                      # Evaluate
-    'shipping', 'platform',                                 # Ship
-    'tracing', 'llmops', 'reliability',                     # Monitor
+    'foundations', 'pricing',                                              # Frame
+    'experiments',                                                         # Design
+    'llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security',  # Build and trace
+    'evals', 'models',                                                     # Evaluate
+    'shipping', 'platform',                                                # Ship
+    'tracing', 'llmops', 'reliability',                                    # Monitor
 ]
 
 # The ML lifecycle strip at the top of the page: which modules belong to which stage.
 LIFECYCLE = [
     ('Frame',
      'Decide the question, the metric and what success is worth.',
-     ['foundations']),
+     ['foundations', 'pricing']),
     ('Design',
      'Plan the runs: what you vary, what you hold fixed, what it costs.',
      ['experiments']),
     ('Build and trace',
      'Build with LangGraph and Databricks, traced from the first line.',
-     ['llm-apps', 'rag', 'agents', 'production', 'security']),
+     ['llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security']),
     ('Evaluate',
      'Score runs on the same eval set; compare quality, cost and latency.',
      ['evals', 'models']),

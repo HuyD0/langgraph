@@ -31,7 +31,7 @@ def test_the_right_answer_rule_matches_the_page():
 
 def test_the_snapshot_says_what_to_work_on():
     data = build_data()
-    question, options, right, _ = data["lessons"]["precision_recall"]["check"]
+    _question, options, right, _ = data["lessons"]["precision_recall"]["check"]
     progress = {
         "lessons": {
             "split_by_key": {"step": 3, "checked": data["lessons"]["split_by_key"]["check"][2], "done": True},
@@ -46,7 +46,7 @@ def test_the_snapshot_says_what_to_work_on():
         {"id": "b", "text": "MERGE INTO", "status": "open", "note": "when?"},
     ]
     text = tutor.snapshot(progress, study, data, today="2026-10-11")
-    assert "Lessons finished: 1 of 95" in text
+    assert f"Lessons finished: 1 of {len(data['lessons'])}" in text
     assert "Next lesson: Precision, recall and why accuracy lies (AI & ML foundations), in progress, at the Build step." in text
     assert "Days practised: 1 in the last 7 days, 1 in the last 30." in text  # counted back from today, not the clock
     assert "Spot the gotcha: 1 spotted, 1 missed" in text
