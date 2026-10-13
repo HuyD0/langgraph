@@ -88,9 +88,9 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `the sorting board` | Build as a judgement task (`SO`, `sortRender`, `sortPlace`) |
 | `the machine` | Rows travelling through the learner's function |
 | `hints, review, solution` | Hint levels, code review, showing the answer |
-| `notebook` | The drawer: glossary, look and motion switches |
+| `notebook` | The drawer: glossary, look and motion switches. **In `page/notebook.js`** (styles: `page/notebook.css`) |
 | `study list` / `the pocket` | Saved items, the tray, spaced review. **In `page/study-list.js`** (styles: `page/pocket.css`, `page/study-list.css`) |
-| `selection toolbar` | Save or explain selected text |
+| `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
 | `backends` | `claudeBackend()` and `localBackend()` |
@@ -131,7 +131,7 @@ as one page.
 | # | Section | Part files | Why this order |
 |---|---|---|---|
 | 1 | study list, the pocket | `study-list.js`, `pocket.css`, `study-list.css` | **Done.** Self-contained, and edited often |
-| 2 | notebook, selection toolbar | `notebook.js`, `selection.js` | Small drawers with their own state |
+| 2 | notebook, selection toolbar | `notebook.js`, `notebook.css`, `selection.js` | **Done.** Small drawers with their own state |
 | 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` | Feature-local state (`M`, `SO`, `QF`) |
 | 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` | Each draws one kind of thing in a step |
 | 5 | content packs | `packs.js` | Only used when a pack is loaded |

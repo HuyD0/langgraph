@@ -369,42 +369,7 @@ details.task .taskbody > * { min-width: 0; }
 .foot .grow { flex: 1 1 auto; }
 .foot .primary { min-width: 46%; }
 
-/* notebook drawer */
-.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; }
-.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); z-index: 41; background: var(--surface); border-left: 1px solid var(--line); display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); padding-top: env(safe-area-inset-top, 0px); }
-.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 4px; }
-.drawer-head h2 { font: 800 20px var(--display); margin: 0; }
-.tabs { display: flex; gap: 2px; padding-inline: 12px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
-.tab { flex: none; font: 600 14px var(--body); background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 10px; min-height: 44px; margin-bottom: -1px; cursor: pointer; }
-.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-.drawer-body { overflow-y: auto; padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 16px; align-content: start; }
-.drawer-body > * { min-width: 0; }
-.drawer-body h3 { font: 800 17px var(--display); margin: 8px 0 0; }
-.lede { margin: 0; color: var(--muted); }
-.search { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; font-size: 16px; }
-dl.gloss { margin: 0; display: grid; gap: 12px; }
-dl.gloss dt { font: 600 14px var(--mono); }
-dl.gloss dd { margin: 2px 0 0; }
-.rule { display: grid; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
-.rule:last-child { border-bottom: 0; }
-.rule h4 { margin: 0; font: 600 15px var(--body); }
-.rule p { margin: 0; }
-.tag { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
-.tag.no { color: var(--fail); }
-.tag.yes { color: var(--pass); }
-.growth { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
-.growth .track { grid-column: 1 / -1; height: 10px; background: var(--sunk); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
-.growth .fill { height: 100%; background: var(--accent); border-radius: 3px; }
-.growth .fill.slow { background: var(--hint); }
-.growth .fill.dead { background: var(--fail); }
-.growth .t.dead { color: var(--fail); }
-.slider { display: grid; gap: 4px; }
-.slider input { width: 100%; accent-color: var(--accent); height: 32px; }
-.mini { font: 500 13px var(--body); background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 12px; min-height: 34px; cursor: pointer; }
-.mini.on { color: var(--accent); border-color: var(--accent); }
-.minis { display: flex; flex-wrap: wrap; gap: 8px; }
-.mini.fill { border-style: dashed; }
+/*INCLUDE page/notebook.css*/
 body.no-ai [data-explain] { display: none; }
 .items { display: grid; gap: 12px; }
 .item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
@@ -3905,120 +3870,11 @@ function insertSnippet(t) {
   ed.dispatchEvent(new Event("input"));
 }
 
-// ---------- notebook ----------
-let nbTab = "gloss";
-function openNotebook(tab) {
-  if (tab) nbTab = tab;
-  if (!$("nb-" + nbTab)) nbTab = "gloss";  // the study list lives in the pocket now
-  for (const t of document.querySelectorAll("[data-nb]")) t.setAttribute("aria-selected", String(t.dataset.nb === nbTab));
-  for (const t of document.querySelectorAll("[data-nb]")) $("nb-" + t.dataset.nb).hidden = t.dataset.nb !== nbTab;
-  $("drawer").hidden = false; $("scrim").hidden = false;
-  document.body.style.overflow = "hidden";
-  $("nbClose").focus();
-}
-function closeNotebook() { $("drawer").hidden = true; $("scrim").hidden = true; document.body.style.overflow = ""; $("nbBtn").focus(); }
-const GROWTH = [
-  ["The same work at any size", n => 1, "Looking up a key in a dict"],
-  ["Halving each step", n => Math.max(1, Math.log2(n)), "Finding the first failing version by checking the middle"],
-  ["One walk through the data", n => n, "Adding up token costs"],
-  ["Sorting", n => n * Math.max(1, Math.log2(n)), "Ranking documents by score"],
-  ["Checking every pair", n => n * n, "Comparing every chunk with every other chunk"],
-  ["Trying every combination", n => Math.pow(2, n), "Testing every possible set of features"],
-];
-function fmtTime(sec) {
-  if (!isFinite(sec) || sec > 4.4e17) return "longer than the universe";
-  if (sec < 0.001) return "instant";
-  if (sec < 1) return Math.round(sec * 1000) + " ms";
-  if (sec < 60) return sec.toFixed(1) + " seconds";
-  if (sec < 3600) return Math.round(sec / 60) + " minutes";
-  if (sec < 86400) return (sec / 3600).toFixed(1) + " hours";
-  if (sec < 86400 * 365) return Math.round(sec / 86400) + " days";
-  const y = sec / (86400 * 365);
-  return y < 1e6 ? Math.round(y).toLocaleString() + " years" : "millions of years";
-}
-function renderGrowth() {
-  const n = Math.round(Math.pow(10, +$("nRange").value));
-  $("nOut").textContent = n.toLocaleString() + " items";
-  $("growth").innerHTML = GROWTH.map(([name, f, eg]) => {
-    const steps = f(n), sec = steps / 1e7;
-    const w = Math.min(100, Math.max(1.5, (Math.log10(Math.max(1, steps)) / 18) * 100));
-    const cls = sec > 3600 ? "dead" : sec > 1 ? "slow" : "";
-    return `<span><b>${esc(name)}</b><br><span class="meta">${esc(eg)}</span></span><span class="t ${cls === "dead" ? "dead" : ""}">${fmtTime(sec)}</span><span class="track" aria-hidden="true"><span class="fill ${cls}" style="width:${w}%;display:block"></span></span>`;
-  }).join("");
-}
-function renderGlossary() {
-  const q = $("glossSearch").value.trim().toLowerCase();
-  const html = D.glossary.map(([group, terms]) => {
-    const hits = terms.filter(([t, d]) => !q || t.toLowerCase().includes(q) || d.toLowerCase().includes(q));
-    if (!hits.length) return "";
-    return `<h3>${esc(group)}</h3><dl class="gloss">${hits.map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${md(d)}</dd>${tagButtons(t, "Glossary")}</div>`).join("")}</dl>`;
-  }).join("");
-  $("glossBody").innerHTML = html || `<p class="empty">No term matches "${esc(q)}". Try a shorter word.</p>`;
-  markSaved();
-}
+/*INCLUDE page/notebook.js*/
 
 /*INCLUDE page/study-list.js*/
 
-// ---------- selection toolbar ----------
-let pendingSel = null, lastPointer = null;
-const ed = $("code");
-function sourceFor(node) {
-  const el = node && (node.nodeType === 1 ? node : node.parentElement);
-  const t = cur ? (cur.kind === "practice" ? cur.p.title : LESSONS[cur.id].title) : "";
-  if (!el) return t || "Daily Drill";
-  if (el.closest("#code")) return "My code · " + t;
-  if (el.closest(".task")) return "Task · " + t;
-  if (el.closest("#feed, #result")) return "Tutor feedback · " + t;
-  if (el.closest("#paneBuild")) return "Python · " + t;
-  if (el.closest("#paneText")) return STEPS[cur ? cur.step : 0] + " · " + t;
-  if (el.closest("#drawer")) return "Notebook";
-  return t || "Daily Drill";
-}
-function hideSelbar() { $("selbar").hidden = true; pendingSel = null; }
-function checkSelection() {
-  const bar = $("selbar");
-  let text = "", kind = "text", rect = null, node = null;
-  if (document.activeElement === ed && ed.selectionEnd > ed.selectionStart) {
-    text = ed.value.slice(ed.selectionStart, ed.selectionEnd); kind = "code"; node = ed;
-    const r = ed.getBoundingClientRect();
-    rect = lastPointer ? { left: lastPointer.x, bottom: lastPointer.y } : { left: r.left + 16, bottom: r.top + 24 };
-  } else {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount && !sel.isCollapsed) {
-      node = sel.anchorNode; const el = node && (node.nodeType === 1 ? node : node.parentElement);
-      if (el && el.closest("main, #drawer") && !el.closest("#items, #selbar, input, textarea")) {
-        text = sel.toString(); rect = sel.getRangeAt(0).getBoundingClientRect();
-        if (el.closest("pre, code")) kind = "code";
-      }
-    }
-  }
-  text = text.trim();
-  if (/^_+$/.test(text)) text = "";
-  if (!text || text.length < 2 || !rect) { if (!bar.matches(":focus-within")) hideSelbar(); return; }
-  pendingSel = { text, kind, source: sourceFor(node) };
-  $("selExplain").hidden = !sample;
-  $("selSave").textContent = "Save to study list";
-  bar.hidden = false;
-  const w = bar.offsetWidth, maxLeft = document.documentElement.clientWidth - w - 8;
-  bar.style.left = Math.max(8, Math.min(maxLeft, rect.left + window.scrollX)) + "px";
-  bar.style.top = (rect.bottom + window.scrollY + 8) + "px";
-}
-document.addEventListener("mouseup", e => { lastPointer = { x: e.clientX, y: e.clientY }; if (!e.target.closest("#selbar")) setTimeout(checkSelection, 0); });
-document.addEventListener("keyup", e => { if (e.shiftKey || e.key === "Shift") { lastPointer = null; setTimeout(checkSelection, 0); } });
-let selTimer = null;
-document.addEventListener("selectionchange", () => {
-  if (coarse.matches) { clearTimeout(selTimer); selTimer = setTimeout(checkSelection, 450); return; }
-  if ($("selbar").hidden) return;
-  const s = window.getSelection();
-  if ((!s || s.isCollapsed) && !(document.activeElement === ed && ed.selectionEnd > ed.selectionStart)) setTimeout(() => { if (!$("selbar").matches(":focus-within")) hideSelbar(); }, 150);
-});
-$("selbar").addEventListener("mousedown", e => e.preventDefault());
-$("selSave").onclick = async () => { if (!pendingSel) return; await addItem(pendingSel.text, pendingSel.source, pendingSel.kind); $("selSave").textContent = "Saved"; setTimeout(hideSelbar, 700); };
-$("selExplain").onclick = async () => {
-  if (!pendingSel) return;
-  const it = await addItem(pendingSel.text, pendingSel.source, pendingSel.kind);
-  hideSelbar(); openPocket(it.id); explainItem(it.id);
-};
+/*INCLUDE page/selection.js*/
 
 // ---------- editor: auto-indent, Tab/Shift+Tab, comments, symbol keys ----------
 function editLines(fn) {
