@@ -1,0 +1,41 @@
+id: ex_failed_run
+status: ready
+title: Why the made-up run failed
+summary: A plan fails because an identity isn't registered yet.
+objective: Work from a symptom to a verified root cause and the next safe check.
+difficulty: core
+learn:
+  text:
+    - Start from the first error, collect evidence, rule causes in or out, and only then decide what to change.
+  views:
+    - kind: walkthrough
+      symptom: "Plan failed: identity orbit-reader not found."
+      steps:
+        - {look: The first error in the run log, found: The lookup for orbit-reader failed.}
+        - {look: The team file, found: orbit-reader is declared.}
+        - {look: The identity registry, found: orbit-reader isn't registered yet.}
+      suspects:
+        - {cause: A typo in the name, verdict: ruled out, why: The name matches the declaration.}
+        - {cause: Not registered yet, verdict: confirmed, why: The registry has no entry.}
+      root_cause: The identity was declared before it was registered.
+      resolution: Register it, then run the plan again.
+      cannot_verify: Whether registration has finished in every environment.
+check:
+  question: A declared identity can't be found during the plan. What do you check first?
+  options: [Delete the declaration, Whether it is registered, The plan's colour]
+  answer: 1
+  why: A declaration isn't proof the identity exists yet.
+practice:
+  kind: troubleshooting
+  prompt: Given this log, what is the most likely cause?
+  artifacts:
+    - {kind: log, label: run log (fictional), content: "error: identity 'orbit-reader' not found"}
+  options: [A typo, Not registered yet, Wrong environment]
+  answer: 1
+  why: The name matches; the registry has no entry.
+  next_check: Look the identity up in the registry before running the plan again.
+  handoff: The run, the first error, and what the registry shows.
+explain:
+  reasoning: Rule causes out with evidence before changing anything.
+  say: I find the first error, check each likely cause against evidence, and only then change something.
+  mistakes: [Rerunning the plan without changing anything.]

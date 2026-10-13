@@ -1,0 +1,28 @@
+id: ex_self_check
+status: ready
+title: Check your reasoning
+summary: Questions you answer in your own words, then compare.
+objective: Explain the evidence and name the next safe check.
+difficulty: core
+learn:
+  text:
+    - Answer each question without help first, then compare with the expected answer and why.
+check:
+  question: A plan finished. Has the change been applied?
+  options: [Yes, Not necessarily, Only on weekdays]
+  answer: 1
+  why: A finished plan is a preview; applying is a separate step.
+practice:
+  kind: reasoning
+  prompt: Answer in your own words, then compare.
+  questions:
+    - ask: What proves a run did not apply anything?
+      expected: The run stopped after planning.
+      why: A plan is a preview.
+    - ask: Why isn't "0 to destroy" enough to approve?
+      expected: Updates can still change access or data.
+      why: An in-place change can matter as much.
+  success: You can explain the evidence, say what you still can't verify, and name the next safe check.
+explain:
+  reasoning: Saying it yourself shows what you really understood.
+  say: I explain the evidence, what I can't verify yet, and the next check.

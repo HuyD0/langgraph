@@ -1,0 +1,25 @@
+# A fictional pack for tests and the guide's walk-through. Every name in it is made up
+# ("orbit" team, "example-env"); nothing here describes a real organisation or system.
+id: example
+title: Example pack (fictional)
+version: 0.1.0
+phase: Ship            # which of the six phases its journeys join
+journeys:
+  - id: example-configure
+    title: "Example: configure"
+    blurb: A made-up team's configuration, from request to plan.
+    lessons:
+      - lessons/config-links.yaml
+      - lessons/trace-field.yaml
+      - lessons/order-steps.yaml
+      - lessons/repair-config.yaml
+  - id: example-review
+    title: "Example: review and troubleshoot"
+    blurb: Reading a made-up plan and fixing a made-up failed run.
+    lessons:
+      - lessons/read-run.yaml
+      - lessons/failed-run.yaml
+      - lessons/plan-review.yaml
+      - lessons/self-check.yaml
+      - lessons/draft-only.yaml
+      - lessons/slot-only.yaml
