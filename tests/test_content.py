@@ -264,3 +264,16 @@ def test_every_look_is_readable():
     assert len(rows) == 3 * len(contrast.PAIRS), "every pair checked in every look"
     bad = [f"{look}: {fg} on {bg} is {r:.2f}:1, needs {m}" for look, fg, bg, r, m, _ in rows if r < m]
     assert not bad, bad
+
+
+def test_the_databricks_phase_is_flagged_without_a_glow():
+    # Ship holds the Databricks and IaC modules, so its tab and title card carry a fixed flag.
+    # Glow means "you are here", so the flag is a chip in its own colour, readable in every look.
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "src/drill/content"
+    page, tokens = (root / "page.html").read_text(), (root / "tokens.css").read_text()
+    assert 'const PH_FLAG = { Ship: "Databricks & IaC" };' in page
+    assert any(name == "Ship" and {"platform", "workspace", "access"} <= set(ms) for name, _, ms in modules.LIFECYCLE)
+    assert tokens.count("--plat:") == tokens.count("--path:"), "every look defines the flag colour"
+    flag_css = page.split(".rail .ph .plat {", 1)[1].split("}", 1)[0]
+    assert "glow" not in flag_css and "animation" not in flag_css

@@ -26,6 +26,7 @@ PAIRS = [
     ("pass", "pass-bg", 4.5, "a passing result"),
     ("fail", "fail-bg", 4.5, "a failing result"),
     ("hint", "hint-bg", 4.5, "a hint"),
+    ("plat", "plat-bg", 4.5, "the Databricks & IaC flag on a phase"),
     ("syn-kw", "code-bg", 4.5, "keywords in the editor"),
     ("syn-str", "code-bg", 4.5, "strings in the editor"),
     ("syn-com", "code-bg", 4.5, "comments in the editor"),
