@@ -79,10 +79,10 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `feedback on drafted reviews and challenges` | Thumbs and reasons on AI drafts |
 | `search: lessons, glossary words and the study list` | The search view |
 | `views` | `show(view)`, `openLesson`, `setStep`, the bottom bar `renderFoot`, `goNext` |
-| `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) |
-| `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` |
+| `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) **In `page/walkthrough.js`** (styles: `page/walkthrough.css`) |
+| `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` **In `page/trust.js`** (styles: `page/trust.css`) |
 | `step panes` | `learnPane`, `checkPane`, the Explain gaps (`clozeHtml`), `anglePane` |
-| `spot the gotcha` | The gotcha challenge in Explain |
+| `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
 | `ask about this lesson` | The tutor chips and answers |
 | `build step` | `loadProblem`, the editor area, running tests |
 | `the sorting board` | Build as a judgement task (`SO`, `sortRender`, `sortPlace`). **In `page/sorting.js`** (styles: `page/sorting.css`) |
@@ -134,7 +134,7 @@ as one page.
 | 1 | study list, the pocket | `study-list.js`, `pocket.css`, `study-list.css` | **Done.** Self-contained, and edited often |
 | 2 | notebook, selection toolbar | `notebook.js`, `notebook.css`, `selection.js` | **Done.** Small drawers with their own state |
 | 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` and a `.css` for each | **Done.** Feature-local state (`M`, `SO`, `QF`) |
-| 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` | Each draws one kind of thing in a step |
+| 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
 | 5 | content packs | `packs.js` | Only used when a pack is loaded |
 | 6 | ask about this lesson, backends | `ask.js`, `backends.js` | Touch the model and storage: move with care |
 | 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |

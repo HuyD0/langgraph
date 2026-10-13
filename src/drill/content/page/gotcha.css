@@ -1,0 +1,30 @@
+/* spot the gotcha */
+.gotcha-card { border-color: color-mix(in srgb, var(--hint) 45%, var(--line)); }
+.gc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gc-head h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--hint); }
+.gc-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gc-icon { position: relative; width: 22px; height: 22px; flex: none; }
+.gc-icon .ic { position: absolute; inset: 0; width: 22px; height: 22px; }
+.gc-icon .bug { color: var(--hint); }
+.gc-icon .ok { color: var(--pass); opacity: 0; }
+.gc-icon.done .bug { opacity: 0; }
+.gc-icon.done .ok { opacity: 1; }
+.gcode { display: grid; margin: 0; padding: 10px 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; font: 14px/1.6 var(--mono); }
+.gln { white-space: pre; padding: 0 14px 0 8px; min-width: max-content; }
+.gln .gm { display: inline-block; width: 2ch; color: var(--muted); user-select: none; }
+.gln.del { background: color-mix(in srgb, var(--fail) 13%, transparent); color: var(--muted); text-decoration: line-through; text-decoration-color: var(--fail); }
+.gln.add { background: color-mix(in srgb, var(--pass) 14%, transparent); }
+.gln.del .gm { color: var(--fail); }
+.gln.add .gm { color: var(--pass); }
+.habit { font-size: 14px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+.habit b { color: var(--fg); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) .gcode.reveal .gln.del { animation: gl-del .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+  :root:not([data-motion="off"]) .gcode.reveal .gln.add { animation: gl-add .45s ease-out both; animation-delay: calc(var(--i) * 70ms + 350ms); }
+  @keyframes gl-del { from { background: transparent; color: var(--fg); text-decoration-color: transparent; } }
+  @keyframes gl-add { from { opacity: 0; transform: translateX(-12px); } }
+  :root:not([data-motion="off"]) .gc-icon.squash .bug { animation: gc-squash .5s ease-in both; }
+  :root:not([data-motion="off"]) .gc-icon.squash .ok { animation: gc-pop .4s .4s ease-out both; }
+  @keyframes gc-squash { 0% { opacity: 1; transform: none; } 50% { opacity: 1; transform: scale(1.3) rotate(-14deg); } 100% { opacity: 0; transform: scale(.2) rotate(50deg); } }
+  @keyframes gc-pop { 0% { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: none; } }
+}
