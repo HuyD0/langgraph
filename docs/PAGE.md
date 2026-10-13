@@ -84,6 +84,47 @@ The sentence is what you'd say to a colleague, so it must sound like a person ta
 short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
 before keeping it.
 
+## Practice on real evidence (platform Build steps)
+
+For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
+questions instead of code: `exercise(..., practice=practice(intro=..., asks=[ask(...)]))`. Each
+`ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
+one plain question, three or so options, a plain line for each wrong one, a clue first and then
+the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
+The Python exercise stays one tap away ("Rather write it in Python?"). A `fix(...)` question is **Fix the YAML**: the learner edits a
+real file until the check passes, with problems listed by line ("Line 6 · policy_id isn't
+allowed"). The rules are the contract (required, allowed, types, allowed values, forbidden fields,
+the worker-size rule) plus a goal; `yamlRead` and `yamlCheck` in the page run them, and
+`content/yaml_rules.py` runs the same checks in Python so a test proves every question starts
+broken and its model answer passes. Used by the repos module,
+Spotting dangerous replacements and "Getting unstuck with AI, safely".
+
+Code boxes wrap long lines, so nothing runs off a phone; Terraform, plan output, state JSON and
+lock errors are coloured by `hlInfra` (plan marks, attribute names, "forces replacement").
+
+## Walkthroughs: a tool's screens, redrawn
+
+A lesson can show a tool's real screens step by step: `walkthrough=[screen(kind, caption=...,
+steps=[...], tips=[...], **data)]` in the lesson. The page redraws each screen from its data in the
+app's own look, so it fits a phone, follows Dusk and Light, and long names wrap instead of being
+cut off. Kinds: `flow`, `header`, `changes`, `log`, `diff` and `history` (Spacelift's run views).
+Any part with `"n": 2` gets a numbered badge and a hint-coloured outline; step 2 explains it.
+"Reading a Spacelift run" (the first Spacelift lesson) uses it, with the same content as the
+annotated screenshots in the platform team's workbook, and tips checked against Spacelift's docs
+(proposed and tracked runs, run promotion, plan policies, contexts, Spacelift-managed state).
+
+## What you practise: AI, the platform, or both
+
+A first visit asks one question, "What do you want to practise?", with three big answers: AI
+engineering, The platform, or Both. Learners who were here before get a one-time prompt under
+their Today card instead. The answer is `progress.focus` (saved with progress, so every device
+agrees) and can be changed any time in the Notebook ("Practise: AI · Platform · Both").
+
+- **Today follows it** (`todayLesson()`): the AI path's next lesson, the platform track's, or with
+  Both, taking turns (after an AI lesson, a platform one; `progress.lastKind`).
+- **Home follows it:** with The platform, the Platform track sits at the top ("Your track") and the
+  Today card is teal; the welcome text and "How it works" describe the platform work.
+
 ## Tracks
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the

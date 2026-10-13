@@ -32,7 +32,7 @@ PAGE_TEMPLATE = HERE / "page.html"
 TOKENS = HERE / "tokens.css"  # the design tokens, inlined into the page at /*TOKENS*/
 
 _EXERCISE_FIELDS = ("title", "topic", "difficulty", "fn", "prompt", "pattern", "target",
-                    "realworld", "starter", "solution", "cases", "unordered", "machine", "sort")
+                    "realworld", "starter", "solution", "cases", "unordered", "machine", "sort", "practice")
 _LEARN_FIELDS = ("concepts", "byhand", "why", "gotchas", "guided")
 _SCAFFOLD_HEADER = "# Replace every ___ with real code, then run the tests."
 
@@ -53,6 +53,8 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
     }
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
+    if entry.get("walkthrough"):
+        out["walk"] = entry["walkthrough"]  # tool views redrawn with numbered callouts (model.screen)
     if note:
         out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
     # [day, sources]: a lesson checked against sources, or the content date with none.

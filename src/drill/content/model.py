@@ -83,6 +83,7 @@ def exercise(
     unordered: bool = False,
     machine: dict | None = None,
     sort: dict | None = None,
+    practice: dict | None = None,
 ) -> dict:
     """The Build step of a lesson.
 
@@ -98,7 +99,7 @@ def exercise(
         "title": title, "topic": topic, "difficulty": difficulty, "fn": fn,
         "prompt": prompt, "pattern": pattern, "target": target, "realworld": realworld,
         "starter": starter, "solution": solution, "cases": cases, "unordered": unordered,
-        "guided": guided, "fills": fills, "machine": machine, "sort": sort,
+        "guided": guided, "fills": fills, "machine": machine, "sort": sort, "practice": practice,
         "concepts": concepts, "byhand": byhand, "why": why, "gotchas": gotchas,
     }
 
@@ -138,6 +139,56 @@ def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict]
         assert not missing, f"{item.get('name')}: missing {sorted(missing)}"
         assert item["bin"] in ids, f"{item['name']}: unknown bin {item['bin']!r}"
     return {"intro": intro, "bins": [{"id": i, "label": l, "who": w} for i, l, w in bins], "items": items, "explain": explain}
+
+
+EVIDENCE_KINDS = ("code", "chain", "plan", "claim", "prompt")
+
+
+def evidence(kind: str, **data: Any) -> dict:
+    """What a practice question is about, drawn above it: ``code`` (YAML, HCL or a log, with
+    ``text`` and optional ``title``), ``chain`` (a field's stops from YAML to provider, each
+    ``{"label", "sub", "state"}`` with state ok, now or later, plus an optional ``snippet``),
+    ``plan`` (``summary`` counts and ``changes`` rows ``{"sym", "address", "note"}``), ``claim``
+    (something an AI assistant said) or ``prompt`` (a prompt to an AI assistant, ``___`` for the gap)."""
+    assert kind in EVIDENCE_KINDS, f"unknown evidence kind {kind!r}"
+    return {"kind": kind, **data}
+
+
+def ask(question: str, options: list[str], *, answer: int, clue: str, why: str,
+        evidence: dict | None = None, wrong: list[str | None] | None = None, pick: bool = False) -> dict:
+    """One practice question: one screen, one plain question about the evidence above it.
+
+    A wrong pick shows its line from ``wrong`` (or a plain "not quite"); help is ``clue`` first,
+    then the answer. ``why`` is shown once it's right. With ``pick``, the plan's own rows are the
+    options (tap the change you'd stop on), and ``answer`` is a row's position.
+    """
+    n = len(evidence["changes"]) if pick else len(options)
+    assert 2 <= n <= 6 and 0 <= answer < n, f"{question[:40]}: answer {answer} out of {n} options"
+    assert not pick or (evidence and evidence["kind"] == "plan"), "pick needs plan evidence"
+    right = evidence["changes"][answer]["address"] if pick else options[answer]
+    assert right.lower() not in clue.lower(), f"{question[:40]}: the clue gives the answer away"
+    assert wrong is None or len(wrong) == n, f"{question[:40]}: one wrong line per option"
+    return {"question": question, "options": options, "answer": answer, "clue": clue, "why": why,
+            "evidence": evidence, "wrong": wrong, "pick": pick}
+
+
+def fix(question: str, *, start: str, answer: str, rules: dict, goal: list[dict] | None = None,
+        clue: str, why: str, file: str = "") -> dict:
+    """A practice question where the learner edits a YAML file until the check passes, like a
+    product team's pull request. ``rules`` is the contract and ``goal`` what the fix must do (see
+    :mod:`drill.content.yaml_rules`); ``answer`` is one fixed version, shown after the clue."""
+    assert start.strip() and answer.strip() and rules.get("path"), f"{question[:40]}: a fix needs start, answer and rules"
+    return {"kind": "fix", "question": question, "start": start, "answer": answer, "rules": rules,
+            "goal": goal or [], "clue": clue, "why": why, "file": file}
+
+
+def practice(*, intro: str, asks: list[dict], explain: str | None = None) -> dict:
+    """The Build step as a few questions about real evidence, for platform lessons where the job
+    is reading YAML, plans and logs rather than writing Python. Three to five asks, easy to
+    tricky; the Python exercise stays one tap away. ``explain`` is the Explain step's big idea
+    for someone who practised this way (like ``sort_task``)."""
+    assert 2 <= len(asks) <= 6, "a practice set has two to six questions"
+    return {"intro": intro, "asks": asks, "explain": explain}
 
 
 def example(caption: str, code: str) -> dict:
@@ -224,6 +275,35 @@ def source(title: str, url: str) -> list[str]:
     return [title, url]
 
 
+SCREEN_KINDS = ("flow", "header", "changes", "log", "diff", "history")
+
+
+def screen(kind: str, *, caption: str, steps: list[str], tips: list[str] | None = None, **data: Any) -> dict:
+    """One view of a tool, redrawn on the page with numbered callouts: a Spacelift run's header,
+    its Changes list, its planning log, a plan diff, its history, or a flow of steps.
+
+    The page draws it from ``data`` in the app's own look, so it fits a phone and follows the
+    theme. Parts of the view carry a number (``"n": 2``); ``steps`` explain them in order, so
+    step 1 is about the part marked 1. The content can match a real screenshot exactly.
+    ``tips`` are good habits for this view, shown under the steps.
+    """
+    assert kind in SCREEN_KINDS, f"unknown screen kind {kind!r}"
+    used = sorted({n for n in _numbers(data)})
+    assert used == list(range(1, len(steps) + 1)), f"{caption}: callouts {used} need one step each, in order"
+    return {"kind": kind, "caption": caption, "steps": steps, "tips": tips or [], "data": data}
+
+
+def _numbers(value: Any):
+    if isinstance(value, dict):
+        if isinstance(value.get("n"), int):
+            yield value["n"]
+        for v in value.values():
+            yield from _numbers(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _numbers(v)
+
+
 def lesson(
     owner: Module,
     id: str,
@@ -237,6 +317,7 @@ def lesson(
     stack: dict | None = None,
     checked: str | None = None,
     sources: list[list[str]] | None = None,
+    walkthrough: list[dict] | None = None,
 ) -> dict:
     """Add one lesson to a module. Lessons appear on the page in the order they are added.
 
@@ -252,6 +333,7 @@ def lesson(
     entry = {
         "id": id, "title": title, "learn": learn, "example": example, "check": check,
         "angle": angle, "stack": stack, "exercise": exercise, "checked": checked, "sources": sources,
+        "walkthrough": walkthrough,
     }
     owner.lessons.append(entry)
     return entry

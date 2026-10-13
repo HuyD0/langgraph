@@ -438,3 +438,77 @@ def test_the_page_script_parses(data, tmp_path):
     (tmp_path / "page.js").write_text(script)
     result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-800:]
+
+
+def test_every_walkthrough_screen_can_be_drawn_and_explained():
+    """A lesson's walkthrough screens (model.screen) each need a renderer in page.html, and every
+    numbered callout needs its step: screen() checks the numbers, this checks the page."""
+    import re
+    from drill.content.build import PAGE_TEMPLATE
+    from drill.content.model import SCREEN_KINDS
+
+    page = PAGE_TEMPLATE.read_text()
+    views = re.search(r"const SL_VIEW = \{(.*?)\n\};", page, re.S).group(1)
+    for kind in SCREEN_KINDS:
+        assert re.search(rf"^\s*{kind}: d =>", views, re.M), f"page.html can't draw a {kind!r} screen"
+    walks = [(lid, w) for lid, lesson in build_data()["lessons"].items() for w in lesson.get("walk", [])]
+    assert walks, "the Spacelift run lesson has a walkthrough"
+    for lid, w in walks:
+        assert w["steps"] and w["caption"], lid
+
+
+def test_new_components_get_dusk_from_surface_tokens_not_their_own_rules():
+    """Dusk's glass, shadows and glow come from the surface tokens in tokens.css (--card-*,
+    --aside-*, --glow-*). A Dusk-only rule that sets a background, shadow or blur on a new
+    component means that component looks flat in every other place a new look is added: use the
+    tokens instead. The ones below predate the tokens."""
+    import re
+    from drill.content.build import PAGE_TEMPLATE
+
+    known = {".btn.primary", ".btn.primary.soft", ".callout.ahead", ".drawer", ".foot", ".keyidea", ".mfn",
+             ".mfn.busy", '.stepbtn[aria-current="step"] i', '[data-theme="dusk"] .stepbtn[aria-current="step"] i',
+             ".top", "body"}
+    page = PAGE_TEMPLATE.read_text()
+    css = page[page.index("<style>"):page.index("</style>")]
+    new = set()
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        if 'data-theme="dusk"' not in sel or not re.search(r"(^|;)\s*(background|box-shadow|backdrop-filter)\s*:", body):
+            continue
+        for part in sel.split(","):
+            if 'data-theme="dusk"' in part:
+                new.add(re.sub(r"\s+", " ", part.strip().split("]", 1)[1].strip()))
+    assert not new - known, f"use the surface tokens (--card-bg, --aside-bg, --glow-current...) instead of Dusk-only rules for: {sorted(new - known)}"
+    tokens = (PAGE_TEMPLATE.parent / "tokens.css").read_text()
+    for name in ("--card-bg", "--card-shadow", "--aside-bg", "--aside-blur", "--glow-current", "--glow-look"):
+        assert tokens.count(name + ":") >= 2, f"{name} needs a default and a Dusk value in tokens.css"
+
+
+def test_practice_sets_can_be_drawn_and_answered():
+    """Platform lessons can practise on real evidence (model.practice): the page needs a drawing
+    for every kind of evidence, and every question a valid answer and a clue."""
+    from drill.content.build import PAGE_TEMPLATE
+    from drill.content.model import EVIDENCE_KINDS
+
+    page = PAGE_TEMPLATE.read_text()
+    for kind in EVIDENCE_KINDS:
+        assert f'e.kind === "{kind}"' in page, f"page.html can't draw {kind!r} evidence"
+    sets = [(p["id"], p["practice"]) for p in build_data()["bank"] if p.get("practice")]
+    assert len(sets) >= 6
+    for pid, pr in sets:
+        for a in pr["asks"]:
+            if a.get("kind") == "fix":
+                continue
+            n = len(a["evidence"]["changes"]) if a["pick"] else len(a["options"])
+            assert 0 <= a["answer"] < n and a["clue"] and a["why"], pid
+
+
+def test_every_fix_the_yaml_question_starts_broken_and_can_be_fixed():
+    """The starting YAML must fail the check (else there's nothing to fix) and the model answer
+    must pass it, goals included. content/yaml_rules.py runs the same checks as the page."""
+    from drill.content.yaml_rules import problems
+
+    fixes = [(p["id"], a) for p in build_data()["bank"] if p.get("practice") for a in p["practice"]["asks"] if a.get("kind") == "fix"]
+    assert len(fixes) >= 3
+    for pid, a in fixes:
+        assert problems(a["start"], a["rules"], a["goal"]), f"{pid}: the starting YAML already passes"
+        assert problems(a["answer"], a["rules"], a["goal"]) == [], f"{pid}: the model answer fails: {problems(a['answer'], a['rules'], a['goal'])}"

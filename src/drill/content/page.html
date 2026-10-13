@@ -309,6 +309,15 @@ body.pk-on #home { padding-bottom: 96px; }
 .fc-done { text-align: center; justify-items: center; }
 .fc-done b { font: 800 26px var(--display); }
 /* first visit */
+.focuspick { gap: 10px; }
+.focusask { border: 1px solid color-mix(in srgb, var(--track) 45%, var(--line)); } .focusask b { color: var(--track); } .focusask .seg { justify-self: start; margin-top: 4px; }
+.fcard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; text-align: left; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; cursor: pointer; min-height: 64px; }
+.fcard svg { grid-row: span 2; width: 36px; height: 36px; overflow: visible; }
+.fcard b { font: 800 17px var(--display); } .fcard span { color: var(--muted); font-size: 14px; }
+.fcard .sh { stroke-width: 2; fill: none; } .fcard .sh.ai { stroke: var(--path); } .fcard .sh.pl { stroke: var(--track); fill: var(--track-soft); }
+@media (hover: hover) { .fcard:hover { border-color: var(--accent); } }
+.next.track { border-color: color-mix(in srgb, var(--track) 55%, var(--line)); }
+.next.track .eyebrow { color: var(--track); }
 .howto { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
 .howto li::marker { font: 600 13px var(--mono); color: var(--accent); }
 /* no model running */
@@ -363,8 +372,14 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .prose p { margin: 0 0 12px; max-width: 65ch; }
 .prose p:last-child { margin-bottom: 0; }
 .example { display: grid; gap: 6px; }
-pre.code { margin: 0; font: 14px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre; overflow-x: auto; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+pre.code { margin: 0; font: 14px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
+/* long lines wrap rather than run off the edge on a phone; wide tables scroll, with a fade saying there's more */
+.dtwrap.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
+/* Terraform, plan output, state JSON and lock errors: the plan's marks, attribute names, and what forces a replacement */
+.syn .pm { font-weight: 700; } .syn .pm.a { color: var(--pass); } .syn .pm.d { color: var(--fail); } .syn .pm.u { color: var(--accent); } .syn .pm.r { color: var(--hint); }
+.syn .key { color: var(--syn-fn); }
+.syn .fr { color: var(--hint); font-weight: 600; font-style: normal; }
+.card { background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
 .card > * { min-width: 0; }
 .card h2 { font: 800 20px/1.2 var(--display); margin: 0; }
 .q { font-weight: 600; font-size: 17px; margin: 0; }
@@ -672,7 +687,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .trustmark .em, .trustmark .bu { left: 50%; top: 50%; background: var(--mark); }
 .trustmark .em { width: 3px; height: 3px; margin: -1.5px; box-shadow: 0 0 6px 1px var(--mark-glow); }
 .trustmark .bu { width: 4px; height: 4px; margin: -2px; box-shadow: 0 0 8px 2px var(--mark-glow); }
-.trustpop { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 8px); max-width: 34rem; display: grid; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 18px 40px rgba(0, 0, 0, .28), 0 0 0 1px var(--mark-glow); font-size: 15px; line-height: 1.45; }
+.trustpop { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 8px); max-width: 34rem; display: grid; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--pop-bg); border: 1px solid var(--pop-line); box-shadow: var(--pop-shadow), 0 0 0 1px var(--mark-glow); backdrop-filter: var(--pop-blur); -webkit-backdrop-filter: var(--pop-blur); font-size: 15px; line-height: 1.45; }
 .trustpop[hidden] { display: none; }
 .trustpop .tk { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mark); }
 .trustpop .tk span:last-child { color: var(--muted); font-weight: 400; letter-spacing: .04em; }
@@ -684,8 +699,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .trustpop .tr i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--muted); }
 .trustpop .tr i.on { background: var(--mark); border-color: var(--mark); box-shadow: 0 0 6px var(--mark-glow); }
 .trustpop .tr span { margin-left: 4px; }
-:root[data-theme="dusk"] .trustpop { background: rgba(19, 18, 28, .9); border-color: rgba(212, 248, 255, .22); box-shadow: 0 0 0 1px rgba(0, 0, 0, .5), 0 18px 40px rgba(0, 0, 0, .6), 0 0 30px rgba(91, 140, 255, .18); backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }
-@media (prefers-reduced-transparency: reduce) { :root[data-theme="dusk"] .trustpop { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+@media (prefers-reduced-transparency: reduce) { :root[data-theme="dusk"] { --pop-bg: var(--surface); --pop-blur: none; } }
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion="off"]) .trustmark:not(.seen) .turn { transform-origin: 9px 9px; animation: tm-turn 14s linear infinite; }
   :root:not([data-motion="off"]) .trustmark:not(.seen) .em { animation: tm-rise 2.6s var(--d) ease-out infinite; }
@@ -805,14 +819,109 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 :root[data-theme="dusk"] body::after { content: ""; position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: .05; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"); }
 :root[data-theme="dusk"] .top { background: rgba(7,7,15,.55); backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%); }
 :root[data-theme="dusk"] .foot { background: rgba(19,18,28,.68); backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%); }
-:root[data-theme="dusk"] .card { background: rgba(19,18,28,.92); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 10px 28px rgba(0,0,0,.35); }
 :root[data-theme="dusk"] .keyidea { background: rgba(93,85,103,.22); border: 1px solid rgba(220,221,235,.10); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 :root[data-theme="dusk"] .btn.primary { background: linear-gradient(180deg, #7aa2ff, #5b8cff); border-color: #5b8cff; box-shadow: 0 0 22px rgba(91,140,255,.35), inset 0 1px 0 rgba(255,255,255,.35); }
 :root[data-theme="dusk"] .drawer { background: var(--surface); }
 :root[data-theme="dusk"] .btn.primary.soft { opacity: .55; box-shadow: none; }
+/* the platform pieces use the surface tokens, so every look (Dusk's glass and glow included)
+   comes from tokens.css; only the ember's motion is Dusk's own */
+:root[data-theme="dusk"]:not([data-motion="off"]) .qf-chain li.now .qf-dot { animation: dd-ember 2.6s ease-in-out infinite; }
 .saynote.nudge { color: var(--hint); font-weight: 600; }
 /* scrolling something into view leaves room for the sticky header and the bottom bar */
 #paneText .verdict, #sayIn { scroll-margin-bottom: 100px; }
+/* practice questions (platform Build step): evidence, one question, options; reuses .opts, .snote, .clzclue */
+.qfbox { display: grid; gap: 12px; }
+.qfbox .shead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.qf-dots { display: flex; gap: 4px; margin-left: auto; }
+.qf-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.qf-dots i.d { background: var(--pass); } .qf-dots i.n { background: var(--accent); box-shadow: var(--glow-current); }
+.qf-ev { margin: 0; display: grid; gap: 4px; } .qf-ev figcaption { font: 600 12px var(--mono); color: var(--muted); }
+.qf-ev pre, .qfbox > pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.qf-claim { background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); backdrop-filter: var(--aside-blur); -webkit-backdrop-filter: var(--aside-blur); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.qf-claim p { margin: 0; }
+.qf-chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.qf-chain li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 4px 0; }
+.qf-chain li.later { opacity: .5; }
+.qf-dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font: 700 11px var(--mono); color: var(--muted); }
+.qf-chain li.ok .qf-dot { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
+.qf-chain li.now .qf-dot { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); box-shadow: var(--glow-current); }
+.qf-chain b { font-size: 14.5px; } .qf-chain small { display: block; font: 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.qf-chain em { font: 600 11px var(--mono); font-style: normal; color: var(--pass); } .qf-chain li.now em { color: var(--accent); }
+.qf-sum { display: flex; flex-wrap: wrap; gap: 6px; }
+.qf-c { font: 600 12px var(--mono); padding: 3px 9px; border-radius: 999px; background: var(--sunk); border: 1px solid var(--line); }
+.qf-c.a { color: var(--pass); } .qf-c.r { color: var(--hint); } .qf-c.d { color: var(--fail); }
+.qf-rows { display: grid; gap: 6px; }
+.qf-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 48px; padding: 6px 10px; border-radius: 12px; border: 1.5px solid var(--card-line); background: var(--card-bg); color: var(--fg); text-align: left; font: inherit; }
+button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
+.qf-row.right { border-color: var(--pass); background: var(--pass-bg); } .qf-row.wrong { border-color: var(--fail); background: var(--fail-bg); }
+.qf-sym { font: 700 13px var(--mono); text-align: center; } .qf-sym.a { color: var(--pass); } .qf-sym.r { color: var(--hint); } .qf-sym.d { color: var(--fail); } .qf-sym.u { color: var(--accent); }
+.qf-addr { font: 12.5px var(--mono); overflow-wrap: anywhere; } .qf-addr small { display: block; font: 12.5px var(--body); color: var(--muted); }
+.qf-prompt .gap { font-family: var(--body); }
+.qf-next { justify-self: start; }
+.qf-yaml { width: 100%; resize: vertical; font: 14px/1.6 var(--mono); tab-size: 2; background: var(--code-bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qf-yaml:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+@media (pointer: coarse) { .qf-yaml { font-size: 16px; } }
+.qf-keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.qf-keys button { min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-bg); color: var(--fg); font: 600 13px var(--mono); cursor: pointer; }
+.qf-probs { display: grid; gap: 6px; background: var(--fail-bg); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.qf-probs b { color: var(--fail); }
+.qf-ln { font: 600 12px var(--mono); color: var(--fail); margin-right: 8px; }
+/* walkthrough: a tool's screens redrawn with numbered callouts; "look here" uses the hint colours */
+.walk { display: grid; gap: 18px; }
+.walk h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.sl { margin: 0; display: grid; gap: 10px; }
+.sl figcaption { font-weight: 600; }
+.sl-view { border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 12px; background: var(--card-bg); padding: 12px; display: grid; gap: 8px; font-size: 13.5px; min-width: 0; overflow: hidden; }
+.sl-n { display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--hint); color: var(--bg); font: 700 11.5px var(--mono); font-style: normal; margin-right: 6px; vertical-align: middle; box-shadow: var(--glow-look); }
+.sl-mark { display: inline-flex; align-items: center; flex-wrap: wrap; max-width: 100%; outline: 2px solid var(--hint); outline-offset: 1px; border-radius: 6px; padding: 1px 4px 1px 2px; box-shadow: var(--glow-look); }
+.sl-hitbox { outline: 2px solid var(--hint); outline-offset: -1px; box-shadow: var(--glow-look); }
+.sl-h1 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sl-h1 b { font: 800 17px/1.25 var(--display); }
+.sl-meta, .sl-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; color: var(--muted); font-size: 12.5px; }
+.sl-bar { justify-content: space-between; }
+.sl-link { color: var(--accent); overflow-wrap: anywhere; }
+.sl-mono, .sl-code, .sl-log { font-family: var(--mono); }
+.sl-pill { font: 600 11px var(--mono); padding: 2px 8px; border-radius: 999px; background: var(--pass-bg); color: var(--pass); white-space: nowrap; }
+.sl-pill.sl-planned { background: var(--accent-soft); color: var(--accent); }
+.sl-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.sl-tab { font-size: 12.5px; padding: 3px 9px; border-radius: 8px; color: var(--muted); }
+.sl-tab.on { background: var(--sunk); color: var(--fg); font-weight: 600; }
+.sl-tab em { font-style: normal; font-family: var(--mono); color: var(--hint); }
+.sl-search { flex: 1 1 180px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sl-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.sl-chips > span, .sl-btn { font-size: 11.5px; border: 1px solid var(--line); border-radius: 7px; padding: 2px 7px; color: var(--muted); background: var(--surface); }
+.sl-chips b { font-size: 12px; margin-right: 2px; }
+.sl-muted { color: var(--muted); }
+.sl-rows { display: grid; gap: 6px; }
+.sl-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 6px; align-items: center; background: var(--card-bg); border: 1px solid var(--card-line); border-radius: 9px; padding: 7px 9px; }
+.sl-row:not(:has(.sl-n)) { grid-template-columns: auto minmax(0, 1fr) auto; }
+.sl-sym { color: var(--hint); font: 700 13px var(--mono); }
+.sl-addr { font-size: 11.5px; overflow-wrap: anywhere; }
+.sl-more { font-size: 12px; padding-left: 4px; }
+.sl-log { background: var(--code-bg); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; font-size: 11.5px; line-height: 1.55; display: grid; gap: 2px; min-width: 0; }
+.sl-code { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
+.sl-line { overflow-wrap: anywhere; }
+.sl-line.sl-hit { background: var(--hint-bg); border-radius: 4px; }
+.sl-id { color: var(--accent); }
+.sl-warn { color: var(--hint); }
+.sl-block { border-radius: 6px; padding: 2px 4px; display: flex; align-items: flex-start; }
+.sl-add { white-space: pre-wrap; color: var(--pass); }
+.sl-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.sl-flow li { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--sunk); padding: 8px 10px; display: grid; gap: 2px; }
+.sl-flow li b { font-size: 13.5px; } .sl-flow li > span:last-child { color: var(--muted); font-size: 12px; }
+.sl-step { font: 700 11px var(--mono); color: var(--muted); }
+.sl-flow li .sl-n { position: absolute; top: -8px; right: -6px; }
+.sl-note { margin: 0; font-size: 13px; font-weight: 600; color: var(--fail); }
+.sl-hist { display: grid; gap: 8px; }
+.sl-ev { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; border-radius: 9px; padding: 6px 8px; }
+.sl-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--pass); color: var(--bg); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.sl-btn { opacity: .7; }
+.sl-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sl-steps li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 2px; }
+.sl-steps li .sl-n { margin-top: 2px; }
+.sl-tips { background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); backdrop-filter: var(--aside-blur); -webkit-backdrop-filter: var(--aside-blur); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
+.sl-tips .eyebrow { display: flex; align-items: center; gap: 6px; color: var(--hint); }
+.sl-tips ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14.5px; }
 .cloze { display: grid; gap: 10px; }
 .cloze .clz { margin: 4px 0 0; font-size: 18px; line-height: 1.75; }
 .gap { display: inline-block; min-width: 3.2em; padding: 0 8px; border-radius: 8px; text-align: center; line-height: 1.5; }
@@ -856,7 +965,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
   :root[data-theme="light"] .bdg.now, :root[data-theme="light"] .stk.next .stg { filter: drop-shadow(0 0 4px rgba(35,70,209,.45)); }
   :root[data-theme="light"] .btn.primary:not([disabled]) { animation: none; }
   :root[data-theme="dusk"] .bdg.now { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
-  :root[data-theme="dusk"] .btn.primary:not([disabled]), :root[data-theme="dusk"] .stepbtn[aria-current="step"] i, :root[data-theme="dusk"] .ministk svg.now { animation: none; }
+  :root[data-theme="dusk"] .btn.primary:not([disabled]), :root[data-theme="dusk"] .stepbtn[aria-current="step"] i, :root[data-theme="dusk"] .ministk svg.now, :root[data-theme="dusk"] .qf-chain li.now .qf-dot { animation: none; }
   :root[data-theme="dusk"] .stk.next .stg { filter: drop-shadow(0 0 5px rgba(91,140,255,.65)); }
   :root[data-theme="dusk"] .stepbtn[aria-current="step"] i { box-shadow: 0 0 8px rgba(91,140,255,.55); }
 }
@@ -886,6 +995,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 :root[data-theme="dusk"] .callout.ahead { background: rgba(93,85,103,.18); border: 1px solid rgba(232,196,122,.30); }
 @media (prefers-reduced-transparency: reduce) {
   :root[data-theme="dusk"] .top, :root[data-theme="dusk"] .foot, :root[data-theme="dusk"] .keyidea { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  :root[data-theme="dusk"] { --aside-blur: none; --aside-bg: var(--accent-soft); }
   :root[data-theme="dusk"] .top { background: var(--bg); } :root[data-theme="dusk"] .foot { background: var(--surface); } :root[data-theme="dusk"] .keyidea { background: var(--accent-soft); }
   :root[data-theme="dusk"] body::after { display: none; }
 }
@@ -1306,7 +1416,7 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
 let m = null; try { m = localStorage.getItem("drill-motion"); } catch {}
 document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on");</script>
 
-<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><!-- aura: the dusk theme's burning glow for whatever is current. The outline is thickened, blurred, lifted a little, torn into rising vertical streaks by moving noise and tinted blue, with a white-hot rim close in and the crisp shape on top. --><filter id="aura" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="3" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="20" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#5b8cff" flood-opacity="0.95"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.6" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1.2" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="6" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#d4f8ff" flood-opacity="0.85"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="aura-track" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="3" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="20" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#34d8c4" flood-opacity="0.95"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.6" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1.2" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="6" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#d4fff6" flood-opacity="0.85"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><!-- aura-ink: the same flame for the light look, drawn in deep blue ink rather than light --><filter id="aura-ink" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="2.6" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="18" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#2346d1" flood-opacity="0.55"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.2" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="5" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#4f6ff0" flood-opacity="0.7"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="aura-ink-track" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="2.6" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="18" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#0b7a70" flood-opacity="0.55"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.2" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="5" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#2aa596" flood-opacity="0.7"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5M3 17l9 5 9-5"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3M14 9l2 2"/></symbol><symbol id="s-pick_compute" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="6" rx="1.5"/><rect x="-9" y="2" width="18" height="6" rx="1.5"/><path d="M-6 -5h2M-6 5h2"/></symbol><symbol id="s-unsupported_runtimes" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M-4 -3h8M-4 1h5"/><path d="M3 4l5 5M8 4l-5 5"/></symbol><symbol id="s-policy_violations" viewBox="-12 -12 24 24"><path d="M0 -9l8 3v5c0 5-4 8-8 10-4-2-8-5-8-10v-5z"/><path d="M-3 -1l6 6M3 -1l-6 6"/></symbol><symbol id="s-skipped_tasks" viewBox="-12 -12 24 24"><circle cx="-7" cy="0" r="2.5"/><circle cx="7" cy="-6" r="2.5"/><circle cx="7" cy="6" r="2.5"/><path d="M-4.5 -1l9 -4M-4.5 1l9 4" stroke-dasharray="2 2"/></symbol><symbol id="s-resolve_variables" viewBox="-12 -12 24 24"><path d="M-9 -7h7M-9 0h7M-9 7h7"/><path d="M1 -7l4 7-4 7"/><path d="M5 0h4"/></symbol><symbol id="s-tag_coverage" viewBox="-12 -12 24 24"><path d="M-9 -9h8l10 10-8 8-10-10z"/><circle cx="-5" cy="-5" r="1.5"/></symbol><symbol id="s-cost_by_tag" viewBox="-12 -12 24 24"><circle cx="0" cy="0" r="8"/><path d="M0 0v-8M0 0l7 4"/></symbol><symbol id="s-idle_cost" viewBox="-12 -12 24 24"><circle cx="0" cy="1" r="7.5"/><path d="M0 1v-4M0 1h3"/><path d="M-3 -9h6"/></symbol><symbol id="s-missing_acls" viewBox="-12 -12 24 24"><circle cx="-4" cy="-4" r="3.5"/><path d="M-10 8c0-4 3-6 6-6s6 2 6 6"/><path d="M5 -2h5M7.5 -4.5v5" stroke-dasharray="1.5 1.5"/></symbol><symbol id="s-location_for_path" viewBox="-12 -12 24 24"><path d="M0 9s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="0" cy="-2" r="2.5"/></symbol><symbol id="s-pick_securable" viewBox="-12 -12 24 24"><circle cx="-5" cy="3" r="4"/><path d="M-2 0l9-9M4 -6l3 3"/></symbol><symbol id="s-masked_columns" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="1.5"/><path d="M-3 -8v16M3 -8v16"/><path d="M-3 -3l6 6M3 -3l-6 6"/></symbol><symbol id="s-grants_to_people" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3"/><circle cx="5" cy="-3" r="3"/><path d="M-10 7c0-3 2-5 5-5s5 2 5 5M0 7c0-3 2-5 5-5s5 2 5 5"/></symbol><symbol id="s-choose_brick" viewBox="-12 -12 24 24"><rect x="-9" y="1" width="8" height="7" rx="1"/><rect x="1" y="1" width="8" height="7" rx="1"/><rect x="-4" y="-8" width="8" height="7" rx="1"/></symbol><symbol id="s-genie_benchmark" viewBox="-12 -12 24 24"><path d="M-8 -8h16v12h-9l-5 4v-4h-2z"/><path d="M-4 -2l2 2 5-5"/></symbol><symbol id="s-managed_mcp_urls" viewBox="-12 -12 24 24"><circle cx="0" cy="0" r="3"/><circle cx="-8" cy="-6" r="2"/><circle cx="8" cy="-6" r="2"/><circle cx="0" cy="9" r="2"/><path d="M-2 -2l-4.5 -3M2 -2l4.5 -3M0 3v4"/></symbol><symbol id="s-vector_index_setup" viewBox="-12 -12 24 24"><rect x="-9" y="-9" width="8" height="18" rx="1.5"/><path d="M-1 0h4"/><circle cx="6" cy="-5" r="2"/><circle cx="6" cy="2" r="2"/><circle cx="6" cy="8" r="1.5"/></symbol><symbol id="s-pick_search_service" viewBox="-12 -12 24 24"><circle cx="-4" cy="-3" r="5"/><path d="M-0.5 0.5l3 3"/><path d="M5 2l4 4-4 4M9 6h-6"/></symbol><symbol id="s-callable_tools" viewBox="-12 -12 24 24"><path d="M-9 -6h7l2 3h9v12h-18z"/><path d="M-3 4l2 2 4-4"/></symbol><symbol id="s-cited_sources" viewBox="-12 -12 24 24"><circle cx="0" cy="0" r="9"/><path d="M-9 0h18M0 -9c-4 4-4 14 0 18M0 -9c4 4 4 14 0 18"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0z"/><path d="M12 10v8M8 13H4M20 13h-4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2M10 6L9 3M14 6l1-3"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><!-- lesson pictures: s-<lesson id>, drawn on a 24 grid centred on 0 --><symbol id="s-best_run" viewBox="-12 -12 24 24"><path d="M-9 -5h18M-9 0h18M-9 5h18"/><circle cx="-4" cy="-5" r="1.6"/><circle cx="3" cy="0" r="1.6"/><circle cx="-1" cy="5" r="1.6"/></symbol><symbol id="s-plan_gaps" viewBox="-12 -12 24 24"><rect x="-7" y="-9" width="14" height="18" rx="2"/><path d="M-4 -4h8M-4 0h8M-4 4h5"/></symbol><symbol id="s-param_grid" viewBox="-12 -12 24 24"><rect x="-9" y="-9" width="5" height="5"/><rect x="-2.5" y="-9" width="5" height="5"/><rect x="4" y="-9" width="5" height="5"/><rect x="-9" y="-2.5" width="5" height="5"/><rect x="-2.5" y="-2.5" width="5" height="5"/><rect x="4" y="-2.5" width="5" height="5"/><rect x="-9" y="4" width="5" height="5"/><rect x="-2.5" y="4" width="5" height="5"/><rect x="4" y="4" width="5" height="5"/></symbol><symbol id="s-cv_folds" viewBox="-12 -12 24 24"><path d="M-8 8v-14M-4 8v-14M0 8v-14M4 8v-14M8 8v-14"/><path d="M-1.5 8v-14" stroke-width="4"/></symbol><symbol id="s-examples_needed" viewBox="-12 -12 24 24"><circle cx="-6" cy="6" r="2"/><circle cx="0" cy="6" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="-3" cy="0" r="2"/><circle cx="3" cy="0" r="2"/><circle cx="0" cy="-6" r="2"/></symbol><symbol id="s-smoke_set" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="3"/><circle cx="-3" cy="0" r="1.6"/><circle cx="3" cy="0" r="1.6"/></symbol><symbol id="s-wilson_interval" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -5v10M9 -5v10"/><circle cx="2" cy="0" r="2.5"/></symbol><symbol id="s-clear_winner" viewBox="-12 -12 24 24"><path d="M-6 8v-8M2 8v-15"/><path d="M-9 8h18"/></symbol><symbol id="s-paired_verdict" viewBox="-12 -12 24 24"><path d="M-6 -8v16M6 -8v16M-6 -4L6 -4M-6 4L6 4"/></symbol><symbol id="s-biggest_gap" viewBox="-12 -12 24 24"><path d="M-9 -8h18L2 0v8h-4v-8z"/></symbol><symbol id="s-ablation_report" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="5" height="6"/><rect x="-2.5" y="-3" width="5" height="6"/><rect x="4" y="-3" width="5" height="6"/><path d="M-4 -7L4 7"/></symbol><symbol id="s-fluke_risk" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="3"/><circle cx="-3" cy="-3" r="1.4"/><circle cx="3" cy="3" r="1.4"/><circle cx="0" cy="0" r="1.4"/></symbol><symbol id="s-split_by_key" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="16" rx="3"/><path d="M0 -8v16"/><circle cx="-5" cy="-3" r="1.6"/><circle cx="-5" cy="3" r="1.6"/><circle cx="5" cy="0" r="1.6"/></symbol><symbol id="s-precision_recall" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><circle cx="3" cy="0" r="6"/></symbol><symbol id="s-best_threshold" viewBox="-12 -12 24 24"><path d="M-8 8v-6M-3 8v-11M2 8v-8M7 8v-14M-10 -2h20"/></symbol><symbol id="s-average_precision" viewBox="-12 -12 24 24"><path d="M-9 -9v18h18"/><path d="M-7 -6c4 0 6 2 8 6s4 6 7 7"/></symbol><symbol id="s-calibration_table" viewBox="-12 -12 24 24"><path d="M-9 9L9 -9"/><circle cx="-5" cy="4" r="1.5"/><circle cx="0" cy="-1" r="1.5"/><circle cx="5" cy="-4" r="1.5"/></symbol><symbol id="s-cost_per_finished_task" viewBox="-12 -12 24 24"><circle r="8"/><path d="M2.5 -4h-3a2 2 0 0 0 0 4h1.5a2 2 0 0 1 0 4h-3.5M0 -6.5v2.5M0 4v2.5"/></symbol><symbol id="s-run_tokens" viewBox="-12 -12 24 24"><path d="M-9 8h5v-5h5v-5h5v-5h4"/></symbol><symbol id="s-payback_plan" viewBox="-12 -12 24 24"><path d="M-9 0h18" stroke-dasharray="2 2"/><path d="M-9 7L9 -7"/><circle cx="0" cy="0" r="1.8"/></symbol><symbol id="s-biggest_swing" viewBox="-12 -12 24 24"><path d="M-9 -7h18M-6 -2h12M-4 3h8M-2 8h4"/></symbol><symbol id="s-peak_capacity" viewBox="-12 -12 24 24"><path d="M-9 6h5l2-2 3-12 3 12 2-2h3"/></symbol><symbol id="s-fill_template" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-4 -3c-2 0-2 3 0 3M4 -3c2 0 2 3 0 3M-4 5h8"/></symbol><symbol id="s-resolve_prompt" viewBox="-12 -12 24 24"><rect x="-9" y="-6" width="14" height="12" rx="2"/><rect x="-5" y="-9" width="14" height="12" rx="2"/><path d="M-6 0h6"/></symbol><symbol id="s-extract_code_block" viewBox="-12 -12 24 24"><path d="M-5 -8c-3 0-3 3-3 8s0 8 3 8M5 -8c3 0 3 3 3 8s0 8-3 8M-2 0h5M1 -2l2 2-2 2"/></symbol><symbol id="s-batch_items" viewBox="-12 -12 24 24"><rect x="-9" y="2" width="8" height="7"/><rect x="1" y="2" width="8" height="7"/><rect x="-4" y="-7" width="8" height="7"/></symbol><symbol id="s-backoff_delays" viewBox="-12 -12 24 24"><path d="M-9 8v-3M-4 8v-6M2 8v-10M8 8v-15"/></symbol><symbol id="s-parse_labels" viewBox="-12 -12 24 24"><path d="M-8 -6h9M-8 0h9M-8 6h9M4 -7l2 2 3-4M4 5l2 2 3-4"/></symbol><symbol id="s-chunk_text" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-11 -3h22M-11 3h22" stroke-dasharray="2 2"/></symbol><symbol id="s-dedupe_chunks" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="10" height="12" rx="1.5"/><rect x="-1" y="-5" width="10" height="12" rx="1.5"/><path d="M2 -2l5 6M7 -2l-5 6"/></symbol><symbol id="s-retrieve" viewBox="-12 -12 24 24"><path d="M-9 -7h8M-9 -3h6M-9 1h5"/><circle cx="3" cy="2" r="4.5"/><path d="M6.5 5.5l3 3"/></symbol><symbol id="s-recall_at_k" viewBox="-12 -12 24 24"><path d="M-9 -5q9 15 18 0"/><circle cx="-3" cy="0" r="1.4"/><circle cx="2" cy="2" r="1.4"/><circle cx="7" cy="-8" r="1.4"/></symbol><symbol id="s-ndcg_at_k" viewBox="-12 -12 24 24"><circle cx="-8" cy="-7" r="1.4"/><path d="M-4 -7h13M-4 -2h9M-4 3h6M-4 8h3"/></symbol><symbol id="s-rerank_check" viewBox="-12 -12 24 24"><path d="M-9 -6h5M-9 0h5M-9 6h5M4 -6h5M4 0h5M4 6h5"/><path d="M-3 -6L3 6M-3 6L3 -6"/></symbol><symbol id="s-abstention_rates" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-4 -1.5h8"/></symbol><symbol id="s-claim_gate" viewBox="-12 -12 24 24"><path d="M-9 9v-14M9 9v-14M-9 -5h18"/><path d="M-4 1l3 3 5-6"/></symbol><symbol id="s-pick_config" viewBox="-12 -12 24 24"><circle cx="-5" cy="-4" r="3"/><circle cx="5" cy="4" r="3"/><path d="M-5 -4l1.5-2M5 4l2 1M-9 8h7M2 -8h7"/></symbol><symbol id="s-rrf" viewBox="-12 -12 24 24"><path d="M-9 -7c6 0 6 7 9 7M-9 7c6 0 6-7 9-7M0 0h9M6 -3l3 3-3 3"/></symbol><symbol id="s-run_agent" viewBox="-12 -12 24 24"><path d="M7 -3a7 7 0 1 0 1 5"/><path d="M8 -8v5h-5"/></symbol><symbol id="s-trim_history" viewBox="-12 -12 24 24"><path d="M-8 -8h16M-8 -4h16" stroke-dasharray="2 2"/><path d="M-8 1h16M-8 5h16M-8 9h10"/></symbol><symbol id="s-stale_claims" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="12" height="15" rx="2"/><path d="M-6 -3h6M-6 1h3"/><circle cx="5" cy="4" r="5"/><path d="M5 1.5v2.5l2 1"/></symbol><symbol id="s-fact_history" viewBox="-12 -12 24 24"><path d="M-9 0h18"/><circle cx="-5" cy="0" r="2.2"/><circle cx="5" cy="0" r="2.2"/><path d="M-8 -5l6 10"/></symbol><symbol id="s-tool_schema" viewBox="-12 -12 24 24"><path d="M-4 -9c-3 0-3 2-3 5s-2 4-2 4 2 1 2 4 0 5 3 5M4 -9c3 0 3 2 3 5s2 4 2 4-2 1-2 4 0 5-3 5"/><path d="M-2 0h4"/></symbol><symbol id="s-tool_pairs" viewBox="-12 -12 24 24"><path d="M-9 -4h14M2 -7l3 3-3 3M9 4h-14M-2 1l-3 3 3 3"/></symbol><symbol id="s-agent_scorecard" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="17" rx="2"/><path d="M-3 -9h6v3h-6z"/><path d="M-4 1l2 2 4-4M-4 6h8"/></symbol><symbol id="s-pass_rates" viewBox="-12 -12 24 24"><path d="M-10 0l2 2 3-4M-2 0l2 2 3-4M6 0l2 2 3-4"/><path d="M-10 6h20"/></symbol><symbol id="s-tool_call_scores" viewBox="-12 -12 24 24"><path d="M-9 -6h7a2 2 0 1 1 4 0h7v12h-18z"/><path d="M-4 1l2 2 4-4"/></symbol><symbol id="s-trajectory_match" viewBox="-12 -12 24 24"><path d="M-9 7l5-6 4 3 5-8 4 2"/><path d="M-9 3l5-6 4 3 5-8 4 2" stroke-dasharray="2 2"/></symbol><symbol id="s-compare_designs" viewBox="-12 -12 24 24"><path d="M0 -9v17M-6 8h12M-9 -5h18M-9 -5l-2 6h4zM9 -5l-2 6h4z"/></symbol><symbol id="s-approval_run" viewBox="-12 -12 24 24"><circle cx="-3" cy="-5" r="3.5"/><path d="M-10 9c0-5 3-7 7-7 2 0 4 .5 5 2"/><path d="M3 4l2 2 4-5"/></symbol><symbol id="s-next_action" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-5 -3l3 3-3 3M0 4h5"/></symbol><symbol id="s-assemble_stream" viewBox="-12 -12 24 24"><path d="M-9 -5h3M-4 -5h3M1 -5h3M-9 3h18M6 0l3 3-3 3"/></symbol><symbol id="s-need_a_team" viewBox="-12 -12 24 24"><path d="M-5 -9v18M5 -9v18M-5 -5h10M-5 0h10M-5 5h10"/></symbol><symbol id="s-one_writer" viewBox="-12 -12 24 24"><path d="M-2 9l1-4 8-8 3 3-8 8z"/><circle cx="-7" cy="-4" r="2"/><circle cx="-1" cy="-8" r="2"/></symbol><symbol id="s-gather_results" viewBox="-12 -12 24 24"><circle cx="-8" cy="0" r="2"/><circle cx="8" cy="0" r="2"/><path d="M-6 0C-2 -7 2 -7 6 0M-6 0h12M-6 0C-2 7 2 7 6 0"/></symbol><symbol id="s-handoff_kept" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="8" height="6" rx="2"/><circle cx="-5" cy="0" r="1"/><path d="M-1 0h8M4 -3l3 3-3 3"/></symbol><symbol id="s-checker_loop" viewBox="-12 -12 24 24"><path d="M6 -4a7 7 0 1 0 0 8"/><path d="M6 -9v5h-5"/><path d="M-3 -1.5v3M0 -1.5v3M3 -1.5v3"/></symbol><symbol id="s-dollars_per_success" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><path d="M-1 -3h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3"/><path d="M4 2l2 2 4-5"/></symbol><symbol id="s-tokens_by_agent" viewBox="-12 -12 24 24"><circle cx="-8" cy="-5" r="1.5"/><circle cx="-8" cy="0" r="1.5"/><circle cx="-8" cy="5" r="1.5"/><path d="M-4 -5h12M-4 0h5M-4 5h8"/></symbol><symbol id="s-team_experiment" viewBox="-12 -12 24 24"><circle cx="-6" cy="0" r="3"/><path d="M-1 -6v12"/><circle cx="4" cy="-4" r="2"/><circle cx="8" cy="0" r="2"/><circle cx="4" cy="4" r="2"/></symbol><symbol id="s-token_bucket" viewBox="-12 -12 24 24"><path d="M-7 -3h14l-2 11h-10z"/><path d="M-3 -9v2M0 -10v2M3 -9v2"/></symbol><symbol id="s-retry_wait" viewBox="-12 -12 24 24"><path d="M-8 2a8 8 0 1 0 3-7"/><path d="M-6 -9l1 4-4 1"/><path d="M0 -2v3l2 1"/></symbol><symbol id="s-run_with_limit" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 0h18M-9 6h18"/><path d="M2 -9v18"/></symbol><symbol id="s-optimistic_writes" viewBox="-12 -12 24 24"><rect x="-3" y="-1" width="6" height="6"/><path d="M-10 -8l5 5M10 -8l-5 5M-8 -3h3v-3M8 -3h-3v-3"/></symbol><symbol id="s-upsert_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h8M-9 3h8M1 -1h8M-1 -5l2 4-2 4"/></symbol><symbol id="s-chunk_rows" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-3 -8v16M3 -8v16"/></symbol><symbol id="s-process_new" viewBox="-12 -12 24 24"><path d="M-9 -6h11M-9 -1h11"/><path d="M-9 5h11" stroke-width="3"/><path d="M5 5h5M8 3l2 2-2 2"/></symbol><symbol id="s-validate_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h10M-9 3h10"/><path d="M4 -7l2 2 3-4M4 1l5 5M9 1l-5 5"/></symbol><symbol id="s-skew_report" viewBox="-12 -12 24 24"><path d="M-8 8v-3M-4 8v-3M0 8v-16M4 8v-3M8 8v-3"/></symbol><symbol id="s-wrap_untrusted" viewBox="-12 -12 24 24"><path d="M-6 -9h-3v18h3M6 -9h3v18h-3"/><path d="M-4 -3h8M-4 1h8M-4 5h5"/></symbol><symbol id="s-is_safe_sql" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-6" rx="7" ry="3"/><path d="M-7 -6v11c0 2 3 3 7 3s7-1 7-3v-11"/><path d="M-3 2l2 2 4-4"/></symbol><symbol id="s-authorize_tool" viewBox="-12 -12 24 24"><circle cx="-4" cy="0" r="4"/><path d="M0 0h9M6 0v3M9 0v3"/></symbol><symbol id="s-shell_policy" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="12" rx="2"/><path d="M-6 -4l2 2-2 2"/><rect x="1" y="3" width="8" height="6" rx="1"/><path d="M3 3v-2a2 2 0 0 1 4 0v2"/></symbol><symbol id="s-memory_write_gate" viewBox="-12 -12 24 24"><path d="M-9 2l3-9h12l3 9v6h-18z"/><path d="M-9 2h5l1 3h6l1-3h5"/></symbol><symbol id="s-redact_pii" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 6h18"/><path d="M-6 0h12" stroke-width="4"/></symbol><symbol id="s-scrub_secrets" viewBox="-12 -12 24 24"><path d="M-6 -3v6M-8.6 -1.5l5.2 3M-8.6 1.5l5.2-3M6 -3v6M3.4 -1.5l5.2 3M3.4 1.5l5.2-3"/></symbol><symbol id="s-budget_check" viewBox="-12 -12 24 24"><path d="M-9 5a9 9 0 0 1 18 0"/><path d="M0 5l6-6"/><path d="M7 -6l2-2"/></symbol><symbol id="s-find_confounds" viewBox="-12 -12 24 24"><path d="M-6 -8v16M6 -8v16"/><circle cx="-6" cy="-3" r="2"/><circle cx="6" cy="-3" r="2"/><circle cx="6" cy="4" r="2"/></symbol><symbol id="s-replay_tools" viewBox="-12 -12 24 24"><path d="M-7 -4a8 8 0 1 1 -1 7"/><path d="M-7 -9v5h5"/></symbol><symbol id="s-decide_release" viewBox="-12 -12 24 24"><path d="M-9 8h18M-6 8v-14h12v14"/><path d="M-3 0l2 2 4-4"/></symbol><symbol id="s-agent_can_read" viewBox="-12 -12 24 24"><circle cx="-3.5" cy="0" r="6"/><circle cx="3.5" cy="0" r="6"/></symbol><symbol id="s-token_findings" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9q0 6 5 9q-5 3 -5 9M5 -9q0 6 -5 9q5 3 5 9"/></symbol><symbol id="s-sweep_memory" viewBox="-12 -12 24 24"><path d="M-8 -5h16M-3 -5v-3h6v3M-6 -5l1 13h10l1-13"/></symbol><symbol id="s-exact_match" viewBox="-12 -12 24 24"><path d="M-7 -3h14M-7 3h14"/></symbol><symbol id="s-assign_splits" viewBox="-12 -12 24 24"><path d="M-9 -1v8h5v-8M-2.5 -1v8h5v-8M4 -1v8h5v-8"/><circle cx="-6.5" cy="-5" r="1.3"/><circle cx="0" cy="-5" r="1.3"/><circle cx="6.5" cy="-5" r="1.3"/></symbol><symbol id="s-stable_split" viewBox="-12 -12 24 24"><path d="M-6 -8l-2 16M0 -8l-2 16M-9 -3h10M-10 3h10"/><path d="M3 0h6M7 -2l2 2-2 2"/></symbol><symbol id="s-weighted_score" viewBox="-12 -12 24 24"><path d="M0 -8v16M-6 8h12M-9 -4h18"/><rect x="-10" y="-4" width="4" height="4"/><rect x="4" y="-4" width="6" height="6"/></symbol><symbol id="s-must_pass_gate" viewBox="-12 -12 24 24"><path d="M0 -9l2.6 5.5 6 .8-4.4 4.2 1.1 6L0 4.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="s-first_bad_version" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -3v6M9 -3v6M0 -4v8"/><path d="M3 -8l4 4M7 -8l-4 4"/></symbol><symbol id="s-judge_agreement" viewBox="-12 -12 24 24"><path d="M-9 0l3 3 6-7M-1 4l3 3 7-8"/></symbol><symbol id="s-cohen_kappa" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M0 -8v16M-8 0h16M-5 -5l2 2M3 3l2 2"/></symbol><symbol id="s-checker_score" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6M-4 -4l4 4M0 -4l-4 4"/></symbol><symbol id="s-memory_update_score" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="11" height="15" rx="2"/><path d="M4 -3h5l-2-2M9 3h-5l2 2"/></symbol><symbol id="s-review_queue" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="14" height="10" rx="2"/><path d="M-7 -6h12M-5 -9h10M2 2l2 2 4-4"/></symbol><symbol id="s-change_report" viewBox="-12 -12 24 24"><path d="M-4 8v-15M-8 -3l4-4 4 4M4 -8v15M0 3l4 4 4-4"/></symbol><symbol id="s-sort_changes" viewBox="-12 -12 24 24"><path d="M-9 -6h10M-9 -1h7M-9 4h4"/><path d="M6 -8v15M3 4l3 3 3-3"/></symbol><symbol id="s-mix_shift" viewBox="-12 -12 24 24"><path d="M-10 6c3 0 3-10 6-10s3 10 6 10"/><path d="M-2 6c3 0 3-10 6-10s3 10 6 10" stroke-dasharray="2 2"/></symbol><symbol id="s-percentile" viewBox="-12 -12 24 24"><path d="M-10 7c4 0 5-12 9-12s6 9 11 11"/><path d="M5 -8v15" stroke-dasharray="2 2"/></symbol><symbol id="s-pareto_models" viewBox="-12 -12 24 24"><path d="M-9 -8c0 8 6 15 17 16"/><circle cx="-6" cy="-1" r="1.4"/><circle cx="1" cy="5" r="1.4"/><circle cx="4" cy="-3" r="1.4"/></symbol><symbol id="s-better_option" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="16" rx="2"/><path d="M-9 -2h18M-4 -9v4M4 -9v4M-2 4h4M0 2v4"/></symbol><symbol id="s-graduation_gate" viewBox="-12 -12 24 24"><path d="M-10 -3l10-5 10 5-10 5z"/><path d="M-5 0v5c3 2 7 2 10 0v-5M10 -3v6"/></symbol><symbol id="s-promote_model" viewBox="-12 -12 24 24"><rect x="-8" y="-1" width="16" height="9" rx="2"/><path d="M0 -9v8M-3 -6l3-3 3 3"/></symbol><symbol id="s-route_request" viewBox="-12 -12 24 24"><path d="M-9 0h6c4 0 5-6 12-6M-3 0c4 0 5 6 12 6"/><path d="M6 -8l3 2-3 2M6 4l3 2-3 2"/></symbol><symbol id="s-prompt_rollout" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4h10M-5 0h6"/><path d="M-5 5h10" stroke-dasharray="3 2"/></symbol><symbol id="s-summarize_plan" viewBox="-12 -12 24 24"><path d="M-8 -6h4M-6 -8v4M-8 1h4M-8 7h4"/><path d="M0 -6h8M0 1h8M0 7h8"/></symbol><symbol id="s-find_replacements" viewBox="-12 -12 24 24"><path d="M-7 3a7 7 0 0 1 11-8M7 -3a7 7 0 0 1-11 8"/><path d="M4 -8v3h-3M-4 8v-3h3"/></symbol><symbol id="s-guard_destroys" viewBox="-12 -12 24 24"><polygon points="-4,-9 4,-9 9,-4 9,4 4,9 -4,9 -9,4 -9,-4"/><path d="M-4 0h8"/></symbol><symbol id="s-lock_info" viewBox="-12 -12 24 24"><rect x="-7" y="-1" width="14" height="10" rx="2"/><path d="M-4 -1v-3a4 4 0 0 1 8 0v3"/></symbol><symbol id="s-missing_tags" viewBox="-12 -12 24 24"><path d="M-9 -1v-8h8l9 9-8 8z"/><circle cx="-5" cy="-5" r="1.4"/><path d="M-1 3h4" stroke-dasharray="1.5 1.5"/></symbol><symbol id="s-grants_to_revoke" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3.5"/><path d="M-1.5 -3h7M3 -3v2.5"/><path d="M2 3l5 5M7 3l-5 5"/></symbol><symbol id="s-count_shift" viewBox="-12 -12 24 24"><path d="M-9 -6h3M-9 0h3M-9 6h3"/><path d="M-2 -6h10M-2 0h10M-2 6h10"/><path d="M1 -9l3 3-3 3"/></symbol><symbol id="s-overlapping_subnets" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="11" height="10" rx="1"/><rect x="-2" y="-3" width="11" height="10" rx="1"/></symbol><symbol id="s-apply_order" viewBox="-12 -12 24 24"><path d="M-8 -6l8-4 8 4-8 4z"/><path d="M-8 0l8 4 8-4M-8 5l8 4 8-4"/></symbol><symbol id="s-field_status" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="7" height="18" rx="1.5"/><path d="M-3 0h4M5 -6v12M1 -3l4 -3 4 3M1 3l4 3 4-3"/></symbol><symbol id="s-folder_access" viewBox="-12 -12 24 24"><path d="M-10 -6h7l2 2h11v12h-20z"/><circle cx="2" cy="2" r="2.5"/><path d="M-2 8c0-2.5 2-4 4-4s4 1.5 4 4"/></symbol><symbol id="s-cluster_from_yaml" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="8" height="10" rx="1.5"/><path d="M-8 -6h4M-8 -3h4M-2 -4h4l-1.5 -1.5M2 -4l-1.5 1.5"/><circle cx="6" cy="-3" r="2.5"/><circle cx="2" cy="6" r="2.5"/><circle cx="9" cy="6" r="2.5"/></symbol><symbol id="s-lookup_failed" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6M-4.5 -4.5l5 5M0.5 -4.5l-5 5"/></symbol><symbol id="s-can_read_table" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="14" height="14" rx="2"/><rect x="-7" y="-7" width="8" height="8" rx="1.5"/><circle cx="5" cy="5" r="3"/><path d="M7.1 7.1l2.9 2.9M8.6 8.6l1.4-1.4"/></symbol><symbol id="s-runs_after" viewBox="-12 -12 24 24"><circle cx="-7" cy="-6" r="2.5"/><circle cx="7" cy="-6" r="2.5"/><circle cx="0" cy="7" r="2.5"/><path d="M-4.5 -6h9M-5.6 -3.8l4.3 8.6M5.6 -3.8l-4.3 8.6"/></symbol><symbol id="s-plan_policy" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4l1.5 1.5 3-3M-5 3l1.5 1.5 3-3M2 -4h3M2 3h3"/></symbol><symbol id="s-allocate_capacity" viewBox="-12 -12 24 24"><circle r="8"/><path d="M0 0V-8M0 0L6.9 4"/><path d="M1.5 -5.5a4 4 0 0 1 3.5 6" /></symbol><symbol id="s-check_limits" viewBox="-12 -12 24 24"><path d="M-10 -5h20" stroke-dasharray="2 2"/><path d="M-6 8v-9M0 8v-12M6 8v-6"/></symbol><symbol id="s-summarize_by_tag" viewBox="-12 -12 24 24"><path d="M-9 -5v-4h4l5 5-4 4z"/><path d="M1 3h8M1 7h6"/></symbol><symbol id="s-slowest_chain" viewBox="-12 -12 24 24"><path d="M-9 -6h6M3 4h4"/><path d="M-5 -1h12" stroke-width="3"/></symbol><symbol id="s-trace_table_row" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="1"/><path d="M-9 -2h18M-9 3h18M-3 -7v14"/></symbol><symbol id="s-context_fill" viewBox="-12 -12 24 24"><rect x="-9" y="-5" width="16" height="10" rx="2"/><path d="M9 -2v4"/><path d="M-6 0h8" stroke-width="4"/></symbol><symbol id="s-summary_recall" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-5 -2h3M2 -2h3"/></symbol><symbol id="s-detect_loop" viewBox="-12 -12 24 24"><path d="M0 0c-3-4-8-4-8 0s5 4 8 0 8-4 8 0-5 4-8 0z"/></symbol><symbol id="s-failure_counts" viewBox="-12 -12 24 24"><path d="M-8 -6v12M-4 -6v12M0 -6v12M4 -6v12M-10 4l16-8"/></symbol><symbol id="s-token_cost" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-5" rx="7" ry="2.5"/><path d="M-7 -5v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 -1v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 3v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4"/></symbol><symbol id="s-estimate_vs_actual" viewBox="-12 -12 24 24"><path d="M-4 8v-12" stroke-dasharray="2 2"/><path d="M4 8v-16M-9 8h18"/></symbol><symbol id="s-cache_hits" viewBox="-12 -12 24 24"><path d="M2 -10l-8 11h6l-2 9 8-11h-6z"/></symbol><symbol id="s-plan_calls" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9c0 6 10 6 10 9s-10 3-10 9M5 -9c0 6-10 6-10 9s10 3 10 9"/></symbol><symbol id="s-circuit_breaker" viewBox="-12 -12 24 24"><path d="M-10 2h4M6 2h4"/><circle cx="-5" cy="2" r="1.5"/><circle cx="5" cy="2" r="1.5"/><path d="M-4 1l8-6"/></symbol><symbol id="s-burn_rate" viewBox="-12 -12 24 24"><path d="M0 9c-5 0-7-3-7-6 0-4 4-6 4-10 3 2 4 4 4 6 1-1 2-2 2-4 2 2 4 5 4 8 0 3-3 6-7 6z"/></symbol><symbol id="s-use_case_score" viewBox="-12 -12 24 24"><rect x="-10" y="-6" width="6" height="12" rx="1"/><rect x="-3" y="-6" width="6" height="12" rx="1"/><rect x="4" y="-6" width="6" height="12" rx="1"/><path d="M-1.5 0l1 1 2-2.5M-8.5 -2l3 4M-5.5 -2l-3 4"/></symbol><symbol id="s-use_case_card" viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2"/><circle cx="-5" cy="-1" r="2"/><path d="M-8 4h6M1 -3h6M1 1h6M1 4h4"/></symbol><symbol id="s-split_requirements" viewBox="-12 -12 24 24"><path d="M-9 -6h6M-9 0h6M-9 6h6"/><path d="M0 -9v18" stroke-dasharray="2 2"/><circle cx="6" cy="0" r="4"/><path d="M6 0l2-2"/></symbol><symbol id="s-well_architected" viewBox="-12 -12 24 24"><path d="M-10 -5l10-5 10 5z"/><path d="M-10 8h20M-7 -3v9M-2.5 -3v9M2.5 -3v9M7 -3v9"/></symbol><symbol id="s-fit_for_purpose" viewBox="-12 -12 24 24"><rect x="-10" y="-1" width="20" height="7" rx="1"/><path d="M-6 -1v3M-2 -1v2M2 -1v3M6 -1v2"/><path d="M-3 -8l2 2 4-4"/></symbol><symbol id="s-total_cost" viewBox="-12 -12 24 24"><path d="M-10 0h20"/><path d="M-4 0l4-7 4 7"/><path d="M-7 0l3 8h8l3-8" stroke-dasharray="2 2"/></symbol><symbol id="s-make_a_skill" viewBox="-12 -12 24 24"><path d="M-10 -6v14h20v-12h-9l-2-2z"/><path d="M-5 1h10M-5 4h6"/><path d="M-5 -2l1.5 1.5 3-3"/></symbol></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><!-- aura: the dusk theme's burning glow for whatever is current. The outline is thickened, blurred, lifted a little, torn into rising vertical streaks by moving noise and tinted blue, with a white-hot rim close in and the crisp shape on top. --><filter id="aura" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="3" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="20" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#5b8cff" flood-opacity="0.95"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.6" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1.2" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="6" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#d4f8ff" flood-opacity="0.85"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="aura-track" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="3" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="20" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#34d8c4" flood-opacity="0.95"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.6" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1.2" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="6" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#d4fff6" flood-opacity="0.85"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><!-- aura-ink: the same flame for the light look, drawn in deep blue ink rather than light --><filter id="aura-ink" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="2.6" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="18" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#2346d1" flood-opacity="0.55"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.2" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="5" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#4f6ff0" flood-opacity="0.7"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="aura-ink-track" x="-70%" y="-120%" width="240%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="2" result="fat"/><feGaussianBlur in="fat" stdDeviation="2.6" result="soft"/><feOffset in="soft" dy="-4" result="lifted"/><feTurbulence type="fractalNoise" baseFrequency="0.13 0.028" numOctaves="3" seed="11" result="streaks"><animate attributeName="baseFrequency" dur="3.6s" values="0.13 0.028;0.16 0.036;0.11 0.024;0.13 0.028" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="lifted" in2="streaks" scale="18" xChannelSelector="R" yChannelSelector="G" result="flame"/><feFlood flood-color="#0b7a70" flood-opacity="0.55"/><feComposite in2="flame" operator="in" result="outer"/><feGaussianBlur in="outer" stdDeviation="1.2" result="outerSoft"/><feMorphology in="SourceAlpha" operator="dilate" radius="1" result="rim"/><feGaussianBlur in="rim" stdDeviation="1" result="rimSoft"/><feDisplacementMap in="rimSoft" in2="streaks" scale="5" xChannelSelector="R" yChannelSelector="G" result="rimFlame"/><feFlood flood-color="#2aa596" flood-opacity="0.7"/><feComposite in2="rimFlame" operator="in" result="hot"/><feMerge><feMergeNode in="outerSoft"/><feMergeNode in="hot"/><feMergeNode in="SourceGraphic"/></feMerge></filter><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5M3 17l9 5 9-5"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3M14 9l2 2"/></symbol><symbol id="s-ai_unstuck" viewBox="-12 -12 24 24"><path d="M-9 -8h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6l-4 3v-3h-2a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z"/><circle cx="6" cy="5" r="3.5"/><path d="M4.6 5l1 1 2-2"/></symbol><symbol id="s-read_a_run" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="20" height="18" rx="2"/><path d="M-10 -4h20M-7 0h6M-7 4h9"/><circle cx="6" cy="2" r="2.5"/><path d="M7.8 3.8l2.2 2.2"/></symbol><symbol id="s-pick_compute" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="6" rx="1.5"/><rect x="-9" y="2" width="18" height="6" rx="1.5"/><path d="M-6 -5h2M-6 5h2"/></symbol><symbol id="s-unsupported_runtimes" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M-4 -3h8M-4 1h5"/><path d="M3 4l5 5M8 4l-5 5"/></symbol><symbol id="s-policy_violations" viewBox="-12 -12 24 24"><path d="M0 -9l8 3v5c0 5-4 8-8 10-4-2-8-5-8-10v-5z"/><path d="M-3 -1l6 6M3 -1l-6 6"/></symbol><symbol id="s-skipped_tasks" viewBox="-12 -12 24 24"><circle cx="-7" cy="0" r="2.5"/><circle cx="7" cy="-6" r="2.5"/><circle cx="7" cy="6" r="2.5"/><path d="M-4.5 -1l9 -4M-4.5 1l9 4" stroke-dasharray="2 2"/></symbol><symbol id="s-resolve_variables" viewBox="-12 -12 24 24"><path d="M-9 -7h7M-9 0h7M-9 7h7"/><path d="M1 -7l4 7-4 7"/><path d="M5 0h4"/></symbol><symbol id="s-tag_coverage" viewBox="-12 -12 24 24"><path d="M-9 -9h8l10 10-8 8-10-10z"/><circle cx="-5" cy="-5" r="1.5"/></symbol><symbol id="s-cost_by_tag" viewBox="-12 -12 24 24"><circle cx="0" cy="0" r="8"/><path d="M0 0v-8M0 0l7 4"/></symbol><symbol id="s-idle_cost" viewBox="-12 -12 24 24"><circle cx="0" cy="1" r="7.5"/><path d="M0 1v-4M0 1h3"/><path d="M-3 -9h6"/></symbol><symbol id="s-missing_acls" viewBox="-12 -12 24 24"><circle cx="-4" cy="-4" r="3.5"/><path d="M-10 8c0-4 3-6 6-6s6 2 6 6"/><path d="M5 -2h5M7.5 -4.5v5" stroke-dasharray="1.5 1.5"/></symbol><symbol id="s-location_for_path" viewBox="-12 -12 24 24"><path d="M0 9s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="0" cy="-2" r="2.5"/></symbol><symbol id="s-pick_securable" viewBox="-12 -12 24 24"><circle cx="-5" cy="3" r="4"/><path d="M-2 0l9-9M4 -6l3 3"/></symbol><symbol id="s-masked_columns" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="1.5"/><path d="M-3 -8v16M3 -8v16"/><path d="M-3 -3l6 6M3 -3l-6 6"/></symbol><symbol id="s-grants_to_people" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3"/><circle cx="5" cy="-3" r="3"/><path d="M-10 7c0-3 2-5 5-5s5 2 5 5M0 7c0-3 2-5 5-5s5 2 5 5"/></symbol><symbol id="s-choose_brick" viewBox="-12 -12 24 24"><rect x="-9" y="1" width="8" height="7" rx="1"/><rect x="1" y="1" width="8" height="7" rx="1"/><rect x="-4" y="-8" width="8" height="7" rx="1"/></symbol><symbol id="s-genie_benchmark" viewBox="-12 -12 24 24"><path d="M-8 -8h16v12h-9l-5 4v-4h-2z"/><path d="M-4 -2l2 2 5-5"/></symbol><symbol id="s-managed_mcp_urls" viewBox="-12 -12 24 24"><circle cx="0" cy="0" r="3"/><circle cx="-8" cy="-6" r="2"/><circle cx="8" cy="-6" r="2"/><circle cx="0" cy="9" r="2"/><path d="M-2 -2l-4.5 -3M2 -2l4.5 -3M0 3v4"/></symbol><symbol id="s-vector_index_setup" viewBox="-12 -12 24 24"><rect x="-9" y="-9" width="8" height="18" rx="1.5"/><path d="M-1 0h4"/><circle cx="6" cy="-5" r="2"/><circle cx="6" cy="2" r="2"/><circle cx="6" cy="8" r="1.5"/></symbol><symbol id="s-pick_search_service" viewBox="-12 -12 24 24"><circle cx="-4" cy="-3" r="5"/><path d="M-0.5 0.5l3 3"/><path d="M5 2l4 4-4 4M9 6h-6"/></symbol><symbol id="s-callable_tools" viewBox="-12 -12 24 24"><path d="M-9 -6h7l2 3h9v12h-18z"/><path d="M-3 4l2 2 4-4"/></symbol><symbol id="s-cited_sources" viewBox="-12 -12 24 24"><circle cx="0" cy="0" r="9"/><path d="M-9 0h18M0 -9c-4 4-4 14 0 18M0 -9c4 4 4 14 0 18"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol><symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol><symbol id="i-clipcheck" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"/><path d="M9 15l-3-3c2-6 7-9 15-9 0 8-3 13-9 15z"/><circle cx="15" cy="9" r="1.5"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol><symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9.5 16h5"/></symbol><symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></symbol><symbol id="i-waterfall" viewBox="0 0 24 24"><path d="M3 5h8M6 10h8M9 15h9M12 20h6"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.4 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.2"/><circle cx="13" cy="10" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="12" cy="15" r="1.2"/></symbol><symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0z"/><path d="M12 10v8M8 13H4M20 13h-4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2M10 6L9 3M14 6l1-3"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9 4h3a2 2 0 1 1 4 0h2v5a2 2 0 1 1 0 4v5h-5a2 2 0 1 0-4 0H4v-5a2 2 0 1 0 0-4V4z"/></symbol><symbol id="i-quote" viewBox="0 0 24 24"><path d="M5 18c3 0 5-2 5-6V6H4v6h4M15 18c3 0 5-2 5-6V6h-6v6h4"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol><symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol><symbol id="i-dict" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-arrowl" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-arrowr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.5-8.5L4 10"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><!-- lesson pictures: s-<lesson id>, drawn on a 24 grid centred on 0 --><symbol id="s-best_run" viewBox="-12 -12 24 24"><path d="M-9 -5h18M-9 0h18M-9 5h18"/><circle cx="-4" cy="-5" r="1.6"/><circle cx="3" cy="0" r="1.6"/><circle cx="-1" cy="5" r="1.6"/></symbol><symbol id="s-plan_gaps" viewBox="-12 -12 24 24"><rect x="-7" y="-9" width="14" height="18" rx="2"/><path d="M-4 -4h8M-4 0h8M-4 4h5"/></symbol><symbol id="s-param_grid" viewBox="-12 -12 24 24"><rect x="-9" y="-9" width="5" height="5"/><rect x="-2.5" y="-9" width="5" height="5"/><rect x="4" y="-9" width="5" height="5"/><rect x="-9" y="-2.5" width="5" height="5"/><rect x="-2.5" y="-2.5" width="5" height="5"/><rect x="4" y="-2.5" width="5" height="5"/><rect x="-9" y="4" width="5" height="5"/><rect x="-2.5" y="4" width="5" height="5"/><rect x="4" y="4" width="5" height="5"/></symbol><symbol id="s-cv_folds" viewBox="-12 -12 24 24"><path d="M-8 8v-14M-4 8v-14M0 8v-14M4 8v-14M8 8v-14"/><path d="M-1.5 8v-14" stroke-width="4"/></symbol><symbol id="s-examples_needed" viewBox="-12 -12 24 24"><circle cx="-6" cy="6" r="2"/><circle cx="0" cy="6" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="-3" cy="0" r="2"/><circle cx="3" cy="0" r="2"/><circle cx="0" cy="-6" r="2"/></symbol><symbol id="s-smoke_set" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="3"/><circle cx="-3" cy="0" r="1.6"/><circle cx="3" cy="0" r="1.6"/></symbol><symbol id="s-wilson_interval" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -5v10M9 -5v10"/><circle cx="2" cy="0" r="2.5"/></symbol><symbol id="s-clear_winner" viewBox="-12 -12 24 24"><path d="M-6 8v-8M2 8v-15"/><path d="M-9 8h18"/></symbol><symbol id="s-paired_verdict" viewBox="-12 -12 24 24"><path d="M-6 -8v16M6 -8v16M-6 -4L6 -4M-6 4L6 4"/></symbol><symbol id="s-biggest_gap" viewBox="-12 -12 24 24"><path d="M-9 -8h18L2 0v8h-4v-8z"/></symbol><symbol id="s-ablation_report" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="5" height="6"/><rect x="-2.5" y="-3" width="5" height="6"/><rect x="4" y="-3" width="5" height="6"/><path d="M-4 -7L4 7"/></symbol><symbol id="s-fluke_risk" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="3"/><circle cx="-3" cy="-3" r="1.4"/><circle cx="3" cy="3" r="1.4"/><circle cx="0" cy="0" r="1.4"/></symbol><symbol id="s-split_by_key" viewBox="-12 -12 24 24"><rect x="-10" y="-8" width="20" height="16" rx="3"/><path d="M0 -8v16"/><circle cx="-5" cy="-3" r="1.6"/><circle cx="-5" cy="3" r="1.6"/><circle cx="5" cy="0" r="1.6"/></symbol><symbol id="s-precision_recall" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><circle cx="3" cy="0" r="6"/></symbol><symbol id="s-best_threshold" viewBox="-12 -12 24 24"><path d="M-8 8v-6M-3 8v-11M2 8v-8M7 8v-14M-10 -2h20"/></symbol><symbol id="s-average_precision" viewBox="-12 -12 24 24"><path d="M-9 -9v18h18"/><path d="M-7 -6c4 0 6 2 8 6s4 6 7 7"/></symbol><symbol id="s-calibration_table" viewBox="-12 -12 24 24"><path d="M-9 9L9 -9"/><circle cx="-5" cy="4" r="1.5"/><circle cx="0" cy="-1" r="1.5"/><circle cx="5" cy="-4" r="1.5"/></symbol><symbol id="s-cost_per_finished_task" viewBox="-12 -12 24 24"><circle r="8"/><path d="M2.5 -4h-3a2 2 0 0 0 0 4h1.5a2 2 0 0 1 0 4h-3.5M0 -6.5v2.5M0 4v2.5"/></symbol><symbol id="s-run_tokens" viewBox="-12 -12 24 24"><path d="M-9 8h5v-5h5v-5h5v-5h4"/></symbol><symbol id="s-payback_plan" viewBox="-12 -12 24 24"><path d="M-9 0h18" stroke-dasharray="2 2"/><path d="M-9 7L9 -7"/><circle cx="0" cy="0" r="1.8"/></symbol><symbol id="s-biggest_swing" viewBox="-12 -12 24 24"><path d="M-9 -7h18M-6 -2h12M-4 3h8M-2 8h4"/></symbol><symbol id="s-peak_capacity" viewBox="-12 -12 24 24"><path d="M-9 6h5l2-2 3-12 3 12 2-2h3"/></symbol><symbol id="s-fill_template" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-4 -3c-2 0-2 3 0 3M4 -3c2 0 2 3 0 3M-4 5h8"/></symbol><symbol id="s-resolve_prompt" viewBox="-12 -12 24 24"><rect x="-9" y="-6" width="14" height="12" rx="2"/><rect x="-5" y="-9" width="14" height="12" rx="2"/><path d="M-6 0h6"/></symbol><symbol id="s-extract_code_block" viewBox="-12 -12 24 24"><path d="M-5 -8c-3 0-3 3-3 8s0 8 3 8M5 -8c3 0 3 3 3 8s0 8-3 8M-2 0h5M1 -2l2 2-2 2"/></symbol><symbol id="s-batch_items" viewBox="-12 -12 24 24"><rect x="-9" y="2" width="8" height="7"/><rect x="1" y="2" width="8" height="7"/><rect x="-4" y="-7" width="8" height="7"/></symbol><symbol id="s-backoff_delays" viewBox="-12 -12 24 24"><path d="M-9 8v-3M-4 8v-6M2 8v-10M8 8v-15"/></symbol><symbol id="s-parse_labels" viewBox="-12 -12 24 24"><path d="M-8 -6h9M-8 0h9M-8 6h9M4 -7l2 2 3-4M4 5l2 2 3-4"/></symbol><symbol id="s-chunk_text" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-11 -3h22M-11 3h22" stroke-dasharray="2 2"/></symbol><symbol id="s-dedupe_chunks" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="10" height="12" rx="1.5"/><rect x="-1" y="-5" width="10" height="12" rx="1.5"/><path d="M2 -2l5 6M7 -2l-5 6"/></symbol><symbol id="s-retrieve" viewBox="-12 -12 24 24"><path d="M-9 -7h8M-9 -3h6M-9 1h5"/><circle cx="3" cy="2" r="4.5"/><path d="M6.5 5.5l3 3"/></symbol><symbol id="s-recall_at_k" viewBox="-12 -12 24 24"><path d="M-9 -5q9 15 18 0"/><circle cx="-3" cy="0" r="1.4"/><circle cx="2" cy="2" r="1.4"/><circle cx="7" cy="-8" r="1.4"/></symbol><symbol id="s-ndcg_at_k" viewBox="-12 -12 24 24"><circle cx="-8" cy="-7" r="1.4"/><path d="M-4 -7h13M-4 -2h9M-4 3h6M-4 8h3"/></symbol><symbol id="s-rerank_check" viewBox="-12 -12 24 24"><path d="M-9 -6h5M-9 0h5M-9 6h5M4 -6h5M4 0h5M4 6h5"/><path d="M-3 -6L3 6M-3 6L3 -6"/></symbol><symbol id="s-abstention_rates" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-4 -1.5h8"/></symbol><symbol id="s-claim_gate" viewBox="-12 -12 24 24"><path d="M-9 9v-14M9 9v-14M-9 -5h18"/><path d="M-4 1l3 3 5-6"/></symbol><symbol id="s-pick_config" viewBox="-12 -12 24 24"><circle cx="-5" cy="-4" r="3"/><circle cx="5" cy="4" r="3"/><path d="M-5 -4l1.5-2M5 4l2 1M-9 8h7M2 -8h7"/></symbol><symbol id="s-rrf" viewBox="-12 -12 24 24"><path d="M-9 -7c6 0 6 7 9 7M-9 7c6 0 6-7 9-7M0 0h9M6 -3l3 3-3 3"/></symbol><symbol id="s-run_agent" viewBox="-12 -12 24 24"><path d="M7 -3a7 7 0 1 0 1 5"/><path d="M8 -8v5h-5"/></symbol><symbol id="s-trim_history" viewBox="-12 -12 24 24"><path d="M-8 -8h16M-8 -4h16" stroke-dasharray="2 2"/><path d="M-8 1h16M-8 5h16M-8 9h10"/></symbol><symbol id="s-stale_claims" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="12" height="15" rx="2"/><path d="M-6 -3h6M-6 1h3"/><circle cx="5" cy="4" r="5"/><path d="M5 1.5v2.5l2 1"/></symbol><symbol id="s-fact_history" viewBox="-12 -12 24 24"><path d="M-9 0h18"/><circle cx="-5" cy="0" r="2.2"/><circle cx="5" cy="0" r="2.2"/><path d="M-8 -5l6 10"/></symbol><symbol id="s-tool_schema" viewBox="-12 -12 24 24"><path d="M-4 -9c-3 0-3 2-3 5s-2 4-2 4 2 1 2 4 0 5 3 5M4 -9c3 0 3 2 3 5s2 4 2 4-2 1-2 4 0 5-3 5"/><path d="M-2 0h4"/></symbol><symbol id="s-tool_pairs" viewBox="-12 -12 24 24"><path d="M-9 -4h14M2 -7l3 3-3 3M9 4h-14M-2 1l-3 3 3 3"/></symbol><symbol id="s-agent_scorecard" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="17" rx="2"/><path d="M-3 -9h6v3h-6z"/><path d="M-4 1l2 2 4-4M-4 6h8"/></symbol><symbol id="s-pass_rates" viewBox="-12 -12 24 24"><path d="M-10 0l2 2 3-4M-2 0l2 2 3-4M6 0l2 2 3-4"/><path d="M-10 6h20"/></symbol><symbol id="s-tool_call_scores" viewBox="-12 -12 24 24"><path d="M-9 -6h7a2 2 0 1 1 4 0h7v12h-18z"/><path d="M-4 1l2 2 4-4"/></symbol><symbol id="s-trajectory_match" viewBox="-12 -12 24 24"><path d="M-9 7l5-6 4 3 5-8 4 2"/><path d="M-9 3l5-6 4 3 5-8 4 2" stroke-dasharray="2 2"/></symbol><symbol id="s-compare_designs" viewBox="-12 -12 24 24"><path d="M0 -9v17M-6 8h12M-9 -5h18M-9 -5l-2 6h4zM9 -5l-2 6h4z"/></symbol><symbol id="s-approval_run" viewBox="-12 -12 24 24"><circle cx="-3" cy="-5" r="3.5"/><path d="M-10 9c0-5 3-7 7-7 2 0 4 .5 5 2"/><path d="M3 4l2 2 4-5"/></symbol><symbol id="s-next_action" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-5 -3l3 3-3 3M0 4h5"/></symbol><symbol id="s-assemble_stream" viewBox="-12 -12 24 24"><path d="M-9 -5h3M-4 -5h3M1 -5h3M-9 3h18M6 0l3 3-3 3"/></symbol><symbol id="s-need_a_team" viewBox="-12 -12 24 24"><path d="M-5 -9v18M5 -9v18M-5 -5h10M-5 0h10M-5 5h10"/></symbol><symbol id="s-one_writer" viewBox="-12 -12 24 24"><path d="M-2 9l1-4 8-8 3 3-8 8z"/><circle cx="-7" cy="-4" r="2"/><circle cx="-1" cy="-8" r="2"/></symbol><symbol id="s-gather_results" viewBox="-12 -12 24 24"><circle cx="-8" cy="0" r="2"/><circle cx="8" cy="0" r="2"/><path d="M-6 0C-2 -7 2 -7 6 0M-6 0h12M-6 0C-2 7 2 7 6 0"/></symbol><symbol id="s-handoff_kept" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="8" height="6" rx="2"/><circle cx="-5" cy="0" r="1"/><path d="M-1 0h8M4 -3l3 3-3 3"/></symbol><symbol id="s-checker_loop" viewBox="-12 -12 24 24"><path d="M6 -4a7 7 0 1 0 0 8"/><path d="M6 -9v5h-5"/><path d="M-3 -1.5v3M0 -1.5v3M3 -1.5v3"/></symbol><symbol id="s-dollars_per_success" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><path d="M-1 -3h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3"/><path d="M4 2l2 2 4-5"/></symbol><symbol id="s-tokens_by_agent" viewBox="-12 -12 24 24"><circle cx="-8" cy="-5" r="1.5"/><circle cx="-8" cy="0" r="1.5"/><circle cx="-8" cy="5" r="1.5"/><path d="M-4 -5h12M-4 0h5M-4 5h8"/></symbol><symbol id="s-team_experiment" viewBox="-12 -12 24 24"><circle cx="-6" cy="0" r="3"/><path d="M-1 -6v12"/><circle cx="4" cy="-4" r="2"/><circle cx="8" cy="0" r="2"/><circle cx="4" cy="4" r="2"/></symbol><symbol id="s-token_bucket" viewBox="-12 -12 24 24"><path d="M-7 -3h14l-2 11h-10z"/><path d="M-3 -9v2M0 -10v2M3 -9v2"/></symbol><symbol id="s-retry_wait" viewBox="-12 -12 24 24"><path d="M-8 2a8 8 0 1 0 3-7"/><path d="M-6 -9l1 4-4 1"/><path d="M0 -2v3l2 1"/></symbol><symbol id="s-run_with_limit" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 0h18M-9 6h18"/><path d="M2 -9v18"/></symbol><symbol id="s-optimistic_writes" viewBox="-12 -12 24 24"><rect x="-3" y="-1" width="6" height="6"/><path d="M-10 -8l5 5M10 -8l-5 5M-8 -3h3v-3M8 -3h-3v-3"/></symbol><symbol id="s-upsert_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h8M-9 3h8M1 -1h8M-1 -5l2 4-2 4"/></symbol><symbol id="s-chunk_rows" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="16" rx="2"/><path d="M-3 -8v16M3 -8v16"/></symbol><symbol id="s-process_new" viewBox="-12 -12 24 24"><path d="M-9 -6h11M-9 -1h11"/><path d="M-9 5h11" stroke-width="3"/><path d="M5 5h5M8 3l2 2-2 2"/></symbol><symbol id="s-validate_rows" viewBox="-12 -12 24 24"><path d="M-9 -5h10M-9 3h10"/><path d="M4 -7l2 2 3-4M4 1l5 5M9 1l-5 5"/></symbol><symbol id="s-skew_report" viewBox="-12 -12 24 24"><path d="M-8 8v-3M-4 8v-3M0 8v-16M4 8v-3M8 8v-3"/></symbol><symbol id="s-wrap_untrusted" viewBox="-12 -12 24 24"><path d="M-6 -9h-3v18h3M6 -9h3v18h-3"/><path d="M-4 -3h8M-4 1h8M-4 5h5"/></symbol><symbol id="s-is_safe_sql" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-6" rx="7" ry="3"/><path d="M-7 -6v11c0 2 3 3 7 3s7-1 7-3v-11"/><path d="M-3 2l2 2 4-4"/></symbol><symbol id="s-authorize_tool" viewBox="-12 -12 24 24"><circle cx="-4" cy="0" r="4"/><path d="M0 0h9M6 0v3M9 0v3"/></symbol><symbol id="s-shell_policy" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="18" height="12" rx="2"/><path d="M-6 -4l2 2-2 2"/><rect x="1" y="3" width="8" height="6" rx="1"/><path d="M3 3v-2a2 2 0 0 1 4 0v2"/></symbol><symbol id="s-memory_write_gate" viewBox="-12 -12 24 24"><path d="M-9 2l3-9h12l3 9v6h-18z"/><path d="M-9 2h5l1 3h6l1-3h5"/></symbol><symbol id="s-redact_pii" viewBox="-12 -12 24 24"><path d="M-9 -6h18M-9 6h18"/><path d="M-6 0h12" stroke-width="4"/></symbol><symbol id="s-scrub_secrets" viewBox="-12 -12 24 24"><path d="M-6 -3v6M-8.6 -1.5l5.2 3M-8.6 1.5l5.2-3M6 -3v6M3.4 -1.5l5.2 3M3.4 1.5l5.2-3"/></symbol><symbol id="s-budget_check" viewBox="-12 -12 24 24"><path d="M-9 5a9 9 0 0 1 18 0"/><path d="M0 5l6-6"/><path d="M7 -6l2-2"/></symbol><symbol id="s-find_confounds" viewBox="-12 -12 24 24"><path d="M-6 -8v16M6 -8v16"/><circle cx="-6" cy="-3" r="2"/><circle cx="6" cy="-3" r="2"/><circle cx="6" cy="4" r="2"/></symbol><symbol id="s-replay_tools" viewBox="-12 -12 24 24"><path d="M-7 -4a8 8 0 1 1 -1 7"/><path d="M-7 -9v5h5"/></symbol><symbol id="s-decide_release" viewBox="-12 -12 24 24"><path d="M-9 8h18M-6 8v-14h12v14"/><path d="M-3 0l2 2 4-4"/></symbol><symbol id="s-agent_can_read" viewBox="-12 -12 24 24"><circle cx="-3.5" cy="0" r="6"/><circle cx="3.5" cy="0" r="6"/></symbol><symbol id="s-token_findings" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9q0 6 5 9q-5 3 -5 9M5 -9q0 6 -5 9q5 3 5 9"/></symbol><symbol id="s-sweep_memory" viewBox="-12 -12 24 24"><path d="M-8 -5h16M-3 -5v-3h6v3M-6 -5l1 13h10l1-13"/></symbol><symbol id="s-exact_match" viewBox="-12 -12 24 24"><path d="M-7 -3h14M-7 3h14"/></symbol><symbol id="s-assign_splits" viewBox="-12 -12 24 24"><path d="M-9 -1v8h5v-8M-2.5 -1v8h5v-8M4 -1v8h5v-8"/><circle cx="-6.5" cy="-5" r="1.3"/><circle cx="0" cy="-5" r="1.3"/><circle cx="6.5" cy="-5" r="1.3"/></symbol><symbol id="s-stable_split" viewBox="-12 -12 24 24"><path d="M-6 -8l-2 16M0 -8l-2 16M-9 -3h10M-10 3h10"/><path d="M3 0h6M7 -2l2 2-2 2"/></symbol><symbol id="s-weighted_score" viewBox="-12 -12 24 24"><path d="M0 -8v16M-6 8h12M-9 -4h18"/><rect x="-10" y="-4" width="4" height="4"/><rect x="4" y="-4" width="6" height="6"/></symbol><symbol id="s-must_pass_gate" viewBox="-12 -12 24 24"><path d="M0 -9l2.6 5.5 6 .8-4.4 4.2 1.1 6L0 4.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="s-first_bad_version" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -3v6M9 -3v6M0 -4v8"/><path d="M3 -8l4 4M7 -8l-4 4"/></symbol><symbol id="s-judge_agreement" viewBox="-12 -12 24 24"><path d="M-9 0l3 3 6-7M-1 4l3 3 7-8"/></symbol><symbol id="s-cohen_kappa" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M0 -8v16M-8 0h16M-5 -5l2 2M3 3l2 2"/></symbol><symbol id="s-checker_score" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6M-4 -4l4 4M0 -4l-4 4"/></symbol><symbol id="s-memory_update_score" viewBox="-12 -12 24 24"><rect x="-9" y="-8" width="11" height="15" rx="2"/><path d="M4 -3h5l-2-2M9 3h-5l2 2"/></symbol><symbol id="s-review_queue" viewBox="-12 -12 24 24"><rect x="-9" y="-3" width="14" height="10" rx="2"/><path d="M-7 -6h12M-5 -9h10M2 2l2 2 4-4"/></symbol><symbol id="s-change_report" viewBox="-12 -12 24 24"><path d="M-4 8v-15M-8 -3l4-4 4 4M4 -8v15M0 3l4 4 4-4"/></symbol><symbol id="s-sort_changes" viewBox="-12 -12 24 24"><path d="M-9 -6h10M-9 -1h7M-9 4h4"/><path d="M6 -8v15M3 4l3 3 3-3"/></symbol><symbol id="s-mix_shift" viewBox="-12 -12 24 24"><path d="M-10 6c3 0 3-10 6-10s3 10 6 10"/><path d="M-2 6c3 0 3-10 6-10s3 10 6 10" stroke-dasharray="2 2"/></symbol><symbol id="s-percentile" viewBox="-12 -12 24 24"><path d="M-10 7c4 0 5-12 9-12s6 9 11 11"/><path d="M5 -8v15" stroke-dasharray="2 2"/></symbol><symbol id="s-pareto_models" viewBox="-12 -12 24 24"><path d="M-9 -8c0 8 6 15 17 16"/><circle cx="-6" cy="-1" r="1.4"/><circle cx="1" cy="5" r="1.4"/><circle cx="4" cy="-3" r="1.4"/></symbol><symbol id="s-better_option" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="16" rx="2"/><path d="M-9 -2h18M-4 -9v4M4 -9v4M-2 4h4M0 2v4"/></symbol><symbol id="s-graduation_gate" viewBox="-12 -12 24 24"><path d="M-10 -3l10-5 10 5-10 5z"/><path d="M-5 0v5c3 2 7 2 10 0v-5M10 -3v6"/></symbol><symbol id="s-promote_model" viewBox="-12 -12 24 24"><rect x="-8" y="-1" width="16" height="9" rx="2"/><path d="M0 -9v8M-3 -6l3-3 3 3"/></symbol><symbol id="s-route_request" viewBox="-12 -12 24 24"><path d="M-9 0h6c4 0 5-6 12-6M-3 0c4 0 5 6 12 6"/><path d="M6 -8l3 2-3 2M6 4l3 2-3 2"/></symbol><symbol id="s-prompt_rollout" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4h10M-5 0h6"/><path d="M-5 5h10" stroke-dasharray="3 2"/></symbol><symbol id="s-summarize_plan" viewBox="-12 -12 24 24"><path d="M-8 -6h4M-6 -8v4M-8 1h4M-8 7h4"/><path d="M0 -6h8M0 1h8M0 7h8"/></symbol><symbol id="s-find_replacements" viewBox="-12 -12 24 24"><path d="M-7 3a7 7 0 0 1 11-8M7 -3a7 7 0 0 1-11 8"/><path d="M4 -8v3h-3M-4 8v-3h3"/></symbol><symbol id="s-guard_destroys" viewBox="-12 -12 24 24"><polygon points="-4,-9 4,-9 9,-4 9,4 4,9 -4,9 -9,4 -9,-4"/><path d="M-4 0h8"/></symbol><symbol id="s-lock_info" viewBox="-12 -12 24 24"><rect x="-7" y="-1" width="14" height="10" rx="2"/><path d="M-4 -1v-3a4 4 0 0 1 8 0v3"/></symbol><symbol id="s-missing_tags" viewBox="-12 -12 24 24"><path d="M-9 -1v-8h8l9 9-8 8z"/><circle cx="-5" cy="-5" r="1.4"/><path d="M-1 3h4" stroke-dasharray="1.5 1.5"/></symbol><symbol id="s-grants_to_revoke" viewBox="-12 -12 24 24"><circle cx="-5" cy="-3" r="3.5"/><path d="M-1.5 -3h7M3 -3v2.5"/><path d="M2 3l5 5M7 3l-5 5"/></symbol><symbol id="s-count_shift" viewBox="-12 -12 24 24"><path d="M-9 -6h3M-9 0h3M-9 6h3"/><path d="M-2 -6h10M-2 0h10M-2 6h10"/><path d="M1 -9l3 3-3 3"/></symbol><symbol id="s-overlapping_subnets" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="11" height="10" rx="1"/><rect x="-2" y="-3" width="11" height="10" rx="1"/></symbol><symbol id="s-apply_order" viewBox="-12 -12 24 24"><path d="M-8 -6l8-4 8 4-8 4z"/><path d="M-8 0l8 4 8-4M-8 5l8 4 8-4"/></symbol><symbol id="s-field_status" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="7" height="18" rx="1.5"/><path d="M-3 0h4M5 -6v12M1 -3l4 -3 4 3M1 3l4 3 4-3"/></symbol><symbol id="s-folder_access" viewBox="-12 -12 24 24"><path d="M-10 -6h7l2 2h11v12h-20z"/><circle cx="2" cy="2" r="2.5"/><path d="M-2 8c0-2.5 2-4 4-4s4 1.5 4 4"/></symbol><symbol id="s-cluster_from_yaml" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="8" height="10" rx="1.5"/><path d="M-8 -6h4M-8 -3h4M-2 -4h4l-1.5 -1.5M2 -4l-1.5 1.5"/><circle cx="6" cy="-3" r="2.5"/><circle cx="2" cy="6" r="2.5"/><circle cx="9" cy="6" r="2.5"/></symbol><symbol id="s-lookup_failed" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6M-4.5 -4.5l5 5M0.5 -4.5l-5 5"/></symbol><symbol id="s-can_read_table" viewBox="-12 -12 24 24"><rect x="-10" y="-10" width="14" height="14" rx="2"/><rect x="-7" y="-7" width="8" height="8" rx="1.5"/><circle cx="5" cy="5" r="3"/><path d="M7.1 7.1l2.9 2.9M8.6 8.6l1.4-1.4"/></symbol><symbol id="s-runs_after" viewBox="-12 -12 24 24"><circle cx="-7" cy="-6" r="2.5"/><circle cx="7" cy="-6" r="2.5"/><circle cx="0" cy="7" r="2.5"/><path d="M-4.5 -6h9M-5.6 -3.8l4.3 8.6M5.6 -3.8l-4.3 8.6"/></symbol><symbol id="s-plan_policy" viewBox="-12 -12 24 24"><rect x="-8" y="-9" width="16" height="18" rx="2"/><path d="M-5 -4l1.5 1.5 3-3M-5 3l1.5 1.5 3-3M2 -4h3M2 3h3"/></symbol><symbol id="s-allocate_capacity" viewBox="-12 -12 24 24"><circle r="8"/><path d="M0 0V-8M0 0L6.9 4"/><path d="M1.5 -5.5a4 4 0 0 1 3.5 6" /></symbol><symbol id="s-check_limits" viewBox="-12 -12 24 24"><path d="M-10 -5h20" stroke-dasharray="2 2"/><path d="M-6 8v-9M0 8v-12M6 8v-6"/></symbol><symbol id="s-summarize_by_tag" viewBox="-12 -12 24 24"><path d="M-9 -5v-4h4l5 5-4 4z"/><path d="M1 3h8M1 7h6"/></symbol><symbol id="s-slowest_chain" viewBox="-12 -12 24 24"><path d="M-9 -6h6M3 4h4"/><path d="M-5 -1h12" stroke-width="3"/></symbol><symbol id="s-trace_table_row" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="14" rx="1"/><path d="M-9 -2h18M-9 3h18M-3 -7v14"/></symbol><symbol id="s-context_fill" viewBox="-12 -12 24 24"><rect x="-9" y="-5" width="16" height="10" rx="2"/><path d="M9 -2v4"/><path d="M-6 0h8" stroke-width="4"/></symbol><symbol id="s-summary_recall" viewBox="-12 -12 24 24"><path d="M-9 -7h18v11h-11l-5 4v-4h-2z"/><path d="M-5 -2h3M2 -2h3"/></symbol><symbol id="s-detect_loop" viewBox="-12 -12 24 24"><path d="M0 0c-3-4-8-4-8 0s5 4 8 0 8-4 8 0-5 4-8 0z"/></symbol><symbol id="s-failure_counts" viewBox="-12 -12 24 24"><path d="M-8 -6v12M-4 -6v12M0 -6v12M4 -6v12M-10 4l16-8"/></symbol><symbol id="s-token_cost" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-5" rx="7" ry="2.5"/><path d="M-7 -5v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 -1v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 3v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4"/></symbol><symbol id="s-estimate_vs_actual" viewBox="-12 -12 24 24"><path d="M-4 8v-12" stroke-dasharray="2 2"/><path d="M4 8v-16M-9 8h18"/></symbol><symbol id="s-cache_hits" viewBox="-12 -12 24 24"><path d="M2 -10l-8 11h6l-2 9 8-11h-6z"/></symbol><symbol id="s-plan_calls" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9c0 6 10 6 10 9s-10 3-10 9M5 -9c0 6-10 6-10 9s10 3 10 9"/></symbol><symbol id="s-circuit_breaker" viewBox="-12 -12 24 24"><path d="M-10 2h4M6 2h4"/><circle cx="-5" cy="2" r="1.5"/><circle cx="5" cy="2" r="1.5"/><path d="M-4 1l8-6"/></symbol><symbol id="s-burn_rate" viewBox="-12 -12 24 24"><path d="M0 9c-5 0-7-3-7-6 0-4 4-6 4-10 3 2 4 4 4 6 1-1 2-2 2-4 2 2 4 5 4 8 0 3-3 6-7 6z"/></symbol><symbol id="s-use_case_score" viewBox="-12 -12 24 24"><rect x="-10" y="-6" width="6" height="12" rx="1"/><rect x="-3" y="-6" width="6" height="12" rx="1"/><rect x="4" y="-6" width="6" height="12" rx="1"/><path d="M-1.5 0l1 1 2-2.5M-8.5 -2l3 4M-5.5 -2l-3 4"/></symbol><symbol id="s-use_case_card" viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2"/><circle cx="-5" cy="-1" r="2"/><path d="M-8 4h6M1 -3h6M1 1h6M1 4h4"/></symbol><symbol id="s-split_requirements" viewBox="-12 -12 24 24"><path d="M-9 -6h6M-9 0h6M-9 6h6"/><path d="M0 -9v18" stroke-dasharray="2 2"/><circle cx="6" cy="0" r="4"/><path d="M6 0l2-2"/></symbol><symbol id="s-well_architected" viewBox="-12 -12 24 24"><path d="M-10 -5l10-5 10 5z"/><path d="M-10 8h20M-7 -3v9M-2.5 -3v9M2.5 -3v9M7 -3v9"/></symbol><symbol id="s-fit_for_purpose" viewBox="-12 -12 24 24"><rect x="-10" y="-1" width="20" height="7" rx="1"/><path d="M-6 -1v3M-2 -1v2M2 -1v3M6 -1v2"/><path d="M-3 -8l2 2 4-4"/></symbol><symbol id="s-total_cost" viewBox="-12 -12 24 24"><path d="M-10 0h20"/><path d="M-4 0l4-7 4 7"/><path d="M-7 0l3 8h8l3-8" stroke-dasharray="2 2"/></symbol><symbol id="s-make_a_skill" viewBox="-12 -12 24 24"><path d="M-10 -6v14h20v-12h-9l-2-2z"/><path d="M-5 1h10M-5 4h6"/><path d="M-5 -2l1.5 1.5 3-3"/></symbol></svg>
 <div id="selbar" hidden role="toolbar" aria-label="Selected text"><button id="selSave">Save to study list</button><button id="selExplain">Explain this</button></div>
 
 <header class="top">
@@ -1331,6 +1441,7 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <section class="pane" id="paneBuild" hidden>
     <div class="buildbar codeonly"><div class="keys" id="keys" role="toolbar" aria-label="Typing shortcuts"></div></div>
     <section class="card sortbox" id="sortBox" hidden aria-label="Sort the ideas"></section>
+    <section class="card qfbox" id="flowBox" hidden aria-label="Practice questions"></section>
     <div class="modeswap" id="modeSwap" hidden></div>
     <details class="card task codeonly" id="taskBox" open>
       <summary><h2 id="taskTitle"></h2></summary>
@@ -1418,6 +1529,7 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <div class="drawer-head"><h2>Notebook</h2><button class="btn quiet" id="nbClose">Close</button></div>
   <div class="prefs"><div class="themepick"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
   <div class="themepick"><span id="motionLabel">Motion</span><div class="seg" role="group" aria-labelledby="motionLabel"><button data-motion-pick="on" aria-pressed="true">On</button><button data-motion-pick="off" aria-pressed="false">Off</button></div></div></div>
+  <div class="themepick"><span id="focusLabel">Practise</span><div class="seg" role="group" aria-labelledby="focusLabel"><button data-focus-pick="ai" aria-pressed="true">AI</button><button data-focus-pick="platform" aria-pressed="false">Platform</button><button data-focus-pick="both" aria-pressed="false">Both</button></div></div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-nb="gloss" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
     <button class="tab" role="tab" data-nb="speed" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>How fast is it?</button>
@@ -1789,7 +1901,7 @@ function trackPage(tr) {
   const go = nid ? `<button class="btn" data-open="${nid}">${d || started(nid) ? "Continue: " + lessonNo(nid) + " " + esc(LESSONS[nid].title) : "Start the track"}</button>` : `<span class="meta">You've finished every lesson in this track so far.</span>`;
   // The same room as a phase: its own paper (blueprint), the inner rim, and a title shape that glows while you're in it.
   const st = d === ids.length ? "done" : ids.some(id => started(id) && !isDoneL(id)) ? "now" : "";
-  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}"><div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">Side track · any time</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
+  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}"><div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
 }
 const trackOpened = new Set();
 function trackFx() {
@@ -1933,32 +2045,54 @@ function aiOffNote() {
   if (!aiOff || hidden) return "";
   return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload.</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
 }
+// What you practise: the AI path, the platform track, or both taking turns. Asked once on the first
+// visit, changeable in the Notebook; saved with progress so every device agrees. Today follows it.
+const FOCUS_NAMES = { ai: "AI engineering", platform: "The platform", both: "Both" };
+function todayLesson() {
+  const ai = nextLesson(), pl = TRACKS.length ? trackNext(TRACKS[0]) : null, f = progress.focus;
+  if (f === "platform") return pl || ai;
+  if (f === "both") return progress.lastKind === "ai" ? (pl || ai) : (ai || pl);
+  return ai || pl;
+}
+function setFocus(f) {
+  progress.focus = f; saveProgress();
+  document.querySelectorAll("[data-focus-pick]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.focusPick === f)));
+  if (!$("home").hidden) renderHome();
+}
 function renderHome() {
   renderTop();
-  const nid = nextLesson();
+  document.querySelectorAll("[data-focus-pick]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.focusPick === (progress.focus || "ai"))));
+  const nid = nextLesson(), tid = todayLesson(), plat = !!(tid && trackOf[tid]);
   if (!openMods) openMods = new Set([nid ? phaseOf[modOf[nid].id].key : PHASES[0].key]);
   const doneToday = progress.days.includes(today()), wd = WEEKDAYS[new Date().getDay()];
   const fresh = !progress.days.length && !Object.keys(progress.solved).length && !ALL_LESSONS.some(started);
   let hello, card;
-  if (nid && fresh) {  // first visit: say how it works, once; it goes away as soon as a lesson starts
-    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">AI engineering on Databricks, one short lesson a day. Nothing to install: your code runs right in this page.</p>`;
+  const about = progress.focus === "platform" ? "Azure Databricks as code: YAML, the runbook, Terraform and Spacelift" : progress.focus === "both" ? "AI engineering and the platform behind it, on Databricks" : "AI engineering on Databricks";
+  if (tid && fresh && !progress.focus) {  // first visit: what do you want to practise? One question, three big answers
+    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">One short lesson a day. Nothing to install: everything runs right in this page.</p>`;
+    card = `<section class="next focuspick"><h2>What do you want to practise?</h2><span class="meta">You can change this any time in the Notebook.</span>
+      <button class="fcard" data-focus-pick="ai"><svg viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh ai" r="9.5"/></svg><b>AI engineering</b><span>Use cases, RAG, agents, evals and shipping them on Databricks.</span></button>
+      <button class="fcard" data-focus-pick="platform"><svg viewBox="-12 -12 24 24" aria-hidden="true">${phShape(TRACK_SHAPE, 9).replace('class="sh"', 'class="sh pl"')}</svg><b>The platform</b><span>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift.</span></button>
+      <button class="fcard" data-focus-pick="both"><svg viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh ai" r="6" cx="-3"/><g transform="translate(4 0) scale(.62)">${phShape(TRACK_SHAPE, 9).replace('class="sh"', 'class="sh pl"')}</g></svg><b>Both</b><span>One of each, taking turns.</span></button></section>`;
+  } else if (tid && fresh) {  // first visit, choice made: say how it works, once; it goes away as soon as a lesson starts
+    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">${esc(about)}, one short lesson a day. Nothing to install: everything runs right in this page.</p>`;
     card = `<section class="next"><span class="eyebrow">How it works</span>
-      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with one question, build it in Python, then explain it in a sentence.</li><li><b>Stuck?</b> Hints come before answers, and the Notebook keeps what you save and brings it back for review.</li></ol>
-      <button class="btn primary" data-open="${nid}">Start the first lesson</button></section>`;
-  } else if (nid) {
-    const m = modOf[nid], ph = phaseOf[m.id], i = m.lessons.indexOf(nid), s = lp(nid), go = started(nid);
+      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with one question, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> Hints come before answers, and the Notebook keeps what you save and brings it back for review.</li></ol>
+      <button class="btn primary" data-open="${tid}">Start the first lesson</button></section>`;
+  } else if (tid) {
+    const m = modOf[tid], ph = phaseOf[m.id], i = m.lessons.indexOf(tid), s = lp(tid), go = started(tid);
     const leftInPhase = ph.modules.flatMap(mid => MOD[mid].lessons).filter(id => !isDoneL(id)).length;
     const why = [leftInPhase === 1 ? `Last one left in ${ph.name}.` : `${ph.name}, ${m.title}.`,
       go ? `You stopped at the ${STEPS[s.step]} step.` : `Lesson ${i + 1} of ${m.lessons.length}.`].join(" ");
     const label = doneToday ? (go ? "Continue" : "Start the next one") : (go ? "Finish today’s lesson" : "Start today’s lesson");
     hello = doneToday
       ? `<h1>${wd}. Done for today.</h1><p class="meta">Come back tomorrow, or keep going if you have time.</p>`
-      : `<h1>${wd}. One lesson.</h1><p class="meta">AI engineering on Databricks, a little every day.</p>`;
-    card = `<section class="next"><span class="eyebrow">${doneToday ? "Up next" : "Today"} · ${go ? "step " + (s.step + 1) + " of 4" : "about 20 min"}</span>
-      <h2>${esc(LESSONS[nid].title)}</h2>
+      : `<h1>${wd}. One lesson.</h1><p class="meta">${esc(about)}, a little every day.</p>`;
+    card = `<section class="next${plat ? " track" : ""}"><span class="eyebrow">${doneToday ? "Up next" : "Today"}${plat ? " · Platform" : ""} · ${go ? "step " + (s.step + 1) + " of 4" : "about 20 min"}</span>
+      <h2>${esc(LESSONS[tid].title)}</h2>
       <span class="meta">${esc(why)}</span>
       ${go ? `<div class="steps" aria-hidden="true">${STEPS.map((_, k) => `<i class="${k < s.step ? "done" : k === s.step ? "now" : ""}"></i>`).join("")}</div>` : ""}
-      <button class="btn primary" data-open="${nid}">${label}</button></section>`;
+      <button class="btn primary" data-open="${tid}">${label}</button></section>`;
   } else {
     hello = `<h1>${wd}.</h1><p class="meta">AI engineering on Databricks.</p>`;
     card = `<section class="next"><span class="eyebrow">Path complete</span><h2>You've finished every lesson.</h2></section>`;
@@ -1981,11 +2115,13 @@ function renderHome() {
   $("home").innerHTML = `<div class="hello">${hello}</div>
     ${card}
     ${aiOffNote()}
+    ${!progress.focus && !fresh && TRACKS.length ? `<div class="callout focusask"><b>New: a platform track</b><p>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift. What do you want to practise?</p><div class="seg" role="group" aria-label="What you practise"><button data-focus-pick="ai">AI</button><button data-focus-pick="platform">Platform</button><button data-focus-pick="both">Both</button></div></div>` : ""}
+    ${progress.focus === "platform" ? TRACKS.map(trackPage).join("") : ""}
 
     <div class="pathhead"><h2>Your path</h2>${nidx !== today_ ? `<button class="linkbtn" data-phase="${today_}">Back to today</button>` : `<span>Tap a phase</span>`}</div>
     <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(false, null, nidx)}${book}</div>
     ${upnext}
-    ${TRACKS.map(trackPage).join("")}
+    ${progress.focus === "platform" ? "" : TRACKS.map(trackPage).join("")}
     <div class="sets"><h3>Practice sets</h3></div>
     <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
@@ -2497,8 +2633,11 @@ function renderFoot() {
   prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
-  if (building() && sorting() && !sortFinished()) {
+  if (building() && (sorting() && !sortFinished() || flowing() && !qfFinished())) {
     label = cur.kind === "lesson" ? "Skip to Explain" : (cur.from ? "Back to lesson" : "Done"); quiet = true;
+  } else if (building() && flowing()) {
+    mid.hidden = false; mid.textContent = "Practise again"; mid.dataset.act = "repractice";
+    label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
   } else if (building() && sorting()) {
     mid.hidden = false; mid.textContent = "Sort again"; mid.dataset.act = "resort";
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
@@ -2525,12 +2664,14 @@ function goPrev() {
 }
 function goNext() {
   if (cur.kind === "done") { goHome(); return; }
-  if (building() && sorting() && !sortFinished()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
+  if (building() && (sorting() && !sortFinished() || flowing() && !qfFinished())) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
+  if (building() && flowing()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
   if (!canFinish() && gapsOf(cur.id).length) { const box = $("paneText").querySelector(".cloze"); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); CLZ.note = "Fill the gaps to finish the lesson."; clozeRender(); return; }
   if (!canFinish()) { const box = $("sayIn"); box.focus(); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); $("sayNote").textContent = "Write one sentence here to finish: what you did and why."; $("sayNote").classList.add("nudge"); return; }
+  progress.lastKind = trackOf[cur.id] ? "platform" : "ai";
   const s = lp(cur.id), id = cur.id, fresh = !s.done; s.done = true; s.step = 3; markDay();
   const o = orderFor(id), after = o[o.indexOf(id) + 1];
   progress.current = after || null;
@@ -2638,6 +2779,53 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => { if (e.key === "Escape" && trustOpen) { const b = trustOpen; closeTrust(); b.focus(); } });
 
 // ---------- step panes ----------
+// ---------- walkthrough: a tool's screens, redrawn with numbered callouts (content/model.py screen) ----------
+// Each screen is data, drawn here in the app's own look so it fits a phone and follows the theme.
+// A part with "n" gets a numbered badge and a hint-coloured outline; the steps below explain them in order.
+const slT = o => o == null ? "" : typeof o === "string" ? o : o.text;
+const slN = n => n ? `<i class="sl-n" aria-hidden="true">${n}</i>` : "";
+const slMark = (o, inner) => o && typeof o === "object" && o.n ? `<span class="sl-mark">${slN(o.n)}${inner}</span>` : inner;
+function slLog(lines, runId) {
+  let lastN = null;
+  return lines.map(l => {
+    const badge = l.n && l.n !== lastN ? slN(l.n) : ""; lastN = l.n || null;
+    const text = l.code ? `<span class="sl-code">${esc(l.text)}</span>` : `${runId ? `<span class="sl-id">[${esc(runId)}]</span> ` : ""}<span${l.warn ? ' class="sl-warn"' : ""}>${esc(l.text)}</span>`;
+    return `<div class="sl-line${l.n ? " sl-hit" : ""}">${badge}${text}</div>`;
+  }).join("");
+}
+const SL_VIEW = {
+  flow: d => `<ol class="sl-flow">${d.boxes.map((b, i) => `<li class="${b.n ? "sl-hitbox" : ""}">${slN(b.n)}<span class="sl-step">${i + 1}</span><b>${esc(b.title)}</b><span>${esc(b.sub)}</span></li>`).join("")}</ol><p class="sl-note">${esc(d.note)}</p>`,
+  header: d => `<div class="sl-h1">${slMark(d.title, `<b>${esc(slT(d.title))}</b>`)}${slMark(d.state, `<span class="sl-pill">✓ ${esc(slT(d.state))}</span>`)}</div>
+    <div class="sl-meta">${slMark(d.path, `<span class="sl-link">${esc(slT(d.path))}</span>`)}${(d.meta || []).map(m => `<span>${esc(m)}</span>`).join("")}${slMark(d.commit, `<span class="sl-link sl-mono">⊸ ${esc(slT(d.commit))}</span>`)}</div>
+    <div class="sl-meta"><span>${esc(d.started)}</span></div>
+    <div class="sl-meta">${(d.line2 || []).map(m => `<span>${esc(m)}</span>`).join("")}${slMark(d.run_type, `<span>ⓘ ${esc(slT(d.run_type))}</span>`)}</div>
+    <div class="sl-tabs">${d.tabs.map((t, i) => slMark(t, `<span class="sl-tab${i === 0 ? " on" : ""}">${esc(t.text)}${t.count ? ` <em>${esc(t.count)}</em>` : ""}</span>`)).join("")}</div>`,
+  changes: d => `<div class="sl-bar">${slMark(d.count, `<span class="sl-muted">${esc(slT(d.count))}</span>`)}<span class="sl-search">⌕ ${esc(d.search)}</span></div>
+    <div class="sl-filters">${slMark(d.filters, `<span class="sl-chips"><b>Filters</b>${d.filters.items.map(f => `<span>${esc(f)} ›</span>`).join("")}</span>`)}</div>
+    <div class="sl-bar">${slMark(d.expand, `<span class="sl-link">⤢ ${esc(slT(d.expand))}</span>`)}</div>
+    <div class="sl-rows">${d.rows.map(r => `<div class="sl-row${r.n ? " sl-hitbox" : ""}">${slN(r.n)}<span class="sl-sym">${esc(r.sym)}</span><span class="sl-mono sl-addr">${esc(r.address)}</span><span class="sl-pill sl-planned">${esc(r.status)}</span></div>`).join("")}${d.more ? `<div class="sl-muted sl-more">${esc(d.more)}</div>` : ""}</div>`,
+  log: d => `<div class="sl-bar"><span><b>▾ ${esc(d.phase)}</b> <span class="sl-muted">· ${esc(d.duration)} · ${esc(d.at)}</span></span>${slMark(d.tools, `<span class="sl-chips">${d.tools.items.map(t => `<span>${esc(t)}</span>`).join("")}</span>`)}</div>
+    <div class="sl-log"><div class="sl-code">${(d.tail || []).map(l => esc(l)).join("\n")}</div>
+    <div class="sl-line${d.summary.n ? " sl-hit" : ""}">${slN(d.summary.n)}<b>${esc(slT(d.summary))}</b></div>${slLog(d.lines, d.run_id)}</div>`,
+  diff: d => `<div class="sl-log sl-code">${d.blocks.map(b => `<div class="sl-block${b.n ? " sl-hitbox" : ""}">${slN(b.n)}<span class="sl-add">+ access_control {
+    + group_name       = "${esc(b.group)}"
+    + permission_level = "${esc(b.level)}"${b.hidden ? `\n      <span class="sl-muted">${esc(b.hidden)}</span>` : ""}
+  }</span></div>`).join("")}<div class="sl-block${d.hidden.n ? " sl-hitbox" : ""}">${slN(d.hidden.n)}<span class="sl-muted">${esc(slT(d.hidden))}</span></div></div>`,
+  history: d => `<div class="sl-h1">${slMark(d.title, `<b>${esc(slT(d.title))}</b>`)}<span class="sl-pill">✓ ${esc(d.state)}</span></div>
+    <div class="sl-meta">${slMark(d.path, `<span class="sl-link">${esc(slT(d.path))}</span>`)}${slMark(d.context, `<span>☰ ${esc(slT(d.context))}</span>`)}<span>ⓘ ${esc(d.run_type)}</span></div>
+    <div class="sl-tabs"><span class="sl-tab on">History</span><span class="sl-tab">Changes <em>${esc(d.changes)}</em></span></div>
+    <div class="sl-hist">${d.events.map(e => `<div class="sl-ev${e.n ? " sl-hitbox" : ""}">${slN(e.n)}<span class="sl-dot">✓</span><b>${esc(e.state)}</b><span class="sl-muted">${esc(e.at)}</span>${e.buttons.map(b => `<span class="sl-btn">${esc(b)}</span>`).join("")}</div>`).join("")}
+    <div class="sl-bar"><span><b>▾ ${esc(d.phase)}</b> <span class="sl-muted">· ${esc(d.duration)} · ${esc(d.at)}</span></span></div>
+    <div class="sl-log">${slLog(d.lines, "01M464E91G7W09T58V7GQFYN0D")}</div></div>`,
+};
+function walkHtml(walk) {
+  return `<section class="walk"><h3>Walkthrough</h3>${walk.map(w => `<figure class="sl">
+    <figcaption>${esc(w.caption)}</figcaption>
+    <div class="sl-view sl-${w.kind}" role="img" aria-label="${esc(w.caption)}, with numbered callouts explained below">${SL_VIEW[w.kind](w.data)}</div>
+    <ol class="sl-steps">${w.steps.map((t, i) => `<li>${slN(i + 1)}<span>${md(t)}</span></li>`).join("")}</ol>
+    ${w.tips && w.tips.length ? `<div class="sl-tips"><span class="eyebrow">${ic("bulb")}Good habits</span><ul>${w.tips.map(t => `<li>${md(t)}</li>`).join("")}</ul></div>` : ""}
+  </figure>`).join("")}</section>`;
+}
 function learnPane() {
   const L = LESSONS[cur.id];
   if (L.pack) return packLearnPane(L, L.pack);
@@ -2645,6 +2833,7 @@ function learnPane() {
   closeTrust();
   return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}
     ${rest.map(p => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>`).join("")}
+    ${L.walk ? walkHtml(L.walk) : ""}
     <figure class="ex"><figcaption>${esc(cap)}</figcaption><pre class="code">${esc(code)}</pre></figure>
     ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}
     ${checkedNote(L)}
@@ -2742,7 +2931,8 @@ function anglePane() {
     ${(x.steps || []).length ? `<section class="sec"><h3>How to investigate</h3><ol class="gl">${x.steps.map(m => `<li>${md(m)}</li>`).join("")}</ol></section>` : ""}
     ${(x.explain_evidence || []).length ? `<section class="sec"><h3>Evidence</h3>${evidenceHtml(x.explain_evidence, x.evidence)}</section>` : ""}`;
   const sorted = !!(p.sort && p.sort.explain && sorting());  // the Build step was the sorting board, not code
-  return `<section class="sec"><h3>${sorted ? "How you sorted them" : x ? "Why it works" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(sorted ? p.sort.explain : text)}</p></section>
+  const practised = !!(p.practice && p.practice.explain && flowing());  // ...or practice questions
+  return `<section class="sec"><h3>${sorted ? "How you sorted them" : practised ? "How you worked it out" : x ? "Why it works" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(sorted ? p.sort.explain : practised ? p.practice.explain : text)}</p></section>
     ${gapsOf(cur.id).length ? clozeHtml(cur.id) + `<details class="card sayback sayown"${said ? " open" : ""}><summary><b>Want to say it your way?</b><span class="meta">Optional. Writing it in your own words helps it stick.</span></summary>
       <textarea id="sayIn" rows="3" maxlength="600" aria-label="Your own sentence" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea><div class="saynote" id="sayNote"></div><div id="sayOurs" hidden></div></details>` : `
     <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
@@ -3003,7 +3193,7 @@ function loadProblem(p) {
   const names = paramNames(p), first = ex.args[0];
   $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
   machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
-  sortLoad(p);
+  sortLoad(p); qfLoad(p);
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
@@ -3189,6 +3379,234 @@ $("sortBox").addEventListener("dragstart", e => { const c = e.target.closest("[d
 $("sortBox").addEventListener("dragover", e => { const b = e.target.closest("[data-sort-bin]"); if (b && !b.classList.contains("off")) { e.preventDefault(); b.classList.add("over"); } });
 $("sortBox").addEventListener("dragleave", e => { const b = e.target.closest("[data-sort-bin]"); if (b && !b.contains(e.relatedTarget)) b.classList.remove("over"); });
 $("sortBox").addEventListener("drop", e => { const b = e.target.closest("[data-sort-bin]"); if (!b) return; e.preventDefault(); const i = e.dataTransfer.getData("text/plain"); if (i !== "") sortPlace(+i, b.dataset.sortBin); });
+
+// ---------- practice questions: Build as reading real evidence (content/model.py practice, ask) ----------
+// For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
+// questions instead of code: one per screen, the evidence above it. A wrong pick is crossed out
+// with a plain reason; help is a clue first, then the answer. The Python version is one tap away.
+const QF = { p: null, i: 0, tried: [], help: 0, first: {}, code: false, again: false };
+const flowing = () => !!(QF.p && cur && cur.p === QF.p && !QF.code);
+const qfFinished = () => !!(QF.p && progress.solved[QF.p.id] && !QF.again);
+const qfKey = id => "drill-flow-" + id;
+function qfLoad(p) {
+  Object.assign(QF, { p: p.practice ? p : null, i: 0, tried: [], help: 0, first: {}, code: false, again: false });
+  if (QF.p) try { QF.code = localStorage.getItem(codeKey(p.id)) === "1"; } catch {}
+  qfMode();
+}
+function qfMode() {
+  if (!QF.p) { $("flowBox").hidden = true; return; }
+  const on = flowing();
+  $("paneBuild").classList.toggle("sorting", on);
+  $("flowBox").hidden = !on;
+  $("modeSwap").hidden = on;
+  $("modeSwap").innerHTML = on ? "" : `<button class="linkbtn" data-qf-mode="flow">${ic("arrowl")}Back to the practice questions</button>`;
+  if (on) qfRender();
+}
+function qfEvidence(e, a, solved) {
+  if (!e) return "";
+  if (e.kind === "code") return `<figure class="qf-ev">${e.title ? `<figcaption>${esc(e.title)}</figcaption>` : ""}<pre class="code">${esc(e.text)}</pre></figure>`;
+  if (e.kind === "claim") return `<div class="qf-claim"><span class="eyebrow">${esc(e.who || "The AI said")}</span><p>${md(e.text)}</p></div>`;
+  if (e.kind === "prompt") return `<figure class="qf-ev"><figcaption>${esc(e.title || "Your prompt")}</figcaption><pre class="code qf-prompt">${esc(e.text).replace("___", `<span class="gap now">?</span>`)}</pre></figure>`;
+  if (e.kind === "chain") return `<ol class="qf-chain">${e.stops.map((st, k) => `<li class="${st.state}"><span class="qf-dot">${st.state === "ok" ? "✓" : k + 1}</span><span><b>${esc(st.label)}</b>${st.sub ? `<small>${esc(st.sub)}</small>` : ""}</span>${st.tag ? `<em>${esc(st.tag)}</em>` : ""}</li>`).join("")}</ol>${e.snippet ? `<pre class="code">${esc(e.snippet)}</pre>` : ""}`;
+  if (e.kind === "plan") {
+    const sum = (e.summary || []).map(([n, w, c]) => `<span class="qf-c ${c || ""}">${esc(n)} ${esc(w)}</span>`).join("");
+    const row = (r, k) => {
+      const cls = a && a.pick ? (solved && k === a.answer ? " right" : QF.tried.includes(k) ? " wrong" : "") : "";
+      const inner = `<span class="qf-sym ${r.sym === "-/+" ? "r" : r.sym === "+" ? "a" : r.sym === "-" ? "d" : "u"}">${esc(r.sym)}</span><span class="qf-addr">${esc(r.address)}${r.note ? `<small>${esc(r.note)}</small>` : ""}</span>`;
+      return a && a.pick ? `<button class="qf-row${cls}" data-qf="${k}"${solved || QF.tried.includes(k) ? " disabled" : ""}>${inner}</button>` : `<div class="qf-row">${inner}</div>`;
+    };
+    return `${e.title ? `<span class="eyebrow">${esc(e.title)}</span>` : ""}<div class="qf-sum">${sum}</div><div class="qf-rows">${e.changes.map(row).join("")}</div>`;
+  }
+  return "";
+}
+// Fix the YAML: a small reader for the YAML config repos use (maps, lists of maps, plain values),
+// with the line of every key, and the same checks as content/yaml_rules.py.
+function yamlRead(text) {
+  const rows = [];
+  text.split("\n").forEach((raw, k) => {
+    if (/^\s*(#.*)?$/.test(raw)) return;
+    const lead = raw.match(/^[ \t]*/)[0];
+    if (lead.includes("\t")) throw { line: k + 1, msg: "Use spaces to indent, not tabs." };
+    rows.push({ n: k + 1, ind: lead.length, text: raw.trim() });
+  });
+  const scalar = v => {
+    v = v.replace(/\s+#.*$/, "").trim();
+    if (/^".*"$|^'.*'$/.test(v)) return v.slice(1, -1);
+    if (/^-?\d+$/.test(v)) return parseInt(v, 10);
+    if (v === "true" || v === "false") return v === "true";
+    if (v === "" || v === "null" || v === "~") return null;
+    return v;
+  };
+  const isItem = r => r.text === "-" || r.text.startsWith("- ");
+  let i = 0;
+  function block(ind) { return isItem(rows[i]) ? list(ind) : map(ind); }
+  function map(ind) {
+    const obj = {}, lines = {};
+    Object.defineProperty(obj, "__lines", { value: lines });
+    Object.defineProperty(obj, "__line", { value: rows[i].n });
+    while (i < rows.length && rows[i].ind === ind && !isItem(rows[i])) {
+      const r = rows[i], m = r.text.match(/^([^:#"'][^:]*?|"[^"]*"):(?:\s+(.*))?$/);
+      if (!m) throw { line: r.n, msg: "Expected key: value." };
+      const key = m[1].replace(/^"|"$/g, "").trim(); lines[key] = r.n; i++;
+      if (m[2] === undefined || m[2].replace(/\s*#.*$/, "") === "") obj[key] = i < rows.length && rows[i].ind > ind ? block(rows[i].ind) : null;
+      else obj[key] = scalar(m[2]);
+    }
+    if (i < rows.length && rows[i].ind > ind) throw { line: rows[i].n, msg: "This line is indented too far." };
+    return obj;
+  }
+  function list(ind) {
+    const arr = [];
+    while (i < rows.length && rows[i].ind === ind && isItem(rows[i])) {
+      const r = rows[i], after = r.text.slice(1).trimStart();
+      if (!after) { i++; arr.push(i < rows.length && rows[i].ind > ind ? block(rows[i].ind) : null); continue; }
+      if (/^[^:#"'][^:]*:(\s|$)/.test(after)) { rows[i] = { n: r.n, ind: ind + (r.text.length - after.length), text: after }; arr.push(map(rows[i].ind)); }
+      else { arr.push(scalar(after)); i++; }
+    }
+    return arr;
+  }
+  if (!rows.length) return null;
+  const doc = block(rows[0].ind);
+  if (i < rows.length) throw { line: rows[i].n, msg: "This line's indent doesn't match the lines above it." };
+  return doc;
+}
+function yamlCheck(text, rules, goal) {
+  let doc;
+  try { doc = yamlRead(text); } catch (e) { return [{ line: e.line, msg: e.msg }]; }
+  let node = doc;
+  for (const part of rules.path.split(".")) node = node && typeof node === "object" && !Array.isArray(node) ? node[part] : undefined;
+  const items = Array.isArray(node) ? node : node && typeof node === "object" ? [node] : null;
+  if (!items) return [{ line: 1, msg: `Expected a list under ${rules.path}.` }];
+  const out = [], forbid = rules.forbid || {};
+  items.forEach(it => {
+    if (!it || typeof it !== "object") { out.push({ line: 1, msg: "Each item needs key: value lines." }); return; }
+    const at = f => (it.__lines || {})[f] || it.__line || 1;
+    for (const [f, msg] of Object.entries(forbid)) if (f in it) out.push({ line: at(f), msg });
+    if (rules.allowed) for (const f of Object.keys(it)) if (!rules.allowed.includes(f) && !(f in forbid)) out.push({ line: at(f), msg: `${f} isn't a field the check knows.` });
+    for (const f of rules.required || []) if (!(f in it)) out.push({ line: it.__line || 1, msg: `${f} is missing.` });
+    for (const [f, kind] of Object.entries(rules.types || {})) if (f in it && (kind === "int" ? !Number.isInteger(it[f]) : typeof it[f] !== "string")) out.push({ line: at(f), msg: `${f} must be ${kind === "int" ? "a whole number" : "text"}.` });
+    for (const [f, vals] of Object.entries(rules.enum || {})) if (f in it && !vals.includes(it[f])) out.push({ line: at(f), msg: `${f} must be one of ${vals.join(", ")}.` });
+    if (rules.size) { const fx = "num_workers" in it, lo = "min_workers" in it, hi = "max_workers" in it;
+      if (!(fx && !lo && !hi) && !(lo && hi && !fx)) out.push({ line: at(fx ? "num_workers" : lo ? "min_workers" : hi ? "max_workers" : "name"), msg: "Use num_workers, or both min_workers and max_workers." }); }
+  });
+  if (out.length) return out;
+  for (const g of goal || []) {
+    if ("equals" in g && (!items.length || items[0][g.field] !== g.equals)) out.push({ line: null, msg: g.message });
+    if ("contains" in g && !items.some(it => it[g.field] === g.contains)) out.push({ line: null, msg: g.message });
+  }
+  return out;
+}
+function qfFixHtml(a, solved) {
+  const text = QF.text != null ? QF.text : a.start, probs = QF.probs;
+  const rows = Math.max(5, text.split("\n").length + 1);
+  const list = probs && probs.length ? `<div class="qf-probs" aria-live="polite"><b>${probs.length} problem${probs.length === 1 ? "" : "s"}</b>${probs.map(p => `<div>${p.line ? `<span class="qf-ln">Line ${p.line}</span>` : `<span class="qf-ln">Goal</span>`}${esc(p.msg)}</div>`).join("")}</div>` : "";
+  const keys = ["  ", "- ", ": ", "min_workers: ", "max_workers: ", "policy_name: "].filter(k => k.trim().length < 3 || text.includes("workers") || a.rules.size);
+  return `<figure class="qf-ev"><figcaption>${esc(a.file || "YAML")}</figcaption>
+    <textarea class="qf-yaml" data-qf-yaml rows="${rows}" spellcheck="false" autocapitalize="off" autocomplete="off"${solved ? " readonly" : ""} aria-label="${esc(a.file || "YAML")}">${esc(text)}</textarea></figure>
+    ${solved ? "" : `<div class="qf-keys" aria-label="Typing keys">${keys.map(k => `<button type="button" data-qf-key="${esc(k)}">${k === "  " ? "⇥ indent" : esc(k.trim() || k)}</button>`).join("")}</div>`}
+    ${list}`;
+}
+function qfRender() {
+  const pr = QF.p.practice, asks = pr.asks, n = asks.length, box = $("flowBox");
+  const dots = k => `<span class="qf-dots" aria-hidden="true">${asks.map((_, j) => `<i class="${j < k ? "d" : j === k ? "n" : ""}"></i>`).join("")}</span>`;
+  const right = Object.values(QF.first).filter(Boolean).length;
+  if (qfFinished() && QF.i === 0 && !QF.tried.length) {
+    const sv = progress.solved[QF.p.id];
+    box.innerHTML = `<div class="shead"><h2>Practice</h2><span class="scount">done</span></div>
+      <div class="sdone"><b>${ic("check")} You answered these before${sv && sv.hints != null ? `: ${Math.max(0, n - sv.hints)} of ${n} right first time` : ""}.</b></div>
+      <div class="sfoot"><button class="linkbtn" data-qf-reset>${ic("reset")}Practise again</button><button class="linkbtn" data-qf-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
+    return;
+  }
+  if (QF.i >= n) {
+    box.innerHTML = `<div class="shead"><h2>Practice</h2><span class="scount">done</span></div>
+      <div class="sdone"><b>${ic("check")} All ${n} answered. ${right} of ${n} right first time.</b><p>The pattern: <em>${md(LESSONS[QF.p.id] ? LESSONS[QF.p.id].angle[0] : QF.p.pattern)}</em></p></div>
+      <div class="sfoot"><button class="linkbtn" data-qf-reset>${ic("reset")}Practise again</button><button class="linkbtn" data-qf-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
+    return;
+  }
+  const a = asks[QF.i], solved = QF.solved === QF.i, lastWrong = QF.tried.length ? QF.tried[QF.tried.length - 1] : null;
+  if (a.kind === "fix") {
+    const fixHelp = solved ? `<button class="btn primary qf-next" data-qf-next>${QF.i + 1 < n ? "Next question" : "See how you did"}${ic("arrowr")}</button>`
+      : `<button class="btn primary qf-next" data-qf-check>Check YAML</button>${QF.help === 0 ? `<button class="linkbtn" data-qf-help>Give me a clue</button>` : `<p class="clzclue">${ic("bulb")}<span>${md(a.clue)}</span></p><button class="linkbtn" data-qf-help>Show a fixed version</button>`}`;
+    box.innerHTML = `<div class="shead"><h2>Practice</h2><span class="scount">Question ${QF.i + 1} of ${n}</span>${dots(QF.i)}</div>
+      ${QF.i === 0 ? `<p class="meta">${md(pr.intro)}</p>` : ""}
+      <p class="q">${md(a.question)}</p>${qfFixHtml(a, solved)}
+      <div aria-live="polite">${solved ? `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "A fixed version." : "The check passes."}</b> ${md(a.why)}</div>` : ""}</div>
+      <div class="clzhelp">${fixHelp}</div>
+      <div class="sfoot"><button class="linkbtn" data-qf-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
+    return;
+  }
+  const opts = a.pick ? "" : `<div class="opts">${a.options.map((o, k) => `<button class="opt${solved && k === a.answer ? " right" : QF.tried.includes(k) ? " wrong" : ""}" data-qf="${k}"${solved || QF.tried.includes(k) ? " disabled" : ""}><span class="k">${"ABCDEF"[k]}</span><span>${md(o)}</span></button>`).join("")}</div>`;
+  const note = solved ? `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "The answer." : "Right."}</b> ${md(a.why)}</div>`
+    : lastWrong != null ? `<div class="snote no"><b>Not quite.</b> ${md((a.wrong && a.wrong[lastWrong]) || "Look at the evidence again.")}</div>` : "";
+  const help = solved ? `<button class="btn primary qf-next" data-qf-next>${QF.i + 1 < n ? "Next question" : "See how you did"}${ic("arrowr")}</button>`
+    : QF.help === 0 ? `<button class="linkbtn" data-qf-help>Give me a clue</button>`
+    : `<p class="clzclue">${ic("bulb")}<span>${md(a.clue)}</span></p><button class="linkbtn" data-qf-help>Tell me the answer</button>`;
+  box.innerHTML = `<div class="shead"><h2>Practice</h2><span class="scount">Question ${QF.i + 1} of ${n}</span>${dots(QF.i)}</div>
+    ${QF.i === 0 ? `<p class="meta">${md(pr.intro)}</p>` : ""}
+    ${qfEvidence(a.evidence, a, solved)}
+    <p class="q">${md(a.question)}</p>${opts}
+    <div aria-live="polite">${note}</div><div class="clzhelp">${help}</div>
+    <div class="sfoot"><button class="linkbtn" data-qf-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
+}
+function qfPick(k) {
+  const a = QF.p.practice.asks[QF.i];
+  if (QF.solved === QF.i || QF.tried.includes(k)) return;
+  if (k === a.answer) { if (!(QF.i in QF.first)) QF.first[QF.i] = !QF.tried.length && QF.help < 2; QF.solved = QF.i; fxOn($("flowBox"), "seal", FX.seal()); }
+  else { QF.tried.push(k); QF.first[QF.i] = false; }
+  qfRender();
+}
+function qfHelp() {
+  const a = QF.p.practice.asks[QF.i];
+  QF.help = Math.min(2, QF.help + 1);
+  if (QF.help === 2) { QF.first[QF.i] = false; QF.solved = QF.i; if (a.kind === "fix") { QF.text = a.answer; QF.probs = null; } }
+  qfRender();
+}
+function qfCheck() {
+  const a = QF.p.practice.asks[QF.i], text = QF.text != null ? QF.text : a.start;
+  QF.probs = yamlCheck(text, a.rules, a.goal);
+  if (!QF.probs.length) { if (!(QF.i in QF.first)) QF.first[QF.i] = !QF.fails && QF.help < 2; QF.solved = QF.i; fxOn($("flowBox"), "seal", FX.seal()); }
+  else { QF.fails = (QF.fails || 0) + 1; QF.first[QF.i] = false; }
+  qfRender();
+}
+function qfNext() {
+  QF.i++; QF.tried = []; QF.help = 0; QF.solved = null; QF.text = null; QF.probs = null; QF.fails = 0;
+  if (QF.i >= QF.p.practice.asks.length) qfSolved();
+  qfRender(); renderFoot();
+  $("flowBox").scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" });
+}
+function qfSolved() {
+  const p = QF.p, n = p.practice.asks.length, right = Object.values(QF.first).filter(Boolean).length, prev = progress.solved[p.id];
+  progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - right };
+  lastRun = { summary: `Answered all ${n} practice questions, ${right} right first time.` };
+  QF.again = false; markDay();
+  if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
+  saveProgress(); renderTop();
+}
+function qfReset() { Object.assign(QF, { i: 0, tried: [], help: 0, first: {}, solved: null, again: true, text: null, probs: null, fails: 0 }); qfRender(); renderFoot(); }
+function qfSetCode(on) {
+  QF.code = on; try { localStorage.setItem(codeKey(QF.p.id), on ? "1" : "0"); } catch {}
+  qfMode(); renderFoot();
+  if (on) machineLoad(QF.p);
+}
+$("flowBox").addEventListener("click", e => {
+  const t = e.target;
+  const o = t.closest("[data-qf]"); if (o && !o.disabled) { qfPick(+o.dataset.qf); return; }
+  if (t.closest("[data-qf-help]")) { qfHelp(); return; }
+  if (t.closest("[data-qf-check]")) { qfCheck(); return; }
+  const key = t.closest("[data-qf-key]");
+  if (key) {  // a typing key: insert at the cursor and keep typing
+    const ta = $("flowBox").querySelector("[data-qf-yaml]"), k = key.dataset.qfKey, a = ta.selectionStart, b = ta.selectionEnd;
+    ta.value = ta.value.slice(0, a) + k + ta.value.slice(b); ta.selectionStart = ta.selectionEnd = a + k.length; ta.focus(); QF.text = ta.value; return;
+  }
+  if (t.closest("[data-qf-next]")) { qfNext(); return; }
+  if (t.closest("[data-qf-reset]")) { qfReset(); return; }
+  if (t.closest('[data-qf-mode="code"]')) qfSetCode(true);
+});
+$("modeSwap").addEventListener("click", e => { if (e.target.closest('[data-qf-mode="flow"]')) qfSetCode(false); });
+$("flowBox").addEventListener("input", e => { if (e.target.matches("[data-qf-yaml]")) QF.text = e.target.value; });
+$("flowBox").addEventListener("keydown", e => {  // Tab indents two spaces in the YAML box, like an editor
+  if (e.key !== "Tab" || !e.target.matches("[data-qf-yaml]") || e.shiftKey) return;
+  e.preventDefault(); const ta = e.target, a = ta.selectionStart; ta.value = ta.value.slice(0, a) + "  " + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = a + 2; QF.text = ta.value;
+});
 
 // ---------- tables of rows ----------
 const isRows = v => Array.isArray(v) && v.length > 0 && v.length <= 12 && v.every(r => r && typeof r === "object" && !Array.isArray(r)) && new Set(v.flatMap(r => Object.keys(r))).size <= 6;
@@ -4029,6 +4447,32 @@ function hlPython(src) {
   }
   return out;
 }
+// Terraform and its output (a plan, state JSON, a lock error) read differently from Python: the
+// plan's marks (+ add, - destroy, ~ change, -/+ replace) lead each line, names come before = or :,
+// and a "forces replacement" note is the thing to notice.
+const looksInfra = t => /(^|\n)\s*(resource|data|module|provider|variable|output|locals|terraform)\s+["{]/.test(t)
+  || /(^|\n)\s*(-\/\+|[+~-]|<=)\s+(resource|data|[\w"-]+\s*[=:{])/.test(t) || /Plan: \d+ to add/.test(t) || /Lock Info:/.test(t)
+  || (/^\s*[{[]/.test(t) && /"[^"\n]+"\s*:/.test(t));
+function hlInfra(src) {
+  return src.split("\n").map(line => {
+    const m = line.match(/^(\s*)(-\/\+|<=|[+~-])(?=\s)/);
+    let lead = "", rest = line;
+    if (m) { const kind = m[2] === "+" ? "a" : m[2] === "-" ? "d" : m[2] === "~" ? "u" : "r"; lead = m[1] + `<span class="pm ${kind}">${esc(m[2])}</span>`; rest = line.slice(m[0].length); }
+    const lock = !m && rest.match(/^(\s*)([A-Z][A-Za-z ]{1,20}):(\s.*|)$/);
+    if (lock) return `${lock[1]}<span class="key">${esc(lock[2])}</span>:${esc(lock[3])}`;
+    let out = "", r = /(#[^\n]*)|("(?:[^"\\]|\\.)*")(\s*:)?|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][\w-]*)(?=\s*=(?!=))|([A-Za-z_][\w-]*)|([\s\S])/g, t;
+    while ((t = r.exec(rest))) {
+      const [all, com, str, colon, num, key, word] = t;
+      if (com) out += `<span class="${/forces replacement/.test(com) ? "fr" : "c"}">${esc(com)}</span>`;
+      else if (str) out += colon ? `<span class="key">${esc(str)}</span>${esc(colon)}` : `<span class="s">${esc(str)}</span>`;
+      else if (num) out += `<span class="n">${num}</span>`;
+      else if (key) out += `<span class="key">${esc(key)}</span>`;
+      else if (word) out += HCL_KW.has(word) && !out.replace(/<[^>]+>/g, "").trim() ? `<span class="k">${word}</span>` : /^(true|false|null)$/.test(word) ? `<span class="n">${word}</span>` : esc(word);
+      else out += esc(all);
+    }
+    return lead + out;
+  }).join("\n");
+}
 // Colour every read-only code box (Learn, In your stack, Python you'll need, the example, hints, tutor
 // answers) as it appears or changes. A box is redrawn only when its text changes, so this never loops.
 const CODE_BOXES = "pre.code, .ai pre, .aa pre, .note pre, .quote.code";
@@ -4036,10 +4480,12 @@ function colourCode() {
   document.querySelectorAll(CODE_BOXES).forEach(pre => {
     const t = pre.textContent;
     if (pre.dataset.hl === String(t.length)) return;
-    pre.innerHTML = hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
+    pre.innerHTML = looksInfra(t) ? hlInfra(t) : hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
   });
+  document.querySelectorAll(".dtwrap").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
 }
 { let queued = false; new MutationObserver(() => { if (queued) return; queued = true; setTimeout(() => { queued = false; colourCode(); }, 0); }).observe(document.body, { childList: true, subtree: true, characterData: true }); colourCode(); }
+document.addEventListener("scroll", e => { const w = e.target.closest && e.target.closest(".dtwrap"); if (w) w.classList.toggle("more", w.scrollLeft + w.clientWidth < w.scrollWidth - 4); }, true);
 function syncCodeScroll() { const hl = $("codeHl"); hl.scrollLeft = ed.scrollLeft; hl.style.setProperty("--sl", ed.scrollLeft + "px"); }
 function drawCode() {
   $("codeHl").innerHTML = hlPython(ed.value).split("\n").map(l => `<span class="ln">${l}</span>`).join("\n") + "\n";
@@ -4091,7 +4537,7 @@ $("homeBtn").onclick = goHome;
 $("backPath").onclick = () => { if (cur && cur.kind === "practice" && cur.from) openLesson(cur.from, 3); else goHome(); };
 $("prevBtn").onclick = goPrev;
 $("nextBtn").onclick = goNext;
-$("midBtn").onclick = () => { const a = $("midBtn").dataset.act; if (a === "run") runTests(); else if (a === "resort") sortReset(); else setStep(3); };
+$("midBtn").onclick = () => { const a = $("midBtn").dataset.act; if (a === "run") runTests(); else if (a === "resort") sortReset(); else if (a === "repractice") qfReset(); else setStep(3); };
 $("hintBtn").onclick = hint;
 for (const b of document.querySelectorAll("[data-mode]")) b.onclick = () => setMode(b.dataset.mode);
 $("guideYes").onclick = applyStart; $("guideNo").onclick = () => { $("guideConfirm").hidden = true; startMode = startMode === "scaffold" ? "blank" : "scaffold"; store.set("drill-start", startMode); renderMode(); };
@@ -4168,6 +4614,7 @@ document.addEventListener("click", async e => {
   const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
   if (t.closest("[data-gotcha-retry]")) { delete progress.gotchas[cur.id]; saveProgress(); renderGotcha(); return; }
   if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
+  const fp = t.closest("[data-focus-pick]"); if (fp) { setFocus(fp.dataset.focusPick); return; }
   const cz = t.closest("[data-clz]"); if (cz) { clozePick(cz.dataset.clz); return; }
   if (t.closest("[data-clz-help]")) { CLZ.help = Math.min(2, CLZ.help + 1); CLZ.note = ""; clozeRender(); return; }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) {
@@ -4565,6 +5012,7 @@ goHome();
             solved: Object.assign({}, r.solved || {}, progress.solved),
             days: [...new Set([...(r.days || []), ...progress.days])].sort(),
             lessons, gotchas: Object.assign({}, r.gotchas || {}, progress.gotchas), current: progress.current || r.current || null,
+            focus: progress.focus || r.focus || null, lastKind: progress.lastKind || r.lastKind || null,
             // your own use case and numbers: the newer copy wins
             mine: ((progress.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (progress.mine || r.mine || {}) : r.mine,
           };
