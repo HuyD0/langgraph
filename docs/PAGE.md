@@ -1,7 +1,7 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-130 lessons in 17 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
+131 lessons in 17 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
 going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
@@ -20,6 +20,7 @@ Everything is in the package, under `src/drill/content/`:
 | `modules/__init__.py` | `ORDER`, the order of the chapters, and `LIFECYCLE`, the strip at the top of the page |
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
+| `trust.py` | The trust marks: where a lesson touches responsible AI, privacy or governance, one note (trait, NIST AI RMF reference, a perspective and a tip, and whether it is TEVV evidence) |
 | `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Explain step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
 | `page.html` | The page: layout, styles and all the JavaScript. `/*DATA*/` is replaced with the content at build time |
 | `build.py` | Puts it together: `build_data()` is the content as one dict, `render_page()` embeds it |
@@ -361,6 +362,27 @@ and `/* fx: end */` in `page.html`. Every effect is played by one of three funct
 in the fx block with a `--hold` for how long it stays, and call `fxScreen` or `fxOn` at the
 moment. Add a row to the table above. To look at one frame by frame, pause it partway with
 `document.getAnimations()` in the browser console.
+
+## Trust marks
+
+Where a lesson's Learn text touches responsible AI, privacy or governance, a small ember sits
+right after the words that matter. Tapping it opens a tooltip: the trait of trustworthy AI it
+serves (NIST AI RMF's seven), the NIST reference, a perspective (why this matters for trust) and
+one tip, with a row of seven dots for the traits the learner has practised (a trait counts once
+any lesson with that trait is done). Notes tagged `tevv` also show a TEVV chip: NIST's name for
+the testing whose record is evidence (experiments, eval runs, registries).
+
+- The notes are `content/trust.py`, keyed by lesson id. Add one with `trust(trait, phrase=...,
+  view=..., tip=..., rmf=..., tevv=...)`. The phrase must appear once in the Learn text and not
+  cut through `**bold**` or backticks; `tests/test_content.py` checks this. One note per lesson,
+  and only where the lesson really is about trust.
+- A mark you haven't opened gives off embers and pops in with a burst each time the Learn step
+  shows it; once opened it rests, remembered on this device (`drill-trust-seen`). With Motion
+  off or reduced motion it is a still glow.
+- Colours are `--mark` and `--mark-glow` in every look: a pale light, apart from the blue of
+  "next" and the violet of the path. The styles sit with the lesson styles (`.trustmark`,
+  `.trustpop`, keyframes `tm-…`), not in the fx block: the mark is part of the page, not a
+  passing effect.
 
 ## Adding a lesson
 

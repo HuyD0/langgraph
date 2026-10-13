@@ -246,6 +246,29 @@ def stack(title: str, code: str) -> dict:
     return {"title": title, "code": code}
 
 
+# The seven traits of trustworthy AI in the NIST AI Risk Management Framework (AI RMF 1.0),
+# keyed by the short name the page shows. Order is NIST's.
+TRAITS = {
+    "valid": "Valid and reliable",
+    "safe": "Safe",
+    "secure": "Secure and resilient",
+    "accountable": "Accountable and transparent",
+    "explainable": "Explainable",
+    "private": "Privacy-enhanced",
+    "fair": "Fair",
+}
+
+
+def trust(trait: str, *, phrase: str, view: str, tip: str, rmf: str, tevv: bool = False) -> dict:
+    """A trust mark (see :mod:`drill.content.trust`): the ember on the page, placed right after
+    ``phrase`` in the lesson's Learn text.
+    ``view`` says why this moment matters for responsible AI, privacy or governance; ``tip`` is
+    one thing to do about it; ``rmf`` is the NIST AI RMF reference, like "Measure 2.10". ``tevv``
+    marks a moment that produces test evidence (NIST's test, evaluation, verification and validation)."""
+    assert trait in TRAITS, f"unknown trait {trait!r}; use one of {', '.join(TRAITS)}"
+    return {"trait": trait, "phrase": phrase, "view": view, "tip": tip, "rmf": rmf, "tevv": tevv}
+
+
 def source(title: str, url: str) -> list[str]:
     """A page a lesson's facts were checked against: what it is, and where."""
     assert url.startswith("https://"), f"{title}: a source needs an https link"

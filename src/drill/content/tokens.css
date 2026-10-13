@@ -31,6 +31,9 @@
   /* the path: violet marks the whole route (the phase tabs on Home); blue stays for where you are.
      --path for fills and done phases, --path-bg the tab strip, --path-line its edge, --path-ink its text */
   --path: #6a3fd0; --path-bg: #efeafc; --path-line: #d9cff5; --path-ink: #574a80;
+  /* the trust mark: a small ember on words about responsible AI, privacy or governance. Its own light,
+     apart from the blue of "next" and the violet of the path. --mark-glow is its halo and the embers' shadow */
+  --mark: #1f68b8; --mark-glow: rgba(31, 104, 184, .35);
   /* the platform track: teal, the one colour family nothing else uses, so it never reads as the AI path */
   --track: #0b7a70; --track-on: #ffffff; --track-soft: #def4f1; --track-line: #b5e2dc; --track-ink: #2c6a64;
 
@@ -70,6 +73,8 @@
   --card-bg: var(--surface); --card-line: var(--line); --card-shadow: none;
   --aside-bg: var(--sunk); --aside-line: transparent; --aside-shadow: none; --aside-blur: none;
   --glow-current: none; --glow-look: none;
+  /* pop = something floating over the page (a tooltip-sized card that opens on a tap) */
+  --pop-bg: var(--surface); --pop-line: var(--line); --pop-shadow: 0 18px 40px rgba(0, 0, 0, .28); --pop-blur: none;
 }
 
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -81,6 +86,7 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
+  --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
@@ -93,6 +99,7 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
+  --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
 
@@ -112,5 +119,7 @@
   --card-bg: rgba(19, 18, 28, .92); --card-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 28px rgba(0, 0, 0, .35);
   --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10); --aside-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); --aside-blur: blur(12px);
   --glow-current: 0 0 10px rgba(91, 140, 255, .55), 0 0 22px rgba(139, 92, 246, .25); --glow-look: 0 0 10px rgba(232, 196, 122, .35);
+  --pop-bg: rgba(19, 18, 28, .9); --pop-line: rgba(212, 248, 255, .22); --pop-shadow: 0 0 0 1px rgba(0, 0, 0, .5), 0 18px 40px rgba(0, 0, 0, .6), 0 0 30px rgba(91, 140, 255, .18); --pop-blur: blur(14px) saturate(130%);
+  --mark: #d4f8ff; --mark-glow: rgba(140, 190, 255, .6);
   --track: #34d8c4; --track-on: #03201c; --track-soft: #0e2422; --track-line: #1d4743; --track-ink: #8ccfc5;
   --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }

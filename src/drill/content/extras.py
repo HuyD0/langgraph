@@ -186,7 +186,7 @@ GLOSSARY = [
             ],
             [
                 'baseline',
-                'What a simple or random approach scores, so you can tell whether your model is actually better than doing nothing clever.',
+                'What you compare against: the version you have now, or a simple approach, so you can tell whether a change is really better.',
             ],
             [
                 'training data',
@@ -199,6 +199,14 @@ GLOSSARY = [
             [
                 'reliability diagram',
                 "A chart that groups answers by how confident the model said it was and shows how often each group was really right. A well-calibrated model's points sit on the diagonal.",
+            ],
+            [
+                'controls',
+                'In an experiment, everything you hold fixed on purpose (the eval set, the model, the judge), so only the thing you are testing changes.',
+            ],
+            [
+                'independent variable',
+                'In an experiment, the one thing you change on purpose, like the chunk size. Everything else stays fixed.',
             ],
             [
                 'eval set',
@@ -441,7 +449,7 @@ GLOSSARY = [
             ],
             [
                 'experiment (MLflow)',
-                'A folder in MLflow that holds the runs and traces for one project or question.',
+                'A folder in MLflow that groups related runs, traces and evaluation runs, often one per app, so you can compare them side by side. It is the ledger of your evidence.',
             ],
             [
                 'run (MLflow)',
@@ -606,6 +614,47 @@ GLOSSARY = [
             [
                 'LangGraph',
                 'A library for building agents and workflows as a graph of steps (nodes) joined by edges, with saved state so they can pause and resume.',
+            ],
+        ],
+    ],
+    [
+        'Responsible AI',
+        [
+            [
+                'NIST AI RMF',
+                "The US standards agency NIST's AI Risk Management Framework (2023). Voluntary, widely quoted, and built on four jobs: Govern, Map, Measure and Manage.",
+            ],
+            [
+                'Govern, Map, Measure, Manage',
+                "The AI RMF's four jobs. Govern: who decides and answers for it. Map: what the system is for and what could go wrong. Measure: test and track the risks. Manage: act on them, before and after launch.",
+            ],
+            [
+                'trustworthy AI traits',
+                "The AI RMF's seven: valid and reliable, safe, secure and resilient, accountable and transparent, explainable, privacy-enhanced, and fair with harmful bias managed. The embers in lessons name one each.",
+            ],
+            [
+                'TEVV',
+                'Test, evaluation, verification and validation: NIST\'s name for the testing that gives evidence a system works and is safe. Your experiments, eval runs and registries are its record.',
+            ],
+            [
+                'confabulation',
+                "NIST's word, in its guide to generative AI, for a confident answer with nothing behind it. Often called hallucination.",
+            ],
+            [
+                'human oversight',
+                'A person able to check, approve or stop what an AI does, planned in advance: which actions, which person, and what they see.',
+            ],
+            [
+                'provenance',
+                'Where a piece of data or a memory came from, and when. It lets you explain an answer later, and undo a bad source.',
+            ],
+            [
+                'privacy by design',
+                'Building privacy in from the start: collect less, mask early, keep it for less time, and limit who can read it.',
+            ],
+            [
+                'right to erasure',
+                'Under privacy laws such as GDPR, a person can ask for their data to be deleted, including from logs, memory and caches.',
             ],
         ],
     ],

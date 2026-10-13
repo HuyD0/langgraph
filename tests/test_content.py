@@ -283,6 +283,44 @@ def test_every_look_is_readable():
     assert not bad, bad
 
 
+def test_every_trust_mark_sits_on_real_words(loaded, data):
+    """Each trust note belongs to a real lesson and its phrase is in that lesson's Learn text exactly once,
+    without cutting through **bold** or `code`, so the page can put the ember right after it."""
+    import re
+
+    from drill.content.model import TRAITS
+    from drill.content.trust import NOTES
+
+    learn = {entry["id"]: entry["learn"] for mod in loaded for entry in mod.lessons}
+    assert len(NOTES) >= 30 and set(n["trait"] for n in NOTES.values()) == set(TRAITS), "every trait has at least one mark"
+    for lesson_id, note in NOTES.items():
+        assert lesson_id in learn, f"trust note for unknown lesson {lesson_id}"
+        hits = [p for p in learn[lesson_id] if note["phrase"] in p]
+        assert len(hits) == 1 and hits[0].count(note["phrase"]) == 1, f"{lesson_id}: phrase must appear exactly once"
+        before = hits[0].split(note["phrase"])[0] + note["phrase"]
+        assert before.count("**") % 2 == 0 and before.count("`") % 2 == 0, f"{lesson_id}: phrase cuts through markup"
+        assert re.fullmatch(r"(Govern|Map|Measure|Manage) \d+(\.\d+)?", note["rmf"]), f"{lesson_id}: rmf like 'Measure 2.10'"
+        for field in ("view", "tip"):
+            assert 20 < len(note[field]) < 160 and "*" not in note[field], f"{lesson_id}: {field} should be one short plain line"
+        assert data["lessons"][lesson_id]["trust"][0] == note["trait"]
+    assert data["traits"] == TRAITS
+
+
+def test_trust_marks_are_wired_into_the_learn_step():
+    """The page places each mark after its phrase, keeps its own colours, and stills it with Motion off."""
+    from pathlib import Path
+
+    root = Path(__file__).parent.parent / "src" / "drill" / "content"
+    page, tokens = (root / "page.html").read_text(), (root / "tokens.css").read_text()
+    learn = page.split("function learnPane()")[1].split("\n}")[0]
+    assert "withTrust(cur.id, first" in learn and "withTrust(cur.id, p" in learn
+    for name in ("--mark", "--mark-glow"):
+        assert tokens.count(name + ":") == 4, name
+    moving = page.split(".trustmark:not(.seen) .em {")[0].rsplit("@media", 1)[1]
+    assert "prefers-reduced-motion: no-preference" in moving and ':root:not([data-motion="off"])' in page.split(".trustmark:not(.seen) .em {")[0][-80:]
+    assert 'store.set("drill-trust-seen"' in page and "aria-expanded" in page.split("function trustMarkHtml")[1].split("\n}")[0]
+
+
 def test_placeholders_are_coming_soon_not_lessons(loaded, data):
     """A planned lesson has a title and a line, never an exercise, and never shares an id with a real lesson."""
     lesson_ids = {lid for m in loaded for lid in m.lesson_ids}

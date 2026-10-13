@@ -9,6 +9,7 @@ The parts, and where each one lives:
 - the classic interview problems: :mod:`drill.problems`, the same bank the CLI drills,
   plus their page-only Learn text in :mod:`drill.content.classics`
 - the glossary, habits and gotchas: :mod:`drill.content.extras`
+- the trust marks (responsible AI, privacy and NIST notes): :mod:`drill.content.trust`
 - the page itself: ``page.html`` next to this file, with ``/*DATA*/`` where the content goes
 
 :func:`build_data` returns the content as one dict, which is what the page embeds and what
@@ -23,8 +24,8 @@ import re
 import sys
 from pathlib import Path
 
-from drill.content import classics, extras, modules, real, review
-from drill.content.model import Module
+from drill.content import classics, extras, modules, real, review, trust
+from drill.content.model import TRAITS, Module
 
 HERE = Path(__file__).resolve().parent
 PAGE_TEMPLATE = HERE / "page.html"
@@ -40,7 +41,7 @@ def _without_none(d: dict) -> dict:
     return {k: v for k, v in d.items() if v is not None}
 
 
-def _page_lesson(entry: dict) -> dict:
+def _page_lesson(entry: dict, note: dict | None = None) -> dict:
     """The shape page.html reads: tuples as lists, in a fixed order."""
     ex, q, a = entry["example"], entry["check"], entry["angle"]
     out = {
@@ -54,6 +55,8 @@ def _page_lesson(entry: dict) -> dict:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
     if entry.get("walkthrough"):
         out["walk"] = entry["walkthrough"]  # tool views redrawn with numbered callouts (model.screen)
+    if note:
+        out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
     # [day, sources]: a lesson checked against sources, or the content date with none.
     from drill.content.freshness import CONTENT_DATE
     out["checked"] = [entry.get("checked") or CONTENT_DATE, [list(s) for s in entry.get("sources") or []]]
@@ -125,7 +128,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
             ex = entry["exercise"]
             bank[entry["id"]] = _without_none({"id": entry["id"], **{k: ex[k] for k in _EXERCISE_FIELDS}})
             learn[entry["id"]] = _without_none({k: ex[k] for k in _LEARN_FIELDS})
-            lessons[entry["id"]] = _page_lesson(entry)
+            lessons[entry["id"]] = _page_lesson(entry, trust.NOTES.get(entry["id"]))
 
     for lesson_id, entry in lessons.items():
         classic = entry["angle"][3]
@@ -138,6 +141,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
         "lessons": lessons,
         "bank": list(bank.values()),
         "learn": learn,
+        "traits": TRAITS,
         "glossary": extras.GLOSSARY,
         "rules": extras.RULES,
         "aiGotchas": extras.AI_GOTCHAS,

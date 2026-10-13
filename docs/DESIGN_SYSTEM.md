@@ -26,7 +26,8 @@ artifact gets updated.
 1. **One reading column**, at most `--col` (760px) wide. Side things slide in as a drawer.
 2. **Colour means one thing.** `pass` only means passed or done, `fail` only failed or wrong,
    `hint` only a hint or a warning, `accent` the one thing to do next. `--path` (violet) marks
-   the route through the phases; `--track` (teal) marks only the Platform track. Effects use only the `--fx-*` colours.
+   the route through the phases; `--track` (teal) marks only the Platform track; `--mark` (a pale
+   light) is only the trust mark. Effects use only the `--fx-*` colours.
 3. **One primary button per screen**, for the next step.
 4. **Thumb first.** Controls are at least 44px tall on touch; check every change at phone width.
 5. **Readable in every look.** Text 4.5:1 against its background, icons and borders 3:1
@@ -47,7 +48,7 @@ artifact gets updated.
 | Track | `track`, `track-on`, `track-soft`, `track-line`, `track-ink` | The Platform track only: its room, caption and glow |
 | Code | `syn-kw`, `syn-str`, `syn-num`, `syn-com`, `syn-fn`, `syn-bi` | Code colours; never green or red |
 | Machine | `tok-a` to `tok-d` | The row pills |
-| Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
+| Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look`, `pop-bg`, `pop-line`, `pop-shadow`, `pop-blur` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), a pop floating over the page (the trust note), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
 | Type | `display`, `body`, `mono` | Headings, reading, anything the computer said |
 | Motion | `dur-tap`, `dur-step`, `dur-moment`, `dur-big`, `dur-slide`, `ease-out`, `ease-in`, `ease-pop` | How long things move, and how |
 | Effects | `fx-core`, `fx-glow`, `fx-veil`, `fx-red`, `fx-mix` | Only the motion effects |

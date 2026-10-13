@@ -29,6 +29,8 @@ PAIRS = [
     ("syn-kw", "code-bg", 4.5, "keywords in the editor"),
     ("syn-str", "code-bg", 4.5, "strings in the editor"),
     ("syn-com", "code-bg", 4.5, "comments in the editor"),
+    ("mark", "bg", 3.0, "the trust mark on the page"),
+    ("mark", "surface", 3.0, "the trust mark on a card"),
 ]
 
 
