@@ -142,6 +142,34 @@ textarea.code { width: 100%; min-height: 260px; resize: vertical; border: 0; out
 .where ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 .nav { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 18px; }
 @media (prefers-reduced-motion: reduce) { .stage, .meter i { transition: none; } }
+/* Ask in line: a button under each part, a small conversation that opens right there */
+.askbtn { display: none; align-items: center; gap: 6px; justify-self: start; border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 999px; padding: 4px 12px; min-height: 36px; font: 600 13px var(--body); cursor: pointer; }
+body.ask-on .askbtn { display: inline-flex; }
+.askbtn svg { width: 15px; height: 15px; }
+@media (pointer: coarse) { .askbtn { min-height: 44px; } }
+.askbox { display: grid; gap: 10px; background: var(--accent-soft); border-radius: 12px; padding: 12px; min-width: 0; }
+.askbox[hidden] { display: none; }
+.askhead { display: flex; align-items: center; gap: 8px; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent); }
+.askhead .grow { flex: 1; }
+.askquote { margin: 0; font-size: 14px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.turn { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.turn.q { justify-self: end; max-width: 90%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 4px 12px; padding: 8px 12px; }
+.turn.a { background: var(--surface); border-radius: 12px 12px 12px 4px; padding: 10px 12px; }
+.turn.a p { margin: 0 0 8px; } .turn.a p:last-child { margin: 0; }
+.turn.a pre { margin: 0 0 8px; font: 13px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; overflow-wrap: normal; }
+.turn.a ul { margin: 0 0 8px; padding-left: 20px; }
+.turn .meta { font-size: 13px; color: var(--muted); }
+.turn.err { color: var(--fail); background: var(--fail-bg); }
+.askchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.askchip { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 4px 12px; min-height: 36px; font-size: 14px; cursor: pointer; text-align: left; }
+@media (pointer: coarse) { .askchip { min-height: 44px; } }
+.askform { display: flex; gap: 8px; align-items: flex-end; }
+.askform textarea { flex: 1; min-width: 0; resize: vertical; min-height: 44px; font: 15px/1.4 var(--body); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); padding: 10px 12px; }
+.askform textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.askoff { margin: 0; font-size: 13px; color: var(--muted); }
+#selAsk { position: absolute; z-index: 30; display: none; }
+#selAsk.on { display: inline-flex; }
+#selAsk .askbtn { display: inline-flex; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
 /* Guiding AI: the cheat sheet and one situation at a time */
 .sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
 .sheet ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
@@ -181,6 +209,7 @@ textarea.code { width: 100%; min-height: 260px; resize: vertical; border: 0; out
   </aside>
   <main class="lesson" id="lesson" aria-live="polite"></main>
 </div>
+<div id="selAsk"><button class="askbtn" id="selAskBtn" type="button">Ask about this</button></div>
 
 <!-- Lines this course shows from the project. tests/test_course.py fails when one disappears, naming the lesson to update. -->
 <script type="application/json" id="anchors">
@@ -1104,6 +1133,8 @@ const BASE = `
 
 // Answer positions vary per question (a fixed rotation from its text), so "always B" never works
 const spin = (q, n) => { let h = 0; for (const ch of q) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const r = h % n; return Array.from({ length: n }, (_, k) => (k + r) % n); };
+const ASK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+const askSlot = (sec, label) => `<button class="askbtn" data-ask="${sec}" type="button">${ASK_ICON}${label || "Ask about this"}</button><div class="askbox" data-askbox="${sec}" hidden></div>`;
 // ---------- the course ----------
 const PARTS = ["The page", "How it looks", "How it behaves", "Putting it together", "Guiding AI", "Design systems"];
 const L = [
@@ -1467,17 +1498,19 @@ function renderLesson() {
       <div class="eyebrow">Lesson ${i + 1} of ${L.length} · ${esc(PARTS[x.part])}</div>
       <h1>${esc(x.title)}</h1>
     </header>
-    <section class="idea sec">${x.idea.map(p => `<p>${inline(p)}</p>`).join("")}</section>
+    <section class="idea sec" data-sec="idea">${x.idea.map(p => `<p>${inline(p)}</p>`).join("")}</section>
     <div class="keyidea"><b>The idea in one line</b><span>${inline(x.key)}</span></div>
-    <section class="sec">
+    ${askSlot("idea", "Ask about this idea")}
+    <section class="sec" data-sec="code">
       <h2>In Daily Drill</h2>
       <div class="real">
         <div class="file">${esc(x.real.file)} <span>${esc(x.real.sub)}</span></div>
         <pre class="code">${esc(text(x.real.id))}</pre>
         <p class="note">${inline(x.real.note)}</p>
       </div>
+      ${askSlot("code", "Ask about this code")}
     </section>
-    <section class="sec">
+    <section class="sec" data-sec="task">
       <h2>Try it</h2>
       <div class="play" id="play">
         <div class="task">
@@ -1500,16 +1533,19 @@ function renderLesson() {
         </div>
         <div id="verdict"></div>
       </div>
+      ${askSlot("task", "Ask for help with the task")}
     </section>
-    <section class="quiz sec" aria-labelledby="qq">
+    <section class="quiz sec" aria-labelledby="qq" data-sec="quiz">
       <div class="eyebrow">Check</div>
       <p class="q" id="qq">${esc(q.q)}</p>
       <div class="opts">${spin(q.q, q.opts.length).map((k, pos) => `<button class="opt${qa != null && k === q.a ? " right" : qa === k && k !== q.a ? " wrong" : ""}" data-opt="${k}"${qa != null ? " disabled" : ""}><span class="k">${"ABC"[pos]}</span><span>${esc(q.opts[k])}</span></button>`).join("")}</div>
       ${qa != null ? `<p class="why"><b>${qa === q.a ? "Right." : `It's ${"ABC"[spin(q.q, q.opts.length).indexOf(q.a)]}.`}</b> ${esc(q.why)}</p>` : ""}
+      ${askSlot("quiz", "Ask about this question")}
     </section>
     ${i === L.length - 1 ? whereNext() : ""}
     ${navHtml(i)}`;
   setupPlay(x);
+  renderAllAsk();
 }
 
 
@@ -1553,12 +1589,14 @@ function renderJudge(x, i) {
       <div class="eyebrow">Lesson ${i + 1} of ${L.length} · ${esc(PARTS[x.part])}</div>
       <h1>${esc(x.title)}</h1>
     </header>
-    <section class="idea sec">${x.idea.map(p => `<p>${inline(p)}</p>`).join("")}</section>
+    <section class="idea sec" data-sec="idea">${x.idea.map(p => `<p>${inline(p)}</p>`).join("")}</section>
     <div class="keyidea"><b>The idea in one line</b><span>${inline(x.key)}</span></div>
-    <section class="sheet"><div class="eyebrow">Your cheat sheet</div><ol>${x.sheet.map(([h, t]) => `<li><b>${esc(h)}</b><span>${esc(t)}</span></li>`).join("")}</ol></section>
-    <section class="sec"><h2>Practise</h2><div class="judge" aria-live="polite">${body}</div></section>
+    ${askSlot("idea", "Ask about this idea")}
+    <section class="sheet" data-sec="sheet"><div class="eyebrow">Your cheat sheet</div><ol>${x.sheet.map(([h, t]) => `<li><b>${esc(h)}</b><span>${esc(t)}</span></li>`).join("")}</ol>${askSlot("sheet", "Ask about the cheat sheet")}</section>
+    <section class="sec" data-sec="sit"><h2>Practise</h2><div class="judge" aria-live="polite">${body}</div>${J.at < n ? askSlot("sit", "Ask about this situation") : ""}</section>
     ${i === L.length - 1 ? whereNext() : ""}
     ${navHtml(i, J.at < n)}`;
+  renderAllAsk();
 }
 
 // ---------- the playground ----------
@@ -1641,6 +1679,191 @@ document.addEventListener("keydown", e => {
   }
 });
 document.addEventListener("input", e => { if (e.target.id === "code" && pg) { pg.src[pg.tab] = e.target.value; clearTimeout(pg.t); pg.t = setTimeout(saveDraft, 500); } });
+
+// ---------- ask in line: each part of a lesson can open a small conversation with Claude ----------
+// Uses the page's `sample` capability: the viewer's own Claude, asked on a click, never on load.
+let sampleFn = null, askOff = false;
+const ASKKEY = KEY + "-ask";
+let ASK = {};
+try { const raw = store.get(ASKKEY); if (raw) ASK = JSON.parse(raw) || {}; } catch {}
+const saveAsk = () => { try { const keep = {}; for (const k of Object.keys(ASK).slice(-40)) keep[k] = { turns: ASK[k].turns.filter(t => t.content).slice(-12), quote: ASK[k].quote }; store.set(ASKKEY, JSON.stringify(keep)); } catch {} };
+const askKey = sec => L[S.at].id + ":" + sec + (sec === "sit" ? ":" + ((S.judge[L[S.at].id] || {}).at || 0) : "");
+const running = {};
+
+const SUGGEST = {
+  idea: ["Explain this in plainer words", "Give me an everyday example", "Where would I see this in Daily Drill?"],
+  code: ["Walk me through this line by line", "What would break if I changed this?", "Why is it written this way?"],
+  task: ["Give me a clue, not the answer", "What does my code do right now?", "Why didn't my check pass?"],
+  quiz: ["Help me think it through, without the answer", "Why is that the right answer?"],
+  sit: ["What should I look for here?", "What would you ask the AI next?"],
+  sheet: ["Which of these matter most for me?", "Give me an example of each from Daily Drill"],
+  sel: ["Explain this", "Why does this matter?"],
+};
+
+function ctxFor(sec, quote) {
+  const x = L[S.at];
+  const parts = [
+    'Course: "Inside page.html", a beginner course on how the Daily Drill learning app\'s front end is built (one HTML file, no framework, design tokens in tokens.css).',
+    `Lesson ${S.at + 1} of ${L.length}: ${x.title} (part: ${PARTS[x.part]}).`,
+    `The lesson's idea:\n${x.idea.join("\n")}\nIn one line: ${x.key}`,
+  ];
+  if (quote) parts.push(`The learner selected this text on the page:\n"""${quote}"""`);
+  if (sec === "code" && x.real) parts.push(`Real code shown from ${x.real.file} (${x.real.sub}):\n${text(x.real.id)}\nNote: ${x.real.note}`);
+  if (sec === "task" && pg) {
+    parts.push(`The learner's task: ${x.task}`);
+    for (const k of ["html", "css", "js"]) if (pg.src[k] && pg.src[k].trim()) parts.push(`Their current ${k.toUpperCase()}:\n${pg.src[k].slice(0, 6000)}`);
+    const v = $("verdict") && $("verdict").textContent.trim(); if (v) parts.push(`What the checker last said: ${v}`);
+    if (pg.logs && pg.logs.length) parts.push(`What their code logged: ${pg.logs.slice(-10).join(" | ")}`);
+    parts.push(S.done[x.id] ? "They have already passed this task." : "They have NOT passed this task yet: give a clue first, never the whole answer, unless they clearly ask for the answer.");
+  }
+  if (sec === "quiz" && x.quiz) {
+    const q = x.quiz, qa = S.quiz[x.id];
+    parts.push(`Quiz question: ${q.q}\nOptions: ${q.opts.join(" / ")}`);
+    parts.push(qa == null ? "They have NOT answered yet: help them reason, but do not reveal or hint which option is right." : `They answered "${q.opts[qa]}". The right answer is "${q.opts[q.a]}" because: ${q.why}`);
+  }
+  if (sec === "sit" && x.cases) {
+    const J = S.judge[x.id] || { at: 0, picks: {} }, c = x.cases[J.at];
+    if (c) {
+      parts.push(`Practice situation (${c.who}): ${c.sit}${c.code ? "\nCode: " + c.code : ""}\nOptions: ${c.opts.join(" / ")}`);
+      parts.push(J.picks[J.at] == null ? "They have NOT chosen yet: help them reason, but do not reveal which option is right." : `They chose "${c.opts[J.picks[J.at]]}". The right one is "${c.opts[c.a]}" because: ${c.why}`);
+    }
+  }
+  if (sec === "sheet" && x.sheet) parts.push("The lesson's cheat sheet:\n" + x.sheet.map(([h, t]) => `- ${h}: ${t}`).join("\n"));
+  return parts.join("\n\n");
+}
+const RULES = `You are a patient tutor inside a beginner course. The learner is new to coding and finds maths hard.
+Answer in plain everyday words and short sentences. Explain any technical term the first time you use it. Never use Big-O or maths notation.
+Keep answers short: about 40 to 150 words, unless they ask for more. Use examples from the Daily Drill app and this lesson where you can.
+Formatting: plain paragraphs; short lists with "- " if useful; backticks for code names; a fenced code block only for a few lines of code.
+When the context says not to reveal an answer, don't: ask a guiding question or give a clue instead.
+If the question is unrelated to the lesson, answer briefly and kindly, then point back to the lesson.`;
+
+function fmt(t) {
+  const out = [], lines = String(t).split("\n");
+  let code = null, list = null;
+  const flushList = () => { if (list) { out.push(`<ul>${list.map(li => `<li>${inline(li)}</li>`).join("")}</ul>`); list = null; } };
+  for (const ln of lines) {
+    if (/^```/.test(ln.trim())) { if (code) { out.push(`<pre>${esc(code.join("\n"))}</pre>`); code = null; } else { flushList(); code = []; } continue; }
+    if (code) { code.push(ln); continue; }
+    const m = ln.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+    if (m) { (list = list || []).push(m[1]); continue; }
+    flushList();
+    if (ln.trim()) out.push(`<p>${inline(ln.replace(/^#+\s*/, ""))}</p>`);
+  }
+  if (code) out.push(`<pre>${esc(code.join("\n"))}</pre>`);
+  flushList();
+  return out.join("");
+}
+
+function renderAsk(sec) {
+  const box = document.querySelector(`[data-askbox="${sec}"]`); if (!box) return;
+  const k = askKey(sec), th = ASK[k];
+  if (!th || !th.open || askOff) { box.hidden = true; return; }
+  box.hidden = false;
+  const busy = running[k];
+  const turns = th.turns.map(t => t.role === "user"
+    ? `<div class="turn q">${esc(t.content)}</div>`
+    : `<div class="turn a${t.err ? " err" : ""}">${t.content ? fmt(t.content) : '<span class="meta">Thinking…</span>'}</div>`).join("");
+  const chips = th.turns.length ? "" : `<div class="askchips">${(SUGGEST[th.quote ? "sel" : sec] || SUGGEST.idea).map(q => `<button class="askchip" type="button" data-askq="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+  box.innerHTML = `<div class="askhead"><span class="grow">Ask Claude</span>${th.turns.length && !busy ? '<button class="btn quiet small" type="button" data-askclear>Clear</button>' : ""}<button class="btn quiet small" type="button" data-askclose>Close</button></div>
+    ${th.quote ? `<p class="askquote">${esc(th.quote)}</p>` : ""}
+    ${turns}${chips}
+    <form class="askform" data-askform>
+      <textarea rows="1" aria-label="Your question" placeholder="${th.turns.length ? "Ask a follow-up…" : "Ask anything about this…"}"${busy ? " disabled" : ""}></textarea>
+      ${busy ? '<button class="btn" type="button" data-askstop>Stop</button>' : '<button class="btn" type="submit">Ask</button>'}
+    </form>
+    <p class="askoff">Answers come from Claude on your own account. Check anything important against the docs.</p>`;
+}
+function openAsk(sec, quote) {
+  if (askOff) return;
+  const k = askKey(sec);
+  ASK[k] = ASK[k] || { turns: [] };
+  ASK[k].open = true;
+  if (quote) ASK[k].quote = quote.slice(0, 600);
+  renderAsk(sec);
+  const box = document.querySelector(`[data-askbox="${sec}"]`);
+  if (box) { box.querySelector("textarea")?.focus({ preventScroll: true }); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+}
+async function ask(sec, question) {
+  const k = askKey(sec), th = ASK[k];
+  if (!th || running[k] || !question.trim() || !sampleFn) return;
+  th.turns.push({ role: "user", content: question.trim() });
+  const ans = { role: "assistant", content: "" };
+  th.turns.push(ans);
+  const ctl = new AbortController(); running[k] = ctl; renderAsk(sec);
+  const history = th.turns.slice(0, -1).filter(t => !t.err && t.content).slice(-8);
+  while (history.length && history[0].role !== "user") history.shift();
+  const input = [{ role: "user", content: RULES + "\n\nContext for this question:\n\n" + ctxFor(sec, th.quote) }, ...history];
+  try {
+    await sampleFn(input, { cache: false, signal: ctl.signal, onText: ({ text: t }) => { ans.content = t; renderAsk(sec); } });
+  } catch (e) {
+    const code = e && e.code;
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(code)) {
+      askOff = true; document.body.classList.remove("ask-on");
+    } else if (code === "cancelled") { ans.content = e.text ? e.text + "\n\n(Stopped.)" : "Stopped."; }
+    else if (code === "rate_limited") { ans.content = (e.text ? e.text + "\n\n" : "") + "That's a lot of questions at once. Wait a minute, then ask again."; ans.err = !e.text; }
+    else if (code === "session_expired") { ans.content = "Your Claude session has expired. Sign in again, then ask."; ans.err = true; }
+    else if (code === "refused") { ans.content = "Claude didn't answer that one. Try asking it a different way."; ans.err = true; }
+    else { ans.content = (e && e.text ? e.text + "\n\n" : "") + "Something went wrong reaching Claude. Ask again in a moment."; ans.err = !(e && e.text); }
+  } finally {
+    delete running[k]; saveAsk(); renderAsk(sec);
+    const box = document.querySelector(`[data-askbox="${sec}"]`);
+    if (box && !askOff) box.querySelector("textarea")?.focus({ preventScroll: true });
+  }
+}
+function renderAllAsk() { document.querySelectorAll("[data-askbox]").forEach(b => renderAsk(b.dataset.askbox)); }
+
+document.addEventListener("click", e => {
+  const t = e.target;
+  const ab = t.closest("[data-ask]");
+  if (ab) { const sec = ab.dataset.ask, k = askKey(sec); if (ASK[k] && ASK[k].open) { ASK[k].open = false; renderAsk(sec); } else openAsk(sec); return; }
+  const box = t.closest("[data-askbox]"); if (!box) return;
+  const sec = box.dataset.askbox;
+  const q = t.closest("[data-askq]"); if (q) { ask(sec, q.dataset.askq); return; }
+  if (t.closest("[data-askclose]")) { ASK[askKey(sec)].open = false; renderAsk(sec); return; }
+  if (t.closest("[data-askclear]")) { ASK[askKey(sec)] = { turns: [], open: true }; saveAsk(); renderAsk(sec); return; }
+  if (t.closest("[data-askstop]")) { running[askKey(sec)]?.abort(); return; }
+});
+document.addEventListener("submit", e => {
+  const f = e.target.closest && e.target.closest("[data-askform]"); if (!f) return;
+  e.preventDefault();
+  const box = f.closest("[data-askbox]"), ta = f.querySelector("textarea"), v = ta.value;
+  ta.value = ""; ask(box.dataset.askbox, v);
+});
+document.addEventListener("keydown", e => {
+  const ta = e.target.closest && e.target.closest("[data-askform] textarea"); if (!ta) return;
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ta.form.requestSubmit(); }
+});
+
+// Select words in a lesson, and a button offers to ask about them
+let selQuote = "", selSec = "idea";
+function placeSelAsk() {
+  const wrap = $("selAsk"), sel = window.getSelection();
+  if (askOff || !sampleFn || !sel || sel.isCollapsed || !sel.rangeCount) { wrap.classList.remove("on"); return; }
+  const txt = sel.toString().trim(), a = sel.anchorNode, node = a && (a.nodeType === 1 ? a : a.parentElement);
+  if (!txt || txt.length < 2 || !node || !node.closest("#lesson") || node.closest("textarea, [data-askbox], button")) { wrap.classList.remove("on"); return; }
+  const host = node.closest("[data-sec]");
+  selSec = host && document.querySelector(`[data-askbox="${host.dataset.sec}"]`) ? host.dataset.sec : "idea";
+  selQuote = txt;
+  const r = sel.getRangeAt(0).getBoundingClientRect();
+  wrap.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 170)) + "px";
+  wrap.style.top = (window.scrollY + r.bottom + 8) + "px";
+  wrap.classList.add("on");
+}
+document.addEventListener("selectionchange", () => { clearTimeout(placeSelAsk.t); placeSelAsk.t = setTimeout(placeSelAsk, 250); });
+$("selAskBtn").addEventListener("mousedown", e => e.preventDefault());
+$("selAskBtn").addEventListener("click", () => {
+  $("selAsk").classList.remove("on");
+  ASK[askKey(selSec)] = { turns: [], open: true };
+  openAsk(selSec, selQuote);
+  window.getSelection()?.removeAllRanges();
+});
+
+// Turn the feature on only where this page may ask Claude
+(async () => {
+  try { sampleFn = window.claude && typeof window.claude.use === "function" ? await window.claude.use("sample") : null; } catch { sampleFn = null; }
+  if (sampleFn) { document.body.classList.add("ask-on"); renderAllAsk(); }
+})();
 
 // ---------- boot ----------
 renderOutline();
