@@ -75,6 +75,14 @@
   --glow-current: none; --glow-look: none;
   /* pop = something floating over the page (a tooltip-sized card that opens on a tap) */
   --pop-bg: var(--surface); --pop-line: var(--line); --pop-shadow: 0 18px 40px rgba(0, 0, 0, .28); --pop-blur: none;
+
+  /* a third-party tool's screen, redrawn (Spacelift in the walkthrough): its own light look in
+     every theme, because it's a picture of that tool, with the workbook's annotation style */
+  --tool-bg: #ffffff; --tool-fg: #1b1f2a; --tool-muted: #6b7280; --tool-line: #e3e5ea; --tool-sunk: #f4f5f7;
+  --tool-link: #2f6fe4; --tool-ok: #1f8a4c; --tool-change: #b26a00; --tool-planned: #1d5fd1; --tool-log: #f7f8fa;
+  --tool-anno: #b3203c; --tool-anno-dot: #2a0c14; --glow-anno: none;
+  /* the frame says "a picture of the tool, not the app": a teal ring, the platform track's colour */
+  --tool-frame: 0 0 0 1px rgba(11, 122, 112, .35), 0 8px 22px rgba(11, 122, 112, .16);
 }
 
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -88,6 +96,10 @@
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
+  --tool-bg: #1b1d26; --tool-fg: #e6e7ee; --tool-muted: #9a9eae; --tool-line: #2f3240; --tool-sunk: #23252f;
+  --tool-link: #78a6ff; --tool-ok: #2a9d5c; --tool-change: #e0a458; --tool-planned: #3b74e6; --tool-log: #15161d;
+  --tool-anno: #ff5d73; --tool-anno-dot: #ff5d73; --glow-anno: none;
+  --tool-frame: 0 0 0 1px rgba(63, 210, 191, .45), 0 0 22px rgba(63, 210, 191, .2);
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
 :root[data-theme="dark"] {
@@ -101,6 +113,10 @@
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
+  --tool-bg: #1b1d26; --tool-fg: #e6e7ee; --tool-muted: #9a9eae; --tool-line: #2f3240; --tool-sunk: #23252f;
+  --tool-link: #78a6ff; --tool-ok: #2a9d5c; --tool-change: #e0a458; --tool-planned: #3b74e6; --tool-log: #15161d;
+  --tool-anno: #ff5d73; --tool-anno-dot: #ff5d73; --glow-anno: none;
+  --tool-frame: 0 0 0 1px rgba(63, 210, 191, .45), 0 0 22px rgba(63, 210, 191, .2);
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
 
 /* Dusk: an opt-in dark theme, data-theme="dusk" on <html>. Blue-black darks with a
@@ -122,4 +138,8 @@
   --pop-bg: rgba(19, 18, 28, .9); --pop-line: rgba(212, 248, 255, .22); --pop-shadow: 0 0 0 1px rgba(0, 0, 0, .5), 0 18px 40px rgba(0, 0, 0, .6), 0 0 30px rgba(91, 140, 255, .18); --pop-blur: blur(14px) saturate(130%);
   --mark: #d4f8ff; --mark-glow: rgba(140, 190, 255, .6);
   --track: #34d8c4; --track-on: #03201c; --track-soft: #0e2422; --track-line: #1d4743; --track-ink: #8ccfc5;
+  --tool-bg: #15141f; --tool-fg: #e8e7f0; --tool-muted: #9d98ad; --tool-line: #2c2938; --tool-sunk: #1d1b29;
+  --tool-link: #7ea3ff; --tool-ok: #2a9d5c; --tool-change: #e8c47a; --tool-planned: #3e6fe0; --tool-log: #0f0e18;
+  --tool-anno: #ff6b7f; --tool-anno-dot: #ff6b7f; --glow-anno: 0 0 12px rgba(255, 107, 127, .45), 0 0 26px rgba(255, 107, 127, .18);
+  --tool-frame: 0 0 0 1px rgba(52, 216, 196, .5), 0 0 18px rgba(52, 216, 196, .28), 0 0 44px rgba(52, 216, 196, .12);
   --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }

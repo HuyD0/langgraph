@@ -344,3 +344,17 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DATABRICKS_CONFIG_PROFILE` | *(the CLI's default)* | Which Databricks CLI profile `databricks` means |
 | `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` values the `/mcp` endpoint accepts |
 | `DRILL_USER_HEADER` | `x-forwarded-email` | Header a login proxy uses to say who is asking |
+
+## What the platform lessons record
+
+Besides steps, Check answers, finished lessons and solved exercises, the server writes:
+
+- `practised`: a practice set finished, with `right` of `total` first time and `missed`: each
+  question not right first time, the wrong answers picked, whether the clue or the answer was
+  needed, and for Fix the YAML the checks run and the problems seen.
+- `explained`: the Explain gaps finished, with wrong picks, clues and answers used.
+- `focus_set`: what the learner chose to practise (ai, platform or both).
+- `solved` now says how (`mode`: code, sort, practice or pack).
+
+The managers' weekly note gets the practice misses and Explain help, so it can name the actual
+sticking point ("picked CAN_EDIT for the owner group twice").

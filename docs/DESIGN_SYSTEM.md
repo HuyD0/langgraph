@@ -51,6 +51,7 @@ artifact gets updated.
 | Code | `syn-kw`, `syn-str`, `syn-num`, `syn-com`, `syn-fn`, `syn-bi` | Code colours; never green or red |
 | Machine | `tok-a` to `tok-d` | The row pills |
 | Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look`, `pop-bg`, `pop-line`, `pop-shadow`, `pop-blur` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), a pop floating over the page (the trust note), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
+| Tool screens | `tool-bg`, `tool-fg`, `tool-muted`, `tool-line`, `tool-sunk`, `tool-link`, `tool-ok`, `tool-change`, `tool-planned`, `tool-log`, `tool-anno`, `tool-anno-dot`, `glow-anno` | A third-party tool redrawn (Spacelift in the walkthrough): its own colours, light in Light and dark in Dark and Dusk, with the annotation style |
 | Type | `display`, `body`, `mono` | Headings, reading, anything the computer said |
 | Motion | `dur-tap`, `dur-step`, `dur-moment`, `dur-big`, `dur-slide`, `ease-out`, `ease-in`, `ease-pop` | How long things move, and how |
 | Effects | `fx-core`, `fx-glow`, `fx-veil`, `fx-red`, `fx-mix` | Only the motion effects |

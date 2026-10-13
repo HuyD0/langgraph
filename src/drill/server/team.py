@@ -140,8 +140,15 @@ def learner_facts(store: DocStore, owner: str, bank: Any, now: float | None = No
         "current_lesson": title(progress["current"]) if progress.get("current") else None,
         "lessons_done_this_week": [title(e["lesson_id"]) for e in week if e["kind"] == "lesson_done"],
         "check_answers": checks,
-        "exercises_solved": [{"exercise": title(e["lesson_id"]), "hints": e["detail"].get("hints")}
+        "exercises_solved": [dict({"exercise": title(e["lesson_id"]), "hints": e["detail"].get("hints")},
+                                  **({"how": e["detail"]["mode"]} if e["detail"].get("mode") else {}))
                              for e in week if e["kind"] == "solved"],
+        "practising": progress.get("focus") or "ai",
+        # platform practice: the questions they didn't get right first time, and how they got there
+        "practice_missed": [dict(m, lesson=title(e["lesson_id"])) for e in week if e["kind"] == "practised"
+                            for m in (e["detail"].get("missed") or [])][-12:],
+        "explain_help": [{"lesson": title(e["lesson_id"]), **e["detail"]} for e in week
+                         if e["kind"] == "explained" and (e["detail"].get("clues") or e["detail"].get("answers"))][-10:],
         "hints_asked": sum(1 for e in week if e["kind"] == "asked" and e["detail"].get("feature") == "hint"),
         "questions": [q for e in week if e["kind"] == "asked" and (q := e["detail"].get("question"))][-10:],
         "study_list_open": [d.get("text", "")[:160] for d in study if d.get("status") != "got"][:10],
@@ -179,8 +186,11 @@ they asked the app's tutor; the study list holds things they saved to come back 
 Write three short parts, in plain words, under 120 words in all:
 1. What they did this week, starting with how many days they studied.
 2. What is going well. If nothing stands out yet, say it is early days.
-3. Where they may be stuck: wrong Check answers, exercises that needed hints, questions on the
-   same topic more than once, or study list items still open. Name the topics.
+3. Where they may be stuck: wrong Check answers, exercises that needed hints, practice questions
+   they missed (practice_missed: the question, the wrong answers they picked, and whether they
+   needed the clue or the answer), sentences they needed help to finish (explain_help), questions
+   on the same topic more than once, or study list items still open. Name the topics; quote a
+   wrong answer if it shows the misunderstanding.
 Then one sentence the manager could say or do to help.
 
 Only use what the numbers show; do not guess at feelings or effort. No headings, no bullet
