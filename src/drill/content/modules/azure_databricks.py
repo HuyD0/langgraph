@@ -183,7 +183,4 @@ b   # 'sales'""",
 )
 
 planned(MODULE, 'workspace_metastore', 'A workspace, a metastore and a catalog', 'How one Unity Catalog metastore serves several workspaces, and where catalogs live.')
-planned(MODULE, 'compute_choices', 'Clusters, SQL warehouses and serverless', 'Which compute runs notebooks, jobs and SQL, and what each costs while idle.')
-planned(MODULE, 'service_principals', 'People, groups and service principals', 'The identities that run jobs and Spacelift, and why they never use a person\'s login.')
-planned(MODULE, 'external_locations', 'External locations and storage credentials', 'How Unity Catalog reaches your Azure storage account without anyone holding its keys.')
 planned(MODULE, 'private_networking', 'Private networking: VNet injection and Private Link', 'Keeping the workspace and its traffic off the public internet.')

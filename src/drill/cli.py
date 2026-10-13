@@ -281,6 +281,36 @@ def build_page_cmd(
     raise typer.Exit(build_main(["--out", str(out)]))
 
 
+content_app = typer.Typer(add_completion=False, help="The curriculum's content: which lessons are due for a fact check.")
+app.add_typer(content_app, name="content")
+
+
+@content_app.command("stale")
+def content_stale(
+    days: int = typer.Option(180, help="Flag lessons last checked more than this many days ago."),
+    all_: bool = typer.Option(False, "--all", help="Also list the fresh lessons."),
+) -> None:
+    """List lessons whose facts are due for another check, with the pages to check them against."""
+    import datetime
+
+    from drill.content import modules
+    from drill.content.freshness import freshness
+
+    report = freshness(modules.load(), datetime.date.today(), days)
+    for row in report["due"]:
+        what = "content as of" if row.get("as_of") else "checked"
+        console.print(f"[yellow]due[/] {row['id']} ({row['module']}): {what} {row['checked']}, {row['age']} days ago")
+        for title, url in row["sources"]:
+            console.print(f"     {title}: {url}")
+    if all_:
+        for row in report["fresh"]:
+            what = "content as of" if row.get("as_of") else "checked"
+            console.print(f"[dim]fresh[/] {row['id']} ({row['module']}): {what} {row['checked']}")
+    sourced = sum(1 for r in report["fresh"] + report["due"] if r["sources"])
+    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {sourced} checked against sources")
+    raise typer.Exit(1 if report["due"] else 0)
+
+
 review_app = typer.Typer(add_completion=False, help="The use case review prompt: score it on cards with planted gaps before publishing a change.")
 app.add_typer(review_app, name="review")
 

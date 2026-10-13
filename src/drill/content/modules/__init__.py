@@ -15,7 +15,8 @@ from drill.content.model import Module
 PATH = [
     'use-case', 'foundations', 'pricing',                                  # Frame
     'experiments',                                                         # Design
-    'llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security',  # Build and trace
+    'llm-apps', 'rag', 'agents', 'agent-teams', 'databricks-ai',           # Build and trace
+    'production', 'security',
     'evals', 'models',                                                     # Evaluate
     'shipping',                                                            # Ship
     'tracing', 'llmops', 'reliability',                                    # Monitor
@@ -31,7 +32,7 @@ LIFECYCLE = [
      ['experiments']),
     ('Build and trace',
      'Build with LangGraph and Databricks, traced from the first line.',
-     ['llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security']),
+     ['llm-apps', 'rag', 'agents', 'agent-teams', 'databricks-ai', 'production', 'security']),
     ('Evaluate',
      'Score runs on the same eval set; compare quality, cost and latency.',
      ['evals', 'models']),
@@ -49,7 +50,7 @@ LIFECYCLE = [
 TRACKS = [
     ('platform', 'Platform track',
      'Azure Databricks as code: the workspace, Terraform and Spacelift work behind an ML platform.',
-     ['platform-repos', 'azure-databricks', 'terraform', 'platform', 'spacelift']),
+     ['platform-repos', 'azure-databricks', 'workspace', 'access', 'terraform', 'platform', 'spacelift']),
 ]
 
 ORDER = PATH + [mid for _, _, _, ms in TRACKS for mid in ms]

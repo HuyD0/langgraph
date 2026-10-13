@@ -363,3 +363,40 @@ def test_the_frontend_guide_and_screen_gallery_match_the_code():
     for name in shots:
         assert f"({name}.webp)" in gallery, f"docs/screens/README.md doesn't show {name}"
         assert (root / "docs/screens" / f"{name}.webp").exists(), f"run scripts/screenshots.mjs: {name}.webp is missing"
+
+
+def test_fast_changing_lessons_say_when_they_were_checked():
+    # Databricks products are renamed and moved often, so these lessons carry the day their
+    # facts were checked and the pages they were checked against; the page shows both.
+    import datetime
+    from pathlib import Path
+
+    from drill.content.freshness import STALE_DAYS, freshness
+    dated = {"workspace", "access", "databricks-ai"}
+    for mod in modules.load():
+        for lesson in mod.lessons:
+            if mod.id in dated:
+                assert lesson["checked"] and lesson["sources"], f"{lesson['id']} needs checked= and sources="
+    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    assert f"const STALE_DAYS = {STALE_DAYS};" in page, "the page and drill content stale agree on when to warn"
+    later = freshness(modules.load(), datetime.date(2030, 1, 1))
+    total = sum(len(m.lesson_ids) for m in modules.load())
+    assert not later["fresh"] and len(later["due"]) == total, "every lesson comes due as time passes"
+    data = build_data(modules.load())
+    assert data["lessons"]["masked_columns"]["checked"][1][0][1].startswith("https://")
+    assert all(lesson["checked"][0] for lesson in data["lessons"].values()), "every lesson has a date on the page"
+
+
+def test_the_page_script_parses(data, tmp_path):
+    # A clash of names or a stray bracket stops the whole page, and no other test runs its script.
+    import re
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    html = build_page(data)
+    script = max(re.findall(r"<script>(.*?)</script>", html, re.S), key=len)
+    (tmp_path / "page.js").write_text(script)
+    result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr[-800:]
