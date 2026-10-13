@@ -53,14 +53,21 @@ def enabled(store: DocStore) -> bool:
 def lesson_rows(bank: Any) -> list[dict]:
     """One row per lesson in path order, numbered the way the page numbers them ("2.11")."""
     phase_of = {m: (i + 1, p["name"]) for i, p in enumerate(bank.data.get("lifecycle", [])) for m in p["modules"]}
+    # A track's lessons are numbered by module within the track, like the page: P2.3.
+    track_of = {m: (k + 1, t["name"]) for t in bank.data.get("tracks", []) for k, m in enumerate(t["modules"])}
     rows, in_phase = [], {}
     for module in bank.modules:
         number, phase = phase_of.get(module["id"], (0, ""))
-        for lesson_id in module["lessons"]:
-            in_phase[number] = in_phase.get(number, 0) + 1
+        for k, lesson_id in enumerate(module["lessons"]):
             lesson = bank.lessons[lesson_id]
+            if module["id"] in track_of:
+                tnum, phase = track_of[module["id"]]
+                no = f"P{tnum}.{k + 1}"
+            else:
+                in_phase[number] = in_phase.get(number, 0) + 1
+                no = f"{number}.{in_phase[number]}"
             rows.append({
-                "id": lesson_id, "no": f"{number}.{in_phase[number]}", "position": len(rows) + 1,
+                "id": lesson_id, "no": no, "position": len(rows) + 1,
                 "title": lesson["title"], "phase": phase, "module": module["title"],
                 "check_answer": int(lesson["check"][2]),
             })

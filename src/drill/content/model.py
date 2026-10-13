@@ -24,6 +24,7 @@ class Module:
     title: str
     blurb: str
     lessons: list[dict] = field(default_factory=list)
+    planned: list[dict] = field(default_factory=list)  # "coming soon" lessons: a title and one line, no exercise yet
 
     @property
     def lesson_ids(self) -> list[str]:
@@ -32,6 +33,18 @@ class Module:
 
 def module(id: str, title: str, blurb: str) -> Module:
     return Module(id=id, title=title, blurb=blurb)
+
+
+def planned(owner: Module, id: str, title: str, blurb: str) -> dict:
+    """A lesson that is coming but not written yet: shown faded as "Coming soon", never counted.
+
+    When it is written, replace this call with a ``lesson(...)`` of the same id, so nothing
+    that links to it has to change.
+    """
+    assert id not in owner.lesson_ids and id not in [p["id"] for p in owner.planned], f"{id} is already in {owner.id}"
+    entry = {"id": id, "title": title, "blurb": blurb}
+    owner.planned.append(entry)
+    return entry
 
 
 def case(*args: Any, expected: Any, sample: bool = False) -> dict:

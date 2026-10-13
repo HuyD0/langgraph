@@ -38,8 +38,10 @@ def test_modules_are_in_order_and_lessons_are_unique(loaded):
     ids = [lesson_id for m in loaded for lesson_id in m.lesson_ids]
     assert len(ids) == len(set(ids)), "a lesson id appears twice"
     lifecycle_modules = [mid for _, _, ms in modules.LIFECYCLE for mid in ms]
-    assert sorted(lifecycle_modules) == sorted(modules.ORDER), "every module belongs to one lifecycle stage"
-    assert lifecycle_modules == modules.ORDER, "the path teaches the stages in order, so ORDER follows LIFECYCLE"
+    track_modules = [mid for _, _, _, ms in modules.TRACKS for mid in ms]
+    assert lifecycle_modules == modules.PATH, "the path teaches the stages in order, so PATH follows LIFECYCLE"
+    assert modules.ORDER == modules.PATH + track_modules, "every module is in one lifecycle stage or one track, path first"
+    assert len(set(modules.ORDER)) == len(modules.ORDER), "a module is in only one place"
 
 
 def test_the_path_has_six_phases_one_sticker_shape_each():
@@ -279,3 +281,22 @@ def test_every_look_is_readable():
     assert len(rows) == 3 * len(contrast.PAIRS), "every pair checked in every look"
     bad = [f"{look}: {fg} on {bg} is {r:.2f}:1, needs {m}" for look, fg, bg, r, m, _ in rows if r < m]
     assert not bad, bad
+
+
+def test_placeholders_are_coming_soon_not_lessons(loaded, data):
+    """A planned lesson has a title and a line, never an exercise, and never shares an id with a real lesson."""
+    lesson_ids = {lid for m in loaded for lid in m.lesson_ids}
+    for m in loaded:
+        for p in m.planned:
+            assert set(p) == {"id", "title", "blurb"} and p["title"] and p["blurb"], (m.id, p)
+            assert p["id"] not in lesson_ids, f"{p['id']} is both a lesson and a placeholder"
+    shown = {p["id"] for m in data["modules"] for p in m["planned"]}
+    assert shown and not (shown & set(data["lessons"])), "placeholders reach the page, and never as lessons"
+
+
+def test_the_platform_track_has_a_real_lesson_in_every_module(loaded):
+    """Each track module opens with a lesson you can do, so a placeholder is never all there is."""
+    by_id = {m.id: m for m in loaded}
+    for _, _, _, mids in modules.TRACKS:
+        for mid in mids:
+            assert by_id[mid].lessons, f"{mid} has only placeholders"

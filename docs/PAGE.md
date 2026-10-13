@@ -65,6 +65,27 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
+## Tracks
+
+A track is a set of modules that sits beside the six phases, with its own order. The first is the
+**Platform track** (Azure Databricks, Terraform foundations, Databricks as code, Spacelift), set in
+`TRACKS` in `src/drill/content/modules/__init__.py`.
+
+- **On the path page** it has its own box under the phases, one scene per module. Its lessons are
+  numbered P1.1 (module 1, lesson 1) and all share one sticker shape, the octagon, so they never
+  look like a phase. "Start the track" or "Continue" opens its next lesson.
+- **Its own colour, teal** (`--track` tokens in `tokens.css`, for every theme). Inside the track box,
+  teal stands in for the blue "current" colour: the rim, Next, and the title shape's glow (a teal
+  copy of the aura). It is printed on blueprint paper and opens with the same rings and spark as a
+  phase room the first time it scrolls into view. Teal is the one colour family nothing else
+  uses, so the track never reads as the violet AI path.
+- **Coming soon**: after each module's real lessons come its planned ones (`planned(...)` in the
+  module file), faded with a dotted outline. They can't be opened; the tutor lists them as not
+  built yet.
+- **It never moves the path**: the Today card, "Next" on the phases and the AI path's order ignore
+  track lessons. Inside a lesson the track shows one caption line instead of the phase rail, and
+  finishing it points to the track's next lesson.
+
 ## Your own use case
 
 The graded exercises in Use case and fit, and Total cost of ownership, use the HR assistant, so
