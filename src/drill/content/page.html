@@ -939,13 +939,13 @@ button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
 .sl-chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--tool-line); }
 .sl-chrome span { margin-left: 8px; font: 600 11.5px var(--body); color: var(--tool-muted); background: var(--tool-bg); border: 1px solid var(--tool-line); border-radius: 6px; padding: 1px 10px; }
 .sl-body { padding: 12px; display: grid; gap: 8px; min-width: 0; }
-.sl-view .sl-n { background: var(--tool-anno-dot); color: #fff; box-shadow: none; font-family: var(--body); }
+.sl-view .sl-n { background: var(--tool-anno-dot); color: var(--tool-anno-ink); box-shadow: none; font-family: var(--body); }
 .sl-view .sl-mark, .sl-view .sl-hitbox { outline: 2px solid var(--tool-anno); box-shadow: none; }
-.sl-now .sl-n, .sl-more .sl-n { background: var(--tool-anno-dot); color: #fff; box-shadow: none; border: 1.5px solid var(--tool-anno); }
+.sl-now .sl-n, .sl-more .sl-n { background: var(--tool-anno-dot); color: var(--tool-anno-ink); box-shadow: none; border: 1.5px solid var(--tool-anno); }
 .sl-count { color: var(--muted); }
 .sl-view .sl-h1 b { font: 700 18px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: var(--tool-fg); }
-.sl-view .sl-pill { background: var(--tool-ok); color: #fff; font: 700 11px/1.6 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: .02em; padding: 1px 9px; border-radius: 999px; }
-.sl-view .sl-pill.sl-planned { background: var(--tool-planned); color: #fff; font-size: 10px; border-radius: 6px; }
+.sl-view .sl-pill { background: var(--tool-ok); color: var(--tool-on); font: 700 11px/1.6 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: .02em; padding: 1px 9px; border-radius: 999px; }
+.sl-view .sl-pill.sl-planned { background: var(--tool-planned); color: var(--tool-on); font-size: 10px; border-radius: 6px; }
 .sl-view .sl-meta, .sl-view .sl-bar, .sl-view .sl-muted { color: var(--tool-muted); }
 .sl-view .sl-link, .sl-view .sl-id { color: var(--tool-link); }
 .sl-view .sl-tab { color: var(--tool-muted); } .sl-view .sl-tab.on { background: var(--tool-sunk); color: var(--tool-fg); }
@@ -957,9 +957,9 @@ button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
 .sl-view .sl-code { color: var(--tool-fg); } .sl-view .sl-add { color: var(--tool-ok); }
 .sl-view .sl-warn { color: var(--tool-change); }
 .sl-view .sl-line.sl-hit { background: color-mix(in srgb, var(--tool-anno) 12%, transparent); }
-.sl-view .sl-dot { background: var(--tool-ok); color: #fff; }
+.sl-view .sl-dot { background: var(--tool-ok); color: var(--tool-on); }
 .sl-view .sl-flow li { background: var(--tool-sunk); border-color: var(--tool-line); color: var(--tool-fg); } .sl-view .sl-flow li > span:last-child { color: var(--tool-muted); }
-.sl-view .sl-step { color: #fff; background: var(--tool-anno-dot); border-radius: 6px; width: 22px; text-align: center; }
+.sl-view .sl-step { color: var(--tool-anno-ink); background: var(--tool-anno-dot); border-radius: 6px; width: 22px; text-align: center; }
 .sl-view .sl-note { color: var(--tool-anno); }
 .sl-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 @media (min-width: 620px) { .sl-cols { grid-template-columns: 170px minmax(0, 1fr); } }
