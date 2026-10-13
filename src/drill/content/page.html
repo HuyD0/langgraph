@@ -309,6 +309,15 @@ body.pk-on #home { padding-bottom: 96px; }
 .fc-done { text-align: center; justify-items: center; }
 .fc-done b { font: 800 26px var(--display); }
 /* first visit */
+.focuspick { gap: 10px; }
+.focusask { border: 1px solid color-mix(in srgb, var(--track) 45%, var(--line)); } .focusask b { color: var(--track); } .focusask .seg { justify-self: start; margin-top: 4px; }
+.fcard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; text-align: left; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; cursor: pointer; min-height: 64px; }
+.fcard svg { grid-row: span 2; width: 36px; height: 36px; overflow: visible; }
+.fcard b { font: 800 17px var(--display); } .fcard span { color: var(--muted); font-size: 14px; }
+.fcard .sh { stroke-width: 2; fill: none; } .fcard .sh.ai { stroke: var(--path); } .fcard .sh.pl { stroke: var(--track); fill: var(--track-soft); }
+@media (hover: hover) { .fcard:hover { border-color: var(--accent); } }
+.next.track { border-color: color-mix(in srgb, var(--track) 55%, var(--line)); }
+.next.track .eyebrow { color: var(--track); }
 .howto { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
 .howto li::marker { font: 600 13px var(--mono); color: var(--accent); }
 /* no model running */
@@ -1470,6 +1479,7 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <div class="drawer-head"><h2>Notebook</h2><button class="btn quiet" id="nbClose">Close</button></div>
   <div class="prefs"><div class="themepick"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
   <div class="themepick"><span id="motionLabel">Motion</span><div class="seg" role="group" aria-labelledby="motionLabel"><button data-motion-pick="on" aria-pressed="true">On</button><button data-motion-pick="off" aria-pressed="false">Off</button></div></div></div>
+  <div class="themepick"><span id="focusLabel">Practise</span><div class="seg" role="group" aria-labelledby="focusLabel"><button data-focus-pick="ai" aria-pressed="true">AI</button><button data-focus-pick="platform" aria-pressed="false">Platform</button><button data-focus-pick="both" aria-pressed="false">Both</button></div></div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-nb="gloss" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
     <button class="tab" role="tab" data-nb="speed" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>How fast is it?</button>
@@ -1841,7 +1851,7 @@ function trackPage(tr) {
   const go = nid ? `<button class="btn" data-open="${nid}">${d || started(nid) ? "Continue: " + lessonNo(nid) + " " + esc(LESSONS[nid].title) : "Start the track"}</button>` : `<span class="meta">You've finished every lesson in this track so far.</span>`;
   // The same room as a phase: its own paper (blueprint), the inner rim, and a title shape that glows while you're in it.
   const st = d === ids.length ? "done" : ids.some(id => started(id) && !isDoneL(id)) ? "now" : "";
-  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}"><div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">Side track · any time</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
+  return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}"><div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
 }
 const trackOpened = new Set();
 function trackFx() {
@@ -1985,32 +1995,54 @@ function aiOffNote() {
   if (!aiOff || hidden) return "";
   return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload.</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
 }
+// What you practise: the AI path, the platform track, or both taking turns. Asked once on the first
+// visit, changeable in the Notebook; saved with progress so every device agrees. Today follows it.
+const FOCUS_NAMES = { ai: "AI engineering", platform: "The platform", both: "Both" };
+function todayLesson() {
+  const ai = nextLesson(), pl = TRACKS.length ? trackNext(TRACKS[0]) : null, f = progress.focus;
+  if (f === "platform") return pl || ai;
+  if (f === "both") return progress.lastKind === "ai" ? (pl || ai) : (ai || pl);
+  return ai || pl;
+}
+function setFocus(f) {
+  progress.focus = f; saveProgress();
+  document.querySelectorAll("[data-focus-pick]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.focusPick === f)));
+  if (!$("home").hidden) renderHome();
+}
 function renderHome() {
   renderTop();
-  const nid = nextLesson();
+  document.querySelectorAll("[data-focus-pick]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.focusPick === (progress.focus || "ai"))));
+  const nid = nextLesson(), tid = todayLesson(), plat = !!(tid && trackOf[tid]);
   if (!openMods) openMods = new Set([nid ? phaseOf[modOf[nid].id].key : PHASES[0].key]);
   const doneToday = progress.days.includes(today()), wd = WEEKDAYS[new Date().getDay()];
   const fresh = !progress.days.length && !Object.keys(progress.solved).length && !ALL_LESSONS.some(started);
   let hello, card;
-  if (nid && fresh) {  // first visit: say how it works, once; it goes away as soon as a lesson starts
-    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">AI engineering on Databricks, one short lesson a day. Nothing to install: your code runs right in this page.</p>`;
+  const about = progress.focus === "platform" ? "Azure Databricks as code: YAML, the runbook, Terraform and Spacelift" : progress.focus === "both" ? "AI engineering and the platform behind it, on Databricks" : "AI engineering on Databricks";
+  if (tid && fresh && !progress.focus) {  // first visit: what do you want to practise? One question, three big answers
+    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">One short lesson a day. Nothing to install: everything runs right in this page.</p>`;
+    card = `<section class="next focuspick"><h2>What do you want to practise?</h2><span class="meta">You can change this any time in the Notebook.</span>
+      <button class="fcard" data-focus-pick="ai"><svg viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh ai" r="9.5"/></svg><b>AI engineering</b><span>Use cases, RAG, agents, evals and shipping them on Databricks.</span></button>
+      <button class="fcard" data-focus-pick="platform"><svg viewBox="-12 -12 24 24" aria-hidden="true">${phShape(TRACK_SHAPE, 9).replace('class="sh"', 'class="sh pl"')}</svg><b>The platform</b><span>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift.</span></button>
+      <button class="fcard" data-focus-pick="both"><svg viewBox="-12 -12 24 24" aria-hidden="true"><circle class="sh ai" r="6" cx="-3"/><g transform="translate(4 0) scale(.62)">${phShape(TRACK_SHAPE, 9).replace('class="sh"', 'class="sh pl"')}</g></svg><b>Both</b><span>One of each, taking turns.</span></button></section>`;
+  } else if (tid && fresh) {  // first visit, choice made: say how it works, once; it goes away as soon as a lesson starts
+    hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">${esc(about)}, one short lesson a day. Nothing to install: everything runs right in this page.</p>`;
     card = `<section class="next"><span class="eyebrow">How it works</span>
-      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with one question, build it in Python, then explain it in a sentence.</li><li><b>Stuck?</b> Hints come before answers, and the Notebook keeps what you save and brings it back for review.</li></ol>
-      <button class="btn primary" data-open="${nid}">Start the first lesson</button></section>`;
-  } else if (nid) {
-    const m = modOf[nid], ph = phaseOf[m.id], i = m.lessons.indexOf(nid), s = lp(nid), go = started(nid);
+      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with one question, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> Hints come before answers, and the Notebook keeps what you save and brings it back for review.</li></ol>
+      <button class="btn primary" data-open="${tid}">Start the first lesson</button></section>`;
+  } else if (tid) {
+    const m = modOf[tid], ph = phaseOf[m.id], i = m.lessons.indexOf(tid), s = lp(tid), go = started(tid);
     const leftInPhase = ph.modules.flatMap(mid => MOD[mid].lessons).filter(id => !isDoneL(id)).length;
     const why = [leftInPhase === 1 ? `Last one left in ${ph.name}.` : `${ph.name}, ${m.title}.`,
       go ? `You stopped at the ${STEPS[s.step]} step.` : `Lesson ${i + 1} of ${m.lessons.length}.`].join(" ");
     const label = doneToday ? (go ? "Continue" : "Start the next one") : (go ? "Finish today’s lesson" : "Start today’s lesson");
     hello = doneToday
       ? `<h1>${wd}. Done for today.</h1><p class="meta">Come back tomorrow, or keep going if you have time.</p>`
-      : `<h1>${wd}. One lesson.</h1><p class="meta">AI engineering on Databricks, a little every day.</p>`;
-    card = `<section class="next"><span class="eyebrow">${doneToday ? "Up next" : "Today"} · ${go ? "step " + (s.step + 1) + " of 4" : "about 20 min"}</span>
-      <h2>${esc(LESSONS[nid].title)}</h2>
+      : `<h1>${wd}. One lesson.</h1><p class="meta">${esc(about)}, a little every day.</p>`;
+    card = `<section class="next${plat ? " track" : ""}"><span class="eyebrow">${doneToday ? "Up next" : "Today"}${plat ? " · Platform" : ""} · ${go ? "step " + (s.step + 1) + " of 4" : "about 20 min"}</span>
+      <h2>${esc(LESSONS[tid].title)}</h2>
       <span class="meta">${esc(why)}</span>
       ${go ? `<div class="steps" aria-hidden="true">${STEPS.map((_, k) => `<i class="${k < s.step ? "done" : k === s.step ? "now" : ""}"></i>`).join("")}</div>` : ""}
-      <button class="btn primary" data-open="${nid}">${label}</button></section>`;
+      <button class="btn primary" data-open="${tid}">${label}</button></section>`;
   } else {
     hello = `<h1>${wd}.</h1><p class="meta">AI engineering on Databricks.</p>`;
     card = `<section class="next"><span class="eyebrow">Path complete</span><h2>You've finished every lesson.</h2></section>`;
@@ -2033,11 +2065,13 @@ function renderHome() {
   $("home").innerHTML = `<div class="hello">${hello}</div>
     ${card}
     ${aiOffNote()}
+    ${!progress.focus && !fresh && TRACKS.length ? `<div class="callout focusask"><b>New: a platform track</b><p>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift. What do you want to practise?</p><div class="seg" role="group" aria-label="What you practise"><button data-focus-pick="ai">AI</button><button data-focus-pick="platform">Platform</button><button data-focus-pick="both">Both</button></div></div>` : ""}
+    ${progress.focus === "platform" ? TRACKS.map(trackPage).join("") : ""}
 
     <div class="pathhead"><h2>Your path</h2>${nidx !== today_ ? `<button class="linkbtn" data-phase="${today_}">Back to today</button>` : `<span>Tap a phase</span>`}</div>
     <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(false, null, nidx)}${book}</div>
     ${upnext}
-    ${TRACKS.map(trackPage).join("")}
+    ${progress.focus === "platform" ? "" : TRACKS.map(trackPage).join("")}
     <div class="sets"><h3>Practice sets</h3></div>
     <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
@@ -2587,6 +2621,7 @@ function goNext() {
   if (cur.step < 3) { setStep(cur.step + 1); return; }
   if (!canFinish() && gapsOf(cur.id).length) { const box = $("paneText").querySelector(".cloze"); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); CLZ.note = "Fill the gaps to finish the lesson."; clozeRender(); return; }
   if (!canFinish()) { const box = $("sayIn"); box.focus(); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); $("sayNote").textContent = "Write one sentence here to finish: what you did and why."; $("sayNote").classList.add("nudge"); return; }
+  progress.lastKind = trackOf[cur.id] ? "platform" : "ai";
   const s = lp(cur.id), id = cur.id, fresh = !s.done; s.done = true; s.step = 3; markDay();
   const o = orderFor(id), after = o[o.indexOf(id) + 1];
   progress.current = after || null;
@@ -4466,6 +4501,7 @@ document.addEventListener("click", async e => {
   const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
   if (t.closest("[data-gotcha-retry]")) { delete progress.gotchas[cur.id]; saveProgress(); renderGotcha(); return; }
   if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
+  const fp = t.closest("[data-focus-pick]"); if (fp) { setFocus(fp.dataset.focusPick); return; }
   const cz = t.closest("[data-clz]"); if (cz) { clozePick(cz.dataset.clz); return; }
   if (t.closest("[data-clz-help]")) { CLZ.help = Math.min(2, CLZ.help + 1); CLZ.note = ""; clozeRender(); return; }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) {
@@ -4863,6 +4899,7 @@ goHome();
             solved: Object.assign({}, r.solved || {}, progress.solved),
             days: [...new Set([...(r.days || []), ...progress.days])].sort(),
             lessons, gotchas: Object.assign({}, r.gotchas || {}, progress.gotchas), current: progress.current || r.current || null,
+            focus: progress.focus || r.focus || null, lastKind: progress.lastKind || r.lastKind || null,
             // your own use case and numbers: the newer copy wins
             mine: ((progress.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (progress.mine || r.mine || {}) : r.mine,
           };

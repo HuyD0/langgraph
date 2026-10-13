@@ -112,6 +112,18 @@ Any part with `"n": 2` gets a numbered badge and a hint-coloured outline; step 2
 annotated screenshots in the platform team's workbook, and tips checked against Spacelift's docs
 (proposed and tracked runs, run promotion, plan policies, contexts, Spacelift-managed state).
 
+## What you practise: AI, the platform, or both
+
+A first visit asks one question, "What do you want to practise?", with three big answers: AI
+engineering, The platform, or Both. Learners who were here before get a one-time prompt under
+their Today card instead. The answer is `progress.focus` (saved with progress, so every device
+agrees) and can be changed any time in the Notebook ("Practise: AI · Platform · Both").
+
+- **Today follows it** (`todayLesson()`): the AI path's next lesson, the platform track's, or with
+  Both, taking turns (after an AI lesson, a platform one; `progress.lastKind`).
+- **Home follows it:** with The platform, the Platform track sits at the top ("Your track") and the
+  Today card is teal; the welcome text and "How it works" describe the platform work.
+
 ## Tracks
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the
