@@ -5,6 +5,10 @@ with no framework and no build tools beyond `uv run drill build-page`. That keep
 as a single claude.ai artifact and servable by `drill-server` unchanged. This page explains how
 it is organised so you can find things, change them and leave them as tidy as you found them.
 
+New to front-end code? Start with the course, [course/inside-page-html.html](course/inside-page-html.html)
+(published at https://claude.ai/artifact/TYnPBikbTkiCJoGLdkQ9Ws): 16 short lessons built on this page,
+with live exercises, ending with how to guide an AI through changes here.
+
 Read with: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) (tokens, rules, looks), [PAGE.md](PAGE.md)
 (what each feature does, for the learner) and [SERVER.md](SERVER.md) (the `/api/*` it talks to).
 
