@@ -469,14 +469,16 @@ class ModelRouter:
         handle = self.observer.start(messages, tier, context)
 
         key = self._cache_key(messages, tier, json_mode)
-        cached = self.store.get(key) if self.store else None
+        # The store may be Lakebase across the network: run its calls on a worker thread so
+        # one slow save doesn't hold up every other request this server is answering.
+        cached = await asyncio.to_thread(self.store.get, key) if self.store else None
         if cached and cached.get("text"):
             self.observer.first_word(handle)
             self.observer.finish(handle, text=cached["text"], route=cached.get("route", ""), model=cached.get("model", ""), cached=True)
             yield Chunk(cached["text"], done=True, route=cached.get("route", ""), model=cached.get("model", ""), cached=True)
             return
 
-        routes = self.order(tier)
+        routes = await asyncio.to_thread(self.order, tier)
         if not routes:
             self.observer.finish(handle, error="no model available")
             raise NoModelAvailable("No model is running. Start Ollama, or set a hosted model in .env.")
@@ -526,9 +528,11 @@ class ModelRouter:
                 errors.append(f"{route.model}: empty answer")
                 self.observer.attempt_failed(handle, route.name, route.model, "empty answer", began_ns)
                 continue
-            tokens = self._record(route, messages, text, usage)
+            tokens = await asyncio.to_thread(self._record, route, messages, text, usage)
             if self.store:
-                self.store.set(key, {"text": text, "route": route.name, "model": route.model, "at": time.time()})
+                await asyncio.to_thread(
+                    self.store.set, key, {"text": text, "route": route.name, "model": route.model, "at": time.time()}
+                )
             settings = {"temperature": getattr(route.chat, "temperature", None), "json_mode": json_mode}
             self.observer.finish(
                 handle, text=text, route=route.name, model=route.model, thinking=thinking, tokens=tokens, attempts=errors,

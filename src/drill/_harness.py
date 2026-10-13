@@ -11,6 +11,10 @@ and shadowing something. Everything the child needs arrives in the JSON payload.
 Results come back on stdout after a sentinel line, so anything the submission
 prints - and you *should* print things while debugging - cannot corrupt the
 report the parent parses.
+
+The parent sends stdout to a file, not into its own memory, and the payload's
+``max_output_bytes`` caps how big any file this process writes can get. A ``print`` in an
+endless loop then fails with "File too large" instead of filling the disk or the server.
 """
 
 import copy
@@ -47,6 +51,7 @@ def safe(value):
 
 def main() -> None:
     payload = json.loads(open(sys.argv[1], encoding="utf-8").read())
+    limit_output(payload.get("max_output_bytes"))
     source = payload["source"]
     function_name = payload["function_name"]
     unordered = payload.get("unordered", False)
@@ -98,6 +103,18 @@ def main() -> None:
         report["cases"].append(entry)
 
     emit(report)
+
+
+def limit_output(max_bytes) -> None:
+    """Cap the size of any file this process writes, stdout's file included (POSIX only)."""
+    if not max_bytes:
+        return
+    try:
+        import resource
+
+        resource.setrlimit(resource.RLIMIT_FSIZE, (max_bytes, max_bytes))
+    except (ImportError, ValueError, OSError):
+        pass  # Windows, or a limit we may not set: run without the cap
 
 
 def emit(report) -> None:

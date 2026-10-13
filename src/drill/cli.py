@@ -252,10 +252,18 @@ def start_cmd(
             console.print(Panel(Markdown(payload["feedback"]), title=title,
                                 border_style="green" if payload["solved"] else "yellow"))
 
-    outcome = run_session(
-        build_drill_graph(), deps, edit_submission,
-        problem_id=problem, topic=topic, on_event=on_event,
-    )
+    try:
+        outcome = run_session(
+            build_drill_graph(), deps, edit_submission,
+            problem_id=problem, topic=topic, on_event=on_event,
+        )
+    except (ConnectionError, TimeoutError) as exc:
+        _model_unreachable(exc)
+    except Exception as exc:
+        # The model SDKs raise their own error types for "couldn't connect" and "timed out".
+        if "connect" in type(exc).__name__.lower() or "timeout" in type(exc).__name__.lower():
+            _model_unreachable(exc)
+        raise
 
     verb = "Solved" if outcome.solved else "Not solved"
     console.print(f"\n{verb} [bold]{outcome.problem.title}[/bold] in {outcome.attempts} "
@@ -566,6 +574,12 @@ TARGET = typer.Option("personal", "--target", "-t", help="Which workspace, from 
 PROFILE = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target).")
 
 
+def _model_unreachable(exc: Exception) -> None:
+    console.print(f"[red]The tutor's model didn't answer ({type(exc).__name__}: {exc}).[/red]\n"
+                  "Is Ollama running (`ollama serve`), or is your hosted model set in .env?")
+    raise typer.Exit(1) from None
+
+
 def _cloud(step):
     """Run one cloud step, turning its errors into a red line instead of a traceback."""
     from drill.cloud import CloudError
@@ -809,7 +823,7 @@ def cloud_requirements_cmd() -> None:
     """Rewrite requirements.txt from uv.lock. Run it after changing dependencies, before deploying."""
     from drill import cloud
 
-    path = cloud.requirements()
+    path = _cloud(cloud.requirements)
     console.print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
 
 if __name__ == "__main__":
