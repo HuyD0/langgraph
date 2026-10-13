@@ -46,17 +46,21 @@ WITH p AS (
 ), study AS (
   SELECT owner, COUNT_IF(coalesce(get_json_object(body, '$.status'), 'open') <> 'got') AS study_open
   FROM {t('docs')} WHERE path LIKE 'study/%' AND {LEARNER} GROUP BY owner
+), focus AS (
+  SELECT owner, max_by(get_json_object(detail, '$.focus'), at) AS practising FROM e WHERE kind = 'focus_set' GROUP BY owner
 ), path AS (SELECT COUNT(*) AS n FROM {t('lessons')})
 SELECT p.owner AS learner,
   size(map_filter(p.doc.lessons, (k, v) -> v.done)) AS lessons_done, path.n AS lessons_in_path,
   cur.no || ' ' || cur.title AS current_lesson, act.last_active, coalesce(act.days_active_7d, 0) AS days_active_7d,
   ROUND(100 * checks.right_rate) AS check_right_pct, coalesce(act.exercises_solved, 0) AS exercises_solved, act.avg_hints,
-  coalesce(act.questions_7d, 0) AS questions_7d, coalesce(study.study_open, 0) AS study_open
+  coalesce(act.questions_7d, 0) AS questions_7d, coalesce(study.study_open, 0) AS study_open,
+  coalesce(focus.practising, 'ai') AS practising
 FROM p CROSS JOIN path
 LEFT JOIN {t('lessons')} cur ON cur.id = p.doc.current
 LEFT JOIN act ON act.owner = p.owner
 LEFT JOIN checks ON checks.owner = p.owner
-LEFT JOIN study ON study.owner = p.owner""",
+LEFT JOIN study ON study.owner = p.owner
+LEFT JOIN focus ON focus.owner = p.owner""",
         "ds_weekly": f"""
 SELECT e.owner AS learner, date_trunc('WEEK', timestamp_seconds(e.at)) AS week,
   COUNT_IF(e.kind = 'lesson_done') AS lessons_done, COUNT_IF(e.kind = 'solved') AS exercises_solved,
@@ -73,6 +77,18 @@ SELECT e.owner AS learner, timestamp_seconds(e.at) AS at, coalesce(l.no || ' ' |
   CAST(get_json_object(e.detail, '$.hints') AS INT) AS hints
 FROM {t('events')} e LEFT JOIN {t('lessons')} l ON l.id = e.lesson_id
 WHERE e.kind = 'solved' AND e.{LEARNER} AND CAST(get_json_object(e.detail, '$.hints') AS INT) >= 2""",
+        # platform practice: each question not right first time, what they picked, and the help they needed
+        "ds_practice_missed": f"""
+WITH m AS (
+  SELECT owner, at, lesson_id, explode(from_json(get_json_object(detail, '$.missed'),
+    'array<struct<q:string,wrong:array<string>,clue:boolean,answer:boolean,checks:int,problems:array<string>>>')) AS x
+  FROM {t('events')} WHERE kind = 'practised' AND {LEARNER}
+)
+SELECT m.owner AS learner, timestamp_seconds(m.at) AS at, coalesce(l.no || ' ' || l.title, m.lesson_id) AS lesson,
+  m.x.q AS question, array_join(m.x.wrong, ', ') AS picked,
+  CASE WHEN m.x.answer THEN 'the answer' WHEN m.x.clue THEN 'a clue' ELSE '' END AS needed,
+  array_join(m.x.problems, '; ') AS yaml_problems
+FROM m LEFT JOIN {t('lessons')} l ON l.id = m.lesson_id""",
         "ds_study": f"""
 SELECT owner AS learner, get_json_object(body, '$.text') AS item, get_json_object(body, '$.source') AS source,
   coalesce(get_json_object(body, '$.status'), 'open') AS status, timestamp_seconds(updated_at) AS updated
@@ -162,7 +178,8 @@ def dashboard(catalog: str) -> dict:
             ("current_lesson", "string", "on lesson"), ("last_active", "datetime", "last active"),
             ("days_active_7d", "integer", "days active (7d)"), ("check_right_pct", "integer", "Check right %"),
             ("exercises_solved", "integer", "exercises solved"), ("avg_hints", "float", "hints per exercise"),
-            ("questions_7d", "integer", "questions (7d)"), ("study_open", "integer", "study list open")],
+            ("questions_7d", "integer", "questions (7d)"), ("study_open", "integer", "study list open"),
+            ("practising", "string", "practising")],
             "Learners", "Where each person is on the path", 0, 2, 6, 5),
         _bar("b_weekly", "ds_weekly", "week", "lessons_done", "Lessons finished per week", "A steady few a week beats a burst", 0, 7, 3),
         _bar("b_days", "ds_weekly", "week", "days_active", "Days active per week", "Daily practice is the habit to build", 3, 7, 3),
@@ -170,7 +187,7 @@ def dashboard(catalog: str) -> dict:
     stuck = {"name": "stuck", "displayName": "Where they're stuck", "pageType": "PAGE_TYPE_CANVAS", "layout": [
         _text("t_stuck", ["### Where they may be stuck\n",
                           "Wrong first answers, exercises that took two or more hints, and what they saved to come back to."], 0, 0, 4),
-        _learner_filter("f_stuck", ["ds_wrong_checks", "ds_hints", "ds_study"], 4, 0),
+        _learner_filter("f_stuck", ["ds_wrong_checks", "ds_hints", "ds_study", "ds_practice_missed"], 4, 0),
         _table("tb_wrong", "ds_wrong_checks", [("learner", "string", "learner"), ("at", "datetime", "when"), ("lesson", "string", "lesson"),
                                                ("phase", "string", "phase"), ("picked", "string", "picked"), ("right_answer", "string", "right answer")],
                "Check answers they got wrong", "A topic that keeps showing up here is worth a conversation", 0, 2, 6, 5),
@@ -179,6 +196,10 @@ def dashboard(catalog: str) -> dict:
         _table("tb_study", "ds_study", [("learner", "string", "learner"), ("item", "string", "saved"), ("source", "string", "from"),
                                         ("status", "string", "status"), ("updated", "datetime", "updated")],
                "Study list", "Things they saved to understand better; 'got' means they marked it learned", 3, 7, 3, 5),
+        _table("tb_practice", "ds_practice_missed", [("learner", "string", "learner"), ("at", "datetime", "when"), ("lesson", "string", "lesson"),
+                                                     ("question", "string", "question"), ("picked", "string", "picked"), ("needed", "string", "needed"),
+                                                     ("yaml_problems", "string", "YAML problems")],
+               "Platform practice questions they missed", "The wrong answer they picked usually shows the misunderstanding", 0, 12, 6, 6),
     ]}
     questions = {"name": "questions", "displayName": "Questions", "pageType": "PAGE_TYPE_CANVAS", "layout": [
         _text("t_q", ["### What they asked the tutor\n", "Every question typed or tapped in \"Ask about this lesson\", newest first."], 0, 0, 4),

@@ -358,3 +358,9 @@ Besides steps, Check answers, finished lessons and solved exercises, the server 
 
 The managers' weekly note gets the practice misses and Explain help, so it can name the actual
 sticking point ("picked CAN_EDIT for the owner group twice").
+
+The managers' dashboard shows them too: a "practising" column (ai, platform or both) on the team
+table, and "Platform practice questions they missed" (the question, what they picked, the help
+they needed, any YAML problems) on "Where they're stuck". After deploying a new version, update
+the dashboard with `uv run drill cloud manager-view --target work`. Nothing in Lakebase needs
+migrating: new event kinds are new rows in the same `events` table.
