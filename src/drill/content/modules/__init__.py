@@ -49,7 +49,7 @@ LIFECYCLE = [
 TRACKS = [
     ('platform', 'Platform track',
      'Azure Databricks as code: the workspace, Terraform and Spacelift work behind an ML platform.',
-     ['azure-databricks', 'terraform', 'platform', 'spacelift']),
+     ['platform-repos', 'azure-databricks', 'terraform', 'platform', 'spacelift']),
 ]
 
 ORDER = PATH + [mid for _, _, _, ms in TRACKS for mid in ms]

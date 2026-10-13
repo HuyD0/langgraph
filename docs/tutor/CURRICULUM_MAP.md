@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 132 lessons in 20 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 132 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 136 lessons in 21 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 136 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -1873,13 +1873,63 @@ Alert on how fast you're using up the budget (the burn rate), not on every error
 - **Exercise:** Error Budgets, writing `burn_rate`. Approach: Turn two counts into a rate, then divide it by the rate the target allows.
 - **Explain:** the pattern is Actual errors over allowed errors. Why this pattern: The big idea: alert on how fast you use up the error budget, not on every error. Your code first returns 0.0 if there were no requests, so it never divides by 0. Then it works out the share that failed, `errors / total`, and the share allowed, `1 - slo`. Dividing the first by the second gives the burn rate, rounded to 1 place. With 72 failures in 1000 and a 99.5% target, that is 0.072 divided by 0.005, or 14.4 times too fast. What to say: "I alert on how fast we use up the error budget, not on every error. A burn rate of 1 means on budget, and 10 means ten times too fast."
 
+## How the platform repos fit together (stage: Platform track)
+
+Follow one request from YAML through the runbook and Spacelift to Azure Databricks.
+
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): Which repo do I change?; Upgrade a module through DEV, UAT and PROD; Proposed, applied, failed: reading a Spacelift run; What to send the platform owner.
+
+### 119. What happened to my YAML field? (`field_status`)
+
+On a platform team, product teams don't write Terraform. They ask for things in YAML in the config repo: `env.yml` lists the teams in an environment, each team's `team.yml` names its owner group and points to resource files like `clusters.yml`. Pydantic checks each file against a contract: a field it doesn't know, or a value of the wrong type, is rejected.
+The runbook is Terraform code that reads that YAML. It loads the files, fills in defaults for anything left out, transforms some values (a cluster's name gets the team's short code in front), and passes the result to modules, which call the Databricks and Azure providers. Spacelift runs all of it as a plan someone reviews before anything is applied.
+So a field goes through five points: the YAML, the check, the runbook, the module, the provider. Valid YAML is not enough. If the runbook never passes a field on, it is dropped: it looks fine in the YAML and does nothing.
+Reviewers describe what happened to a field with one word: SUPPORTED (it reaches the provider as written), DEFAULTED (it was left out and the runbook supplied a value), TRANSFORMED (changed on the way), DROPPED (accepted, never used), INVALID (the check rejects it) or UNKNOWN (you haven't traced it all the way yet).
+
+- **Check:** A team adds `autoscale_note: "keep it small"` to `clusters.yml`. Pydantic accepts it as free text, but the runbook never reads it. What happened to the field? Right answer: DROPPED: it is accepted but never passed on. Why: Passing the check only means the YAML is well formed. The field has to reach the provider to do anything, and this one stops at the runbook, so it is dropped. A dropped field is a blocker: nobody should rely on it.
+- **Exercise:** Name What Happened, writing `field_status`. Approach: Ask the questions in a fixed order and return at the first one that fits.
+- **Explain:** the pattern is Follow the field all the way down. Why this pattern: The big idea: a field in YAML only matters if it reaches the provider. You follow it through five points: the YAML, the check, the runbook, the module and the provider, and give it one word for what happened. Your code asks the questions in a set order. Rejected by the check: INVALID. Any step not traced yet: UNKNOWN. Not passed on, or never reaching the provider: DROPPED. Left out and filled in by the runbook: DEFAULTED. Changed on the way: TRANSFORMED. Otherwise: SUPPORTED. It is like posting a parcel: it only counts if it is delivered, not if the label was filled in correctly. What to say: "Valid YAML isn't enough. I follow a field from the YAML through the runbook to the provider. If it never gets there, it's dropped, even though the YAML looks fine."
+
+### 120. Where did that access come from? (`folder_access`)
+
+A team's `team.yml` can name an `owner_group` and list `folder_grants`: other groups and the permission each should have on the team's workspace folder, like `CAN_EDIT`. A group is a named set of people or identities from Microsoft Entra ID.
+The runbook doesn't copy that list as it is. It adds access you didn't type: the owner group gets `CAN_MANAGE`, and every workspace user gets `CAN_READ` by default. Then it joins those with the explicit grants and hands the whole list to the module.
+Databricks folder permissions go up in steps: `CAN_READ`, then `CAN_RUN`, then `CAN_EDIT`, then `CAN_MANAGE`. A group listed twice ends up with the highest of its permissions, not both.
+So when a plan shows `CAN_MANAGE` for a group that only asked for `CAN_EDIT`, Terraform isn't making it up. Look at what the runbook adds before you call it a mistake, and review who ends up with what, not the order of the list.
+
+- **Check:** `team.yml` names `grp-sales-dev-owners` as owner and also grants that same group `CAN_EDIT`. What does the group end up with on the folder? Right answer: CAN_MANAGE, the higher of the two. Why: The runbook gives the owner CAN_MANAGE, and the explicit grant adds CAN_EDIT. A group listed twice keeps the higher permission, so the owners have CAN_MANAGE.
+- **Exercise:** Who Gets What on the Folder, writing `folder_permissions`. Approach: Start from the defaults, then add each grant, keeping the higher permission for a group seen before.
+- **Explain:** the pattern is Add what the runbook adds, keep the highest. Why this pattern: The big idea: the permissions in a plan are the YAML plus whatever the runbook adds. Your code starts with every workspace user at CAN_READ. If there is an owner group, it gets CAN_MANAGE. Then each explicit grant is added, and for a group that is already there it keeps whichever permission ranks higher. The ranks are a list in order, so the higher one is the one with the bigger position. It is like a guest list where the host is always on it, everyone gets in the lobby, and someone on the list twice gets the better of their two passes. What to say: "The plan can show access nobody typed. The runbook gives the owner group CAN_MANAGE and every user CAN_READ. If a group shows up twice, it keeps the higher permission."
+
+### 121. What will Terraform build from clusters.yml? (`cluster_from_yaml`)
+
+A team asks for a cluster in its own `clusters.yml`, and `team.yml` points to that file. The first file is only a pointer; the second describes the cluster: a name, the team's short code, its size and a cluster policy, the set of rules that limits what a cluster may be.
+The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in lower case: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses Personal Compute. It also gives the team's owner group permission to manage the cluster.
+Some things are not allowed in YAML. A raw `policy_id` is rejected: teams name the policy, and the module looks up its id. Size is either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling, never a mix and never neither.
+Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the default policy) or a mistake, and you should be able to say which.
+
+- **Check:** A cluster in `clusters.yml` has `num_workers: 2` and also `max_workers: 6`. What happens? Right answer: It is rejected: use num_workers, or both min and max. Why: Size is one or the other: a fixed num_workers, or min_workers and max_workers together. A mix is invalid, and it is better caught in review than in a failed plan.
+- **Exercise:** Predict the Cluster, writing `build_cluster`. Approach: Collect every problem first; only if there are none, build the result with the defaults filled in.
+- **Explain:** the pattern is Check it, then build what the runbook would. Why this pattern: The big idea: before you trust a plan, predict it from the YAML. Your code first collects problems: a raw policy_id, or a size that is not exactly num_workers or both min and max. Any problem means you return the list of problems. Otherwise it builds the cluster the way the runbook does: code and name joined and lower-cased, the named policy or Personal Compute, the size as given, and the owner group as manager. It is like checking an order form before the kitchen cooks it: send back the impossible ones, then make the rest the house way. What to say: "Before I read the plan, I work out what the runbook will build. I reject a raw policy_id and a size that mixes the two styles. Then I add the team's code to the name and use Personal Compute if no policy is named."
+
+### 122. Why can't the plan find the service principal? (`lookup_failed`)
+
+A service principal (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word data in the error path means Terraform tried to look up something that should already exist; it was never going to create it.
+An SP has to pass several stages, in order, before a lookup works. It must exist in Microsoft Entra ID. It must be declared in the team's `service_principals.yml`. The Foundation stack must have been applied, which registers it in the Databricks account. Then the Service stack assigns it to the workspace.
+Each stage is separate: one being done says nothing about the next. A name in YAML is not proof the SP exists. A green proposed run in Spacelift is a preview, not an apply. And an SP named only in a connector's permissions, not in `service_principals.yml`, is never picked up by Foundation.
+So you check the stages in order and stop at the first one that isn't true. Before anything else, make sure you are reading the config at the same commit the failed run used: the repo may have changed since.
+
+- **Check:** The SP is declared in `service_principals.yml` and the Foundation stack shows a proposed run that finished. The Service plan still cannot find it. What do you check next? Right answer: Whether Foundation was actually applied. Why: A finished proposed run is only a preview: it does not register anything. Ask for evidence that Foundation was applied. Rerunning or recreating identities changes things without knowing the cause.
+- **Exercise:** Find the First Missing Stage, writing `next_check`. Approach: Walk the stages in the order they must happen and return at the first gap.
+- **Explain:** the pattern is Check the stages in order, stop at the first gap. Why this pattern: The big idea: a lookup fails when an earlier stage is not done, so you check the stages in the order they must happen and stop at the first one that is not true. Your code goes through the facts in a fixed order: the same commit as the run, the SP in Entra ID, declared in service_principals.yml, Foundation applied, assigned by Service. It returns the name of the first missing step. If all are true, what is left is the name or scope. It is like a parcel that never arrived: check it was sent, then that it reached the depot, then the van, in that order. What to say: "A failed lookup means an earlier stage isn't done. I check them in order: Entra ID, declared in the YAML, Foundation applied, then assigned to the workspace. I stop at the first one that's missing."
+
 ## Azure Databricks (stage: Platform track)
 
 The workspace, Unity Catalog and who can see what, before any of it goes into code.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace, a metastore and a catalog; Clusters, SQL warehouses and serverless; People, groups and service principals; External locations and storage credentials; Private networking: VNet injection and Private Link.
 
-### 119. Who can read this table? (`can_read_table`)
+### 123. Who can read this table? (`can_read_table`)
 
 In Azure Databricks every table lives at a three-part address: catalog.schema.table, like `main.sales.orders`. Unity Catalog is the part of Databricks that keeps those addresses and decides who may use them. A catalog is the top folder, a schema is a folder inside it, and a table sits in a schema.
 To read a table you need a key at every level on the way down: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.
@@ -1896,7 +1946,7 @@ Read a plan, keep state safe, and change infrastructure in the right order.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): Variables, outputs and modules; Bringing existing resources under Terraform; Renaming without destroying; Pinning provider versions.
 
-### 120. What a Terraform plan really says (`summarize_plan`)
+### 124. What a Terraform plan really says (`summarize_plan`)
 
 `terraform plan` compares your code with state (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy.
 `terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.
@@ -1921,7 +1971,7 @@ Coming soon, not built yet (say so if asked; don't teach them as if they exist):
   # the 1 to destroy is the workspace itself: stop and fix it
   ```
 
-### 121. Spotting dangerous replacements (`find_replacements`)
+### 125. Spotting dangerous replacements (`find_replacements`)
 
 Some attributes can't change in place. Changing them forces replacement: Terraform destroys the resource and creates a new one.
 On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan's mark for a replacement) before approving.
@@ -1952,7 +2002,7 @@ On an Azure Databricks workspace, that means a new URL and losing everything ins
   }
   ```
 
-### 122. State and locking (`lock_info`)
+### 126. State and locking (`lock_info`)
 
 State is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a lock first.
 A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead.
@@ -1982,7 +2032,7 @@ A crashed run can leave the lock behind. Before `terraform force-unlock`, check 
   # and commit .terraform.lock.hcl
   ```
 
-### 123. count vs for_each (`count_shift`)
+### 127. count vs for_each (`count_shift`)
 
 `count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).
 Remove the first item from a `count` list and every later item shifts position. Terraform sees changed names and replaces them, and for storage containers that deletes their data. Use `for_each`, and `moved` blocks to migrate.
@@ -2010,7 +2060,7 @@ Remove the first item from a `count` list and every later item shifts position. 
   }
   ```
 
-### 124. Dependencies and stacks (`apply_order`)
+### 128. Dependencies and stacks (`apply_order`)
 
 Terraform builds a dependency graph (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.
 A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks (a stack is one set of Terraform code with its own state, planned and applied on its own), with a stack dependency between them.
@@ -2041,7 +2091,7 @@ The workspace, catalogs and network of an ML platform, kept in Terraform.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace in Terraform; Cluster policies as code; The metastore and catalogs as code; Service principals and their permissions.
 
-### 125. Tagging for cost and policy (`missing_tags`)
+### 129. Tagging for cost and policy (`missing_tags`)
 
 Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
 The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
@@ -2050,7 +2100,7 @@ The azurerm provider (Terraform's plugin for Azure) has no provider-wide default
 - **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
 - **Explain:** the pattern is List the gaps per resource. Why this pattern: The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can't be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn't empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out. What to say: "Tags decide who pays for what. I skip resources that can't be tagged, then list the required tags each one is missing."
 
-### 126. Unity Catalog grants (`grants_to_revoke`)
+### 130. Unity Catalog grants (`grants_to_revoke`)
 
 Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
 Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
@@ -2077,7 +2127,7 @@ Grants added by hand in Catalog Explorer disappear at the next apply. Put them i
   }
   ```
 
-### 127. Networking for Databricks (`overlapping_subnets`)
+### 131. Networking for Databricks (`overlapping_subnets`)
 
 VNet injection puts a Databricks workspace's clusters in your own virtual network, using a host and a container subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.
 A subnet's addresses are written as a CIDR block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.
@@ -2112,7 +2162,7 @@ Each node (one machine in a cluster) uses an address in each subnet, and Azure r
   }
   ```
 
-### 128. Who gets capacity when it's scarce (`allocate_capacity`)
+### 132. Who gets capacity when it's scarce (`allocate_capacity`)
 
 When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide who comes first before it happens, by putting each app in a tier: a group with its own rule, served most important first.
 Once its traffic is steady, a critical app moves to provisioned throughput: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on spillover: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.
@@ -2142,7 +2192,7 @@ Critical apps come first and get what they ask for. Each graduated app gets what
   }
   ```
 
-### 129. A shared space with fair limits (`check_limits`)
+### 133. A shared space with fair limits (`check_limits`)
 
 In a shared experiment space (the sandbox), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A per-user rate limit stops that: each person gets a slice, well below the whole.
 The Databricks AI gateway (now called Unity Gateway) sets limits on a service (the whole space), a default for each user, and custom ones for a group. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.
@@ -2190,7 +2240,7 @@ Stacks, runs and the policies that guard every change.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A run's life: queued, planning, unconfirmed, applying; Drift detection; Contexts and secrets; Testing a policy before it blocks.
 
-### 130. What runs after a change? (`runs_after`)
+### 134. What runs after a change? (`runs_after`)
 
 In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
 Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
@@ -2201,7 +2251,7 @@ Stacks that don't depend on the change, directly or through another stack, don't
 - **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
 - **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When one stack changes, every stack that uses it has to run again. I list those, then run them in an order where each one waits for the stacks it needs."
 
-### 131. Policies as guardrails (`guard_destroys`)
+### 135. Policies as guardrails (`guard_destroys`)
 
 A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
 Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
@@ -2228,7 +2278,7 @@ Start with the resources you can't rebuild: workspaces, storage accounts, metast
   }
   ```
 
-### 132. Policy as code (`plan_policy`)
+### 136. Policy as code (`plan_policy`)
 
 Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
 Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.

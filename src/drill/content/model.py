@@ -27,14 +27,17 @@ class Module:
     blurb: str
     lessons: list[dict] = field(default_factory=list)
     planned: list[dict] = field(default_factory=list)  # "coming soon" lessons: a title and one line, no exercise yet
+    setting: str = ""  # the world every tutor example and question is set in, like the platform team's repos
 
     @property
     def lesson_ids(self) -> list[str]:
         return [lesson["id"] for lesson in self.lessons]
 
 
-def module(id: str, title: str, blurb: str) -> Module:
-    return Module(id=id, title=title, blurb=blurb)
+def module(id: str, title: str, blurb: str, *, setting: str = "") -> Module:
+    """A chapter. ``setting`` describes the world its examples live in; the AI tutor gets it with
+    every question, so a "harder one like this" stays in that world instead of inventing another."""
+    return Module(id=id, title=title, blurb=blurb, setting=setting)
 
 
 def planned(owner: Module, id: str, title: str, blurb: str) -> dict:

@@ -1,8 +1,9 @@
 """Spacelift: stacks, runs and the policies that guard every change."""
 
+from drill.content.modules.platform_world import PLATFORM_SETTING
 from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
 
-MODULE = module('spacelift', 'Spacelift', 'Stacks, runs and the policies that guard every change.')
+MODULE = module('spacelift', 'Spacelift', 'Stacks, runs and the policies that guard every change.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'runs_after',

@@ -1,8 +1,9 @@
 """Azure Databricks: the workspace, Unity Catalog and who can see what, before any of it goes into Terraform."""
 
+from drill.content.modules.platform_world import PLATFORM_SETTING
 from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
 
-MODULE = module('azure-databricks', 'Azure Databricks', 'The workspace, Unity Catalog and who can see what, before any of it goes into code.')
+MODULE = module('azure-databricks', 'Azure Databricks', 'The workspace, Unity Catalog and who can see what, before any of it goes into code.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'can_read_table',

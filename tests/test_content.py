@@ -328,3 +328,15 @@ def test_every_explain_gap_is_answerable_and_the_plain_sentence_reads_right():
             assert len({g["answer"], *g["wrong"]}) == 3, (lid, g)
             assert g["answer"].lower() not in g["clue"].lower(), f"{lid}: the clue gives away {g['answer']!r}"
     assert with_gaps == len(build_data()["lessons"]), "every lesson's Explain sentence has gaps"
+
+
+def test_every_platform_module_tells_the_tutor_its_setting():
+    """Without a setting, "give me a harder one" drifts to generic web-app examples."""
+    from drill.content.build import PAGE_TEMPLATE
+
+    data = build_data()
+    track = next(t for t in data["tracks"] if t["id"] == "platform")
+    by_id = {m["id"]: m for m in data["modules"]}
+    for mid in track["modules"]:
+        assert "Azure Databricks" in by_id[mid]["setting"], mid
+    assert "modOf[cur.id].setting" in PAGE_TEMPLATE.read_text(), "the tutor's lesson context must include the setting"
