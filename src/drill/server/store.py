@@ -51,6 +51,7 @@ from typing import Any, Callable
 from sqlalchemy import (
     Column,
     Float,
+    Integer,
     MetaData,
     String,
     Table,
@@ -93,6 +94,27 @@ events = Table(
     Column("kind", String(40), nullable=False),  # step, checked, lesson_done, solved, asked, hint_used...
     Column("lesson_id", String(120), nullable=False, default=""),
     Column("detail", Text, nullable=False, default="{}"),  # anything else, as JSON text
+)
+# The manager's view (drill.server.team): a dashboard reads these beside docs and events.
+lessons = Table(
+    "lessons",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("no", String(12), nullable=False),  # "2.11": phase 2, its 11th lesson, as the page numbers it
+    Column("position", Integer, nullable=False),  # 1 to N along the whole path
+    Column("title", String(300), nullable=False),
+    Column("phase", String(80), nullable=False),
+    Column("module", String(160), nullable=False),
+    Column("check_answer", Integer, nullable=False),  # the right option of the lesson's Check, from 0
+)
+summaries = Table(
+    "summaries",
+    metadata,
+    Column("owner", String(320), primary_key=True),
+    Column("week", String(10), primary_key=True),  # ISO week, "2026-W42"
+    Column("made_at", Float, nullable=False),
+    Column("summary", Text, nullable=False),  # a few plain sentences for the manager
+    Column("facts", Text, nullable=False, default="{}"),  # the numbers it was written from, as JSON text
 )
 
 

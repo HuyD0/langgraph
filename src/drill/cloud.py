@@ -325,3 +325,49 @@ def start(target: str, profile: str | None) -> dict:
 def stop(target: str, profile: str | None) -> dict:
     cli("apps", "stop", app_name(target), "-o", "json", profile=profile)
     return status(target, profile)
+
+
+# -- the manager's view ------------------------------------------------------------
+
+DEFAULT_CATALOG = "daily_drill_lakebase"
+
+
+def ensure_catalog(target: str, profile: str | None, catalog: str) -> str:
+    """A read-only Unity Catalog catalog over the app's Lakebase database, so a SQL warehouse
+    (and the dashboard) can read it. Found if it is there, else registered."""
+    found = cli("postgres", "get-catalog", f"catalogs/{catalog}", "-o", "json", profile=profile, check=False)
+    if isinstance(found, dict) and found.get("catalog_id"):
+        return catalog
+    values = read_overrides(target)
+    if "lakebase_database" not in values:
+        raise CloudError(f"Run `uv run drill cloud setup --target {target}` first.")
+    database = cli("postgres", "get-database", values["lakebase_database"], "-o", "json", profile=profile)
+    spec = {"spec": {"branch": values["lakebase_branch"], "postgres_database": database["status"]["postgres_database"]}}
+    cli("postgres", "create-catalog", catalog, "--json", json.dumps(spec), "-o", "json", profile=profile)
+    return catalog
+
+
+def manager_view(target: str, profile: str | None, warehouse: str | None = None, catalog: str | None = None) -> dict:
+    """Find or create the catalog and the learners dashboard, then publish it with your
+    credentials (so it reads every learner's rows). Running it again updates both."""
+    from drill import manager_view as view
+
+    values = read_overrides(target)
+    warehouse = warehouse or values.get("warehouse_id")
+    if not warehouse:
+        raise CloudError("Pass --warehouse <id>: a small serverless SQL warehouse (Lakebase catalogs need serverless).")
+    catalog = ensure_catalog(target, profile, catalog or values.get("lakebase_catalog") or DEFAULT_CATALOG)
+    body = {"display_name": view.DASHBOARD_NAME, "warehouse_id": warehouse, "serialized_dashboard": view.serialized(catalog)}
+    dashboard_id = values.get("manager_dashboard_id")
+    existing = cli("lakeview", "get", dashboard_id, "-o", "json", profile=profile, check=False) if dashboard_id else None
+    if isinstance(existing, dict) and existing.get("lifecycle_state") != "TRASHED":
+        cli("lakeview", "update", dashboard_id, "--json", json.dumps(body), "-o", "json", profile=profile)
+    else:
+        body["parent_path"] = f"/Users/{me(profile)}"
+        dashboard_id = cli("lakeview", "create", "--json", json.dumps(body), "-o", "json", profile=profile)["dashboard_id"]
+    cli("lakeview", "publish", dashboard_id, "--embed-credentials", "--warehouse-id", warehouse, "-o", "json", profile=profile)
+    write_overrides(target, {"lakebase_catalog": catalog, "warehouse_id": warehouse, "manager_dashboard_id": dashboard_id})
+    host = cli("auth", "describe", "-o", "json", profile=profile, check=False)
+    host = (host or {}).get("details", {}).get("host", "") if isinstance(host, dict) else ""
+    return {"catalog": catalog, "dashboard_id": dashboard_id,
+            "url": f"{host.rstrip('/')}/dashboardsv3/{dashboard_id}/published" if host else dashboard_id}
