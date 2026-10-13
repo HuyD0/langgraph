@@ -55,7 +55,7 @@ class Bank:
         learn = self.learn.get(lesson_id, {})
         module = self.module_of(lesson_id) or {}
         question, options, answer, why = lesson["check"]
-        pattern, text, say, classic = lesson["angle"]
+        pattern, text, say, classic = lesson["angle"][:4]
         cases = problem.get("cases", [])
         sample = next((c for c in cases if c.get("sample")), cases[0] if cases else None)
         card = {

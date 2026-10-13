@@ -34,7 +34,7 @@ failed a gate, so shelved:
     angle=angle(
         pattern='Gates first, then the map',
         text='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. The order matters. The gates come first, because a valuable idea that does harm unchecked is still shelved. Then two separate questions, value and doable, pick one of four corners: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It is like sorting post into four trays by two questions, after binning the junk. In Python the same steps are four empty lists, one if for the gate, and if, elif and else for the corners.',
-        say='"I start from a business problem and write the use case in one line. I rule it out if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked. Then I place it by value and how doable it is, and pilot the valuable, doable ones first."',
+        say='"I start from a business [[problem|model|tool::Start from what hurts today, not from the technology.]] and write the use case in one line. I rule it out if a [[rule|person|database::If plain if-this-then-that logic does the job, you don\'t need AI.]] could do it, there is nothing to test on, or a wrong answer would do harm unchecked. Then I place it by value and how doable it is, and pilot the valuable, [[doable|exciting|cheap::The map asks two things: is it worth a lot, and could you do it now?]] ones first."',
         classic=None,
     ),
     exercise=exercise(
@@ -226,7 +226,7 @@ lesson(MODULE, 'use_case_card',
     angle=angle(
         pattern='Check every field, then the number',
         text='The big idea: a use case card answers ten questions on one page, and a blank line, or a success line with no number, is an open question to settle before building. Your code goes through the ten field names in order. For each it reads the card\'s value, or an empty string if the field is missing, and strips spaces. A blank value is a gap. For the success field it also checks the text has at least one digit, because success you cannot count is a gap too. It returns the gaps in the same order. It is like checking a form before you post it: every box filled, and the amount written as a number.',
-        say='"I write the use case on one page: who and the task, the decision the AI makes and the action that follows, today\'s cost, success as a number, the cost of a wrong answer, the test data, how feedback improves it, and the owner. Any blank is a question to answer first."',
+        say='"I write the use case on [[one page|a slide deck|a ticket::Short enough that every field must be filled in.]]: who and the task, the decision the AI makes and the action that follows, today\'s cost, success as a [[number|feeling|demo::It has to be something a pilot can measure.]], the cost of a wrong answer, the test data, how feedback improves it, and the owner. Any blank is a [[question|failure|detail::An empty field isn\'t wrong; it\'s something you don\'t know yet.]] to answer first."',
         classic=None,
     ),
     exercise=exercise(
@@ -361,7 +361,7 @@ lesson(MODULE, 'split_requirements',
     angle=angle(
         pattern='Sort by a list of how-well words',
         text='The big idea: functional requirements say what a system does and non-functional ones say how well, and a first sort can look for words about speed, uptime, cost, security and scale. Your code makes two empty lists. For each requirement it lowercases the text and checks whether any word from the how-well list appears in it. If one does, the row goes in the non-functional list, otherwise in the functional list. It returns both lists, in their original order. It is like sorting post into bills and letters by looking for a price on the envelope; a person still checks the pile.',
-        say='"I split requirements into what it must do and how well it must do it, and I give every how-well requirement a number the pilot can test, like under 5 seconds for 95 in 100 answers."',
+        say='"I split requirements into what it must [[do|cost|look like::One half is the job itself.]] and how [[well|often|soon::The other half is quality: speed, accuracy, uptime.]] it must do it, and I give every how-well requirement a [[number|name|owner::"Fast" can\'t be tested; "under 5 seconds" can.]] the pilot can test, like under 5 seconds for 95 in 100 answers."',
         classic=None,
     ),
     exercise=exercise(
@@ -514,7 +514,7 @@ Rules:
     angle=angle(
         pattern='Card, then pillars, then rules',
         text='The big idea: an AI-drafted review is only as good as its prompt, so the prompt gives the whole use case card, asks each pillar\'s questions, and sets rules that stop the model guessing or deciding. Your code builds the prompt as a list of lines. It starts with the task and the card, writing "not written" for any blank field so the gap is visible. Then for each pillar it adds a heading and its questions, and at the end the rules. It joins the lines with new lines. It is like a briefing pack for a reviewer: the facts, the questions to answer, and how to answer them.',
-        say='"I draft a well-architected review by giving a model the whole use case card, each pillar\'s questions and strict rules: back findings with the card, mark unknowns as questions, rate the risk, and leave the decision to a person. Then I check every claim myself."',
+        say='"I draft a well-architected review by giving a model the whole use case card, each pillar\'s questions and strict rules: back findings with the card, mark unknowns as [[questions|passes|failures::When the card doesn\'t say, the model must not guess.]], rate the risk, and leave the decision to a [[person|model|script::The model drafts; it doesn\'t decide.]]. Then I check every claim [[myself|with another model|later::The draft is a starting point, not a verdict.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -682,7 +682,7 @@ pilot = {"quality": 0.78, "seconds": 4,
     angle=angle(
         pattern='Must-pass first, then count the misses',
         text='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their bars, noting each one missed and whether the miss is close: quality within 0.05 of the bar, speed or cost no more than 1.2 times the bar. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
-        say='"I agree the bars before the pilot: quality, must-pass cases, speed and cost. Any must-pass failure is a stop, all bars met is a go, and one near miss means fix and test again."',
+        say='"I agree the bars [[before|after|during::Setting the bar after you see results lets you move it.]] the pilot: quality, must-pass cases, speed and cost. Any must-pass failure is a [[stop|go|near miss::Must-pass means exactly that.]], all bars met is a go, and one near miss means fix and [[test again|ship it|stop::A near miss gets another try, not a pass.]]."',
         classic=None,
     ),
     exercise=exercise(

@@ -48,7 +48,7 @@ def _page_lesson(entry: dict) -> dict:
         "learn": list(entry["learn"]),
         "example": [ex["caption"], ex["code"]],
         "check": [q["question"], list(q["options"]), q["answer"], q["why"]],
-        "angle": [a["pattern"], a["text"], a["say"], a["classic"]],
+        "angle": [a["pattern"], a["text"], a["say"], a["classic"], a.get("cloze") or []],
     }
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]

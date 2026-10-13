@@ -65,6 +65,20 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
+## Explain: finish the sentence
+
+The Explain step ends with the lesson's own sentence (the `say` in `angle(...)`) with two or
+three gaps. You fill them one at a time by tapping one of three words. A wrong pick says so in
+one line and is crossed out; **Give me a clue** shows a hint, then **Tell me the answer** marks the
+right word. The lesson can finish once the sentence is whole. "Want to say it your way?" keeps
+the free box as an optional extra.
+
+A gap is written inside `say` as `[[answer|wrong|wrong::clue]]`. `model.cloze` turns it into the
+plain sentence (used by the tutor, the MCP tools and the done screen) and the pieces the page
+shows. Every gap needs two wrong words and a clue that doesn't contain the answer
+(`tests/test_content.py` checks). A lesson whose `say` has no gaps keeps the old "say it in your
+own words" box, so lessons can be converted a module at a time.
+
 ## Tracks
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the

@@ -31,7 +31,7 @@ GRANT SELECT ON TABLE main.sales.orders TO analysts;
     angle=angle(
         pattern='A key at every level on the way down',
         text='The big idea: Unity Catalog checks three keys before you read a table: USE CATALOG on its catalog, USE SCHEMA on its schema, SELECT on the table. A key given higher up counts below it, and ALL PRIVILEGES counts as any key. Your code first collects every key the person holds, through any of their groups, as a set of (privilege, where) pairs. Then it asks three questions: USE CATALOG on the catalog; USE SCHEMA on the catalog or the schema; SELECT on the catalog, the schema or the table. Only three yeses mean yes. It is like walking into an office: the front door, then the floor, then the room, and a master key opens all three.',
-        say='"To read a table you need USE CATALOG, USE SCHEMA and SELECT, each on its own level or anywhere above it, given to you or to one of your groups. I check all three; one missing means no."',
+        say='"To read a table you need USE CATALOG, USE SCHEMA and SELECT, each on its own level or anywhere [[above|below|beside::A grant on a catalog covers the schemas and tables inside it.]] it, given to you or to one of your [[groups|tables|catalogs::Permissions can be given to a person or to something people belong to.]]. I check all three; one missing means [[no|yes|maybe::You need a key at every level on the way down.]]."',
         classic=None,
     ),
     stack=stack('Terraform: the same keys as code', """resource "databricks_grants" "sales" {
