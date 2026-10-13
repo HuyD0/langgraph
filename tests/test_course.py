@@ -27,8 +27,15 @@ def _anchors() -> list[dict]:
 
 def test_every_line_the_course_shows_still_exists():
     missing = []
+    try:  # page.html with its parts filled in (src/drill/content/page/), like the build reads it
+        from drill.content.build import page_source
+    except ImportError:  # before the page was split into parts
+        page_source = None
     for a in _anchors():
-        text = (ROOT / a["file"]).read_text(encoding="utf-8")
+        if a["file"] == "src/drill/content/page.html" and page_source:
+            text = page_source()
+        else:
+            text = (ROOT / a["file"]).read_text(encoding="utf-8")
         if a["find"] not in text:
             missing.append(f'lesson "{a["lesson"]}": {a["file"]} no longer has {a["find"]!r}')
     assert not missing, "The course shows code that changed. Update the lesson's snippet and anchor, then republish:\n" + "\n".join(missing)
