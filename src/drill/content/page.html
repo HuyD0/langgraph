@@ -807,6 +807,15 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .titlecard .n.full { color: var(--pass); }
 .chip { font: 600 11px var(--body); padding: 1px 8px; border-radius: 999px; background: var(--sunk); color: var(--fg); }
 .chip.here { background: var(--accent-soft); color: var(--accent); }
+.checked { margin-top: 18px; font-size: 13px; color: var(--muted); }
+p.checked { display: flex; align-items: center; gap: 6px; }
+p.checked .ic { width: 15px; height: 15px; }
+.checked summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; min-height: 32px; }
+.checked summary::-webkit-details-marker { display: none; }
+.checked summary .ic { width: 15px; height: 15px; }
+.checked ul { margin: 4px 0 0; padding-left: 22px; display: grid; gap: 4px; }
+.checked a { color: var(--accent); }
+.checked.old { background: var(--hint-bg); color: var(--hint); border-radius: 10px; padding: 4px 10px; }
 .chip.plat { display: inline-flex; align-items: center; gap: 4px; background: var(--plat-bg); color: var(--plat); }
 .chip.plat .ic { width: 12px; height: 12px; stroke-width: 2.2; }
 .bookhead { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
@@ -2374,7 +2383,23 @@ function learnPane() {
     ${rest.map(p => `<div class="prose"><p>${md(p)}</p></div>`).join("")}
     <figure class="ex"><figcaption>${esc(cap)}</figcaption><pre class="code">${esc(code)}</pre></figure>
     ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}
+    ${checkedNote(L)}
     ${askPanel()}`;
+}
+// Lessons about products that change often say when their facts were last checked, and against
+// what. After STALE_DAYS the note warns that names and steps may have moved on.
+const STALE_DAYS = 180;
+function checkedNote(L) {
+  if (!L.checked) return "";
+  const [day, sources] = L.checked, when = new Date(day + "T00:00:00");
+  const age = Math.floor((Date.now() - when) / 864e5), old = age > STALE_DAYS;
+  const nice = when.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const links = sources.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join("");
+  // With sources, the facts were checked against them that day; without, it's the content's date.
+  const did = sources.length ? "Checked against the docs on" : "Content as of";
+  const head = old ? `${did} ${nice}, over ${Math.floor(age / 30)} months ago. Names and steps may have changed.` : `${did} ${nice}`;
+  if (!sources.length) return `<p class="checked${old ? " old" : ""}">${ic("clock")}<span>${esc(head)}</span></p>`;
+  return `<details class="checked${old ? " old" : ""}"><summary>${ic("clock")}<span>${esc(head)}</span></summary><ul>${links}</ul></details>`;
 }
 function checkPane() {
   const L = LESSONS[cur.id], s = lp(cur.id);

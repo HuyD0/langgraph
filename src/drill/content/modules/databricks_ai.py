@@ -1,11 +1,13 @@
 """Agent Bricks, Genie and MCP: Databricks' ready-made agents, data questions in plain words, and the tools agents can call."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
 
 MODULE = module('databricks-ai', 'Agent Bricks, Genie and MCP', "Databricks' ready-made agents, data questions in plain words, and the tools agents can call.")
 
 lesson(MODULE, 'choose_brick',
     title='Agent Bricks: start from a template',
+    checked='2026-10-12',
+    sources=[source('Agent Bricks', 'https://docs.databricks.com/aws/en/generative-ai/agent-bricks/'), source('Supervisor Agent is GA', 'https://www.databricks.com/blog/agent-bricks-supervisor-agent-now-ga-orchestrate-enterprise-agents')],
     learn=[
         "**Agent Bricks** is Databricks' platform for building agents. The quickest start is a **template**: a ready-made agent for a common job. You describe the task in plain words and point it at your data. It builds the agent, **evaluates** it (scores its answers with MLflow judges, the LLM graders from the Evaluate phase) and tunes it with feedback from your experts.",
         'It runs on **serverless** compute (Databricks starts and stops the machines for you) and is governed by **Unity Catalog**, so the agent only reads data its users are allowed to read.',
@@ -187,6 +189,8 @@ pairs   # [['ana', 3]]""",
 
 lesson(MODULE, 'genie_benchmark',
     title='Genie: questions about your data in plain words',
+    checked='2026-10-12',
+    sources=[source('Genie Agents', 'https://docs.databricks.com/aws/en/genie-agents/'), source('Trusted assets', 'https://docs.databricks.com/aws/en/genie/trusted-assets')],
     learn=[
         'A **Genie Agent** (called a Genie space until 2026) lets business users ask questions about data in plain words. Genie writes the **SQL** (the language for asking a database questions) over the Unity Catalog tables the author picked, runs it on a **SQL warehouse** (the compute that runs SQL) and shows a table or chart. It runs with the asker\'s own permissions, so people only see rows they are allowed to see.',
         'An author improves an agent with plain-text **instructions**, **example SQL queries** and **trusted assets**: example queries with **parameters** (blanks Genie fills in from the question) and SQL functions. When Genie answers with a trusted asset, the answer is marked as verified.',
@@ -359,6 +363,8 @@ If `results` is empty, return `[0, []]`.""",
 
 lesson(MODULE, 'managed_mcp_urls',
     title='Managed MCP servers: tools agents can call',
+    checked='2026-10-12',
+    sources=[source('Managed MCP servers', 'https://docs.databricks.com/aws/en/generative-ai/mcp/managed-mcp'), source('Genie One MCP', 'https://docs.databricks.com/aws/en/agents/mcp-tools/genie-mcp'), source('Built-in MCP services', 'https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services')],
     learn=[
         '**MCP** (Model Context Protocol) is a standard way for an agent to find and call tools on a **server** (a program that waits for requests). The agent asks the server for its list of tools, then calls one by name with arguments. It works the same way whatever the server is.',
         "Databricks runs **managed MCP servers** for you, so you only need a URL. The current ones live in the `system.ai` schema behind **Unity Gateway** (Databricks' AI gateway), at `https://<workspace>/ai-gateway/mcp-services/<name>`. `system.ai.genie_one_mcp` answers questions across your data with Genie One, through its `genie_ask` tool.",
@@ -555,6 +561,8 @@ tool['space_id']   # '01f0aa'
 
 lesson(MODULE, 'callable_tools',
     title='Unity Catalog functions: tools with permissions',
+    checked='2026-10-12',
+    sources=[source('Unity Catalog functions', 'https://docs.databricks.com/aws/en/udf/unity-catalog'), source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
     learn=[
         'The lesson "Tools from Unity Catalog" showed how a function becomes a tool the model can read. This lesson is about the other half: who is allowed to run it. A **Unity Catalog function** lives at `catalog.schema.function`, like `main.support.lookup_order`, the same three parts as a table.',
         'There are two kinds. A **SQL function** says `LANGUAGE SQL` and then `RETURN` with one expression or one query. A **Python function** says `LANGUAGE PYTHON`, puts its code between two `$$` marks, and declares its **return type** (the kind of value it gives back, like `STRING`). If the Python code needs extra packages, an `ENVIRONMENT` clause lists them (from PyPI, volumes or URLs), and then `environment_version` must be set too.',
@@ -780,6 +788,8 @@ age >= 18 and has_ticket   # False""",
 
 lesson(MODULE, 'cited_sources',
     title='Web search for agents',
+    checked='2026-10-12',
+    sources=[source('Built-in MCP services', 'https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services')],
     learn=[
         '`system.ai.web_search` is a built-in MCP service that searches the public web. It gives back a **synthesized** answer (one answer written from several pages) with **citations**: links to the pages it used. Its URL is `https://<host>/ai-gateway/mcp-services/system.ai.web_search`.',
         'It is a Unity Catalog securable reached through Unity Gateway: grants decide who can call it, and policies govern each call. It is **Beta**: an account admin turns on the Unity Gateway beta on the Previews page of the account console. It is not available in workspaces with HIPAA compliance enabled (HIPAA is a US rule for health data). It is available in supported US regions, or in workspaces that allow **cross-Geo processing**, which means your data may be processed outside your region. Check with your data team before you turn that on.',

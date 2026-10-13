@@ -1,11 +1,13 @@
 """Databricks building blocks: Compute, runtimes, jobs, bundles, tags and what they cost."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
 
 MODULE = module('workspace', 'Databricks building blocks', 'Compute, runtimes, jobs, bundles, tags and what they cost.')
 
 lesson(MODULE, 'pick_compute',
     title='Which compute for which work',
+    checked='2026-10-12',
+    sources=[source('Compute', 'https://docs.databricks.com/aws/en/compute/'), source('Serverless compute', 'https://docs.databricks.com/aws/en/compute/serverless/')],
     learn=[
         '**Compute** is the machines that run your code. Databricks bills it in **DBUs** (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.',
         '**All-purpose compute** (also called classic compute) is a cluster you start, share and work in from notebooks. **Jobs compute** is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose.',
@@ -188,6 +190,8 @@ pairs.append(['tea', 'hot'])   # [['tea', 'hot']]""",
 
 lesson(MODULE, 'unsupported_runtimes',
     title='Databricks Runtime versions',
+    checked='2026-10-12',
+    sources=[source('Databricks Runtime release notes', 'https://docs.databricks.com/aws/en/release-notes/runtime/')],
     learn=[
         'The **Databricks Runtime** (DBR) is the software image on the compute: Spark, Python and a set of libraries, each at a fixed version. You pick it when you create classic compute.',
         '**LTS** means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.',
@@ -325,6 +329,8 @@ Return the `name` of every cluster whose version is not in `supported`, in the s
 
 lesson(MODULE, 'policy_violations',
     title='Cluster policies',
+    checked='2026-10-12',
+    sources=[source('Compute policy reference', 'https://docs.databricks.com/aws/en/admin/clusters/policy-definition')],
     learn=[
         'A **compute policy** (older docs say cluster policy) limits what people can set when they create compute. Each rule targets one setting.',
         'A rule can **fix** a value, allow only values from an **allowlist**, or keep a number in a **range**. Typical targets are `autotermination_minutes`, `node_type_id` (the machine size) and `custom_tags.team`.',
@@ -532,6 +538,8 @@ ok   # False""",
 
 lesson(MODULE, 'skipped_tasks',
     title='Jobs: tasks that depend on each other',
+    checked='2026-10-12',
+    sources=[source('Lakeflow Jobs', 'https://docs.databricks.com/aws/en/jobs/'), source('Repair job failures', 'https://docs.databricks.com/aws/en/jobs/repair-job-failures')],
     learn=[
         '**Lakeflow Jobs** (formerly Databricks Workflows) run your work on a schedule. A job has **tasks**, and `depends_on` says which tasks must finish before a task starts.',
         'Each task has a **Run if** condition. The default is "all succeeded": run only if every task it depends on succeeded.',
@@ -704,6 +712,8 @@ seen.append('b')
 
 lesson(MODULE, 'resolve_variables',
     title='Bundles: one source, many targets',
+    checked='2026-10-12',
+    sources=[source('Declarative Automation Bundles', 'https://docs.databricks.com/aws/en/dev-tools/bundles/'), source('Bundles release notes (the rename)', 'https://docs.databricks.com/aws/en/release-notes/dev-tools/bundles')],
     learn=[
         '**Declarative Automation Bundles** (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files.',
         '`databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev **target**, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.',
@@ -863,6 +873,8 @@ names.sort()   # names is now ['ana', 'zoe']""",
 
 lesson(MODULE, 'tag_coverage',
     title='Why tagging matters',
+    checked='2026-10-12',
+    sources=[source('Serverless budget policies', 'https://docs.databricks.com/aws/en/admin/usage/budget-policies'), source('Billing system tables', 'https://docs.databricks.com/aws/en/admin/system-tables/billing')],
     learn=[
         '**Tags** are key-value labels, like `team = data`. On Databricks they do four jobs.',
         '**Cost.** Compute `custom_tags`, and serverless budget policies (newer docs: serverless usage policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.',
@@ -1026,6 +1038,8 @@ share = 0 if total == 0 else 5 / total   # 0""",
 
 lesson(MODULE, 'cost_by_tag',
     title='Who spent what',
+    checked='2026-10-12',
+    sources=[source('Billing system tables', 'https://docs.databricks.com/aws/en/admin/system-tables/billing'), source('System tables', 'https://docs.databricks.com/aws/en/admin/system-tables/')],
     learn=[
         '`system.billing.usage` has one row per piece of usage: `usage_quantity` (how many DBUs), `sku_name` (what kind of compute, which sets the price), `custom_tags` (a map of tags) and `usage_date`.',
         '`system.billing.list_prices` has the **list price** per DBU for each SKU. It is the public price, not any discount you have agreed, so treat the result as a guide, not the invoice.',
@@ -1200,6 +1214,8 @@ menu[order['item']]   # 2""",
 
 lesson(MODULE, 'idle_cost',
     title='Idle compute is the quiet bill',
+    checked='2026-10-12',
+    sources=[source('Manage compute', 'https://docs.databricks.com/aws/en/compute/clusters-manage'), source('Compute policy reference', 'https://docs.databricks.com/aws/en/admin/clusters/policy-definition')],
     learn=[
         'A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until **auto-termination** stops it.',
         '`autotermination_minutes` sets how long a cluster may sit idle before it stops. **0 means never**: it runs until someone stops it.',

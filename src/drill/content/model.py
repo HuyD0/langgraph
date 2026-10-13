@@ -142,6 +142,12 @@ def stack(title: str, code: str) -> dict:
     return {"title": title, "code": code}
 
 
+def source(title: str, url: str) -> list[str]:
+    """A page a lesson's facts were checked against: what it is, and where."""
+    assert url.startswith("https://"), f"{title}: a source needs an https link"
+    return [title, url]
+
+
 def lesson(
     owner: Module,
     id: str,
@@ -153,12 +159,23 @@ def lesson(
     angle: dict,
     exercise: dict,
     stack: dict | None = None,
+    checked: str | None = None,
+    sources: list[list[str]] | None = None,
 ) -> dict:
-    """Add one lesson to a module. Lessons appear on the page in the order they are added."""
+    """Add one lesson to a module. Lessons appear on the page in the order they are added.
+
+    ``checked`` is the day (YYYY-MM-DD) the lesson's facts were last checked against its
+    ``sources``. Lessons about products that change often must have both; the page shows the
+    date, and ``drill content stale`` lists lessons due for another look.
+    """
     assert id not in owner.lesson_ids, f"{id} is already in {owner.id}"
+    if checked is not None:
+        import datetime
+        datetime.date.fromisoformat(checked)  # fails loudly on a typo
+        assert sources, f"{id}: a checked date needs the sources it was checked against"
     entry = {
         "id": id, "title": title, "learn": learn, "example": example, "check": check,
-        "angle": angle, "stack": stack, "exercise": exercise,
+        "angle": angle, "stack": stack, "exercise": exercise, "checked": checked, "sources": sources,
     }
     owner.lessons.append(entry)
     return entry

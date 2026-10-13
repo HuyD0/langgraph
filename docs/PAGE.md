@@ -286,6 +286,9 @@ where it should appear. Copy a neighbour; every field is named. In short:
 - `angle`: the interview angle: the `pattern` name, the plain-language `text`, a sentence
   to `say` out loud, and optionally the `classic` interview problem that uses the same idea.
 - `stack`: optional, the same idea in Databricks, LangGraph, LangChain or MLflow.
+- `checked` and `sources`: the day (`'2026-10-12'`) you checked the lesson's facts, and the
+  pages you checked them against (`source(title, url)`). Required for lessons about products that
+  change often (the Databricks modules); welcome on any lesson. See "Keeping content current".
 - `exercise`: the `prompt`, `starter`, `solution` and `cases` (mark one `sample=True`), the
   `guided` scaffold with `___` blanks and the matching `fills`, and the Learn panel
   (`concepts`, `byhand`, `why`, `gotchas`).
@@ -316,3 +319,40 @@ A hyphen in the id becomes an underscore in the file name: `agent-teams` lives i
 
 Keep the wording plain and the page quiet: no Big-O, and visuals only where they replace
 text.
+
+## Keeping content current
+
+Databricks, Azure, MLflow and LangGraph rename and move things often (in 2026 alone: Asset
+Bundles became Declarative Automation Bundles, Genie spaces became Genie Agents, Vector Search
+became Databricks AI Search). So a lesson records **when** its facts were last checked and
+**against what**:
+
+```python
+lesson(MODULE, 'masked_columns',
+    title='ABAC: policies that follow tags',
+    checked='2026-10-12',
+    sources=[source('ABAC policies', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/policies')],
+    ...
+```
+
+The page shows "Checked against the docs on 12 Oct 2026" under Learn, with the sources one tap
+away. Lessons with no date of their own show "Content as of 12 Oct 2026", the day dates were
+first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days either note
+turns amber and says names and steps may have changed.
+
+**To find what needs a look:**
+
+```bash
+uv run drill content stale          # lessons checked over 180 days ago, with their sources
+uv run drill content stale --all    # also the fresh ones
+```
+
+**To update a lesson:** open each source, compare it with the lesson's Learn text, stack box,
+gotchas and exercise wording, fix what moved (keep the old name once, "formerly ..."), then set
+`checked` to today and add any new source. Run `uv run drill build-page` and `uv run pytest`.
+Only change the date when you actually checked: a date says "true as of this day".
+
+**To add new content:** a new lesson in an existing module, or a new module (see "Adding a
+lesson"), dated and sourced like the above. Private or company-specific material goes in a
+content pack instead (`docs/CONTENT_PACKS.md` once that lands), which has its own dated evidence.
+

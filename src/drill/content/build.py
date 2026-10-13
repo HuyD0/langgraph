@@ -52,6 +52,9 @@ def _page_lesson(entry: dict) -> dict:
     }
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
+    # [day, sources]: a lesson checked against sources, or the content date with none.
+    from drill.content.freshness import CONTENT_DATE
+    out["checked"] = [entry.get("checked") or CONTENT_DATE, [list(s) for s in entry.get("sources") or []]]
     return out
 
 

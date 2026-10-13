@@ -4,12 +4,14 @@ The spine of this module: teams remember table grants, then miss the access list
 experiments, catalogs, compute, access connectors, service credentials and connections.
 """
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
 
 MODULE = module('access', 'Databricks access control', 'Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.')
 
 lesson(MODULE, 'can_read_table',
     title='Unity Catalog privileges flow down',
+    checked='2026-10-12',
+    sources=[source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
     learn=[
         'Unity Catalog names every table with three parts: `catalog.schema.table`, like `sales.crm.accounts`. A **catalog** is the top folder, a **schema** is a folder inside it, and the table sits in the schema.',
         'To read a table you need three things: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. `USE CATALOG` and `USE SCHEMA` are like keys to the building and the room; `SELECT` lets you open the box.',
@@ -198,6 +200,8 @@ is_adult(20)   # True""",
 
 lesson(MODULE, 'missing_acls',
     title='Workspace objects have their own permissions',
+    checked='2026-10-12',
+    sources=[source('Access control lists', 'https://docs.databricks.com/aws/en/security/auth/access-control/')],
     learn=[
         'Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own **access control list** (ACL): a list of who may do what to that one object.',
         'Each object type has its own **permission levels**, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.',
@@ -390,6 +394,8 @@ found is None   # True""",
 
 lesson(MODULE, 'location_for_path',
     title='Access connectors, storage credentials and external locations',
+    checked='2026-10-12',
+    sources=[source('ADLS external locations (Azure)', 'https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-storage/external-locations-adls')],
     learn=[
         'On Azure, Unity Catalog reaches your storage through a chain of four links. Miss one and reads fail with a "permission denied" that is hard to trace.',
         '1. An **access connector** (`azurerm_databricks_access_connector`) is an Azure resource with a **managed identity**: an identity Azure looks after for you, so there is no password or secret to rotate. 2. In Azure, give that identity the **Storage Blob Data Contributor** role on the storage account.',
@@ -554,6 +560,8 @@ result is None   # True""",
 
 lesson(MODULE, 'pick_securable',
     title='Service credentials and connections',
+    checked='2026-10-12',
+    sources=[source('Service credentials (Azure)', 'https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-services/use-service-credentials'), source('Lakehouse Federation', 'https://docs.databricks.com/aws/en/query-federation/')],
     learn=[
         'Different targets need different Unity Catalog objects. Using the wrong one is a common reason "the permissions look right but nothing works".',
         'Files in cloud storage (`abfss://...`): a **storage credential** plus an **external location** (last lesson).',
@@ -731,6 +739,8 @@ day == 'sat' or day == 'sun'   # True""",
 
 lesson(MODULE, 'masked_columns',
     title='ABAC: policies that follow tags',
+    checked='2026-10-12',
+    sources=[source('ABAC policies', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/policies')],
     learn=[
         '**ABAC** (attribute-based access control) means rules follow labels on the data, not a list of tables. You write the rule once and it covers every table that carries the label.',
         'The labels are **governed tags**: tags defined for the whole account with a fixed set of allowed values, like `pii` with values `email`, `phone`, `ssn`. Data stewards put them on columns or tables.',
@@ -940,6 +950,8 @@ tags.get('domain')   # None""",
 
 lesson(MODULE, 'grants_to_people',
     title='Grant to groups, run as service principals',
+    checked='2026-10-12',
+    sources=[source('Users, groups and service principals', 'https://docs.databricks.com/aws/en/admin/users-groups/'), source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
     learn=[
         'Grant to **groups**, not to people. People move teams and leave; a grant to a person goes stale, while a group\'s membership is managed in one place.',
         'Groups usually come from **Entra ID** (Azure\'s sign-in and user directory), synced by **SCIM** provisioning (a standard way to copy users and groups between systems) or by automatic identity management.',
