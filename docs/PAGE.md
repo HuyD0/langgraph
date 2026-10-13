@@ -74,6 +74,11 @@ A track is a set of modules that sits beside the six phases, with its own order.
 - **On the path page** it has its own box under the phases, one scene per module. Its lessons are
   numbered P1.1 (module 1, lesson 1) and all share one sticker shape, the octagon, so they never
   look like a phase. "Start the track" or "Continue" opens its next lesson.
+- **Its own colour, teal** (`--track` tokens in `tokens.css`, for every theme). Inside the track box,
+  teal stands in for the blue "current" colour: the rim, Next, and the title shape's glow (a teal
+  copy of the aura). It is printed on blueprint paper and opens with the same rings and spark as a
+  phase room the first time it scrolls into view. Teal is the one colour family nothing else
+  uses, so the track never reads as the violet AI path.
 - **Coming soon**: after each module's real lessons come its planned ones (`planned(...)` in the
   module file), faded with a dotted outline. They can't be opened; the tutor lists them as not
   built yet.
