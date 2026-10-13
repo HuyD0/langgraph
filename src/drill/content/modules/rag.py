@@ -1,8 +1,8 @@
-"""RAG with Vector Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
+"""RAG with AI Search (formerly Vector Search): Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
 
-MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval, then measuring which settings actually work.')
+MODULE = module('rag', 'RAG with AI Search', 'Chunking, indexing and retrieval, then measuring which settings actually work.')
 
 lesson(MODULE, 'chunk_text',
     title='Chunking documents',

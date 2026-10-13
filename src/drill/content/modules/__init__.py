@@ -10,9 +10,10 @@ from drill.content.model import Module
 ORDER = [
     'use-case', 'foundations', 'pricing',                                  # Frame
     'experiments',                                                         # Design
-    'llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security',  # Build and trace
+    'llm-apps', 'rag', 'agents', 'agent-teams', 'databricks-ai',           # Build and trace
+    'production', 'security',
     'evals', 'models',                                                     # Evaluate
-    'shipping', 'platform',                                                # Ship
+    'shipping', 'platform', 'workspace', 'access',                         # Ship
     'tracing', 'llmops', 'reliability',                                    # Monitor
 ]
 
@@ -26,13 +27,13 @@ LIFECYCLE = [
      ['experiments']),
     ('Build and trace',
      'Build with LangGraph and Databricks, traced from the first line.',
-     ['llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security']),
+     ['llm-apps', 'rag', 'agents', 'agent-teams', 'databricks-ai', 'production', 'security']),
     ('Evaluate',
      'Score runs on the same eval set; compare quality, cost and latency.',
      ['evals', 'models']),
     ('Ship',
-     'Register, promote and canary with a rule you wrote down first.',
-     ['shipping', 'platform']),
+     'Register, promote and canary with a rule you wrote down first, on a Databricks platform you can trust.',
+     ['shipping', 'platform', 'workspace', 'access']),
     ('Monitor',
      'Watch real traffic in traces and feed failures back into evals.',
      ['tracing', 'llmops', 'reliability']),
