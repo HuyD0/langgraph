@@ -12,6 +12,8 @@ quietly producing an empty box on the page.
 
 from __future__ import annotations
 
+import re
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -146,10 +148,43 @@ def question(text: str, options: list[str], *, answer: int, why: str) -> dict:
     return {"question": text, "options": options, "answer": answer, "why": why}
 
 
+_GAP = re.compile(r"\[\[(.+?)\]\]")
+
+
+def cloze(say: str) -> tuple[str, list]:
+    """Split a sentence with gaps into the plain sentence and the pieces the page shows.
+
+    A gap is ``[[answer|wrong|wrong::clue]]``: the right word first, two tempting wrong ones,
+    then a clue that points at the answer without giving it. The pieces alternate text and
+    gaps: ``["When a stack changes I find everything ", {"answer": ..., "wrong": [...],
+    "clue": ...}, " of it, ..."]``. A sentence with no gaps gives an empty list.
+    """
+    pieces: list = []
+    at = 0
+    for m in _GAP.finditer(say):
+        body, _, clue = m.group(1).partition("::")
+        answer, *wrong = [w.strip() for w in body.split("|")]
+        assert len(wrong) == 2, f"gap {answer!r} needs two wrong choices, has {len(wrong)}"
+        assert clue.strip(), f"gap {answer!r} needs a clue: help is a clue first, then the answer"
+        assert answer not in wrong, f"gap {answer!r} lists its answer as a wrong choice"
+        pieces += [say[at:m.start()], {"answer": answer, "wrong": wrong, "clue": clue.strip()}]
+        at = m.end()
+    if not pieces:
+        return say, []
+    pieces.append(say[at:])
+    assert 2 <= len(pieces) // 2 <= 3, f"a sentence takes two or three gaps, not {len(pieces) // 2}"
+    plain = "".join(p if isinstance(p, str) else p["answer"] for p in pieces)
+    return plain, pieces
+
+
 def angle(*, pattern: str, text: str, say: str, classic: str | None = None) -> dict:
     """The Explain step: the pattern, why it matters, a sentence to say out loud, and the
-    classic interview problem (from :mod:`drill.problems`) that uses the same idea."""
-    return {"pattern": pattern, "text": text, "say": say, "classic": classic}
+    classic interview problem (from :mod:`drill.problems`) that uses the same idea.
+
+    ``say`` may mark two or three gaps (see :func:`cloze`); then the learner rebuilds the
+    sentence by picking words, and ``say`` itself is stored plain for everything else."""
+    plain, pieces = cloze(say)
+    return {"pattern": pattern, "text": text, "say": plain, "cloze": pieces, "classic": classic}
 
 
 def stack(title: str, code: str) -> dict:

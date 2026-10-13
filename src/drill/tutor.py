@@ -136,7 +136,7 @@ def curriculum_map(data: dict | None = None) -> str:
             lesson = data["lessons"][lesson_id]
             problem = bank[lesson_id]
             question, options, right, why = lesson["check"]
-            pattern, pattern_text, say, _classic = lesson["angle"]
+            pattern, pattern_text, say, _classic = lesson["angle"][:4]
             lines += [
                 f"### {number}. {_plain(lesson['title'])} (`{lesson_id}`)",
                 "",

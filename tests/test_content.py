@@ -300,3 +300,31 @@ def test_the_platform_track_has_a_real_lesson_in_every_module(loaded):
     for _, _, _, mids in modules.TRACKS:
         for mid in mids:
             assert by_id[mid].lessons, f"{mid} has only placeholders"
+
+
+def test_a_sentence_with_gaps_is_stored_plain_and_in_pieces():
+    from drill.content.model import cloze
+
+    plain, pieces = cloze("I find everything [[downstream|upstream|beside it::Which way?]] of it, then wait for [[inputs|outputs|logs::What it needs.]].")
+    assert plain == "I find everything downstream of it, then wait for inputs."
+    assert pieces[1] == {"answer": "downstream", "wrong": ["upstream", "beside it"], "clue": "Which way?"}
+    assert cloze("No gaps here.") == ("No gaps here.", [])
+    with pytest.raises(AssertionError):  # help is a clue first, so every gap needs one
+        cloze("One [[gap|a|b]] and [[two|c|d::ok]].")
+
+
+def test_every_explain_gap_is_answerable_and_the_plain_sentence_reads_right():
+    from drill.content.build import build_data
+
+    with_gaps = 0
+    for lid, lesson in build_data()["lessons"].items():
+        pattern, text, say, classic, pieces = lesson["angle"]
+        if not pieces:
+            continue
+        with_gaps += 1
+        assert "[[" not in say and "]]" not in say, lid
+        assert "".join(p if isinstance(p, str) else p["answer"] for p in pieces) == say, lid
+        for g in (p for p in pieces if not isinstance(p, str)):
+            assert len({g["answer"], *g["wrong"]}) == 3, (lid, g)
+            assert g["answer"].lower() not in g["clue"].lower(), f"{lid}: the clue gives away {g['answer']!r}"
+    assert with_gaps == len(build_data()["lessons"]), "every lesson's Explain sentence has gaps"

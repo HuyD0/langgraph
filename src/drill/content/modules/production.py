@@ -25,7 +25,7 @@ lesson(MODULE, 'token_bucket',
     angle=angle(
         pattern='Top up, then spend one',
         text='The big idea: a token bucket keeps you under the rate limit on your side, so you avoid 429 errors. Your code remembers two numbers: how many tokens are in the bucket, and when the last request came. For each request, it adds `rate` tokens for every second since then, but never more than `bucket_size`. If at least one token is there, it spends one and marks the request `True`. Otherwise it marks it `False`. It is like a jar of tickets that slowly refills, so a full jar lets a short burst through.',
-        say='"A token bucket refills at a steady rate up to a set size. Each request spends a token, so short bursts are fine but we stay under the limit."',
+        say='"I keep a [[token bucket|request queue|retry loop::It\'s like a jar of tickets that slowly refills.]] that refills at a steady rate. Each request spends one token, so a short [[burst|delay|error::A full jar lets several through at once.]] is fine but we stay under the [[rate limit|bucket size|timeout::Go past it and the server answers with error 429.]]."',
         classic=None,
     ),
     stack=stack('LangChain: a client-side token bucket', """from langchain_core.rate_limiters import InMemoryRateLimiter
@@ -153,7 +153,7 @@ lesson(MODULE, 'retry_wait',
     angle=angle(
         pattern='Retry-After first, else backoff with jitter',
         text='The big idea: when retrying, wait as long as the server asks, and otherwise wait longer each time with jitter. Your code first checks `retry_after`, and if the server gave a wait, it returns that. Otherwise the window is `2 ** attempt` seconds, so 1, 2, 4, 8 and so on, but never more than `max_wait`. It returns `random_number` times the window, a random spot inside it. Because the random number is passed in, a test can give the same number and get the same answer every time.',
-        say='"I honour Retry-After when the server sends it. Otherwise I wait a random time inside a window that doubles each try, up to a cap."',
+        say='"If the server says how long to wait, I wait [[that long|twice as long|a fixed time::Its Retry-After header tells you.]]. If not, I pick a [[random|fixed|short::Jitter stops every client trying again at the same moment.]] wait, and the window [[doubles|halves|stays the same::1, 2, 4, 8 seconds and so on.]] each try, up to a cap."',
         classic=None,
     ),
     stack=stack('tenacity: backoff with jitter', """from tenacity import retry, stop_after_attempt, wait_random_exponential
@@ -269,7 +269,7 @@ lesson(MODULE, 'run_with_limit',
     angle=angle(
         pattern='Give each call the first free slot',
         text="The big idea: running several calls at once finishes sooner, but a cap stops you from hitting rate limits. Your code keeps a list of slots, each holding the time that slot becomes free, all starting at 0. For each call, it sorts the slots so the one free soonest comes first, then adds the call's time to it. It is like a shop with a few tills, where each new customer goes to the till that frees up first. At the end, the latest slot time is when every call has finished.",
-        say='"I cap how many calls run at once. When one finishes, the next starts in its place, so the batch is fast without hitting rate limits."',
+        say='"I cap how many calls run [[at once|in total|per day::Think of a shop with only a few tills.]]. When one finishes, the next one [[takes its place|waits a minute|starts over::The till that frees up first serves the next customer.]], so the batch is quick without hitting [[rate limits|memory limits|time limits::Too many calls together and the server starts saying 429.]]."',
         classic=None,
     ),
     stack=stack('asyncio and LangChain: cap calls in flight', """sem = asyncio.Semaphore(8)
@@ -397,7 +397,7 @@ lesson(MODULE, 'optimistic_writes',
     angle=angle(
         pattern='Accept only up-to-date writes',
         text="The big idea: each write says which version it read, so a write based on old data is rejected instead of silently erasing someone else's change. Your code goes through the writes in the order they arrive, using a loop: a block of code that runs once for each item. If a write read the record's current version, it is accepted and the version goes up by 1. Otherwise it is rejected. It is like a shared document: if someone saved after you opened it, you must reopen it before you save.",
-        say='"Each write carries the version it read. If the record changed since then, the write is rejected, so the loser re-reads and tries again instead of overwriting."',
+        say='"Each write says which [[version|user|time::It goes up by 1 every time someone saves.]] it read. If someone saved since then, the write is [[rejected|merged|queued::Like a shared doc: if it changed, you must reopen it first.]], so they re-read and try again instead of [[overwriting|deleting|copying::The danger is silently erasing someone else\'s change.]] it."',
         classic=None,
     ),
     stack=stack('SQL: a version-checked update', """UPDATE tickets
@@ -505,7 +505,7 @@ lesson(MODULE, 'upsert_rows',
     angle=angle(
         pattern='Remember where each row is',
         text="The big idea: saving rows by a stable key means a retried job replaces rows instead of adding duplicates. Your code first builds a dict, a lookup table, from each row's key to its position in the table. Then for each update it asks: is this key already in the table? If yes, the update replaces the row in that spot. If no, it goes on the end. The dict works like a book's index: you jump straight to the right page instead of reading every row.",
-        say='"I save rows by a stable key: a matching row is replaced and a new one is added. Running the same batch twice changes nothing."',
+        say='"I save rows by a [[stable key|row number|timestamp::Something that stays the same every time the job runs.]]. If the key is already there I [[replace|skip|duplicate::A retried job should not leave two copies.]] that row, otherwise I add it. So running the same batch [[twice|once|in order::Think about a job that gets retried.]] changes nothing."',
         classic='two_sum',
     ),
     stack=stack('Delta Lake: MERGE INTO', """MERGE INTO main.support.eval_results AS t
@@ -646,7 +646,7 @@ d1  "abcdefg" (size 3)       d1-0  abc
     angle=angle(
         pattern='Cut each document on its own',
         text='The big idea: Spark can only spread the work over many machines if each piece uses its own row and nothing else. Your code takes one document at a time and cuts its text into slices of `size` characters. `range(0, len(text), size)` counts 0, 3, 6 and so on when size is 3, and the last slice can be shorter. Each chunk gets an id made from the document\'s id and a count that restarts at 0, like `"d1-0"`. So a re-run gives the same ids, and a MERGE overwrites instead of duplicating.',
-        say='"My function only looks at one document at a time, so Spark can spread it across machines. The ids come from the data, so a re-run gives the same ids."',
+        say='"My function only looks at [[one document|every document|the whole table::Spark can only split the work if each piece stands alone.]] at a time, so Spark can spread the work across machines. Each chunk id comes from the [[document\'s id|current time|a random number::Like d1-0: built from data that never changes.]], so a re-run gives the [[same ids|new ids|more rows::Then a MERGE overwrites instead of duplicating.]]."',
         classic=None,
     ),
     stack=stack('PySpark: a pandas UDF plus posexplode', """from pyspark.sql import functions as F, types as T
@@ -780,7 +780,7 @@ watermark: time 100 → event 3 (time 90) is too late"""),
     angle=angle(
         pattern='Skip what you have already read',
         text="The big idea: an incremental job remembers where it stopped, so each run handles only new events instead of the whole table. Your code goes through the events and skips any whose offset is not past `saved_offset`. For each new event it moves `new_offset` forward, even if the event is late, so the next run won't read it again. It keeps the value only if the event's time is at least the `watermark`. It is like a bookmark: you start reading where you left off.",
-        say='"I save the offset of the last event I read and only process events after it. A watermark decides which late events are too late to count."',
+        say='"I save the [[offset|time|count::It works like a bookmark in the stream of events.]] of the last event I read, and next run I only handle events [[after it|before it|near it::You start reading where you left off.]]. A [[watermark|checkpoint|schema::A cut-off time: events older than it are dropped.]] decides which late events are too late to count."',
         classic=None,
     ),
     stack=stack('Structured Streaming: checkpoint, watermark, run as a batch', """(spark.readStream.table("main.support.events")
@@ -893,7 +893,7 @@ lesson(MODULE, 'validate_rows',
     angle=angle(
         pattern='Check every column, then sort the row',
         text='The big idea: a row that breaks the contract goes to quarantine, so one bad row doesn\'t stop the whole load. Your code checks each row against every column in `schema`. If a column is missing, or its value is the wrong kind, the row is marked bad. A small helper, `kind_of`, names each value\'s kind: a string is "text", and an int or float is "number". Good and bad rows go into two lists, like sorting mail into keep and check-later piles. Extra columns are never looked at, so they are allowed.',
-        say='"I check each row against the contract and set bad rows aside in quarantine instead of failing the whole load. I decide on purpose that new columns are allowed."',
+        say='"I check each row against the [[contract|last row|sample::It lists every column and the kind of value it must hold.]]. Bad rows go to [[quarantine|the bin|the log::A check-later pile, so one bad row doesn\'t stop the load.]] instead of failing the whole load. I decide on purpose that [[extra columns|missing columns|wrong types::The code never looks at columns beyond the schema.]] are allowed."',
         classic=None,
     ),
     stack=stack('Lakeflow pipelines: expectations plus a quarantine table', """-- DROP ROW throws a bad row away and only counts it in the event log
@@ -1076,7 +1076,7 @@ lesson(MODULE, 'skew_report',
     angle=angle(
         pattern='Compare each key with the average',
         text='The big idea: if one key has far more rows than the rest, one worker does most of the job while the others wait. Your code goes through the keys twice. The first time it adds up all the rows, then divides by the number of keys to get the average. The second time it keeps every key whose count is more than `factor` times that average. You need the full total before you can judge any key, like needing every test mark before you know the class average.',
-        say='"I compare each key\'s row count with the average. When one key has far more rows, I turn on AQE, handle that key separately, or salt it."',
+        say='"I compare each key\'s row count with the [[average|biggest|smallest::Add up all the rows and divide by the number of keys.]]. When one key has far more, I turn on AQE, handle that key [[separately|first|later::Pull it out from the others.]], or [[salt|drop|sort::Add a random bit to the key so its rows spread out.]] it."',
         classic=None,
     ),
     stack=stack('Spark: adaptive skew-join handling', """spark.conf.set("spark.sql.adaptive.enabled", "true")

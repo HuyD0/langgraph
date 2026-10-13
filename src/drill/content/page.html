@@ -762,6 +762,27 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .saynote.nudge { color: var(--hint); font-weight: 600; }
 /* scrolling something into view leaves room for the sticky header and the bottom bar */
 #paneText .verdict, #sayIn { scroll-margin-bottom: 100px; }
+.cloze { display: grid; gap: 10px; }
+.cloze .clz { margin: 4px 0 0; font-size: 18px; line-height: 1.75; }
+.gap { display: inline-block; min-width: 3.2em; padding: 0 8px; border-radius: 8px; text-align: center; line-height: 1.5; }
+.gap.now { border: 2px dashed var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.gap.later { border: 1.5px dashed var(--line); color: var(--muted); }
+.gap.filled { background: var(--pass-bg); color: var(--pass); font-weight: 600; }
+.clzchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.clzchip { min-height: 44px; padding: 8px 16px; border-radius: 22px; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); font: 600 15px var(--body); cursor: pointer; }
+@media (hover: hover) { .clzchip:not(.no):hover { border-color: var(--accent); } }
+.clzchip.no { opacity: .45; text-decoration: line-through; cursor: default; }
+.clzchip.shown { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
+.clznote { margin: 0; min-height: 1.2em; font-size: 14px; color: var(--fail); }
+.clznote:empty { display: none; }
+.clzclue { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--hint-bg); color: var(--fg); font-size: 14px; }
+.clzclue .ic { color: var(--hint); flex: none; margin-top: 2px; }
+.clzhelp { display: grid; gap: 8px; justify-items: start; }
+.clzhelp .linkbtn { min-height: 44px; }
+.cloze.done .eyebrow { display: flex; gap: 6px; align-items: center; color: var(--pass); }
+.sayown summary { display: grid; gap: 2px; cursor: pointer; list-style: none; min-height: 44px; align-content: center; }
+.sayown summary::-webkit-details-marker { display: none; }
+.sayown[open] summary { margin-bottom: 8px; }
 #paneText .q { scroll-margin-top: 90px; }
 .btn.primary[disabled] { opacity: 1; background: var(--sunk); color: var(--muted); border-color: var(--line); box-shadow: none; }
 :root[data-theme="dusk"] .bdg.now { filter: url(#aura); }
@@ -2393,6 +2414,7 @@ function goNext() {
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
+  if (!canFinish() && gapsOf(cur.id).length) { const box = $("paneText").querySelector(".cloze"); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); CLZ.note = "Fill the gaps to finish the lesson."; clozeRender(); return; }
   if (!canFinish()) { const box = $("sayIn"); box.focus(); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); $("sayNote").textContent = "Write one sentence here to finish: what you did and why."; $("sayNote").classList.add("nudge"); return; }
   const s = lp(cur.id), id = cur.id, fresh = !s.done; s.done = true; s.step = 3; markDay();
   const o = orderFor(id), after = o[o.indexOf(id) + 1];
@@ -2463,12 +2485,54 @@ function checkPane() {
 }
 const SAY_WORDS = 4;  // "one sentence": enough words to be a thought, not a box ticked
 const words = t => (t || "").trim().split(/\s+/).filter(Boolean).length;
-const canFinish = () => lp(cur.id).done || words(lp(cur.id).said) >= SAY_WORDS;
+// The lesson's own sentence with two or three gaps: pick the word for each gap, one at a time.
+// Help is a clue first, then the answer. Writing it your own way is an optional extra.
+const gapsOf = id => (LESSONS[id].angle[4] || []).filter(x => typeof x !== "string");
+const clozeDone = id => { const g = gapsOf(id); return g.length > 0 && (lp(id).filled || 0) >= g.length; };
+const CLZ = { id: null, help: 0, wrong: [], note: "" };  // this gap only: help 1 = clue shown, 2 = answer shown
+const canFinish = () => lp(cur.id).done || clozeDone(cur.id) || words(lp(cur.id).said) >= SAY_WORDS;
+function clozeChips(id, k, g) {  // the three words in a fixed order per gap, so a reload doesn't reshuffle them
+  const all = [g.answer, ...g.wrong], h = [...(id + k)].reduce((a, c) => a * 31 + c.charCodeAt(0) >>> 0, 7);
+  return all.map((w, i) => ({ w, i, r: (h >> (i * 3)) % 7 + i / 10 })).sort((a, b) => a.r - b.r).map(x => x.w);
+}
+function clozeHtml(id) {
+  const pieces = LESSONS[id].angle[4], gaps = gapsOf(id), n = lp(id).filled || 0, done = n >= gaps.length;
+  if (CLZ.id !== id + n) { CLZ.id = id + n; CLZ.help = 0; CLZ.wrong = []; CLZ.note = ""; }
+  let k = -1;
+  const line = pieces.map(x => {
+    if (typeof x === "string") return esc(x);
+    k++;
+    return k < n ? `<span class="gap filled">${esc(x.answer)}</span>` : k === n ? `<span class="gap now" aria-label="gap ${k + 1}, to fill">?</span>` : `<span class="gap later" aria-label="a later gap">…</span>`;
+  }).join("");
+  if (done) return `<section class="card cloze done"><span class="eyebrow">${ic("check")}Said like an engineer</span><p class="clz">${line}</p><span class="meta">That's the idea in one sentence. Try saying it out loud once.</span></section>`;
+  const g = gaps[n];
+  const chips = clozeChips(id, n, g).map(w => {
+    const off = CLZ.wrong.includes(w), right = CLZ.help === 2 && w === g.answer;
+    return `<button class="clzchip${off ? " no" : ""}${right ? " shown" : ""}" data-clz="${esc(w)}"${off ? ' aria-disabled="true"' : ""}>${esc(w)}</button>`;
+  }).join("");
+  const help = CLZ.help === 0 ? `<button class="linkbtn" data-clz-help>Give me a clue</button>`
+    : `<p class="clzclue">${ic("bulb")}<span>${esc(g.clue)}</span></p>${CLZ.help === 1 ? `<button class="linkbtn" data-clz-help>Tell me the answer</button>` : ""}`;
+  return `<section class="card cloze"><b>Finish the sentence</b><span class="meta">Gap ${n + 1} of ${gaps.length}: tap the word that fits. This is how you'd explain it at work or in an interview.</span>
+    <p class="clz">${line}</p>
+    <div class="clzchips" role="group" aria-label="Words for gap ${n + 1}">${chips}</div>
+    <p class="clznote" aria-live="polite">${esc(CLZ.note)}</p>
+    <div class="clzhelp">${help}</div></section>`;
+}
+function clozePick(w) {
+  const id = cur.id, s = lp(id), g = gapsOf(id)[s.filled || 0]; if (!g || CLZ.wrong.includes(w)) return;
+  if (w !== g.answer) { CLZ.wrong.push(w); CLZ.note = `Not "${w}". Try another one${CLZ.help ? "" : ", or ask for a clue"}.`; clozeRender(); return; }
+  s.filled = (s.filled || 0) + 1; saveProgress();
+  clozeRender();
+  const box = $("paneText").querySelector(".cloze");
+  if (clozeDone(id)) fxOn(box, "seal", FX.seal()); else fxScreen("spark", FX.spark, box.querySelector(".gap.filled:last-of-type"));
+  renderFoot();
+}
+function clozeRender() { const box = $("paneText").querySelector(".cloze"); if (box) box.outerHTML = clozeHtml(cur.id); }
 let sayTimer = null;
 document.addEventListener("input", e => {
   if (e.target.id !== "sayIn" || !cur || cur.kind !== "lesson") return;
   const s = lp(cur.id); s.said = e.target.value; const ready = words(s.said) >= SAY_WORDS;
-  $("sayNote").textContent = ready ? "" : "Write one sentence to finish the lesson.";
+  $("sayNote").textContent = ready || gapsOf(cur.id).length ? "" : "Write one sentence to finish the lesson.";
   $("sayOurs").hidden = !ready; renderFoot();
   clearTimeout(sayTimer); sayTimer = setTimeout(saveProgress, 600);
 });
@@ -2479,10 +2543,12 @@ function anglePane() {
   const said = lp(cur.id).said || "", ready = words(said) >= SAY_WORDS;
   const sorted = !!(p.sort && p.sort.explain && sorting());  // the Build step was the sorting board, not code
   return `<section class="sec"><h3>${sorted ? "How you sorted them" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(sorted ? p.sort.explain : text)}</p></section>
+    ${gapsOf(cur.id).length ? clozeHtml(cur.id) + `<details class="card sayback sayown"${said ? " open" : ""}><summary><b>Want to say it your way?</b><span class="meta">Optional. Writing it in your own words helps it stick.</span></summary>
+      <textarea id="sayIn" rows="3" maxlength="600" aria-label="Your own sentence" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea><div class="saynote" id="sayNote"></div><div id="sayOurs" hidden></div></details>` : `
     <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
       <textarea id="sayIn" rows="3" maxlength="600" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea>
       <div class="saynote" id="sayNote">${ready ? "" : "Write one sentence to finish the lesson."}</div>
-      <details class="quiet" id="sayOurs"${ready ? "" : " hidden"}><summary>Compare with ours</summary><div><p class="say">${md(say)}</p></div></details></section>
+      <details class="quiet" id="sayOurs"${ready ? "" : " hidden"}><summary>Compare with ours</summary><div><p class="say">${md(say)}</p></div></details></section>`}
     ${p.realworld ? `<section class="sec"><h3>At work</h3><p>${md(p.realworld)}</p></section>` : ""}
     ${gotchaCard()}
     ${gotchas ? `<section class="sec"><h3>Watch out for</h3><ul class="gl">${gotchas}</ul></section>` : ""}
@@ -3900,6 +3966,8 @@ document.addEventListener("click", async e => {
   const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
   if (t.closest("[data-gotcha-retry]")) { delete progress.gotchas[cur.id]; saveProgress(); renderGotcha(); return; }
   if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
+  const cz = t.closest("[data-clz]"); if (cz) { clozePick(cz.dataset.clz); return; }
+  if (t.closest("[data-clz-help]")) { CLZ.help = Math.min(2, CLZ.help + 1); CLZ.note = ""; clozeRender(); return; }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) {
     lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1, true);
     const verdict = $("paneText").querySelector(".verdict");
@@ -4081,7 +4149,7 @@ goHome();
           const lessons = Object.assign({}, r.lessons || {});
           for (const [k, v] of Object.entries(progress.lessons)) {
             const o = lessons[k];
-            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said };
+            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0) };
           }
           progress = {
             solved: Object.assign({}, r.solved || {}, progress.solved),

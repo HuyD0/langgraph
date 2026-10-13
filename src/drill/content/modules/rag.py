@@ -25,7 +25,7 @@ lesson(MODULE, 'chunk_text',
     angle=angle(
         pattern='Sliding window with overlap',
         text='The big idea: documents are cut into small chunks for search, and chunks overlap a little so a sentence on a boundary appears whole in one of them. Your code starts at character 0 and cuts out `size` characters. Then it moves forward by `size - overlap`, so each chunk repeats the last few characters of the one before. It stops once a chunk reaches the end of the text, so no extra chunk is made. It is like roof tiles, each one covering the edge of the last.',
-        say='"I cut the text into fixed-size chunks that overlap a little, so a sentence that crosses a boundary appears whole in at least one chunk."',
+        say='"I cut the text into small [[chunks|tables|keys::These are the pieces you search and put in the prompt.]] that [[overlap|alternate|shrink::Each piece repeats the end of the one before.]] a little. That way a sentence cut at the edge still shows up [[whole|twice|shorter::You want the full sentence in at least one piece.]] in one of them."',
         classic='longest_unique_substring',
     ),
     stack=stack('Databricks Vector Search: index a table of chunks', """vsc.create_delta_sync_index(
@@ -156,7 +156,7 @@ lesson(MODULE, 'dedupe_chunks',
     angle=angle(
         pattern='Clean key, keep the first',
         text="The big idea: repeated chunks waste money on embeddings and push useful chunks out of the results, so you keep only the first copy. Your code makes a key for each chunk: lowercase, with extra spaces and line breaks squeezed to single spaces. It keeps a set of keys it has already seen. A set is a collection where checking if something is in it is instant, like finding a word through a book's index. A chunk with a new key is kept exactly as written, and one with a seen key is skipped.",
-        say='"I turn each chunk into a cleaned-up key and keep a set of keys I\'ve seen, so only the first copy of each chunk survives."',
+        say='"Copies of the same chunk waste money and crowd out useful ones. I make a cleaned-up [[key|summary|embedding::A lowercase, tidied version used only for comparing.]] for each chunk and keep only the [[first|last|longest::Once you have seen it, later copies get skipped.]] copy."',
         classic='group_anagrams',
     ),
     stack=stack('Databricks SQL: keep one chunk per cleaned text', "CREATE OR REPLACE TABLE main.support.doc_chunks_clean AS\nSELECT * FROM main.support.doc_chunks\nQUALIFY row_number() OVER (\n  PARTITION BY lower(trim(regexp_replace(text, '\\\\s+', ' '))) ORDER BY chunk_id) = 1"),
@@ -283,7 +283,7 @@ top = scored[:k]"""),
     angle=angle(
         pattern='Score, sort, keep the top k',
         text="The big idea: retrieval scores every document against the question and keeps the top k, breaking ties the same way every time. Your code turns the query into a set, a collection with no repeats, of lowercase words. For each document, `&` keeps the words found in both sets, and the score is how many there are. Each score is stored as a negative number next to the document's position. Sorting smallest first then puts the highest score first, and ties go to the earlier document. It returns the first k positions.",
-        say='"I score every document against the question, sort best first and keep the top k. Ties go to the earlier document, so results stay the same every time."',
+        say='"I give every document a [[score|label|summary::A number for how well it matches the question.]] and keep the best k. When two tie, the [[earlier|shorter|later::Look at where each document sits in the list.]] one wins, so I get the same results every time."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: hybrid search', """from databricks.vector_search.client import VectorSearchClient
@@ -435,7 +435,7 @@ recall@3 = 1 found of 2 relevant = 0.5"""),
     angle=angle(
         pattern='Count what the top k found',
         text='The big idea: measure retrieval on its own, by asking what share of the right documents made it into the top k. Your code returns 0 if there are no relevant documents, so it never divides by zero. Otherwise it takes the first k retrieved ids and turns them and the relevant ids into sets, collections with no repeats. `&` keeps only the ids found in both. It divides how many were found by how many were relevant. It is like checking a shopping list against what is in your basket.',
-        say='"I measure retrieval separately from the answer: of the documents that should be found, what share made it into the top k."',
+        say='"I check retrieval on its own, before the answer. Of the documents that [[should be found|were found|came first::Start from the right documents, not from what came back.]], I count what [[share|order|score::A fraction: how many turned up, divided by how many there were.]] made it into the top k."',
         classic='two_sum',
     ),
     stack=stack('MLflow: a recall@5 scorer', """from mlflow.genai.scorers import scorer
@@ -557,7 +557,7 @@ nDCG@3 = 2.89 divided by 3.63
     angle=angle(
         pattern='Compare to the best order',
         text='The big idea: recall@k ignores order, so nDCG gives each document a grade and counts it less the lower it appears. Your code first lists the grades of the top `k` results, using 0 for any id with no grade. Then it builds the best possible list: all the grades sorted from highest to lowest, cut to `k`. Sorting just means putting things in order. It divides the `dcg` of your list by the `dcg` of the best list, so 1.0 means perfectly ordered. If the best list scores 0, it returns 0.0.',
-        say='"Recall@k ignores order, so I use nDCG@k. I score my ranking, then divide by the score of the best possible order, giving a number from 0 to 1."',
+        say='"Recall@k doesn\'t care about [[order|size|cost::Whether the best document is first or fifth.]], so I use nDCG. I score my list, then divide by the score of the [[best possible|average|first::Imagine every result sorted perfectly.]] order, so 1 means perfect."',
         classic=None,
     ),
     stack=stack('scikit-learn: nDCG on graded relevance', """from sklearn.metrics import ndcg_score
@@ -733,7 +733,7 @@ gift-card       d40         (not in top 20)                        out of reach"
     angle=angle(
         pattern='Sort each question into four piles',
         text='The big idea: a reranker can only reorder what retrieval found, so first check whether the right document was found at all. Your code starts a dict, a lookup table from each outcome name to its count, with all four at 0. For each question, if the right document is missing from `before`, it counts as out of reach and the code moves on. Otherwise it asks two things: was it in the top `k` before, and is it in the top `k` after? Those two answers decide helped, hurt or no change.',
-        say='"First I count the questions that are out of reach, because a reranker can\'t fix what retrieval missed. Then I count helped, hurt and no change in the top k."',
+        say='"A reranker can only [[reorder|replace|find::It shuffles what is already there.]] what retrieval found. So first I count the questions where the right document was [[missing|ranked first|duplicated::No reranker can fix a document that never came back.]]. Then I count helped, hurt and no change."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: retrieve wide, rerank, keep a few', """results = index.similarity_search(query_text=question, columns=["id", "text"], num_results=20)
@@ -880,7 +880,7 @@ answerable:   40 questions, declined 2          → over-refusals    5%"""),
     angle=angle(
         pattern='Two groups, each with its own count',
         text="The big idea: put unanswerable questions in the eval on purpose and measure two mistakes separately, because they pull against each other. Your code goes through the results one by one with four counters, running counts that go up by one. Answerable questions add to one group, plus a mistake if the app declined. Unanswerable ones add to the other group, plus a mistake if the app answered anyway. Then it divides each mistake count by its group's size. An empty group gets a rate of 0.0, so the code never divides by zero.",
-        say='"I add unanswerable questions on purpose and track two rates: missed refusals, the dangerous one, and over-refusals, the annoying one."',
+        say='"I add [[unanswerable|easy|long::There is nothing in the documents to answer these.]] questions on purpose. Then I count two mistakes [[separately|together|once::They pull against each other, so each gets its own number.]]: declining a real question, and [[answering|declining|repeating::Here the app should have said it doesn\'t know.]] one it can\'t."',
         classic=None,
     ),
     stack=stack('MLflow: a judge for declining when the context is missing', """from mlflow.genai.scorers import Guidelines
@@ -1048,7 +1048,7 @@ You can also get store credit instead.              [3]    unsupported
     angle=angle(
         pattern='Keep supported claims, then decide',
         text='The big idea: a claim gate, a groundedness check, checks each statement at request time, before the user sees the answer. Your code goes through the verdicts once. It keeps the text of every supported claim in a list and notes if any claim is contradicted. Then it decides. Any contradiction, or nothing supported, means abstain and keep nothing. If every claim was supported, it releases them all. Otherwise it revises, keeping only the supported claims in their original order. An empty list has nothing supported, so it abstains too.',
-        say='"Before the user sees an answer, I check each claim. All supported means release, some means revise, and none supported or any contradicted means abstain."',
+        say='"Before the user sees an answer, I check each [[claim|word|source::A single statement the answer makes.]]. All supported, I send it. Some supported, I [[keep only those|send it all|drop it all::Cut the parts with no backing.]]. Otherwise I abstain."',
         classic=None,
     ),
     stack=stack('MLflow: log the gate\'s decision on the trace', """with mlflow.start_span(name="claim_gate", span_type="GUARDRAIL") as span:
@@ -1181,7 +1181,7 @@ fast enough and best: 512, 5"""),
     angle=angle(
         pattern='Skip the slow ones, keep the best',
         text="The big idea: pick a config with the rule you wrote down: best answer quality within the latency budget. Your code goes through the rows one by one and skips any row slower than `max_ms`. It remembers the best row so far, like holding the tallest card you have seen and swapping when a taller one turns up. A row takes its place if its quality is higher, or equal with a lower cost. At the end it returns that row's `chunk_size` and `k`, or `None` if no row was fast enough.",
-        say='"I drop every config over the latency budget, then pick the highest quality. If two tie, I take the cheaper one."',
+        say='"I drop every config that\'s [[too slow|too cheap|too big::It goes over the time limit.]], then pick the one with the best [[quality|speed|price::How good the answers are.]]. If two tie, I take the [[cheaper|faster|newer::Look at what each one costs.]] one."',
         classic=None,
     ),
     stack=stack('MLflow: one evaluated run per config', """from mlflow.genai.scorers import RelevanceToQuery, RetrievalGroundedness
@@ -1330,7 +1330,7 @@ fused:   d1, d3, d9, d7"""),
     angle=angle(
         pattern='Add up points by place, then sort',
         text="The big idea: keyword and vector scores can't be compared, so hybrid search merges results by their place in each list instead. Your code goes through every list and gives each document `1 / (k + rank)` points, where rank counts from 1. It adds those points into a dict, a lookup table from each document id to its running total. A document found by both searches collects points twice and rises. Then it sorts the totals from highest to lowest, and ties fall into alphabetical order.",
-        say='"I merge keyword and vector results by rank, not raw score. Each document gets points from every list, so ones that do well in both rise to the top."',
+        say='"Keyword and vector scores can\'t be compared, so I merge the results by [[rank|score|length::Where a document sits in each list.]] instead. A document gets points from [[every list|the first list|the best score::Both searches count.]], so ones found by both rise to the top."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: hybrid query', """results = index.similarity_search(

@@ -32,7 +32,7 @@ order: monitoring, workspace, catalogs, jobs"""),
     angle=angle(
         pattern='Downstream, then in waiting order',
         text='The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived.',
-        say='"When a stack changes I find everything downstream of it, then order them so each stack runs only after every stack it waits for has finished."',
+        say='"When one stack changes, every stack that [[uses it|it uses|sits beside it::Think about who depends on whose outputs.]] has to run again. I list those, then run them in an order where each one [[waits for|runs before|ignores::A stack can\'t start until what it needs is ready.]] the stacks it needs."',
         classic=None,
     ),
     exercise=exercise(
@@ -182,7 +182,7 @@ lesson(MODULE, 'guard_destroys',
     angle=angle(
         pattern='Check each change against a set',
         text='The big idea: a plan policy checks every run automatically, starting with the resources you can\'t rebuild. Your code first turns the protected types into a set, a collection built to answer "is this in it?" instantly, like a book\'s index. Then it goes through the changes in order. A change gets a message only if its type is protected and its actions include delete. A replacement includes delete, so it counts too. An empty list means the run may go ahead.',
-        say='"I put the protected types in a set, then flag every change that would delete one of them, replacements included. No messages means the run can go ahead."',
+        say='"My plan policy checks every run for changes that would [[delete|update|read::The dangerous change is the one you can\'t undo.]] something we can\'t rebuild, like a workspace. A [[replacement|tag change|comment::Destroying and re-creating something also loses it.]] counts too. If nothing is flagged, the run can [[go ahead|stop|wait::An empty list of problems is a pass.]]."',
         classic='two_sum',
     ),
     exercise=exercise(
@@ -310,7 +310,7 @@ lesson(MODULE, 'plan_policy',
     angle=angle(
         pattern='Two separate rules per change',
         text="The big idea: policy as code runs your review rules on every plan, starting with never destroying data you can't recreate and never opening things to the public internet. Your code goes through the changes in order and asks two separate `if` questions about each one. The first flags a protected type with a delete action. The second flags `public_access` being `True`. Neither question stops the other, so one change can get both messages, rule 1 first.",
-        say='"I check every change against each rule separately and report every problem, not just the first. One change can break both rules and get both messages."',
+        say='"[[Policy as code|A code review|A unit test::Rules written as code that run on every plan.]] checks our review rules on every plan. I check each change against every rule [[separately|once in total|only if the first passes::Each rule gets its own look at every change.]], so I report [[every problem|the first problem|the worst problem::Stopping early would hide the rest.]], even two from the same change."',
         classic=None,
     ),
     stack=stack('terraform test with a mocked provider', """mock_provider "azurerm" {}

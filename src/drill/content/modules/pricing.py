@@ -36,7 +36,7 @@ total = model + check + redo
     angle=angle(
         pattern='Add up the three costs',
         text="The big idea: an AI task costs more than the model's bill, so you price a finished task: the model, plus a person checking, plus redoing failures. Your code works out each part. Checking is the share checked times the minutes per check, divided by 60 to make hours, times the hourly rate. Failures are the share that fails times the cost of a redo. It adds both to the model cost and rounds to cents. It is like a meal's real cost: the food, plus the cook's time.",
-        say='"I price a finished task, not a model call: the model cost, plus people checking answers, plus redoing the answers that fail."',
+        say='"I price a [[finished task|model call|prompt::The thing the business actually gets.]], not a single call. That\'s the model cost, plus people [[checking|writing|training::Someone looks over a share of the answers.]] answers, plus [[redoing|ignoring|logging::Answers that fail have to be done again.]] the ones that fail."',
         classic=None,
     ),
     stack=stack('MLflow 3: model cost per task from traces', """import mlflow
@@ -183,7 +183,7 @@ for out, tool in steps:
     angle=angle(
         pattern='A running total that grows',
         text="The big idea: an agent resends everything so far on every step, so the input grows and one task costs far more than one call. Your code keeps the context size in a variable, starting with the first input. For each step it first adds the whole context to the input total, and the step's output to the output total. Only after that does the context grow by the step's output and tool result. It is like an email thread where every reply quotes everything above it.",
-        say='"I price an agent from whole runs, not one call. Each step resends the whole context so far, so the input bill grows every step."',
+        say='"I price an agent by the [[whole run|first call|last step::Every step of the task, start to finish.]], not one call. Each step [[resends|forgets|shortens::Like an email reply that quotes everything above it.]] everything so far, so the input bill [[grows|shrinks|stays flat::The context gets longer every step.]] every step."',
         classic=None,
     ),
     stack=stack('LangChain: tokens for a whole agent run', """from langchain_core.callbacks import (
@@ -325,7 +325,7 @@ monthly = {"model": 900, "hosting": 1200,
     angle=angle(
         pattern='One-off plus monthly times months',
         text='The big idea: the total cost of ownership is the one-off build costs plus every monthly cost for the whole life of the system, and the biggest single item shows where a saving matters most. Your code works out the number of months as 12 times the years. It adds up the one-off costs as they are and each monthly cost times the months, and while doing it keeps the name of the item with the biggest share so far. It returns the total, rounded to whole dollars, and that name. It is like the true cost of a car: the price, plus fuel, insurance and servicing for as long as you keep it.',
-        say='"I price the total cost of ownership: one-off build costs plus every monthly cost, tokens, hosting, monitoring, people checking and upkeep, for the life of the system, and I look hardest at the biggest item."',
+        say='"For total cost of ownership, I add the [[one-off|monthly|yearly::Things you pay for just once.]] build costs to every monthly cost, for the whole [[life|first year|launch::How long the system will be running.]] of the system. Then I look hardest at the [[biggest|newest|smallest::Where a saving matters most.]] item."',
         classic=None,
     ),
     exercise=exercise(
@@ -464,7 +464,7 @@ even = fixed / saving   # 1774.6
     angle=angle(
         pattern='Check before you divide',
         text="The big idea: a task that saves money each time can still lose money once monthly costs and the build are counted. Your code works out the monthly net: saving per task times tasks a month, minus fixed costs. Only if the net is above zero does it divide the build cost by it to get payback months. Otherwise payback is `None`, Python's word for no value. Break-even is fixed costs divided by saving per task, rounded up to a whole task, because you can't do part of a task.",
-        say='"I work out the monthly net first. If it is zero or less there is no payback, so I return None. I round break-even up to a whole task."',
+        say='"First I work out what\'s left each month after [[fixed costs|the build|taxes::Costs you pay every month no matter how many tasks run.]]. If that\'s zero or less, there\'s [[no payback|quick payback|a refund::It never earns back what you spent.]]. I round break-even [[up|down|off::You can\'t do part of a task.]] to a whole task."',
         classic=None,
     ),
     stack=stack('MLflow: keep the business case next to the POC', """import mlflow
@@ -633,7 +633,7 @@ swing = high - low              # 18900
     angle=angle(
         pattern='Move one guess, keep the biggest',
         text="The big idea: change one guess at a time, and the one that moves the answer most is the one to measure hardest. Your code copies the base values into a dict: a lookup table from each guess's name to its value. It works out the value with one guess at its low, then at its high. The swing is the gap between them, made positive with `abs`. It keeps the biggest, going through names in alphabetical order so a tie goes to the name that comes first.",
-        say='"I move one guess at a time from its low to its high, keep the others at expected values, and measure the guess with the biggest swing first."',
+        say='"I move [[one guess|three guesses|two guesses::Change a single thing so you know what caused the swing.]] at a time from its low to its high, and keep the others [[steady|random|at zero::Everything else stays at its expected value.]]. The one that moves the answer most is the one I [[measure|ignore|drop::It\'s the guess most worth pinning down.]] first."',
         classic=None,
     ),
     stack=stack('MLflow 3: measure the guess that matters most', """import mlflow
@@ -811,7 +811,7 @@ peak = 270 * 0.2 / 60 * 3 * tokens
     angle=angle(
         pattern='Daily count to busiest minute',
         text='The big idea: traffic is never even, so you size for the busiest minute, not the daily average, or users hit error 429. Your code takes tasks a day times the busy-hour share and divides by 60 to get tasks a minute. It multiplies by the burst factor, then by tokens per task, and rounds to a whole number of tokens. Then it checks that number is at or below the tokens-per-minute limit, and returns the number and that true or false answer. It is like staffing a café for the lunch rush.',
-        say='"I size for the busiest minute, not the daily average, and check it against every limit on the path, so users don\'t get error 429."',
+        say='"Traffic is never even, so I size for the [[busiest minute|daily average|whole day::Staff a café for the lunch rush.]]. Then I check that against the [[per-minute limit|monthly bill|daily average::The cap the endpoint sets on tokens.]], so users don\'t get [[error 429|slow pages|wrong answers::The too-many-requests error.]]."',
         classic=None,
     ),
     stack=stack("Databricks: the busiest minutes in the gateway's usage table", """-- the 5 busiest minutes last week
@@ -955,7 +955,7 @@ description: Vets a proposed AI use case before
     angle=angle(
         pattern='Check the rules, then write the file',
         text='The big idea: a skill is a SKILL.md file whose name and description Claude reads first, so the file must follow the rules exactly or it will not load. Your code first collects every rule the name or description breaks: characters, length, the reserved words, an empty or too-long description, angle brackets. If there are any, it returns them all, so they can be fixed in one go. Otherwise it builds the file line by line: the frontmatter (the settings between --- markers), a title made from the name, and the steps numbered from 1. It is like filling in a form that is checked before it is sent.',
-        say='"I package a routine I repeat, like vetting a use case, as a Claude skill: a SKILL.md with a name, a description that says what it does and when to use it, short steps, and scripts for anything that must be exact, like the cost sums. Then I test it on cases with known answers."',
+        say='"I package a routine I repeat as a Claude skill. Its [[description|title|folder::Claude reads it first to decide when to use the skill.]] says what it does and when to use it, and anything exact, like cost sums, goes in a [[script|prompt|comment::A model can get sums wrong; this can\'t.]]."',
         classic=None,
     ),
     exercise=exercise(

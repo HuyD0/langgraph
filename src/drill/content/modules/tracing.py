@@ -37,7 +37,7 @@ traces = mlflow.search_traces(filter_string="tags.config = 'cs512-k5'")"""),
     angle=angle(
         pattern='Group by a tag, then average',
         text="The big idea: tagging every trace lets you compare versions later, like v1 against v2. Your code sorts the traces into piles by their tag. For each pile it keeps a running count and a running total of milliseconds, stored in a dict: a lookup table from the tag's value to its numbers. At the end it divides each total by its count to get the average time per version. Traces without the tag are skipped.",
-        say='"I tag every trace with its version, then group the traces by that tag and average their times, so I can compare versions side by side."',
+        say='"I [[tag|name|time::A label like v1 or v2.]] every trace with its version. Then I group the traces by that tag and [[average|add up|sort::Total time divided by how many.]] their times, so I can compare versions side by side."',
         classic='group_anagrams',
     ),
     stack=stack('MLflow tracing a LangGraph app, with tags', """mlflow.langchain.autolog()   # every LangGraph run becomes a trace
@@ -193,7 +193,7 @@ lesson(MODULE, 'slowest_chain',
     angle=angle(
         pattern='Follow the slowest child down',
         text="The big idea: to find what's slow, start at the root and keep following the slowest child down. Your code first goes through the spans to find the root and build a dict, a lookup table from each parent's name to its children. Then it walks down: it adds the current span's name to the path, picks the child with the biggest `ms`, and moves to it. When a span has no children, it stops. It is like following the thickest branch of a tree out to its tip.",
-        say='"I group spans by parent, then start at the root and step into the slowest child each time. The path usually ends at the slow tool or model call."',
+        say='"To find what\'s slow, I start at the [[root|slowest leaf|newest span::The top span everything else hangs from.]] and keep stepping into the [[slowest|first|newest::The child with the biggest time.]] child. Where it stops is usually the slow tool or model call."',
         classic='num_islands',
     ),
     stack=stack('MLflow: find the slowest model call', """from mlflow.entities import SpanType
@@ -368,7 +368,7 @@ t-03       9       4  14800  61200
     angle=angle(
         pattern='Four numbers from one trace',
         text="The big idea: turn each trace into one row of a few numbers, so you can sort and filter runs like a spreadsheet. Your code starts four numbers at 0 and looks at each span once. It adds 1 to steps for a model call, and 1 to tool errors for a failed tool call. It keeps the biggest input tokens seen so far, and adds every span's input and output tokens to the total. An empty trace leaves all four at 0.",
-        say='"I turn each trace into one row: model steps, tool errors, the biggest prompt and total tokens. Then I sort the rows to find the runs worth reading."',
+        say='"I turn each trace into one [[row|chart|span::Like a line in a spreadsheet.]] of a few numbers: model steps, tool errors, biggest prompt and total tokens. Then I [[sort|delete|merge::Put the rows in order to spot the odd ones.]] the rows to find the runs worth reading."',
         classic=None,
     ),
     stack=stack('MLflow 3: one row per trace', """import mlflow
@@ -555,7 +555,7 @@ call 3: 108000 tokens  84%
     angle=angle(
         pattern='Track the biggest, note the first',
         text="The big idea: measure each call's fill, its input tokens as a percent of the window, so you can clean up before a run hits the limit. Your code works out each call's fill in order, and `enumerate` gives each call's position from 0. It keeps the biggest fill so far, like a high score. It also notes the first position over 80, and the `first_over is None` check stops later ones replacing it. At the end it rounds the biggest fill to a whole number.",
-        say='"I work out each call\'s fill as a percent of the window, keep the biggest, and note the first call over 80 percent, which is when to clean up."',
+        say='"For each call I work out how [[full|long|old::Compare what\'s in the context window with how much it can hold.]] the context window is. I keep the biggest, and note the [[first|last|biggest::You want to know when it started getting crowded.]] call over 80 percent, because that\'s when to clean up."',
         classic=None,
     ),
     stack=stack('MLflow 3: input tokens per model call', """import mlflow
@@ -705,7 +705,7 @@ agent:   "I'm not sure."  (forgotten)"""),
     angle=angle(
         pattern='Check each planted fact in a set',
         text='The big idea: test a summary by planting facts, asking about them later, and counting how many the agent still gets right. Your code turns `answered` into a set, a collection built to answer "is this in it?" instantly, like a book\'s index. Then it checks each planted fact. A hit adds 1 to the count, and a miss goes on the forgotten list. Hits divided by facts planted, rounded to 2 places, is the share kept. The forgotten facts come out sorted A to Z.',
-        say='"I plant facts, compact the run, then ask about them. I report the share the agent still knows and list what it forgot."',
+        say='"I plant facts early, [[compact|restart|extend::Squash the history into a summary.]] the run, then ask about them. I report the [[share|word count|time::Facts remembered divided by facts planted.]] the agent still knows and list what it forgot."',
         classic='two_sum',
     ),
     stack=stack('LangChain: clear tool results, then summarise', """from langchain.agents import create_agent
@@ -873,7 +873,7 @@ search('weather paris')   # stop here"""),
     angle=angle(
         pattern='Count repeats in a row',
         text="The big idea: the simplest guardrail stops an agent that makes the same call again and again. Your code remembers the previous call and a count of repeats in a row. If the current call matches the previous one, the count goes up by 1. If not, the count starts again at 1. As soon as the count reaches `limit`, it returns that call's position. If that never happens, it returns -1.",
-        say='"I count how many identical calls come in a row, starting again at 1 when the call changes, and stop the agent once the count reaches the limit."',
+        say='"I count how many times the same call comes [[in a row|in total|per hour::Back to back, with nothing different between.]]. When the call changes, the count goes back to [[1|0|the limit::The new call counts itself.]], and I stop the agent once it reaches the limit."',
         classic='max_subarray',
     ),
     stack=stack('LangGraph: stop on a repeated call', """def route(state):
@@ -1031,7 +1031,7 @@ ignored task        9  t-402, t-417
     angle=angle(
         pattern='Group by label, count, then sort',
         text='The big idea: label each failed trace, count the labels, and fix the biggest group first. Your code sorts the failures into piles by label, kept in a dict: a lookup table from each label to its list of ids. Then it makes one row per label: the label, how many ids it has, and its first `n` ids. Last, it sorts the rows so the biggest count comes first, and labels with the same count go A to Z.',
-        say='"I group failed traces by label, count each group and keep a few example ids. Then I sort biggest first, so I fix the most common failure first."',
+        say='"I [[label|delete|rerun::Give each failure a name for what went wrong.]] each failed trace, then count each kind. I fix the [[biggest|newest|smallest::The group with the most traces.]] group first."',
         classic='group_anagrams',
     ),
     stack=stack('MLflow 3: save labels on traces, then look them up', """import mlflow
