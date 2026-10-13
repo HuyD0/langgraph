@@ -31,7 +31,8 @@
   /* the path: violet marks the whole route (the phase tabs on Home); blue stays for where you are.
      --path for fills and done phases, --path-bg the tab strip, --path-line its edge, --path-ink its text */
   --path: #6a3fd0; --path-bg: #efeafc; --path-line: #d9cff5; --path-ink: #574a80;
-  --plat: #a63d12; --plat-bg: #fbe9df;   /* the Databricks & IaC flag on a phase */
+  /* the platform track: teal, the one colour family nothing else uses, so it never reads as the AI path */
+  --track: #0b7a70; --track-on: #ffffff; --track-soft: #def4f1; --track-line: #b5e2dc; --track-ink: #2c6a64;
 
   /* code colours: keyword, string, number, comment, function name, built-in. No green or red, which mean pass and fail. */
   --syn-kw: #7a3fc7; --syn-str: #a04a00; --syn-num: #b4307a; --syn-com: #6b7280; --syn-fn: #1f5fbf; --syn-bi: #0f7a8a;
@@ -72,7 +73,7 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
-  --plat: #ff9f73; --plat-bg: #2c1a12;
+  --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
 :root[data-theme="dark"] {
@@ -84,7 +85,7 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
-  --plat: #ff9f73; --plat-bg: #2c1a12;
+  --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
 
 /* Dusk: an opt-in dark theme, data-theme="dusk" on <html>. Blue-black darks with a
@@ -100,5 +101,5 @@
   --finish: #b49cff; --finish-ink: #0a1233;
   --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6;
   --path: #8b5cf6; --path-bg: #150f28; --path-line: #3a2a63; --path-ink: #a99ad6;
-  --plat: #ffa27a; --plat-bg: #26150f;
+  --track: #34d8c4; --track-on: #03201c; --track-soft: #0e2422; --track-line: #1d4743; --track-ink: #8ccfc5;
   --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }

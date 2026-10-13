@@ -36,7 +36,7 @@ lesson(MODULE, 'graduation_gate',
     angle=angle(
         pattern='Check every rule, keep every failure',
         text='The big idea: an app should graduate on evidence the trial measured, and the gate lists every check that fails so the team can fix them all in one round. Your code checks the six rules one after another. Each rule that fails adds its reason to a list, and the code never stops early. Exactly at a limit passes, because it uses `<` and `>`, not `<=` and `>=`. At the end, `sorted` puts the reasons in A to Z order, and an empty list means it graduates.',
-        say='"I check every rule and collect all the failing reasons instead of stopping at the first one, so the team can fix everything in one round."',
+        say='"I check [[every rule|the first rule|the main rule::Don\'t stop early.]] and collect all the reasons that fail, instead of stopping at the first one. That way the team can fix everything in [[one round|one line|one day::A single pass of fixes, not back and forth.]]."',
         classic=None,
     ),
     stack=stack('MLflow: log the pack on a run, read it back', """import mlflow
@@ -257,7 +257,7 @@ model = mlflow.pyfunc.load_model('models:/main.ml.churn@champion')"""),
     angle=angle(
         pattern='Keep the best so far',
         text="The big idea: only promote a challenger when it beats the champion by a meaningful margin on the same data. Your code first works out the bar: the champion's score plus `min_gain`. Then it goes through the challengers, keeping the best so far, like holding the tallest card you have seen. A challenger takes over only if it clears the bar and scores higher than the current best. A tie is not higher, so the earlier version stays, and if nobody clears the bar the champion stays.",
-        say='"I only promote a challenger that beats the champion by the minimum gain. Of those, the highest score wins, and a tie goes to the earlier version."',
+        say='"A challenger only replaces the [[champion|newest model|test data::The version running now.]] if it wins by at least the [[minimum gain|same score|one point::A tiny win could just be luck.]]. Among those, the highest score wins, and a tie goes to the [[earlier|later|cheaper::The one that came first stays.]] version."',
         classic='max_subarray',
     ),
     stack=stack('Databricks: move the champion alias in Unity Catalog', """from mlflow import MlflowClient
@@ -389,7 +389,7 @@ lesson(MODULE, 'route_request',
     angle=angle(
         pattern='Add up percents until you pass',
         text="The big idea: a canary release sends a small share of traffic to the new version, and using the user's id means one person always gets the same version. Your code takes the last two digits, `user_id % 100`, as a bucket from 0 to 99. Then it goes through the routes, adding each percent to a running total. The first route whose total is bigger than the bucket answers. With a 90 and 10 split, buckets 0 to 89 get the first version and 90 to 99 the second.",
-        say='"I turn the user id into a bucket from 0 to 99, so a person always sees the same version. The first route whose running total passes it wins."',
+        say='"I turn each user id into a number from 0 to 99, so a person always sees the [[same version|newest version|random version::Coming back tomorrow shouldn\'t change what they get.]]. Then I add up the route percents, and the first route whose [[running total|own percent|name::Keep adding as you go down the list.]] passes that number wins."',
         classic=None,
     ),
     stack=stack('Databricks: a 90/10 split on a serving endpoint', """import mlflow.deployments
@@ -530,7 +530,7 @@ rule: at least 100 traces and 10 points better → promote v3"""),
     angle=angle(
         pattern='Count passes per version, then compare',
         text='The big idea: tag every trace with its prompt version, then decide with a rule you wrote down first: promote, keep testing, or roll back. Your code keeps two dicts, small lookup tables from a version name to a number. One counts traces and one counts passes. If the new version has fewer than `min_traces` traces, it returns `"keep"` before any dividing. Otherwise it works out both pass rates as percents and checks the rules in order: promote, then roll back, then keep.',
-        say='"I tag each trace with its prompt version and compare pass rates once the new one has enough traces. I promote only on a gain I set in advance."',
+        say='"I tag each trace with its [[prompt version|user name|time::Which wording of the prompt made this answer.]] and compare pass rates once the new one has [[enough traces|one trace|a good trace::A few results could just be luck.]]. I promote only on a gain I set in advance."',
         classic=None,
     ),
     stack=stack('Tag traces with the prompt version, then compare', """prod = mlflow.genai.load_prompt("prompts:/main.support.answer@production")

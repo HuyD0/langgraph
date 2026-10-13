@@ -38,8 +38,10 @@ def test_modules_are_in_order_and_lessons_are_unique(loaded):
     ids = [lesson_id for m in loaded for lesson_id in m.lesson_ids]
     assert len(ids) == len(set(ids)), "a lesson id appears twice"
     lifecycle_modules = [mid for _, _, ms in modules.LIFECYCLE for mid in ms]
-    assert sorted(lifecycle_modules) == sorted(modules.ORDER), "every module belongs to one lifecycle stage"
-    assert lifecycle_modules == modules.ORDER, "the path teaches the stages in order, so ORDER follows LIFECYCLE"
+    track_modules = [mid for _, _, _, ms in modules.TRACKS for mid in ms]
+    assert lifecycle_modules == modules.PATH, "the path teaches the stages in order, so PATH follows LIFECYCLE"
+    assert modules.ORDER == modules.PATH + track_modules, "every module is in one lifecycle stage or one track, path first"
+    assert len(set(modules.ORDER)) == len(modules.ORDER), "a module is in only one place"
 
 
 def test_the_path_has_six_phases_one_sticker_shape_each():
@@ -251,6 +253,21 @@ def test_phase_tabs_are_one_piece_with_their_room():
     assert 'class="phasebox' in page and "data-showing=" in page, "the box must not carry data-phase, or any tap inside it would switch phase"
 
 
+def test_a_sorting_lesson_explains_itself_to_someone_who_sorted(loaded):
+    """Explain must not tell a learner who sorted cards about the Python lists they never wrote."""
+    for mod in loaded:
+        for entry in mod.lessons:
+            sort = entry["exercise"]["sort"]
+            if not sort:
+                continue
+            assert sort["explain"], f"{entry['id']}: a sort_task needs explain text"
+            assert "Python" not in sort["explain"] and "elif" not in sort["explain"], entry["id"]
+            assert sort["explain"] in entry["angle"]["text"], f"{entry['id']}: explain should be the lesson's own words"
+            labels = {b["id"]: f'{b["label"]} {b["who"]}'.lower() for b in sort["bins"]}
+            if "gate" in labels and "shelve" in labels:  # the lesson says a failed gate is shelved; the board must agree
+                assert "gate" in labels["shelve"] and "shelved" in labels["gate"], entry["id"]
+
+
 def test_every_look_is_readable():
     """Text, results, the primary button and code colours meet contrast minimums in light, dark and dusk."""
     import importlib.util
@@ -266,17 +283,86 @@ def test_every_look_is_readable():
     assert not bad, bad
 
 
-def test_the_databricks_phase_is_flagged_without_a_glow():
-    # Ship holds the Databricks and IaC modules, so its tab and title card carry a fixed flag.
-    # Glow means "you are here", so the flag is a chip in its own colour, readable in every look.
+def test_placeholders_are_coming_soon_not_lessons(loaded, data):
+    """A planned lesson has a title and a line, never an exercise, and never shares an id with a real lesson."""
+    lesson_ids = {lid for m in loaded for lid in m.lesson_ids}
+    for m in loaded:
+        for p in m.planned:
+            assert set(p) == {"id", "title", "blurb"} and p["title"] and p["blurb"], (m.id, p)
+            assert p["id"] not in lesson_ids, f"{p['id']} is both a lesson and a placeholder"
+    shown = {p["id"] for m in data["modules"] for p in m["planned"]}
+    assert shown and not (shown & set(data["lessons"])), "placeholders reach the page, and never as lessons"
+
+
+def test_the_platform_track_has_a_real_lesson_in_every_module(loaded):
+    """Each track module opens with a lesson you can do, so a placeholder is never all there is."""
+    by_id = {m.id: m for m in loaded}
+    for _, _, _, mids in modules.TRACKS:
+        for mid in mids:
+            assert by_id[mid].lessons, f"{mid} has only placeholders"
+
+
+def test_a_sentence_with_gaps_is_stored_plain_and_in_pieces():
+    from drill.content.model import cloze
+
+    plain, pieces = cloze("I find everything [[downstream|upstream|beside it::Which way?]] of it, then wait for [[inputs|outputs|logs::What it needs.]].")
+    assert plain == "I find everything downstream of it, then wait for inputs."
+    assert pieces[1] == {"answer": "downstream", "wrong": ["upstream", "beside it"], "clue": "Which way?"}
+    assert cloze("No gaps here.") == ("No gaps here.", [])
+    with pytest.raises(AssertionError):  # help is a clue first, so every gap needs one
+        cloze("One [[gap|a|b]] and [[two|c|d::ok]].")
+
+
+def test_every_explain_gap_is_answerable_and_the_plain_sentence_reads_right():
+    from drill.content.build import build_data
+
+    with_gaps = 0
+    for lid, lesson in build_data()["lessons"].items():
+        pattern, text, say, classic, pieces = lesson["angle"]
+        if not pieces:
+            continue
+        with_gaps += 1
+        assert "[[" not in say and "]]" not in say, lid
+        assert "".join(p if isinstance(p, str) else p["answer"] for p in pieces) == say, lid
+        for g in (p for p in pieces if not isinstance(p, str)):
+            assert len({g["answer"], *g["wrong"]}) == 3, (lid, g)
+            assert g["answer"].lower() not in g["clue"].lower(), f"{lid}: the clue gives away {g['answer']!r}"
+    assert with_gaps == len(build_data()["lessons"]), "every lesson's Explain sentence has gaps"
+
+
+def test_every_platform_module_tells_the_tutor_its_setting():
+    """Without a setting, "give me a harder one" drifts to generic web-app examples."""
+    from drill.content.build import PAGE_TEMPLATE
+
+    data = build_data()
+    track = next(t for t in data["tracks"] if t["id"] == "platform")
+    by_id = {m["id"]: m for m in data["modules"]}
+    for mid in track["modules"]:
+        assert "Azure Databricks" in by_id[mid]["setting"], mid
+    assert "modOf[cur.id].setting" in PAGE_TEMPLATE.read_text(), "the tutor's lesson context must include the setting"
+
+
+def test_the_frontend_guide_and_screen_gallery_match_the_code():
+    """docs/FRONTEND.md's map names page.html's section markers, and docs/screens/README.md shows
+    every shot scripts/screenshots.mjs takes: renaming one without the other fails here."""
+    import re
     from pathlib import Path
-    root = Path(__file__).resolve().parents[1] / "src/drill/content"
-    page, tokens = (root / "page.html").read_text(), (root / "tokens.css").read_text()
-    assert 'const PH_FLAG = { Ship: "Databricks & IaC" };' in page
-    assert any(name == "Ship" and {"platform", "workspace", "access"} <= set(ms) for name, _, ms in modules.LIFECYCLE)
-    assert tokens.count("--plat:") == tokens.count("--path:"), "every look defines the flag colour"
-    flag_css = page.split(".rail .ph .plat {", 1)[1].split("}", 1)[0]
-    assert "glow" not in flag_css and "animation" not in flag_css
+
+    root = Path(__file__).resolve().parents[1]
+    page = (root / "src/drill/content/page.html").read_text()
+    guide = (root / "docs/FRONTEND.md").read_text()
+    table = guide.split("## Map of the script", 1)[1].split("\n## ", 1)[0]
+    markers = [m for cell in re.findall(r"^\| `([^`]+)`(?: / `([^`]+)`)? \|", table, re.M) for m in cell if m]
+    assert len(markers) >= 20
+    for marker in markers:
+        assert f"// ---------- {marker}" in page, f"docs/FRONTEND.md names a section page.html doesn't have: {marker}"
+
+    shots = re.findall(r'^\s*\["([a-z0-9-]+)",', (root / "scripts/screenshots.mjs").read_text(), re.M)
+    gallery = (root / "docs/screens/README.md").read_text()
+    assert len(shots) >= 10
+    for name in shots:
+        assert f"({name}.webp)" in gallery, f"docs/screens/README.md doesn't show {name}"
+        assert (root / "docs/screens" / f"{name}.webp").exists(), f"run scripts/screenshots.mjs: {name}.webp is missing"
 
 
 def test_fast_changing_lessons_say_when_they_were_checked():

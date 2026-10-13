@@ -1,8 +1,9 @@
 """Databricks building blocks: Compute, runtimes, jobs, bundles, tags and what they cost."""
 
+from drill.content.modules.platform_world import PLATFORM_SETTING
 from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
 
-MODULE = module('workspace', 'Databricks building blocks', 'Compute, runtimes, jobs, bundles, tags and what they cost.')
+MODULE = module('workspace', 'Databricks building blocks', 'Compute, runtimes, jobs, bundles, tags and what they cost.', setting=PLATFORM_SETTING)
 
 lesson(MODULE, 'pick_compute',
     title='Which compute for which work',
@@ -30,7 +31,7 @@ lesson(MODULE, 'pick_compute',
     angle=angle(
         pattern='Rules in order, first match wins',
         text='The big idea: the kind of work and its special needs decide the compute. Your code goes through the workloads one by one and asks questions in a fixed order. Is it SQL? Then a SQL warehouse, whatever else it needs. If not, does it need a GPU or an init script? Then classic compute: all-purpose for a notebook, jobs compute for a job. Anything left goes to serverless. The order matters: the first rule that fits decides.',
-        say='"I check SQL first, then special machine needs, and default the rest to serverless. Classic compute only when serverless can\'t do the job, and jobs compute rather than all-purpose for anything scheduled."',
+        say='"I check SQL first and send it to a [[SQL warehouse|cluster pool|notebook::Compute made for queries and dashboards.]], then special machine needs, and default the rest to [[serverless|all-purpose|GPU::Databricks runs the machines for you.]]. For anything scheduled, [[jobs compute|all-purpose compute|a laptop::Made for one run, then shut down.]] beats all-purpose."',
         classic=None,
     ),
     stack=stack('Terraform: a serverless SQL warehouse and a job on jobs compute', """resource "databricks_sql_endpoint" "bi" {
@@ -216,7 +217,7 @@ lesson(MODULE, 'unsupported_runtimes',
     angle=angle(
         pattern='Cut out the key, then check membership',
         text='The big idea: every cluster names its runtime in one string, so you can check a whole workspace against the supported list. Your code goes through the clusters in order. For each one it cuts the version out of `spark_version` by splitting the text at `".x"` and keeping the first piece. Then it asks one question: is that version in the supported list? If not, the cluster\'s name goes into the result.',
-        say='"I take the version from each cluster\'s spark_version, the part before .x, and flag every cluster whose version isn\'t on the supported list."',
+        say='"I take the version from each cluster\'s spark_version, the part [[before .x|after .x|at the end::Like 15.4 in 15.4.x-scala2.12.]], and flag every cluster whose version isn\'t on the [[supported list|newest list|price list::The versions still getting fixes.]], so it can move to a [[current LTS|beta|random::A long-term support version.]] runtime."',
         classic='two_sum',
     ),
     stack=stack('Terraform: always pick the latest LTS', """data "databricks_spark_version" "lts" {
@@ -357,7 +358,7 @@ lesson(MODULE, 'policy_violations',
     angle=angle(
         pattern='Look up each rule, check by its type',
         text='The big idea: a policy is a set of rules, one per setting, and each rule type has its own simple test. Your code goes through the policy\'s rules in order. For each one it first looks up the setting in the cluster. Missing breaks the rule. Otherwise it checks by type: fixed means equal, allowlist means in the list, range means not below `minValue` and not above `maxValue`, checking only the limits that are given.',
-        say='"I check every policy rule against the cluster: a fixed value must match, an allowlist must contain it, a range must hold it. Missing settings break the rule too."',
+        say='"I check every policy rule against the cluster: a fixed value must [[match|be bigger|be empty::Exactly the same.]], an allowlist must [[contain it|skip it|sort it::Its value is one of the listed ones.]], and a range must hold it. A [[missing setting|long name|new cluster::Nothing set at all.]] breaks the rule too."',
         classic=None,
     ),
     stack=stack('Terraform: the policy, and who may use it', """resource "databricks_cluster_policy" "data_team" {
@@ -566,7 +567,7 @@ clean fails:
     angle=angle(
         pattern='Spread through a list in order',
         text='The big idea: a failure spreads downstream, so you track which tasks are stopped. Your code starts a list of stopped tasks with only the failed one. Because each task comes after the tasks it depends on, one pass in order is enough. For each task it asks: does it depend on any stopped task? If yes, it is skipped. Add it to the result and to the stopped list, so the tasks after it see it too.',
-        say='"I keep a list of stopped tasks, starting with the failed one. Going in order, any task that depends on a stopped task is skipped and joins the list."',
+        say='"I keep a list of stopped tasks, starting with the [[failed one|first one|last one::Where the trouble began.]]. Going in order, any task that [[depends on|runs before|has the same name as::Its depends_on names one.]] a stopped task is [[skipped|retried|failed::It never runs, but it wasn\'t its own fault.]] and joins the list."',
         classic='num_islands',
     ),
     stack=stack('A job in a bundle: depends_on and run_if', """resources:
@@ -748,7 +749,7 @@ targets:
     angle=angle(
         pattern='Layered lookup: specific value, then default',
         text="The big idea: one set of files deploys to many places, and each place fills in its own values. Your code goes through the declared variables. For each name it asks in order: does the target set it? Use that. Is there a default? Use that. Neither? Then it's missing. The missing names are sorted at the end, so the error message is the same every time.",
-        say='"For each variable, the target value wins, then the default. Anything with neither is missing, and validate should fail on it before anything deploys."',
+        say='"For each variable, the [[target value|default|first value::The setting for dev or prod.]] wins, then the default. Anything with neither is [[missing|zero|empty text::It has no value at all.]], and bundle validate should [[fail|warn|guess::Stop before anything deploys.]] on it."',
         classic=None,
     ),
     stack=stack('The bundle commands', """databricks bundle validate -t prod
@@ -906,7 +907,7 @@ lesson(MODULE, 'tag_coverage',
     angle=angle(
         pattern='Two running totals, then a share',
         text='The big idea: tags only help if most of the spend carries them, so you measure coverage. Your code keeps two running totals. For each usage row it asks one question: does `custom_tags` have the key? Its cost goes into tagged or untagged. At the end the percent is tagged divided by the total, times 100. If the total is 0, the percent is 0, so you never divide by zero.',
-        say='"I add up tagged and untagged cost for the key, and report the tagged share. Untagged spend is what nobody owns, so that number is the one to drive down."',
+        say='"I add up [[tagged and untagged|big and small|old and new::Two piles: with the key, and without.]] cost, and report the tagged share. Untagged spend is what [[nobody owns|is free|is cheapest::No team to send the bill to.]], so that is the number to [[drive down|ignore|double::Make it smaller each month.]]."',
         classic=None,
     ),
     stack=stack('SQL: how much of last month\'s usage has a team tag', """SELECT
@@ -1061,7 +1062,7 @@ sku_name = "PREMIUM_JOBS_COMPUTE"    # price: 0.30 a DBU (made up)
     angle=angle(
         pattern='Group and add up',
         text='The big idea: spend only means something when you can say whose it is. Your code keeps a dict from tag value to dollars. For each usage row it finds the group: the tag value, or "untagged" if the row has no such tag. Then it works out the dollars, DBUs times the price for that SKU, and adds them to the group, starting it at the first dollars if it is new. At the end it rounds each total.',
-        say='"I group usage by the tag, price each row from its SKU, and add it up. Untagged gets its own line so it can\'t hide."',
+        say='"I group usage by the tag, price each row from its [[SKU|date|cluster name::The product line the DBUs were used on.]], and add it up. [[Untagged|Expensive|Old::Rows without the key.]] gets its own line so it can\'t [[hide|grow|vanish::Stay out of sight in the total.]]."',
         classic='group_anagrams',
     ),
     stack=stack('SQL: last month\'s list-price spend by team', """SELECT
@@ -1234,7 +1235,7 @@ idle 240 minutes, autotermination_minutes 30
     angle=angle(
         pattern='Cap each value, work out the cost, sort',
         text="The big idea: idle minutes are paid for but do nothing, and auto-termination caps them. Your code goes through the clusters. For each one it works out the idle minutes billed each day: all of them if auto-termination is 0, otherwise whichever is smaller, the idle minutes or the auto-termination setting. Turn minutes into hours, times the days, times DBUs an hour, times the price. Round it, and sort with the most expensive first.",
-        say='"For each cluster I cap the idle time at its auto-termination setting, price the idle hours, and sort so the biggest waste is at the top."',
+        say='"For each cluster I cap the idle time at its [[auto-termination|start-up|policy name::The setting that shuts it down after idle minutes.]] setting, price the [[idle hours|busy hours|DBU names::The time nobody was using it.]], and sort so the [[biggest waste|newest cluster|cheapest one::What to fix first.]] is at the top."',
         classic=None,
     ),
     stack=stack('Terraform: idle limits on a cluster, a warehouse and a policy', """resource "databricks_cluster" "shared" {

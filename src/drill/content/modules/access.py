@@ -4,199 +4,10 @@ The spine of this module: teams remember table grants, then miss the access list
 experiments, catalogs, compute, access connectors, service credentials and connections.
 """
 
+from drill.content.modules.platform_world import PLATFORM_SETTING
 from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
 
-MODULE = module('access', 'Databricks access control', 'Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.')
-
-lesson(MODULE, 'can_read_table',
-    title='Unity Catalog privileges flow down',
-    checked='2026-10-12',
-    sources=[source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
-    learn=[
-        'Unity Catalog names every table with three parts: `catalog.schema.table`, like `sales.crm.accounts`. A **catalog** is the top folder, a **schema** is a folder inside it, and the table sits in the schema.',
-        'To read a table you need three things: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. `USE CATALOG` and `USE SCHEMA` are like keys to the building and the room; `SELECT` lets you open the box.',
-        'Privileges **inherit**: they flow down to everything inside. `SELECT` granted on a schema covers every table in it, today and tomorrow. `USE SCHEMA` granted on a catalog covers every schema in it.',
-        'The classic ticket: "I granted SELECT but they still can\'t see it." Nine times out of ten, `USE CATALOG` or `USE SCHEMA` is missing. Catalogs are one of the permissions people forget most.',
-        '`BROWSE` on a catalog lets people find tables and read their descriptions without reading any data. Grant everything to **groups**, not to single people.',
-    ],
-    example=example('The three grants a reader needs', """GRANT USE CATALOG ON CATALOG sales TO `analysts`;
-GRANT USE SCHEMA  ON SCHEMA  sales.crm TO `analysts`;
-GRANT SELECT      ON TABLE   sales.crm.accounts TO `analysts`;"""),
-    check=question(
-        '`analysts` have `SELECT` on `sales.crm.accounts` and `USE SCHEMA` on `sales.crm`. Can they read the table?',
-        ['Yes, SELECT is enough', 'No, they still need USE CATALOG on sales', 'Only in a notebook, not in SQL'],
-        answer=1,
-        why='All three are needed. Without USE CATALOG they cannot step into the catalog at all.',
-    ),
-    angle=angle(
-        pattern='Three checks, each looking up the tree',
-        text='The big idea: reading a table needs three separate privileges, and each one can come from the place itself or from a place above it. Your code splits the table name into its catalog and schema. Then a small helper asks one question: "does any of my groups have this privilege on one of these places?" You ask it three times: USE CATALOG on the catalog; USE SCHEMA on the catalog or schema; SELECT on the catalog, schema or table. If any answer is no, the user cannot read the table.',
-        say='"I check the three privileges separately: USE CATALOG, USE SCHEMA and SELECT. Each can be granted on the object or anywhere above it, and the user gets them through any of their groups."',
-        classic=None,
-    ),
-    stack=stack('The same grants in Terraform', """resource "databricks_grants" "sales" {
-  catalog = "sales"
-  grant {
-    principal  = "analysts"
-    privileges = ["USE_CATALOG", "BROWSE"]
-  }
-}
-
-resource "databricks_grants" "crm" {
-  schema = "sales.crm"
-  grant {
-    principal  = "analysts"
-    privileges = ["USE_SCHEMA", "SELECT"]   # SELECT here covers every table in sales.crm
-  }
-}"""),
-    exercise=exercise(
-        title='Can They Read the Table?',
-        topic='unity-catalog',
-        difficulty='easy',
-        fn='can_read_table',
-        prompt="""Your function gets three things:
-
-- `grants`: a list of grants. Each one is a dict like `{"principal": "analysts", "privilege": "SELECT", "on": "sales.crm"}`. `on` is a catalog (`"sales"`), a schema (`"sales.crm"`) or a table (`"sales.crm.accounts"`).
-- `groups`: everyone the user counts as: their own name plus every group they belong to, like `["ana", "analysts"]`.
-- `table`: the full table name, like `"sales.crm.accounts"`.
-
-The user can read the table only when all three of these are true, through a grant to any name in `groups`:
-
-1. `USE CATALOG` on the catalog.
-2. `USE SCHEMA` on the schema, or on the catalog (it flows down).
-3. `SELECT` on the table, the schema or the catalog.
-
-A grant of `ALL PRIVILEGES` counts as any privilege. Return `True` or `False`.""",
-        pattern='Write one helper that answers "is this privilege granted to my groups on any of these places?", then call it three times.',
-        target='one pass over the grants for each of the three checks',
-        realworld='This is the first thing to check on every "I can\'t see the table" ticket. In SQL, `SHOW GRANTS ON CATALOG sales` and `SHOW GRANTS ON SCHEMA sales.crm` show the two grants people forget.',
-        starter="""def can_read_table(grants, groups, table):
-    # your code here
-    pass
-""",
-        solution="""def has_grant(grants, groups, privilege, places):
-    for grant in grants:
-        if grant["principal"] in groups and grant["on"] in places:
-            if grant["privilege"] == privilege or grant["privilege"] == "ALL PRIVILEGES":
-                return True
-    return False
-
-
-def can_read_table(grants, groups, table):
-    parts = table.split(".")
-    catalog = parts[0]
-    schema = parts[0] + "." + parts[1]
-    if not has_grant(grants, groups, "USE CATALOG", [catalog]):
-        return False
-    if not has_grant(grants, groups, "USE SCHEMA", [catalog, schema]):
-        return False
-    return has_grant(grants, groups, "SELECT", [catalog, schema, table])
-""",
-        cases=[
-            case([
-                {'principal': 'analysts', 'privilege': 'USE SCHEMA', 'on': 'sales.crm'},
-                {'principal': 'analysts', 'privilege': 'SELECT', 'on': 'sales.crm.accounts'},
-            ], ['ana', 'analysts'], 'sales.crm.accounts', expected=False, sample=True),
-            case([
-                {'principal': 'analysts', 'privilege': 'USE CATALOG', 'on': 'sales'},
-                {'principal': 'analysts', 'privilege': 'USE SCHEMA', 'on': 'sales.crm'},
-                {'principal': 'analysts', 'privilege': 'SELECT', 'on': 'sales.crm.accounts'},
-            ], ['ana', 'analysts'], 'sales.crm.accounts', expected=True),
-            case([
-                {'principal': 'finance', 'privilege': 'USE CATALOG', 'on': 'sales'},
-                {'principal': 'finance', 'privilege': 'USE SCHEMA', 'on': 'sales'},
-                {'principal': 'finance', 'privilege': 'SELECT', 'on': 'sales'},
-            ], ['bo', 'finance'], 'sales.billing.invoices', expected=True),
-            case([
-                {'principal': 'data-engineers', 'privilege': 'USE CATALOG', 'on': 'sales'},
-                {'principal': 'data-engineers', 'privilege': 'ALL PRIVILEGES', 'on': 'sales.crm'},
-            ], ['kai', 'data-engineers'], 'sales.crm.contacts', expected=True),
-            case([
-                {'principal': 'marketing', 'privilege': 'USE CATALOG', 'on': 'sales'},
-                {'principal': 'marketing', 'privilege': 'USE SCHEMA', 'on': 'sales.crm'},
-                {'principal': 'marketing', 'privilege': 'SELECT', 'on': 'sales.crm.accounts'},
-            ], ['ana', 'analysts'], 'sales.crm.accounts', expected=False),
-            case([
-                {'principal': 'ana', 'privilege': 'USE CATALOG', 'on': 'sales'},
-                {'principal': 'ana', 'privilege': 'USE SCHEMA', 'on': 'sales.crm'},
-                {'principal': 'ana', 'privilege': 'SELECT', 'on': 'sales.crm.accounts'},
-            ], ['ana', 'analysts'], 'sales.crm.leads', expected=False),
-        ],
-        guided="""def has_grant(grants, groups, privilege, places):
-    # True when one of my groups has this privilege on one of these places.
-    for grant in grants:
-        if grant["principal"] in groups and grant["on"] in places:
-            # ALL PRIVILEGES counts as any privilege.
-            if grant["privilege"] == privilege or grant["privilege"] == ___:
-                return True
-    return False
-
-
-def can_read_table(grants, groups, table):
-    # Replace every ___ with real code, then run the tests.
-
-    parts = table.split(".")
-    catalog = parts[0]
-    schema = parts[0] + "." + parts[1]
-
-    # Need 1: USE CATALOG, only on the catalog itself.
-    if not has_grant(grants, groups, "USE CATALOG", [catalog]):
-        return False
-
-    # Need 2: USE SCHEMA, on the catalog or the schema.
-    if not has_grant(grants, groups, "USE SCHEMA", ___):
-        return False
-
-    # Need 3: SELECT, on the catalog, the schema or the table.
-    return has_grant(grants, groups, "SELECT", ___)
-""",
-        fills=['"ALL PRIVILEGES"', '[catalog, schema]', '[catalog, schema, table]'],
-        concepts=[
-            [
-                'Splitting a string',
-                '`text.split(".")` cuts the text at every dot and gives a list of the pieces.',
-                """'sales.crm.accounts'.split('.')   # ['sales', 'crm', 'accounts']""",
-            ],
-            [
-                'A helper function',
-                'When you ask the same question several times, put it in its own function and call it with different inputs.',
-                """def is_adult(age):
-    return age >= 18
-is_adult(20)   # True""",
-            ],
-            [
-                'Returning early',
-                '`return` stops the function at once. Use it to give up as soon as one need is missing.',
-                """def check(x):
-    if x < 0:
-        return 'negative'
-    return 'fine'""",
-            ],
-            [
-                'in on a list',
-                '`x in a_list` is True when x is one of the items. It compares whole items, so `"sales"` is not in `["sales.crm"]`.',
-                """'tea' in ['tea', 'milk']   # True
-'te' in ['tea', 'milk']    # False""",
-            ],
-        ],
-        byhand='The table is sales.crm.accounts, so the catalog is "sales" and the schema is "sales.crm". Need 1: is there USE CATALOG on "sales" for ana or analysts? No grant mentions "sales" alone, so the answer is False straight away, even though SELECT and USE SCHEMA are there.',
-        why='Three passes over the grants at most, one for each need.',
-        gotchas=[
-            [
-                'Owners have everything',
-                'The owner of a catalog, schema or table has every privilege on it without a grant. If ownership sits with one person, access breaks when they leave. Make a group the owner.',
-            ],
-            [
-                'Workspace bindings',
-                'A catalog can be bound to some workspaces only. Then even perfect grants do nothing in other workspaces. If the grants look right, check the catalog\'s workspace bindings next.',
-            ],
-            [
-                'BROWSE is not read',
-                '`BROWSE` shows that a table exists and what it holds, so people can ask for access. It never lets them read rows.',
-            ],
-        ],
-    ),
-)
+MODULE = module('access', 'Databricks access control', 'Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.', setting=PLATFORM_SETTING)
 
 lesson(MODULE, 'missing_acls',
     title='Workspace objects have their own permissions',
@@ -222,7 +33,7 @@ lesson(MODULE, 'missing_acls',
     angle=angle(
         pattern='Compare positions in an ordered list',
         text='The big idea: each object type has its levels in order, weakest first, so "is this level high enough?" becomes "does it sit at the same place or later in the list?". Your code goes through each need. It finds the object type from the name, looks up what the principal has on that object, and if they have nothing, the need is missing. Otherwise it compares positions with `list.index`: a smaller position means a weaker level, so the need is missing too.',
-        say='"For each need I look up the principal\'s current level on that object. No level, or a level earlier in the type\'s ordered list, means the ACL is missing."',
+        say='"For each need I look up the principal\'s [[current level|email|group name::What it has on that object today.]] on that object. No level, or a level [[earlier|later|the same::Lower in the type\'s ordered list.]] than the need, means the ACL is [[missing|fine|too generous::Someone will be refused.]]."',
         classic=None,
     ),
     stack=stack('An experiment ACL in Terraform', """resource "databricks_mlflow_experiment" "churn" {
@@ -417,7 +228,7 @@ lesson(MODULE, 'location_for_path',
     angle=angle(
         pattern='Prefix match on whole folders',
         text='The big idea: a path is covered by a location when it is the location\'s path or sits in a folder under it. Your code goes through the locations and, for each, checks two things: is the path exactly the url, or does the path start with the url followed by "/"? Adding the "/" is what stops `sales` from matching `sales-archive`. Because locations cannot overlap, the first match is the answer. No match means no location covers it.',
-        say='"I look for the location whose url is the path or a parent folder of it, matching on a whole folder so a similar name never counts. Locations can\'t overlap, so at most one matches."',
+        say='"I look for the location whose url is the path or a [[parent folder|sibling folder|file::A folder the path sits inside.]] of it, matching on a [[whole folder|first letter|file type::So sales never matches sales-archive.]]. Locations can\'t [[overlap|be renamed|be read::One can\'t sit inside another.]], so at most one matches."',
         classic=None,
     ),
     stack=stack('The whole chain in Terraform', """resource "azurerm_databricks_access_connector" "uc" {
@@ -583,7 +394,7 @@ api_key = client.get_secret("ticket-api-key").value"""),
     angle=angle(
         pattern='Rules in order, first match wins',
         text='The big idea: you choose the object by looking at where the target lives. Your code checks each target against simple rules in order: storage paths first, then Azure service hosts, then any other web address, then database addresses. The first rule that fits gives the answer, and anything unknown goes to a person. Checking the Azure hosts before the general "https://" rule matters, because both start the same way.',
-        say='"I route by target: storage paths to external locations, Azure service calls to service credentials, other web APIs to HTTP connections, and databases to federation connections. Anything else goes to the platform team."',
+        say='"I route by target: storage paths to [[external locations|service credentials|secret scopes::A storage path plus its credential.]], Azure service calls to [[service credentials|external locations|HTTP connections::Built on an access connector, not for storage.]], other web APIs to [[HTTP connections|foreign catalogs|volumes::Needs USE CONNECTION.]], and databases to federation connections."',
         classic=None,
     ),
     stack=stack('Connections in SQL', """-- A database, through Lakehouse Federation
@@ -767,7 +578,7 @@ ON COLUMN c;"""),
     angle=angle(
         pattern='For each item, does any rule match?',
         text='The big idea: a column is masked for you when some policy matches its tag and applies to you. Your code goes through the columns in order. For each one it tries every policy: does the column have that tag with that value? Are you in one of the "to" groups, or does "to" say everyone? Are you in none of the "except" groups? If one policy says yes to all three, the column goes in the list and you move on.',
-        say='"For each column I look for a policy whose tag and value match, that targets one of my groups, and that doesn\'t exempt any of my groups. One such policy is enough to mask it."',
+        say='"For each column I look for a policy whose [[tag and value|name and size|owner and date::What the governed tag says on the column.]] match, that targets one of my groups, and that doesn\'t [[exempt|name|charge::The EXCEPT part.]] any of my groups. [[One|Every|Two::How many matching policies does it take?]] such policy is enough to mask it."',
         classic=None,
     ),
     stack=stack('A row filter policy, as a sketch', """CREATE FUNCTION sales.gov.not_eu(region STRING) RETURNS BOOLEAN
@@ -971,7 +782,7 @@ data-engineers                           -> a group    (good)
     angle=angle(
         pattern='Filter by a simple mark',
         text='The big idea: people show up in grant lists by their email address, so an "@" is a cheap, reliable sign of a grant to a person. Your code goes through the grants in order and keeps every one whose principal contains "@". Groups have plain names and service principals have application IDs, so neither contains "@" and neither is flagged.',
-        say='"I flag every grant whose principal is an email address, because those are grants to people. Groups and service principals pass."',
+        say='"I flag every grant whose principal is an [[email address|application ID|group name::Something with an @ in it.]], because those are grants to [[people|programs|teams::They move teams and leave.]]. Groups and [[service principals|admins|owners::Identities for programs and jobs.]] pass."',
         classic=None,
     ),
     stack=stack('Groups and a service principal in Terraform', """resource "databricks_grants" "crm" {

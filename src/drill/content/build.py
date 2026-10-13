@@ -48,7 +48,7 @@ def _page_lesson(entry: dict) -> dict:
         "learn": list(entry["learn"]),
         "example": [ex["caption"], ex["code"]],
         "check": [q["question"], list(q["options"]), q["answer"], q["why"]],
-        "angle": [a["pattern"], a["text"], a["say"], a["classic"]],
+        "angle": [a["pattern"], a["text"], a["say"], a["classic"], a.get("cloze") or []],
     }
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
@@ -95,8 +95,9 @@ def build_data(loaded: list[Module] | None = None) -> dict:
         assert classic is None or classic in bank, f"{lesson_id}: unknown classic {classic!r}"
 
     return json.loads(json.dumps({
-        "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids} for m in loaded],
+        "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids, "planned": m.planned, "setting": m.setting} for m in loaded],
         "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in modules.LIFECYCLE],
+        "tracks": [{"id": i, "name": n, "text": t, "modules": ms} for i, n, t, ms in modules.TRACKS],
         "lessons": lessons,
         "bank": list(bank.values()),
         "learn": learn,

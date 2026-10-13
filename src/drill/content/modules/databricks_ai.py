@@ -29,7 +29,7 @@ send questions to the sales     Supervisor Agent
     angle=angle(
         pattern='Rules checked in order',
         text='The big idea: pick the template from what the task needs, and check the most specific need first. Your code walks the tasks and checks rules in order with `if`, `elif` and `else`, so only the first match counts. Several agents comes first, because a supervisor can use the other kinds as helpers. Documents plus fields comes before documents alone, since both start from documents. Anything left is a single text task.',
-        say='"I pick the template from the shape of the task: several agents need a supervisor, fields from documents is extraction, questions over documents is a knowledge assistant, and a single text job is a custom LLM."',
+        say='"I pick the template from the shape of the task: several agents need a [[supervisor|knowledge assistant|custom LLM::Something that routes each request.]], fields from documents is [[extraction|a chatbot|a dashboard::Documents in, a table out.]], and questions over documents is a [[knowledge assistant|supervisor|warehouse::A chatbot that cites its sources.]]."',
         classic=None,
     ),
     stack=stack('Agent Bricks: a Knowledge Assistant, in the workspace', """# Agents (left menu) > Create Agent
@@ -216,7 +216,7 @@ accuracy: 2 of 3 = 66.7%"""),
     angle=angle(
         pattern='Compare sorted copies',
         text='The big idea: a benchmark run counts how many answers match a trusted SQL answer, where row order does not matter. Your code walks the results. For each one it makes sorted copies of the expected rows and of the rows Genie got, so order no longer matters, and compares them with `==`. A match adds 1 to passed; a miss goes on the failed list, in order. The percent is passed divided by the total, times 100, rounded to 1 place.',
-        say='"I compare each answer\'s rows after sorting both, because the same rows in a different order are still right. Then I report the pass rate and the questions that failed, so we know what to fix."',
+        say='"I compare each answer\'s rows after [[sorting both|counting them|reading the SQL::Order shouldn\'t decide right or wrong.]], because the same rows in a different order are still right. Then I report the [[pass rate|average time|token count::The share that matched.]] and the questions that [[failed|passed|were slow::So we know what to fix.]]."',
         classic=None,
     ),
     stack=stack('Databricks SQL: a trusted asset Genie can use', """-- A SQL function with a parameter.
@@ -394,7 +394,7 @@ functions  main / tools / lookup_order
     angle=angle(
         pattern='Build a string per kind',
         text='The big idea: every managed MCP server is just a URL on your workspace, made from a fixed path and a few names. Your code walks the tools in order. For each one it checks the kind with `if` and `elif`, joins the fixed path and the tool\'s names with `+` and `"/"`, and puts `"https://"` and the host in front. One URL per tool, in the same order.',
-        say='"Each managed MCP server is a URL on the workspace. New agents use the system.ai services through Unity Gateway, older ones the workspace endpoints. Either way, every call runs with the caller\'s own permissions."',
+        say='"Each managed MCP server is a [[URL|password|notebook::An address on the workspace.]] on the workspace. New agents use the system.ai services through [[Unity Gateway|a VPN|Spacelift::Where Databricks routes, governs and logs the calls.]], and every call runs with [[the caller\'s own permissions|admin rights|no permissions::The agent can only reach what its identity can.]]."',
         classic=None,
     ),
     stack=stack('databricks-mcp: connect and list the tools', """# pip install databricks-mcp databricks-sdk
@@ -567,7 +567,7 @@ lesson(MODULE, 'callable_tools',
         'The lesson "Tools from Unity Catalog" showed how a function becomes a tool the model can read. This lesson is about the other half: who is allowed to run it. A **Unity Catalog function** lives at `catalog.schema.function`, like `main.support.lookup_order`, the same three parts as a table.',
         'There are two kinds. A **SQL function** says `LANGUAGE SQL` and then `RETURN` with one expression or one query. A **Python function** says `LANGUAGE PYTHON`, puts its code between two `$$` marks, and declares its **return type** (the kind of value it gives back, like `STRING`). If the Python code needs extra packages, an `ENVIRONMENT` clause lists them (from PyPI, volumes or URLs), and then `environment_version` must be set too.',
         'Write a `COMMENT` on the function and on each parameter. Those comments become the tool description the model reads, so a vague comment leads to wrong tool picks.',
-        'To **create** a function you need `USE CATALOG`, `USE SCHEMA` and `CREATE FUNCTION` on the schema. To **call** one you need `EXECUTE` on the function, plus `USE CATALOG` and `USE SCHEMA`. `EXECUTE` granted on a schema or a catalog flows down to every function inside, the same idea as in "Unity Catalog privileges flow down".',
+        'To **create** a function you need `USE CATALOG`, `USE SCHEMA` and `CREATE FUNCTION` on the schema. To **call** one you need `EXECUTE` on the function, plus `USE CATALOG` and `USE SCHEMA`. `EXECUTE` granted on a schema or a catalog flows down to every function inside, the same idea as in "Who can read this table?".',
         "Agents call functions through `UCFunctionToolkit` or the managed MCP functions server, `https://<host>/api/2.0/mcp/functions/{catalog}/{schema}/{function}`. Every call runs with the **caller's** permissions. A deployed agent often runs as a **service principal** (an identity for an app, not a person), so that service principal needs `EXECUTE`. The classic miss: the team grants it to people, tests in a notebook, it works, and then the deployed agent is refused.",
     ],
     example=example('A SQL function, described and granted', """CREATE FUNCTION main.support.lookup_order(
@@ -595,7 +595,7 @@ GRANT EXECUTE ON FUNCTION main.support.lookup_order TO `support-bots`;"""),
     angle=angle(
         pattern='Three checks per function, each looking up the tree',
         text='The big idea: an agent can call a function only when three privileges line up, and each one can come from the place itself or a place above it. Your code goes through the functions one by one and splits each name into catalog and schema. A small helper, `has`, asks one question: "does any of the agent\'s names have this privilege on one of these places?" You ask it three times: USE CATALOG on the catalog; USE SCHEMA on the catalog or schema; EXECUTE on the catalog, schema or function. When all three say yes, the function goes on the list.',
-        say='"An agent calls Unity Catalog functions as its own identity. So before deploying, I check that its service principal, or a group it is in, has USE CATALOG, USE SCHEMA and EXECUTE, each granted on the object or above it."',
+        say='"An agent calls Unity Catalog functions as [[its own identity|the person who wrote it|an admin::Usually a service principal.]]. So before deploying, I check that identity has USE CATALOG, USE SCHEMA and [[EXECUTE|SELECT|MODIFY::The privilege to call a function.]], each granted on the object or [[above it|below it|in a notebook::A grant on a schema covers what\'s inside.]]."',
         classic=None,
     ),
     stack=stack('A Python function an agent can call', """CREATE OR REPLACE FUNCTION
@@ -817,7 +817,7 @@ https://microsoft.com.fake-docs.example  microsoft.com.fake-docs...  dropped""")
     angle=angle(
         pattern='Cut out the host, then match the end',
         text='The big idea: a citation only helps if it comes from a site you trust, and the host in the link tells you which site that is. Your code goes through the links in order. It cuts the text after `"://"`, then cuts again at the first `"/"`, to get the host. A link with no `"://"` has no host, so it can never match. Then it checks each allowed domain: the host is that domain exactly, or ends with `"."` plus it. The dot matters: it stops `evilmicrosoft.com` from passing as `microsoft.com`. Each link goes in kept or dropped, in order.',
-        say='"I use web search only for public, fresh facts, and keep company questions on internal retrieval. I check every citation\'s host against an allow list, matching the exact domain or a dot before it, so lookalike sites fail."',
+        say='"I use web search only for [[public, fresh facts|company policies|customer records::Things anyone could look up today.]], and keep company questions on internal retrieval. I check every citation\'s [[host|title|date::The part of the link after ://.]] against an allow list, matching the exact domain or a [[dot before it|dash after it|word inside it::How learn.microsoft.com belongs to microsoft.com.]]."',
         classic=None,
     ),
     stack=stack('databricks-mcp: connect to web search', """# pip install databricks-mcp databricks-sdk

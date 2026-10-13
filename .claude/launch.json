@@ -21,6 +21,18 @@
         "drill-server"
       ],
       "port": 8788
+    },
+    {
+      "name": "drill-server-screens",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DRILL_PORT=8791",
+        "DRILL_DATABASE_URL=sqlite:///.drill/screens.db",
+        "uv",
+        "run",
+        "drill-server"
+      ],
+      "port": 8791
     }
   ]
 }
