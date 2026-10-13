@@ -79,21 +79,23 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `feedback on drafted reviews and challenges` | Thumbs and reasons on AI drafts |
 | `search: lessons, glossary words and the study list` | The search view |
 | `views` | `show(view)`, `openLesson`, `setStep`, the bottom bar `renderFoot`, `goNext` |
-| `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) |
-| `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` |
+| `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) **In `page/walkthrough.js`** (styles: `page/walkthrough.css`) |
+| `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` **In `page/trust.js`** (styles: `page/trust.css`) |
 | `step panes` | `learnPane`, `checkPane`, the Explain gaps (`clozeHtml`), `anglePane` |
-| `spot the gotcha` | The gotcha challenge in Explain |
-| `ask about this lesson` | The tutor chips and answers |
+| `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
+| `ask about this lesson` | The tutor chips and answers **In `page/ask.js`** (styles: `page/ask.css`) |
 | `build step` | `loadProblem`, the editor area, running tests |
-| `the sorting board` | Build as a judgement task (`SO`, `sortRender`, `sortPlace`) |
-| `the machine` | Rows travelling through the learner's function |
+| `the sorting board` | Build as a judgement task (`SO`, `sortRender`, `sortPlace`). **In `page/sorting.js`** (styles: `page/sorting.css`) |
+| `practice questions` | Build as reading real evidence: YAML, plans, logs (`QF`, `qfRender`). **In `page/practice.js`** (styles: `page/practice.css`) |
+| `the machine` | Rows travelling through the learner's function. **In `page/machine.js`** (styles: `page/machine.css`; its Dusk glow stays with the motion rules in `page.html`) |
 | `hints, review, solution` | Hint levels, code review, showing the answer |
 | `notebook` | The drawer: glossary, look and motion switches. **In `page/notebook.js`** (styles: `page/notebook.css`) |
 | `study list` / `the pocket` | Saved items, the tray, spaced review. **In `page/study-list.js`** (styles: `page/pocket.css`, `page/study-list.css`) |
 | `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
-| `backends` | `claudeBackend()` and `localBackend()` |
+| `backends` | `claudeBackend()` and `localBackend()` **In `page/backends.js`** |
+| `content packs: practice exercises and investigation views` | A pack lesson's Practice step (`PX_SHAPE`, `practicePane`), its views and guided tour (`viewHtml`, `tourHtml`), `packOf`, `migrateAliases`. **In `page/packs.js`** (styles: `page/packs.css`). See [CONTENT_PACKS.md](CONTENT_PACKS.md) |
 | `boot` | Load data and progress, pick the look, first render |
 
 The CSS follows the same order, with its own markers (`/* ---------- the pocket ... */`,
@@ -132,10 +134,10 @@ as one page.
 |---|---|---|---|
 | 1 | study list, the pocket | `study-list.js`, `pocket.css`, `study-list.css` | **Done.** Self-contained, and edited often |
 | 2 | notebook, selection toolbar | `notebook.js`, `notebook.css`, `selection.js` | **Done.** Small drawers with their own state |
-| 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` | Feature-local state (`M`, `SO`, `QF`) |
-| 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` | Each draws one kind of thing in a step |
-| 5 | content packs | `packs.js` | Only used when a pack is loaded |
-| 6 | ask about this lesson, backends | `ask.js`, `backends.js` | Touch the model and storage: move with care |
+| 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` and a `.css` for each | **Done.** Feature-local state (`M`, `SO`, `QF`) |
+| 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
+| 5 | content packs | `packs.js`, `packs.css` | **Done.** Only used when a pack is loaded |
+| 6 | ask about this lesson, backends | `ask.js`, `ask.css`, `backends.js` | **Done**, with a live check: saving, the study list and asking a real model all work on `drill-server` |
 | 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |
 
 ## Recipes

@@ -1,0 +1,50 @@
+/* ---------- trust marks: an ember right after the words in a lesson where responsible AI, privacy or
+   governance comes up. Tap it for a tooltip: why it matters for trust, and one tip. Marks you haven't
+   opened give off slow embers; once opened, a mark rests. The notes are content/trust.py; colours are
+   --mark and --mark-glow. Motion off or reduced motion: a still glow. */
+.trusthost { position: relative; overflow-x: clip; overflow-clip-margin: 16px; }  /* the burst may fly past the column, never past the page gutter */
+.trusthost > p { margin-bottom: 0; }
+.trustmark { position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; margin: -6px 0 -6px 1px; padding: 0; vertical-align: middle; border: 0; border-radius: 50%; background: none; color: var(--mark); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.trustmark svg { width: 18px; height: 18px; overflow: visible; filter: drop-shadow(0 0 3px var(--mark-glow)); }
+.trustmark svg * { fill: none; stroke: currentColor; }
+.trustmark svg .core { fill: currentColor; stroke: none; }
+.trustmark.seen svg { filter: none; opacity: .75; }
+.trustmark:focus-visible { outline: 2px solid var(--mark); outline-offset: 1px; }
+.trustmark i { position: absolute; display: block; pointer-events: none; border-radius: 50%; opacity: 0; }
+.trustmark .ring { inset: 4px; border: 1.5px solid var(--mark); }
+.trustmark .em, .trustmark .bu { left: 50%; top: 50%; background: var(--mark); }
+.trustmark .em { width: 3px; height: 3px; margin: -1.5px; box-shadow: 0 0 6px 1px var(--mark-glow); }
+.trustmark .bu { width: 4px; height: 4px; margin: -2px; box-shadow: 0 0 8px 2px var(--mark-glow); }
+.trustpop { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 8px); max-width: 34rem; display: grid; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--pop-bg); border: 1px solid var(--pop-line); box-shadow: var(--pop-shadow), 0 0 0 1px var(--mark-glow); backdrop-filter: var(--pop-blur); -webkit-backdrop-filter: var(--pop-blur); font-size: 15px; line-height: 1.45; }
+.trustpop[hidden] { display: none; }
+.trustpop .tk { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mark); }
+.trustpop .tk span:last-child { color: var(--muted); font-weight: 400; letter-spacing: .04em; }
+.trustpop .tevv { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid var(--mark); border-radius: 4px; letter-spacing: .08em; }
+.trustpop .tv { margin: 0; font: 600 16px/1.35 var(--display); color: var(--fg); }
+.trustpop .tt { margin: 0; color: var(--fg); }
+.trustpop .tt b { margin-right: 6px; font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.trustpop .tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font: 400 12px var(--mono); color: var(--muted); }
+.trustpop .tr i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--muted); }
+.trustpop .tr i.on { background: var(--mark); border-color: var(--mark); box-shadow: 0 0 6px var(--mark-glow); }
+.trustpop .tr span { margin-left: 4px; }
+@media (prefers-reduced-transparency: reduce) { :root[data-theme="dusk"] { --pop-bg: var(--surface); --pop-blur: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) .trustmark:not(.seen) .turn { transform-origin: 9px 9px; animation: tm-turn 14s linear infinite; }
+  :root:not([data-motion="off"]) .trustmark:not(.seen) .em { animation: tm-rise 2.6s var(--d) ease-out infinite; }
+  :root:not([data-motion="off"]) .trustmark.arrive svg { animation: tm-pop 600ms var(--ease-pop) backwards; }
+  :root:not([data-motion="off"]) .trustmark.arrive .ring { animation: tm-wave 900ms 100ms ease-out; }
+  :root:not([data-motion="off"]) .trustmark.arrive .bu, :root:not([data-motion="off"]) .trustmark.fire .bu { animation: tm-shoot 800ms ease-out; }
+  :root:not([data-motion="off"]) .trustmark.fire .ring { animation: tm-wave 800ms ease-out; }
+  :root:not([data-motion="off"]) .trustpop.opening { animation: tm-open 480ms var(--ease-out) backwards; }
+  :root:not([data-motion="off"]) .trustpop.opening > * { animation: tm-up 360ms var(--ease-out) backwards; }
+  :root:not([data-motion="off"]) .trustpop.opening > :nth-child(2) { animation-delay: 110ms; }
+  :root:not([data-motion="off"]) .trustpop.opening > :nth-child(3) { animation-delay: 180ms; }
+  :root:not([data-motion="off"]) .trustpop.opening > :nth-child(4) { animation-delay: 250ms; }
+}
+@keyframes tm-turn { to { transform: rotate(360deg); } }
+@keyframes tm-rise { 0% { opacity: 0; transform: translate(0, 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), -22px) scale(.3); } }
+@keyframes tm-pop { 0% { transform: scale(0) rotate(-120deg); opacity: 0; } 60% { transform: scale(1.6) rotate(10deg); opacity: 1; } 100% { transform: none; } }
+@keyframes tm-wave { 0% { opacity: .95; transform: scale(.5); } 100% { opacity: 0; transform: scale(3.6); } }
+@keyframes tm-shoot { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(26px) scale(.4); } }
+@keyframes tm-open { from { clip-path: circle(0 at var(--ox, 24px) var(--oy, -14px)); } to { clip-path: circle(var(--or, 160%) at var(--ox, 24px) var(--oy, -14px)); } }
+@keyframes tm-up { from { opacity: 0; transform: translateY(6px); } }

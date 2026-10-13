@@ -1,0 +1,37 @@
+/* practice questions (platform Build step): evidence, one question, options; reuses .opts, .snote, .clzclue */
+.qfbox { display: grid; gap: 12px; }
+.qfbox .shead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.qf-dots { display: flex; gap: 4px; margin-left: auto; }
+.qf-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.qf-dots i.d { background: var(--pass); } .qf-dots i.n { background: var(--accent); box-shadow: var(--glow-current); }
+.qf-ev { margin: 0; display: grid; gap: 4px; } .qf-ev figcaption { font: 600 12px var(--mono); color: var(--muted); }
+.qf-ev pre, .qfbox > pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.qf-claim { background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); backdrop-filter: var(--aside-blur); -webkit-backdrop-filter: var(--aside-blur); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.qf-claim p { margin: 0; }
+.qf-chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.qf-chain li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 4px 0; }
+.qf-chain li.later { opacity: .5; }
+.qf-dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font: 700 11px var(--mono); color: var(--muted); }
+.qf-chain li.ok .qf-dot { border-color: var(--pass); background: var(--pass-bg); color: var(--pass); }
+.qf-chain li.now .qf-dot { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); box-shadow: var(--glow-current); }
+.qf-chain b { font-size: 14.5px; } .qf-chain small { display: block; font: 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.qf-chain em { font: 600 11px var(--mono); font-style: normal; color: var(--pass); } .qf-chain li.now em { color: var(--accent); }
+.qf-sum { display: flex; flex-wrap: wrap; gap: 6px; }
+.qf-c { font: 600 12px var(--mono); padding: 3px 9px; border-radius: 999px; background: var(--sunk); border: 1px solid var(--line); }
+.qf-c.a { color: var(--pass); } .qf-c.r { color: var(--hint); } .qf-c.d { color: var(--fail); }
+.qf-rows { display: grid; gap: 6px; }
+.qf-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 48px; padding: 6px 10px; border-radius: 12px; border: 1.5px solid var(--card-line); background: var(--card-bg); color: var(--fg); text-align: left; font: inherit; }
+button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
+.qf-row.right { border-color: var(--pass); background: var(--pass-bg); } .qf-row.wrong { border-color: var(--fail); background: var(--fail-bg); }
+.qf-sym { font: 700 13px var(--mono); text-align: center; } .qf-sym.a { color: var(--pass); } .qf-sym.r { color: var(--hint); } .qf-sym.d { color: var(--fail); } .qf-sym.u { color: var(--accent); }
+.qf-addr { font: 12.5px var(--mono); overflow-wrap: anywhere; } .qf-addr small { display: block; font: 12.5px var(--body); color: var(--muted); }
+.qf-prompt .gap { font-family: var(--body); }
+.qf-next { justify-self: start; }
+.qf-yaml { width: 100%; resize: vertical; font: 14px/1.6 var(--mono); tab-size: 2; background: var(--code-bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qf-yaml:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+@media (pointer: coarse) { .qf-yaml { font-size: 16px; } }
+.qf-keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.qf-keys button { min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-bg); color: var(--fg); font: 600 13px var(--mono); cursor: pointer; }
+.qf-probs { display: grid; gap: 6px; background: var(--fail-bg); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.qf-probs b { color: var(--fail); }
+.qf-ln { font: 600 12px var(--mono); color: var(--fail); margin-right: 8px; }
