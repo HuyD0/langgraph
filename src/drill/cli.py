@@ -559,6 +559,54 @@ def store_push_cmd() -> None:
 
 
 
+content_app = typer.Typer(add_completion=False, help="Content packs: check them, and preview them in the page.")
+app.add_typer(content_app, name="content")
+
+
+@content_app.command("check")
+def content_check_cmd(packs: list[Path] = typer.Argument(None, help="Pack folders (default: DRILL_CONTENT_PACKS).")) -> None:
+    """Check content packs: every problem, each naming its file and field. Exits 1 if any."""
+    from drill.content import modules
+    from drill.content import packs as content_packs
+
+    dirs = packs or content_packs.pack_dirs()
+    if not dirs:
+        console.print("No pack given. Pass a folder, or set DRILL_CONTENT_PACKS.")
+        raise typer.Exit(1)
+    taken = {lesson["id"] for m in modules.load() for lesson in m.lessons}
+    try:
+        content_packs.load_packs(dirs, taken=taken, drafts=True)
+        for line in content_packs.report(dirs):
+            console.print(f"[green]✓[/green] {line}")
+    except content_packs.PackError as exc:
+        for problem in exc.problems:
+            console.print(f"[red]✗[/red] {problem}")
+        console.print(f"\n{len(exc.problems)} problem(s). Fix them and run this again.")
+        raise typer.Exit(1)
+
+
+@content_app.command("preview")
+def content_preview_cmd(
+    packs: list[Path] = typer.Argument(..., help="Pack folders to preview."),
+    port: int = typer.Option(8790, "--port", help="Where to serve it."),
+    drafts: bool = typer.Option(True, "--drafts/--no-drafts", help="Show draft lessons too (marked Draft)."),
+) -> None:
+    """Serve the page with these packs on this machine (a scratch progress file, not yours)."""
+    import os
+
+    from drill.config import PROJECT_ROOT
+
+    os.environ["DRILL_CONTENT_PACKS"] = os.pathsep.join(str(p.resolve()) for p in packs)
+    os.environ["DRILL_SHOW_DRAFTS"] = "1" if drafts else "0"
+    os.environ["DRILL_PORT"] = str(port)
+    os.environ.setdefault("DRILL_DATABASE_URL", f"sqlite:///{PROJECT_ROOT / '.drill' / 'preview.db'}")
+    os.environ.setdefault("DRILL_TRACING", "0")
+    console.print(f"Previewing {', '.join(p.name for p in packs)} at http://127.0.0.1:{port} (Ctrl+C to stop)")
+    from drill.server.api import main as serve
+
+    serve()
+
+
 cloud_app = typer.Typer(add_completion=False, help="Run the server as a Databricks App: setup, deploy, start, stop, status.")
 app.add_typer(cloud_app, name="cloud")
 
