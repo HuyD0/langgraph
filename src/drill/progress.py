@@ -9,7 +9,10 @@ running to work.
 from __future__ import annotations
 
 import json
+import os
 import random
+import sys
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -43,8 +46,12 @@ class ProgressStore:
             return []
         try:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            # A corrupt history should never block practice. Start fresh instead.
+            if not isinstance(raw, dict):
+                raise ValueError("expected a JSON object at the top")
+        except (json.JSONDecodeError, ValueError, OSError):
+            # A corrupt history should never block practice. Move it aside (so the next
+            # save can't overwrite it and you can still open it), then start fresh.
+            self._set_aside()
             return []
         records = []
         for item in raw.get("attempts", []):
@@ -58,10 +65,24 @@ class ProgressStore:
         history = self.load()
         history.append(attempt)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps({"attempts": [asdict(a) for a in history]}, indent=2),
-            encoding="utf-8",
-        )
+        # Write a temporary file next to the real one, then swap it in. A crash halfway
+        # leaves the old file whole instead of a half-written one.
+        fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=self.path.name, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump({"attempts": [asdict(a) for a in history]}, f, indent=2)
+            os.replace(tmp, self.path)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
+
+    def _set_aside(self) -> None:
+        bad = self.path.with_name(f"{self.path.name}.bad-{time.strftime('%Y%m%d-%H%M%S')}")
+        try:
+            self.path.rename(bad)
+            print(f"Your practice history at {self.path} could not be read; it was kept as {bad.name}.", file=sys.stderr)
+        except OSError:
+            pass
 
     # -- what the history tells us ------------------------------------------
 

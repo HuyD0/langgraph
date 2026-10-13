@@ -28,9 +28,15 @@ Everything is in the package, under `src/drill/content/`:
 
 Home shows the path as a sticker book, with the six phases always in view:
 
-- **The phase rail** shows the six phases in order, done phases filled, the current one large and
-  blue. On Home each phase is a button: tap one to see its page of stickers, and "Back to today"
-  returns to the current phase. Above every lesson the rail is a reminder only, so a tap never
+- **Phase tabs and the room.** On Home the six phases are tabs on a violet strip (the path), and
+  the phase you picked opens below as a room: one piece, with the chosen tab cut from the room's
+  own paper and no gap between them. The room is rimmed in blue when it is where you are and in
+  violet for any other phase, and its title shape is the only thing that glows. A small blue dot
+  marks your phase on the strip, and a thin violet line along the top fills as phases are done.
+  Tap a tab (or use the arrow keys, Home and End) to see its page of stickers; "Back to today"
+  returns to the current phase. It is a real tab list (`role="tablist"`, `tab`, `tabpanel`).
+  The look lives in `.phasebox`, `.rail.phtabs` and `.book.room` in `page.html`; the colours are
+  the `--path*` tokens. Above every lesson the small rail is a reminder only, so a tap never
   leaves the lesson.
 - **One shape per phase**: circle (Frame), rounded square (Design), hexagon (Build and trace),
   diamond (Evaluate), shield (Ship), pentagon (Monitor). Every lesson is a sticker in its phase's
@@ -55,8 +61,8 @@ Home shows the path as a sticker book, with the six phases always in view:
   phone a long press shows the same card; a tap still opens the lesson.
 - **Finishing a lesson** shows its new sticker.
 
-Shape and position carry the phases, not colour: colour stays for passed, failed and the next
-step. The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
+Shape and position carry the phases, not colour: colour stays for passed, failed, the next
+step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
 ## Your own use case
@@ -131,7 +137,7 @@ The magnifier in the top bar, or the `/` key, opens search. As you type it finds
 - **Lessons** whose title, text or function name holds every word typed, title matches first.
   Each shows its phase shape, its number (like 2.11), its module and whether it's done.
 - **Your study list** items whose text, note or explanation match; choosing one opens it in
-  the Notebook.
+  the study list's tray.
 
 With nothing typed it offers the six phases to jump to, the lessons you're in the middle of,
 and a few example searches. Enter opens the first lesson; Escape or Close goes back to where
@@ -139,17 +145,28 @@ you were.
 
 ## The study list
 
-Select any text in a lesson, or a line of your code, to save it to the study list in the
-Notebook. Each item shows as one line until you open it, grouped by the lesson it came from in
-path order, under three headings:
+Select any text in a lesson, or a line of your code, to save it to the study list. It lives in
+a **tray**: on the path it waits at the bottom, one line tall, saying what's due; on any other
+page a chip in the header opens it (glowing, with a count, when something is due). Tap the tray
+to slide it up. Three tabs:
 
-- **Review now**: items you marked "Got it" whose review has come round. Try to recall it, check
-  what you saved, then say whether you remembered. Remembering pushes the next review further
-  out (3 days, then 10, 30 and 90); forgetting puts it back on To learn.
-- **To learn**: everything still being learned, with its explanation, quiz and follow-ups inside.
-- **Got it**: closed by default, each with its next review date.
+- **To review**: items you marked "Got it" whose review has come round.
+- **Still learning**: everything you saved and haven't marked "Got it" yet.
+- **Got it**: each waiting for its next review.
 
-The search box looks through the text, your notes, the explanations and the lesson names.
+Each row is one line: the item, the shape of the phase it came from, and four **seals** for the
+reviews after 3, 10, 30 and 90 days (filled once passed, ringed for the one it's waiting for).
+Opening an item shows it with its review ladder and **one** main step, which changes as you go:
+**Explain it to me**, then **Quiz me**, then **Got it**. Notes, follow-up questions and a new
+quiz are small links; removing it is under "⋯".
+
+**Reviewing** happens in the focus field. **Start review** opens it, with the page's "space"
+effect: one card at a time. Try to recall it first, then **Show what I saved**, then say whether
+you remembered. Remembering stamps a seal (and a spark) and pushes the next review further out
+(3, 10, 30, 90 days); forgetting puts it back on Learning. It ends with how many you sealed. With
+Motion off the effects don't play; everything else is the same.
+
+The search button in the tray looks through the text, your notes, the explanations and the lesson names.
 
 **Two copies.** On claude.ai the list lives in the artifact's database; served by `drill-server`
 it lives in `.drill/drill.db`. The two cannot reach each other, so they don't sync by themselves.
@@ -207,6 +224,8 @@ and two guards still stop any answer from writing the exercise's code.
 
 ## Motion
 
+(The wider design system, its tokens and how to change them: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).)
+
 Short effects mark real moments: finishing something, getting something right, fixing a bug.
 They decorate what already happened and never change a lesson's order, wording or difficulty.
 
@@ -224,6 +243,7 @@ They decorate what already happened and never change a lesson's order, wording o
 | 10 | Seal | A right answer in Check | 0.5 s | the Check click → `fxOn(option, "seal")` |
 | 11 | Energy flow | A row travels into the machine's function box | with each row | `machineRender` (`.mtok.fly`) |
 | 12 | Unveil | A hint opens | about 1 s | `hint` → `fxOn(note, "unveil")` |
+| 13 | Room | You change phase on Home: the tab slides over, the page's words follow it, rings ripple from the title shape and a red-black spark runs along the top edge. Once per visit, the path's line first fills to where you are | 0.3 s (about 1 s the first time) | phase tab click → `phaseFx` → `fxMove` + `fxOn(book, "room", …, shape)` |
 
 Grades are worked out from lessons done, so nothing new is saved and they can't disagree with progress.
 
@@ -233,7 +253,8 @@ and `/* fx: end */` in `page.html`. Every effect is played by one of three funct
 
 - `fxScreen(name, html, at, cover)`: over the screen, centred on the element `at` (or, with
   `cover`, only over the part of `at` you can see). One at a time: a new one replaces the last.
-- `fxOn(el, name, html)`: inside one element, clipped to its box.
+- `fxOn(el, name, html, at)`: inside one element, clipped to its box; with `at`, centred on that
+  element (`--x`, `--y` in the effect's own box).
 - `fxMove(el, frames)`: the element itself moves, with the Web Animations API, and is left as it was.
 
 **The promises,** checked by `tests/test_content.py`:

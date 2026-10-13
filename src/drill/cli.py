@@ -695,6 +695,81 @@ def _show_findings(found) -> None:
                   + (" Run with --fix to grant what you can." if any(f.grant for f in missing) else ""))
 
 
+@cloud_app.command("port")
+def cloud_port_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    catalog: str = typer.Option(None, "--catalog", help="A catalog your team owns: traces go in <catalog>.drill_traces, prompts in <catalog>.daily_drill."),
+    model: str = typer.Option(None, "--model", help="The governed Unity Gateway model service, catalog.schema.service."),
+    project: str = typer.Option("daily-drill", "--lakebase-project", help="The Lakebase project for progress (created if missing)."),
+    experiment: str = typer.Option(None, "--experiment", help="MLflow experiment path (default /Shared/daily-drill)."),
+    warehouse: str = typer.Option(None, "--warehouse", help="A serverless SQL warehouse id (default: find or create 'daily-drill')."),
+    learner: list[str] = typer.Option([], "--learner", help="Email of someone who may use the app (repeat it)."),
+    managers: str = typer.Option(None, "--managers", help="A group that may use the app and read the managers' dashboard."),
+    do_apply: bool = typer.Option(False, "--apply", help="Create, grant, deploy and share. Without it, only the plan is shown."),
+    no_deploy: bool = typer.Option(False, "--no-deploy", help="With --apply: set everything up but don't deploy yet."),
+) -> None:
+    """Move Daily Drill into a workspace: check everything, then (with --apply) create, grant, deploy and share."""
+    from drill import cloud, port
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    the_plan = _cloud(lambda: port.plan(target, prof, catalog=catalog, model=model, project=project,
+                                       experiment=experiment, warehouse=warehouse))
+    for step in the_plan.steps:
+        line = f"{step.mark} {step.name}" + (f"  [dim]{step.detail}[/dim]" if step.detail else "")
+        console.print(line)
+        if step.state == "blocked" and step.todo:
+            console.print(f"    [red]{step.todo}[/red]")
+    if the_plan.blocked:
+        console.print(f"\n[red]{len(the_plan.blocked)} blocked.[/red] Fix those, then run this again.")
+        raise typer.Exit(1)
+    if not do_apply:
+        console.print("\nNothing changed. Run again with --apply to create, grant, deploy and share.")
+        return
+    done = _cloud(lambda: port.apply(the_plan, learners=learner, managers=managers, deploy=not no_deploy, say=console.print))
+    for g in done.get("granted", []):
+        console.print(f"  granted {g}")
+    if done.get("app"):
+        _show_status(done["app"])
+    if done.get("dashboard"):
+        console.print(f"Managers' dashboard: {done['dashboard']['url']}")
+    for s in done.get("shared", []):
+        console.print(f"  {s}")
+    for m in done.get("missing", []):
+        console.print(f"[red]  still missing: {m}[/red] (see uv run drill cloud check --target {target})")
+
+
+@cloud_app.command("share")
+def cloud_share_cmd(
+    emails: list[str] = typer.Argument(None, help="Emails of people who may use the app."),
+    target: str = TARGET,
+    profile: str = PROFILE,
+    managers: str = typer.Option(None, "--managers", help="A group that may also read the managers' dashboard and its catalog."),
+) -> None:
+    """Let people use the app (and a managers group read the dashboard)."""
+    from drill import cloud, port
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    for line in _cloud(lambda: port.share(target, prof, emails or [], managers)):
+        console.print(line)
+
+
+@cloud_app.command("manager-view")
+def cloud_manager_view_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    warehouse: str = typer.Option(None, "--warehouse", help="A small serverless SQL warehouse id (default: the one saved for the target)."),
+    catalog: str = typer.Option(None, "--catalog", help="Unity Catalog name for the app's Lakebase data (default daily_drill_lakebase)."),
+) -> None:
+    """The managers' dashboard: every learner's progress, where they are stuck, their questions and weekly notes."""
+    from drill import cloud
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    info = _cloud(lambda: cloud.manager_view(target, prof, warehouse, catalog))
+    console.print(f"Dashboard: {info['url']}\nReads catalog {info['catalog']} with your credentials.")
+    console.print("Share it with managers only: it shows every learner's progress, study list and questions.")
+
+
 traces_app = typer.Typer(add_completion=False, help="The deployed app's traces: score them with the registered scorers.")
 app.add_typer(traces_app, name="traces")
 

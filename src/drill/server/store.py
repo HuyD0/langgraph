@@ -25,8 +25,10 @@ and the tables go in their own schema (``DRILL_DB_SCHEMA``, ``drill`` in the app
 service principal creates and owns. One app serves everyone, so each request reads and
 writes as the signed-in person (:meth:`DocStore.for_owner`).
 
-If Lakebase cannot be reached when the server starts, it keeps going on the local SQLite
-file and says so; ``drill store push`` sends that work up later.
+If Lakebase cannot be reached when the server starts on your Mac, it keeps going on the
+local SQLite file and says so; ``drill store push`` sends that work up later. In a
+Databricks App it keeps trying for a couple of minutes and then refuses to start: the
+app's disk is wiped on every restart, so a local file there would quietly lose work.
 
 Besides the documents there is an ``events`` table: one row per thing that happened
 (a lesson step reached, a hint asked for, tests run), which is what a team dashboard
@@ -40,6 +42,7 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -48,6 +51,7 @@ from typing import Any, Callable
 from sqlalchemy import (
     Column,
     Float,
+    Integer,
     MetaData,
     String,
     Table,
@@ -60,6 +64,8 @@ from sqlalchemy import (
     select,
     text,
 )
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from drill.config import PROJECT_ROOT
 
@@ -67,6 +73,8 @@ log = logging.getLogger("drill.server")
 
 LOCAL_OWNER = "local"
 TOKEN_LIFETIME = 45 * 60  # Lakebase passwords last an hour; get a new one well before that
+CONNECT_TIMEOUT = 10  # seconds to wait for Postgres to answer before giving up on a connection
+APP_WAIT = 120  # seconds a Databricks App keeps trying Lakebase before refusing to start
 
 metadata = MetaData()
 docs = Table(
@@ -86,6 +94,27 @@ events = Table(
     Column("kind", String(40), nullable=False),  # step, checked, lesson_done, solved, asked, hint_used...
     Column("lesson_id", String(120), nullable=False, default=""),
     Column("detail", Text, nullable=False, default="{}"),  # anything else, as JSON text
+)
+# The manager's view (drill.server.team): a dashboard reads these beside docs and events.
+lessons = Table(
+    "lessons",
+    metadata,
+    Column("id", String(120), primary_key=True),
+    Column("no", String(12), nullable=False),  # "2.11": phase 2, its 11th lesson, as the page numbers it
+    Column("position", Integer, nullable=False),  # 1 to N along the whole path
+    Column("title", String(300), nullable=False),
+    Column("phase", String(80), nullable=False),
+    Column("module", String(160), nullable=False),
+    Column("check_answer", Integer, nullable=False),  # the right option of the lesson's Check, from 0
+)
+summaries = Table(
+    "summaries",
+    metadata,
+    Column("owner", String(320), primary_key=True),
+    Column("week", String(10), primary_key=True),  # ISO week, "2026-W42"
+    Column("made_at", Float, nullable=False),
+    Column("summary", Text, nullable=False),  # a few plain sentences for the manager
+    Column("facts", Text, nullable=False, default="{}"),  # the numbers it was written from, as JSON text
 )
 
 
@@ -181,6 +210,8 @@ class DocStore:
             kwargs["connect_args"] = {"check_same_thread": False, "timeout": 5}
         else:
             kwargs["pool_pre_ping"] = True  # Lakebase sleeps when idle; check a connection before using it
+            if "connect_timeout" not in self.url:
+                kwargs["connect_args"] = {"connect_timeout": CONNECT_TIMEOUT}
         self.engine = create_engine(self.url, future=True, **kwargs)
         if login is not None:
 
@@ -202,6 +233,9 @@ class DocStore:
         if self.url.startswith("sqlite"):
             _add_owner_column(self.engine)
         metadata.create_all(self.engine)
+        # Read-change-write updates (update(), add()) hold this so two requests in this
+        # process can't both read the old document and lose one of the changes.
+        self._writing = threading.Lock()
 
     def for_owner(self, owner: str) -> "DocStore":
         """The same database, reading and writing ``owner``'s rows: one per signed-in person in an app."""
@@ -227,21 +261,39 @@ class DocStore:
         return json.loads(row[0]) if row else None
 
     def set(self, path: str, doc: dict, updated_at: float | None = None) -> dict:
-        """Replace the document at ``path`` (creating it if needed) and return it."""
+        """Replace the document at ``path`` (creating it if needed) and return it.
+
+        One statement ("insert, or update if it's already there"), so two saves to the same
+        path at the same moment can't trip over each other the way delete-then-insert did.
+        """
+        values = {"owner": self.owner, "path": path, "body": json.dumps(doc), "updated_at": updated_at or time.time()}
+        upsert = (pg_insert if self.engine.dialect.name == "postgresql" else sqlite_insert)(docs).values(**values)
+        upsert = upsert.on_conflict_do_update(
+            index_elements=[docs.c.owner, docs.c.path],
+            set_={"body": upsert.excluded.body, "updated_at": upsert.excluded.updated_at},
+        )
         with self.engine.begin() as conn:
-            conn.execute(delete(docs).where(self._mine(), docs.c.path == path))
-            conn.execute(
-                insert(docs).values(
-                    owner=self.owner, path=path, body=json.dumps(doc), updated_at=updated_at or time.time()
-                )
-            )
+            conn.execute(upsert)
         return doc
 
     def update(self, path: str, patch: dict) -> dict:
         """Merge ``patch`` into the document (creating it if needed) and return the result."""
-        merged = dict(self.get(path) or {})
-        merged.update(patch)
-        return self.set(path, merged)
+        with self._writing:
+            merged = dict(self.get(path) or {})
+            merged.update(patch)
+            return self.set(path, merged)
+
+    def add(self, path: str, key: str, amounts: dict[str, int]) -> dict:
+        """Add ``amounts`` to the counters under ``key`` in the document at ``path``, e.g. a day's usage.
+
+        Read and write happen under one lock, so two answers finishing together both count.
+        """
+        with self._writing:
+            doc = self.get(path) or {}
+            entry = doc.setdefault(key, {})
+            for name, amount in amounts.items():
+                entry[name] = int(entry.get(name, 0)) + int(amount)
+            return self.set(path, doc)
 
     def delete(self, path: str) -> None:
         with self.engine.begin() as conn:
@@ -336,24 +388,49 @@ def _add_owner_column(engine) -> None:
         conn.execute(text("DROP TABLE docs_before_owner"))
 
 
-def open_store(make_login: Callable[[str], LakebaseLogin] = LakebaseLogin) -> DocStore:
-    """The store the settings ask for. Lakebase when ``DRILL_LAKEBASE_ENDPOINT`` is set, falling
-    back to the local SQLite file (with ``fallback`` set) when it cannot be reached."""
+def in_databricks_app() -> bool:
+    """True when running as a Databricks App, which sets ``DATABRICKS_APP_NAME``."""
+    return bool(os.getenv("DATABRICKS_APP_NAME", "").strip())
+
+
+def open_store(make_login: Callable[[str], LakebaseLogin] = LakebaseLogin, wait: float | None = None) -> DocStore:
+    """The store the settings ask for. Lakebase when ``DRILL_LAKEBASE_ENDPOINT`` is set.
+
+    When Lakebase can't be reached: on your Mac, fall back to the local SQLite file (with
+    ``fallback`` set) so practice goes on and ``drill store push`` sends it up later. In a
+    Databricks App, keep trying for ``wait`` seconds (Lakebase may still be waking up) and
+    then raise, because the app's local disk is wiped on restart and the work would be lost.
+    """
     endpoint = lakebase_endpoint()
     if not endpoint:
         return DocStore()
-    try:
-        login = make_login(endpoint)
-        store = DocStore(database_url(), login=login)
-        with store.engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return store
-    except Exception as exc:  # noqa: BLE001
-        log.warning("Lakebase is out of reach (%s). Saving on this machine; run `drill store push` later.", exc)
+    in_app = in_databricks_app()
+    deadline = time.monotonic() + (APP_WAIT if wait is None else wait) if in_app else 0.0
+    pause, login = 2.0, None
+    while True:
         try:
-            owner = login.user  # type: ignore[possibly-undefined]
-        except Exception:  # noqa: BLE001
-            owner = os.getenv("DRILL_OWNER", "").strip() or LOCAL_OWNER
-        store = DocStore(local_url(), owner=owner)
-        store.fallback = True
-        return store
+            login = make_login(endpoint)
+            store = DocStore(database_url(), login=login)
+            with store.engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            return store
+        except Exception as exc:  # noqa: BLE001
+            if in_app and time.monotonic() + pause < deadline:
+                log.warning("Lakebase is not answering yet (%s). Trying again in %.0fs.", exc, pause)
+                time.sleep(pause)
+                pause = min(pause * 2, 30.0)
+                continue
+            if in_app:
+                raise RuntimeError(
+                    "Lakebase could not be reached, so the app will not start: saving to this app's disk "
+                    "would lose everyone's work at the next restart."
+                ) from exc
+            log.warning("Lakebase is out of reach (%s). Saving on this machine; run `drill store push` later.", exc)
+            break
+    try:
+        owner = login.user if login is not None else ""
+    except Exception:  # noqa: BLE001
+        owner = ""
+    store = DocStore(local_url(), owner=owner or os.getenv("DRILL_OWNER", "").strip() or LOCAL_OWNER)
+    store.fallback = True
+    return store
