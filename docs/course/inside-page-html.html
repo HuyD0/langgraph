@@ -383,6 +383,16 @@ body.ask-on .askbtn { display: inline-flex; }
   "file": "docs/DESIGN_SYSTEM.md",
   "find": "4. **Thumb first.** Controls are at least 44px tall on touch",
   "lesson": "ds-standards"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "/*INCLUDE page/study-list.js*/",
+  "lesson": "one-file"
+ },
+ {
+  "file": "src/drill/content/build.py",
+  "find": "def page_source() -> str:",
+  "lesson": "together"
  }
 ]
 </script>
@@ -392,6 +402,7 @@ body.ask-on .askbtn { display: inline-flex; }
 <style>
   /*TOKENS*/            ← build.py pastes tokens.css here
   .btn { ... }          ← how buttons, cards, chips look
+  /*INCLUDE page/pocket.css*/   ← a section kept in its own file, pasted back here
 </style>
 
 <main id="home" class="wrap"></main>
@@ -1142,10 +1153,10 @@ const L = [
   idea: [
     "A web page is text that the browser reads and draws. It's written in three languages, each with one job:",
     "**HTML** says what's on the page: a heading, a paragraph, a button. **CSS** says how it looks: colours, sizes, spacing. **JavaScript** says what happens when you do something: tap a button, and a lesson opens.",
-    "Most web apps split these into hundreds of files and use a framework (a big helper library such as React). Daily Drill doesn't. Its whole front end is **one file**, `src/drill/content/page.html`, with no framework. That makes it a good place to learn: everything you see is in one place, written with the plain tools every browser understands.",
+    "Most web apps split these into hundreds of files and use a framework (a big helper library such as React). Daily Drill doesn't. It **ships as one file**, with no framework: its source is `src/drill/content/page.html`, plus a few sections kept in files of their own in `src/drill/content/page/`, which the build pastes back in. That makes it a good place to learn: everything is written with the plain tools every browser understands.",
   ],
   key: "HTML is what's there, CSS is how it looks, JavaScript is what it does.",
-  real: { id: "r-onefile", file: "src/drill/content/page.html", sub: "its shape, top to bottom", note: "A `<style>` block, a few empty `<main>` boxes, and one big `<script>`. Open the real file and search for `<main id=\"home\"` to find these lines." },
+  real: { id: "r-onefile", file: "src/drill/content/page.html", sub: "its shape, top to bottom", note: "A `<style>` block, a few empty `<main>` boxes, and one big `<script>`. Some sections sit in their own files and come back in at a line like `/*INCLUDE page/study-list.js*/`. Search the real file for `<main id=\"home\"` to find these lines." },
   play: { html: "p1-html", css: "p1-css", js: "p1-js", tab: "html" },
   task: "Change the button's words to **Start the first lesson**, then press Run.",
   check: (r) => { const b = r.querySelector("button"); if (!b) return [false, "The button is gone. Put it back between <button class=\"btn\"> and </button>."]; const t = b.textContent.trim(); return t === "Start the first lesson" ? [true, "That's how every word on Daily Drill's screens gets there: as text inside an element."] : [false, `The button says "${t}". It should say "Start the first lesson".`]; },
@@ -1320,7 +1331,7 @@ const L = [
 },
 { id: "together", part: 3, title: "How it all comes together",
   idea: [
-    "You never edit the finished page. The lessons are written in Python, in `src/drill/content/modules/*.py`. Running `uv run drill build-page` turns them into data and pastes it into `page.html` at `/*DATA*/`, and pastes `tokens.css` at `/*TOKENS*/`. Out comes one file, `dist/daily-drill.html`.",
+    "You never edit the finished page. The lessons are written in Python, in `src/drill/content/modules/*.py`. Running `uv run drill build-page` turns them into data and pastes it into `page.html` at `/*DATA*/`, pastes `tokens.css` at `/*TOKENS*/`, and pastes each section kept in `page/` back in at its `/*INCLUDE ...*/` line. Out comes one file, `dist/daily-drill.html`. Splitting the source this way changed nothing you see: the finished file came out identical, checked with a fingerprint (`shasum`).",
     "That one file runs in two places: on claude.ai as an artifact, and on your Mac from `drill-server`. Saving and asking the AI go through a **backend** with the same functions in both places, so features don't care where they run.",
     "To change something: find its section in `page.html` by its marker (like `// ---------- events ----------`), change it, run `scripts/check.sh` (build plus tests), and look at it at phone width in Dusk and Light. The map of every section is in `docs/FRONTEND.md`.",
   ],
