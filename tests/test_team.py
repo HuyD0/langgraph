@@ -85,6 +85,19 @@ def test_a_learners_week_as_numbers(store, bank):
     assert len(facts["days_active"]) >= 1
 
 
+def test_platform_practice_misses_reach_the_weekly_note(store, bank):
+    now, lesson = time.time(), bank.order()[0]
+    missed = [{"q": "What does the owner group get?", "wrong": ["CAN_EDIT"], "clue": True, "answer": False}]
+    event(store, ANA, "practised", lesson, now - 500, right=3, total=4, missed=missed)
+    event(store, ANA, "explained", lesson, now - 400, wrong=1, clues=1, answers=0)
+    event(store, ANA, "solved", lesson, now - 300, hints=1, count=1, mode="practice")
+    facts = team.learner_facts(store, ANA, bank, now)
+    assert facts["practice_missed"] == [dict(missed[0], lesson=bank.lessons[lesson]["title"])]
+    assert facts["explain_help"] == [{"lesson": bank.lessons[lesson]["title"], "wrong": 1, "clues": 1, "answers": 0}]
+    assert facts["exercises_solved"][0]["how"] == "practice"
+    assert "practice_missed" in team.summary_prompt(facts)
+
+
 def test_weekly_note_is_written_once_and_refreshed_only_after_news(store, bank):
     now = time.time()
     event(store, ANA, "lesson_done", bank.order()[0], now - 600)

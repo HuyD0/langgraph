@@ -108,7 +108,13 @@ A lesson can show a tool's real screens step by step: `walkthrough=[screen(kind,
 steps=[...], tips=[...], **data)]` in the lesson. The page redraws each screen from its data in the
 app's own look, so it fits a phone, follows Dusk and Light, and long names wrap instead of being
 cut off. Kinds: `flow`, `header`, `changes`, `log`, `diff` and `history` (Spacelift's run views).
-Any part with `"n": 2` gets a numbered badge and a hint-coloured outline; step 2 explains it.
+It steps through one callout at a time: only the current part is outlined (the workbook's style:
+a dark numbered circle and a crimson outline), its words sit right under the screen with Back and
+Next, and the other lines fade back. Hovering a numbered part outlines it faintly and shows its
+step as a tooltip; tapping or clicking it jumps there, and the new outline draws in (through the
+motion engine). "All steps" and "Good habits" fold away below. The screen looks like Spacelift
+(its window bar, pills, links and grey log), in its light look in Light and its dark look in Dark
+and Dusk: the `--tool-*` tokens.
 "Reading a Spacelift run" (the first Spacelift lesson) uses it, with the same content as the
 annotated screenshots in the platform team's workbook, and tips checked against Spacelift's docs
 (proposed and tracked runs, run promotion, plan policies, contexts, Spacelift-managed state).

@@ -916,11 +916,78 @@ button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
 .sl-ev { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; border-radius: 9px; padding: 6px 8px; }
 .sl-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--pass); color: var(--bg); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
 .sl-btn { opacity: .7; }
+.sl-now { display: grid; gap: 6px; }
+.sl-count { font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hint); }
+.sl-now p { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px; font-size: 16px; line-height: 1.5; }
+.sl-now p .sl-n { margin-top: 3px; }
+.sl-nav { display: flex; gap: 8px; justify-content: space-between; }
+.sl-nav .btn { min-height: 44px; }
+.sl-more > summary { cursor: pointer; list-style: none; min-height: 40px; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.sl-more > summary::-webkit-details-marker { display: none; }
+.sl-more[open] > summary { color: var(--fg); }
+.sl-more .sl-steps, .sl-more ul { margin-top: 6px; }
+/* inside the screen: Spacelift's own light look, in every theme (the --tool-* tokens), and the
+   workbook's annotation style: a dark numbered circle and a crimson outline on the one part */
+.sl-view { background: var(--tool-bg); color: var(--tool-fg); border: 1px solid var(--tool-line); box-shadow: var(--tool-frame), var(--card-shadow); padding: 0; gap: 0; font: 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+/* the frame burns in Dusk: the teal flame (the aura filter, tinted for the platform track) licks
+   around the window, behind its content; with Motion off or reduced motion it stays a still ring */
+.sl-view { position: relative; isolation: isolate; overflow: visible; }
+.sl-chrome { overflow: hidden; }
+:root[data-theme="dusk"]:not([data-motion="off"]) .sl-view::before { content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; border: 2px solid rgba(52, 216, 196, .75); filter: url(#aura-track); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { :root[data-theme="dusk"] .sl-view::before { display: none; } }
+.sl-chrome { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(--tool-sunk); border-bottom: 1px solid var(--tool-line); border-radius: 12px 12px 0 0; }
+.sl-chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--tool-line); }
+.sl-chrome span { margin-left: 8px; font: 600 11.5px var(--body); color: var(--tool-muted); background: var(--tool-bg); border: 1px solid var(--tool-line); border-radius: 6px; padding: 1px 10px; }
+.sl-body { padding: 12px; display: grid; gap: 8px; min-width: 0; }
+.sl-view .sl-n { background: var(--tool-anno-dot); color: #fff; box-shadow: none; font-family: var(--body); }
+.sl-view .sl-mark, .sl-view .sl-hitbox { outline: 2px solid var(--tool-anno); box-shadow: none; }
+.sl-now .sl-n, .sl-more .sl-n { background: var(--tool-anno-dot); color: #fff; box-shadow: none; border: 1.5px solid var(--tool-anno); }
+.sl-count { color: var(--muted); }
+.sl-view .sl-h1 b { font: 700 18px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: var(--tool-fg); }
+.sl-view .sl-pill { background: var(--tool-ok); color: #fff; font: 700 11px/1.6 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: .02em; padding: 1px 9px; border-radius: 999px; }
+.sl-view .sl-pill.sl-planned { background: var(--tool-planned); color: #fff; font-size: 10px; border-radius: 6px; }
+.sl-view .sl-meta, .sl-view .sl-bar, .sl-view .sl-muted { color: var(--tool-muted); }
+.sl-view .sl-link, .sl-view .sl-id { color: var(--tool-link); }
+.sl-view .sl-tab { color: var(--tool-muted); } .sl-view .sl-tab.on { background: var(--tool-sunk); color: var(--tool-fg); }
+.sl-view .sl-tab em { color: var(--tool-change); border: 1px solid color-mix(in srgb, var(--tool-change) 40%, transparent); background: color-mix(in srgb, var(--tool-change) 10%, transparent); border-radius: 6px; padding: 0 5px; }
+.sl-view .sl-search, .sl-view .sl-chips > span, .sl-view .sl-btn { background: var(--tool-bg); border-color: var(--tool-line); color: var(--tool-muted); }
+.sl-view .sl-row { background: var(--tool-bg); border-color: var(--tool-line); box-shadow: none; }
+.sl-view .sl-sym { color: var(--tool-change); } .sl-view .sl-chev { color: var(--tool-muted); }
+.sl-view .sl-log { background: var(--tool-log); border-color: var(--tool-line); color: var(--tool-fg); }
+.sl-view .sl-code { color: var(--tool-fg); } .sl-view .sl-add { color: var(--tool-ok); }
+.sl-view .sl-warn { color: var(--tool-change); }
+.sl-view .sl-line.sl-hit { background: color-mix(in srgb, var(--tool-anno) 12%, transparent); }
+.sl-view .sl-dot { background: var(--tool-ok); color: #fff; }
+.sl-view .sl-flow li { background: var(--tool-sunk); border-color: var(--tool-line); color: var(--tool-fg); } .sl-view .sl-flow li > span:last-child { color: var(--tool-muted); }
+.sl-view .sl-step { color: #fff; background: var(--tool-anno-dot); border-radius: 6px; width: 22px; text-align: center; }
+.sl-view .sl-note { color: var(--tool-anno); }
+.sl-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+@media (min-width: 620px) { .sl-cols { grid-template-columns: 170px minmax(0, 1fr); } }
+.sl-filt { display: grid; gap: 0; border: 1px solid var(--tool-line); border-radius: 8px; font-size: 12.5px; overflow: hidden; width: 100%; }
+.sl-ftabs, .sl-frow, .sl-fitem { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 6px 9px; border-top: 1px solid var(--tool-line); }
+.sl-ftabs { border-top: 0; justify-content: flex-start; gap: 12px; } .sl-ftabs b { background: var(--tool-sunk); border-radius: 6px; padding: 1px 7px; } .sl-ftabs span { color: var(--tool-muted); }
+.sl-fitem { justify-content: flex-start; }
+@media (max-width: 619px) { .sl-filt .sl-fitem:nth-child(n+6) { display: none; } .sl-side .sl-filt { display: flex; flex-wrap: wrap; } .sl-side .sl-filt > * { border-top: 0; } }
+.sl-mainc { display: grid; gap: 8px; min-width: 0; }
+.sl-top { justify-content: flex-start; } .sl-sub { border-bottom: 1px solid var(--tool-line); padding-bottom: 6px; }
+.sl-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; } .sl-toggle i { width: 24px; height: 13px; border-radius: 999px; background: var(--tool-link); position: relative; } .sl-toggle i::after { content: ""; position: absolute; right: 2px; top: 2px; width: 9px; height: 9px; border-radius: 50%; background: var(--tool-bg); }
+.sl-showing { font-size: 12px; } .sl-sort { font-size: 12px; } .sl-sort b { border: 1px solid var(--tool-line); border-radius: 6px; padding: 1px 6px; font-weight: 500; }
+.sl-row { grid-template-columns: auto auto auto minmax(0, 1fr) auto !important; }
+.sl-row:not(:has(.sl-n)) { grid-template-columns: auto auto minmax(0, 1fr) auto !important; }
+/* every numbered part is a target: a faint dashed outline on hover, the step's words as its tooltip */
+.sl-view [data-walk-n] { cursor: pointer; transition: opacity var(--dur-tap) var(--ease-out); }
+.sl-view .sl-tgt { border-radius: 6px; }
+@media (hover: hover) { .sl-view .sl-tgt:hover, .sl-view .sl-line[data-walk-n]:not(.sl-hit):hover, .sl-view .sl-row[data-walk-n]:not(.sl-hitbox):hover, .sl-view .sl-block[data-walk-n]:not(.sl-hitbox):hover, .sl-view .sl-ev[data-walk-n]:not(.sl-hitbox):hover { outline: 1.5px dashed var(--tool-anno); outline-offset: 1px; opacity: 1; } }
+.sl-view .sl-mark, .sl-view .sl-hitbox { box-shadow: var(--glow-anno); }
+/* calmer screens: one thing outlined, everything else steps back */
+.sl-view .sl-line:not(.sl-hit), .sl-view .sl-row:not(.sl-hitbox), .sl-view .sl-block:not(.sl-hitbox) { opacity: .62; }
+.sl-view .sl-log { font-size: 12px; }
 .sl-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .sl-steps li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 2px; }
 .sl-steps li .sl-n { margin-top: 2px; }
 .sl-tips { background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); backdrop-filter: var(--aside-blur); -webkit-backdrop-filter: var(--aside-blur); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
-.sl-tips .eyebrow { display: flex; align-items: center; gap: 6px; color: var(--hint); }
+.sl-tips:not([open]) { background: none; border-color: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; }
+.sl-tips > summary .ic { color: var(--hint); width: 16px; height: 16px; }
 .sl-tips ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14.5px; }
 .cloze { display: grid; gap: 10px; }
 .cloze .clz { margin: 4px 0 0; font-size: 18px; line-height: 1.75; }
@@ -2560,6 +2627,7 @@ function show(view) {
 }
 function goHome() { cur = null; viewPh = null; show("home"); renderHome(); }
 function openLesson(id, step) {
+  for (const k in WALK) delete WALK[k];
   const s = lp(id);
   cur = { kind: "lesson", id, p: byId[id], from: null };
   progress.current = id; saveProgress();
@@ -2783,49 +2851,80 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && trustOpen)
 // Each screen is data, drawn here in the app's own look so it fits a phone and follows the theme.
 // A part with "n" gets a numbered badge and a hint-coloured outline; the steps below explain them in order.
 const slT = o => o == null ? "" : typeof o === "string" ? o : o.text;
-const slN = n => n ? `<i class="sl-n" aria-hidden="true">${n}</i>` : "";
-const slMark = (o, inner) => o && typeof o === "object" && o.n ? `<span class="sl-mark">${slN(o.n)}${inner}</span>` : inner;
+let SL_ACT = 0;  // the step being explained: only its part gets the badge and the outline
+const slN = n => n && n === SL_ACT ? `<i class="sl-n" aria-hidden="true">${n}</i>` : "";
+const slMark = (o, inner) => !(o && typeof o === "object" && o.n) ? inner
+  : o.n === SL_ACT ? `<span class="sl-mark" data-walk-n="${o.n}">${slN(o.n)}${inner}</span>` : `<span class="sl-tgt" data-walk-n="${o.n}">${inner}</span>`;
 function slLog(lines, runId) {
   let lastN = null;
   return lines.map(l => {
-    const badge = l.n && l.n !== lastN ? slN(l.n) : ""; lastN = l.n || null;
-    const text = l.code ? `<span class="sl-code">${esc(l.text)}</span>` : `${runId ? `<span class="sl-id">[${esc(runId)}]</span> ` : ""}<span${l.warn ? ' class="sl-warn"' : ""}>${esc(l.text)}</span>`;
-    return `<div class="sl-line${l.n ? " sl-hit" : ""}">${badge}${text}</div>`;
+    const hit = l.n && l.n === SL_ACT, badge = hit && l.n !== lastN ? slN(l.n) : ""; lastN = hit ? l.n : null;
+    const text = l.code ? `<span class="sl-code">${esc(l.text)}</span>` : `${runId ? `<span class="sl-id">[${esc(runId.slice(0, 6))}…]</span> ` : ""}<span${l.warn ? ' class="sl-warn"' : ""}>${esc(l.text)}</span>`;
+    return `<div class="sl-line${hit ? " sl-hit" : ""}"${l.n ? ` data-walk-n="${l.n}"` : ""}>${badge}${text}</div>`;
   }).join("");
 }
 const SL_VIEW = {
-  flow: d => `<ol class="sl-flow">${d.boxes.map((b, i) => `<li class="${b.n ? "sl-hitbox" : ""}">${slN(b.n)}<span class="sl-step">${i + 1}</span><b>${esc(b.title)}</b><span>${esc(b.sub)}</span></li>`).join("")}</ol><p class="sl-note">${esc(d.note)}</p>`,
+  flow: d => `<ol class="sl-flow">${d.boxes.map((b, i) => `<li class="${b.n && b.n === SL_ACT ? "sl-hitbox" : ""}">${slN(b.n)}<span class="sl-step">${i + 1}</span><b>${esc(b.title)}</b><span>${esc(b.sub)}</span></li>`).join("")}</ol><p class="sl-note">${esc(d.note)}</p>`,
   header: d => `<div class="sl-h1">${slMark(d.title, `<b>${esc(slT(d.title))}</b>`)}${slMark(d.state, `<span class="sl-pill">✓ ${esc(slT(d.state))}</span>`)}</div>
     <div class="sl-meta">${slMark(d.path, `<span class="sl-link">${esc(slT(d.path))}</span>`)}${(d.meta || []).map(m => `<span>${esc(m)}</span>`).join("")}${slMark(d.commit, `<span class="sl-link sl-mono">⊸ ${esc(slT(d.commit))}</span>`)}</div>
     <div class="sl-meta"><span>${esc(d.started)}</span></div>
     <div class="sl-meta">${(d.line2 || []).map(m => `<span>${esc(m)}</span>`).join("")}${slMark(d.run_type, `<span>ⓘ ${esc(slT(d.run_type))}</span>`)}</div>
     <div class="sl-tabs">${d.tabs.map((t, i) => slMark(t, `<span class="sl-tab${i === 0 ? " on" : ""}">${esc(t.text)}${t.count ? ` <em>${esc(t.count)}</em>` : ""}</span>`)).join("")}</div>`,
-  changes: d => `<div class="sl-bar">${slMark(d.count, `<span class="sl-muted">${esc(slT(d.count))}</span>`)}<span class="sl-search">⌕ ${esc(d.search)}</span></div>
-    <div class="sl-filters">${slMark(d.filters, `<span class="sl-chips"><b>Filters</b>${d.filters.items.map(f => `<span>${esc(f)} ›</span>`).join("")}</span>`)}</div>
-    <div class="sl-bar">${slMark(d.expand, `<span class="sl-link">⤢ ${esc(slT(d.expand))}</span>`)}</div>
-    <div class="sl-rows">${d.rows.map(r => `<div class="sl-row${r.n ? " sl-hitbox" : ""}">${slN(r.n)}<span class="sl-sym">${esc(r.sym)}</span><span class="sl-mono sl-addr">${esc(r.address)}</span><span class="sl-pill sl-planned">${esc(r.status)}</span></div>`).join("")}${d.more ? `<div class="sl-muted sl-more">${esc(d.more)}</div>` : ""}</div>`,
-  log: d => `<div class="sl-bar"><span><b>▾ ${esc(d.phase)}</b> <span class="sl-muted">· ${esc(d.duration)} · ${esc(d.at)}</span></span>${slMark(d.tools, `<span class="sl-chips">${d.tools.items.map(t => `<span>${esc(t)}</span>`).join("")}</span>`)}</div>
+  changes: d => `<div class="sl-cols"><aside class="sl-side">${slMark(d.filters, `<div class="sl-filt"><div class="sl-ftabs"><b>Filters</b><span>Views</span></div><div class="sl-frow"><span>Default view</span><span class="sl-btn">New view</span></div><div class="sl-frow sl-muted">⤢ Expand all</div>${d.filters.items.map(f => `<div class="sl-fitem">› ${esc(f)}</div>`).join("")}</div>`)}</aside>
+    <div class="sl-mainc"><div class="sl-bar sl-top"><span class="sl-toggle"><i></i> New diff view</span>${slMark(d.count, `<span class="sl-showing">${esc(slT(d.count))}</span>`)}<span class="sl-search">⌕ ${esc(d.search)}</span></div>
+    <div class="sl-bar sl-sub">${slMark(d.expand, `<span>⤢ ${esc(slT(d.expand))}</span>`)}<span class="sl-sort">Sort by: <b>Address ↓</b></span></div>
+    <div class="sl-rows">${d.rows.map(r => `<div class="sl-row${r.n && r.n === SL_ACT ? " sl-hitbox" : ""}"${r.n ? ` data-walk-n="${r.n}"` : ""}>${slN(r.n)}<span class="sl-chev">›</span><span class="sl-sym">${esc(r.sym)}</span><span class="sl-mono sl-addr">${esc(r.address)}</span><span class="sl-pill sl-planned">${esc(r.status)}</span></div>`).join("")}${d.more ? `<div class="sl-muted sl-more">${esc(d.more)}</div>` : ""}</div></div></div>`,
+  log: d => `<div class="sl-bar"><span><b>▾ ${esc(d.phase)}</b> <span class="sl-muted">• ${esc(d.duration)} • ${esc(d.at)}</span></span>${slMark(d.tools, `<span class="sl-chips">${d.tools.items.map(t => `<span>${esc(t)}</span>`).join("")}</span>`)}</div>
     <div class="sl-log"><div class="sl-code">${(d.tail || []).map(l => esc(l)).join("\n")}</div>
-    <div class="sl-line${d.summary.n ? " sl-hit" : ""}">${slN(d.summary.n)}<b>${esc(slT(d.summary))}</b></div>${slLog(d.lines, d.run_id)}</div>`,
-  diff: d => `<div class="sl-log sl-code">${d.blocks.map(b => `<div class="sl-block${b.n ? " sl-hitbox" : ""}">${slN(b.n)}<span class="sl-add">+ access_control {
+    <div class="sl-line${d.summary.n === SL_ACT ? " sl-hit" : ""}" data-walk-n="${d.summary.n}">${slN(d.summary.n)}<b>${esc(slT(d.summary))}</b></div>${slLog(d.lines, d.run_id)}</div>`,
+  diff: d => `<div class="sl-log sl-code">${d.blocks.map(b => `<div class="sl-block${b.n && b.n === SL_ACT ? " sl-hitbox" : ""}"${b.n ? ` data-walk-n="${b.n}"` : ""}>${slN(b.n)}<span class="sl-add">+ access_control {
     + group_name       = "${esc(b.group)}"
     + permission_level = "${esc(b.level)}"${b.hidden ? `\n      <span class="sl-muted">${esc(b.hidden)}</span>` : ""}
-  }</span></div>`).join("")}<div class="sl-block${d.hidden.n ? " sl-hitbox" : ""}">${slN(d.hidden.n)}<span class="sl-muted">${esc(slT(d.hidden))}</span></div></div>`,
+  }</span></div>`).join("")}<div class="sl-block${d.hidden.n === SL_ACT ? " sl-hitbox" : ""}" data-walk-n="${d.hidden.n}">${slN(d.hidden.n)}<span class="sl-muted">${esc(slT(d.hidden))}</span></div></div>`,
   history: d => `<div class="sl-h1">${slMark(d.title, `<b>${esc(slT(d.title))}</b>`)}<span class="sl-pill">✓ ${esc(d.state)}</span></div>
     <div class="sl-meta">${slMark(d.path, `<span class="sl-link">${esc(slT(d.path))}</span>`)}${slMark(d.context, `<span>☰ ${esc(slT(d.context))}</span>`)}<span>ⓘ ${esc(d.run_type)}</span></div>
     <div class="sl-tabs"><span class="sl-tab on">History</span><span class="sl-tab">Changes <em>${esc(d.changes)}</em></span></div>
-    <div class="sl-hist">${d.events.map(e => `<div class="sl-ev${e.n ? " sl-hitbox" : ""}">${slN(e.n)}<span class="sl-dot">✓</span><b>${esc(e.state)}</b><span class="sl-muted">${esc(e.at)}</span>${e.buttons.map(b => `<span class="sl-btn">${esc(b)}</span>`).join("")}</div>`).join("")}
+    <div class="sl-hist">${d.events.map(e => `<div class="sl-ev${e.n && e.n === SL_ACT ? " sl-hitbox" : ""}"${e.n ? ` data-walk-n="${e.n}"` : ""}>${slN(e.n)}<span class="sl-dot">✓</span><b>${esc(e.state)}</b><span class="sl-muted">${esc(e.at)}</span>${e.buttons.map(b => `<span class="sl-btn">${esc(b)}</span>`).join("")}</div>`).join("")}
     <div class="sl-bar"><span><b>▾ ${esc(d.phase)}</b> <span class="sl-muted">· ${esc(d.duration)} · ${esc(d.at)}</span></span></div>
     <div class="sl-log">${slLog(d.lines, "01M464E91G7W09T58V7GQFYN0D")}</div></div>`,
 };
-function walkHtml(walk) {
-  return `<section class="walk"><h3>Walkthrough</h3>${walk.map(w => `<figure class="sl">
+// One step at a time: the screen with only the current part outlined, the step's words right
+// under it, and Back and Next. All the steps, and the good habits, fold away below.
+const WALK = {};
+function walkFig(w, k) {
+  const n = w.steps.length, at = WALK[k] || 1;
+  SL_ACT = at;
+  const view = SL_VIEW[w.kind](w.data).replace(/data-walk-n="(\d+)"/g, (m, n) => `${m} title="${esc(String(w.steps[n - 1] || "").replace(/[*`]/g, ""))}"`);
+  SL_ACT = 0;
+  return `<figure class="sl" data-walk="${k}">
     <figcaption>${esc(w.caption)}</figcaption>
-    <div class="sl-view sl-${w.kind}" role="img" aria-label="${esc(w.caption)}, with numbered callouts explained below">${SL_VIEW[w.kind](w.data)}</div>
-    <ol class="sl-steps">${w.steps.map((t, i) => `<li>${slN(i + 1)}<span>${md(t)}</span></li>`).join("")}</ol>
-    ${w.tips && w.tips.length ? `<div class="sl-tips"><span class="eyebrow">${ic("bulb")}Good habits</span><ul>${w.tips.map(t => `<li>${md(t)}</li>`).join("")}</ul></div>` : ""}
-  </figure>`).join("")}</section>`;
+    <div class="sl-view sl-${w.kind}" role="img" aria-label="${esc(w.caption)}: step ${at} of ${n} highlighted">${w.kind === "flow" ? "" : `<div class="sl-chrome"><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i><span>Spacelift · example screen</span></div>`}<div class="sl-body">${view}</div></div>
+    <div class="sl-now" aria-live="polite"><span class="sl-count">Step ${at} of ${n}</span><p>${slNfixed(at)}<span>${md(w.steps[at - 1])}</span></p>
+      <div class="sl-nav"><button class="btn quiet" data-walk-go="-1"${at === 1 ? " disabled" : ""}>${ic("arrowl")}Back</button><button class="btn" data-walk-go="1"${at === n ? " disabled" : ""}>Next${ic("arrowr")}</button></div></div>
+    <details class="sl-more"><summary>All ${n} steps</summary><ol class="sl-steps">${w.steps.map((t, i) => `<li>${slNfixed(i + 1)}<span>${md(t)}</span></li>`).join("")}</ol></details>
+    ${w.tips && w.tips.length ? `<details class="sl-more sl-tips"><summary>${ic("bulb")}Good habits (${w.tips.length})</summary><ul>${w.tips.map(t => `<li>${md(t)}</li>`).join("")}</ul></details>` : ""}
+  </figure>`;
 }
+const slNfixed = n => `<i class="sl-n" aria-hidden="true">${n}</i>`;
+function walkHtml(walk) {
+  return `<section class="walk"><h3>Walkthrough</h3>${walk.map((w, k) => walkFig(w, k)).join("")}</section>`;
+}
+function walkTo(fig, n) {
+  const k = +fig.dataset.walk, w = LESSONS[cur.id].walk[k];
+  WALK[k] = Math.min(w.steps.length, Math.max(1, n));
+  fig.outerHTML = walkFig(w, k);
+  // the new part's outline draws in and its number pops; the step's words follow (Motion off: they just appear)
+  const now = document.querySelector(`[data-walk="${k}"]`);
+  now.querySelectorAll(".sl-view .sl-mark, .sl-view .sl-hitbox, .sl-view .sl-hit").forEach(el => fxMove(el, [{ transform: "scale(1.04)", opacity: .3 }, { transform: "none", opacity: 1 }], "--dur-step"));
+  now.querySelectorAll(".sl-view .sl-n").forEach(el => fxMove(el, [{ transform: "scale(0)" }, { transform: "scale(1.2)" }, { transform: "none" }], "--dur-step"));
+  const words = now.querySelector(".sl-now p"); if (words) fxMove(words, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], "--dur-step");
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-walk-go]");
+  if (b && !b.disabled) { const fig = b.closest("[data-walk]"); walkTo(fig, (WALK[+fig.dataset.walk] || 1) + +b.dataset.walkGo); return; }
+  const t = e.target.closest(".sl-view [data-walk-n]");
+  if (t) walkTo(t.closest("[data-walk]"), +t.dataset.walkN);
+});
 function learnPane() {
   const L = LESSONS[cur.id];
   if (L.pack) return packLearnPane(L, L.pack);
@@ -2905,8 +3004,9 @@ function clozeHtml(id) {
 }
 function clozePick(w) {
   const id = cur.id, s = lp(id), g = gapsOf(id)[s.filled || 0]; if (!g || CLZ.wrong.includes(w)) return;
-  if (w !== g.answer) { CLZ.wrong.push(w); CLZ.note = `Not "${w}". Try another one${CLZ.help ? "" : ", or ask for a clue"}.`; clozeRender(); return; }
-  s.filled = (s.filled || 0) + 1; saveProgress();
+  const ex = s.explain || (s.explain = { wrong: 0, clues: 0, answers: 0, done: false });
+  if (w !== g.answer) { ex.wrong++; saveProgress(); CLZ.wrong.push(w); CLZ.note = `Not "${w}". Try another one${CLZ.help ? "" : ", or ask for a clue"}.`; clozeRender(); return; }
+  s.filled = (s.filled || 0) + 1; if (clozeDone(id)) ex.done = true; saveProgress();
   clozeRender();
   const box = $("paneText").querySelector(".cloze");
   if (clozeDone(id)) fxOn(box, "seal", FX.seal()); else fxScreen("spark", FX.spark, box.querySelector(".gap.filled:last-of-type"));
@@ -3243,7 +3343,7 @@ async function runTests() {
     if (firstBad === -1) {
       lastRun = { summary: `All ${total} tests passed.` };
       const prev = progress.solved[p.id];
-      progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: hintLevel };
+      progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: hintLevel, mode: "code" };
       $("result").className = "result pass";
       $("result").innerHTML = `<div class="score">${ic("check")} ${total}/${total} passed</div><div class="dots">${dots}</div>
         <div>Solved. The pattern: <em>${md(p.pattern)}</em></div>${habitLine("pass")}
@@ -3348,7 +3448,7 @@ function sortPlace(i, binId, byHint) {
 }
 function sortSolved() {
   const p = SO.p, n = p.sort.items.length, prev = progress.solved[p.id];
-  progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - sortRight() };
+  progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - sortRight(), mode: "sort" };
   lastRun = { summary: `Sorted all ${n} ideas, ${sortRight()} right first time.` };
   markDay();
   if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
@@ -3384,12 +3484,18 @@ $("sortBox").addEventListener("drop", e => { const b = e.target.closest("[data-s
 // For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
 // questions instead of code: one per screen, the evidence above it. A wrong pick is crossed out
 // with a plain reason; help is a clue first, then the answer. The Python version is one tap away.
-const QF = { p: null, i: 0, tried: [], help: 0, first: {}, code: false, again: false };
+const QF = { p: null, i: 0, tried: [], help: 0, first: {}, code: false, again: false, log: [] };
+// One line per question for the backend: the question, wrong picks, clue or answer used, YAML checks.
+function qfNote(change) {
+  const a = QF.p.practice.asks[QF.i];
+  const x = QF.log[QF.i] || (QF.log[QF.i] = { q: String(a.question).replace(/[`*]/g, "").slice(0, 120), wrong: [], clue: false, answer: false, first: true });
+  change(x, a);
+}
 const flowing = () => !!(QF.p && cur && cur.p === QF.p && !QF.code);
 const qfFinished = () => !!(QF.p && progress.solved[QF.p.id] && !QF.again);
 const qfKey = id => "drill-flow-" + id;
 function qfLoad(p) {
-  Object.assign(QF, { p: p.practice ? p : null, i: 0, tried: [], help: 0, first: {}, code: false, again: false });
+  Object.assign(QF, { p: p.practice ? p : null, i: 0, tried: [], help: 0, first: {}, code: false, again: false, log: [] });
   if (QF.p) try { QF.code = localStorage.getItem(codeKey(p.id)) === "1"; } catch {}
   qfMode();
 }
@@ -3550,19 +3656,21 @@ function qfRender() {
 function qfPick(k) {
   const a = QF.p.practice.asks[QF.i];
   if (QF.solved === QF.i || QF.tried.includes(k)) return;
-  if (k === a.answer) { if (!(QF.i in QF.first)) QF.first[QF.i] = !QF.tried.length && QF.help < 2; QF.solved = QF.i; fxOn($("flowBox"), "seal", FX.seal()); }
-  else { QF.tried.push(k); QF.first[QF.i] = false; }
+  if (k === a.answer) { if (!(QF.i in QF.first)) QF.first[QF.i] = !QF.tried.length && QF.help < 2; QF.solved = QF.i; qfNote(x => { x.first = !!QF.first[QF.i]; }); fxOn($("flowBox"), "seal", FX.seal()); }
+  else { QF.tried.push(k); QF.first[QF.i] = false; qfNote((x, a) => { x.first = false; x.wrong.push(a.pick ? a.evidence.changes[k].address : String(a.options[k]).replace(/[`*]/g, "")); }); }
   qfRender();
 }
 function qfHelp() {
   const a = QF.p.practice.asks[QF.i];
   QF.help = Math.min(2, QF.help + 1);
+  qfNote(x => { x.first = false; if (QF.help === 1) x.clue = true; else x.answer = true; });
   if (QF.help === 2) { QF.first[QF.i] = false; QF.solved = QF.i; if (a.kind === "fix") { QF.text = a.answer; QF.probs = null; } }
   qfRender();
 }
 function qfCheck() {
   const a = QF.p.practice.asks[QF.i], text = QF.text != null ? QF.text : a.start;
   QF.probs = yamlCheck(text, a.rules, a.goal);
+  qfNote(x => { x.checks = (x.checks || 0) + 1; if (QF.probs.length) { x.first = false; x.problems = [...new Set([...(x.problems || []), ...QF.probs.map(p => p.msg)])].slice(0, 6); } });
   if (!QF.probs.length) { if (!(QF.i in QF.first)) QF.first[QF.i] = !QF.fails && QF.help < 2; QF.solved = QF.i; fxOn($("flowBox"), "seal", FX.seal()); }
   else { QF.fails = (QF.fails || 0) + 1; QF.first[QF.i] = false; }
   qfRender();
@@ -3575,13 +3683,15 @@ function qfNext() {
 }
 function qfSolved() {
   const p = QF.p, n = p.practice.asks.length, right = Object.values(QF.first).filter(Boolean).length, prev = progress.solved[p.id];
-  progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - right };
+  progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - right, mode: "practice" };
+  // what a manager needs to help: every question that wasn't right first time, and how
+  if (cur.kind === "lesson") lp(p.id).practice = { day: today(), right, total: n, missed: (QF.log || []).filter(x => x && !x.first).map(({ first, ...x }) => x) };
   lastRun = { summary: `Answered all ${n} practice questions, ${right} right first time.` };
   QF.again = false; markDay();
   if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
   saveProgress(); renderTop();
 }
-function qfReset() { Object.assign(QF, { i: 0, tried: [], help: 0, first: {}, solved: null, again: true, text: null, probs: null, fails: 0 }); qfRender(); renderFoot(); }
+function qfReset() { Object.assign(QF, { i: 0, tried: [], help: 0, first: {}, solved: null, again: true, text: null, probs: null, fails: 0, log: [] }); qfRender(); renderFoot(); }
 function qfSetCode(on) {
   QF.code = on; try { localStorage.setItem(codeKey(QF.p.id), on ? "1" : "0"); } catch {}
   qfMode(); renderFoot();
@@ -4616,7 +4726,12 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
   const fp = t.closest("[data-focus-pick]"); if (fp) { setFocus(fp.dataset.focusPick); return; }
   const cz = t.closest("[data-clz]"); if (cz) { clozePick(cz.dataset.clz); return; }
-  if (t.closest("[data-clz-help]")) { CLZ.help = Math.min(2, CLZ.help + 1); CLZ.note = ""; clozeRender(); return; }
+  if (t.closest("[data-clz-help]")) {
+    CLZ.help = Math.min(2, CLZ.help + 1); CLZ.note = "";
+    const ex = lp(cur.id).explain || (lp(cur.id).explain = { wrong: 0, clues: 0, answers: 0, done: false });
+    if (CLZ.help === 1) ex.clues++; else ex.answers++;
+    saveProgress(); clozeRender(); return;
+  }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) {
     lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1, true);
     const verdict = $("paneText").querySelector(".verdict");
@@ -4791,7 +4906,7 @@ function pxShuffle(items, seed) {
 }
 function pxSolved(id, tries) {
   const prev = progress.solved[id];
-  progress.solved[id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: Math.max(0, tries - 1) };
+  progress.solved[id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: Math.max(0, tries - 1), mode: "pack" };
   markDay(); saveProgress(); renderTop();
   if (cur && cur.kind === "lesson") { const b = $("stepper").querySelector('[data-step="2"]'); if (b) b.classList.add("done"); }
   renderFoot();
@@ -5006,7 +5121,7 @@ goHome();
           const lessons = Object.assign({}, r.lessons || {});
           for (const [k, v] of Object.entries(progress.lessons)) {
             const o = lessons[k];
-            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0) };
+            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain };
           }
           progress = {
             solved: Object.assign({}, r.solved || {}, progress.solved),

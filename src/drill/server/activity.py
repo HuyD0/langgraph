@@ -8,7 +8,14 @@ copy it had and writes one event per change:
     step         reached a lesson's next step (Learn 0, Check 1, Build 2, Interview 3)
     checked      answered the lesson's check question (``answer``)
     lesson_done  finished a lesson
-    solved       passed an exercise's tests (``hints`` used, ``count`` times solved)
+    solved       passed an exercise (``hints`` used, ``count`` times solved, and ``mode``: code,
+                 sort, practice or pack, when the page says)
+    practised    finished a practice set (platform lessons): ``right`` of ``total`` first time,
+                 and ``missed``: each question not right first time, the wrong answers picked,
+                 whether the clue or the answer was needed, and for Fix the YAML the checks run
+                 and the problems seen
+    explained    finished the Explain gaps: ``wrong`` picks, ``clues`` and ``answers`` used
+    focus_set    chose what to practise: ``focus`` is ai, platform or both (no lesson)
 
 The tutor's own routes add ``asked`` (a question in the page, with what it was for),
 ``tests_run``, ``hint_used`` and ``saved_to_study``. Each event has an owner, a time, a
@@ -41,10 +48,21 @@ def progress_events(before: dict | None, after: dict | None) -> Iterator[tuple[s
             yield "checked", lesson_id, {"answer": now.get("checked")}
         if now.get("done") and not was.get("done"):
             yield "lesson_done", lesson_id, {}
+        practice = now.get("practice")
+        if isinstance(practice, dict) and practice != was.get("practice"):
+            yield "practised", lesson_id, practice
+        explain = now.get("explain")
+        if isinstance(explain, dict) and explain.get("done") and explain != was.get("explain"):
+            yield "explained", lesson_id, {k: explain.get(k, 0) for k in ("wrong", "clues", "answers")}
     old_solved = before.get("solved") or {}
     for problem_id, now in (after.get("solved") or {}).items():
         was = old_solved.get(problem_id)
         count = now.get("count", 1) if isinstance(now, dict) else 1
         was_count = (was.get("count", 1) if isinstance(was, dict) else 1) if was else 0
         if count > was_count:
-            yield "solved", problem_id, {"hints": now.get("hints") if isinstance(now, dict) else None, "count": count}
+            detail = {"hints": now.get("hints") if isinstance(now, dict) else None, "count": count}
+            if isinstance(now, dict) and now.get("mode"):
+                detail["mode"] = now["mode"]
+            yield "solved", problem_id, detail
+    if after.get("focus") and after.get("focus") != before.get("focus"):
+        yield "focus_set", "", {"focus": after["focus"]}
