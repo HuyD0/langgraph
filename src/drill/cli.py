@@ -273,12 +273,16 @@ def start_cmd(
 
 @app.command("build-page")
 def build_page_cmd(
-    out: Path = typer.Option(PROJECT_ROOT / "dist", "--out", "-o", help="Directory to write into."),
+    out: Path | None = typer.Option(None, "--out", "-o", help="Directory to write into (default dist/, or dist/private/ with --pack)."),
+    pack: list[Path] = typer.Option([], "--pack", help="A content pack folder to include; repeat for several. Its output is private: never publish it."),
 ) -> None:
     """Build the Daily Drill page (web) from src/drill/content, checking every exercise first."""
     from drill.content.build import main as build_main
 
-    raise typer.Exit(build_main(["--out", str(out)]))
+    args = ["--out", str(out)] if out else ["--out", str(PROJECT_ROOT / "dist")] if not pack else []
+    for p in pack:
+        args += ["--pack", str(p)]
+    raise typer.Exit(build_main(args))
 
 
 content_app = typer.Typer(add_completion=False, help="The curriculum's content: lessons due for a fact check, and content packs to check and preview.")

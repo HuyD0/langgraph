@@ -225,3 +225,15 @@ def test_a_pack_can_join_a_track_and_takes_its_setting(copy, core):
     with pytest.raises(packs.PackError, match="either 'phase'"):
         packs.load_pack(copy)
     assert "track: platform" in (SLOTS / "pack.yaml").read_text(), "the IaC slots join the Platform track"
+
+
+def test_the_build_page_command_takes_a_pack(tmp_path, monkeypatch):
+    # docs/CONTENT_PACKS.md says `uv run drill build-page --pack <folder>`; the command must pass it on.
+    from typer.testing import CliRunner
+
+    from drill.cli import app
+
+    monkeypatch.chdir(ROOT)
+    result = CliRunner().invoke(app, ["build-page", "--out", str(tmp_path), "--pack", str(EXAMPLE)])
+    assert result.exit_code == 0, result.output
+    assert "ex_config_links" in (tmp_path / "daily-drill.html").read_text()

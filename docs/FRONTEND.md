@@ -95,6 +95,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
 | `backends` | `claudeBackend()` and `localBackend()` |
+| `content packs: practice exercises and investigation views` | A pack lesson's Practice step (`PX_SHAPE`, `practicePane`), its views and guided tour (`viewHtml`, `tourHtml`), `packOf`, `migrateAliases`. **In `page/packs.js`** (styles: `page/packs.css`). See [CONTENT_PACKS.md](CONTENT_PACKS.md) |
 | `boot` | Load data and progress, pick the look, first render |
 
 The CSS follows the same order, with its own markers (`/* ---------- the pocket ... */`,
@@ -135,7 +136,7 @@ as one page.
 | 2 | notebook, selection toolbar | `notebook.js`, `notebook.css`, `selection.js` | **Done.** Small drawers with their own state |
 | 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` and a `.css` for each | **Done.** Feature-local state (`M`, `SO`, `QF`) |
 | 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
-| 5 | content packs | `packs.js` | Only used when a pack is loaded |
+| 5 | content packs | `packs.js`, `packs.css` | **Done.** Only used when a pack is loaded |
 | 6 | ask about this lesson, backends | `ask.js`, `backends.js` | Touch the model and storage: move with care |
 | 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |
 
