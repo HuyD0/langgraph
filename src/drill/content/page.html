@@ -211,8 +211,6 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 
 /* lesson */
 #lesson { padding-block: 12px calc(96px + env(safe-area-inset-bottom, 0px)); }
-.crumbs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.crumbs .btn { padding-inline: 8px; }
 .lesson-title { font: 800 clamp(26px, 5vw, 34px)/1.12 var(--display); margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
 .stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .stepbtn { display: grid; gap: 6px; text-align: left; background: none; border: 0; padding: 0 0 2px; cursor: pointer; color: var(--muted); font: 600 13px var(--body); }
@@ -536,15 +534,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .rail .ph.now[aria-pressed="true"] .cnt { color: var(--accent); }
 .rail .ph:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: hover) { .rail button.ph:hover .nm { color: var(--fg); } }
-.rail.mini { border: 0; background: none; padding: 2px 0 0; max-width: 340px; }
-.rail.mini::before, .rail.mini .fill { top: 20px; }
-.rail.mini .ph { cursor: default; min-height: 0; }
-.rail.mini .ph { grid-template-rows: 36px; }
-.railcap { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.trackcap { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.trackcap svg { width: 22px; height: 22px; flex: none; }
-.trackcap { color: var(--track-ink); }
-.trackcap .sh { fill: var(--track-soft); stroke: var(--track); stroke-width: 1.6; }
 /* inside the track everything "current" is teal instead of blue: the rim, Next, the title shape's glow */
 .book.room.track { --room: var(--track); --accent: var(--track); --accent-ink: var(--track-on); --accent-soft: var(--track-soft); --line: var(--track-line); margin-top: 16px; border-radius: 14px; border-color: var(--track); }
 .book.track .titlecard .eyebrow, .book.track .scenehead .ic { color: var(--track); }
@@ -989,7 +978,15 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .upnext .top-row { display: flex; align-items: center; gap: 10px; }
 .upnext .top-row svg { width: 26px; height: 26px; flex: none; }
 .upnext p { margin: 0; font-size: 14px; color: var(--muted); }
-.railbar { margin-bottom: 4px; }
+/* the lesson's one line of wayfinding: back, the phase's (or the track's) shape, the number and module */
+.lessonbar { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-bottom: 2px; min-width: 0; }
+.lessonbar .btn { min-height: 44px; min-width: 44px; padding-inline: 10px; justify-content: center; }
+.lb-shape svg { display: block; width: 22px; height: 22px; }
+.lb-shape .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+.lb-shape.track .sh { fill: var(--track-soft); stroke: var(--track); }
+.lb-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--muted); }
+.lb-t b { font: 600 14px var(--mono); color: var(--fg); margin-right: 8px; }
+.lb-shape.track + .lb-t b { color: var(--track-ink); }
 .lessonhead { display: flex; align-items: flex-start; gap: 12px; }
 .lessonhead .lesson-title { flex: 1; min-width: 0; }
 .earn { flex: none; display: grid; justify-items: center; gap: 2px; font-size: 11px; color: var(--accent); }
@@ -1213,8 +1210,7 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
 <main id="home" class="wrap"></main>
 
 <main id="lesson" class="wrap" hidden>
-  <div class="railbar" id="lessonRail"></div>
-  <div class="crumbs"><button class="btn quiet" id="backPath"><svg class="ic" aria-hidden="true"><use href="#i-arrowl"/></svg>Path</button><span class="eyebrow" id="lessonWhere"></span></div>
+  <div class="lessonbar"><button class="btn quiet" id="backPath" aria-label="Back to the path"><svg class="ic" aria-hidden="true"><use href="#i-arrowl"/></svg></button><span class="lb-shape" id="lessonRail" aria-hidden="true"></span><span class="lb-t" id="lessonWhere"></span></div>
   <div class="lessonhead"><h1 class="lesson-title" id="lessonTitle"></h1><span class="earn" id="lessonEarn"></span></div>
   <div class="callout ahead" id="aheadNote" hidden></div>
   <nav class="stepper" id="stepper" aria-label="Lesson steps"></nav>
@@ -1349,7 +1345,7 @@ const orderFor = id => trackOf[id] ? trackOf[id].tr.lessons : ORDER;
 const trackNext = tr => tr.lessons.find(id => !(progress.lessons[id] && progress.lessons[id].done)) || null;
 const STEPS = ["Learn", "Check", "Build", "Explain"];
 const STEP_ICON = ["book", "help", "code", "quote"];
-const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", workspace: "layers", access: "key", "databricks-ai": "sparkle", classics: "trophy" };
+const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "databricks-ai": "sparkle", classics: "trophy" };
 const STAGE_ICON = ["target", "compass", "wrench", "clipcheck", "rocket", "activity"];
 const ic = (n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const tile = (n, cls) => `<span class="tile${cls ? " " + cls : ""}">${ic(n)}</span>`;
@@ -1642,30 +1638,28 @@ function badge(i, r, st) {
 const badgeSvg = (i, r, st, cls) => `<svg${cls ? ` class="${cls}"` : ""} width="${2 * r + 16}" height="${2 * r + 16}" viewBox="${-r - 8} ${-r - 8} ${2 * r + 16} ${2 * r + 16}" aria-hidden="true">${badge(i, r, st)}</svg>`;
 // The rail: the six phases in order. On Home each phase is a button that shows its page of stickers;
 // above a lesson it is a reminder only, so a stray tap never leaves the lesson.
-function railHtml(mini, focus, viewing) {
+function railHtml(focus, viewing) {
   const sts = PHASES.map((_, i) => phState(i));
   const lastDone = sts.lastIndexOf("done");
   const items = PHASES.map((ph, i) => {
     const st = focus != null ? (sts[i] === "done" ? "done" : focus === i ? "now" : "") : sts[i];
-    const r = mini ? (st === "now" ? 10 : 8) : (st === "now" ? 15 : 12);
     const ids = phLessons(ph), d = ids.filter(isDoneL).length;
     const say = `${ph.name}, ${st === "done" ? "done" : d + " of " + ids.length}${st === "now" ? ", you are here" : ""}`;
-    if (mini) return `<span class="ph">${badgeSvg(i, r, st)}</span>`;
     // On Home the tabs never glow: the glow belongs to the room's title shape below.
     const on = viewing === i, pic = badgeSvg(i, 11, st === "done" ? "done" : "");
     return `<button class="ph ${st}" role="tab" id="phtab${i}" data-phase="${i}" aria-selected="${on}" aria-controls="phasePanel" tabindex="${on ? 0 : -1}" aria-label="${esc(say)}">${pic}<span class="nm">${esc(ph.name.split(" ")[0])}</span><span class="cnt">${st === "now" || on ? d + "/" + ids.length : ""}</span></button>`;
   }).join("");
-  if (mini) {
-    const ph = PHASES[focus];
-    const fill = lastDone >= 0 ? `<i class="fill" style="width: calc((100% - 8px) / 6 * ${Math.min(lastDone + 1, 5)})"></i>` : "";
-    return `<div class="rail mini" role="img" aria-label="Phase ${focus + 1} of 6, ${esc(ph.name)}">${fill}${items}</div><div class="railcap">${esc(ph.name)} · phase ${focus + 1} of ${PHASES.length}</div>`;
-  }
   const fill = lastDone >= 0 ? `<i class="fill" style="width: calc((100% - 8px) / 6 * ${lastDone + 1})"></i>` : "";
   return `<div class="rail phtabs" role="tablist" aria-label="The six phases">${fill}<i class="sleeve" style="--i: ${viewing}" aria-hidden="true"></i>${items}</div>`;
 }
-function trackRail(id) {
-  const { tr, k } = trackOf[id], m = modOf[id];
-  return `<div class="trackcap"><svg viewBox="-12 -12 24 24" aria-hidden="true">${phShape(TRACK_SHAPE, 9)}</svg><span>${esc(tr.name)} · module ${k + 1} of ${tr.modules.length}, ${esc(m.title)}</span></div>`;
+// The lesson's one line: its shape (the phase's, or the track's octagon), its number and its module.
+function lessonBar(id) {
+  const m = modOf[id], k = m.lessons.indexOf(id) + 1, tk = trackOf[id], i = phaseIdx(id);
+  $("lessonRail").className = "lb-shape" + (tk ? " track" : "");
+  $("lessonRail").innerHTML = packOf(id) ? "" : `<svg viewBox="-12 -12 24 24">${phShape(shapeOf(id), 9)}</svg>`;
+  const where = tk ? `${tk.tr.name}, module ${tk.k + 1} of ${tk.tr.modules.length}` : i != null ? `${PHASES[i].name}, phase ${i + 1} of ${PHASES.length}` : "";
+  $("lessonWhere").innerHTML = `${packOf(id) ? "" : `<b>${lessonNo(id)}</b>`}${esc(m.title)}`;
+  $("lessonWhere").title = (where ? where + " · " : "") + `lesson ${k} of ${m.lessons.length} in this module`;
 }
 // A track on Home: its own box under the path, one scene per module. After each module's lessons
 // come its planned ones, faded, so you can see what is coming without being able to open it.
@@ -1679,7 +1673,8 @@ function trackPage(tr) {
     return `<div class="scene"><button class="scenehead" data-scene="${key}" aria-expanded="${open}">${ic(MOD_ICON[mid] || "book")}<b>P${k + 1} · ${esc(m.title)}</b>${more}<span class="n${md_ === m.lessons.length ? " full" : ""}">${md_}/${m.lessons.length}</span>${ic("chevron", "chev")}</button>
       ${open ? `<div class="stickers">${m.lessons.map(sticker).join("")}${soon}</div>` : minis(m.lessons)}</div>`;
   }).join("");
-  const go = nid ? `<button class="btn" data-open="${nid}">${d || started(nid) ? "Continue: " + lessonNo(nid) + " " + esc(LESSONS[nid].title) : "Start the track"}</button>` : `<span class="meta">You've finished every lesson in this track so far.</span>`;
+  // One button per destination: when the Today card already opens this lesson, the Next sticker is enough.
+  const go = nid && nid === todayLesson() ? "" : nid ? `<button class="btn" data-open="${nid}">${d || started(nid) ? "Continue: " + lessonNo(nid) + " " + esc(LESSONS[nid].title) : "Start the track"}</button>` : `<span class="meta">You've finished every lesson in this track so far.</span>`;
   // The same room as a phase: its own paper (blueprint), the inner rim, and a title shape that glows while you're in it.
   const st = d === ids.length ? "done" : ids.some(id => started(id) && !isDoneL(id)) ? "now" : "";
   return `<section class="book room track paper6${st === "now" ? " here" : ""}" id="track-${tr.id}" aria-label="${esc(tr.name)}"><div class="titlecard">${badgeSvg(TRACK_SHAPE, 22, st)}<span class="mt"><span class="row1"><span class="eyebrow">${progress.focus === "platform" ? "Your track" : "Side track · any time"}</span></span><b>${esc(tr.name)}</b><span>${esc(tr.text)}</span></span><span class="n${d === ids.length ? " full" : ""}">${d}/${ids.length}</span></div>${go}${scenes}</section>`;
@@ -1902,7 +1897,7 @@ function renderHome() {
     ${progress.focus === "platform" ? TRACKS.map(trackPage).join("") : ""}
 
     <div class="pathhead"><h2>Your path</h2>${nidx !== today_ ? `<button class="linkbtn" data-phase="${today_}">Back to today</button>` : `<span>Tap a phase</span>`}</div>
-    <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(false, null, nidx)}${book}</div>
+    <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(null, nidx)}${book}</div>
     ${upnext}
     ${progress.focus === "platform" ? "" : TRACKS.map(trackPage).join("")}
     <div class="sets"><h3>Practice sets</h3></div>
@@ -2351,29 +2346,31 @@ function openLesson(id, step) {
   cur = { kind: "lesson", id, p: byId[id], from: null };
   progress.current = id; saveProgress();
   const m = modOf[id];
-  $("lessonWhere").textContent = m.title + " · " + (m.lessons.indexOf(id) + 1) + " of " + m.lessons.length;
+  lessonBar(id);
   $("lessonTitle").textContent = LESSONS[id].title;
-  $("lessonRail").innerHTML = trackOf[id] ? trackRail(id) : railHtml(true, phaseIdx(id));
   const est = isDoneL(id) ? "done" : "now";
   $("lessonEarn").className = "earn" + (isDoneL(id) ? " done" : "");
   $("lessonEarn").innerHTML = `<span class="stk ${est}">${stickerSvg(id, est, 18)}</span><span>${isDoneL(id) ? "earned" : "earning"}</span>`;
   $("lessonEarn").hidden = false; $("lessonRail").hidden = false;
-  const nid = nextFor(id), before = undoneBefore(id), pk = packOf(id);
+  let nid = nextFor(id), before = undoneBefore(id);
+  const pk = packOf(id), inMod = !!trackOf[id];
+  // Each track module stands on its own: only the earlier lessons in the same module count.
+  if (inMod) { const earlier = m.lessons.slice(0, m.lessons.indexOf(id)).filter(x => !isDoneL(x)); before = earlier.length; nid = earlier[0] || id; }
   // A pack lesson is optional and names its own prerequisites; only those count here.
   const needs = pk ? (pk.prerequisites || []).filter(x => LESSONS[x] && !isDoneL(x)) : [];
   const ahead = !pk && !isDoneL(id) && !started(id) && nid && nid !== id && before > 0;
   $("aheadNote").hidden = !ahead && !(needs.length && !isDoneL(id));
   if (!ahead && needs.length && !isDoneL(id)) $("aheadNote").innerHTML = `<b>Do ${needs.length === 1 ? "this one" : "these"} first</b><p>${needs.map(x => `<b>${lessonNo(x)} ${esc(LESSONS[x].title)}</b>`).join(", ")}: this lesson builds on ${needs.length === 1 ? "it" : "them"}.</p><div class="row"><button class="btn" data-open="${needs[0]}">Go there</button><button class="linkbtn" data-aheadok>Stay here</button></div>`;
-  if (ahead) $("aheadNote").innerHTML = `<b>This lesson builds on ${before} you haven’t done yet</b><p>The next one in order is <b>${lessonNo(nid)} ${esc(LESSONS[nid].title)}</b>. You can stay here; the earlier lessons may make this one easier.</p><div class="row"><button class="btn" data-open="${nid}">Go to the next one</button><button class="linkbtn" data-aheadok>Stay here</button></div>`;
+  if (ahead) $("aheadNote").innerHTML = `<b>This lesson builds on ${before} ${inMod ? "earlier in this module" : "you haven’t done yet"}</b><p>The next one in order is <b>${lessonNo(nid)} ${esc(LESSONS[nid].title)}</b>. You can stay here; the earlier lessons may make this one easier.</p><div class="row"><button class="btn" data-open="${nid}">Go to the next one</button><button class="linkbtn" data-aheadok>Stay here</button></div>`;
   $("stepper").hidden = false;
   if (!packOf(id)) loadProblem(cur.p);
-  if (packOf(id) && packOf(id).status === "draft") $("lessonWhere").textContent += " · Draft";
+  if (packOf(id) && packOf(id).status === "draft") $("lessonWhere").insertAdjacentText("beforeend", " · Draft");
   show("lesson");
   setStep(step != null ? step : (s.done ? 0 : s.step));
 }
 function openPractice(pid, from) {
   cur = { kind: "practice", id: pid, p: byId[pid], from };
-  $("lessonWhere").textContent = "Practice · Classic interview problems";
+  $("lessonWhere").textContent = "Practice · Classic interview problems"; $("lessonWhere").title = "";
   $("lessonTitle").textContent = byId[pid].title;
   $("lessonRail").hidden = true; $("lessonEarn").hidden = true; $("aheadNote").hidden = true;
   $("stepper").hidden = true;
@@ -3345,6 +3342,8 @@ function hlPython(src) {
 const looksInfra = t => /(^|\n)\s*(resource|data|module|provider|variable|output|locals|terraform)\s+["{]/.test(t)
   || /(^|\n)\s*(-\/\+|[+~-]|<=)\s+(resource|data|[\w"-]+\s*[=:{])/.test(t) || /Plan: \d+ to add/.test(t) || /Lock Info:/.test(t)
   || (/^\s*[{[]/.test(t) && /"[^"\n]+"\s*:/.test(t));
+// a YAML block: a top-level "key:" line and indented "key:" lines under it
+const looksYaml = t => /(^|\n)[\w-]+:\s*(\n|$)/.test(t) && /\n {2,}(- )?[\w"-]+:/.test(t);
 function hlInfra(src) {
   return src.split("\n").map(line => {
     const m = line.match(/^(\s*)(-\/\+|<=|[+~-])(?=\s)/);
@@ -3373,8 +3372,9 @@ function colourCode() {
     const t = pre.textContent;
     if (pre.dataset.hl === String(t.length)) return;
     pre.innerHTML = looksInfra(t) ? hlInfra(t) : hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
-    // columns lined up with spaces lose their meaning when wrapped: those boxes scroll sideways instead
-    pre.classList.toggle("aligned", t.split("\n").filter(l => /\S {2,}\S/.test(l)).length >= 2);
+    // columns lined up with spaces, and YAML or Terraform (where indenting is meaning), lose it when
+    // wrapped: those boxes scroll sideways instead
+    pre.classList.toggle("aligned", t.split("\n").filter(l => /\S {2,}\S/.test(l)).length >= 2 || looksInfra(t) || looksYaml(t));
   });
   document.querySelectorAll(".dtwrap, pre.code.aligned").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
 }
