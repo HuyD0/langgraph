@@ -1,0 +1,10 @@
+.asklesson { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.asklesson h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.asklesson .thread { display: grid; gap: 14px; }
+.asklesson .thread:empty { display: none; }
+.asklesson .turn { display: grid; gap: 6px; min-width: 0; }
+.asklesson .aq { margin: 0; font-weight: 600; }
+.asklesson .aa { background: var(--sunk); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.asklesson .aa p { margin: 0; max-width: 65ch; }
+.asklesson .aa pre { margin: 0; font: 13px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; white-space: pre; overflow-x: auto; }
+.asklesson .linkbtn { padding: 2px 0; font-size: 14px; }

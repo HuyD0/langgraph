@@ -83,7 +83,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` **In `page/trust.js`** (styles: `page/trust.css`) |
 | `step panes` | `learnPane`, `checkPane`, the Explain gaps (`clozeHtml`), `anglePane` |
 | `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
-| `ask about this lesson` | The tutor chips and answers |
+| `ask about this lesson` | The tutor chips and answers **In `page/ask.js`** (styles: `page/ask.css`) |
 | `build step` | `loadProblem`, the editor area, running tests |
 | `the sorting board` | Build as a judgement task (`SO`, `sortRender`, `sortPlace`). **In `page/sorting.js`** (styles: `page/sorting.css`) |
 | `practice questions` | Build as reading real evidence: YAML, plans, logs (`QF`, `qfRender`). **In `page/practice.js`** (styles: `page/practice.css`) |
@@ -94,7 +94,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
-| `backends` | `claudeBackend()` and `localBackend()` |
+| `backends` | `claudeBackend()` and `localBackend()` **In `page/backends.js`** |
 | `content packs: practice exercises and investigation views` | A pack lesson's Practice step (`PX_SHAPE`, `practicePane`), its views and guided tour (`viewHtml`, `tourHtml`), `packOf`, `migrateAliases`. **In `page/packs.js`** (styles: `page/packs.css`). See [CONTENT_PACKS.md](CONTENT_PACKS.md) |
 | `boot` | Load data and progress, pick the look, first render |
 
@@ -137,7 +137,7 @@ as one page.
 | 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` and a `.css` for each | **Done.** Feature-local state (`M`, `SO`, `QF`) |
 | 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
 | 5 | content packs | `packs.js`, `packs.css` | **Done.** Only used when a pack is loaded |
-| 6 | ask about this lesson, backends | `ask.js`, `backends.js` | Touch the model and storage: move with care |
+| 6 | ask about this lesson, backends | `ask.js`, `ask.css`, `backends.js` | **Done**, with a live check: saving, the study list and asking a real model all work on `drill-server` |
 | 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |
 
 ## Recipes
