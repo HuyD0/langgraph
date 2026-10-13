@@ -40,7 +40,7 @@ def test_anchors_name_real_lessons_and_cover_every_code_lesson():
     assert len(lesson_ids) >= 16
     named = {a["lesson"] for a in _anchors()}
     assert named <= lesson_ids, f"anchors name lessons that don't exist: {named - lesson_ids}"
-    code_lessons = set(re.findall(r'^\{ id: "([a-z-]+)", part: [0-3],', course, re.M))
+    code_lessons = set(re.findall(r'^\{ id: "([a-z-]+)", part: \d+, title:', course, re.M))
     assert code_lessons <= named, f"lessons that show code but have no anchor: {code_lessons - named}"
 
 

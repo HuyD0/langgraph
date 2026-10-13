@@ -6,8 +6,8 @@ as a single claude.ai artifact and servable by `drill-server` unchanged. This pa
 it is organised so you can find things, change them and leave them as tidy as you found them.
 
 New to front-end code? Start with the course, [course/inside-page-html.html](course/inside-page-html.html)
-(published at https://claude.ai/artifact/TYnPBikbTkiCJoGLdkQ9Ws): 16 short lessons built on this page,
-with live exercises, ending with how to guide an AI through changes here.
+(published at https://claude.ai/artifact/TYnPBikbTkiCJoGLdkQ9Ws): 19 short lessons built on this page,
+with live exercises, how to guide an AI through changes here, and how to use the design system.
 
 Read with: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) (tokens, rules, looks), [PAGE.md](PAGE.md)
 (what each feature does, for the learner) and [SERVER.md](SERVER.md) (the `/api/*` it talks to).

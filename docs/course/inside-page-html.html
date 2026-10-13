@@ -169,7 +169,7 @@ textarea.code { width: 100%; min-height: 260px; resize: vertical; border: 0; out
     </div>
     <div>
       <div class="meter" aria-hidden="true"><i id="meterFill"></i></div>
-      <div class="meterline" id="meterText">0 of 16 done</div>
+      <div class="meterline" id="meterText">0 of 19 done</div>
     </div>
     <button class="btn small outtoggle" id="outToggle" aria-expanded="false" aria-controls="parts">All lessons</button>
     <nav class="parts" id="parts" aria-label="Lessons"></nav>
@@ -319,6 +319,41 @@ textarea.code { width: 100%; min-height: 260px; resize: vertical; border: 0; out
   "file": "src/drill/content/page.html",
   "find": "withTrust(cur.id, first,",
   "lesson": "render"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "/* verdicts: the strong color is for text and icons, its -bg twin is the fill behind them */",
+  "lesson": "ds-what"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--pass: #157347; --pass-bg: #e3f4ea;",
+  "lesson": "ds-what"
+ },
+ {
+  "file": "docs/DESIGN_SYSTEM.md",
+  "find": "2. **Colour means one thing.**",
+  "lesson": "ds-what"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--aside-bg: var(--sunk); --aside-line: transparent;",
+  "lesson": "ds-build"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--aside-blur: blur(12px);",
+  "lesson": "ds-build"
+ },
+ {
+  "file": "docs/DESIGN_SYSTEM.md",
+  "find": "**Style a new component.** Pick its surface first",
+  "lesson": "ds-build"
+ },
+ {
+  "file": "docs/DESIGN_SYSTEM.md",
+  "find": "4. **Thumb first.** Controls are at least 44px tall on touch",
+  "lesson": "ds-standards"
  }
 ]
 </script>
@@ -933,6 +968,120 @@ root.addEventListener("click", e => {
 render();
 </script>
 
+
+<script type="text/plain" id="r-ds1">
+/* tokens.css: each name says what a colour MEANS, not what it looks like */
+  /* the one accent: the next thing to do, focus rings */
+  --accent: #2346d1;
+  /* verdicts: the strong color is for text and icons, its -bg twin is the fill behind them */
+  --pass: #157347; --pass-bg: #e3f4ea;
+  --fail: #b42318; --fail-bg: #fdecea;
+  --hint: #8a5a00; --hint-bg: #fdf3dc;
+
+/* docs/DESIGN_SYSTEM.md, rule 2 */
+Colour means one thing. pass only means passed or done, fail only failed or wrong,
+hint only a hint or a warning, accent the one thing to do next.
+</script>
+<script type="text/plain" id="r-ds2">
+/* tokens.css: surfaces say what a box IS */
+  card = something you read; aside = a note beside it (key idea, tips, what an
+  AI said); glow-current = the one thing you're on; glow-look = "look here" in hint colours.
+  --card-bg: var(--surface); --card-line: var(--line); --card-shadow: none;
+  --aside-bg: var(--sunk); --aside-line: transparent; --aside-shadow: none; --aside-blur: none;
+
+/* the Dusk look makes the same names glass */
+  --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10);
+  --aside-blur: blur(12px);
+
+/* docs/DESIGN_SYSTEM.md, "Style a new component" */
+Pick its surface first ... Never write a :root[data-theme="dusk"] rule for a new
+component's background, shadow or blur: a test fails if you do.
+</script>
+<script type="text/plain" id="p17-html">
+<div class="result pass"><b>5/5 passed</b><span>Every case passed. Nice.</span></div>
+<div class="result fail"><b>2/5 passed</b><span>First failing case: split_by_key([], "id")</span></div>
+</script>
+<script type="text/plain" id="p17-css">
+/* The design system: names and their meaning, for Light, then for Dusk */
+.page {
+  --pass: #157347; --pass-bg: #e3f4ea;
+  --fail: #b42318; --fail-bg: #fdecea;
+}
+.page[data-theme="dusk"] {
+  --pass: #7fd6b0; --pass-bg: #10261f;
+  --fail: #ff8f9e; --fail-bg: #351723;
+}
+
+/* A component someone built without the system. Swap each # colour for a token. */
+.result { border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; margin-bottom: 8px; }
+.result span { color: var(--fg); }
+.result.pass { background: #e3f4ea; color: #157347; }
+.result.fail { background: #fdecea; color: #b42318; }
+</script>
+<script type="text/plain" id="a17-css">
+/* The design system: names and their meaning, for Light, then for Dusk */
+.page {
+  --pass: #157347; --pass-bg: #e3f4ea;
+  --fail: #b42318; --fail-bg: #fdecea;
+}
+.page[data-theme="dusk"] {
+  --pass: #7fd6b0; --pass-bg: #10261f;
+  --fail: #ff8f9e; --fail-bg: #351723;
+}
+
+.result { border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; margin-bottom: 8px; }
+.result span { color: var(--fg); }
+.result.pass { background: var(--pass-bg); color: var(--pass); }
+.result.fail { background: var(--fail-bg); color: var(--fail); }
+</script>
+<script type="text/plain" id="p18-html">
+<section class="card">
+  <h3>Precision and recall</h3>
+  <p>Precision: of the ones you said yes to, how many were right.</p>
+  <aside class="tip"><b>Key idea</b> Accuracy hides the rare cases. Look at both numbers.</aside>
+</section>
+</script>
+<script type="text/plain" id="p18-css">
+/* The design system's surfaces (the real values, cut down) */
+.page {
+  --card-bg: var(--surface); --card-line: var(--line);
+  --aside-bg: var(--sunk); --aside-line: transparent; --aside-blur: none;
+}
+.page[data-theme="dusk"] {
+  --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10); --aside-blur: blur(12px);
+}
+
+/* A card: already built from the system */
+.card { background: var(--card-bg); border: 1px solid var(--card-line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.card h3 { margin: 0; }
+
+/* Your new component: a tip beside the text. It's an aside.
+   Use the aside tokens, corners of 12px, padding 12px 14px. No # colours, no Dusk rule of its own. */
+.tip {
+}
+</script>
+<script type="text/plain" id="a18-css">
+/* The design system's surfaces (the real values, cut down) */
+.page {
+  --card-bg: var(--surface); --card-line: var(--line);
+  --aside-bg: var(--sunk); --aside-line: transparent; --aside-blur: none;
+}
+.page[data-theme="dusk"] {
+  --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10); --aside-blur: blur(12px);
+}
+
+.card { background: var(--card-bg); border: 1px solid var(--card-line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.card h3 { margin: 0; }
+
+.tip {
+  background: var(--aside-bg);
+  border: 1px solid var(--aside-line);
+  backdrop-filter: var(--aside-blur);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+</script>
+
 <script>
 (() => {
 // ---------- helpers ----------
@@ -956,7 +1105,7 @@ const BASE = `
 // Answer positions vary per question (a fixed rotation from its text), so "always B" never works
 const spin = (q, n) => { let h = 0; for (const ch of q) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const r = h % n; return Array.from({ length: n }, (_, k) => (k + r) % n); };
 // ---------- the course ----------
-const PARTS = ["The page", "How it looks", "How it behaves", "Putting it together", "Guiding AI"];
+const PARTS = ["The page", "How it looks", "How it behaves", "Putting it together", "Guiding AI", "Design systems"];
 const L = [
 { id: "one-file", part: 0, title: "One file, three languages",
   idea: [
@@ -1220,6 +1369,63 @@ const L = [
     { who: "You check", sit: "A change to how something looks. What do you look at?", opts: ["The desktop view only", "Phone width (375px) in Dusk and Light, Tab through it with the keyboard, and Motion off", "Nothing: the tests passed"], a: 1, clue: "Who uses Daily Drill, and on what?", why: "Most use phones, in Dusk. Tests don't see colours or layout; your eyes do." },
     { who: "The change", sit: "It edits function show(view), which switches screens.", opts: ["Ask: \"What else calls show()? What could break?\"", "Accept it: it's a small function", "Ask it to rename show()"], a: 0, clue: "A function many places use is a function many places can break.", why: "show() runs on every screen change. Asking about callers and risks makes the AI check them." },
     { who: "The AI said", sit: "\"I used event delegation so redrawn rows keep working.\" You don't know that word.", opts: ["Pretend it's fine", "Ask: \"Explain event delegation in plain words, with an example from this project\"", "Ask it to avoid that word"], a: 1, clue: "Lesson 10 might help, but it's always fine to ask.", why: "Unknown words are where mistakes hide. A plain explanation with a local example turns them into knowledge." },
+  ],
+},
+
+{ id: "ds-what", part: 5, title: "What a design system is",
+  idea: [
+    "A **design system** is a team's shared decisions about how things look and behave, written down so everyone (people and AI) builds the same way. It has four parts: **tokens** (named values: colours, fonts, sizes, timings), **components** (reusable pieces: buttons, cards, chips), **rules** (how to use them), and **docs** (where all of that is explained, with examples).",
+    "Good tokens are named by **meaning**, not looks. Many systems have two layers: **primitive** tokens that just name a colour (`blue-600: #2346d1`) and **semantic** tokens that say what it's for (`accent: var(--blue-600)`). Components only use the semantic ones. Daily Drill keeps it simple and names colours by meaning straight away: `--accent` is \"the next thing to do\", `--pass` is \"passed or done\".",
+    "That's why a design system makes changes safe. To make Dusk's green softer, you change one value, and every passed result, done step and tick follows, while nothing else changes by accident.",
+  ],
+  key: "Tokens named by meaning, components built only from tokens, rules that say how.",
+  real: { id: "r-ds1", file: "src/drill/content/tokens.css + docs/DESIGN_SYSTEM.md", sub: "names by meaning, and the rule behind them", note: "The full list, with what each name is for, is the tokens table in docs/DESIGN_SYSTEM.md." },
+  play: { html: "p17-html", css: "p17-css", tab: "css" },
+  task: "Someone built these results with raw colours, so they **don't change in Dusk**. Replace every `#` colour in the `.result` rules with the right token. Then switch the preview to Dusk to see the difference.",
+  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); const comp = css.replace(/\.page(\[data-theme="dusk"\])?\s*\{[^}]*\}/g, ""); const hex = comp.match(/#[0-9a-fA-F]{3,8}\b/); if (hex) return [false, `There's still a raw colour, ${hex[0]}, in a component rule. Swap it for var(--pass), var(--pass-bg), var(--fail) or var(--fail-bg).`]; const pass = r.querySelector(".result.pass"), fail = r.querySelector(".result.fail"); if (!pass || !fail) return [false, "Keep both results in the HTML."]; const was = ctx.page.getAttribute("data-theme"); ctx.page.setAttribute("data-theme", "dusk"); const a = getComputedStyle(pass), b = getComputedStyle(fail); const ok = a.backgroundColor === "rgb(16, 38, 31)" && a.color === "rgb(127, 214, 176)" && b.backgroundColor === "rgb(53, 23, 35)" && b.color === "rgb(255, 143, 158)"; ctx.page.setAttribute("data-theme", was || "light"); return ok ? [true, "No raw colours left, and both results follow the look. The strong colour for the words, its -bg twin behind them, just like the real verdicts."] : [false, "In Dusk the colours aren't the Dusk ones yet. Each result needs its strong colour for color and its -bg twin for background."]; },
+  clue: "`.result.pass` gets `background: var(--pass-bg); color: var(--pass);`. Do the same with fail.",
+  answer: { css: "a17-css" },
+  quiz: { q: "Which token name is better for the blue of the main button?", opts: ["--blue", "--accent", "--button-color-2"], a: 1, why: "--accent says what it's for. If the brand turns green next year, --blue would be a lie; --accent still tells the truth." },
+},
+{ id: "ds-build", part: 5, title: "Building with it: pick the surface, then reuse",
+  idea: [
+    "When you need something new, **look for an existing component first**. The components table in `docs/DESIGN_SYSTEM.md` lists them. Most \"new\" things are an existing piece with different words.",
+    "If you really need a new one, start by asking **what kind of box it is**. Daily Drill has surface tokens for that: a **card** is something you read, an **aside** is a note beside it (a key idea, a tip, what an AI said), a **pop** floats over the page. Light fills them plainly; Dusk makes them glass. Use the surface's tokens and your component gets every look for free, with no Dusk rule of its own.",
+    "Then size and space it from the system's steps (gaps of 4 to 24px; corners of 4, 8, 10, 12, 14 or a pill), give it every state it needs (hover, keyboard focus, disabled), and add a row to the components table so the next person finds it.",
+  ],
+  key: "Reuse first; if new, pick its surface, use the steps, cover every state, write it down.",
+  real: { id: "r-ds2", file: "src/drill/content/tokens.css + docs/DESIGN_SYSTEM.md", sub: "surfaces, and the rule for new components", note: "A test fails if a new component writes its own Dusk rule for background, shadow or blur. The surfaces handle that." },
+  play: { html: "p18-html", css: "p18-css", tab: "css" },
+  task: "Build the `.tip` as an **aside**: use the aside tokens for its background, border and blur, 12px corners and 12px 14px padding. No `#` colours and no Dusk rule of its own. Check it in Light and Dusk.",
+  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); const tipRules = (css.match(/[^{}]*\.tip[^{]*\{[^}]*\}/g) || []).join("\n"); if (/data-theme/.test(tipRules)) return [false, "There's a Dusk rule for .tip. Remove it: the aside tokens already change in Dusk."]; if (/#[0-9a-fA-F]{3,8}\b/.test(tipRules)) return [false, "The .tip rule has a raw colour. Use var(--aside-bg) and var(--aside-line)."]; const tip = r.querySelector(".tip"); if (!tip) return [false, "Keep the <aside class=\"tip\"> in the HTML."]; const was = ctx.page.getAttribute("data-theme"); ctx.page.setAttribute("data-theme", "light"); const L1 = getComputedStyle(tip); const light = [L1.backgroundColor, L1.borderTopLeftRadius, L1.paddingTop, L1.paddingLeft]; ctx.page.setAttribute("data-theme", "dusk"); const D1 = getComputedStyle(tip); const dusk = [D1.backgroundColor, D1.borderTopStyle]; ctx.page.setAttribute("data-theme", was || "light"); if (light[0] !== "rgb(228, 232, 238)") return [false, "In Light the tip isn't the aside colour yet. Set background: var(--aside-bg)."]; if (dusk[0] !== "rgba(93, 85, 103, 0.22)") return [false, "In Dusk the tip should turn to glass by itself. Use var(--aside-bg), not a fixed colour."]; if (dusk[1] !== "solid") return [false, "Give it border: 1px solid var(--aside-line), so Dusk can draw its faint edge."]; if (light[1] !== "12px") return [false, "Corners should be 12px, one of the system's steps."]; if (light[2] !== "12px" || light[3] !== "14px") return [false, "Padding should be 12px 14px."]; return [true, "Plain in Light, glass in Dusk, with no Dusk rule of its own. That's what picking the surface buys you."]; },
+  clue: "Five lines inside `.tip { }`: `background: var(--aside-bg);`, `border: 1px solid var(--aside-line);`, `backdrop-filter: var(--aside-blur);`, `border-radius: 12px;`, `padding: 12px 14px;`.",
+  answer: { css: "a18-css" },
+  quiz: { q: "You need a box that shows what the AI said, next to a lesson. What do you do first?", opts: ["Pick a nice new colour for it", "Check the components table, then build it as an aside from the aside tokens", "Copy a card and add a Dusk rule"], a: 1, why: "What the AI said is a note beside the content: an aside. Reuse first, and the surface gives you every look." },
+},
+{ id: "ds-standards", part: 5, kind: "judge", title: "Standards and good practice",
+  idea: [
+    "Some rules come from **standards** that everyone shares. The main one is **WCAG 2.2**, the web's accessibility guidelines; teams usually aim for level **AA**. Others are a team's **house rules**, often stricter than the standard. A good design system says which is which.",
+    "For sharing tokens between tools (design apps, code, docs), there's now a common file format: the **W3C Design Tokens format**, whose first stable version, 2025.10, came out in October 2025. Daily Drill keeps its tokens in CSS; the Design System artifact holds them as a list for its own pages.",
+    "And there's good practice for **changing** a system: change values, not meanings; add a new token rather than reuse one for something else; remove a token only when nothing uses it; and write down what changed.",
+  ],
+  key: "Meet the standard (WCAG 2.2 AA), keep the house rules, and change meanings carefully.",
+  sheet: [
+    ["Text contrast: at least 4.5:1", "WCAG 1.4.3 (AA); 3:1 for large text. Daily Drill checks its pairs with scripts/contrast.py"],
+    ["Icons, borders and focus rings: 3:1", "WCAG 1.4.11 (AA): parts you need to see to use the page"],
+    ["Never colour alone", "WCAG 1.4.1: a failed result also says \"failed\" or shows a cross"],
+    ["Tap targets: 24px is the floor, 44px is the house rule", "WCAG 2.2 asks at least 24 by 24 (2.5.8, AA); Daily Drill asks 44px on touch"],
+    ["Focus you can see, never hidden", "WCAG 2.4.7 (AA), and 2.4.11 (AA, new in 2.2): not covered by a sticky bar"],
+    ["Name by meaning", "--accent, not --blue; --pass, not --green"],
+    ["Change values, not meanings", "need a new meaning? add a new token; deprecate before you delete"],
+    ["Write it down", "a row in the components table, and a line in the PR saying what changed"],
+  ],
+  cases: [
+    { who: "A designer asks", sit: "\"Make the new 'New lesson' badge green, like the pass colour.\"", opts: ["Use --pass: it's green", "Don't: --pass means passed or done. Use a neutral chip, or add a token that means 'new'", "Use --hint"], a: 1, clue: "In this system, what does --pass mean?", why: "Colour means one thing. A green 'New' badge would read as 'done' to anyone who knows the app." },
+    { who: "The change", code: ".note { color: #9aa0a6; background: #ffffff; }  /* 2.7:1 */", sit: "Body text in a new note.", opts: ["Fine, it's readable on my screen", "Fails WCAG 1.4.3: body text needs 4.5:1. Use --muted, which is 7.4:1 on the page", "Make it bold instead"], a: 1, clue: "Find the number in the comment, and compare it with the text rule on your cheat sheet.", why: "2.7:1 is too faint for many people, in sunlight or with tired eyes. --muted is already tuned and checked." },
+    { who: "The change", code: ".iconbtn { width: 20px; height: 20px; }", sit: "A small icon button for phones.", opts: ["Fine: icons are small", "Too small: WCAG's floor is 24px, and Daily Drill's touch rule is 44px", "Make it 21px"], a: 1, clue: "Two numbers on your cheat sheet: the standard's floor and the house rule.", why: "A fingertip is about 44px. Below 24px fails the standard; below 44px breaks this app's own rule on touch." },
+    { who: "The AI suggests", sit: "\"The new feature wants purple, so I changed --hint to purple.\"", opts: ["Good, one line", "Stop: every hint and warning would turn purple. Add a new token for the new meaning", "Change --accent instead"], a: 1, clue: "Who else uses --hint?", why: "Changing a token's value changes everything that means 'hint'. A new meaning needs a new name." },
+    { who: "You find", sit: "--finish-ink is defined in tokens.css, but nothing uses it.", opts: ["Delete it quietly with some other change", "Search to confirm it's unused, then remove it in its own small PR that says so", "Leave it forever"], a: 1, clue: "How would the next person know why it disappeared?", why: "Unused tokens confuse people (\"should I use this?\"). Removing one is fine, done on its own and written down." },
+    { who: "The change", code: ".field.error { border-color: var(--fail); }", sit: "How a wrong answer shows in a form.", opts: ["Fine: red means wrong", "Add words or an icon too: never colour alone (WCAG 1.4.1)", "Make the border thicker"], a: 1, clue: "Someone can't tell red from grey. What do they see?", why: "About 1 in 12 men has some colour blindness. A message like \"Not quite: it's B\" works for everyone." },
   ],
 },
 ];
