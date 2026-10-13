@@ -7,9 +7,10 @@ MODULE = module('experiments', 'Experiment design with MLflow', 'Runs, grids, fa
 lesson(MODULE, 'best_run',
     title='Experiments, runs and the lifecycle',
     learn=[
-        'An **experiment** answers one question, like "which chunk size (how big a piece each document is cut into) gives the best answers under 1.5 seconds?". Each attempt is a **run** that records its **parameters** (what you set), **metrics** (what you measured) and **artifacts** (files, like the eval results).',
+        'An **experiment** is a fair test that turns a question into evidence. You change one thing on purpose, like the chunk size (how big a piece each document is cut into); scientists call it the **independent variable**. You hold everything else fixed, like the eval set, the model and the prompt: these are the **controls**. Then you measure the result against a **baseline**, the version you have now, run the same way. Because only that one thing changed, a difference in the result can be put down to it. (A grid, later in this module, changes a few things in a planned way; everything you did not plan to change still stays fixed.)',
+        'MLflow is the **ledger** that keeps that evidence. An **MLflow experiment** is a folder that groups related runs, often one per app, so you can compare them side by side. Each **run** is a permanent record of one attempt: its **parameters** (what you set), **metrics** (what you measured) and **artifacts** (files, like the eval results). For an LLM app, scoring one version on your eval set with `mlflow.genai.evaluate` makes an **evaluation run**.',
         'The metrics usually come from an **eval set**: a fixed list of test questions with known good answers. Each answer is often marked by an **LLM judge**, a model that grades answers.',
-        'MLflow stores all of this so you can compare runs side by side instead of in a spreadsheet. Write the decision rule down before you run anything, for example "highest quality at $2 or less per 1,000 requests". That\'s what turns an experiment into a decision, and a decision into return on the time spent.',
+        'Write the decision rule down before you run anything, for example "highest quality at $2 or less per 1,000 requests". That\'s what turns an experiment into a decision, and a decision into return on the time spent.',
         'This course follows one **lifecycle**, the strip at the top of the page: **Frame** (decide the question), **Design** (plan the runs and how you will judge them), **Build and trace**, **Evaluate** (score the runs and read the results against your plan), **Ship** and **Monitor**. This module is about Design.',
     ],
     example=example('One run, logged', """import mlflow
@@ -130,7 +131,7 @@ if best is None:
 lesson(MODULE, 'plan_gaps',
     title='Write the plan before the runs',
     learn=[
-        'Decide how you will judge an experiment **before** you see a single result: the question, the one thing you change, the eval set and its version, the metric, how many runs, how you will compare, and the rule that picks a winner.',
+        'Decide how you will judge an experiment **before** you see a single result: the question, the one thing you change, what stays fixed (the **controls**, like the eval set and its version), the **baseline** you compare against, the metric, how many runs, how you will compare, and the rule that picks a winner.',
         "If you choose the metric or the rule after looking, you can talk yourself into almost any answer. Writing it down first is called **pre-registration** in research. It's the cheapest protection against fooling yourself, and it makes a result easy to defend to someone else.",
         'Also write down what "no result" means. "Too close to call, keep the current version and add more examples" is a decision you can make in advance.',
     ],
@@ -379,6 +380,245 @@ b["size"] = 5   # a is still {"size": 3}""",
             [
                 "Copy, don't share",
                 'Appending the same dict object several times means changing one changes them all. Always copy before adding a value.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'find_confounds',
+    title='Spot the confound',
+    learn=[
+        'A **confound** (or confounding variable) is a second thing that changed between two runs without you planning it. Once two things changed, you can no longer tell which one caused the difference, so the result is not evidence about either.',
+        'In AI apps confounds hide in the setup, not the code: the document index was rebuilt between runs, the eval set gained new questions, the judge model was upgraded, the provider updated the model behind the same name, or someone changed the temperature (how random the answers are). Each one is a control that quietly moved.',
+        'So before you compare two runs, compare their settings. Everything except the one thing you planned should match exactly. MLflow logs each run\'s parameters, so this is a quick check, as long as you log every setting that could matter, including versions: the eval set, the index, the judge, the model and the prompt.',
+        'For RAG, freeze the documents: build the index once from a fixed copy, give it a version, and log that version with every run. Otherwise the documents change under your experiment and you end up measuring the documents, not your change. "Designing a RAG experiment", in the RAG module, puts this to work.',
+    ],
+    example=example('Two runs that differ in more than you planned', """planned change: chunk_size
+run A: chunk_size=512  k=5  index=v7  judge=j2
+run B: chunk_size=256  k=5  index=v8  judge=j2
+→ confound: index (v7 vs v8)"""),
+    check=question(
+        "Run B scores 6 points higher than run A. You changed the chunk size, but B also used index v8 instead of v7. What can you conclude?",
+        ['The smaller chunk size helped', 'Nothing about chunk size yet: rerun B on index v7 so only the chunk size differs', 'Index v8 helped'],
+        answer=1,
+        why='Two things changed, so the 6 points could come from either, or both. Rerun with only the planned change.',
+    ),
+    angle=angle(
+        pattern='Compare two dicts key by key',
+        text='The big idea: a result only counts as evidence when the one thing you planned is the only thing that changed. Your code looks at every setting either run has. It skips the one you planned to change. For each other setting, if one run has it and the other does not, or the values differ, it is a confound. It returns their names in alphabetical order, so the list is easy to read and to compare. It is like spotting the differences between two photos.',
+        say='"Before comparing two runs I diff their settings. Anything that differs besides the planned change is a confound, so I rerun before I trust the result."',
+        classic=None,
+    ),
+    stack=stack('MLflow: diff the parameters of two runs', """import mlflow
+a = mlflow.get_run(run_a_id).data.params
+b = mlflow.get_run(run_b_id).data.params
+changed = sorted(k for k in a.keys() | b.keys() if a.get(k) != b.get(k))
+# expect exactly one: the setting you planned to change"""),
+    exercise=exercise(
+        title='Find the Confounds',
+        topic='experiments',
+        difficulty='easy',
+        fn='find_confounds',
+        prompt="""Your function gets three things:
+
+- `run_a`: the settings of the first run, as a dict, like `{"chunk_size": 512, "index": "v7"}`.
+- `run_b`: the settings of the second run, in the same form.
+- `planned`: the name of the one setting you meant to change, like `"chunk_size"`.
+
+A **confound** is any other setting that differs between the two runs. A setting counts as different if its values are not equal, or if only one of the runs has it.
+
+Return the names of the confounds as a list in alphabetical order, like `["index"]`. Leave out `planned`. If nothing else differs, return `[]`.""",
+        pattern='Look at every key in either dict, skip the planned one, and keep the keys whose values differ.',
+        target='one pass over each run',
+        realworld='Experiment tracking tools compare runs this way: MLflow\'s run comparison can hide the settings that are the same, so only the differences show. Teams often add a check like this before any comparison is reported.',
+        starter="""def find_confounds(run_a, run_b, planned):
+    # your code here
+    pass
+""",
+        solution="""def find_confounds(run_a, run_b, planned):
+    out = []
+    for key in run_a:
+        if key == planned:
+            continue
+        if key not in run_b or run_a[key] != run_b[key]:
+            out.append(key)
+    for key in run_b:
+        if key != planned and key not in run_a:
+            out.append(key)
+    return sorted(out)
+""",
+        cases=[
+            case({'chunk_size': 512, 'k': 5, 'index': 'v7', 'judge': 'j2'},
+                 {'chunk_size': 256, 'k': 5, 'index': 'v8', 'judge': 'j2'}, 'chunk_size', expected=['index'], sample=True),
+            case({'chunk_size': 512, 'k': 5}, {'chunk_size': 256, 'k': 5}, 'chunk_size', expected=[]),
+            case({'model': 'small', 'k': 5}, {'model': 'large', 'k': 5, 'temperature': 0.7}, 'model', expected=['temperature']),
+            case({'prompt': 'v3', 'judge': 'j1', 'index': 'v7', 'k': 5},
+                 {'prompt': 'v4', 'judge': 'j2', 'index': 'v8', 'k': 5}, 'prompt', expected=['index', 'judge']),
+            case({'k': 5, 'index': 'v7'}, {'index': 'v7'}, 'chunk_size', expected=['k']),
+            case({}, {}, 'k', expected=[]),
+        ],
+        guided="""def find_confounds(run_a, run_b, planned):
+    # Replace every ___ with real code, then run the tests.
+
+    out = []
+    # Step 1: every setting run A has. Skip the planned one;
+    # keep it if B lacks it or has a different value.
+    for key in run_a:
+        if key == planned:
+            continue
+        if key not in run_b or run_a[key] != ___:
+            out.append(key)
+    # Step 2: settings only run B has are confounds too.
+    for key in run_b:
+        if key != planned and key not in ___:
+            out.append(key)
+    # Step 3: alphabetical order.
+    return ___
+""",
+        fills=['run_b[key]', 'run_a', 'sorted(out)'],
+        concepts=[
+            [
+                'Looping over a dict',
+                'A `for` loop over a dict gives its keys, one at a time. `d[key]` gives the value for that key.',
+                """run = {'k': 5, 'index': 'v7'}
+for key in run:
+    print(key, run[key])   # k 5, then index v7""",
+            ],
+            [
+                'Is the key there?',
+                '`key in d` is True when the dict has that key. Check it before reading `d[key]`, or a missing key stops your code with an error.',
+                """run = {'k': 5}
+'k' in run       # True
+'index' in run   # False""",
+            ],
+            [
+                'Skipping one item',
+                '`continue` jumps straight to the next turn of the loop.',
+                """for n in [1, 2, 3]:
+    if n == 2:
+        continue
+    print(n)   # 1, then 3""",
+            ],
+        ],
+        byhand='planned is "chunk_size". Run A\'s keys: chunk_size is planned, so skip it. k is 5 in both, same. index is v7 in A and v8 in B, different, so keep "index". judge is j2 in both, same. Run B has no keys that A lacks. Sorted: ["index"].',
+        why='One pass over each run.',
+        gotchas=[
+            [
+                'Log it or you can\'t check it',
+                'A setting you never logged can still change. Log versions of everything outside your code too: the index, the eval set, the judge and the model.',
+            ],
+            [
+                'Same name, new model',
+                'Providers update the model behind a name. Log the full version or date of the model, not just its friendly name.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'replay_tools',
+    title='Designing an agent experiment',
+    learn=[
+        'Agents are harder to test fairly than a prompt, for two reasons. The same agent can take a different path on each try. And its tools read a world that keeps changing: a ticket gets closed, a price changes, a new document appears. Both add differences that are not your change.',
+        'So run each task several times, often 3 to 5, and count a task as passed only if it passed **every time** (the Agents module calls this pass^k). Then **freeze the world**: point the tools at a fixed copy of the data, or **record** what the real tools returned once and **replay** those results in every run. This is often called record and replay, or mocking. Now every design faces exactly the same situation.',
+        'If the agent asks for something that was never recorded, don\'t quietly call the live tool: mark it as missing, so you can see the run left the frozen world. Then decide whether to record that call too.',
+        'Decide the outcomes before running: **task success**, checked from the real end state rather than the agent\'s own report; **cost per success**; the number of **steps**; and whether the **path** was acceptable. Hold the model, the tool descriptions, the step limit and the temperature fixed, unless one of them is what you are testing. "Comparing agent designs", in the Agents module, uses exactly this setup.',
+    ],
+    example=example('Replaying recorded tool results', """recorded: get_order:42 → "shipped"
+          get_refund:42 → "none"
+agent asks: get_order 42   → "shipped"
+agent asks: get_order 77   → "missing"  (never recorded)"""),
+    check=question(
+        "Your agent's tools read live order data. Design A ran on Monday, design B on Tuesday, and B scored higher. What is the problem?",
+        ['Nothing, B is better', 'The orders changed between the runs, so replay the same recorded tool results for both designs', 'They should have run on the same day of the week'],
+        answer=1,
+        why='The world the tools read is a control. If it changes between runs, it is a confound. Recording and replaying the tool results freezes it.',
+    ),
+    angle=angle(
+        pattern='Look up each call in a recording',
+        text="The big idea: freeze what the tools return, so every design faces the same world. The recording is a dict, a lookup table, from a call to its saved result. Your code turns each call the agent makes into the same kind of key, the tool's name and its argument joined by a colon, and looks it up. If the key is there, it returns the saved result. If not, it returns \"missing\" instead of calling the real tool, so you can see the run left the frozen world. It is like a quiz where every answer was written down in advance.",
+        say='"I record the tool results once and replay them in every run, so the designs face the same world. Calls that were never recorded come back as missing, not live."',
+        classic=None,
+    ),
+    stack=stack('LangChain: a tool that replays recorded results', """from langchain.tools import tool
+RECORDED = {"42": "shipped", "77": "delivered"}
+
+@tool
+def get_order(order_id: str) -> str:
+    \"\"\"Look up the status of an order by its id.\"\"\"
+    return RECORDED.get(order_id, "missing")   # never the live system in an experiment"""),
+    exercise=exercise(
+        title='Replay Recorded Tools',
+        topic='experiments',
+        difficulty='easy',
+        fn='replay_tools',
+        prompt="""Your function gets two things:
+
+- `recording`: the tool results saved from one real run, as a dict. Each key is a tool name and its argument joined by a colon, like `"get_order:42"`, and its value is what the tool returned, like `"shipped"`.
+- `calls`: the tool calls an agent makes in a new run, in order. Each one is `[tool, argument]`, like `["get_order", "42"]`.
+
+For each call, build its key (the tool, a colon, then the argument) and look it up in `recording`. If it is there, the result is the saved value. If not, the result is `"missing"`.
+
+Return a list with one result per call, in order, like `["shipped", "missing"]`.""",
+        pattern='Build a lookup key from each call and read it from a dict, with a default for keys that are not there.',
+        target='one pass over the calls',
+        realworld='Agent test suites do this to make runs repeatable: the first run records every tool response, and later runs replay them. Recorded responses are often called fixtures or cassettes.',
+        starter="""def replay_tools(recording, calls):
+    # your code here
+    pass
+""",
+        solution="""def replay_tools(recording, calls):
+    out = []
+    for tool, arg in calls:
+        key = tool + ":" + arg
+        out.append(recording.get(key, "missing"))
+    return out
+""",
+        cases=[
+            case({'get_order:42': 'shipped', 'get_refund:42': 'none'},
+                 [['get_order', '42'], ['get_refund', '42'], ['get_order', '77']], expected=['shipped', 'none', 'missing'], sample=True),
+            case({}, [], expected=[]),
+            case({}, [['search', 'refund policy']], expected=['missing']),
+            case({'search:refund policy': 'doc-12', 'get_order:42': 'shipped'},
+                 [['search', 'refund policy'], ['search', 'refund policy']], expected=['doc-12', 'doc-12']),
+            case({'get_order:42': 'shipped'}, [['get_refund', '42']], expected=['missing']),
+        ],
+        guided="""def replay_tools(recording, calls):
+    # Replace every ___ with real code, then run the tests.
+
+    out = []
+    for tool, arg in calls:
+        # Step 1: the key, like "get_order:42".
+        key = tool + ":" + ___
+        # Step 2: the saved result, or "missing" if
+        # this call was never recorded.
+        out.append(recording.get(key, ___))
+    return out
+""",
+        fills=['arg', '"missing"'],
+        concepts=[
+            [
+                'Joining text',
+                '`+` between two strings joins them into one.',
+                """"get_order" + ":" + "42"   # 'get_order:42'""",
+            ],
+            [
+                'A lookup with a default',
+                '`d.get(key, default)` gives the value for key, or the default when the dict does not have that key.',
+                """saved = {'get_order:42': 'shipped'}
+saved.get('get_order:42', 'missing')   # 'shipped'
+saved.get('get_order:77', 'missing')   # 'missing'""",
+            ],
+        ],
+        byhand='The first call is get_order with 42, so the key is "get_order:42", which is recorded as "shipped". The second is "get_refund:42", recorded as "none". The third is "get_order:77", which was never recorded, so "missing". Return ["shipped", "none", "missing"].',
+        why='One pass over the calls.',
+        gotchas=[
+            [
+                'Missing is a finding',
+                'A call that was never recorded means the new design asked something the old one did not. Record it, then rerun every design on the bigger recording.',
+            ],
+            [
+                'Write tools are different',
+                'Replaying a read is safe. For tools that change things, like refunds or emails, record that the call was made and check it, but never send it for real in an experiment.',
             ],
         ],
     ),
@@ -959,7 +1199,7 @@ lesson(MODULE, 'paired_verdict',
     learn=[
         'The best way to compare two setups is to run both on **the same examples** and look example by example. This is a **paired comparison**. It is much more sensitive than comparing two overall scores, because the hard examples are hard for both setups and that difficulty cancels out.',
         'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: how often A passed where B failed, and the other way round. If the disagreements split about evenly, the difference is noise.',
-        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
+        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call. With very few disagreements (under about 10) the shortcut is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.",
         'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples. For scores that are not pass/fail, the paired versions are a **paired bootstrap** or a **permutation test** (on each example, randomly swap the A and B scores, do that many times, and see how often luck alone makes a gap that big).',
     ],
     example=example('Only disagreements count', """example   A   B
@@ -1110,6 +1350,156 @@ if adult and age < 65:
             [
                 'Why 2?',
                 "It is a rounded version of 1.96, the number behind a 95% confidence interval. That rounding makes the rule slightly stricter than the quick version of McNemar's test. With fewer than about 25 disagreements, use the exact version, which is stricter: this rule calls 5 to 0 a win, but the exact test calls it too close.",
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'decide_release',
+    title='One decision from many outcomes',
+    learn=[
+        'A real comparison has several outcomes: quality, the must-pass cases, cost and speed. Look at each one on its own and you can nearly always find one that favours the version you hoped would win. So write one **decision rule** over all of them, in a fixed order, before you run anything.',
+        'A common order. First the **gates**, the things that must hold or the answer is no: every must-pass case passes, the cost per task is within budget, and the p95 latency (95 out of 100 requests are faster than this) is within budget. Check every gate and list each one that fails, not just the first, so the team can fix them all in one round.',
+        'Only if every gate passes, look at **quality** with the paired check from "Comparing on the same examples": count the questions only the new version got right (its wins) and only the old one got right (its losses). The new version is clearly better if wins minus losses is at least twice the square root of wins plus losses, and clearly worse if losses minus wins is.',
+        'The decision is one of three: **ship** the new version, **keep the baseline**, or **too close to call**, which keeps the baseline for now and means more examples, or choosing on cost. Save the reasons with the decision. That list is what a reviewer reads, and what you will want to know in six months.',
+    ],
+    example=example('A candidate against its budget', """must-pass failures: 0      ok
+cost per task: $0.80       ok (budget $1.00)
+p95: 2.1 s                 too slow (budget 1.5 s)
+→ keep baseline, because: too slow"""),
+    check=question(
+        "The new version wins 15 questions and loses 5 against the baseline, a clear quality win. But one must-pass case now fails. What is the decision?",
+        ['Ship: the quality win is clear', 'Keep the baseline: a failed must-pass case is a gate, and gates come before quality', 'Too close to call'],
+        answer=1,
+        why='Gates are checked first because no quality gain makes up for breaking a case that must never break.',
+    ),
+    angle=angle(
+        pattern='Gates first, then one test',
+        text='The big idea: one rule, written down first, turns many numbers into one decision. Your code checks the three gates in order and adds a reason to a list for each one that fails. If the list is not empty, the answer is "keep baseline", with the reasons. Otherwise it compares wins and losses with the paired check. A gap big enough in the new version\'s favour means "ship". Big enough the other way means "keep baseline", because it is worse. Otherwise it is "too close to call". It is like a job offer: the salary must clear your minimum before you compare anything else.',
+        say='"I check the gates first and list every one that fails. Only if they all pass do I compare quality with the paired check: ship, keep the baseline, or too close to call."',
+        classic=None,
+    ),
+    stack=stack('MLflow: one decision, logged with its evidence', """import mlflow
+with mlflow.start_run(run_name="decide-rerank-v2"):
+    mlflow.log_dict({"decision": "keep baseline", "reasons": ["too slow"],
+                     "eval_run": eval_run_id, "rule": "gates, then paired check"},
+                    "decision.json")"""),
+    exercise=exercise(
+        title='One Release Decision',
+        topic='experiments',
+        difficulty='medium',
+        fn='decide_release',
+        prompt="""Your function gets two things:
+
+- `result`: how the new version did against the baseline, as a dict with five keys: `must_pass_failed` (how many must-pass cases failed), `cost` (dollars per task), `p95` (seconds), `wins` (questions only the new version got right) and `losses` (questions only the baseline got right).
+- `budget`: a dict with `cost` and `p95`, the most each may be.
+
+Step 1, the gates. Start an empty list of reasons. In this order, add:
+
+- `"a must-pass case failed"` if `must_pass_failed` is more than 0
+- `"over the cost budget"` if `cost` is more than `budget["cost"]`
+- `"too slow"` if `p95` is more than `budget["p95"]`
+
+If the list is not empty, return `["keep baseline", reasons]`.
+
+Step 2, quality. Let `gap` be `wins - losses` and `n` be `wins + losses`. The gap is big enough when `gap * gap` is at least `4 * n` (the same as at least twice the square root of n, without the square root).
+
+- Big enough and `gap` above 0: return `["ship", []]`.
+- Big enough and `gap` below 0: return `["keep baseline", ["worse on quality"]]`.
+- Otherwise: return `["too close to call", []]`.""",
+        pattern='Check every gate and collect the failures, then make one paired comparison.',
+        target='a fixed number of checks',
+        realworld='Release gates in tools like MLflow deployment jobs work this way: hard checks first, then a quality comparison against the version in production, with the reasons kept next to the decision.',
+        starter="""def decide_release(result, budget):
+    # your code here
+    pass
+""",
+        solution="""def decide_release(result, budget):
+    reasons = []
+    if result["must_pass_failed"] > 0:
+        reasons.append("a must-pass case failed")
+    if result["cost"] > budget["cost"]:
+        reasons.append("over the cost budget")
+    if result["p95"] > budget["p95"]:
+        reasons.append("too slow")
+    if reasons:
+        return ["keep baseline", reasons]
+    gap = result["wins"] - result["losses"]
+    n = result["wins"] + result["losses"]
+    big_enough = gap * gap >= 4 * n
+    if big_enough and gap > 0:
+        return ["ship", []]
+    if big_enough and gap < 0:
+        return ["keep baseline", ["worse on quality"]]
+    return ["too close to call", []]
+""",
+        cases=[
+            case({'must_pass_failed': 0, 'cost': 0.8, 'p95': 2.1, 'wins': 15, 'losses': 5}, {'cost': 1.0, 'p95': 1.5},
+                 expected=['keep baseline', ['too slow']], sample=True),
+            case({'must_pass_failed': 0, 'cost': 0.8, 'p95': 1.2, 'wins': 15, 'losses': 5}, {'cost': 1.0, 'p95': 1.5},
+                 expected=['ship', []]),
+            case({'must_pass_failed': 0, 'cost': 0.8, 'p95': 1.2, 'wins': 12, 'losses': 8}, {'cost': 1.0, 'p95': 1.5},
+                 expected=['too close to call', []]),
+            case({'must_pass_failed': 0, 'cost': 0.8, 'p95': 1.2, 'wins': 3, 'losses': 14}, {'cost': 1.0, 'p95': 1.5},
+                 expected=['keep baseline', ['worse on quality']]),
+            case({'must_pass_failed': 2, 'cost': 1.4, 'p95': 3.0, 'wins': 30, 'losses': 2}, {'cost': 1.0, 'p95': 1.5},
+                 expected=['keep baseline', ['a must-pass case failed', 'over the cost budget', 'too slow']]),
+            case({'must_pass_failed': 0, 'cost': 1.0, 'p95': 1.5, 'wins': 0, 'losses': 0}, {'cost': 1.0, 'p95': 1.5},
+                 expected=['too close to call', []]),
+        ],
+        guided="""def decide_release(result, budget):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: the gates. Collect every one that fails.
+    reasons = []
+    if result["must_pass_failed"] > 0:
+        reasons.append("a must-pass case failed")
+    if result["cost"] > budget["cost"]:
+        reasons.append("over the cost budget")
+    if result["p95"] > ___:
+        reasons.append("too slow")
+    if reasons:
+        return ["keep baseline", ___]
+    # Step 2: quality, with the paired check.
+    gap = result["wins"] - result["losses"]
+    n = result["wins"] + result["losses"]
+    big_enough = gap * gap >= ___
+    if big_enough and gap > 0:
+        return ["ship", []]
+    if big_enough and gap < 0:
+        return ["keep baseline", ["worse on quality"]]
+    return ["too close to call", []]
+""",
+        fills=['budget["p95"]', 'reasons', '4 * n'],
+        concepts=[
+            [
+                'Collecting reasons in a list',
+                'Start with an empty list and `append` to it for each check that fails. An empty list counts as False in an `if`, so `if reasons:` means "if anything failed".',
+                """reasons = []
+if 3 > 2:
+    reasons.append("too big")
+if reasons:
+    print(reasons)   # ['too big']""",
+            ],
+            [
+                'Returning early',
+                '`return` ends the function straight away, so the code after it only runs when the earlier checks did not return.',
+                """def grade(score):
+    if score < 50:
+        return "fail"
+    return "pass\"""",
+            ],
+        ],
+        byhand='Gates: no must-pass failures, fine. Cost is 0.8, within 1.0, fine. p95 is 2.1, more than 1.5, so add "too slow". The list is not empty, so stop there and return ["keep baseline", ["too slow"]]. The 15 to 5 quality win is never looked at, because a gate failed.',
+        why='A fixed number of checks, whatever the numbers are.',
+        gotchas=[
+            [
+                'Gates before quality',
+                'Look at quality first and a big win makes it tempting to explain away a failed gate. Checking the gates first keeps the decision honest.',
+            ],
+            [
+                'Save the reasons',
+                '"Keep baseline" on its own teaches nobody anything. The reasons tell the team what to fix next.',
             ],
         ],
     ),

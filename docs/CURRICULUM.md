@@ -147,7 +147,7 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 130 lessons in
+Or use the published page on claude.ai. Either way the path is the same: 136 lessons in
 17 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).

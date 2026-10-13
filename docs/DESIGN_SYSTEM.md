@@ -23,7 +23,7 @@ artifact gets updated.
 1. **One reading column**, at most `--col` (760px) wide. Side things slide in as a drawer.
 2. **Colour means one thing.** `pass` only means passed or done, `fail` only failed or wrong,
    `hint` only a hint or a warning, `accent` the one thing to do next. `--path` (violet) marks
-   the route through the phases. Effects use only the `--fx-*` colours.
+   the route through the phases. `--mark` (a pale light) is only the trust mark. Effects use only the `--fx-*` colours.
 3. **One primary button per screen**, for the next step.
 4. **Thumb first.** Controls are at least 44px tall on touch; check every change at phone width.
 5. **Readable in every look.** Text 4.5:1 against its background, icons and borders 3:1

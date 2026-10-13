@@ -31,6 +31,9 @@
   /* the path: violet marks the whole route (the phase tabs on Home); blue stays for where you are.
      --path for fills and done phases, --path-bg the tab strip, --path-line its edge, --path-ink its text */
   --path: #6a3fd0; --path-bg: #efeafc; --path-line: #d9cff5; --path-ink: #574a80;
+  /* the trust mark: a small ember on words about responsible AI, privacy or governance. Its own light,
+     apart from the blue of "next" and the violet of the path. --mark-glow is its halo and the embers' shadow */
+  --mark: #1f68b8; --mark-glow: rgba(31, 104, 184, .35);
 
   /* code colours: keyword, string, number, comment, function name, built-in. No green or red, which mean pass and fail. */
   --syn-kw: #7a3fc7; --syn-str: #a04a00; --syn-num: #b4307a; --syn-com: #6b7280; --syn-fn: #1f5fbf; --syn-bi: #0f7a8a;
@@ -71,6 +74,7 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
+  --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark } }
 
 :root[data-theme="dark"] {
@@ -82,6 +86,7 @@
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
+  --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
 
 /* Dusk: an opt-in dark theme, data-theme="dusk" on <html>. Blue-black darks with a
@@ -97,4 +102,5 @@
   --finish: #b49cff; --finish-ink: #0a1233;
   --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6;
   --path: #8b5cf6; --path-bg: #150f28; --path-line: #3a2a63; --path-ink: #a99ad6;
+  --mark: #d4f8ff; --mark-glow: rgba(140, 190, 255, .6);
   --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }

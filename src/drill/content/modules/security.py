@@ -380,6 +380,120 @@ limit is not None   # False""",
     ),
 )
 
+lesson(MODULE, 'agent_can_read',
+    title='Whose identity does the agent use?',
+    learn=[
+        'When an agent reads a table or calls a tool, it does so **as someone**. There are two common choices. It can act as the app itself, through a **service principal** (a robot account for the app): simple, but every user shares the same access. Or it can act **on behalf of** the signed-in user, often shortened to **OBO**: the agent uses that person\'s own permissions, so it can only see and do what they could.',
+        'With one powerful app identity, any user can ask the agent for data they are not allowed to see, and the agent fetches it. This is the **confused deputy** problem: a trusted helper tricked into using its power for someone who lacks it. Prompt injection makes it worse, because the "someone" can be a line hidden in a document the agent reads.',
+        'So for anything about a particular person\'s data, prefer on-behalf-of. Then the agent can reach only what is in **both** lists: what the user may access, and what the app is allowed to use. On Databricks this is called **user authorization**: Unity Catalog permissions, row filters and column masks then apply per person, and **scopes** (like `sql` or `genie`) limit which kinds of API the app may call for them.',
+        'Keep the app identity for shared work that is not about one person, like reading a public policy table, and give it least privilege. Log which identity each tool call used, so an audit can tell "the agent did it" apart from "the agent did it for Ana".',
+    ],
+    example=example('What the agent can read for Ana', """Ana may read:        tickets_ana, faq
+the app may read:    tickets_all, tickets_ana, faq
+as the app:          faq, tickets_all, tickets_ana   ← every customer's tickets
+on behalf of Ana:    faq, tickets_ana                ← only what she could see"""),
+    check=question(
+        "A support agent runs as a service principal that can read every customer's tickets. A customer asks it to show another customer's ticket. What stops it?",
+        ['The system prompt tells it not to', "Nothing in this setup. Run it on behalf of the user, so it can only read that customer's tickets", 'The rate limit'],
+        answer=1,
+        why='A prompt is a request the model can be talked out of. On-behalf-of makes the data store itself refuse, because the user has no access.',
+    ),
+    angle=angle(
+        pattern='The overlap of two lists',
+        text='The big idea: an agent should never be able to fetch more for a user than that user could fetch alone. Your code takes two lists of tables, what the user may read and what the app may read. Acting as the app, the agent can read everything on the app\'s list. Acting on behalf of the user, it can read only tables on both lists: the overlap. Return the tables in alphabetical order. It is like a visitor badge that opens only the doors both you and the building allow.',
+        say='"For anything about a person\'s data I run the agent on behalf of the user, so it can reach only the overlap of what they may see and what the app may use. That stops the confused deputy."',
+        classic=None,
+    ),
+    stack=stack('Databricks Apps: user authorization, with only the scopes the agent needs (databricks.yml)', """resources:
+  apps:
+    support_agent:
+      name: support-agent
+      source_code_path: ./
+      user_api_scopes:   # act on behalf of the signed-in user, only for these APIs
+        - sql
+        - genie"""),
+    exercise=exercise(
+        title='What Can the Agent Read?',
+        topic='security',
+        difficulty='easy',
+        fn='agent_can_read',
+        prompt="""Your function gets three things:
+
+- `user_tables`: the tables the signed-in user may read, like `["tickets_ana", "faq"]`.
+- `app_tables`: the tables the app's own identity may read, like `["tickets_all", "tickets_ana", "faq"]`.
+- `mode`: how the agent signs in, either `"app"` (as the app's service principal) or `"obo"` (on behalf of the user).
+
+Return the tables the agent can read, in alphabetical order:
+
+- In `"app"` mode, every table in `app_tables`.
+- In `"obo"` mode, only the tables that are in both `user_tables` and `app_tables`.
+
+Each table name appears at most once in each list.""",
+        pattern='The overlap of two lists: keep the items of one that are also in the other.',
+        target='one pass over the app tables',
+        realworld='Databricks Apps call these app authorization and user authorization. With user authorization, Unity Catalog applies the user\'s own permissions, row filters and column masks, and the app\'s scopes limit which APIs it may call for them.',
+        starter="""def agent_can_read(user_tables, app_tables, mode):
+    # your code here
+    pass
+""",
+        solution="""def agent_can_read(user_tables, app_tables, mode):
+    if mode == "app":
+        return sorted(app_tables)
+    both = []
+    for table in app_tables:
+        if table in user_tables:
+            both.append(table)
+    return sorted(both)
+""",
+        cases=[
+            case(['tickets_ana', 'faq'], ['tickets_all', 'tickets_ana', 'faq'], 'obo', expected=['faq', 'tickets_ana'], sample=True),
+            case(['tickets_ana', 'faq'], ['tickets_all', 'tickets_ana', 'faq'], 'app', expected=['faq', 'tickets_all', 'tickets_ana']),
+            case(['salaries', 'faq'], ['faq'], 'obo', expected=['faq']),
+            case([], ['faq', 'orders'], 'obo', expected=[]),
+            case(['faq'], [], 'app', expected=[]),
+        ],
+        guided="""def agent_can_read(user_tables, app_tables, mode):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: as the app, it can read all the app's tables.
+    if mode == "app":
+        return sorted(___)
+    # Step 2: on behalf of the user, only tables on both lists.
+    both = []
+    for table in app_tables:
+        if table in ___:
+            both.append(table)
+    return sorted(both)
+""",
+        fills=['app_tables', 'user_tables'],
+        concepts=[
+            [
+                'Is it in the list?',
+                '`x in some_list` is True when the list holds x.',
+                """'faq' in ['faq', 'orders']        # True
+'salaries' in ['faq', 'orders']   # False""",
+            ],
+            [
+                'Alphabetical order',
+                '`sorted(a_list)` returns a new list in order: alphabetical for text.',
+                """sorted(['tickets', 'faq', 'orders'])   # ['faq', 'orders', 'tickets']""",
+            ],
+        ],
+        byhand='mode is "obo", so keep only the app tables Ana may also read. tickets_all: not on her list, skip. tickets_ana: on her list, keep. faq: on her list, keep. Sorted: ["faq", "tickets_ana"]. In "app" mode the agent could read all three, including every customer\'s tickets.',
+        why='One pass over the app tables.',
+        gotchas=[
+            [
+                'A prompt is not a permission',
+                '"Only show the user their own tickets" in the system prompt can be talked around. A permission check in the data store can\'t.',
+            ],
+            [
+                'Scopes still matter',
+                'On behalf of the user, the agent could do anything the user can. Ask only for the scopes the agent needs, like reading SQL, not managing clusters.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'shell_policy',
     title='Giving an agent a shell',
     learn=[
@@ -767,6 +881,144 @@ order["item"]   # 'tea'""",
     ),
 )
 
+lesson(MODULE, 'sweep_memory',
+    title='Memory lifecycle: keep, expire, forget',
+    learn=[
+        "An agent's long-term memory is a database of facts about people. Treat it like one: decide who can read it, how long each kind of fact is kept, and how to delete everything about one person. The last lesson guarded what goes **in**; this one is about everything after.",
+        "**Isolation.** Every read and write uses the signed-in user's **namespace** (their own folder in the store), taken from the login, never from the chat. Then one user's memories can never show up in another user's answers. Facts everyone shares, like policies, live in a separate store the agent can only read. And only the agent's own service should read the memory store, not every analyst with access to the database.",
+        "**Retention.** Give each kind of memory a lifetime, a **TTL** (time to live). A saved preference might keep for a year, a one-off delivery address for 30 days. Some kinds should never be saved at all, like health details or card numbers. Expired memories are deleted on a schedule, not just hidden from the agent.",
+        '**Deletion.** When a person asks to be forgotten, delete their whole namespace, and their memories inside any snapshots and backups too, within the time the law allows. Keeping a list of who asked lets the next clean-up catch anything that was missed.',
+    ],
+    example=example('A nightly clean-up on day 100', """ana  preference   saved day 20   (keep 365 days) → keep
+ana  address      saved day 40   (keep 30 days)  → expire
+bo   health       saved day 95   (never store)   → delete
+cy   preference   saved day 90   (cy asked to be forgotten) → delete"""),
+    check=question(
+        "An agent saves memories under a user id it reads from the chat, like \"I'm user 42\". What is the risk?",
+        ['None, users know their own id', "Anyone can type someone else's id and read or poison their memories. The namespace must come from the login", 'The ids might be too long'],
+        answer=1,
+        why='Anything in the chat can be made up. Who the user is must come from the signed-in session, which the user cannot edit.',
+    ),
+    angle=angle(
+        pattern='First matching rule wins',
+        text='The big idea: memory is personal data, so every memory needs a reason to still exist. Your code goes through the memories in order and gives each one a decision from the first rule that matches. If its user asked to be forgotten, delete it. If its kind has no lifetime in the table, it should never have been saved, so delete it. If it is older than its kind\'s lifetime, it has expired. Otherwise keep it. Checking the strongest rule first means a forgotten user\'s memories go, however new they are. It is like clearing out a fridge: anything for someone who moved out goes first, then anything past its date.',
+        say='"I run a clean-up over the memory store: forgotten users first, then kinds we should never store, then anything older than its time to live. Everything else stays."',
+        classic=None,
+    ),
+    stack=stack('LangGraph: the namespace comes from the login, not the chat', """def remember(state, config, *, store):
+    user_id = config["configurable"]["user_id"]   # set by your server from the signed-in session
+    store.put(("memories", user_id), key, {"fact": fact, "kind": kind, "day": today})
+
+def forget_user(store, user_id):
+    for item in store.search(("memories", user_id)):
+        store.delete(("memories", user_id), item.key)"""),
+    exercise=exercise(
+        title='Sweep the Memory Store',
+        topic='security',
+        difficulty='medium',
+        fn='sweep_memory',
+        prompt="""Your function gets four things:
+
+- `memories`: the saved memories, in order. Each is a dict like `{"user": "ana", "kind": "address", "day": 40}`, where `day` is the day it was saved.
+- `today`: today's day number, like `100`.
+- `ttl_days`: how many days each kind of memory may be kept, like `{"preference": 365, "address": 30}`. A kind that is not in this dict should never be stored.
+- `forget`: the users who asked to be forgotten, like `["cy"]`.
+
+Give each memory one decision, using the first rule that matches:
+
+1. Its `user` is in `forget`: `"delete"`.
+2. Its `kind` is not in `ttl_days`: `"delete"`.
+3. Its age, `today` minus `day`, is more than `ttl_days` for its kind: `"expire"`.
+4. Otherwise: `"keep"`.
+
+Return the decisions as a list, one per memory, in order.""",
+        pattern='Check rules in a fixed order and stop at the first that matches.',
+        target='one pass over the memories',
+        realworld='Privacy laws such as GDPR expect personal data to be kept no longer than needed and deleted on request. Memory stores for agents, like LangGraph\'s, are organised by namespace so that one user\'s data can be found, kept apart and deleted together.',
+        starter="""def sweep_memory(memories, today, ttl_days, forget):
+    # your code here
+    pass
+""",
+        solution="""def sweep_memory(memories, today, ttl_days, forget):
+    out = []
+    for m in memories:
+        if m["user"] in forget:
+            out.append("delete")
+        elif m["kind"] not in ttl_days:
+            out.append("delete")
+        elif today - m["day"] > ttl_days[m["kind"]]:
+            out.append("expire")
+        else:
+            out.append("keep")
+    return out
+""",
+        cases=[
+            case([{'user': 'ana', 'kind': 'preference', 'day': 20},
+                  {'user': 'ana', 'kind': 'address', 'day': 40},
+                  {'user': 'bo', 'kind': 'health', 'day': 95},
+                  {'user': 'cy', 'kind': 'preference', 'day': 90}],
+                 100, {'preference': 365, 'address': 30}, ['cy'],
+                 expected=['keep', 'expire', 'delete', 'delete'], sample=True),
+            case([], 100, {'preference': 365}, [], expected=[]),
+            case([{'user': 'ana', 'kind': 'address', 'day': 70}], 100, {'address': 30}, [], expected=['keep']),
+            case([{'user': 'ana', 'kind': 'address', 'day': 69}], 100, {'address': 30}, [], expected=['expire']),
+            case([{'user': 'bo', 'kind': 'card', 'day': 99}, {'user': 'bo', 'kind': 'preference', 'day': 99}],
+                 100, {'preference': 365}, ['bo'], expected=['delete', 'delete']),
+        ],
+        guided="""def sweep_memory(memories, today, ttl_days, forget):
+    # Replace every ___ with real code, then run the tests.
+
+    out = []
+    for m in memories:
+        # Rule 1: the user asked to be forgotten.
+        if m["user"] in ___:
+            out.append("delete")
+        # Rule 2: a kind we should never store.
+        elif m["kind"] not in ___:
+            out.append("delete")
+        # Rule 3: older than this kind's lifetime.
+        elif today - m["day"] > ___:
+            out.append("expire")
+        else:
+            out.append("keep")
+    return out
+""",
+        fills=['forget', 'ttl_days', 'ttl_days[m["kind"]]'],
+        concepts=[
+            [
+                'if, elif, else',
+                'Python checks each condition in order and runs only the first one that is True. `else` runs when none were.',
+                """n = 5
+if n > 10:
+    print("big")
+elif n > 3:
+    print("medium")   # only this prints
+else:
+    print("small")""",
+            ],
+            [
+                'not in',
+                '`x not in d` is True when the dict has no key x. It also works for lists.',
+                """ttl = {'address': 30}
+'card' not in ttl      # True
+'address' not in ttl   # False""",
+            ],
+        ],
+        byhand='Today is 100. ana\'s preference is 80 days old, within 365, so keep. ana\'s address is 60 days old, more than 30, so expire. bo\'s health detail has no lifetime in the table, so delete. cy asked to be forgotten, so delete, even though the memory is new. Return ["keep", "expire", "delete", "delete"].',
+        why='One pass over the memories.',
+        gotchas=[
+            [
+                'Order matters',
+                'Check the forget list first. Otherwise a new memory for a forgotten user would be kept because it has not expired yet.',
+            ],
+            [
+                'Snapshots remember too',
+                'Deleting from the live store is not enough. Snapshots and backups made for rollback hold the same memories, so the clean-up has to reach them.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'redact_pii',
     title='Personal data',
     learn=[
@@ -1026,6 +1278,132 @@ def scrub_secrets(config):
             [
                 'Terraform state stores secrets',
                 'Values in state (Terraform\'s saved record of what it built) are stored in plain text even when marked sensitive. Restrict who can read state, and keep the secret itself out of Terraform: put it in Key Vault and point a Key Vault-backed secret scope at it, or use ephemeral or write-only values in newer Terraform.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'token_findings',
+    title='Short-lived tokens, not PATs',
+    learn=[
+        'A **personal access token** (PAT) is a long password for an API that one person creates, often valid for months. It works for anyone who holds it, from anywhere, until it expires or someone revokes it. A PAT pasted into a notebook, a job or an agent\'s settings is one of the commonest ways data leaks.',
+        'It has three problems. It **lives long**, so a leaked copy stays useful for weeks. It is **tied to a person**, so it keeps their access after they change teams, and the job breaks when they leave. And it usually carries **all** of that person\'s access, not just what the job needs.',
+        'Prefer **OAuth** tokens that the platform hands out for a short time, often an hour, and renews for you. A person signs in once (user-to-machine). A job or agent signs in as a service principal (machine-to-machine), ideally through **workload identity federation**, so there is no stored secret at all. A short **TTL** (time to live, how long a token works) means a leaked token dies on its own.',
+        'On Databricks, admins can stop people creating PATs and set the longest lifetime a token may have. Where a long-lived secret is unavoidable, keep it in a secret store, give it to a service principal rather than a person, and rotate it on a schedule.',
+    ],
+    example=example('Auditing three credentials', """nightly-job   PAT,   2160 hours, owner left  → replace with OAuth, lives too long, owner has left
+agent-sp      OAuth, 1 hour,     owner here  → fine
+ana-laptop    OAuth, 1 hour,     owner here  → fine"""),
+    check=question(
+        "A nightly job still uses a PAT that Ana created. Ana left the company last month. What is the risk?",
+        ["None, it's only a job", "The token may still work with Ana's access, and nobody owns it. Move the job to a service principal with short-lived OAuth", 'The job will run faster without her'],
+        answer=1,
+        why="A PAT outlives its owner's role and has all their access. A service principal is owned by the team, and its OAuth tokens expire within the hour.",
+    ),
+    angle=angle(
+        pattern='Run every rule on every item',
+        text="The big idea: a credential is safest when it is short-lived, owned by the team and has only the access it needs. Your code goes through the credentials in order and checks three rules on each one: is it a PAT, does it live longer than a day, and has its owner left. Every rule that fails adds one finding, written as the name, a colon, and the problem. Checking every rule, not stopping at the first, gives the whole list to fix. It is like a car inspection that lists every fault, not just the first one it finds.",
+        say='"I audit credentials against three rules: no PATs, nothing that lives longer than a day, and every owner still here. Short-lived OAuth means a leaked token dies on its own."',
+        classic=None,
+    ),
+    stack=stack('Databricks CLI: OAuth sign-in instead of a PAT', """# a person: short-lived OAuth tokens, renewed for you
+databricks auth login --host https://adb-1234567890123456.7.azuredatabricks.net
+
+# a job or agent: a service principal with OAuth (machine-to-machine).
+# Read these from the secret store at run time; never paste them into code.
+export DATABRICKS_CLIENT_ID=...
+export DATABRICKS_CLIENT_SECRET=..."""),
+    exercise=exercise(
+        title='Audit the Tokens',
+        topic='security',
+        difficulty='easy',
+        fn='token_findings',
+        prompt="""Your function gets `tokens`: a list of credentials, in order. Each one is a dict with four keys:
+
+- `name`: what uses it, like `"nightly-job"`
+- `kind`: `"pat"` or `"oauth"`
+- `hours`: how long it stays valid, like `1` or `2160`
+- `owner_active`: `True` if the person or team who owns it is still here
+
+Check each token against three rules, in this order, and write one finding for each rule it breaks:
+
+- `kind` is `"pat"`: the problem is `"replace with OAuth"`
+- `hours` is more than 24: the problem is `"lives too long"`
+- `owner_active` is `False`: the problem is `"owner has left"`
+
+A finding is the token's name, a colon and a space, then the problem, like `"nightly-job: replace with OAuth"`. Return every finding as one list: token by token in order, and within a token, in the rule order above. Return `[]` if there are none.""",
+        pattern='For each item, run every rule and collect each one that fails.',
+        target='one pass over the tokens',
+        realworld='Databricks recommends OAuth over personal access tokens. Admins can monitor and revoke PATs, stop users creating them, and set a maximum lifetime for new ones.',
+        starter="""def token_findings(tokens):
+    # your code here
+    pass
+""",
+        solution="""def token_findings(tokens):
+    out = []
+    for t in tokens:
+        if t["kind"] == "pat":
+            out.append(t["name"] + ": replace with OAuth")
+        if t["hours"] > 24:
+            out.append(t["name"] + ": lives too long")
+        if not t["owner_active"]:
+            out.append(t["name"] + ": owner has left")
+    return out
+""",
+        cases=[
+            case([{'name': 'nightly-job', 'kind': 'pat', 'hours': 2160, 'owner_active': False},
+                  {'name': 'agent-sp', 'kind': 'oauth', 'hours': 1, 'owner_active': True}],
+                 expected=['nightly-job: replace with OAuth', 'nightly-job: lives too long', 'nightly-job: owner has left'], sample=True),
+            case([], expected=[]),
+            case([{'name': 'ana-laptop', 'kind': 'oauth', 'hours': 1, 'owner_active': True}], expected=[]),
+            case([{'name': 'report', 'kind': 'pat', 'hours': 24, 'owner_active': True}], expected=['report: replace with OAuth']),
+            case([{'name': 'sync', 'kind': 'oauth', 'hours': 48, 'owner_active': True},
+                  {'name': 'old-bot', 'kind': 'oauth', 'hours': 1, 'owner_active': False}],
+                 expected=['sync: lives too long', 'old-bot: owner has left']),
+        ],
+        guided="""def token_findings(tokens):
+    # Replace every ___ with real code, then run the tests.
+
+    out = []
+    for t in tokens:
+        # Check all three rules; each one that fails adds a finding.
+        if t["kind"] == ___:
+            out.append(t["name"] + ": replace with OAuth")
+        if t["hours"] > ___:
+            out.append(t["name"] + ": lives too long")
+        if not t[___]:
+            out.append(t["name"] + ": owner has left")
+    return out
+""",
+        fills=['"pat"', '24', '"owner_active"'],
+        concepts=[
+            [
+                'Several ifs, not elif',
+                'Separate `if` lines are each checked, so one item can break several rules. `elif` would stop at the first.',
+                """n = 30
+if n > 10:
+    print("big")
+if n > 20:
+    print("bigger")   # both print""",
+            ],
+            [
+                'not',
+                '`not x` turns True into False and False into True.',
+                """active = False
+if not active:
+    print("left")""",
+            ],
+        ],
+        byhand='nightly-job is a PAT, so "nightly-job: replace with OAuth". It lives 2160 hours, more than 24, so "nightly-job: lives too long". Its owner has left, so "nightly-job: owner has left". agent-sp is OAuth, lives 1 hour, and its owner is here, so no findings. Return the three findings.',
+        why='One pass over the tokens.',
+        gotchas=[
+            [
+                'Exactly 24 hours is fine',
+                'The rule is "more than 24", so a token that lives exactly 24 hours does not break it.',
+            ],
+            [
+                'Revoke, then replace',
+                'When you find a leaked or orphaned token, revoke it first, then fix whatever breaks. Replacing it first leaves the old one working.',
             ],
         ],
     ),
