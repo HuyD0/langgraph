@@ -96,5 +96,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `page.html` (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
 - `dist/` is git-ignored; the page is built, never committed.
+- Some sections of `page.html` live in `src/drill/content/page/` and come back in at their
+  `/*INCLUDE page/<file>*/` line. Search both places, read the page through `build.page_source()`,
+  and when moving a section, check the build's fingerprint is unchanged ([docs/FRONTEND.md](docs/FRONTEND.md), "Parts").
 - Other sessions publish the claude.ai artifact too: compare the live page with your build
   before publishing, so you don't undo someone else's work.
