@@ -10,9 +10,9 @@ lives, the rules, and how to make the common changes safely.
 |---|---|---|
 | **Tokens**: every colour, font, timing and the column width | `src/drill/content/tokens.css` | The one source of truth. `build.py` inlines it into the page at `/*TOKENS*/` |
 | **Components and looks**: buttons, cards, the stepper, the machine, Dusk's glass and glow | `src/drill/content/page.html`, in `<style>` | Every rule uses `var(--token)`, never a raw colour (a test checks the names exist) |
-| **Motion**: the twelve effects | `page.html`, between `/* fx: start */` and `/* fx: end */`, plus the `fxScreen` / `fxOn` / `fxMove` engine | Catalogue and rules: [PAGE.md](PAGE.md), "Motion" |
-| **Design System artifact** (reference, for designing new screens) | https://claude.ai/artifact/Pfq6TaX5tHMs1iUbZCqZ9U | Colour tokens (light and dark), type, spacing, radii, component cards, the brand book README |
-| **Design canvas** (why things look the way they do) | https://claude.ai/artifact/DA8WMYSJh7jTSwnsyDgQVa | Boards for colour, type, spacing, components and patterns |
+| **Motion**: the thirteen effects | `page.html`, between `/* fx: start */` and `/* fx: end */`, plus the `fxScreen` / `fxOn` / `fxMove` engine | Catalogue and rules: [PAGE.md](PAGE.md), "Motion" |
+| **Design System artifact** (reference, for designing new screens) | https://claude.ai/artifact/Pfq6TaX5tHMs1iUbZCqZ9U | Colour tokens (Light, Dark and Dusk), type, spacing, radii, component cards, the brand book README |
+| **Design canvas** (why things look the way they do) | https://claude.ai/artifact/DA8WMYSJh7jTSwnsyDgQVa | A snapshot from 11 Oct 2026: the reasoning and the proposals that were built. Its values predate Dusk, the path and track colours; the Design System artifact has the current ones |
 | **Explorations** (palettes, the Dusk look, animation drafts) | https://claude.ai/artifact/SSb5sYRyKLtgnY1owsTY2o | Playable drafts; nothing here ships until it's built into the page |
 
 | **How the page's code works** (state, rendering, events, a map of the script) | [FRONTEND.md](FRONTEND.md) | Read before changing behaviour |
@@ -46,6 +46,8 @@ artifact gets updated.
 | Verdicts | `pass`/`pass-bg`, `fail`/`fail-bg`, `hint`/`hint-bg` | Strong colour for text and icons, `-bg` twin for the fill behind |
 | Path | `path`, `path-bg`, `path-line`, `path-ink` | The phase tabs on Home |
 | Track | `track`, `track-on`, `track-soft`, `track-line`, `track-ink` | The Platform track only: its room, caption and glow |
+| Trust mark | `mark`, `mark-glow` | The trust mark only: the ember, its halo and its tooltip's trait name |
+| Finish | `finish` (Dusk only) | Reviews passed and finishing in Dusk; Light and Dark fall back to `pass` |
 | Code | `syn-kw`, `syn-str`, `syn-num`, `syn-com`, `syn-fn`, `syn-bi` | Code colours; never green or red |
 | Machine | `tok-a` to `tok-d` | The row pills |
 | Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look`, `pop-bg`, `pop-line`, `pop-shadow`, `pop-blur` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), a pop floating over the page (the trust note), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
@@ -63,7 +65,7 @@ them before making a new one; a new one gets a row here.
 |---|---|---|---|
 | Button | `.btn`, `.btn.primary`, `.btn.quiet`, `.btn.soft`, `.linkbtn` | Everywhere | One `primary` per screen. `soft` = looks waiting but still answers a tap with a nudge |
 | Card | `.card`, `.callout`, `.keyidea` | Lesson panes, notes | `surface` background, `line` border, 12–14px corners |
-| Stepper | `.stepbtn` | Top of a lesson | Learn, Check, Build, Explain; the current one carries `accent` |
+| Stepper | `.stepbtn` | Top of a lesson | Learn, Check, Build, Explain (a content-pack lesson says Practice for Build); the current one carries `accent` |
 | Bottom bar | `#foot` (rendered by `renderFoot`) | Lessons | One primary on the right, a quiet Back on the left |
 | Phase tabs and room | `.phasebox`, `.rail.phtabs`, `.book.room`, `.titlecard`, `.paper0`–`.paper5` | Home | Violet `--path*`; the room's paper matches its phase shape |
 | Track room | `.book.room.track`, `.paper6`, `.trackcap` | Home, track lessons | Teal `--track*`; inside it teal stands in for `accent` |
@@ -75,6 +77,11 @@ them before making a new one; a new one gets a row here.
 | Practice questions | `.qfbox`, `.qf-chain`, `.qf-rows`, `.qf-row` (`.right`, `.wrong`), `.qf-claim`, `.qf-sum` | Platform Build steps | One question per screen; evidence above; uses the surface tokens |
 | Walkthrough | `.walk`, `.sl`, `.sl-view`, `.sl-mark`, `.sl-n`, `.sl-steps`, `.sl-tips` | Tool lessons (Spacelift) | Numbered callouts in the hint colours match numbered steps |
 | Study tray | `.pocket`, `.pk-row`, `.seals` | Every screen | Collapsed by default; the aura only when something is due |
+| Trust mark | `.trustmark`, `.trustpop` | Learn text | An ember after the words that matter; `mark` colours only |
+| Date note | `.checked` (`p.checked`, `details.checked`, `.old`) | Under Learn | "Checked against the docs on …" with its sources, or "Content as of …"; turns `hint` after 180 days |
+| Practice step | `.px`, `.px-seq`, `.px-match`, `.px-edit`, `.px-rules`, `.px-q`, `.px-next` | Content-pack lessons | Replaces the editor: choose, order, match, repair or reason; the next safe check in `accent-soft` |
+| Investigation views | `.iv`, `.iv-link`, `.iv-trace`, `.iv-row`, `.iv-tag` | Content-pack Learn and Practice | Relationships, trace, walkthrough, plan review; tags use the verdict colours |
+| Guided tour | `.tour-shot`, `.tour-box`, `.tour-zoom`, `.tour-nav`, `.tour-dot` | Content-pack Learn | A screenshot with one numbered box, a close-up and Back / Next; the dim is `scrim` |
 | Hover card | `#stkTip` | Stickers | Long press on phones |
 | Toast | `#toast` | After saving | Short, plain, disappears by itself |
 
@@ -141,7 +148,7 @@ steps. The preview database keeps your real progress out of it. Restart the serv
 
 When tokens or components change, the Design System artifact should follow. Ask Claude to
 "update the design system" with what changed: colour tokens go in its `tokens.json` (light and
-dark values; it has no Dusk theme yet), and rules go in its README's sections. Its format has no
+dark and dusk values: it has all three looks as themes), and rules go in its README's sections. Its format has no
 motion family, so timings and curves are described in the README's Motion section instead.
 
 ## Ship it
