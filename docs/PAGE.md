@@ -90,7 +90,12 @@ questions instead of code: `exercise(..., practice=practice(intro=..., asks=[ask
 `ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
 one plain question, three or so options, a plain line for each wrong one, a clue first and then
 the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
-The Python exercise stays one tap away ("Rather write it in Python?"). Used by the repos module,
+The Python exercise stays one tap away ("Rather write it in Python?"). A `fix(...)` question is **Fix the YAML**: the learner edits a
+real file until the check passes, with problems listed by line ("Line 6 · policy_id isn't
+allowed"). The rules are the contract (required, allowed, types, allowed values, forbidden fields,
+the worker-size rule) plus a goal; `yamlRead` and `yamlCheck` in the page run them, and
+`content/yaml_rules.py` runs the same checks in Python so a test proves every question starts
+broken and its model answer passes. Used by the repos module,
 Spotting dangerous replacements and "Getting unstuck with AI, safely".
 
 Code boxes wrap long lines, so nothing runs off a phone; Terraform, plan output, state JSON and
