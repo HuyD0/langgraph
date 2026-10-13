@@ -3,7 +3,7 @@
 A pack is a folder (see content-packs/README.md and docs/CONTENT_PACKS.md)::
 
     my-pack/
-      pack.yaml            # id, title, version, the phase it joins, its journeys and their lessons
+      pack.yaml            # id, title, version, the phase or track it joins, its journeys and their lessons
       lessons/*.yaml       # one lesson per file: learn, check, practice, explain, evidence
       assets/              # screenshots and diagrams the lessons point at
 
@@ -80,7 +80,7 @@ class Pack:
     id: str
     title: str
     version: str
-    phase: str
+    phase: str  # the phase name it joins, or the track id
     root: Path
     modules: list[Module] = field(default_factory=list)
     hidden: list[str] = field(default_factory=list)  # lesson ids not shown: slots, and drafts when not previewing
@@ -133,16 +133,22 @@ def load_pack(root: Path, drafts: bool | None = None, taken: set[str] | None = N
     if not manifest:
         raise PackError(problems or [f"{root / 'pack.yaml'}: empty"])
     where = root / "pack.yaml"
-    for key in ("id", "title", "version", "phase", "journeys"):
+    for key in ("id", "title", "version", "journeys"):
         if key not in manifest:
             problems.append(f"{where}: missing '{key}'")
     from drill.content import modules as core
 
+    # A pack joins one phase of the path (phase: Ship) or one track beside it (track: platform).
     phases = [name for name, _, _ in core.LIFECYCLE]
-    if manifest.get("phase") and manifest["phase"] not in phases:
+    tracks = [tid for tid, _, _, _ in core.TRACKS]
+    if ("phase" in manifest) == ("track" in manifest):
+        problems.append(f"{where}: give either 'phase' (one of {phases}) or 'track' (one of {tracks})")
+    elif "phase" in manifest and manifest["phase"] not in phases:
         problems.append(f"{where}: phase '{manifest['phase']}' is not one of {phases}")
+    elif "track" in manifest and manifest["track"] not in tracks:
+        problems.append(f"{where}: track '{manifest['track']}' is not one of {tracks}")
     pack = Pack(str(manifest.get("id", "")), str(manifest.get("title", "")), str(manifest.get("version", "")),
-                str(manifest.get("phase", "")), root)
+                str(manifest.get("phase") or manifest.get("track") or ""), root)
 
     seen: dict[str, str] = {}
     taken = set(taken or ())
@@ -462,5 +468,5 @@ def report(dirs: list[Path]) -> list[str]:
             for lesson in m.lessons:
                 counts[lesson["pack"]["status"]] += 1
         lines.append(f"{pack.id} {pack.version} ({root}): {counts['ready']} ready, {counts['draft']} draft, "
-                     f"{len(pack.hidden)} slots; joins phase {pack.phase}")
+                     f"{len(pack.hidden)} slots; joins {pack.phase}")
     return lines

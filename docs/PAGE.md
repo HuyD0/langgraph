@@ -65,6 +65,54 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
+## Explain: finish the sentence
+
+The Explain step ends with the lesson's own sentence (the `say` in `angle(...)`) with two or
+three gaps. You fill them one at a time by tapping one of three words. A wrong pick says so in
+one line and is crossed out; **Give me a clue** shows a hint, then **Tell me the answer** marks the
+right word. The lesson can finish once the sentence is whole. "Want to say it your way?" keeps
+the free box as an optional extra.
+
+A gap is written inside `say` as `[[answer|wrong|wrong::clue]]`. `model.cloze` turns it into the
+plain sentence (used by the tutor, the MCP tools and the done screen) and the pieces the page
+shows. Every gap needs two wrong words and a clue that doesn't contain the answer
+(`tests/test_content.py` checks). A lesson whose `say` has no gaps keeps the old "say it in your
+own words" box (every lesson has gaps today; a test keeps it that way).
+
+The sentence is what you'd say to a colleague, so it must sound like a person talking: one or two
+short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
+before keeping it.
+
+## Tracks
+
+A track is a set of modules that sits beside the six phases, with its own order. The first is the
+**Platform track** (How the platform repos fit together, Azure Databricks, Terraform foundations,
+Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
+
+- **How the platform repos fit together** comes first because it is the map: product teams ask in
+  YAML (config repo), the Terraform runbook reads it and adds defaults and access, modules and
+  providers build it, and Spacelift runs each stage (Foundation, Service) as a reviewed plan. Its
+  lessons follow one request through that chain. Every name in it is invented.
+- **The tutor stays in that world.** Each track module passes `setting=PLATFORM_SETTING`
+  (`modules/platform_world.py`) to `module(...)`; the page adds it to every tutor request, so
+  "Give me a harder one like this" asks about workspaces, stacks and service principals, not
+  web apps. A test checks every platform module has it.
+
+- **On the path page** it has its own box under the phases, one scene per module. Its lessons are
+  numbered P1.1 (module 1, lesson 1) and all share one sticker shape, the octagon, so they never
+  look like a phase. "Start the track" or "Continue" opens its next lesson.
+- **Its own colour, teal** (`--track` tokens in `tokens.css`, for every theme). Inside the track box,
+  teal stands in for the blue "current" colour: the rim, Next, and the title shape's glow (a teal
+  copy of the aura). It is printed on blueprint paper and opens with the same rings and spark as a
+  phase room the first time it scrolls into view. Teal is the one colour family nothing else
+  uses, so the track never reads as the violet AI path.
+- **Coming soon**: after each module's real lessons come its planned ones (`planned(...)` in the
+  module file), faded with a dotted outline. They can't be opened; the tutor lists them as not
+  built yet.
+- **It never moves the path**: the Today card, "Next" on the phases and the AI path's order ignore
+  track lessons. Inside a lesson the track shows one caption line instead of the phase rail, and
+  finishing it points to the track's next lesson.
+
 ## Your own use case
 
 The graded exercises in Use case and fit, and Total cost of ownership, use the HR assistant, so
@@ -286,6 +334,9 @@ where it should appear. Copy a neighbour; every field is named. In short:
 - `angle`: the interview angle: the `pattern` name, the plain-language `text`, a sentence
   to `say` out loud, and optionally the `classic` interview problem that uses the same idea.
 - `stack`: optional, the same idea in Databricks, LangGraph, LangChain or MLflow.
+- `checked` and `sources`: the day (`'2026-10-12'`) you checked the lesson's facts, and the
+  pages you checked them against (`source(title, url)`). Required for lessons about products that
+  change often (the Databricks modules); welcome on any lesson. See "Keeping content current".
 - `exercise`: the `prompt`, `starter`, `solution` and `cases` (mark one `sample=True`), the
   `guided` scaffold with `___` blanks and the matching `fills`, and the Learn panel
   (`concepts`, `byhand`, `why`, `gotchas`).
@@ -301,7 +352,7 @@ where it should appear. Copy a neighbour; every field is named. In short:
   makes the Build step a sorting board: one idea at a time, placed by tapping or dragging
   onto a 2 by 2 map (the first four bins, in map order) or a tray above it (a fifth bin).
   Every move shows the item's `why`; a wrong move keeps the card, and the score is how many
-  were right first time. "Place one for me" is the hint. The Python exercise stays, behind
+  were right first time. "Tell me the answer" (on the board, beside "Not sure? Come back to it later") gives the answer and why; it then counts as not right first time. An idea that stops at a gate is shelved, so the Shelve box is right for it too. The Python exercise stays, behind
   "Rather write it in Python?", and the page remembers which one the learner chose.
   Lesson 1.1 uses it; `tests/test_content.py` checks its answers match the Python solution's.
 
@@ -316,3 +367,40 @@ A hyphen in the id becomes an underscore in the file name: `agent-teams` lives i
 
 Keep the wording plain and the page quiet: no Big-O, and visuals only where they replace
 text.
+
+## Keeping content current
+
+Databricks, Azure, MLflow and LangGraph rename and move things often (in 2026 alone: Asset
+Bundles became Declarative Automation Bundles, Genie spaces became Genie Agents, Vector Search
+became Databricks AI Search). So a lesson records **when** its facts were last checked and
+**against what**:
+
+```python
+lesson(MODULE, 'masked_columns',
+    title='ABAC: policies that follow tags',
+    checked='2026-10-12',
+    sources=[source('ABAC policies', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/policies')],
+    ...
+```
+
+The page shows "Checked against the docs on 12 Oct 2026" under Learn, with the sources one tap
+away. Lessons with no date of their own show "Content as of 12 Oct 2026", the day dates were
+first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days either note
+turns amber and says names and steps may have changed.
+
+**To find what needs a look:**
+
+```bash
+uv run drill content stale          # lessons checked over 180 days ago, with their sources
+uv run drill content stale --all    # also the fresh ones
+```
+
+**To update a lesson:** open each source, compare it with the lesson's Learn text, stack box,
+gotchas and exercise wording, fix what moved (keep the old name once, "formerly ..."), then set
+`checked` to today and add any new source. Run `uv run drill build-page` and `uv run pytest`.
+Only change the date when you actually checked: a date says "true as of this day".
+
+**To add new content:** a new lesson in an existing module, or a new module (see "Adding a
+lesson"), dated and sourced like the above. Private or company-specific material goes in a
+content pack instead (`docs/CONTENT_PACKS.md` once that lands), which has its own dated evidence.
+

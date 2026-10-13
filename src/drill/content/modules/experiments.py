@@ -26,7 +26,7 @@ with mlflow.start_run(run_name="cs512-k5"):
     angle=angle(
         pattern='Skip over budget, keep the best',
         text='The big idea: write the decision rule down first, like highest quality within a cost limit, so the experiment ends in a decision. Your code goes through the runs one by one. It skips any run that costs more than the budget. Of the rest, it keeps the best so far, and replaces it only when a run has strictly higher quality, so a tie keeps the earlier run. It is like picking the best phone you can afford. If no run fits, it returns `None`.',
-        say='"I write the decision rule down first. Then I drop runs over budget and pick the highest quality of the rest, keeping the earlier run on a tie."',
+        say='"I write the decision rule down [[first|afterwards|at the end::Deciding after you see results lets you fool yourself.]]. Then I drop runs over [[budget|average|time::The cost limit you set at the start.]] and pick the best quality from the rest, like the best phone I can afford."',
         classic='max_subarray',
     ),
     stack=stack('MLflow: find the best run within budget', """runs = mlflow.search_runs(
@@ -156,7 +156,7 @@ lesson(MODULE, 'plan_gaps',
     angle=angle(
         pattern='Tick off a checklist',
         text="The big idea: decide how you will judge an experiment before you see any results, so you can't talk yourself into an answer. Your code has a fixed list of the seven fields a plan needs. It looks up each one in the plan, which is a dict: a lookup table from a field's name to what you wrote. `plan.get(field)` gives `None` when a field is missing. Any field that is missing or empty goes on the list of gaps, like ticking off a packing list.",
-        say='"I write the plan and the decision rule before I run anything, and I check every required field is filled in before the first run."',
+        say='"I write the plan and the rule that picks a winner [[before|after|while::Deciding once you\'ve seen results lets you talk yourself into anything.]] I run anything. Then I check no field is [[empty|long|new::A blank box is a gap.]], so I can\'t move the goalposts later."',
         classic=None,
     ),
     stack=stack('MLflow: log the plan with the run', """with mlflow.start_run(run_name="hints-a-vs-b"):
@@ -244,7 +244,7 @@ lesson(MODULE, 'param_grid',
     title='Planning what to vary',
     learn=[
         "A good experiment varies a few things on purpose and holds everything else fixed: the same eval set, the same judge, the same prompt unless the prompt is what you're testing.",
-        'Every value you add multiplies the number of runs. 3 chunk sizes times 4 values of k (how many pieces to fetch for each question) times 2 models is 24 runs, each paying for eval and judge calls. Count the runs, and their cost, before you start.',
+        'Trying every combination of values is called a **grid search**. Every value you add multiplies the number of runs. 3 chunk sizes times 4 values of k (how many pieces to fetch for each question) times 2 models is 24 runs, each paying for eval and judge calls. Count the runs, and their cost, before you start.',
     ],
     example=example('2 chunk sizes times 2 values of k: 4 runs', """chunk_size   k
 256          3    run 1
@@ -261,7 +261,7 @@ try 3 models as well: 4 times 3 is 12 runs"""),
     angle=angle(
         pattern='Grow combinations setting by setting',
         text="The big idea: every value you add multiplies the number of runs, so count them before you start. Your code starts with one empty combination. For each setting, it makes a new list: every combination so far, copied once for each value, with that value added. Copying with `dict(combo)` matters, so changing one copy doesn't change the others. It is like getting dressed: 2 shirts and 3 trousers give 6 outfits, and adding 2 hats gives 12.",
-        say='"I build the combinations one setting at a time: 3 chunk sizes, 4 values of k and 2 models make 24 runs. I count them before paying for them."',
+        say='"Every setting I add [[multiplies|adds to|halves::Think of shirts and trousers making outfits.]] the number of runs: 3 chunk sizes, 4 values of k and 2 models make [[24|9|12::Three times four times two.]]. So I count the runs before I pay for them."',
         classic=None,
     ),
     stack=stack('MLflow: one run per combination', """for config in grid:
@@ -273,7 +273,7 @@ try 3 models as well: 4 times 3 is 12 runs"""),
         topic='experiments',
         difficulty='medium',
         fn='param_grid',
-        prompt="""`settings` is a list of settings to try. Each setting is a pair, `[name, values]`, like `["k", [3, 5]]`.
+        prompt="""`settings` is a list of settings to try. Each setting (a **parameter**, in MLflow's words) is a pair, `[name, values]`, like `["k", [3, 5]]`.
 
 Return every combination, with one value for each setting, as a list of dicts like `{"chunk_size": 256, "k": 3}`.
 
@@ -388,7 +388,7 @@ lesson(MODULE, 'cv_folds',
     title='Experiments for classic ML',
     learn=[
         'For a classifier (spam, churn, fraud), one train/test split can be lucky or unlucky. **Cross-validation** splits the data into a few equal groups called **folds** (often 5) and trains once per fold: each time it tests on that fold and trains on all the others.',
-        'You get one score per fold instead of one overall: report the average and how much they vary. Compare models on the same folds, and log every model as an MLflow run so the comparison is reproducible.',
+        'You get one score per fold instead of one overall: report the average and how much they vary (the **standard deviation**). Compare models on the same folds, and log every model as an MLflow run so the comparison is reproducible.',
     ],
     example=example('10 examples, 5 folds, 5 rounds', """fold 0: examples 0, 5
 fold 1: examples 1, 6
@@ -408,9 +408,9 @@ round 5: test on fold 4, train on folds 0, 1, 2, 3
         why='Same average, but B swings widely depending on the data it sees. Production data will swing too.',
     ),
     angle=angle(
-        pattern='Deal examples out like cards',
-        text='The big idea: one train and test split can be lucky or unlucky, so cross-validation splits the data into folds and tests on each one in turn. Your code makes one empty list per fold. Then it deals the example numbers out in turn, like dealing cards around a table. `i % num_folds` is the remainder after dividing, so with 3 folds, examples 0, 1 and 2 go to folds 0, 1 and 2, and example 3 starts again at fold 0. The folds end up differing in size by at most one.',
-        say='"I deal examples into folds in turn, so the folds are nearly equal. I train once per fold and report the average score and how much it varies."',
+        pattern='Round-robin: deal examples out like cards',
+        text='The big idea: one train and test split can be lucky or unlucky, so cross-validation splits the data into folds and tests on each one in turn. Your code makes one empty list per fold. Then it deals the example numbers out in turn, like dealing cards around a table. Programmers call this **round-robin**. `i % num_folds` is the remainder after dividing, so with 3 folds, examples 0, 1 and 2 go to folds 0, 1 and 2, and example 3 starts again at fold 0. The folds end up differing in size by at most one.',
+        say='"One split can be lucky, so I split the data into [[folds|batches|labels::A few equal groups, often 5.]] and test on each one in turn. I report the [[average|best|first::Combine all the scores into one fair number.]] score and how much the scores vary."',
         classic=None,
     ),
     stack=stack('scikit-learn with MLflow autologging', """import mlflow
@@ -434,7 +434,7 @@ with mlflow.start_run(run_name="logreg-5fold"):
 Deal the examples out like cards: example `i` goes into fold number `i % num_folds`, the remainder when you divide `i` by `num_folds`.
 
 Return a list with one inner list per fold, fold 0 first. Each fold holds its example numbers, smallest first. If there are fewer examples than folds, some folds stay empty.""",
-        pattern='Deal the examples out in turn, like dealing cards to players.',
+        pattern='Round-robin: deal the examples out in turn, like dealing cards to players.',
         target='one step per example',
         realworld="This is how a classifier gets a more trustworthy score: train 5 times, test on 5 different folds, and report both the average and how much it varied. `scikit-learn`'s `cross_val_score` does this, and MLflow can log every fold.",
         starter="""def cv_folds(num_examples, num_folds):
@@ -494,7 +494,7 @@ groups[1].append(7)   # [[], [7]]""",
         gotchas=[
             [
                 'Shuffle first, but split by group',
-                'Real data is often sorted (by date, by customer), so shuffle before dealing. If the same customer appears many times, keep all their rows in one fold, the same leakage rule as before.',
+                'Real data is often sorted (by date, by customer), so shuffle before dealing. If the same customer appears many times, keep all their rows in one fold (scikit-learn\'s `GroupKFold` does this), the same data leakage rule as before.',
             ],
             [
                 'Report the spread, not just the average',
@@ -507,8 +507,8 @@ groups[1].append(7)   # [[], [7]]""",
 lesson(MODULE, 'examples_needed',
     title='How many examples do you need?',
     learn=[
-        'A pass rate measured on an eval set is an estimate, not the truth. Score 70% on 25 questions and the real rate could easily be anywhere from 50% to 90%. The fewer the examples, the wider that **margin of error**.',
-        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of n**, in percentage points, where n is the number of examples. That is a 95% range: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
+        'A pass rate measured on an eval set is an estimate, not the truth. Score 70% on 25 questions and the real rate could easily be anywhere from 50% to 90%. The fewer the examples (the smaller the **sample size**), the wider that **margin of error**.',
+        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of n**, in percentage points, where n is the number of examples. That is a 95% **confidence interval**: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
         "Use it backwards before you run anything: if the improvement you hope to see is smaller than the margin, your eval set can't show it. Add examples first, or compare on the same examples (later in this module), which is more sensitive.",
         'For scores near 0% or 100% (like 49 out of 50) this simple rule breaks down; statisticians use a **Wilson interval** there (two lessons from now). For metrics with no simple formula, use the **bootstrap**: rebuild the eval set 1,000 times by drawing examples at random with repeats allowed, score each, and keep the middle 95% of the scores.',
     ],
@@ -530,7 +530,7 @@ lesson(MODULE, 'examples_needed',
     angle=angle(
         pattern='Run the margin rule backwards',
         text="The big idea: a small eval set has a wide margin of error, so check you have enough examples before you run anything. The rule says the margin is 100 divided by the square root of n. Your code flips it around: it divides 100 by the margin you want, then multiplies that number by itself to get n. If the answer has a decimal part, it rounds up, because you can't use part of an example. So a margin of 5 points needs 400 examples.",
-        say='"Before running, I check the eval set is big enough to show the change I care about. Halving the margin takes four times the examples."',
+        say='"Before I run anything, I check my eval set is big enough to show the change I care about. To [[halve|double|remove::Cut the margin down to 50% of what it is.]] the margin of error, I need [[four times|twice|ten times::It\'s more than you\'d guess: 100 examples become 400.]] as many examples."',
         classic=None,
     ),
     stack=stack('MLflow: log the size and the margin with every run', """n = len(eval_set)
@@ -631,7 +631,7 @@ holdout     100 questions    the one winner       once, the confirmation"""),
     angle=angle(
         pattern='A few from each group',
         text='The big idea: try ideas on a small smoke set first, with a few questions from every group plus the must-pass ones, and only send finalists to the full set. Your code starts a set with the must-pass ids. A set is a collection that holds each item only once, so duplicates vanish on their own. Then it takes the first few ids from each group and adds them. At the end it returns them sorted alphabetically. It is like a tasting menu: a little from every dish, plus the house special.',
-        say='"I try ideas on a small smoke set with a few questions from every group and all the must-pass ones, and only run finalists on the full set."',
+        say='"I try new ideas on a small [[smoke set|holdout set|dev set::Quick and cheap, for weeding out bad ideas.]]: a few questions from every group plus all the [[must-pass|easiest|newest::The questions the app can never get wrong.]] ones. Only the [[finalists|first idea|cheapest::The few that survive the quick test.]] go on to the full set."',
         classic=None,
     ),
     stack=stack('MLflow: the smoke set as its own dataset', """df = full.to_df()
@@ -754,7 +754,7 @@ Wilson:         0% to 11.4%"""),
     angle=angle(
         pattern='Fill in the formula in steps',
         text='The big idea: near 0% or 100% the quick margin rule gives impossible ranges, so you use the Wilson interval, which always stays between 0% and 100%. Your code works out the pass rate, then follows the formula one piece at a time, giving each piece a name: `bottom`, `centre`, `spread` and `half`. The range runs from the centre minus half to the centre plus half, rounded to 3 decimal places. Naming the pieces is like a recipe that lists each step, so a mistake is easy to spot.',
-        say='"Near 0% or 100% I use a Wilson interval. Zero failures in 30 tries doesn\'t mean a 0% failure rate: the range goes up to about 11%."',
+        say='"Near 0% or 100%, I use a [[Wilson interval|bigger sample|average::The standard fix that always stays between the two edges.]]. Zero failures in 30 tries doesn\'t mean a [[0%|10%|30%::The real rate could still be above zero.]] failure rate; it could be up to about 11%."',
         classic=None,
     ),
     stack=stack('statsmodels: the same interval', """from statsmodels.stats.proportion import proportion_confint
@@ -773,7 +773,7 @@ mlflow.log_metrics({"pass_rate_low": low, "pass_rate_high": high})"""),
 
 Work out the Wilson range with these lines of Python:
 
-- `z = 1.96`, which gives a 95% range
+- `z = 1.96`, which gives a 95% confidence interval
 - `n = total`
 - `p = passed / n`
 - `bottom = 1 + z * z / n`
@@ -858,7 +858,7 @@ lesson(MODULE, 'clear_winner',
     learn=[
         'LLM outputs and LLM judges vary from run to run. A single comparison of 0.82 against 0.80 may just be luck.',
         'Run each setup several times (3 to 5 is common), and only call a winner when the results clearly separate. If they overlap, choose on cost or speed, or test on more examples.',
-        "This rule is deliberately cautious: it rarely crowns a fake winner (about 1 time in 10 with 3 runs each, far less with 5), but it can miss a real one, because overlapping ranges don't prove there is no difference. When both setups ran on the same examples, a **paired comparison** is the standard check, and it is more sensitive. That is the next lesson.",
+        "This rule is deliberately cautious: it rarely crowns a fake winner, a **false positive** (about 1 time in 10 with 3 runs each, far less with 5), but it can miss a real one, a **false negative**, because overlapping ranges don't prove there is no difference. When both setups ran on the same examples, a **paired comparison** is the standard check, and it is more sensitive. That is the next lesson.",
     ],
     example=example('Three runs each: compare the ranges', """     run 1   run 2   run 3    range
 A    0.78    0.80    0.79     0.78 to 0.80
@@ -877,7 +877,7 @@ the ranges overlap                          → no clear winner"""),
     angle=angle(
         pattern='Worst run must beat best run',
         text="The big idea: LLM results vary from run to run, so you only call a winner when the scores clearly separate. Your code compares each setup's worst run with the other's best. If A's smallest score is above B's largest score, A wins, and the same the other way round. Anything else is a tie. It is like two runners: one only clearly wins if their slowest race beats the other's fastest.",
-        say='"I run each setup several times and only call a winner when one\'s worst run beats the other\'s best. Otherwise it\'s a tie and I decide on cost."',
+        say='"Results change from run to run, so I run each setup [[several times|once|in parallel::One run could just be lucky.]]. I only call a winner when its [[worst|best|average::Even its weakest run has to come out ahead.]] run beats the other\'s best; otherwise it\'s a tie."',
         classic=None,
     ),
     stack=stack('MLflow: repeat runs as nested runs', """with mlflow.start_run(run_name="prompt_b"):
@@ -959,7 +959,7 @@ lesson(MODULE, 'paired_verdict',
     learn=[
         'The best way to compare two setups is to run both on **the same examples** and look example by example. This is a **paired comparison**. It is much more sensitive than comparing two overall scores, because the hard examples are hard for both setups and that difficulty cancels out.',
         'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: how often A passed where B failed, and the other way round. If the disagreements split about evenly, the difference is noise.',
-        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
+        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
         'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples. For scores that are not pass/fail, the paired versions are a **paired bootstrap** or a **permutation test** (on each example, randomly swap the A and B scores, do that many times, and see how often luck alone makes a gap that big).',
     ],
     example=example('Only disagreements count', """example   A   B
@@ -985,7 +985,7 @@ A only 12, B only 8:  gap 4, below 8.9   → too close"""),
     angle=angle(
         pattern='Count only the disagreements',
         text='The big idea: run both setups on the same examples, because only the examples where they disagree tell you which is better. Your code uses `zip` to walk both lists side by side. It counts how often A passed where B failed, and the other way round. A winner needs a gap of at least twice the square root of the number of disagreements. The code checks this without a square root: the gap times itself must be at least 4 times the disagreements. Otherwise it is a tie.',
-        say='"I run both setups on the same examples and count only where they disagree. That is McNemar\'s test, and it is more sensitive than comparing two overall scores."',
+        say='"I run both setups on the [[same examples|newest examples|easy examples::Give them identical questions so difficulty cancels out.]] and only count the ones where they [[disagree|both pass|both fail::Where both agree, you learn nothing about which is better.]]. That\'s McNemar\'s test, and it spots real differences better than two overall scores."',
         classic=None,
     ),
     stack=stack('MLflow: log the paired counts', """with mlflow.start_run(run_name="prompt-a-vs-b"):
@@ -1109,7 +1109,7 @@ if adult and age < 65:
             ],
             [
                 'Why 2?',
-                "It is a rounded version of 1.96, the number behind a 95% range. That rounding makes the rule slightly stricter than the quick version of McNemar's test. With fewer than about 25 disagreements, use the exact version, which is stricter: this rule calls 5 to 0 a win, but the exact test calls it too close.",
+                "It is a rounded version of 1.96, the number behind a 95% confidence interval. That rounding makes the rule slightly stricter than the quick version of McNemar's test. With fewer than about 25 disagreements, use the exact version, which is stricter: this rule calls 5 to 0 a win, but the exact test calls it too close.",
             ],
         ],
     ),
@@ -1141,7 +1141,7 @@ oracle prompt (expert-written)         80%   → prompt headroom:     2 points
     angle=angle(
         pattern='Find the step with most headroom',
         text="The big idea: swap one step for a perfect version, and the gain shows the most you could win by fixing that step. Your code goes through each step in the oracle scores. It subtracts your current score from that step's oracle score to get its gain, and keeps the step with the biggest gain so far. The best gain starts at 0, so if no oracle beats the current score, it returns `None`: no step is worth fixing. It is like finding which leak in a bucket loses the most water.",
-        say='"Before tuning a pipeline, I run an oracle test on each step, so I fix the step with the most headroom instead of guessing."',
+        say='"Before tuning, I swap each step for a perfect version and rerun the eval: an [[oracle test|ablation|smoke test::Pretend one step always gets it right.]]. Then I fix the step with the most [[headroom|cost|steps::The most you could win by making that step perfect.]] instead of [[guessing|testing|measuring::Without the test, you\'d be picking by gut feeling.]]."',
         classic=None,
     ),
     stack=stack('MLflow: the oracle as one more named variant', """def oracle_app(question, gold_doc_ids):
@@ -1255,7 +1255,7 @@ paired check for the reranker:
     angle=angle(
         pattern='Measure the drop, then sort',
         text='The big idea: to find out what one part of your app is worth, take it out and see how much the score drops. Your code works out that drop for each part: the full score minus the score without it. Then it sorts the parts so the biggest drop comes first. The part you would miss most is at the top, and a part whose drop is 0 is one you could delete: less to run, pay for and fix.',
-        say='"I take out one part at a time and rerun the eval. The bigger the drop, the more that part is worth. A part with no drop can go."',
+        say='"I take out [[one part|every part|two parts::Change only a single thing so you know what caused the change.]] at a time and rerun the eval. The more the score [[drops|rises|wobbles::Removing something useful makes the result worse.]], the more that part is worth. A part that changes nothing can [[go|stay|move::Less to run, pay for and fix.]]."',
         classic=None,
     ),
     stack=stack('LangGraph: build the graph with a part switched off', """def build_graph(use_rerank=True, use_rewrite=True):
@@ -1350,8 +1350,8 @@ pets.sort(key=lambda p: p[1], reverse=True)
 lesson(MODULE, 'fluke_risk',
     title='Testing many variants',
     learn=[
-        'Each comparison has a small chance of declaring a winner by luck. With the usual 95% standard, that is 5%. Test one variant and a fluke is unlikely; test twenty, and the chance that at least one "wins" by luck is about 64%.',
-        'This is how teams fool themselves: try many prompts, keep the best, report its score. The best of many is partly luck, so its score on the same eval set is too optimistic.',
+        'Each comparison has a small chance of declaring a winner by luck, a **false positive**. With the usual 95% standard, that is 5%. Test one variant and a fluke is unlikely; test twenty, and the chance that at least one "wins" by luck is about 64%.',
+        'This is the **multiple comparisons problem**, and it is how teams fool themselves: try many prompts, keep the best, report its score. The best of many is partly luck, so its score on the same eval set is too optimistic.',
         "Two guards. In **Design**, limit how many variants you test, and for a strict check divide the 5% by the number of comparisons (the **Bonferroni** correction). In **Evaluate**, confirm the winner **once** on the holdout set, the examples kept aside that it has never seen. That confirmation is the reason the holdout set exists.",
     ],
     example=example('The chance of at least one fluke', """variants tested    chance one wins by luck    stricter threshold
@@ -1372,7 +1372,7 @@ lesson(MODULE, 'fluke_risk',
     angle=angle(
         pattern='Chance of at least one fluke',
         text='The big idea: each comparison has a 5% chance of a lucky win, so if you test many variants, one will likely win by luck. Your code starts at 1 and multiplies by 0.95 once per variant. That gives the chance that none of them is a fluke. One minus that is the chance that at least one is. With 20 variants it comes to about 64%. It is like rolling a die: one roll rarely gives a six, but roll enough times and a six turns up.',
-        say='"When I test many variants I limit how many, and I confirm the winner once on the holdout set before I trust its score."',
+        say='"If I test lots of variants, one will probably win by [[luck|design|merit::Each test has a small chance of a fake win.]]. So I limit how many I test, and confirm the winner [[once|daily|twice::Reusing it would spoil it.]] on the [[holdout set|smoke set|training set::The examples kept aside that it has never seen.]]."',
         classic=None,
     ),
     stack=stack('MLflow: confirm the dev winner on the holdout, once', """winner = pick_best(mlflow.search_runs(experiment_names=["prompt-search"], filter_string="tags.split = 'dev'"))
@@ -1386,7 +1386,7 @@ with mlflow.start_run(run_name=f"{winner}-holdout"):
         fn='fluke_risk',
         prompt="""`num_variants` is how many variants you try, like `20`. A variant is one version of your app, such as a different prompt. Each variant is compared once against your current version.
 
-Each comparison has a 5% chance of a fluke: a winner picked by luck. So one comparison is clean 95% of the time, written in Python as `0.95`. To get the chance that all of them are clean, start at `1` and multiply by `0.95` once for each variant. For 2 variants that is `0.95 * 0.95`, about 0.90.
+Each comparison has a 5% chance of a fluke: a winner picked by luck (a false positive). So one comparison is clean 95% of the time, written in Python as `0.95`. To get the chance that all of them are clean, start at `1` and multiply by `0.95` once for each variant. For 2 variants that is `0.95 * 0.95`, about 0.90.
 
 Return the chance of at least one fluke: 1 minus the chance that all are clean, rounded to 2 decimal places (as a decimal, like `0.64`).""",
         pattern='Multiply the chance of a clean result once per variant, then take it away from 1.',

@@ -8,7 +8,7 @@ lesson(MODULE, 'percentile',
     title='Latency that users feel',
     learn=[
         '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.',
-        "Measure the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
+        "Measure **end-to-end latency**: the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
     ],
     example=example('Finding slow traces in MLflow', """slow = mlflow.search_traces(
     filter_string="attributes.execution_time_ms > 5000",
@@ -23,7 +23,7 @@ lesson(MODULE, 'percentile',
     angle=angle(
         pattern='Sort, then pick by position',
         text='The big idea: averages hide slow requests, so teams look at p95, the time that 95 out of 100 requests finish within. Your code sorts the times, fastest first. Then it works out the position: length times percent, divided by 100, rounded up. Adding 99 before whole-number division with `//` is a trick that rounds up. Python counts list places from 0, so position 3 is `ordered[2]`, which is why the code subtracts 1. Mixing those two up is the most common bug.',
-        say='"I sort the latencies, work out the position by rounding up, and subtract one because Python counts from zero."',
+        say='"Averages hide slow requests, so I look at [[p95|the average|the fastest::The time 95 out of 100 requests finish within.]]. I sort the times, find the position, and subtract one, because Python counts list places from [[zero|one|the end::The first item is at position 0.]]."',
         classic=None,
     ),
     stack=stack('MLflow: p95 of your real traces', """traces = mlflow.search_traces(max_results=1000)
@@ -42,7 +42,7 @@ Your function gets two things:
 - `latencies`: response times in milliseconds, like `[820, 640, 4100]`.
 - `percent`: which percentile you want, like `95` for p95.
 
-Sort the latencies, fastest first. Multiply the list's length by `percent`, divide by 100, and round up to a whole number. That is the position of your answer, counting from 1. For example, 5 items at 50 percent is 5 times 50 divided by 100, which is 2.5, so round up to position 3. Return the latency at that position.
+Sort the latencies, fastest first. Multiply the list's length by `percent`, divide by 100, and round up to a whole number. That is the position of your answer, counting from 1. This way of finding a percentile is called the **nearest-rank method**. For example, 5 items at 50 percent is 5 times 50 divided by 100, which is 2.5, so round up to position 3. Return the latency at that position.
 
 If `latencies` is empty, return `None`.""",
         pattern='Sort, then pick by position.',
@@ -129,7 +129,7 @@ lesson(MODULE, 'pareto_models',
     title='Comparing LLMs for a task',
     learn=[
         'To choose a model for a task, run each candidate on the **same eval set**, with the **same judge**, and record **quality, cost and p95 latency** as one MLflow run per model.',
-        "Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the **Pareto front**.",
+        "Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. The usual term is that the winner **dominates** the loser. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the **Pareto front**.",
     ],
     example=example('One run per model, same eval set', """from mlflow.genai.scorers import Correctness
 
@@ -147,7 +147,7 @@ for model in ["fast-model", "smart-model"]:
     angle=angle(
         pattern='Compare every pair',
         text="The big idea: throw out any model that another model beats, and what's left is a short list of real trade-offs. A helper, `beats`, says model A beats B if A is at least as good on quality, cost and latency, and better on at least one. Your code compares each model with every model in the list and keeps it only if none beats it. That is fine for a handful of models, but with thousands the number of comparisons grows very fast.",
-        say='"A model is out if another is at least as good on quality, cost and latency and better on one. The ones left are the Pareto front."',
+        say='"I drop any model that another one beats: at least as good on quality, cost and speed, and [[better on one|worse on one|equal on all::Matching everywhere isn\'t enough; it has to win somewhere.]]. What\'s left is the [[Pareto front|best model|test set::The models nothing else beats.]], a short list of real [[trade-offs|winners|mistakes::Each one is better at something and worse at something else.]]."',
         classic=None,
     ),
     stack=stack('MLflow: one run per candidate endpoint', """# candidates: names of the models you can call in Databricks.
@@ -167,7 +167,7 @@ for endpoint in candidates:
 - `cost`: dollars per 1,000 calls. Lower is better.
 - `p95_ms`: the p95 latency in milliseconds. Lower is better.
 
-Model A **beats** model B when A is at least as good on all three, and better on at least one. So two models with the same numbers do not beat each other.
+Model A **beats** model B (the usual term is **dominates**) when A is at least as good on all three, and better on at least one. So two models with the same numbers do not beat each other.
 
 Return the names of the models that no other model beats, in their original order. These are called the Pareto front, which is where the name `pareto_models` comes from.""",
         pattern='Compare every pair: keep a model only if no other model beats it.',
@@ -333,7 +333,7 @@ lesson(MODULE, 'better_option',
     angle=angle(
         pattern='Work out the net, keep the best',
         text='The big idea: choose a model by the money it makes after paying for its calls, not by its price or success rate alone. For each option, your code works out the net: volume times success rate times value per success, minus volume times cost per call. It remembers the best net so far, like holding on to the highest card you have seen. A new option replaces it only if its net is strictly bigger, so on a tie the one listed first wins.',
-        say='"I work out each model\'s net value per month with the same formula and pick the highest. The value of a success comes from the team that owns the outcome."',
+        say='"For each model, I take what good answers earn and [[subtract|add|multiply by::Paying for calls takes money away.]] what the calls cost. I pick the one that leaves the most money each month, not just the [[cheapest|fastest|newest::A low price per call can still lose if it fails often.]]."',
         classic=None,
     ),
     stack=stack('MLflow: log each option\'s inputs', """for option in options:   # one run per model

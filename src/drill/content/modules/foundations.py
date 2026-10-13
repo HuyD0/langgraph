@@ -31,7 +31,7 @@ for row in rows:
     angle=angle(
         pattern='Check each row against a set',
         text="The big idea: every row from a test user goes to test, so no user ends up on both sides and the score stays honest. Your code does it by asking one question per row: is this row's user one of the test users? Keeping the test users in a set makes that question instant, like finding a word through a book's index. A plain list is read from the start every time, like checking a guest list name by name: fine for 2 names, slow for 10,000.",
-        say='"I split by user so nobody is in both training and test. I keep the test users in a set, so checking each row is instant."',
+        say='"I split the data by [[user|row|column::Splitting this way keeps one customer from landing on both sides.]], so nobody shows up in both training and test. I keep the test users in a [[set|list|string::Looking things up in this is instant, like a book\'s index.]], so checking each row is instant."',
         classic='two_sum',
     ),
     stack=stack('MLflow: record which data trained the model', """with mlflow.start_run(run_name="churn-split-by-user"):
@@ -175,8 +175,8 @@ recall    = tp / (tp + fn)"""),
     ),
     angle=angle(
         pattern='Count three piles, then divide',
-        text='The big idea: when the thing you look for is rare, accuracy can look great while the model misses it, so you measure precision and recall instead. Your code walks through each prediction next to its right answer, using `zip` to pair them up like matching socks. Each pair adds 1 to one of three counters: `tp`, `fp` or `fn`. Pairs where both are 0 are skipped. Then it divides to get precision and recall, and if the bottom number is 0 it uses 0 instead of crashing.',
-        say='"I count true positives, false positives and false negatives, then divide. If the bottom number is zero, I return 0 instead of crashing."',
+        text='The big idea: when the thing you look for is rare, accuracy can look great while the model misses it, so you measure precision and recall instead. Your code walks through each prediction next to its right answer, using `zip` to pair them up like matching socks. Each pair adds 1 to one of three counters: `tp`, `fp` or `fn`. Pairs where both are 0 are skipped. Then it divides to get precision and recall, and if the bottom number (the denominator) is 0 it uses 0 instead of crashing.',
+        say='"When what I\'m looking for is rare, [[accuracy|precision|recall::Always answering no can score 99% on this one.]] can fool me. So I check precision, how much of what it [[flagged|missed|skipped::Precision only looks at the cases the model said yes to.]] was right, and recall, how many real cases it [[caught|skipped|guessed::Recall asks how many of the real ones it found.]]."',
         classic=None,
     ),
     stack=stack('MLflow: log both numbers on every run', """mlflow.sklearn.autolog()   # params, metrics and the model on every fit
@@ -295,7 +295,7 @@ count += 1   # count is now 2""",
             ],
             [
                 'Averages across classes',
-                'With more than two classes, you can average the score of each class (every class counts the same), or count all examples together (big classes count more). The two can tell very different stories.',
+                'With more than two classes, you can macro-average: average the score of each class, so every class counts the same. Or you can micro-average: count all examples together, so big classes count more. The two can tell very different stories.',
             ],
         ],
     ),
@@ -319,7 +319,7 @@ lesson(MODULE, 'best_threshold',
     angle=angle(
         pattern='Try every threshold, keep the best',
         text='The big idea: a model gives a score, and you pick the threshold where at or above means yes. Your code tries each score in the list as the threshold. For each one, it turns every score into a 1 or a 0 and counts how many match the right answer. It keeps the threshold with the most right so far, and a later one only wins if it gets strictly more right. This checks every threshold against every example: fine for 100 examples, slow for 10,000, because that is 100 million checks.',
-        say='"I try each score as the threshold and keep the one that gets the most answers right. I tune it on the validation set, then check it once on test."',
+        say='"I try each score as the [[threshold|average|label::At or above this, the answer is yes.]] and keep the one that gets the most answers right. I tune it on the [[validation|test|training::This set is for tuning, so the final check stays honest.]] set, then check it once on test."',
         classic='merge_intervals',
     ),
     stack=stack('MLflow: the threshold is a parameter', """with mlflow.start_run(run_name="threshold-0.65"):
@@ -473,7 +473,7 @@ average precision = (1.00 + 0.67 + 0.60) / 3, about 0.76"""),
     angle=angle(
         pattern='Sort by score, then walk down',
         text='The big idea: for rare events, average precision is the honest score, because it rewards finding the real positives near the top. Your code first counts the real positives and returns 0 if there are none. Then it sorts the examples by score, highest first, like ranking exam papers. It walks down the list counting how many it has seen and how many were real positives. At each real positive it adds the precision so far, and at the end it divides that sum by the number of positives.',
-        say='"When positives are rare I report average precision, not ROC-AUC, because ROC-AUC looks good just from ranking lots of easy negatives low."',
+        say='"When positives are rare, I report [[average precision|ROC-AUC|accuracy::It rewards finding the real cases near the top of the list.]]. ROC-AUC can look good just because there are so many [[easy negatives|real positives|thresholds::Lots of obvious no\'s are simple to rank low.]] to rank low."',
         classic=None,
     ),
     stack=stack('scikit-learn and MLflow', """from sklearn.metrics import average_precision_score, roc_auc_score
@@ -582,7 +582,7 @@ lesson(MODULE, 'calibration_table',
     title='Are the probabilities honest?',
     learn=[
         'A model that says "70% likely" should be right about 70% of the time when it says that. That is **calibration**. Many models are overconfident, and LLMs (large language models, the kind behind chatbots) asked to rate their own confidence often are.',
-        "To check, put the predictions into buckets by their probability (0-20%, 20-40%, and so on) and compare, in each bucket, the average prediction with how often the thing really happened. In a calibrated model the two numbers match. The chart of these pairs is called a **reliability diagram**.",
+        "To check, put the predictions into buckets, usually called **bins**, by their probability (0-20%, 20-40%, and so on) and compare, in each bucket, the average prediction with how often the thing really happened. In a calibrated model the two numbers match. The chart of these pairs is called a **reliability diagram**.",
         'One number for all of it is the **Brier score**. For each prediction, take the gap between the predicted probability and what happened (1 or 0), and multiply the gap by itself. The Brier score is the average of those. Lower is better, 0 is perfect, and always guessing 50% scores 0.25.',
         'Calibration matters whenever the probability itself drives a decision: auto-approve above 90%, send to a person below. An overconfident model makes that threshold mean something it does not.',
     ],
@@ -603,7 +603,7 @@ lesson(MODULE, 'calibration_table',
     angle=angle(
         pattern='Five buckets with running totals',
         text="The big idea: a model that says 70% should be right about 70% of the time, so you compare what it predicted with what happened. Your code gives each prediction a bucket number from 0 to 4 with `int(p * 5)`, like sorting mail into five slots. Three lists, each a row of five numbers, keep how many predictions each bucket has, their total, and how many really happened. Then, for each bucket that isn't empty, it makes a row with the average prediction and the share that happened.",
-        say='"Before a probability drives a decision, I check calibration: in each bucket, the average prediction should match how often the thing really happened."',
+        say='"If a model says 70%, it should be right [[70%|100%|50%::The same chance it claimed.]] of the time. I sort its predictions into [[buckets|folds|batches::Group them by how sure the model said it was.]] and check each one against how often the thing really [[happened|failed|changed::Compare the guess with what came true.]]."',
         classic=None,
     ),
     stack=stack('scikit-learn: reliability curve and Brier score', """from sklearn.calibration import calibration_curve

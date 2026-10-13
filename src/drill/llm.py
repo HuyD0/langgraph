@@ -30,6 +30,12 @@ def _credential(settings: LLMSettings):
     )
 
 
+# Without these the SDKs wait up to 10 minutes per try and retry twice, so a stuck model
+# could freeze a practice session for half an hour. Same limits as the server's router.
+MODEL_TIMEOUT = 120  # seconds
+MODEL_RETRIES = 1
+
+
 def _build_azure_openai(settings: LLMSettings) -> Any:
     """Azure OpenAI surface: ``https://<resource>.openai.azure.com`` + a deployment."""
     from langchain_openai import AzureChatOpenAI
@@ -38,6 +44,8 @@ def _build_azure_openai(settings: LLMSettings) -> Any:
         "azure_endpoint": settings.endpoint,
         "azure_deployment": settings.deployment,
         "api_version": settings.api_version,
+        "request_timeout": MODEL_TIMEOUT,
+        "max_retries": MODEL_RETRIES,
     }
 
     # Omitted entirely rather than passed as None: reasoning models reject the
@@ -74,6 +82,8 @@ def _build_azure_inference(settings: LLMSettings) -> Any:
         "endpoint": settings.endpoint,
         "credential": credential,
         "model_name": settings.deployment,
+        "request_timeout": MODEL_TIMEOUT,
+        "max_retries": MODEL_RETRIES,
     }
     if settings.temperature is not None:
         kwargs["temperature"] = settings.temperature
@@ -90,6 +100,8 @@ def _build_openai_compatible(settings: LLMSettings) -> Any:
         "model": settings.deployment,
         # Neither checks the key here, but the OpenAI client refuses to start without one.
         "api_key": "local",
+        "request_timeout": MODEL_TIMEOUT,
+        "max_retries": MODEL_RETRIES,
     }
     if settings.temperature is not None:
         kwargs["temperature"] = settings.temperature

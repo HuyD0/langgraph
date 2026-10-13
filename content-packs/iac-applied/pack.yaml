@@ -4,7 +4,7 @@
 id: iac-applied
 title: "Infrastructure as Code: Applied Practice"
 version: 0.0.1
-phase: Ship
+track: platform        # joins the Platform track, after Spacelift
 journeys:
   - id: iac-configure
     title: "Applied IaC: configure infrastructure"

@@ -27,7 +27,7 @@ cost = (input_cost + output_cost) / 1000000"""),
     angle=angle(
         pattern='Add up cost per model',
         text="The big idea: track cost per model from day one, so when the bill jumps you can see why. For each call, your code multiplies input tokens by the input price and output tokens by the output price, then divides the sum by one million. It adds that cost to its model's running total, kept in a dict, a lookup table from model name to number. `totals.get(model, 0)` starts a new model at 0. Rounding to 4 places happens only at the end.",
-        say='"I work out each call\'s cost from its input and output prices and add it to its model\'s total. I round only at the end, so errors don\'t pile up."',
+        say='"For each call I work out the cost from its [[input and output|total|average::Two kinds of tokens, each with its own price.]] prices, and add it to that model\'s total. I [[round|add|check::Cutting off extra decimal places.]] only at the end, so small errors don\'t pile up."',
         classic='group_anagrams',
     ),
     stack=stack('Databricks: tokens per endpoint from AI Gateway usage tracking', """SELECT served_entity_id,
@@ -176,7 +176,7 @@ percent = int(round(over * 100))
     angle=angle(
         pattern='Keep the overruns, biggest first',
         text='The big idea: check every estimate against the real bill each month, and look at the biggest overruns first. For each project, your code works out how far over it is: the extra spend divided by the estimate. It keeps the project only if that share is at least the threshold, and turns it into a whole percent. Then it sorts the pairs so the biggest percent comes first, with equal percents in A to Z order by name.',
-        say='"I compare each project\'s actual cost with its estimate as a percent, flag the ones over the margin, and look at the biggest first."',
+        say='"Each month I compare every project\'s real bill with its [[estimate|contract|last bill::The number you guessed at the start.]]. I flag the ones that went over by more than my margin, and look at the [[biggest|newest|smallest::Deal with the worst overrun first.]] first."',
         classic=None,
     ),
     stack=stack('Databricks: actual tokens per project from request tags', """-- each app sends its project name in
@@ -347,7 +347,7 @@ cache.pop(0)        # ['c', 'a']"""),
     angle=angle(
         pattern='A list kept in order of use',
         text='The big idea: a cache reuses stored answers to save money and time, and when full it removes the prompt used longest ago. Your code keeps the cache as a list in order of use, oldest at the front. On a hit it counts it, takes the prompt out and puts it back at the end. On a miss with a full cache, `pop(0)` first removes the front one. Finding a prompt in a list means reading it from the start: fine for 2 prompts, slow for 10,000.',
-        say='"I keep the prompts in order of use. A hit moves a prompt to the back. When the cache is full, the front one, used longest ago, goes."',
+        say='"I keep the prompts in the order they were [[used|added|written::A hit counts too, not just when it was first stored.]]. A hit moves a prompt to the back. When the cache is full, I remove the one at the [[front|back|middle::That\'s the one nobody has asked for in the longest time.]]."',
         classic=None,
     ),
     stack=stack('LangChain: an LLM cache', """from langchain_core.globals import set_llm_cache
@@ -373,7 +373,7 @@ The cache starts empty. Go through `prompts` in order:
 Return the number of hits.""",
         pattern='Keep the cache as a list in order of use: used longest ago at the front, newest at the end.',
         target='one walk through the prompts',
-        realworld='Prompt and response caching cuts cost and waiting time for repeated questions. Model providers also offer cheaper prices when many prompts start with the same opening text.',
+        realworld='Prompt and response caching cuts cost and waiting time for repeated questions. Model providers also offer prompt caching: cheaper prices when many prompts start with the same opening text (the same prefix).',
         starter="""def cache_hits(prompts, capacity):
     # your code here
     pass

@@ -37,7 +37,7 @@ traces = mlflow.search_traces(filter_string="tags.config = 'cs512-k5'")"""),
     angle=angle(
         pattern='Group by a tag, then average',
         text="The big idea: tagging every trace lets you compare versions later, like v1 against v2. Your code sorts the traces into piles by their tag. For each pile it keeps a running count and a running total of milliseconds, stored in a dict: a lookup table from the tag's value to its numbers. At the end it divides each total by its count to get the average time per version. Traces without the tag are skipped.",
-        say='"I tag every trace with its version, then group the traces by that tag and average their times, so I can compare versions side by side."',
+        say='"I [[tag|name|time::A label like v1 or v2.]] every trace with its version. Then I group the traces by that tag and [[average|add up|sort::Total time divided by how many.]] their times, so I can compare versions side by side."',
         classic='group_anagrams',
     ),
     stack=stack('MLflow tracing a LangGraph app, with tags', """mlflow.langchain.autolog()   # every LangGraph run becomes a trace
@@ -166,7 +166,7 @@ for name in ages:
             ],
             [
                 'Keep tags to a few values',
-                'Tags like config or model have only a few values, so they split your results into a few clear groups. Put unique values like request ids in span attributes instead.',
+                'Tags like config or model have only a few values (**low cardinality**), so they split your results into a few clear groups. Put unique values like request ids in span attributes instead.',
             ],
         ],
     ),
@@ -176,7 +176,7 @@ lesson(MODULE, 'slowest_chain',
     title='Reading agent traces',
     learn=[
         'A **trace** records one agent run as nested **spans**: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their **parent**; the spans directly inside it are its **children**.',
-        "To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. The answer is usually one tool or one model call.",
+        "To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. That chain of slowest steps is the **critical path**. The answer is usually one tool or one model call.",
         "An agent team makes the same kind of tree when each helper is traced under its own name: one span on top for the whole team run, one span for each helper agent, and each helper's tool calls inside its span. Following the slowest child then shows which helper held the run up.",
     ],
     example=example('Spans form a tree', """agent_run      4200 ms
@@ -193,7 +193,7 @@ lesson(MODULE, 'slowest_chain',
     angle=angle(
         pattern='Follow the slowest child down',
         text="The big idea: to find what's slow, start at the root and keep following the slowest child down. Your code first goes through the spans to find the root and build a dict, a lookup table from each parent's name to its children. Then it walks down: it adds the current span's name to the path, picks the child with the biggest `ms`, and moves to it. When a span has no children, it stops. It is like following the thickest branch of a tree out to its tip.",
-        say='"I group spans by parent, then start at the root and step into the slowest child each time. The path usually ends at the slow tool or model call."',
+        say='"To find what\'s slow, I start at the [[root|slowest leaf|newest span::The top span everything else hangs from.]] and keep stepping into the [[slowest|first|newest::The child with the biggest time.]] child. Where it stops is usually the slow tool or model call."',
         classic='num_islands',
     ),
     stack=stack('MLflow: find the slowest model call', """from mlflow.entities import SpanType
@@ -368,7 +368,7 @@ t-03       9       4  14800  61200
     angle=angle(
         pattern='Four numbers from one trace',
         text="The big idea: turn each trace into one row of a few numbers, so you can sort and filter runs like a spreadsheet. Your code starts four numbers at 0 and looks at each span once. It adds 1 to steps for a model call, and 1 to tool errors for a failed tool call. It keeps the biggest input tokens seen so far, and adds every span's input and output tokens to the total. An empty trace leaves all four at 0.",
-        say='"I turn each trace into one row: model steps, tool errors, the biggest prompt and total tokens. Then I sort the rows to find the runs worth reading."',
+        say='"I turn each trace into one [[row|chart|span::Like a line in a spreadsheet.]] of a few numbers: model steps, tool errors, biggest prompt and total tokens. Then I [[sort|delete|merge::Put the rows in order to spot the odd ones.]] the rows to find the runs worth reading."',
         classic=None,
     ),
     stack=stack('MLflow 3: one row per trace', """import mlflow
@@ -533,7 +533,7 @@ lesson(MODULE, 'context_fill',
     title='How full is the context?',
     learn=[
         "Answers get worse as the prompt gets longer, even when the right fact is in it. A model's **context window** is the most tokens it can read in one call. This drop is called **context rot**, and a model with a bigger window does not fix it.",
-        'An agent sends its whole history again on every call, so each call reads more than the last. Measure the **fill** of each call: its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).',
+        'An agent sends its whole history again on every call, so each call reads more than the last. Measure the **context usage** of each call (how full it is, the fill): its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).',
         'Three habits keep the context small and useful. Put the question after the retrieved text, and keep a short goal and plan near the end of the prompt, where models pay the most attention. Fewer, better chunks often beat more: try 5 retrieved chunks against 50 and compare the eval scores.',
     ],
     example=example('The fill grows on every call', """window: 128000 tokens
@@ -555,7 +555,7 @@ call 3: 108000 tokens  84%
     angle=angle(
         pattern='Track the biggest, note the first',
         text="The big idea: measure each call's fill, its input tokens as a percent of the window, so you can clean up before a run hits the limit. Your code works out each call's fill in order, and `enumerate` gives each call's position from 0. It keeps the biggest fill so far, like a high score. It also notes the first position over 80, and the `first_over is None` check stops later ones replacing it. At the end it rounds the biggest fill to a whole number.",
-        say='"I work out each call\'s fill as a percent of the window, keep the biggest, and note the first call over 80 percent, which is when to clean up."',
+        say='"For each call I work out how [[full|long|old::Compare what\'s in the context window with how much it can hold.]] the context window is. I keep the biggest, and note the [[first|last|biggest::You want to know when it started getting crowded.]] call over 80 percent, because that\'s when to clean up."',
         classic=None,
     ),
     stack=stack('MLflow 3: input tokens per model call', """import mlflow
@@ -685,7 +685,7 @@ lesson(MODULE, 'summary_recall',
     learn=[
         'When the context gets too full, agents **compact** it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.',
         'Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.',
-        'To test a summary, **plant facts**: put a few details you will ask about later, like a table name, into a long run. Compact it, then ask **probe questions** about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.',
+        'To test a summary, **plant facts**: put a few details you will ask about later, like a table name, into a long run. It is the same idea as a **needle-in-a-haystack** test. Compact it, then ask **probe questions** about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.',
     ],
     example=example('A probe question after compaction', """planted: goal, table, ticket_id
 summary: "Fix the HR tickets.
@@ -705,7 +705,7 @@ agent:   "I'm not sure."  (forgotten)"""),
     angle=angle(
         pattern='Check each planted fact in a set',
         text='The big idea: test a summary by planting facts, asking about them later, and counting how many the agent still gets right. Your code turns `answered` into a set, a collection built to answer "is this in it?" instantly, like a book\'s index. Then it checks each planted fact. A hit adds 1 to the count, and a miss goes on the forgotten list. Hits divided by facts planted, rounded to 2 places, is the share kept. The forgotten facts come out sorted A to Z.',
-        say='"I plant facts, compact the run, then ask about them. I report the share the agent still knows and list what it forgot."',
+        say='"I plant facts early, [[compact|restart|extend::Squash the history into a summary.]] the run, then ask about them. I report the [[share|word count|time::Facts remembered divided by facts planted.]] the agent still knows and list what it forgot."',
         classic='two_sum',
     ),
     stack=stack('LangChain: clear tool results, then summarise', """from langchain.agents import create_agent
@@ -873,7 +873,7 @@ search('weather paris')   # stop here"""),
     angle=angle(
         pattern='Count repeats in a row',
         text="The big idea: the simplest guardrail stops an agent that makes the same call again and again. Your code remembers the previous call and a count of repeats in a row. If the current call matches the previous one, the count goes up by 1. If not, the count starts again at 1. As soon as the count reaches `limit`, it returns that call's position. If that never happens, it returns -1.",
-        say='"I count how many identical calls come in a row, starting again at 1 when the call changes, and stop the agent once the count reaches the limit."',
+        say='"I count how many times the same call comes [[in a row|in total|per hour::Back to back, with nothing different between.]]. When the call changes, the count goes back to [[1|0|the limit::The new call counts itself.]], and I stop the agent once it reaches the limit."',
         classic='max_subarray',
     ),
     stack=stack('LangGraph: stop on a repeated call', """def route(state):
@@ -1009,9 +1009,9 @@ score += 1   # score is now 1""",
 lesson(MODULE, 'failure_counts',
     title='Label failures, then count',
     learn=[
-        'With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one **failure label**: a short name for what went wrong. Then count the labels and fix the biggest group first.',
-        'Use a fixed list of labels, so the same problem always gets the same name. A research list called **MAST** names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.',
-        'A person labels the first batch by hand. A judge model can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.',
+        'With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one label for its **failure mode**: a short name for what went wrong. Then count the labels and fix the biggest group first. This is called **error analysis**.',
+        'Use a fixed list of labels, so the same problem always gets the same name. A research **taxonomy** (a fixed list of categories) called **MAST** names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.',
+        'A person labels the first batch by hand. An **LLM judge** (a model that grades) can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.',
     ],
     example=example('Failed runs, counted by label', """label           count  read first
 repeated step      41  t-193, t-207
@@ -1031,7 +1031,7 @@ ignored task        9  t-402, t-417
     angle=angle(
         pattern='Group by label, count, then sort',
         text='The big idea: label each failed trace, count the labels, and fix the biggest group first. Your code sorts the failures into piles by label, kept in a dict: a lookup table from each label to its list of ids. Then it makes one row per label: the label, how many ids it has, and its first `n` ids. Last, it sorts the rows so the biggest count comes first, and labels with the same count go A to Z.',
-        say='"I group failed traces by label, count each group and keep a few example ids. Then I sort biggest first, so I fix the most common failure first."',
+        say='"I [[label|delete|rerun::Give each failure a name for what went wrong.]] each failed trace, then count each kind. I fix the [[biggest|newest|smallest::The group with the most traces.]] group first."',
         classic='group_anagrams',
     ),
     stack=stack('MLflow 3: save labels on traces, then look them up', """import mlflow
@@ -1180,7 +1180,7 @@ pets.sort(key=lambda p: (-p[1], p[0]))
             ],
             [
                 'Trusting a tool to find the broken step',
-                'A judge model can name the kind of failure fairly well, but tools that claim to find the exact step where a run went wrong are still unreliable. A person checks before you act on it.',
+                'An LLM judge can name the failure mode fairly well, but tools that claim to find the exact step where a run went wrong are still unreliable. A person checks before you act on it.',
             ],
         ],
     ),

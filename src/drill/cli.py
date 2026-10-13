@@ -252,10 +252,18 @@ def start_cmd(
             console.print(Panel(Markdown(payload["feedback"]), title=title,
                                 border_style="green" if payload["solved"] else "yellow"))
 
-    outcome = run_session(
-        build_drill_graph(), deps, edit_submission,
-        problem_id=problem, topic=topic, on_event=on_event,
-    )
+    try:
+        outcome = run_session(
+            build_drill_graph(), deps, edit_submission,
+            problem_id=problem, topic=topic, on_event=on_event,
+        )
+    except (ConnectionError, TimeoutError) as exc:
+        _model_unreachable(exc)
+    except Exception as exc:
+        # The model SDKs raise their own error types for "couldn't connect" and "timed out".
+        if "connect" in type(exc).__name__.lower() or "timeout" in type(exc).__name__.lower():
+            _model_unreachable(exc)
+        raise
 
     verb = "Solved" if outcome.solved else "Not solved"
     console.print(f"\n{verb} [bold]{outcome.problem.title}[/bold] in {outcome.attempts} "
@@ -271,6 +279,36 @@ def build_page_cmd(
     from drill.content.build import main as build_main
 
     raise typer.Exit(build_main(["--out", str(out)]))
+
+
+content_app = typer.Typer(add_completion=False, help="The curriculum's content: lessons due for a fact check, and content packs to check and preview.")
+app.add_typer(content_app, name="content")
+
+
+@content_app.command("stale")
+def content_stale(
+    days: int = typer.Option(180, help="Flag lessons last checked more than this many days ago."),
+    all_: bool = typer.Option(False, "--all", help="Also list the fresh lessons."),
+) -> None:
+    """List lessons whose facts are due for another check, with the pages to check them against."""
+    import datetime
+
+    from drill.content import modules
+    from drill.content.freshness import freshness
+
+    report = freshness(modules.load(), datetime.date.today(), days)
+    for row in report["due"]:
+        what = "content as of" if row.get("as_of") else "checked"
+        console.print(f"[yellow]due[/] {row['id']} ({row['module']}): {what} {row['checked']}, {row['age']} days ago")
+        for title, url in row["sources"]:
+            console.print(f"     {title}: {url}")
+    if all_:
+        for row in report["fresh"]:
+            what = "content as of" if row.get("as_of") else "checked"
+            console.print(f"[dim]fresh[/] {row['id']} ({row['module']}): {what} {row['checked']}")
+    sourced = sum(1 for r in report["fresh"] + report["due"] if r["sources"])
+    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {sourced} checked against sources")
+    raise typer.Exit(1 if report["due"] else 0)
 
 
 review_app = typer.Typer(add_completion=False, help="The use case review prompt: score it on cards with planted gaps before publishing a change.")
@@ -559,8 +597,6 @@ def store_push_cmd() -> None:
 
 
 
-content_app = typer.Typer(add_completion=False, help="Content packs: check them, and preview them in the page.")
-app.add_typer(content_app, name="content")
 
 
 @content_app.command("check")
@@ -612,6 +648,12 @@ app.add_typer(cloud_app, name="cloud")
 
 TARGET = typer.Option("personal", "--target", "-t", help="Which workspace, from databricks.yml: personal or work.")
 PROFILE = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target).")
+
+
+def _model_unreachable(exc: Exception) -> None:
+    console.print(f"[red]The tutor's model didn't answer ({type(exc).__name__}: {exc}).[/red]\n"
+                  "Is Ollama running (`ollama serve`), or is your hosted model set in .env?")
+    raise typer.Exit(1) from None
 
 
 def _cloud(step):
@@ -857,7 +899,7 @@ def cloud_requirements_cmd() -> None:
     """Rewrite requirements.txt from uv.lock. Run it after changing dependencies, before deploying."""
     from drill import cloud
 
-    path = cloud.requirements()
+    path = _cloud(cloud.requirements)
     console.print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
 
 if __name__ == "__main__":

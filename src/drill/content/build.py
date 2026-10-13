@@ -48,10 +48,13 @@ def _page_lesson(entry: dict) -> dict:
         "learn": list(entry["learn"]),
         "example": [ex["caption"], ex["code"]],
         "check": [q["question"], list(q["options"]), q["answer"], q["why"]],
-        "angle": [a["pattern"], a["text"], a["say"], a["classic"]],
+        "angle": [a["pattern"], a["text"], a["say"], a["classic"], a.get("cloze") or []],
     }
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
+    # [day, sources]: a lesson checked against sources, or the content date with none.
+    from drill.content.freshness import CONTENT_DATE
+    out["checked"] = [entry.get("checked") or CONTENT_DATE, [list(s) for s in entry.get("sources") or []]]
     return out
 
 
@@ -67,6 +70,11 @@ def _classic_problem(problem) -> dict:
     }
 
 
+def _track_setting(loaded: list[Module], track_modules: list[str]) -> str:
+    """The world a track's modules are set in, so a pack joining the track tells the tutor the same."""
+    return next((m.setting for m in loaded if m.id in track_modules and m.setting), "")
+
+
 def build_data(loaded: list[Module] | None = None, packs: list | None = None, assets: str = "url") -> dict:
     """Everything the page, the server and the MCP tools show, as plain data.
 
@@ -80,12 +88,19 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
     loaded = loaded if loaded is not None else modules.load()
     packs = packs or []
     lifecycle = [[n, t, list(ms)] for n, t, ms in modules.LIFECYCLE]
+    tracks = [[i, n, t, list(ms)] for i, n, t, ms in modules.TRACKS]
     loaded = list(loaded)
     for pack in packs:
-        phase = next(p for p in lifecycle if p[0] == pack.phase)
-        after = max((i for i, m in enumerate(loaded) if m.id in phase[2]), default=len(loaded) - 1)
+        # A pack's journeys go after the last module of the phase or track it joins.
+        joins = next((p[2] for p in lifecycle if p[0] == pack.phase), None)
+        if joins is None:
+            track = next(tr for tr in tracks if tr[0] == pack.phase)
+            joins = track[3]
+            for m in pack.modules:
+                m.setting = m.setting or _track_setting(loaded, joins)
+        after = max((i for i, m in enumerate(loaded) if m.id in joins), default=len(loaded) - 1)
         loaded[after + 1:after + 1] = pack.modules
-        phase[2] += [m.id for m in pack.modules]
+        joins += [m.id for m in pack.modules]
     bank: dict[str, dict] = {}
     learn: dict[str, dict] = {}
 
@@ -115,8 +130,9 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
         assert classic is None or classic in bank, f"{lesson_id}: unknown classic {classic!r}"
 
     return json.loads(json.dumps({
-        "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids} for m in loaded],
+        "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids, "planned": m.planned, "setting": m.setting} for m in loaded],
         "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in lifecycle],
+        "tracks": [{"id": i, "name": n, "text": t, "modules": ms} for i, n, t, ms in tracks],
         "lessons": lessons,
         "bank": list(bank.values()),
         "learn": learn,

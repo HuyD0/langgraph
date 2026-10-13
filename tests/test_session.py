@@ -7,6 +7,8 @@ editor, no prompts - which is the payoff for keeping the CLI out of it.
 
 from __future__ import annotations
 
+import pytest
+
 from drill.graph import build_drill_graph
 from drill.session import run_session
 
@@ -90,3 +92,32 @@ def test_each_session_gets_its_own_thread(deps):
                     problem_id="binary_search")
     assert a.problem.id != b.problem.id
     assert len(deps.progress.load()) == 2
+
+
+def test_an_error_during_a_session_reaches_you_as_itself(deps):
+    """Ollama down mid-session should say so, not turn into "generator didn't stop"."""
+
+    def broken(problem, request):
+        raise ConnectionError("Ollama is not running")
+
+    with pytest.raises(ConnectionError, match="Ollama"):
+        run_session(build_drill_graph(), deps, broken, problem_id="two_sum")
+
+
+def test_tracking_failing_at_the_end_does_not_cost_the_session(deps, monkeypatch):
+    import mlflow
+
+    ended = []
+
+    def end_run_fails(status="FINISHED"):
+        ended.append(status)
+        raise OSError("tracking server went away")
+
+    # A stand-in for MLflow: the run starts fine, then ending it fails.
+    monkeypatch.setattr(mlflow, "start_run", lambda **k: object())
+    monkeypatch.setattr(mlflow, "log_params", lambda *a, **k: None)
+    monkeypatch.setattr(mlflow, "set_tags", lambda *a, **k: None)
+    monkeypatch.setattr(mlflow, "active_run", lambda: object())
+    monkeypatch.setattr(mlflow, "end_run", end_run_fails)
+    outcome = run_session(build_drill_graph(), deps, scripted(CORRECT), problem_id="two_sum")
+    assert outcome.solved and ended == ["FINISHED"]  # it tried to end the run, failed, and the session still finished

@@ -1,8 +1,8 @@
-"""RAG with Vector Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
+"""RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
 
-MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval, then measuring which settings actually work.')
+MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
 
 lesson(MODULE, 'chunk_text',
     title='Chunking documents',
@@ -23,9 +23,9 @@ lesson(MODULE, 'chunk_text',
         why='Without overlap, an answer split across two chunks may never be retrieved in one piece.',
     ),
     angle=angle(
-        pattern='Overlapping slices along the text',
+        pattern='Sliding window with overlap',
         text='The big idea: documents are cut into small chunks for search, and chunks overlap a little so a sentence on a boundary appears whole in one of them. Your code starts at character 0 and cuts out `size` characters. Then it moves forward by `size - overlap`, so each chunk repeats the last few characters of the one before. It stops once a chunk reaches the end of the text, so no extra chunk is made. It is like roof tiles, each one covering the edge of the last.',
-        say='"I cut the text into fixed-size chunks that overlap a little, so a sentence that crosses a boundary appears whole in at least one chunk."',
+        say='"I cut the text into small [[chunks|tables|keys::These are the pieces you search and put in the prompt.]] that [[overlap|alternate|shrink::Each piece repeats the end of the one before.]] a little. That way a sentence cut at the edge still shows up [[whole|twice|shorter::You want the full sentence in at least one piece.]] in one of them."',
         classic='longest_unique_substring',
     ),
     stack=stack('Databricks Vector Search: index a table of chunks', """vsc.create_delta_sync_index(
@@ -48,7 +48,7 @@ lesson(MODULE, 'chunk_text',
 The first chunk starts at character 0. Each next chunk starts `size - overlap` characters later. Stop once a chunk includes the last character of the text. The last chunk can be shorter than `size`.
 
 Return the chunks as a list, in order. Empty text gives `[]`.""",
-        pattern='Move a fixed-size slice along the text in equal jumps, and know exactly when to stop.',
+        pattern='A sliding window: move a fixed-size slice along the text in equal jumps, and know exactly when to stop.',
         target='one pass along the text, in equal jumps',
         realworld='The first step of RAG (retrieval-augmented generation). The overlap stops a sentence from being cut in half and lost.',
         starter="""def chunk_text(text, size, overlap):
@@ -156,7 +156,7 @@ lesson(MODULE, 'dedupe_chunks',
     angle=angle(
         pattern='Clean key, keep the first',
         text="The big idea: repeated chunks waste money on embeddings and push useful chunks out of the results, so you keep only the first copy. Your code makes a key for each chunk: lowercase, with extra spaces and line breaks squeezed to single spaces. It keeps a set of keys it has already seen. A set is a collection where checking if something is in it is instant, like finding a word through a book's index. A chunk with a new key is kept exactly as written, and one with a seen key is skipped.",
-        say='"I turn each chunk into a cleaned-up key and keep a set of keys I\'ve seen, so only the first copy of each chunk survives."',
+        say='"Copies of the same chunk waste money and crowd out useful ones. I make a cleaned-up [[key|summary|embedding::A lowercase, tidied version used only for comparing.]] for each chunk and keep only the [[first|last|longest::Once you have seen it, later copies get skipped.]] copy."',
         classic='group_anagrams',
     ),
     stack=stack('Databricks SQL: keep one chunk per cleaned text', "CREATE OR REPLACE TABLE main.support.doc_chunks_clean AS\nSELECT * FROM main.support.doc_chunks\nQUALIFY row_number() OVER (\n  PARTITION BY lower(trim(regexp_replace(text, '\\\\s+', ' '))) ORDER BY chunk_id) = 1"),
@@ -283,7 +283,7 @@ top = scored[:k]"""),
     angle=angle(
         pattern='Score, sort, keep the top k',
         text="The big idea: retrieval scores every document against the question and keeps the top k, breaking ties the same way every time. Your code turns the query into a set, a collection with no repeats, of lowercase words. For each document, `&` keeps the words found in both sets, and the score is how many there are. Each score is stored as a negative number next to the document's position. Sorting smallest first then puts the highest score first, and ties go to the earlier document. It returns the first k positions.",
-        say='"I score every document against the question, sort best first and keep the top k. Ties go to the earlier document, so results stay the same every time."',
+        say='"I give every document a [[score|label|summary::A number for how well it matches the question.]] and keep the best k. When two tie, the [[earlier|shorter|later::Look at where each document sits in the list.]] one wins, so I get the same results every time."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: hybrid search', """from databricks.vector_search.client import VectorSearchClient
@@ -435,7 +435,7 @@ recall@3 = 1 found of 2 relevant = 0.5"""),
     angle=angle(
         pattern='Count what the top k found',
         text='The big idea: measure retrieval on its own, by asking what share of the right documents made it into the top k. Your code returns 0 if there are no relevant documents, so it never divides by zero. Otherwise it takes the first k retrieved ids and turns them and the relevant ids into sets, collections with no repeats. `&` keeps only the ids found in both. It divides how many were found by how many were relevant. It is like checking a shopping list against what is in your basket.',
-        say='"I measure retrieval separately from the answer: of the documents that should be found, what share made it into the top k."',
+        say='"I check retrieval on its own, before the answer. Of the documents that [[should be found|were found|came first::Start from the right documents, not from what came back.]], I count what [[share|order|score::A fraction: how many turned up, divided by how many there were.]] made it into the top k."',
         classic='two_sum',
     ),
     stack=stack('MLflow: a recall@5 scorer', """from mlflow.genai.scorers import scorer
@@ -536,7 +536,7 @@ lesson(MODULE, 'ndcg_at_k',
     title='Ranking quality: nDCG',
     learn=[
         "Recall@k asks whether the right documents made the top k. It ignores the order inside the top k, and it treats every relevant document as equally good. When order matters, for example when comparing rerankers (models that reorder search results), use **nDCG@k**.",
-        "Give each document a **grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: position 1 counts in full, position 2 about 63%, position 3 half, position 4 about 43%. Add those up to get the **DCG**.",
+        "Give each document a **relevance grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: position 1 counts in full, position 2 about 63%, position 3 half, position 4 about 43%. Add those up to get the **DCG**, short for discounted cumulative gain: \"discounted\" because lower places count less, \"cumulative gain\" because you add up the grades.",
         'Then divide by the best possible DCG for those grades, the **ideal DCG**, where the best documents come first. So nDCG runs from 0 to 1, and 1 means perfectly ordered. Grades come from people or an LLM judge, on a sample of questions.',
         'Another common metric, MRR (mean reciprocal rank), only looks at where the first relevant document sits. nDCG uses every graded document.',
     ],
@@ -557,7 +557,7 @@ nDCG@3 = 2.89 divided by 3.63
     angle=angle(
         pattern='Compare to the best order',
         text='The big idea: recall@k ignores order, so nDCG gives each document a grade and counts it less the lower it appears. Your code first lists the grades of the top `k` results, using 0 for any id with no grade. Then it builds the best possible list: all the grades sorted from highest to lowest, cut to `k`. Sorting just means putting things in order. It divides the `dcg` of your list by the `dcg` of the best list, so 1.0 means perfectly ordered. If the best list scores 0, it returns 0.0.',
-        say='"Recall@k ignores order, so I use nDCG@k. I score my ranking, then divide by the score of the best possible order, giving a number from 0 to 1."',
+        say='"Recall@k doesn\'t care about [[order|size|cost::Whether the best document is first or fifth.]], so I use nDCG. I score my list, then divide by the score of the [[best possible|average|first::Imagine every result sorted perfectly.]] order, so 1 means perfect."',
         classic=None,
     ),
     stack=stack('scikit-learn: nDCG on graded relevance', """from sklearn.metrics import ndcg_score
@@ -712,7 +712,7 @@ lesson(MODULE, 'rerank_check',
     title='Did the reranker help?',
     learn=[
         "A **reranker** takes the retriever's candidates, say the top 20, and puts them in a better order, so the top few that reach the model are the most useful. It costs time on every request, so measure what it actually does.",
-        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back: that question is **out of reach**, and the fix belongs in retrieval (chunking, embeddings, hybrid search). Only then compare the top k before and after reranking, on the same candidate lists.",
+        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back: that question is **out of reach** (a **retrieval miss**: the right document is not in the candidate set), and the fix belongs in retrieval (chunking, embeddings, hybrid search). Only then compare the top k before and after reranking, on the same candidate lists.",
         "Count four outcomes per question: **helped** (the right document entered the top k), **hurt** (it was pushed out), **no change**, and **out of reach**. If most misses are out of reach, a better reranker won't help, and you have learned where to spend effort next.",
     ],
     example=example('Before and after, on the same candidates', """question        right doc   top 3 before        top 3 after        outcome
@@ -733,7 +733,7 @@ gift-card       d40         (not in top 20)                        out of reach"
     angle=angle(
         pattern='Sort each question into four piles',
         text='The big idea: a reranker can only reorder what retrieval found, so first check whether the right document was found at all. Your code starts a dict, a lookup table from each outcome name to its count, with all four at 0. For each question, if the right document is missing from `before`, it counts as out of reach and the code moves on. Otherwise it asks two things: was it in the top `k` before, and is it in the top `k` after? Those two answers decide helped, hurt or no change.',
-        say='"First I count the questions that are out of reach, because a reranker can\'t fix what retrieval missed. Then I count helped, hurt and no change in the top k."',
+        say='"A reranker can only [[reorder|replace|find::It shuffles what is already there.]] what retrieval found. So first I count the questions where the right document was [[missing|ranked first|duplicated::No reranker can fix a document that never came back.]]. Then I count helped, hurt and no change."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: retrieve wide, rerank, keep a few', """results = index.similarity_search(query_text=question, columns=["id", "text"], num_results=20)
@@ -747,7 +747,7 @@ mlflow.log_metric("out_of_reach", int(gold not in candidates))"""),
         fn='rerank_check',
         prompt="""Your function gets two things:
 
-- `questions`: one dict per question, with three keys. `gold` is the right document id, like `"d12"`. `before` is the search results, best first, like `["d4", "d9", "d12"]`. `after` is the same ids, reordered by the reranker.
+- `questions`: one dict per question, with three keys. `gold` is the right document id (the **gold label**: the answer you know is right), like `"d12"`. `before` is the search results, best first, like `["d4", "d9", "d12"]`. `after` is the same ids, reordered by the reranker.
 - `k`: how many top results count, like `2`.
 
 Give each question one outcome, checking in this order:
@@ -861,7 +861,7 @@ Return a dict counting each outcome. Include all four, even at 0.""",
 lesson(MODULE, 'abstention_rates',
     title='Knowing when not to answer',
     learn=[
-        "Retrieval always finds *something*, even when your documents don't contain the answer. A model handed weak chunks will often answer anyway, confidently. If every question in your eval set can be answered from your documents, you never measure this.",
+        "Retrieval always finds *something*, even when your documents don't contain the answer. A model handed weak chunks will often answer anyway, confidently. If every question in your eval set can be answered from your documents, you never measure this. Declining to answer on purpose is called **abstention**.",
         "So put **unanswerable questions** in the eval set on purpose: questions on nearby topics that your documents really don't cover, written by someone who knows the documents. Then measure two rates separately. **Missed refusals**: of the unanswerable questions, how often did it answer anyway? That's the dangerous one. **Over-refusals**: of the answerable questions, how often did it decline? That's the annoying one.",
         "There is no standard name or formula for this yet; these two rates are a practical choice. They pull against each other: pushing one rate down usually pushes the other up. So decide which matters more for your app before you tune.",
     ],
@@ -880,7 +880,7 @@ answerable:   40 questions, declined 2          → over-refusals    5%"""),
     angle=angle(
         pattern='Two groups, each with its own count',
         text="The big idea: put unanswerable questions in the eval on purpose and measure two mistakes separately, because they pull against each other. Your code goes through the results one by one with four counters, running counts that go up by one. Answerable questions add to one group, plus a mistake if the app declined. Unanswerable ones add to the other group, plus a mistake if the app answered anyway. Then it divides each mistake count by its group's size. An empty group gets a rate of 0.0, so the code never divides by zero.",
-        say='"I add unanswerable questions on purpose and track two rates: missed refusals, the dangerous one, and over-refusals, the annoying one."',
+        say='"I add [[unanswerable|easy|long::There is nothing in the documents to answer these.]] questions on purpose. Then I count two mistakes [[separately|together|once::They pull against each other, so each gets its own number.]]: declining a real question, and [[answering|declining|repeating::Here the app should have said it doesn\'t know.]] one it can\'t."',
         classic=None,
     ),
     stack=stack('MLflow: a judge for declining when the context is missing', """from mlflow.genai.scorers import Guidelines
@@ -1026,7 +1026,7 @@ if not task['done']:
 lesson(MODULE, 'claim_gate',
     title='Checking each claim before release',
     learn=[
-        'Evals check quality **before** release, on a fixed set. A **claim gate** checks every answer **at request time**, before the user sees it. The model writes one short statement per line, each citing the passage it came from. A verifier (a small specialised model, or an LLM judge) labels each statement **supported**, **unsupported** or **contradicted** by its cited passage.',
+        'Evals check quality **before** release, on a fixed set. A **groundedness check** is a **guardrail** that checks every answer **at request time**, before the user sees it; this lesson calls it a claim gate. The model writes one short statement (a **claim**) per line, each citing the passage it came from. A verifier (a small specialised model such as an NLI, natural language inference, model, or an LLM judge) labels each statement **supported**, **unsupported** or **contradicted** by its cited passage.',
         'A gate then decides: **release** if every claim is supported, **revise** by dropping the unsupported claims, or **abstain** ("I couldn\'t verify an answer") if nothing is supported. A safe policy also abstains if any claim is **contradicted**, because a contradiction means the answer says the opposite of its source.',
         'Know its limits. **Supported is not relevant**: a claim can match its passage and still not answer the question. A claim with the **wrong citation** gets dropped even when it is true. **Dropping** a claim can change the meaning, for example by removing a "do not". And the verifier is a judge, so check it against human labels like any judge. The share of answers revised or abstained also makes a good monitoring signal.',
     ],
@@ -1047,8 +1047,8 @@ You can also get store credit instead.              [3]    unsupported
     ),
     angle=angle(
         pattern='Keep supported claims, then decide',
-        text='The big idea: a claim gate checks each statement at request time, before the user sees the answer. Your code goes through the verdicts once. It keeps the text of every supported claim in a list and notes if any claim is contradicted. Then it decides. Any contradiction, or nothing supported, means abstain and keep nothing. If every claim was supported, it releases them all. Otherwise it revises, keeping only the supported claims in their original order. An empty list has nothing supported, so it abstains too.',
-        say='"Before the user sees an answer, I check each claim. All supported means release, some means revise, and none supported or any contradicted means abstain."',
+        text='The big idea: a claim gate, a groundedness check, checks each statement at request time, before the user sees the answer. Your code goes through the verdicts once. It keeps the text of every supported claim in a list and notes if any claim is contradicted. Then it decides. Any contradiction, or nothing supported, means abstain and keep nothing. If every claim was supported, it releases them all. Otherwise it revises, keeping only the supported claims in their original order. An empty list has nothing supported, so it abstains too.',
+        say='"Before the user sees an answer, I check each [[claim|word|source::A single statement the answer makes.]]. All supported, I send it. Some supported, I [[keep only those|send it all|drop it all::Cut the parts with no backing.]]. Otherwise I abstain."',
         classic=None,
     ),
     stack=stack('MLflow: log the gate\'s decision on the trace', """with mlflow.start_span(name="claim_gate", span_type="GUARDRAIL") as span:
@@ -1163,7 +1163,7 @@ n == 0 or n > 5   # True""",
 lesson(MODULE, 'pick_config',
     title='Designing a RAG experiment',
     learn=[
-        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination, so you can see what each one did.',
+        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination (a **grid search**), so you can see what each one did.',
         'Hold the eval set, the judge and the answering model fixed. Log retrieval quality, answer quality, p95 latency (how slow it is: 95 out of 100 requests are faster than this) and cost for every run. Then pick a **config** (one combination of settings) using the rule you wrote down: best answer quality within the latency budget, the slowest you can accept.',
     ],
     example=example('Two settings, every combination, a 1500 ms budget', """chunk  k  quality  p95 ms
@@ -1181,7 +1181,7 @@ fast enough and best: 512, 5"""),
     angle=angle(
         pattern='Skip the slow ones, keep the best',
         text="The big idea: pick a config with the rule you wrote down: best answer quality within the latency budget. Your code goes through the rows one by one and skips any row slower than `max_ms`. It remembers the best row so far, like holding the tallest card you have seen and swapping when a taller one turns up. A row takes its place if its quality is higher, or equal with a lower cost. At the end it returns that row's `chunk_size` and `k`, or `None` if no row was fast enough.",
-        say='"I drop every config over the latency budget, then pick the highest quality. If two tie, I take the cheaper one."',
+        say='"I drop every config that\'s [[too slow|too cheap|too big::It goes over the time limit.]], then pick the one with the best [[quality|speed|price::How good the answers are.]]. If two tie, I take the [[cheaper|faster|newer::Look at what each one costs.]] one."',
         classic=None,
     ),
     stack=stack('MLflow: one evaluated run per config', """from mlflow.genai.scorers import RelevanceToQuery, RetrievalGroundedness
@@ -1330,7 +1330,7 @@ fused:   d1, d3, d9, d7"""),
     angle=angle(
         pattern='Add up points by place, then sort',
         text="The big idea: keyword and vector scores can't be compared, so hybrid search merges results by their place in each list instead. Your code goes through every list and gives each document `1 / (k + rank)` points, where rank counts from 1. It adds those points into a dict, a lookup table from each document id to its running total. A document found by both searches collects points twice and rises. Then it sorts the totals from highest to lowest, and ties fall into alphabetical order.",
-        say='"I merge keyword and vector results by rank, not raw score. Each document gets points from every list, so ones that do well in both rise to the top."',
+        say='"Keyword and vector scores can\'t be compared, so I merge the results by [[rank|score|length::Where a document sits in each list.]] instead. A document gets points from [[every list|the first list|the best score::Both searches count.]], so ones found by both rise to the top."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: hybrid query', """results = index.similarity_search(
@@ -1444,6 +1444,378 @@ pairs.sort()
             [
                 'Rerankers come after fusion',
                 'A reranker model re-scores the fused top results more carefully, at extra latency and cost.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'vector_index_setup',
+    title='Databricks Vector Search: endpoints, indexes and sync',
+    checked='2026-10-12',
+    sources=[source('Create Vector Search endpoints and indexes', 'https://docs.databricks.com/aws/en/vector-search/create-vector-search'), source('Databricks AI Search cost guide', 'https://docs.databricks.com/aws/en/ai-search/cost-management')],
+    learn=[
+        'Databricks Vector Search (now called Databricks AI Search; the code still says vector search) has two parts. An **endpoint** is the serving compute: machines kept running to answer searches. An **index** is the searchable copy of your chunks. It lives in Unity Catalog, Databricks\' catalog of data and who may use it, under a three-part name like `main.support.docs_index`, and it sits on an endpoint.',
+        'There are two endpoint types. **Standard** answers in tens of milliseconds (thousandths of a second). **Storage-optimized** takes a few hundred milliseconds but costs much less per vector when you have a lot of them. It is a good fit from around 10 million vectors.',
+        'There are two index types. A **Delta Sync** index follows a Delta table (a Databricks table) and keeps itself up to date. The table needs **Change Data Feed** turned on: a setting that keeps a log of which rows changed, so the index only updates those. Without it, creating the index fails. Databricks can make the embeddings (the lists of numbers that capture meaning) for you, called **managed embeddings**: you name an embedding model endpoint such as `databricks-gte-large-en`. Or you bring a column of your own, called **self-managed embeddings**. A **Direct Vector Access** index has no source table: you write the vectors yourself through the SDK (the Python library) or the API.',
+        'A Delta Sync index has a **sync mode**. **Triggered** updates only when you call sync, so it is the cheapest. **Continuous** updates within moments, but costs more because a streaming job runs all the time. Storage-optimized endpoints only do Triggered.',
+        'Access has two locks. In Unity Catalog you need USE CATALOG, USE SCHEMA and SELECT on the index. On the endpoint you need its own permission, CAN_USE or CAN_MANAGE, and admins can limit who may create endpoints at all. An endpoint bills for every hour it is up, even with no searches, so delete ones you no longer use. Queries can also filter on columns and run hybrid search (keywords plus meaning) with `query_type="hybrid"`, as in "Hybrid search and rank fusion".',
+    ],
+    example=example('Turn on Change Data Feed first', """-- Without this, creating a Delta Sync index fails
+ALTER TABLE main.support.doc_chunks
+SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+
+-- 200,000 chunks, no embeddings yet, an hour old is fine:
+-- delta sync, managed embeddings, standard endpoint, triggered"""),
+    check=question(
+        'You try to create a Delta Sync index on a table and it fails straight away. What is the most likely cause?',
+        [
+            'Change Data Feed is not turned on for the source table',
+            'The endpoint is Standard instead of Storage-optimized',
+            'The table has too few rows',
+        ],
+        answer=0,
+        why='A Delta Sync index reads the table\'s change log to know what to update. No Change Data Feed, no change log, so creation fails.',
+    ),
+    angle=angle(
+        pattern='Rules checked in a fixed order',
+        text='The big idea: setting up Databricks Vector Search is four choices, and each one follows from a plain fact about your data. Your code asks the questions in order. Is the source a Delta table? Then Delta Sync, otherwise Direct Vector Access. Do you already have embeddings? Then self-managed, otherwise managed (and Direct Vector Access is always self-managed). Ten million vectors or more? Then storage-optimized. Last comes sync: none for Direct Vector Access, triggered on storage-optimized, and continuous only when the data must be fresh within 5 minutes. The order matters, because an earlier answer can rule out a later option.',
+        say='"I pick the index type from where the data lives, the endpoint type from [[how many vectors|how many users|how long the text::Storage-optimized pays off around ten million of them.]] there are, and the sync mode from how fresh answers must be. [[Continuous|Triggered|Manual::The mode that runs all the time.]] sync only when minutes matter, because it [[costs more|is slower|loses data::A streaming job never stops.]]."',
+        classic=None,
+    ),
+    stack=stack('Databricks Vector Search: endpoint, index, sync', """from databricks.vector_search.client import VectorSearchClient
+
+vsc = VectorSearchClient()
+vsc.create_endpoint(name="vs-endpoint", endpoint_type="STANDARD")
+
+index = vsc.create_delta_sync_index(
+    endpoint_name="vs-endpoint",
+    index_name="main.support.docs_index",
+    source_table_name="main.support.doc_chunks",
+    pipeline_type="TRIGGERED",
+    primary_key="id",
+    embedding_source_column="text",
+    embedding_model_endpoint_name="databricks-gte-large-en",
+)
+index.sync()   # Triggered: pull in the latest table changes now"""),
+    exercise=exercise(
+        title='Plan a Vector Index',
+        topic='rag',
+        difficulty='easy',
+        fn='vector_index_setup',
+        prompt="""Your function gets one thing:
+
+- `needs`: a dict (a lookup table of names and values) describing your data, like `{"source_is_delta": True, "vectors": 200000, "has_embeddings": False, "fresh_within_minutes": 60}`.
+
+Return a list of four choices, in this order:
+
+1. **Index type**: `"delta sync"` if `source_is_delta` is true, otherwise `"direct access"`.
+2. **Embeddings**: `"self-managed"` if `has_embeddings` is true, otherwise `"managed"`. For direct access it is always `"self-managed"`, because you write the vectors yourself.
+3. **Endpoint type**: `"storage-optimized"` if `vectors` is 10000000 (ten million) or more, otherwise `"standard"`.
+4. **Sync**: `"none"` for direct access. `"triggered"` on a storage-optimized endpoint. Otherwise `"continuous"` if `fresh_within_minutes` is 5 or less, else `"triggered"`.""",
+        pattern='A few if / else checks in a fixed order, where an earlier answer can decide a later one.',
+        target='a few checks, the same however big the data is',
+        realworld='The four choices you make before creating a Databricks Vector Search index. Getting sync wrong is the usual cost surprise: Continuous runs a streaming job all day.',
+        starter="""def vector_index_setup(needs):
+    # your code here
+    pass
+""",
+        solution="""def vector_index_setup(needs):
+    if needs["source_is_delta"]:
+        index_type = "delta sync"
+        if needs["has_embeddings"]:
+            embeddings = "self-managed"
+        else:
+            embeddings = "managed"
+    else:
+        index_type = "direct access"
+        embeddings = "self-managed"
+    if needs["vectors"] >= 10000000:
+        endpoint_type = "storage-optimized"
+    else:
+        endpoint_type = "standard"
+    if index_type == "direct access":
+        sync = "none"
+    elif endpoint_type == "storage-optimized":
+        sync = "triggered"
+    elif needs["fresh_within_minutes"] <= 5:
+        sync = "continuous"
+    else:
+        sync = "triggered"
+    return [index_type, embeddings, endpoint_type, sync]
+""",
+        cases=[
+            case({'source_is_delta': True, 'vectors': 200000, 'has_embeddings': False, 'fresh_within_minutes': 60},
+                 expected=['delta sync', 'managed', 'standard', 'triggered'], sample=True),
+            case({'source_is_delta': True, 'vectors': 50000, 'has_embeddings': True, 'fresh_within_minutes': 5},
+                 expected=['delta sync', 'self-managed', 'standard', 'continuous']),
+            case({'source_is_delta': True, 'vectors': 25000000, 'has_embeddings': False, 'fresh_within_minutes': 1},
+                 expected=['delta sync', 'managed', 'storage-optimized', 'triggered']),
+            case({'source_is_delta': False, 'vectors': 300000, 'has_embeddings': False, 'fresh_within_minutes': 1},
+                 expected=['direct access', 'self-managed', 'standard', 'none']),
+            case({'source_is_delta': True, 'vectors': 10000000, 'has_embeddings': True, 'fresh_within_minutes': 30},
+                 expected=['delta sync', 'self-managed', 'storage-optimized', 'triggered']),
+        ],
+        guided="""def vector_index_setup(needs):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: index type, and who makes the embeddings.
+    if needs["source_is_delta"]:
+        index_type = "delta sync"
+        if ___:
+            embeddings = "self-managed"
+        else:
+            embeddings = "managed"
+    else:
+        index_type = "direct access"
+        embeddings = "self-managed"   # you write vectors yourself
+
+    # Step 2: ten million vectors or more -> storage-optimized.
+    if ___:
+        endpoint_type = "storage-optimized"
+    else:
+        endpoint_type = "standard"
+
+    # Step 3: sync mode. Check these rules in this order.
+    if index_type == "direct access":
+        sync = "none"
+    elif endpoint_type == "storage-optimized":
+        sync = "triggered"
+    elif ___:
+        sync = "continuous"
+    else:
+        sync = "triggered"
+
+    return [index_type, embeddings, endpoint_type, sync]
+""",
+        fills=['needs["has_embeddings"]', 'needs["vectors"] >= 10000000', 'needs["fresh_within_minutes"] <= 5'],
+        concepts=[
+            [
+                'Reading from a dict',
+                '`d["name"]` gives the value stored under that name.',
+                """needs = {'vectors': 500}
+needs['vectors']   # 500""",
+            ],
+            [
+                'if / elif / else',
+                'Python checks each condition from the top and runs the first one that is true. `elif` means "else if". The rest are skipped.',
+                """if size > 100:
+    label = 'big'
+elif size > 10:
+    label = 'medium'
+else:
+    label = 'small'""",
+            ],
+            [
+                'Comparing numbers',
+                '`>=` means "at least" and `<=` means "at most". Both include the number itself.',
+                """10 >= 10   # True
+5 <= 4     # False""",
+            ],
+            [
+                'Returning a list',
+                'Square brackets make a list. Here it holds the four answers in a fixed order.',
+                """return ['a', 'b', 'c', 'd']""",
+            ],
+        ],
+        byhand='The sample needs are: source is Delta, 200,000 vectors, no embeddings yet, an hour old is fine. Source is Delta, so the index type is "delta sync". No embeddings yet, so Databricks makes them: "managed". 200,000 is less than ten million, so "standard". Not direct access and not storage-optimized, so look at freshness: 60 minutes is more than 5, so "triggered". Return ["delta sync", "managed", "standard", "triggered"].',
+        why='A few checks, each done once, however big the index is.',
+        gotchas=[
+            [
+                'Idle endpoints still cost money',
+                'An endpoint bills while it is up, even with no searches. Delete endpoints for finished experiments.',
+            ],
+            [
+                'Two locks, two keys',
+                'A user needs Unity Catalog grants (USE CATALOG, USE SCHEMA, SELECT on the index) and CAN_USE on the endpoint. Missing either one gives a permission error.',
+            ],
+            [
+                'Continuous is not free',
+                'Continuous sync keeps a streaming job running all the time. Pick it only when answers must reflect changes within minutes; otherwise run Triggered sync on a schedule.',
+            ],
+            [
+                'Storage-optimized is slower',
+                'A few hundred milliseconds per search is fine for most chat apps, but check it against your latency budget (how long a user can wait) before switching.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'pick_search_service',
+    title='Databricks Vector Search or Azure AI Search?',
+    checked='2026-10-12',
+    sources=[source('Azure AI Search agentic retrieval', 'https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-overview'), source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'), source('Create Vector Search endpoints and indexes', 'https://docs.databricks.com/aws/en/vector-search/create-vector-search')],
+    learn=[
+        'Many companies have both Databricks Vector Search and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now also sold as part of Foundry IQ). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
+        'Databricks Vector Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: Agent Bricks, Model Serving, or the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
+        'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as an Azure AI Foundry or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and private endpoints (a private network address, so traffic never crosses the public internet).',
+        'Azure AI Search adds two extras. The **semantic ranker** is a reranker that re-scores the top results by meaning. **Agentic retrieval** splits a hard question into smaller searches and merges the results, using **knowledge bases**: these are generally available in REST API version 2026-04-01, while query planning is still in preview. Pricing is by tier, paid in **search units** (blocks of capacity), with a newer serverless option in preview. The semantic ranker and agentic retrieval are billed on top.',
+        'Running both is common: curated tables in Databricks Vector Search, SharePoint documents in Azure AI Search. Keep **one evaluation set** (see "Measuring retrieval") so you compare them on the same questions.',
+    ],
+    example=example('Two common setups side by side', """curated tables in Unity Catalog
+  -> Databricks Vector Search -> agent on Model Serving
+
+policy documents in SharePoint
+  -> Azure AI Search indexer -> app in Azure AI Foundry
+
+same eval questions -> compare recall@k for both"""),
+    check=question(
+        'The policy documents live in SharePoint and the chat app runs in Azure AI Foundry. Which service fits more naturally?',
+        ['Databricks Vector Search', 'Azure AI Search', 'Neither can do this'],
+        answer=1,
+        why='An Azure AI Search indexer can pull from SharePoint on a schedule, and the app already runs in Azure, so there is no copy into Delta tables to keep in step.',
+    ),
+    angle=angle(
+        pattern='Count the points for each side, then compare',
+        text='The big idea: the choice follows where the data lives and where the app runs, not which tool is "better". Your code walks through the facts once. A fact on the Databricks list gives Databricks Vector Search a point, a fact on the Azure list gives Azure AI Search a point, and anything else is ignored. More points wins. A tie is an honest answer too: test both on the same eval set and let the numbers decide.',
+        say='"I put the index [[next to the data|in the cheapest place|where the model is::Where do the documents already live?]] and the app. Delta tables and agents on Databricks point to Databricks Vector Search; SharePoint, Blob and apps in Azure point to [[Azure AI Search|Genie|Lakebase::Microsoft\'s search service.]]. If it is close, I test both on [[one eval set|live traffic|a demo::The same questions for both.]]."',
+        classic=None,
+    ),
+    stack=stack('Same question, two services', """# Databricks Vector Search
+results = index.similarity_search(
+    query_text="how many days of annual leave?",
+    columns=["id", "text"],
+    query_type="hybrid",
+    num_results=5,
+)
+
+# Azure AI Search (azure-search-documents)
+from azure.search.documents.models import VectorizableTextQuery
+results = search_client.search(
+    search_text="how many days of annual leave?",
+    vector_queries=[VectorizableTextQuery(
+        text="how many days of annual leave?",
+        k_nearest_neighbors=5, fields="text_vector")],
+    query_type="semantic",
+    semantic_configuration_name="default",
+    top=5,
+)"""),
+    exercise=exercise(
+        title='Pick a Search Service',
+        topic='rag',
+        difficulty='easy',
+        fn='pick_search_service',
+        prompt="""Your function gets one thing:
+
+- `facts`: a list of short strings about your project, like `["data in delta", "agent on databricks", "docs in sharepoint"]`.
+
+These facts give Databricks Vector Search a point each: `"data in delta"`, `"need uc grants"`, `"agent on databricks"`, `"sync from table"`.
+
+These facts give Azure AI Search a point each: `"docs in sharepoint"`, `"docs in blob"`, `"app outside databricks"`, `"need semantic ranker"`, `"need entra rbac"`.
+
+Any other string is ignored.
+
+Return a list of three things: `[choice, databricks_points, azure_points]`. The choice is `"databricks vector search"` if Databricks has more points, `"azure ai search"` if Azure has more, and `"either: test both on your eval set"` if they are equal.""",
+        pattern='Count matches into two totals in one pass, then compare them.',
+        target='one pass over the facts, then one comparison',
+        realworld='A quick, honest way to frame the choice in a design review: list the facts, see which side they point to, and treat a tie as a reason to measure.',
+        starter="""def pick_search_service(facts):
+    # your code here
+    pass
+""",
+        solution="""def pick_search_service(facts):
+    databricks_signs = ["data in delta", "need uc grants", "agent on databricks", "sync from table"]
+    azure_signs = ["docs in sharepoint", "docs in blob", "app outside databricks", "need semantic ranker", "need entra rbac"]
+    databricks_points = 0
+    azure_points = 0
+    for fact in facts:
+        if fact in databricks_signs:
+            databricks_points += 1
+        elif fact in azure_signs:
+            azure_points += 1
+    if databricks_points > azure_points:
+        choice = "databricks vector search"
+    elif azure_points > databricks_points:
+        choice = "azure ai search"
+    else:
+        choice = "either: test both on your eval set"
+    return [choice, databricks_points, azure_points]
+""",
+        cases=[
+            case(['data in delta', 'agent on databricks', 'docs in sharepoint'],
+                 expected=['databricks vector search', 2, 1], sample=True),
+            case(['docs in blob', 'app outside databricks', 'need semantic ranker'],
+                 expected=['azure ai search', 0, 3]),
+            case([], expected=['either: test both on your eval set', 0, 0]),
+            case(['need uc grants', 'need entra rbac', 'team likes python'],
+                 expected=['either: test both on your eval set', 1, 1]),
+            case(['sync from table', 'docs in sharepoint', 'need entra rbac', 'budget is tight'],
+                 expected=['azure ai search', 1, 2]),
+        ],
+        guided="""def pick_search_service(facts):
+    # Replace every ___ with real code, then run the tests.
+
+    databricks_signs = ["data in delta", "need uc grants", "agent on databricks", "sync from table"]
+    azure_signs = ["docs in sharepoint", "docs in blob", "app outside databricks", "need semantic ranker", "need entra rbac"]
+    databricks_points = 0
+    azure_points = 0
+
+    for fact in facts:
+        # Step 1: give a point to the side this fact belongs to.
+        if fact in databricks_signs:
+            databricks_points += 1
+        elif ___:
+            azure_points += 1
+        # any other fact is ignored
+
+    # Step 2: more points wins; equal points means test both.
+    if ___:
+        choice = "databricks vector search"
+    elif azure_points > databricks_points:
+        choice = "azure ai search"
+    else:
+        choice = ___
+
+    return [choice, databricks_points, azure_points]
+""",
+        fills=['fact in azure_signs', 'databricks_points > azure_points', '"either: test both on your eval set"'],
+        concepts=[
+            [
+                'in on a list',
+                '`x in items` is True if x is one of the items in the list.',
+                """'bo' in ['ana', 'bo']    # True
+'cy' in ['ana', 'bo']    # False""",
+            ],
+            [
+                'Counting with +=',
+                '`n += 1` adds 1 to n. Start the count at 0 before the loop.',
+                """count = 0
+count += 1   # 1""",
+            ],
+            [
+                'for loop',
+                'Visits each item of a list in turn.',
+                """for name in ['ana', 'bo']:
+    print(name)""",
+            ],
+            [
+                'if / elif / else',
+                'Runs the first branch whose condition is true. `else` catches everything left, here the tie.',
+                """if a > b:
+    winner = 'a'
+elif b > a:
+    winner = 'b'
+else:
+    winner = 'tie'""",
+            ],
+        ],
+        byhand='The sample facts are "data in delta", "agent on databricks" and "docs in sharepoint". The first two are on the Databricks list, so Databricks has 2 points. "docs in sharepoint" is on the Azure list, so Azure has 1. 2 is more than 1, so return ["databricks vector search", 2, 1].',
+        why='One look at each fact, then one comparison at the end.',
+        gotchas=[
+            [
+                'Say the full name',
+                'Always say "Azure AI Search" or "Databricks Vector Search". A bare "AI Search" could mean either company\'s product.',
+            ],
+            [
+                'Check what is in preview',
+                'Some features, such as query planning, the serverless tier and some indexers, have been in preview (not yet fully supported). Check the docs before you build on one.',
+            ],
+            [
+                'Copies drift',
+                'Copying the same documents into both services means two indexes to keep in step. Pick one home per source unless you are deliberately comparing.',
+            ],
+            [
+                'Points are a starting point',
+                'One hard rule, such as "data may not leave Azure", can outweigh several points. Use the count to start the conversation, then check the evaluation numbers.',
             ],
         ],
     ),

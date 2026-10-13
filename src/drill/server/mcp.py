@@ -16,6 +16,7 @@ the result, and for hints, reviews and questions the model call inside it.
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import os
 import time
@@ -129,12 +130,14 @@ async def hint(lesson_id: str, code: str = "", level: int = 1) -> str:
     card = _bank().card(lesson_id)
     failure = None
     if code.strip():
-        result = tutor.run_exercise(_bank().problems[lesson_id], code)
+        # Running the code can take up to the sandbox's time limit: do it on a worker thread
+        # so the web server it's mounted in keeps answering everyone else meanwhile.
+        result = await asyncio.to_thread(tutor.run_exercise, _bank().problems[lesson_id], code)
         failure = result["first_failure"] or ({"error": result["fatal_error"]} if result["fatal_error"] else None)
     context = {"feature": "hint", "door": "mcp", "lesson_id": lesson_id, "exercise_fn": card["exercise"]["function"],
                "hint_level": level, "word_limit": 80}
     answer = await _router().ask(tutor.hint_prompt(card, code, level, failure), tier="quick", context=context)
-    _store().log("hint_used", lesson_id, door="mcp", level=level)
+    await asyncio.to_thread(_store().log, "hint_used", lesson_id, door="mcp", level=level)
     return answer.text
 
 

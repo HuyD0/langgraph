@@ -207,3 +207,20 @@ def test_a_guided_tour_needs_its_image_and_boxes_inside_it(copy):
         packs.load_pack(copy)
     assert "w must be a number from 0 to 100" in str(err.value)
     assert "learn refers to 'assets/missing.svg'" in str(err.value)
+
+
+def test_a_pack_can_join_a_track_and_takes_its_setting(copy, core):
+    # The IaC pack joins the Platform track, not a phase of the path; its tutor stays in that world.
+    f = copy / "pack.yaml"
+    f.write_text(f.read_text().replace("phase: Ship", "track: platform"))
+    pack = packs.load_pack(copy, drafts=False)
+    data = build.build_data(core, [pack])
+    track = next(t for t in data["tracks"] if t["id"] == "platform")
+    assert track["modules"][-2:] == ["example-configure", "example-review"]
+    assert all("example" not in m for p in data["lifecycle"] for m in p["modules"]), "not in a phase as well"
+    by_id = {m["id"]: m for m in data["modules"]}
+    assert "Azure Databricks" in by_id["example-configure"]["setting"]
+    f.write_text(f.read_text() + "phase: Ship\n")
+    with pytest.raises(packs.PackError, match="either 'phase'"):
+        packs.load_pack(copy)
+    assert "track: platform" in (SLOTS / "pack.yaml").read_text(), "the IaC slots join the Platform track"

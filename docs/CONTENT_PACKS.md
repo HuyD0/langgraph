@@ -26,7 +26,7 @@ the lessons straight into `content-packs/iac-applied/`.
 
 ```text
 content-packs/iac-applied/
-  pack.yaml            id, title, version, the phase it joins (Ship), its journeys and their lessons
+  pack.yaml            id, title, version, where it joins (track: platform), its journeys and their lessons
   lessons/*.yaml       one lesson per file
   assets/              screenshots and diagrams the lessons name
 ```

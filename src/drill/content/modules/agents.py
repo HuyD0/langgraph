@@ -8,7 +8,7 @@ lesson(MODULE, 'run_agent',
     title='The agent loop',
     learn=[
         'An **agent** is a loop: the model picks a tool, your code runs it, the result goes back to the model, repeat until it gives a final answer.',
-        'Two rules keep it safe: a **hard step limit**, and turning tool errors into messages the model can read instead of crashes.',
+        'Two rules keep it safe: a **hard step limit** (LangGraph calls it the **recursion limit**), and turning tool errors into messages the model can read instead of crashes.',
         "Don't count on LangGraph's built-in limit. It is about 10,000 steps, so a stuck agent can spend money for a long time first. Always set your own small limit.",
     ],
     example=example('The shape of every agent', """for step in range(MAX_STEPS):
@@ -29,7 +29,7 @@ lesson(MODULE, 'run_agent',
     angle=angle(
         pattern='A loop with a hard stop',
         text='The big idea: an agent is a loop, so it needs your own small step limit, and tool errors should become messages instead of crashes. A loop repeats the same work for each item. Your code loops over only the first `max_steps` steps of the plan, so it can never run longer. A final step adds the answer and returns at once. An unknown tool adds an error line and the loop keeps going. Any other tool adds its result. If the loop ends with no final answer, it adds `"stopped"`.',
-        say='"Every agent loop gets my own small step limit. Tool errors go back as messages the model can read, so one bad call doesn\'t crash the run."',
+        say='"My agent loop has a [[step limit|time limit|word limit::A fixed number of turns, so it can never go on forever.]], so it always stops. If a tool fails, I send the error back as a [[message|log entry|silent skip::The model should be able to read what went wrong and carry on.]], so one bad call doesn\'t end the run."',
         classic=None,
     ),
     stack=stack('LangGraph: a hard step limit', """graph = builder.compile()
@@ -194,7 +194,7 @@ lesson(MODULE, 'trim_history',
     angle=angle(
         pattern='Keep the newest that fit',
         text="The big idea: a model can only read so much, so keep the system prompt and then the newest messages that fit. Your code counts the system message's words first. Then it walks backwards from the newest message, adding each one while the total stays within `max_words`. At the first message that doesn't fit, it stops, so there are no gaps in the middle. It is like packing a bag with your newest things first. Finally it flips the kept messages back to oldest first and puts the system message in front.",
-        say='"I always keep the system message, then add messages from newest backwards until the word budget runs out, stopping at the first one that doesn\'t fit."',
+        say='"I always keep the [[system message|first message|longest message::The instructions at the very top never get dropped.]]. Then I add messages starting with the [[newest|oldest|shortest::Recent things matter most, so begin there and work backwards.]] one, and I stop at the first one that doesn\'t fit."',
         classic=None,
     ),
     stack=stack('LangChain: trim_messages', """from langchain_core.messages import trim_messages
@@ -368,7 +368,7 @@ pet     chat    1      -    unknown"""),
     angle=angle(
         pattern='Compare versions, sort into three lists',
         text="The big idea: save each fact with its source's version, and compare versions in plain code before using it. Your code goes through the memories in order. It looks up each source in `current`, a dict: a lookup table from source name to its version now. If the source isn't there, the fact goes in unknown, because there is nothing to compare. If the versions match, it is fresh. Otherwise it is stale, which means check again, not wrong. Unknown stays apart because not being able to tell is not the same as fresh.",
-        say='"I save each fact with its source\'s version and compare before using it. Stale means re-read the source, not delete the fact or trust it."',
+        say='"I save each fact with its source\'s [[version|date|author::A label that changes whenever the source changes.]] and compare before I use it. If they don\'t match, the fact is [[stale|wrong|deleted::Not false, just maybe out of date.]], so I re-read the source."',
         classic=None,
     ),
     stack=stack('LangGraph store and Databricks row versions', '''# LangGraph: save the fact with its
@@ -535,8 +535,8 @@ lesson(MODULE, 'fact_history',
     title='When a new fact replaces an old one',
     learn=[
         'When a new fact replaces an old one, **overwriting** the old one loses the history. You can no longer answer "where was the office in March?", or see what the agent believed when it made an old decision. In LangGraph, `store.put` on a key that already exists replaces the whole value, with no warning.',
-        "Instead, **close** the old fact. Give each fact a `from` day (when it became true) and a `to` day (`None` while it is still true). When a new fact arrives, set the old fact's `to` to the new fact's `from`, and save the new fact next to it under its own key.",
-        'Now "what\'s true now?" means the facts whose `to` is `None`. "What was true on day 30?" means the fact that started on or before day 30 and hadn\'t ended yet. Some systems also save a second date, the day they **learned** the fact, because it can differ from the day it became true.',
+        "Instead, **close** the old fact. Give each fact a `from` day (when it became true) and a `to` day (`None` while it is still true). When a new fact arrives, set the old fact's `to` to the new fact's `from`, and save the new fact next to it under its own key. Data teams know this pattern as **SCD Type 2** (slowly changing dimension, type 2).",
+        'Now "what\'s true now?" means the facts whose `to` is `None`. "What was true on day 30?" means the fact that started on or before day 30 and hadn\'t ended yet. Some systems also save a second date, the day they **learned** the fact, because it can differ from the day it became true. Keeping both dates is called **bitemporal** data.',
         'One exception is **personal data**. When a person asks to be forgotten, deleting wins over keeping history (see the "Personal data" lesson in Security).',
     ],
     example=example('Two facts about the office', """value  from  to
@@ -559,7 +559,7 @@ day 99  ->  York"""),
     angle=angle(
         pattern='Find the fact that covers the day',
         text='The big idea: never overwrite a fact. Close it with a `to` day, so you can still ask what was true then. Your code skips any fact with a different subject, or that started after the day asked about. A fact still counts if its `to` is `None`, meaning still true, or if the day is before `to`. On the `to` day itself the fact has already ended, like a hotel stay where you are gone on checkout day. The code returns the first match, or `None` if no fact covers that day.',
-        say='"I never overwrite a fact. I close the old one with an end day and save the new one beside it, so I can answer what was true when."',
+        say='"I never [[overwrite|delete|copy::Replacing the old fact would lose its history.]] a fact. I give the old one an [[end day|start day|owner::It marks when the fact stopped being true.]] and save the new one beside it, so I can still tell what was true on any day."',
         classic=None,
     ),
     stack=stack('LangGraph store: one key per version', '''# put on an existing key REPLACES the
@@ -725,7 +725,7 @@ n is None or n > 3   # True""",
 lesson(MODULE, 'tool_schema',
     title='Tools from Unity Catalog',
     learn=[
-        "An agent's tools are described to the model as a **name**, a **description** and **parameters** (the inputs the tool takes). The model picks a tool by reading those descriptions, so they are part of your prompt.",
+        "An agent's tools are described to the model as a **name**, a **description** and **parameters** (the inputs the tool takes). The model picks a tool by reading those descriptions, so they are part of your prompt. Together they are called the **tool schema**, written in a format called JSON Schema.",
         'On Databricks, a common pattern is to write tools as **Unity Catalog functions**: governed, permissioned and reusable. `UCFunctionToolkit` turns them into LangChain tools, using the function and parameter comments as descriptions.',
     ],
     example=example('A tool as the model sees it', """{"type": "function", "function": {
@@ -743,7 +743,7 @@ lesson(MODULE, 'tool_schema',
     angle=angle(
         pattern='Fill the inside, then wrap it',
         text='The big idea: the model picks a tool by reading its name, description and parameters, so this description is part of your prompt. Your code goes through each parameter once. It turns the database type into the model\'s word using `TYPES`, a dict: a lookup table, like a small translation dictionary. Each parameter goes into `properties` with its type and comment, and its name goes into `required`, in order. Then the code wraps everything from the inside out, like nesting boxes: `parameters`, then the `"function"` dict, then the outer dict.',
-        say='"Tool descriptions are part of the prompt. I translate each parameter\'s type, add its comment, list it as required, and wrap it all in the shape models expect."',
+        say='"The model picks a tool by reading its [[description|code|logs::It sees words about the tool, not how it\'s built.]], so that\'s part of my prompt. I list each parameter with its type and comment, mark it [[required|optional|hidden::The model must always fill these in.]], and wrap it in the shape models expect."',
         classic=None,
     ),
     stack=stack('databricks_langchain: Unity Catalog functions as tools', """from databricks_langchain import ChatDatabricks, UCFunctionToolkit
@@ -946,7 +946,7 @@ names.append('Ana')   # ['Ana']""",
 lesson(MODULE, 'tool_pairs',
     title='Tool calls and results',
     learn=[
-        'When a model calls tools, each call gets an **id**, and each result must reference it. Model APIs reject a conversation where a call has no matching result.',
+        'When a model calls tools, each call gets an **id**, and each result must reference it. Model APIs reject a conversation where a call has no matching result. A call left without a result is often called a **dangling tool call**.',
         'This breaks most often after trimming history, or when a tool crashes and no result is sent. Send the error as the result instead.',
     ],
     example=example('A call and its result', """{'role': 'assistant', 'tool_calls': [{'id': 'call_1', 'name': 'search'}]}
@@ -964,7 +964,7 @@ lesson(MODULE, 'tool_pairs',
     angle=angle(
         pattern='A waiting list of open calls',
         text="The big idea: every tool call needs a matching result, or the model's service rejects the whole chat. Your code keeps a list called `waiting`. Each time it sees a tool call, it adds that call's id to the list. Each time it sees a tool result, it removes the id that result answers. It is like a coat check, where each ticket waits until its coat is collected. Whatever ids are still waiting at the end never got a result, and they are already in the order the calls were made.",
-        say='"I keep a list of open call ids, and each result removes one. Anything still open at the end has no result, and the API would reject that chat."',
+        say='"Every tool call needs a matching [[result|retry|summary::The answer that comes back after the tool runs.]]. I keep a list of open call ids and cross one off each time an answer arrives. Anything left over means the API would [[reject|accept|ignore::The service refuses a chat with unanswered calls.]] the chat."',
         classic='valid_parentheses',
     ),
     stack=stack('LangGraph: ToolNode answers every tool call', """from langgraph.prebuilt import ToolNode
@@ -1105,7 +1105,7 @@ cost per success: $0.90 total / 2 successes   -> $0.45"""),
     angle=angle(
         pattern='Running totals, then divide',
         text="The big idea: one number isn't enough for an agent, so track success rate, steps and cost per success. Your code goes through the runs once, keeping three running totals. Every run adds its cost, failed ones too. Successful runs also add one win and their steps. Then it divides: wins by all runs for the success rate, steps by wins for the average steps, and total cost by wins for the cost per success. If nothing succeeded, the last two are `None`, because you can't divide by zero.",
-        say='"I report success rate, average steps on successful runs, and cost per success, which spreads the cost of failed runs over the ones that worked."',
+        say='"I report how often the agent [[succeeds|runs|answers::Out of all runs, how many actually worked.]], how many steps the good runs take, and the cost per success. That cost includes the [[failed runs|fast runs|first run::You still pay for the tries that didn\'t work.]], so the price is honest."',
         classic=None,
     ),
     stack=stack('MLflow: an LLM judge for task success', 'from mlflow.genai.judges import make_judge\ntask_done = make_judge(\n    name="task_success",\n    instructions="Did the agent complete the user\'s task?\\nUser: {{ inputs }}\\nAgent: {{ outputs }}\\nAnswer yes or no.",\n)\nmlflow.genai.evaluate(data=tasks, predict_fn=run_agent, scorers=[task_done])'),
@@ -1238,7 +1238,7 @@ pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
     angle=angle(
         pattern="Count 'at least once' and 'every time'",
         text="The big idea: one try per task hides how unreliable an agent is, so you run each task several times and count two things. Your code goes through the tasks one by one. For each task, Python's `any` says whether at least one try worked, and `all` says whether every try worked. Dividing each count by the number of tasks gives pass@k and pass^k. The second is the one users feel, because each user only gets one try.",
-        say='"I run each task several times and report how often it worked at least once and how often it worked every time. Users feel the second number."',
+        say='"I run each task several times. I count how often it worked [[at least once|on average|the first time::One good try out of many is enough for this count.]] and how often it worked [[every time|most times|sometimes::No try is allowed to fail.]]. Users feel the second number, because they only get one try."',
         classic=None,
     ),
     stack=stack('MLflow: log both rates for an agent version', """with mlflow.start_run(run_name="agent-v7-k3"):
@@ -1356,7 +1356,7 @@ tool selection 2/2 = 1.0      arguments 1/2 = 0.5"""),
     angle=angle(
         pattern='Compare the lists side by side',
         text='The big idea: an agent can pick the right tool with the wrong argument, so score tool choice and arguments separately. Your code lines up the two lists and compares first with first, second with second, for as many places as both lists have. If the names match, that counts as a right tool. If the args match as well, it also counts as right args. Then it divides both counts by the length of the longer list. So a missing or extra call counts as wrong, like a blank answer on a test.',
-        say='"When I know the right calls, I score tool choice and arguments separately, and I count missing or extra calls as wrong."',
+        say='"When I know the right calls, I score the [[tool choice|tool speed|tool count::Did it pick the right tool?]] and the [[arguments|answers|timings::What it passed into the tool.]] separately. A missing or extra call counts as [[wrong|half right|skipped::Like leaving a test question blank.]]."',
         classic=None,
     ),
     stack=stack('MLflow: a code scorer over the agent\'s tool calls', """from mlflow.genai.scorers import scorer
@@ -1503,7 +1503,7 @@ subset     ✗  (check_policy was not expected)"""),
     angle=angle(
         pattern='Four ways to compare a path',
         text='The big idea: the path an agent takes matters, and you choose how strict to be for each task. Your code looks at `mode` and runs one test. Strict asks whether the two lists are exactly equal. Unordered sorts both lists, putting them in order, then compares them, so the same tools the same number of times will pass. Superset checks that every expected tool shows up in `actual`. Subset checks that every tool in `actual` was on the expected list. Any other mode returns `False`.',
-        say='"I pick the match mode per task: strict when order is a rule, superset when extra lookups are fine, subset when an unexpected tool is the risk."',
+        say='"I pick how strict to be for each task. I use strict when the [[order|cost|speed::Sometimes step one must come before step two.]] is a rule, superset when [[extra|fewer|slow::Additional lookups do no harm here.]] lookups are fine, and subset when a surprise tool is the risk."',
         classic=None,
     ),
     stack=stack("AgentEvals: the same modes on LangChain message lists", """from agentevals.trajectory.match import create_trajectory_match_evaluator
@@ -1627,7 +1627,7 @@ sorted(['a', 'b'])   # ['a', 'b']
 lesson(MODULE, 'compare_designs',
     title='Comparing agent designs',
     learn=[
-        'There are several ways to build the same agent. **ReAct**: think, call a tool, look, repeat. **Plan then execute**: write the plan first, then follow it.',
+        'There are several ways to build the same agent. **ReAct**: think, call a tool, look, repeat. **Plan-and-execute**: write the plan first, then follow it.',
         'A **supervisor** is a main agent whose tools are specialist helper agents. In LangGraph each design is a different graph. Which is better depends on your tasks, so measure it instead of guessing.',
         'Run every design on **the same tasks**, several times each. Compare how often a run succeeds, and how many tasks succeed on **every** try (the pass^k idea). Also compare the **cost per success**: the cost of all runs, failed ones included, spread over the runs that worked.',
         'Then read the tasks one design fails and another passes, trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
@@ -1650,7 +1650,7 @@ supervisor          83%          70%             $0.090
     angle=angle(
         pattern='Group by design, then work out rates',
         text="The big idea: measure agent designs on the same tasks instead of guessing, and compare success rate and cost per success. Your code sorts the runs into piles by design. For each pile it keeps three running numbers: runs, wins and cost. They live in a dict, a lookup table from the design's name to its numbers. At the end it divides wins by runs for the success rate. It divides cost by wins for the cost per success, or gives `None` if that design never succeeded.",
-        say='"I run every design on the same tasks and compare success rate and cost per success, with the cost of failed runs included."',
+        say='"I run every design on the [[same tasks|easiest tasks|its own tasks::A fair race uses one course for everyone.]]. Then I compare success rate and cost per success, with the cost of [[failed runs|setup|training::You pay for every try, even ones that didn\'t work.]] counted in."',
         classic='group_anagrams',
     ),
     stack=stack('LangChain: build a supervisor, then compare', '''from langchain.agents import create_agent
@@ -1860,7 +1860,7 @@ run 2 with "approve": issue_refund → email_customer → done"""),
     angle=angle(
         pattern='Stop at the first unapproved risky step',
         text="The big idea: some agent actions need a person to say yes, so the agent pauses there and resumes later. Your code goes through the steps in order. A step that isn't risky runs and is added to `ran`. A risky step runs only if its name is in `approved`. At the first risky step nobody approved, the code returns right away with what ran so far and the name of the step it paused at. If it reaches the end, `paused_at` is `None`.",
-        say='"Risky steps pause for a person. LangGraph saves the state under a thread id, and the run picks up from that exact point once someone approves."',
+        say='"Risky steps [[pause|fail|get skipped::They wait instead of running.]] until a person says yes. LangGraph saves the state under a [[thread id|password|file name::A label that lets you find this one run again.]], so the run picks up from that exact point once someone approves."',
         classic=None,
     ),
     stack=stack('LangGraph: interrupt and resume', """from langgraph.types import interrupt, Command
@@ -1968,7 +1968,7 @@ names.append('Ana')   # ['Ana']""",
         gotchas=[
             [
                 'Steps before the pause may run twice',
-                'When LangGraph resumes, the node containing interrupt() runs again from its start. Put actions that change things, like sending an email, after the interrupt, or make them safe to run twice.',
+                'When LangGraph resumes, the node containing interrupt() runs again from its start. Put actions that change things, like sending an email, after the interrupt, or make them **idempotent** (safe to run twice).',
             ],
             [
                 "Show the person what they're approving",
@@ -1982,8 +1982,8 @@ lesson(MODULE, 'next_action',
     title='An agent that runs code',
     learn=[
         'Code a model writes often fails on the first try. A **coding agent** runs its code, reads the error, writes a fix and runs it again. Each run ends with an **exit code**: 0 means no error, and anything else means it failed.',
-        'Give the loop a **round limit**: the most tries it gets, such as 3. Without one, a stuck agent keeps spending money.',
-        "Some errors are **setup errors**, not bugs in the code, so rewriting the code rarely helps. A package that isn't installed (code someone else wrote, like pandas) or a **permission error** (the code isn't allowed to touch that file) fails the same way every round. Send those to a person instead of retrying.",
+        'Give the loop a **retry limit** (often called max retries): the most rounds it gets, such as 3. Without one, a stuck agent keeps spending money.',
+        "Some errors are **environment errors** (problems with the setup), not bugs in the code, so rewriting the code rarely helps. Teams call these **non-retryable** errors. A missing **dependency** (a package of code someone else wrote, like pandas, that isn't installed) or a **permission error** (the code isn't allowed to touch that file) fails the same way every round. Send those to a person instead of retrying.",
         "Run the code in a **sandbox**: a locked-down computer of its own, with a time limit and no internet, so a bad run can't touch real data. When the agent says \"done\", check the real result yourself: run the tests, or read the table. Agents often report success that never happened.",
     ],
     example=example('Four separate runs, with 3 rounds allowed', """exit  round  last line         next
@@ -2003,8 +2003,8 @@ lesson(MODULE, 'next_action',
     ),
     angle=angle(
         pattern='Rules checked in order',
-        text="The big idea: a coding agent retries after errors, but it needs a round limit, and setup errors should go to a person. Your code checks rules in order and stops at the first match. Exit code 0 means done. Reaching the round limit means stop, because there are no tries left. A permission error or a missing package means ask a person, since rewriting the code won't help. Anything else is a bug the agent can try to fix. The order matters: a run that passes on its last round still returns done.",
-        say='"Success goes to a real check, the round limit stops the loop, setup and permission errors go to a person, and only code errors get another try."',
+        text="The big idea: a coding agent retries after errors, but it needs a retry limit, and environment errors should go to a person. Your code checks rules in order and stops at the first match. Exit code 0 means done. Reaching the retry limit means stop, because there are no tries left. A permission error or a missing package means ask a person, since rewriting the code won't help. Anything else is a bug the agent can try to fix. The order matters: a run that passes on its last round still returns done.",
+        say='"I stop when the [[check passes|code looks right|agent says done::Trust a real test, not a feeling.]] or the retry limit is hit. Permission and missing-package errors go to a [[person|retry|log::Rewriting the code won\'t fix these.]]. Only real code bugs get another try."',
         classic=None,
     ),
     stack=stack('LangGraph: route after each run', '''# startswith can take a tuple: it is
@@ -2094,7 +2094,7 @@ Check these rules in order, and return at the first one that matches:
     if ___:
         return "stop"
 
-    # Step 3: setup errors go to a person.
+    # Step 3: environment errors go to a person.
     if last_line.startswith("PermissionError"):
         return "ask"
     # Same again, for "ModuleNotFoundError".
@@ -2140,7 +2140,7 @@ Check these rules in order, and return at the first one that matches:
         why='A few checks one after another, with nothing to loop over.',
         gotchas=[
             [
-                'Retrying setup errors',
+                'Retrying environment errors',
                 'A package that isn\'t installed or a blocked file fails the same way every round, so the agent burns all its rounds. Worse, it may "fix" it by working around the block. Send these to a person.',
             ],
             [
@@ -2168,7 +2168,7 @@ tool_args '{"order_id": ' · tool_args '"A-1042"}' · tool_end"""),
     angle=angle(
         pattern='Join the pieces as they arrive',
         text="The big idea: streaming sends the answer in small pieces, so your code must put them back together and only use a tool call once it is complete. Your code goes through the events one by one. Text pieces are added onto one long string. A tool start remembers the tool's name and begins an empty argument string. Argument pieces are added onto that. A tool end saves the finished name and arguments to `calls`, then clears them. It is like writing down a phone number someone reads out one digit at a time.",
-        say='"I join streamed pieces as they arrive, and I only treat a tool call as ready when its end event comes, so I never use half the arguments."',
+        say='"The answer streams in small pieces, so I [[join|drop|sort::Put the bits back together as they come.]] them as they arrive. I only use a tool call once its [[end event|first piece|name::The signal that says the call is complete.]] comes, so I never act on half the arguments."',
         classic=None,
     ),
     stack=stack('LangGraph: stream tokens as they arrive', """for chunk, metadata in graph.stream(inputs, stream_mode="messages"):
