@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 130 lessons in 17 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 130 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 132 lessons in 20 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 132 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -12,6 +12,7 @@ Each module is tagged with the stage of an AI project it belongs to. The tags ar
 - **Evaluate**: Score runs on the same eval set; compare quality, cost and latency.
 - **Ship**: Register, promote and canary with a rule you wrote down first.
 - **Monitor**: Watch real traffic in traces and feed failures back into evals.
+- **Platform track** (a separate track beside the path, numbered P1.1 and so on): Azure Databricks as code: the workspace, Terraform and Spacelift work behind an ML platform.
 
 ## Use case and fit (stage: Frame)
 
@@ -1704,11 +1705,198 @@ Tag every trace with the prompt version it used. Then you can compare versions o
 - **Exercise:** Promote a Prompt Version, writing `prompt_rollout`. Approach: Count per version in one walk, then apply a rule you wrote down before looking at the numbers.
 - **Explain:** the pattern is Count passes per version, then compare. Why this pattern: The big idea: tag every trace with its prompt version, then decide with a rule you wrote down first: promote, keep testing, or roll back. Your code keeps two dicts, small lookup tables from a version name to a number. One counts traces and one counts passes. If the new version has fewer than `min_traces` traces, it returns `"keep"` before any dividing. Otherwise it works out both pass rates as percents and checks the rules in order: promote, then roll back, then keep. What to say: "I tag each trace with its prompt version and compare pass rates once the new one has enough traces. I promote only on a gain I set in advance."
 
-## ML platform on Azure Databricks (stage: Ship)
+## Tracing and AgentOps (stage: Monitor)
 
-The Terraform and Spacelift work behind the platform.
+Traces that answer your questions, slow steps and runaway agents.
 
-### 106. What a Terraform plan really says (`summarize_plan`)
+### 106. Designing traces for experiments (`summarize_by_tag`)
+
+A trace records one request: every model call, retrieval and tool, with timings, inputs, outputs and token counts. Design traces before you need them.
+Tag every trace with the things you'll want to split your results by later (for example, comparing two models): config, model, prompt version, environment. A trace is made of spans, one for each step inside it (a model call, a retrieval, a tool). Mark spans with their type (RETRIEVER, TOOL, CHAT_MODEL) so evaluation and analysis can find them, and put per-request details in span attributes (extra details saved on a span).
+Give each version you compare a name with `mlflow.set_active_model(name=...)`, like `rag-rerank-v2`. Every trace and eval run is then linked to that version, which is what lets you line up two versions question by question and read their regressions and improvements. This module sits under Monitor, but designing your traces happens earlier, in Build and trace, where you build the app and record what it does from the first line: if it isn't in the traces when they're created, no analysis later can recover it.
+
+- **Check:** You want to compare two configs on last week's production traffic. What must already be true? Right answer: Each trace was tagged with its config when it was created. Why: If nothing recorded which config served each request, you can't work it out later, so tag traces when they are created. Decide the tags before the experiment.
+- **Exercise:** Group Traces by Tag, writing `summarize_by_tag`. Approach: Group by a key: keep a running count and total for each value, then divide once at the end.
+- **Explain:** the pattern is Group by a tag, then average. Why this pattern: The big idea: tagging every trace lets you compare versions later, like v1 against v2. Your code sorts the traces into piles by their tag. For each pile it keeps a running count and a running total of milliseconds, stored in a dict: a lookup table from the tag's value to its numbers. At the end it divides each total by its count to get the average time per version. Traces without the tag are skipped. What to say: "I tag every trace with its version, then group the traces by that tag and average their times, so I can compare versions side by side."
+- **Spot the gotcha:** "Log what the model saw". When an answer is wrong, you need the exact prompt, retrieved chunks and tool calls to find out why. That's what tracing tools like MLflow and LangSmith are for. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  answer = chain.invoke(q)
+  ```
+
+  The fix:
+
+  ```
+  mlflow.langchain.autolog()
+  answer = chain.invoke(q)   # full trace saved
+  ```
+
+### 107. Reading agent traces (`slowest_chain`)
+
+A trace records one agent run as nested spans: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their parent; the spans directly inside it are its children.
+To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. That chain of slowest steps is the critical path. The answer is usually one tool or one model call.
+An agent team makes the same kind of tree when each helper is traced under its own name: one span on top for the whole team run, one span for each helper agent, and each helper's tool calls inside its span. Following the slowest child then shows which helper held the run up.
+
+- **Check:** A parent span took 4200 ms. Its children ran one after another and took 600, 3100 and 400 ms. How long did the parent take on its own? Right answer: 100 ms. Why: Parent time includes its children's time. The children add up to 4100 ms (600 plus 3100 plus 400), and 4200 minus 4100 leaves 100 ms of its own.
+- **Exercise:** Find the Slow Path in a Trace, writing `slowest_chain`. Approach: List each span's children in one pass, then walk down from the root, always into the slowest child.
+- **Explain:** the pattern is Follow the slowest child down. Why this pattern: The big idea: to find what's slow, start at the root and keep following the slowest child down. Your code first goes through the spans to find the root and build a dict, a lookup table from each parent's name to its children. Then it walks down: it adds the current span's name to the path, picks the child with the biggest `ms`, and moves to it. When a span has no children, it stops. It is like following the thickest branch of a tree out to its tip. What to say: "I group spans by parent, then start at the root and step into the slowest child each time. The path usually ends at the slow tool or model call."
+
+### 108. Traces to a table (`trace_table_row`)
+
+Reading traces one at a time stops working after a few dozen runs. Turn each trace into one row of a few numbers: steps (model calls), tool errors, the biggest prompt and total tokens. Then sort and filter the rows, like a spreadsheet, to find the runs worth reading.
+Rows with many steps or many tool errors are the runs to open first. The biggest prompt (the most input tokens in one call) shows how close a run came to filling the context window, the most a model can read in one call.
+On Databricks, production traces can be stored as tables in Unity Catalog, so you can query them with SQL. Keep every trace (with personal data hidden first, as in Security), and save money by judging only a sample of them, say 1 in 10. Recording fewer traces can throw away exactly the failing runs you need.
+
+- **Check:** Your agent handles 5,000 runs a day, and judging every trace with a model costs too much. What should you do? Right answer: Record every run, and judge only 1 in 10. Why: Runs you never record are gone, failures included, and many failures get no complaint. Keep every trace, and save money by judging a sample.
+- **Exercise:** Turn a Trace into a Row, writing `trace_table_row`. Approach: One pass over the spans, updating two counts, a running biggest and a running total as you go.
+- **Explain:** the pattern is Four numbers from one trace. Why this pattern: The big idea: turn each trace into one row of a few numbers, so you can sort and filter runs like a spreadsheet. Your code starts four numbers at 0 and looks at each span once. It adds 1 to steps for a model call, and 1 to tool errors for a failed tool call. It keeps the biggest input tokens seen so far, and adds every span's input and output tokens to the total. An empty trace leaves all four at 0. What to say: "I turn each trace into one row: model steps, tool errors, the biggest prompt and total tokens. Then I sort the rows to find the runs worth reading."
+
+### 109. How full is the context? (`context_fill`)
+
+Answers get worse as the prompt gets longer, even when the right fact is in it. A model's context window is the most tokens it can read in one call. This drop is called context rot, and a model with a bigger window does not fix it.
+An agent sends its whole history again on every call, so each call reads more than the last. Measure the context usage of each call (how full it is, the fill): its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).
+Three habits keep the context small and useful. Put the question after the retrieved text, and keep a short goal and plan near the end of the prompt, where models pay the most attention. Fewer, better chunks often beat more: try 5 retrieved chunks against 50 and compare the eval scores.
+
+- **Check:** Your agent gets worse on long runs, even though the right fact is in its prompt. A teammate suggests a model with a window twice as big. What happens? Right answer: It still slips as the prompt grows, so keep the context short. Why: Quality drops as the prompt grows, whatever the window size. The fix is a shorter, more focused context, not more room.
+- **Exercise:** Watch the Context Fill Up, writing `context_fill`. Approach: Work out each fill in one walk. Keep the biggest, and note the first index over 80.
+- **Explain:** the pattern is Track the biggest, note the first. Why this pattern: The big idea: measure each call's fill, its input tokens as a percent of the window, so you can clean up before a run hits the limit. Your code works out each call's fill in order, and `enumerate` gives each call's position from 0. It keeps the biggest fill so far, like a high score. It also notes the first position over 80, and the `first_over is None` check stops later ones replacing it. At the end it rounds the biggest fill to a whole number. What to say: "I work out each call's fill as a percent of the window, keep the biggest, and note the first call over 80 percent, which is when to clean up."
+
+### 110. What a summary forgets (`summary_recall`)
+
+When the context gets too full, agents compact it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.
+Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.
+To test a summary, plant facts: put a few details you will ask about later, like a table name, into a long run. It is the same idea as a needle-in-a-haystack test. Compact it, then ask probe questions about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.
+
+- **Check:** After you add a summary step, runs are shorter, but the agent sometimes rewrites a table it already wrote. Which test catches this? Right answer: Plant facts, compact, then ask probe questions. Why: A summary's length and the model's own opinion say nothing about what was lost. Probe questions check whether the agent still knows the facts it needs to finish.
+- **Exercise:** Score a Summary with Planted Facts, writing `summary_recall`. Approach: Look each planted fact up in a set of the answers. Count the hits and collect the misses.
+- **Explain:** the pattern is Check each planted fact in a set. Why this pattern: The big idea: test a summary by planting facts, asking about them later, and counting how many the agent still gets right. Your code turns `answered` into a set, a collection built to answer "is this in it?" instantly, like a book's index. Then it checks each planted fact. A hit adds 1 to the count, and a miss goes on the forgotten list. Hits divided by facts planted, rounded to 2 places, is the share kept. The forgotten facts come out sorted A to Z. What to say: "I plant facts, compact the run, then ask about them. I report the share the agent still knows and list what it forgot."
+- **Spot the gotcha:** "Tell the summary what it must keep". A plain "summarise the chat" drops the exact details the agent needs next, like which table it wrote to. List the sections the summary must keep, then test it with a question such as "Which table did we write to?" The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  SUMMARY_PROMPT = """Summarise the chat.
+  {messages}"""
+  ```
+
+  The fix:
+
+  ```
+  SUMMARY_PROMPT = """Summarise under:
+  - Goal
+  - Decisions made
+  - Exact table names and file paths
+  - IDs and error codes
+  - Open tasks and the next step
+  {messages}"""
+  ```
+
+### 111. Guardrails for agents (`detect_loop`)
+
+Agents in production need guardrails: limits that stop a run before it does damage or burns money. The simplest catches the same call repeated again and again.
+Production systems also cap total steps, tokens and time, and tell the model why it was stopped.
+In LangGraph, the step cap is `recursion_limit`. Its default in langgraph 1.2.11 is 10,007 steps, far too many to stop a stuck agent early. Always pass your own small limit, like 25.
+
+- **Check:** An agent alternates between two calls forever: A, B, A, B. Does a "same call 3 times in a row" check catch it? Right answer: No, so you also need a total step limit. Why: No call repeats back to back, so you need other limits too.
+- **Exercise:** Stop a Looping Agent, writing `detect_loop`. Approach: Keep a count of identical calls in a row; start again at 1 when the call changes.
+- **Explain:** the pattern is Count repeats in a row. Why this pattern: The big idea: the simplest guardrail stops an agent that makes the same call again and again. Your code remembers the previous call and a count of repeats in a row. If the current call matches the previous one, the count goes up by 1. If not, the count starts again at 1. As soon as the count reaches `limit`, it returns that call's position. If that never happens, it returns -1. What to say: "I count how many identical calls come in a row, starting again at 1 when the call changes, and stop the agent once the count reaches the limit."
+
+### 112. Label failures, then count (`failure_counts`)
+
+With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one label for its failure mode: a short name for what went wrong. Then count the labels and fix the biggest group first. This is called error analysis.
+Use a fixed list of labels, so the same problem always gets the same name. A research taxonomy (a fixed list of categories) called MAST names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.
+A person labels the first batch by hand. An LLM judge (a model that grades) can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.
+
+- **Check:** You have 300 failed runs and one week to improve the agent. What should you do first? Right answer: Label a sample, count the labels, fix the biggest group. Why: Counting labels shows which single fix helps the most runs. Going one by one, or rewriting everything, uses up the week without knowing what mattered.
+- **Exercise:** Count Failures by Label, writing `failure_counts`. Approach: Group the ids by label in a dict of lists, make one row per label, then sort by count with the label as the tie-break.
+- **Explain:** the pattern is Group by label, count, then sort. Why this pattern: The big idea: label each failed trace, count the labels, and fix the biggest group first. Your code sorts the failures into piles by label, kept in a dict: a lookup table from each label to its list of ids. Then it makes one row per label: the label, how many ids it has, and its first `n` ids. Last, it sorts the rows so the biggest count comes first, and labels with the same count go A to Z. What to say: "I group failed traces by label, count each group and keep a few example ids. Then I sort biggest first, so I fix the most common failure first."
+
+## LLMOps (stage: Monitor)
+
+Cost and caching in production.
+
+### 113. Tokens and cost (`token_cost`)
+
+LLM providers bill per token (roughly three quarters of a word), with separate prices for input and output. Output usually costs several times more. Prices are quoted in dollars per million tokens.
+Track cost per model, per feature and per user from day one. When the bill jumps, that breakdown tells you why.
+
+- **Check:** Your bill doubled but the number of requests didn't change. What should you check first? Right answer: Tokens per request, especially output tokens and agent steps. Why: Same requests, more cost means more tokens per request: longer prompts, longer answers or more agent steps.
+- **Exercise:** Cost per Model, writing `token_cost`. Approach: Group by model: add each call's cost to that model's total in a dict.
+- **Explain:** the pattern is Add up cost per model. Why this pattern: The big idea: track cost per model from day one, so when the bill jumps you can see why. For each call, your code multiplies input tokens by the input price and output tokens by the output price, then divides the sum by one million. It adds that cost to its model's running total, kept in a dict, a lookup table from model name to number. `totals.get(model, 0)` starts a new model at 0. Rounding to 4 places happens only at the end. What to say: "I work out each call's cost from its input and output prices and add it to its model's total. I round only at the end, so errors don't pile up."
+
+### 114. Estimate against actual (`estimate_vs_actual`)
+
+Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.
+So each month, set the estimate (what the plan said a project would cost) next to the actual (what it really cost). Percent over is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.
+When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a request tag does this, and the usage table records it next to each request's tokens.
+Flag only projects over by a set margin, such as 20 percent, and look at the biggest first. Then replace the guess in the plan with the measured number.
+
+- **Check:** Project A planned $100 a month and spent $150. Project B planned $1,000 and spent $1,200. Whose estimate was the worse guess for its size? Right answer: A, because it spent 50 percent more than planned. Why: Percent over compares each project with its own estimate. A is 50 percent over and B only 20 percent, even though B's extra dollars are bigger.
+- **Exercise:** Projects Over Estimate, writing `estimate_vs_actual`. Approach: Filter and rank: work out each project's percent over, keep the ones at or above the threshold, then sort biggest first with the name breaking ties.
+- **Explain:** the pattern is Keep the overruns, biggest first. Why this pattern: The big idea: check every estimate against the real bill each month, and look at the biggest overruns first. For each project, your code works out how far over it is: the extra spend divided by the estimate. It keeps the project only if that share is at least the threshold, and turns it into a whole percent. Then it sorts the pairs so the biggest percent comes first, with equal percents in A to Z order by name. What to say: "I compare each project's actual cost with its estimate as a percent, flag the ones over the margin, and look at the biggest first."
+
+### 115. Caching responses (`cache_hits`)
+
+Many requests repeat. A cache returns a stored answer instead of calling the model again, which saves money and time. It looks answers up by a key, usually the prompt text.
+Caches have a size limit. LRU (least recently used) removes whatever hasn't been used for the longest time.
+
+- **Check:** A cache returns another user's answer to a question about their own account. What was missing from the cache key? Right answer: Who is asking (the user or their permissions). Why: If the answer depends on the user, the user must be part of the key.
+- **Exercise:** Count Cache Hits, writing `cache_hits`. Approach: Keep the cache as a list in order of use: used longest ago at the front, newest at the end.
+- **Explain:** the pattern is A list kept in order of use. Why this pattern: The big idea: a cache reuses stored answers to save money and time, and when full it removes the prompt used longest ago. Your code keeps the cache as a list in order of use, oldest at the front. On a hit it counts it, takes the prompt out and puts it back at the end. On a miss with a full cache, `pop(0)` first removes the front one. Finding a prompt in a list means reading it from the start: fine for 2 prompts, slow for 10,000. What to say: "I keep the prompts in order of use. A hit moves a prompt to the back. When the cache is full, the front one, used longest ago, goes."
+
+## Reliability (stage: Monitor)
+
+Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't.
+
+### 116. Timeouts and deadlines (`plan_calls`)
+
+Every call that can wait forever eventually will. Set a timeout on every model and HTTP call.
+Better still, give the whole request a deadline and pass the remaining time down, so no step starts work it can't finish.
+
+- **Check:** A user-facing request has a 3-second budget and retrieval took 2.8 s. What should the model call do? Right answer: Skip it and return a fallback, since it can't finish in time. Why: Starting work that can't finish wastes capacity and still fails the user.
+- **Exercise:** Work Within a Deadline, writing `plan_calls`. Approach: Carry the time left forward and check it before each step.
+- **Explain:** the pattern is Spend down a time budget. Why this pattern: The big idea: give the whole request a deadline and pass the time left down, so no step starts work it can't finish. Your code starts with all of `deadline_ms` as time left and goes through the steps in order. A step runs only if its time is at most the time left, and then its time is taken off. A step that doesn't fit is skipped, but a shorter one later may still fit. It is like spending pocket money: buy what you can afford, skip what you can't. What to say: "I pass the time left down the request. Each step runs only if it fits in what remains, so nothing starts work it can't finish before the deadline."
+
+### 117. Circuit breakers and fallbacks (`circuit_breaker`)
+
+When a service you depend on (a dependency, like a reranker or model endpoint) is down, calling it again and again makes everything slower and the outage worse.
+A circuit breaker stops calling after repeated failures, fails fast to a fallback (a cheaper model, a cached answer), and tries again after a cooldown. It has three states: closed (calls go through), open (calls are blocked) and half-open (after the cooldown, one trial call decides whether to close or open again).
+
+- **Check:** Your reranker endpoint is timing out on every call. What should the app do? Right answer: Stop calling it for a while and skip reranking. Why: Serve slightly worse results instead of slow failures.
+- **Exercise:** Stop Calling a Failing Service, writing `circuit_breaker`. Approach: Keep two things as you go: failures in a row, and when the breaker opened. Decide each call from those.
+- **Explain:** the pattern is Remember failures and when it opened. Why this pattern: The big idea: when a service keeps failing, stop calling it for a while instead of making the outage worse. Your code remembers two things: how many failures in a row, and when the breaker opened, which is `None` while it is closed. A call during the cooldown is blocked and changes nothing. A working call resets the count and closes the breaker. A failed call adds 1, and reaching `threshold` opens the breaker at that time, like a fuse box switch that trips. What to say: "After enough failures in a row, the breaker opens and blocks calls for a cooldown, so we fail fast to a fallback. A success closes it again."
+
+### 118. SLOs and error budgets (`burn_rate`)
+
+An SLO (service level objective) is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your error budget.
+Alert on how fast you're using up the budget (the burn rate), not on every error. That pages people (sends an urgent alert to whoever is on call) only when it matters.
+
+- **Check:** Errors are at 0.6% against a 0.5% budget. Is this an emergency? Right answer: No: the burn rate is about 1.2, so watch it. Why: Slightly over budget is a trend to fix, not a 3am page.
+- **Exercise:** Error Budgets, writing `burn_rate`. Approach: Turn two counts into a rate, then divide it by the rate the target allows.
+- **Explain:** the pattern is Actual errors over allowed errors. Why this pattern: The big idea: alert on how fast you use up the error budget, not on every error. Your code first returns 0.0 if there were no requests, so it never divides by 0. Then it works out the share that failed, `errors / total`, and the share allowed, `1 - slo`. Dividing the first by the second gives the burn rate, rounded to 1 place. With 72 failures in 1000 and a 99.5% target, that is 0.072 divided by 0.005, or 14.4 times too fast. What to say: "I alert on how fast we use up the error budget, not on raw error counts. A burn rate of 1 is on budget. 10 is ten times too fast."
+
+## Azure Databricks (stage: Platform track)
+
+The workspace, Unity Catalog and who can see what, before any of it goes into code.
+
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace, a metastore and a catalog; Clusters, SQL warehouses and serverless; People, groups and service principals; External locations and storage credentials; Private networking: VNet injection and Private Link.
+
+### 119. Who can read this table? (`can_read_table`)
+
+In Azure Databricks every table lives at a three-part address: catalog.schema.table, like `main.sales.orders`. Unity Catalog is the part of Databricks that keeps those addresses and decides who may use them. A catalog is the top folder, a schema is a folder inside it, and a table sits in a schema.
+To read a table you need a key at every level on the way down: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.
+A key given higher up counts for everything below it. `SELECT` granted on the schema `main.sales` lets you read every table in it, and `USE SCHEMA` granted on the catalog `main` opens every schema in it. `ALL PRIVILEGES` counts as every key at once.
+Keys are given to principals: a person, a group, or a service principal (an identity for a program, like a Spacelift run). You hold every key given to you and to any group you are in. Teams grant to groups, not people, so a new joiner gets access by joining the group.
+
+- **Check:** Ana is in `analysts`, which has `USE CATALOG` on `main` and `SELECT` on `main.sales.orders`. Nobody granted `USE SCHEMA` on `main.sales` or on `main`. Can she read the table? Right answer: No: she also needs USE SCHEMA on the way down. Why: Every level on the way down needs its key. SELECT on the table is the last one, not the only one: with no USE SCHEMA on main.sales (or on main, which would cover it), the query stops at the schema.
+- **Exercise:** Can They Read It?, writing `can_read`. Approach: Collect the keys they hold, then check each level: catalog, schema, table, each on its own place or above.
+- **Explain:** the pattern is A key at every level on the way down. Why this pattern: The big idea: Unity Catalog checks three keys before you read a table: USE CATALOG on its catalog, USE SCHEMA on its schema, SELECT on the table. A key given higher up counts below it, and ALL PRIVILEGES counts as any key. Your code first collects every key the person holds, through any of their groups, as a set of (privilege, where) pairs. Then it asks three questions: USE CATALOG on the catalog; USE SCHEMA on the catalog or the schema; SELECT on the catalog, the schema or the table. Only three yeses mean yes. It is like walking into an office: the front door, then the floor, then the room, and a master key opens all three. What to say: "To read a table you need USE CATALOG, USE SCHEMA and SELECT, each on its own level or anywhere above it, given to you or to one of your groups. I check all three; one missing means no."
+
+## Terraform foundations (stage: Platform track)
+
+Read a plan, keep state safe, and change infrastructure in the right order.
+
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): Variables, outputs and modules; Bringing existing resources under Terraform; Renaming without destroying; Pinning provider versions.
+
+### 120. What a Terraform plan really says (`summarize_plan`)
 
 `terraform plan` compares your code with state (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy.
 `terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.
@@ -1733,7 +1921,7 @@ The Terraform and Spacelift work behind the platform.
   # the 1 to destroy is the workspace itself: stop and fix it
   ```
 
-### 107. Spotting dangerous replacements (`find_replacements`)
+### 121. Spotting dangerous replacements (`find_replacements`)
 
 Some attributes can't change in place. Changing them forces replacement: Terraform destroys the resource and creates a new one.
 On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan's mark for a replacement) before approving.
@@ -1764,34 +1952,7 @@ On an Azure Databricks workspace, that means a new URL and losing everything ins
   }
   ```
 
-### 108. Policies as guardrails (`guard_destroys`)
-
-A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
-Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
-
-- **Check:** A plan policy blocks destroying storage accounts. Can someone still lose one? Right answer: Yes, by deleting it in the Azure portal, with the Azure CLI, or with a local apply outside Spacelift, none of which go through the policy. Why: Policies only see plans. Pair them with RBAC (role-based access control: rules for who may do what) and resource locks.
-- **Exercise:** Write a Plan Policy, writing `guard_destroys`. Approach: Filter, then format. Turn the protected list into a set first so each check is instant.
-- **Explain:** the pattern is Check each change against a set. Why this pattern: The big idea: a plan policy checks every run automatically, starting with the resources you can't rebuild. Your code first turns the protected types into a set, a collection built to answer "is this in it?" instantly, like a book's index. Then it goes through the changes in order. A change gets a message only if its type is protected and its actions include delete. A replacement includes delete, so it counts too. An empty list means the run may go ahead. What to say: "I put the protected types in a set, then flag every change that would delete one of them, replacements included. No messages means the run can go ahead."
-- **Spot the gotcha:** "Protect the resources you can't rebuild". Workspaces, the lake storage account and the metastore hold things Terraform can't recreate. Make destroying them an error. The learner sees this risky code and picks the rule it breaks:
-
-  ```
-  resource "azurerm_databricks_workspace" "this" {
-    ...
-  }
-  ```
-
-  The fix:
-
-  ```
-  resource "azurerm_databricks_workspace" "this" {
-    ...
-    lifecycle {
-      prevent_destroy = true
-    }
-  }
-  ```
-
-### 109. State and locking (`lock_info`)
+### 122. State and locking (`lock_info`)
 
 State is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a lock first.
 A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead.
@@ -1821,43 +1982,7 @@ A crashed run can leave the lock behind. Before `terraform force-unlock`, check 
   # and commit .terraform.lock.hcl
   ```
 
-### 110. Tagging for cost and policy (`missing_tags`)
-
-Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
-The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
-
-- **Check:** Which of these resources should your tag check skip? Right answer: `databricks_catalog`. Why: Resources from the databricks provider (names starting `databricks_`, like `databricks_catalog`) have no Azure tags attribute. `azurerm_databricks_*` resources, like the workspace, are Azure resources, so they do.
-- **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
-- **Explain:** the pattern is List the gaps per resource. Why this pattern: The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can't be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn't empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out. What to say: "I skip resources that can't be tagged, then list the required tags each one is missing. The result pairs each address with its gaps."
-
-### 111. Unity Catalog grants (`grants_to_revoke`)
-
-Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
-Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
-
-- **Check:** Someone gave `analysts` SELECT in the UI. The code uses `databricks_grants` without analysts. What happens at the next apply? Right answer: The analysts' grant is removed. Why: Authoritative means the code is the whole list.
-- **Exercise:** Predict Grant Drift, writing `grants_to_revoke`. Approach: For each principal, keep the live privileges that the code doesn't list. A principal missing from `code` loses everything.
-- **Explain:** the pattern is Live minus code, per principal. Why this pattern: The big idea: `databricks_grants` makes the live grants match the code exactly, so anything not in code is removed at the next apply. Your code goes through each principal in `live`. It finds that principal's privileges in `code` with `code.get(principal, [])`, which gives an empty list if the principal is missing, so they lose everything. Each live privilege not in that list is added to a list called `gone`. Principals who lose something are stored in a dict, a lookup table from name to list. What to say: "For each principal, I take the live privileges and drop the ones in code. Whatever is left is what the next apply will remove."
-- **Spot the gotcha:** "Use OIDC, not client secrets". Spacelift can sign in to Azure with workload identity federation, so there's no secret to rotate or leak. Terraform state stores attribute values in plain text, so keep secrets out of resources where you can. The learner sees this risky code and picks the rule it breaks:
-
-  ```
-  provider "azurerm" {
-    features {}
-    client_secret = var.client_secret
-  }
-  ```
-
-  The fix:
-
-  ```
-  provider "azurerm" {
-    features {}
-    use_oidc        = true
-    subscription_id = var.subscription_id
-  }
-  ```
-
-### 112. count vs for_each (`count_shift`)
+### 123. count vs for_each (`count_shift`)
 
 `count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).
 Remove the first item from a `count` list and every later item shifts position. Terraform sees changed names and replaces them, and for storage containers that deletes their data. Use `for_each`, and `moved` blocks to migrate.
@@ -1885,7 +2010,74 @@ Remove the first item from a `count` list and every later item shifts position. 
   }
   ```
 
-### 113. Networking for Databricks (`overlapping_subnets`)
+### 124. Dependencies and stacks (`apply_order`)
+
+Terraform builds a dependency graph (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.
+A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks (a stack is one set of Terraform code with its own state, planned and applied on its own), with a stack dependency between them.
+
+- **Check:** Why does a separate stack for workspace contents help on the first deploy? Right answer: The workspace URL exists by the time the second stack plans. Why: The provider needs a real URL at plan time, which only exists after the first stack applies.
+- **Exercise:** Work Out the Apply Order, writing `apply_order`. Approach: Topological sort: keep adding the first resource whose dependencies are all in the list. If none is ready but some are left, there is a loop.
+- **Explain:** the pattern is Add whatever is ready next. Why this pattern: The big idea: Terraform creates each resource after the ones it needs, and resources that wait on each other in a loop cause `Error: Cycle`. Your code repeats until every resource is in the list. Each round it goes through the names A to Z and picks the first one not yet listed whose dependencies are all listed already. It is like getting dressed: socks before shoes. If a round finds nothing ready, the leftovers are waiting on each other, so it returns `None`. What to say: "I keep adding a resource whose dependencies are already in the list. If some are left but none is ready, they wait on each other in a cycle."
+- **Spot the gotcha:** "Point the Databricks provider at the workspace resource". Hardcoded URLs break when a workspace is recreated or you add an environment. Reference the resource, and split workspace creation and workspace contents into separate stacks so the URL is known at plan time. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  provider "databricks" {
+    host = "https://adb-1234567890123456.7.azuredatabricks.net"
+  }
+  ```
+
+  The fix:
+
+  ```
+  provider "databricks" {
+    host                        = azurerm_databricks_workspace.this.workspace_url
+    azure_workspace_resource_id = azurerm_databricks_workspace.this.id
+  }
+  ```
+
+## Databricks as code (stage: Platform track)
+
+The workspace, catalogs and network of an ML platform, kept in Terraform.
+
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace in Terraform; Cluster policies as code; The metastore and catalogs as code; Service principals and their permissions.
+
+### 125. Tagging for cost and policy (`missing_tags`)
+
+Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
+The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
+
+- **Check:** Which of these resources should your tag check skip? Right answer: `databricks_catalog`. Why: Resources from the databricks provider (names starting `databricks_`, like `databricks_catalog`) have no Azure tags attribute. `azurerm_databricks_*` resources, like the workspace, are Azure resources, so they do.
+- **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
+- **Explain:** the pattern is List the gaps per resource. Why this pattern: The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can't be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn't empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out. What to say: "I skip resources that can't be tagged, then list the required tags each one is missing. The result pairs each address with its gaps."
+
+### 126. Unity Catalog grants (`grants_to_revoke`)
+
+Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
+Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
+
+- **Check:** Someone gave `analysts` SELECT in the UI. The code uses `databricks_grants` without analysts. What happens at the next apply? Right answer: The analysts' grant is removed. Why: Authoritative means the code is the whole list.
+- **Exercise:** Predict Grant Drift, writing `grants_to_revoke`. Approach: For each principal, keep the live privileges that the code doesn't list. A principal missing from `code` loses everything.
+- **Explain:** the pattern is Live minus code, per principal. Why this pattern: The big idea: `databricks_grants` makes the live grants match the code exactly, so anything not in code is removed at the next apply. Your code goes through each principal in `live`. It finds that principal's privileges in `code` with `code.get(principal, [])`, which gives an empty list if the principal is missing, so they lose everything. Each live privilege not in that list is added to a list called `gone`. Principals who lose something are stored in a dict, a lookup table from name to list. What to say: "For each principal, I take the live privileges and drop the ones in code. Whatever is left is what the next apply will remove."
+- **Spot the gotcha:** "Use OIDC, not client secrets". Spacelift can sign in to Azure with workload identity federation, so there's no secret to rotate or leak. Terraform state stores attribute values in plain text, so keep secrets out of resources where you can. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  provider "azurerm" {
+    features {}
+    client_secret = var.client_secret
+  }
+  ```
+
+  The fix:
+
+  ```
+  provider "azurerm" {
+    features {}
+    use_oidc        = true
+    subscription_id = var.subscription_id
+  }
+  ```
+
+### 127. Networking for Databricks (`overlapping_subnets`)
 
 VNet injection puts a Databricks workspace's clusters in your own virtual network, using a host and a container subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.
 A subnet's addresses are written as a CIDR block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.
@@ -1920,59 +2112,7 @@ Each node (one machine in a cluster) uses an address in each subnet, and Azure r
   }
   ```
 
-### 114. Dependencies and stacks (`apply_order`)
-
-Terraform builds a dependency graph (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.
-A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks (a stack is one set of Terraform code with its own state, planned and applied on its own), with a stack dependency between them.
-
-- **Check:** Why does a separate stack for workspace contents help on the first deploy? Right answer: The workspace URL exists by the time the second stack plans. Why: The provider needs a real URL at plan time, which only exists after the first stack applies.
-- **Exercise:** Work Out the Apply Order, writing `apply_order`. Approach: Topological sort: keep adding the first resource whose dependencies are all in the list. If none is ready but some are left, there is a loop.
-- **Explain:** the pattern is Add whatever is ready next. Why this pattern: The big idea: Terraform creates each resource after the ones it needs, and resources that wait on each other in a loop cause `Error: Cycle`. Your code repeats until every resource is in the list. Each round it goes through the names A to Z and picks the first one not yet listed whose dependencies are all listed already. It is like getting dressed: socks before shoes. If a round finds nothing ready, the leftovers are waiting on each other, so it returns `None`. What to say: "I keep adding a resource whose dependencies are already in the list. If some are left but none is ready, they wait on each other in a cycle."
-- **Spot the gotcha:** "Point the Databricks provider at the workspace resource". Hardcoded URLs break when a workspace is recreated or you add an environment. Reference the resource, and split workspace creation and workspace contents into separate stacks so the URL is known at plan time. The learner sees this risky code and picks the rule it breaks:
-
-  ```
-  provider "databricks" {
-    host = "https://adb-1234567890123456.7.azuredatabricks.net"
-  }
-  ```
-
-  The fix:
-
-  ```
-  provider "databricks" {
-    host                        = azurerm_databricks_workspace.this.workspace_url
-    azure_workspace_resource_id = azurerm_databricks_workspace.this.id
-  }
-  ```
-
-### 115. Policy as code (`plan_policy`)
-
-Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
-Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.
-
-- **Check:** Why roll out a new policy as a warning first? Right answer: To see what it would block before it blocks anyone. Why: You find false positives without stopping deploys.
-- **Exercise:** Policy as Code, writing `plan_policy`. Approach: One pass, two independent rules, each adding its own message.
-- **Explain:** the pattern is Two separate rules per change. Why this pattern: The big idea: policy as code runs your review rules on every plan, starting with never destroying data you can't recreate and never opening things to the public internet. Your code goes through the changes in order and asks two separate `if` questions about each one. The first flags a protected type with a delete action. The second flags `public_access` being `True`. Neither question stops the other, so one change can get both messages, rule 1 first. What to say: "I check every change against each rule separately and report every problem, not just the first. One change can break both rules and get both messages."
-- **Spot the gotcha:** "Upgrade providers on purpose". "locked provider registry.terraform.io/hashicorp/azurerm 3.116.0 does not match configured version constraint ~> 4.0; must use terraform init -upgrade" means the lock file and the constraint disagree. Run `terraform init -upgrade` in a branch, read the plan, then commit the new lock file. The learner sees this risky code and picks the rule it breaks:
-
-  ```
-  # every CI run
-  terraform init -upgrade
-  terraform apply -auto-approve
-  ```
-
-  The fix:
-
-  ```
-  # every CI run: exactly the versions in .terraform.lock.hcl
-  terraform init
-  terraform plan
-  
-  # upgrades get their own branch: read the plan, commit the new lock file
-  terraform init -upgrade
-  ```
-
-### 116. Who gets capacity when it's scarce (`allocate_capacity`)
+### 128. Who gets capacity when it's scarce (`allocate_capacity`)
 
 When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide who comes first before it happens, by putting each app in a tier: a group with its own rule, served most important first.
 Once its traffic is steady, a critical app moves to provisioned throughput: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on spillover: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.
@@ -2002,7 +2142,7 @@ Critical apps come first and get what they ask for. Each graduated app gets what
   }
   ```
 
-### 117. A shared space with fair limits (`check_limits`)
+### 129. A shared space with fair limits (`check_limits`)
 
 In a shared experiment space (the sandbox), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A per-user rate limit stops that: each person gets a slice, well below the whole.
 The Databricks AI gateway (now called Unity Gateway) sets limits on a service (the whole space), a default for each user, and custom ones for a group. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.
@@ -2044,173 +2184,76 @@ Give the sandbox its own Foundry deployment. If it shares a production deploymen
   }
   ```
 
-## Tracing and AgentOps (stage: Monitor)
+## Spacelift (stage: Platform track)
 
-Traces that answer your questions, slow steps and runaway agents.
+Stacks, runs and the policies that guard every change.
 
-### 118. Designing traces for experiments (`summarize_by_tag`)
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): A run's life: queued, planning, unconfirmed, applying; Drift detection; Contexts and secrets; Testing a policy before it blocks.
 
-A trace records one request: every model call, retrieval and tool, with timings, inputs, outputs and token counts. Design traces before you need them.
-Tag every trace with the things you'll want to split your results by later (for example, comparing two models): config, model, prompt version, environment. A trace is made of spans, one for each step inside it (a model call, a retrieval, a tool). Mark spans with their type (RETRIEVER, TOOL, CHAT_MODEL) so evaluation and analysis can find them, and put per-request details in span attributes (extra details saved on a span).
-Give each version you compare a name with `mlflow.set_active_model(name=...)`, like `rag-rerank-v2`. Every trace and eval run is then linked to that version, which is what lets you line up two versions question by question and read their regressions and improvements. This module sits under Monitor, but designing your traces happens earlier, in Build and trace, where you build the app and record what it does from the first line: if it isn't in the traces when they're created, no analysis later can recover it.
+### 130. What runs after a change? (`runs_after`)
 
-- **Check:** You want to compare two configs on last week's production traffic. What must already be true? Right answer: Each trace was tagged with its config when it was created. Why: If nothing recorded which config served each request, you can't work it out later, so tag traces when they are created. Decide the tags before the experiment.
-- **Exercise:** Group Traces by Tag, writing `summarize_by_tag`. Approach: Group by a key: keep a running count and total for each value, then divide once at the end.
-- **Explain:** the pattern is Group by a tag, then average. Why this pattern: The big idea: tagging every trace lets you compare versions later, like v1 against v2. Your code sorts the traces into piles by their tag. For each pile it keeps a running count and a running total of milliseconds, stored in a dict: a lookup table from the tag's value to its numbers. At the end it divides each total by its count to get the average time per version. Traces without the tag are skipped. What to say: "I tag every trace with its version, then group the traces by that tag and average their times, so I can compare versions side by side."
-- **Spot the gotcha:** "Log what the model saw". When an answer is wrong, you need the exact prompt, retrieved chunks and tool calls to find out why. That's what tracing tools like MLflow and LangSmith are for. The learner sees this risky code and picks the rule it breaks:
+In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
+Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
+Order matters. A stack only runs once every stack it waits for has finished, if that stack is running too. If `jobs` waits for `workspace` and `catalogs`, it goes after both, even though `workspace` changed first.
+Stacks that don't depend on the change, directly or through another stack, don't run at all. That keeps a small change small.
 
-  ```
-  answer = chain.invoke(q)
-  ```
+- **Check:** `network` changes. `jobs` waits for `workspace` and `catalogs`, and `catalogs` waits for `workspace`. When can `jobs` run? Right answer: Once workspace and catalogs have both finished. Why: A stack runs only after every stack it waits for has finished, when those are running too. workspace runs first, then catalogs, and only then jobs.
+- **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
+- **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When a stack changes I find everything downstream of it, then order them so each stack runs only after every stack it waits for has finished."
 
-  The fix:
+### 131. Policies as guardrails (`guard_destroys`)
 
-  ```
-  mlflow.langchain.autolog()
-  answer = chain.invoke(q)   # full trace saved
-  ```
+A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
+Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
 
-### 119. Reading agent traces (`slowest_chain`)
-
-A trace records one agent run as nested spans: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their parent; the spans directly inside it are its children.
-To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. That chain of slowest steps is the critical path. The answer is usually one tool or one model call.
-An agent team makes the same kind of tree when each helper is traced under its own name: one span on top for the whole team run, one span for each helper agent, and each helper's tool calls inside its span. Following the slowest child then shows which helper held the run up.
-
-- **Check:** A parent span took 4200 ms. Its children ran one after another and took 600, 3100 and 400 ms. How long did the parent take on its own? Right answer: 100 ms. Why: Parent time includes its children's time. The children add up to 4100 ms (600 plus 3100 plus 400), and 4200 minus 4100 leaves 100 ms of its own.
-- **Exercise:** Find the Slow Path in a Trace, writing `slowest_chain`. Approach: List each span's children in one pass, then walk down from the root, always into the slowest child.
-- **Explain:** the pattern is Follow the slowest child down. Why this pattern: The big idea: to find what's slow, start at the root and keep following the slowest child down. Your code first goes through the spans to find the root and build a dict, a lookup table from each parent's name to its children. Then it walks down: it adds the current span's name to the path, picks the child with the biggest `ms`, and moves to it. When a span has no children, it stops. It is like following the thickest branch of a tree out to its tip. What to say: "I group spans by parent, then start at the root and step into the slowest child each time. The path usually ends at the slow tool or model call."
-
-### 120. Traces to a table (`trace_table_row`)
-
-Reading traces one at a time stops working after a few dozen runs. Turn each trace into one row of a few numbers: steps (model calls), tool errors, the biggest prompt and total tokens. Then sort and filter the rows, like a spreadsheet, to find the runs worth reading.
-Rows with many steps or many tool errors are the runs to open first. The biggest prompt (the most input tokens in one call) shows how close a run came to filling the context window, the most a model can read in one call.
-On Databricks, production traces can be stored as tables in Unity Catalog, so you can query them with SQL. Keep every trace (with personal data hidden first, as in Security), and save money by judging only a sample of them, say 1 in 10. Recording fewer traces can throw away exactly the failing runs you need.
-
-- **Check:** Your agent handles 5,000 runs a day, and judging every trace with a model costs too much. What should you do? Right answer: Record every run, and judge only 1 in 10. Why: Runs you never record are gone, failures included, and many failures get no complaint. Keep every trace, and save money by judging a sample.
-- **Exercise:** Turn a Trace into a Row, writing `trace_table_row`. Approach: One pass over the spans, updating two counts, a running biggest and a running total as you go.
-- **Explain:** the pattern is Four numbers from one trace. Why this pattern: The big idea: turn each trace into one row of a few numbers, so you can sort and filter runs like a spreadsheet. Your code starts four numbers at 0 and looks at each span once. It adds 1 to steps for a model call, and 1 to tool errors for a failed tool call. It keeps the biggest input tokens seen so far, and adds every span's input and output tokens to the total. An empty trace leaves all four at 0. What to say: "I turn each trace into one row: model steps, tool errors, the biggest prompt and total tokens. Then I sort the rows to find the runs worth reading."
-
-### 121. How full is the context? (`context_fill`)
-
-Answers get worse as the prompt gets longer, even when the right fact is in it. A model's context window is the most tokens it can read in one call. This drop is called context rot, and a model with a bigger window does not fix it.
-An agent sends its whole history again on every call, so each call reads more than the last. Measure the context usage of each call (how full it is, the fill): its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).
-Three habits keep the context small and useful. Put the question after the retrieved text, and keep a short goal and plan near the end of the prompt, where models pay the most attention. Fewer, better chunks often beat more: try 5 retrieved chunks against 50 and compare the eval scores.
-
-- **Check:** Your agent gets worse on long runs, even though the right fact is in its prompt. A teammate suggests a model with a window twice as big. What happens? Right answer: It still slips as the prompt grows, so keep the context short. Why: Quality drops as the prompt grows, whatever the window size. The fix is a shorter, more focused context, not more room.
-- **Exercise:** Watch the Context Fill Up, writing `context_fill`. Approach: Work out each fill in one walk. Keep the biggest, and note the first index over 80.
-- **Explain:** the pattern is Track the biggest, note the first. Why this pattern: The big idea: measure each call's fill, its input tokens as a percent of the window, so you can clean up before a run hits the limit. Your code works out each call's fill in order, and `enumerate` gives each call's position from 0. It keeps the biggest fill so far, like a high score. It also notes the first position over 80, and the `first_over is None` check stops later ones replacing it. At the end it rounds the biggest fill to a whole number. What to say: "I work out each call's fill as a percent of the window, keep the biggest, and note the first call over 80 percent, which is when to clean up."
-
-### 122. What a summary forgets (`summary_recall`)
-
-When the context gets too full, agents compact it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.
-Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.
-To test a summary, plant facts: put a few details you will ask about later, like a table name, into a long run. It is the same idea as a needle-in-a-haystack test. Compact it, then ask probe questions about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.
-
-- **Check:** After you add a summary step, runs are shorter, but the agent sometimes rewrites a table it already wrote. Which test catches this? Right answer: Plant facts, compact, then ask probe questions. Why: A summary's length and the model's own opinion say nothing about what was lost. Probe questions check whether the agent still knows the facts it needs to finish.
-- **Exercise:** Score a Summary with Planted Facts, writing `summary_recall`. Approach: Look each planted fact up in a set of the answers. Count the hits and collect the misses.
-- **Explain:** the pattern is Check each planted fact in a set. Why this pattern: The big idea: test a summary by planting facts, asking about them later, and counting how many the agent still gets right. Your code turns `answered` into a set, a collection built to answer "is this in it?" instantly, like a book's index. Then it checks each planted fact. A hit adds 1 to the count, and a miss goes on the forgotten list. Hits divided by facts planted, rounded to 2 places, is the share kept. The forgotten facts come out sorted A to Z. What to say: "I plant facts, compact the run, then ask about them. I report the share the agent still knows and list what it forgot."
-- **Spot the gotcha:** "Tell the summary what it must keep". A plain "summarise the chat" drops the exact details the agent needs next, like which table it wrote to. List the sections the summary must keep, then test it with a question such as "Which table did we write to?" The learner sees this risky code and picks the rule it breaks:
+- **Check:** A plan policy blocks destroying storage accounts. Can someone still lose one? Right answer: Yes, by deleting it in the Azure portal, with the Azure CLI, or with a local apply outside Spacelift, none of which go through the policy. Why: Policies only see plans. Pair them with RBAC (role-based access control: rules for who may do what) and resource locks.
+- **Exercise:** Write a Plan Policy, writing `guard_destroys`. Approach: Filter, then format. Turn the protected list into a set first so each check is instant.
+- **Explain:** the pattern is Check each change against a set. Why this pattern: The big idea: a plan policy checks every run automatically, starting with the resources you can't rebuild. Your code first turns the protected types into a set, a collection built to answer "is this in it?" instantly, like a book's index. Then it goes through the changes in order. A change gets a message only if its type is protected and its actions include delete. A replacement includes delete, so it counts too. An empty list means the run may go ahead. What to say: "I put the protected types in a set, then flag every change that would delete one of them, replacements included. No messages means the run can go ahead."
+- **Spot the gotcha:** "Protect the resources you can't rebuild". Workspaces, the lake storage account and the metastore hold things Terraform can't recreate. Make destroying them an error. The learner sees this risky code and picks the rule it breaks:
 
   ```
-  SUMMARY_PROMPT = """Summarise the chat.
-  {messages}"""
+  resource "azurerm_databricks_workspace" "this" {
+    ...
+  }
   ```
 
   The fix:
 
   ```
-  SUMMARY_PROMPT = """Summarise under:
-  - Goal
-  - Decisions made
-  - Exact table names and file paths
-  - IDs and error codes
-  - Open tasks and the next step
-  {messages}"""
+  resource "azurerm_databricks_workspace" "this" {
+    ...
+    lifecycle {
+      prevent_destroy = true
+    }
+  }
   ```
 
-### 123. Guardrails for agents (`detect_loop`)
+### 132. Policy as code (`plan_policy`)
 
-Agents in production need guardrails: limits that stop a run before it does damage or burns money. The simplest catches the same call repeated again and again.
-Production systems also cap total steps, tokens and time, and tell the model why it was stopped.
-In LangGraph, the step cap is `recursion_limit`. Its default in langgraph 1.2.11 is 10,007 steps, far too many to stop a stuck agent early. Always pass your own small limit, like 25.
+Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
+Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.
 
-- **Check:** An agent alternates between two calls forever: A, B, A, B. Does a "same call 3 times in a row" check catch it? Right answer: No, so you also need a total step limit. Why: No call repeats back to back, so you need other limits too.
-- **Exercise:** Stop a Looping Agent, writing `detect_loop`. Approach: Keep a count of identical calls in a row; start again at 1 when the call changes.
-- **Explain:** the pattern is Count repeats in a row. Why this pattern: The big idea: the simplest guardrail stops an agent that makes the same call again and again. Your code remembers the previous call and a count of repeats in a row. If the current call matches the previous one, the count goes up by 1. If not, the count starts again at 1. As soon as the count reaches `limit`, it returns that call's position. If that never happens, it returns -1. What to say: "I count how many identical calls come in a row, starting again at 1 when the call changes, and stop the agent once the count reaches the limit."
+- **Check:** Why roll out a new policy as a warning first? Right answer: To see what it would block before it blocks anyone. Why: You find false positives without stopping deploys.
+- **Exercise:** Policy as Code, writing `plan_policy`. Approach: One pass, two independent rules, each adding its own message.
+- **Explain:** the pattern is Two separate rules per change. Why this pattern: The big idea: policy as code runs your review rules on every plan, starting with never destroying data you can't recreate and never opening things to the public internet. Your code goes through the changes in order and asks two separate `if` questions about each one. The first flags a protected type with a delete action. The second flags `public_access` being `True`. Neither question stops the other, so one change can get both messages, rule 1 first. What to say: "I check every change against each rule separately and report every problem, not just the first. One change can break both rules and get both messages."
+- **Spot the gotcha:** "Upgrade providers on purpose". "locked provider registry.terraform.io/hashicorp/azurerm 3.116.0 does not match configured version constraint ~> 4.0; must use terraform init -upgrade" means the lock file and the constraint disagree. Run `terraform init -upgrade` in a branch, read the plan, then commit the new lock file. The learner sees this risky code and picks the rule it breaks:
 
-### 124. Label failures, then count (`failure_counts`)
+  ```
+  # every CI run
+  terraform init -upgrade
+  terraform apply -auto-approve
+  ```
 
-With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one label for its failure mode: a short name for what went wrong. Then count the labels and fix the biggest group first. This is called error analysis.
-Use a fixed list of labels, so the same problem always gets the same name. A research taxonomy (a fixed list of categories) called MAST names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.
-A person labels the first batch by hand. An LLM judge (a model that grades) can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.
+  The fix:
 
-- **Check:** You have 300 failed runs and one week to improve the agent. What should you do first? Right answer: Label a sample, count the labels, fix the biggest group. Why: Counting labels shows which single fix helps the most runs. Going one by one, or rewriting everything, uses up the week without knowing what mattered.
-- **Exercise:** Count Failures by Label, writing `failure_counts`. Approach: Group the ids by label in a dict of lists, make one row per label, then sort by count with the label as the tie-break.
-- **Explain:** the pattern is Group by label, count, then sort. Why this pattern: The big idea: label each failed trace, count the labels, and fix the biggest group first. Your code sorts the failures into piles by label, kept in a dict: a lookup table from each label to its list of ids. Then it makes one row per label: the label, how many ids it has, and its first `n` ids. Last, it sorts the rows so the biggest count comes first, and labels with the same count go A to Z. What to say: "I group failed traces by label, count each group and keep a few example ids. Then I sort biggest first, so I fix the most common failure first."
-
-## LLMOps (stage: Monitor)
-
-Cost and caching in production.
-
-### 125. Tokens and cost (`token_cost`)
-
-LLM providers bill per token (roughly three quarters of a word), with separate prices for input and output. Output usually costs several times more. Prices are quoted in dollars per million tokens.
-Track cost per model, per feature and per user from day one. When the bill jumps, that breakdown tells you why.
-
-- **Check:** Your bill doubled but the number of requests didn't change. What should you check first? Right answer: Tokens per request, especially output tokens and agent steps. Why: Same requests, more cost means more tokens per request: longer prompts, longer answers or more agent steps.
-- **Exercise:** Cost per Model, writing `token_cost`. Approach: Group by model: add each call's cost to that model's total in a dict.
-- **Explain:** the pattern is Add up cost per model. Why this pattern: The big idea: track cost per model from day one, so when the bill jumps you can see why. For each call, your code multiplies input tokens by the input price and output tokens by the output price, then divides the sum by one million. It adds that cost to its model's running total, kept in a dict, a lookup table from model name to number. `totals.get(model, 0)` starts a new model at 0. Rounding to 4 places happens only at the end. What to say: "I work out each call's cost from its input and output prices and add it to its model's total. I round only at the end, so errors don't pile up."
-
-### 126. Estimate against actual (`estimate_vs_actual`)
-
-Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.
-So each month, set the estimate (what the plan said a project would cost) next to the actual (what it really cost). Percent over is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.
-When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a request tag does this, and the usage table records it next to each request's tokens.
-Flag only projects over by a set margin, such as 20 percent, and look at the biggest first. Then replace the guess in the plan with the measured number.
-
-- **Check:** Project A planned $100 a month and spent $150. Project B planned $1,000 and spent $1,200. Whose estimate was the worse guess for its size? Right answer: A, because it spent 50 percent more than planned. Why: Percent over compares each project with its own estimate. A is 50 percent over and B only 20 percent, even though B's extra dollars are bigger.
-- **Exercise:** Projects Over Estimate, writing `estimate_vs_actual`. Approach: Filter and rank: work out each project's percent over, keep the ones at or above the threshold, then sort biggest first with the name breaking ties.
-- **Explain:** the pattern is Keep the overruns, biggest first. Why this pattern: The big idea: check every estimate against the real bill each month, and look at the biggest overruns first. For each project, your code works out how far over it is: the extra spend divided by the estimate. It keeps the project only if that share is at least the threshold, and turns it into a whole percent. Then it sorts the pairs so the biggest percent comes first, with equal percents in A to Z order by name. What to say: "I compare each project's actual cost with its estimate as a percent, flag the ones over the margin, and look at the biggest first."
-
-### 127. Caching responses (`cache_hits`)
-
-Many requests repeat. A cache returns a stored answer instead of calling the model again, which saves money and time. It looks answers up by a key, usually the prompt text.
-Caches have a size limit. LRU (least recently used) removes whatever hasn't been used for the longest time.
-
-- **Check:** A cache returns another user's answer to a question about their own account. What was missing from the cache key? Right answer: Who is asking (the user or their permissions). Why: If the answer depends on the user, the user must be part of the key.
-- **Exercise:** Count Cache Hits, writing `cache_hits`. Approach: Keep the cache as a list in order of use: used longest ago at the front, newest at the end.
-- **Explain:** the pattern is A list kept in order of use. Why this pattern: The big idea: a cache reuses stored answers to save money and time, and when full it removes the prompt used longest ago. Your code keeps the cache as a list in order of use, oldest at the front. On a hit it counts it, takes the prompt out and puts it back at the end. On a miss with a full cache, `pop(0)` first removes the front one. Finding a prompt in a list means reading it from the start: fine for 2 prompts, slow for 10,000. What to say: "I keep the prompts in order of use. A hit moves a prompt to the back. When the cache is full, the front one, used longest ago, goes."
-
-## Reliability (stage: Monitor)
-
-Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't.
-
-### 128. Timeouts and deadlines (`plan_calls`)
-
-Every call that can wait forever eventually will. Set a timeout on every model and HTTP call.
-Better still, give the whole request a deadline and pass the remaining time down, so no step starts work it can't finish.
-
-- **Check:** A user-facing request has a 3-second budget and retrieval took 2.8 s. What should the model call do? Right answer: Skip it and return a fallback, since it can't finish in time. Why: Starting work that can't finish wastes capacity and still fails the user.
-- **Exercise:** Work Within a Deadline, writing `plan_calls`. Approach: Carry the time left forward and check it before each step.
-- **Explain:** the pattern is Spend down a time budget. Why this pattern: The big idea: give the whole request a deadline and pass the time left down, so no step starts work it can't finish. Your code starts with all of `deadline_ms` as time left and goes through the steps in order. A step runs only if its time is at most the time left, and then its time is taken off. A step that doesn't fit is skipped, but a shorter one later may still fit. It is like spending pocket money: buy what you can afford, skip what you can't. What to say: "I pass the time left down the request. Each step runs only if it fits in what remains, so nothing starts work it can't finish before the deadline."
-
-### 129. Circuit breakers and fallbacks (`circuit_breaker`)
-
-When a service you depend on (a dependency, like a reranker or model endpoint) is down, calling it again and again makes everything slower and the outage worse.
-A circuit breaker stops calling after repeated failures, fails fast to a fallback (a cheaper model, a cached answer), and tries again after a cooldown. It has three states: closed (calls go through), open (calls are blocked) and half-open (after the cooldown, one trial call decides whether to close or open again).
-
-- **Check:** Your reranker endpoint is timing out on every call. What should the app do? Right answer: Stop calling it for a while and skip reranking. Why: Serve slightly worse results instead of slow failures.
-- **Exercise:** Stop Calling a Failing Service, writing `circuit_breaker`. Approach: Keep two things as you go: failures in a row, and when the breaker opened. Decide each call from those.
-- **Explain:** the pattern is Remember failures and when it opened. Why this pattern: The big idea: when a service keeps failing, stop calling it for a while instead of making the outage worse. Your code remembers two things: how many failures in a row, and when the breaker opened, which is `None` while it is closed. A call during the cooldown is blocked and changes nothing. A working call resets the count and closes the breaker. A failed call adds 1, and reaching `threshold` opens the breaker at that time, like a fuse box switch that trips. What to say: "After enough failures in a row, the breaker opens and blocks calls for a cooldown, so we fail fast to a fallback. A success closes it again."
-
-### 130. SLOs and error budgets (`burn_rate`)
-
-An SLO (service level objective) is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your error budget.
-Alert on how fast you're using up the budget (the burn rate), not on every error. That pages people (sends an urgent alert to whoever is on call) only when it matters.
-
-- **Check:** Errors are at 0.6% against a 0.5% budget. Is this an emergency? Right answer: No: the burn rate is about 1.2, so watch it. Why: Slightly over budget is a trend to fix, not a 3am page.
-- **Exercise:** Error Budgets, writing `burn_rate`. Approach: Turn two counts into a rate, then divide it by the rate the target allows.
-- **Explain:** the pattern is Actual errors over allowed errors. Why this pattern: The big idea: alert on how fast you use up the error budget, not on every error. Your code first returns 0.0 if there were no requests, so it never divides by 0. Then it works out the share that failed, `errors / total`, and the share allowed, `1 - slo`. Dividing the first by the second gives the burn rate, rounded to 1 place. With 72 failures in 1000 and a 99.5% target, that is 0.072 divided by 0.005, or 14.4 times too fast. What to say: "I alert on how fast we use up the error budget, not on raw error counts. A burn rate of 1 is on budget. 10 is ten times too fast."
+  ```
+  # every CI run: exactly the versions in .terraform.lock.hcl
+  terraform init
+  terraform plan
+  
+  # upgrades get their own branch: read the plan, commit the new lock file
+  terraform init -upgrade
+  ```
 
 ## Practice sets
 

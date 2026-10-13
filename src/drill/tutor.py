@@ -99,6 +99,7 @@ def curriculum_map(data: dict | None = None) -> str:
     bank = {p["id"]: p for p in data["bank"]}
     cards = gotcha_cards(data)
     stage_of = {mid: st["name"] for st in data["lifecycle"] for mid in st["modules"]}
+    stage_of.update({mid: tr["name"] for tr in data.get("tracks", []) for mid in tr["modules"]})
     total = sum(len(m["lessons"]) for m in data["modules"])
 
     lines = [
@@ -119,12 +120,17 @@ def curriculum_map(data: dict | None = None) -> str:
         "not the order:",
         "",
         *[f"- **{st['name']}**: {st['text']}" for st in data["lifecycle"]],
+        *[f"- **{tr['name']}** (a separate track beside the path, numbered P1.1 and so on): {tr['text']}"
+          for tr in data.get("tracks", [])],
         "",
     ]
     number = 0
     for module in data["modules"]:
         stage = stage_of.get(module["id"], "")
         lines += [f"## {module['title']}" + (f" (stage: {stage})" if stage else ""), "", module["blurb"], ""]
+        if module.get("planned"):
+            lines += ["Coming soon, not built yet (say so if asked; don't teach them as if they exist): "
+                      + "; ".join(_plain(p["title"]) for p in module["planned"]) + ".", ""]
         for lesson_id in module["lessons"]:
             number += 1
             lesson = data["lessons"][lesson_id]
