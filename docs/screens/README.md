@@ -37,7 +37,7 @@ then the path: six phase tabs on a violet strip, joined to the phase's room belo
 shows "How it works" instead of the next lesson.
 
 **What draws it.** `renderHome()` in the `home: the learning path` section; the tabs are
-`railHtml(false, ...)`; the card is `.next`. Colours: `--accent` for the button, `--path*` for the
+`railHtml(null, viewing)`; the card is `.next`. Colours: `--accent` for the button, `--path*` for the
 strip.
 
 **Change it safely.** Keep one primary button. New home sections go between `${upnext}` and
@@ -77,11 +77,13 @@ teal comes from the `--track*` tokens.
 
 ![The Learn step on a phone](lesson-learn-phone-dusk.webp)
 
-**What the learner sees.** Where they are, the title and the sticker they'll earn, the four-step
-stepper, then the lesson text and its example.
+**What the learner sees.** One line saying where they are (back, the phase's shape, "1.1 Use case
+and fit"), the title and the sticker they'll earn, the four-step stepper, then the lesson text and
+its example.
 
-**What draws it.** `openLesson()` then `setStep(0)` → `learnPane()`; the stepper and bottom bar
-are `setStep()` and `renderFoot()`.
+**What draws it.** `openLesson()` → `lessonBar()` for the line, then `setStep(0)` → `learnPane()`;
+the stepper and bottom bar are `setStep()` and `renderFoot()`. Styles `.lessonbar`, `.lb-shape`,
+`.lb-t`.
 
 **Change it safely.** Lesson words live in `modules/<module>.py` (`learn=`, `example=`). The
 bottom bar has one primary button, "Next".
