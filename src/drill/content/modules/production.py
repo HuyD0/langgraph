@@ -140,7 +140,7 @@ lesson(MODULE, 'retry_wait',
     title='Retries done right',
     learn=[
         'Retry only errors that can succeed later (429 rate limits, 503 overload, timeouts). If the server says how long to wait (a **Retry-After** value), wait that long.',
-        "Otherwise wait longer each time, with **jitter**: a random wait inside a growing window, so many clients don't all retry at the same moment. Always stop after a few attempts.",
+        "Otherwise use **exponential backoff**: wait longer each time, doubling the window (1, 2, 4, 8 seconds), with **jitter**: a random wait inside that growing window, so many clients don't all retry at the same moment. Always stop after a few attempts.",
     ],
     example=example('Without and with jitter', """# 50 workers, no jitter: all retry at exactly 2 s, 4 s, 8 s → repeated collisions
 # full jitter: each waits a random time up to 2 s, then up to 4 s, then up to 8 s → spread out"""),
@@ -151,7 +151,7 @@ lesson(MODULE, 'retry_wait',
         why='Identical waits make the retries collide. Jitter spreads them out.',
     ),
     angle=angle(
-        pattern='Follow the server, else a random wait',
+        pattern='Retry-After first, else backoff with jitter',
         text='The big idea: when retrying, wait as long as the server asks, and otherwise wait longer each time with jitter. Your code first checks `retry_after`, and if the server gave a wait, it returns that. Otherwise the window is `2 ** attempt` seconds, so 1, 2, 4, 8 and so on, but never more than `max_wait`. It returns `random_number` times the window, a random spot inside it. Because the random number is passed in, a test can give the same number and get the same answer every time.',
         say='"I honour Retry-After when the server sends it. Otherwise I wait a random time inside a window that doubles each try, up to a cap."',
         classic=None,
@@ -168,7 +168,7 @@ def call_model(messages):
         fn='retry_wait',
         prompt="""Work out how long to wait before retrying a rate-limited call.
 
-You wait a random time between 0 and a limit called the **window**. The window doubles with each retry. This random part, **jitter**, stops many clients retrying at the same moment.
+You wait a random time between 0 and a limit called the **window**. The window doubles with each retry: this is **exponential backoff**. This random part, **jitter**, stops many clients retrying at the same moment.
 
 Your function gets four things:
 
@@ -251,7 +251,7 @@ lesson(MODULE, 'run_with_limit',
     title='Many calls at once',
     learn=[
         'Calling a model is mostly waiting. Running calls **concurrently** (several in flight at once) finishes a batch far sooner than one at a time.',
-        'But unlimited concurrency triggers rate limits and overloads services. Use a **cap**: a semaphore lets at most a set number (say 8) run at once, and the next starts the moment one finishes.',
+        'But unlimited concurrency triggers rate limits and overloads services. Use a **concurrency limit**: a **semaphore** (a counter of free places that each call must take before it starts) lets at most a set number (say 8) run at once, and the next starts the moment one finishes.',
     ],
     example=example('100 calls of 2 seconds each', """# one at a time:   200 seconds
 # 10 at a time:     20 seconds
@@ -627,7 +627,7 @@ lesson(MODULE, 'chunk_rows',
     title='Transforming data at scale with Spark',
     learn=[
         "Spark splits a table into **partitions** and runs your code on each partition in parallel across the cluster. That only works if your function handles **one row at a time** and doesn't depend on other rows or on shared state.",
-        'Give every output a **stable id** built from its inputs, so re-running the job produces the same ids and a MERGE overwrites instead of duplicating.',
+        'Give every output a **deterministic id** (a stable id built only from its inputs), so re-running the job produces the same ids and a MERGE overwrites instead of duplicating.',
     ],
     example=example('One document becomes many chunk rows', """id  text                  →  id    text
 d1  "abcdefg" (size 3)       d1-0  abc
@@ -881,7 +881,7 @@ lesson(MODULE, 'validate_rows',
     title='Data contracts',
     learn=[
         'Pipelines break when data changes shape: a number arrives as text, a column disappears, a new one appears.',
-        'Check rows against a **contract** (the agreed list of columns each row must have, and what kind of value goes in each), quarantine the bad ones (set them aside to look at later) instead of failing the whole load, and decide on purpose whether new columns are allowed in.',
+        'Check rows against a **contract** (the agreed list of columns each row must have, and the **data type**, or kind of value, that goes in each), quarantine the bad ones (set them aside to look at later) instead of failing the whole load, and decide on purpose whether new columns are allowed in (**schema evolution**).',
     ],
     example=example('Good, quarantined, new columns', 'A1 {minutes: 12}       → good\nA2 {minutes: "twelve"} → quarantine\nA3 {..., channel}      → good; "channel" is a new column'),
     check=question(

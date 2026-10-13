@@ -115,11 +115,12 @@ lesson(MODULE, 'circuit_breaker',
     title='Circuit breakers and fallbacks',
     learn=[
         'When a service you depend on (a dependency, like a reranker or model endpoint) is down, calling it again and again makes everything slower and the outage worse.',
-        'A **circuit breaker** stops calling after repeated failures, fails fast to a **fallback** (a cheaper model, a cached answer), and tries again after a cooldown.',
+        'A **circuit breaker** stops calling after repeated failures, fails fast to a **fallback** (a cheaper model, a cached answer), and tries again after a cooldown. It has three states: **closed** (calls go through), **open** (calls are blocked) and **half-open** (after the cooldown, one trial call decides whether to close or open again).',
     ],
-    example=example('Closed → open → trial', """closed: calls go through, failures are counted
-open:   calls are blocked for the cooldown
-trial:  one call; success closes it, failure re-opens it"""),
+    example=example('Closed → open → half-open', """closed:    calls go through, failures are counted
+open:      calls are blocked for the cooldown
+half-open: one trial call; success closes it,
+           failure re-opens it"""),
     check=question(
         'Your reranker endpoint is timing out on every call. What should the app do?',
         ['Keep retrying each request', 'Stop calling it for a while and skip reranking', 'Crash'],
@@ -256,7 +257,7 @@ print(age < 18)    # False
 print(age >= 18)   # True""",
             ],
         ],
-        byhand='Time 0 fails: count 1. Time 1 fails: count 2, which reaches the threshold of 2. The breaker opens at 1. 1 plus 10 is 11, so calls before time 11 are blocked. Time 5 is earlier than 11: blocked. The count stays at 2. Time 12 is not earlier than 11, so it is sent as a trial. It fails: count 3, which is 2 or more, so the breaker re-opens at 12. 12 plus 10 is 22, so calls before time 22 are blocked. Time 30 is not earlier than 22, so it is sent as a trial. It works: ok, the count goes back to 0 and the breaker closes. Return fail, fail, blocked, fail, ok.',
+        byhand='Time 0 fails: count 1. Time 1 fails: count 2, which reaches the threshold of 2. The breaker opens at 1. 1 plus 10 is 11, so calls before time 11 are blocked. Time 5 is earlier than 11: blocked. The count stays at 2. Time 12 is not earlier than 11, so the breaker is half-open and the call is sent as a trial. It fails: count 3, which is 2 or more, so the breaker re-opens at 12. 12 plus 10 is 22, so calls before time 22 are blocked. Time 30 is not earlier than 22, so it is sent as a trial. It works: ok, the count goes back to 0 and the breaker closes. Return fail, fail, blocked, fail, ok.',
         why='One pass over the calls.',
         gotchas=[
             [
@@ -362,7 +363,7 @@ The error rate (the share of requests that failed) is `errors / total`. The allo
         gotchas=[
             [
                 'Pick the window with the threshold',
-                'A high burn rate over the last hour means "page now"; a low one over a few days means "open a ticket and look tomorrow". Teams use both.',
+                'A high burn rate over the last hour means "page now"; a low one over a few days means "open a ticket and look tomorrow". Teams use both, which Google calls multiwindow, multi-burn-rate alerts.',
             ],
             [
                 'Define failure for AI',

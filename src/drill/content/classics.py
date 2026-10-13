@@ -26,14 +26,14 @@ ages['bo'] = 25   # adds a pair""",
     print(i, w)   # 0 a, then 1 b""",
             ],
             [
-                'The partner number',
-                'If you are on number `n` and want a total of `target`, the partner you need is `target - n`.',
+                'The complement',
+                'If you are on number `n` and want a total of `target`, the number you still need is `target - n`. Programmers call it the complement.',
                 """budget = 10
 spent = 3
 left = budget - spent   # 7""",
             ],
         ],
-        'byhand': 'Read the list left to right. Position 0 holds 2. Its partner would be 7, since 2 plus 7 is 9. You haven\'t seen 7 yet, so remember that 2 is at position 0. Position 1 holds 7. Its partner would be 2, and you saw 2 at position 0. Return [0, 1].',
+        'byhand': 'Read the list left to right. Position 0 holds 2. Its complement (the number it still needs) is 7, since 2 plus 7 is 9. You haven\'t seen 7 yet, so remember that 2 is at position 0. Position 1 holds 7. Its complement is 2, and you saw 2 at position 0. Return [0, 1].',
         'why': 'You look at each number once, and each dict check is instant, so the work grows only as fast as the list. The slow way tries every pair, with a loop inside a loop.',
         'guided': """def two_sum(numbers, target):
     # Replace every ___ with real code, then run the tests.
@@ -43,10 +43,11 @@ left = budget - spent   # 7""",
     seen = {}
 
     for i, n in enumerate(numbers):
-        # Step 1: the partner n needs to make target.
+        # Step 1: the complement, the number n needs
+        #         to make target.
         need = ___
 
-        # Step 2: seen the partner already? Return a
+        # Step 2: seen the complement already? Return a
         #         list: its position (stored in seen)
         #         first, then i.
         if need in seen:
@@ -100,7 +101,7 @@ not pile   # True""",
 not pile or 1 > 2   # True: the pile is empty""",
             ],
         ],
-        'byhand': 'Read left to right, using a stack (a pile where you only touch the top). "{" opens: put it on the stack. "[" opens: put it on top. "]" closes, and the top is "[", its partner: take it off. "}" closes, and the top is now "{", its partner: take it off. The stack is empty at the end, so return True.',
+        'byhand': 'Read left to right, using a stack (a pile where you only touch the top). "{" opens: put it on the stack. "[" opens: put it on top. "]" closes, and the top is "[", its matching opening bracket: take it off. "}" closes, and the top is now "{", its matching opening bracket: take it off. The stack is empty at the end, so return True.',
         'why': 'You read each character once, and putting on or taking off the top of the stack is instant.',
         'guided': """def is_valid(brackets):
     # Replace every ___ with real code, then run the tests.
@@ -160,7 +161,7 @@ elif age < 20: print('teen')
 else: print('adult')""",
             ],
         ],
-        'byhand': 'At first the search area is the whole list: low is position 0 and high is position 4. The middle is position 2, which holds 5. 7 is bigger than 5, so it must be to the right: low moves to 3, and the area is positions 3 to 4. Halfway between 3 and 4, rounded down, is position 3. It holds 7. Found it: return 3.',
+        'byhand': 'At first the search space (the part of the list target could still be in) is the whole list: low is position 0 and high is position 4. The middle is position 2, which holds 5. 7 is bigger than 5, so it must be to the right: low moves to 3, and the search space is positions 3 to 4. Halfway between 3 and 4, rounded down, is position 3. It holds 7. Found it: return 3.',
         'why': "Each step throws away half of what's left. A million items take only about 20 steps, because you can halve a million only about 20 times.",
         'guided': """def search(numbers, target):
     # Replace every ___ with real code, then run the tests.
@@ -207,7 +208,7 @@ today = 8           # then move on""",
             ],
         ],
         'byhand': 'Count the ways to reach each step, from the bottom. Step 1: 1 way. Step 2: 2 ways (1 then 1, or 2). Step 3: your last move came from step 2 or step 1, so 2 plus 1 is 3 ways. Step 4: your last move came from step 3 or step 2, so 3 plus 2 is 5 ways. Return 5.',
-        'why': 'One walk up the stairs, keeping only two numbers. Listing every order one by one would take far too long for 40 steps.',
+        'why': 'This is dynamic programming: building the answer from answers to smaller versions of the problem. One walk up the stairs, keeping only two numbers. Listing every order one by one would take far too long for 40 steps.',
         'guided': """def climb_stairs(steps):
     # Replace every ___ with real code, then run the tests.
 
@@ -275,7 +276,7 @@ i - start + 1   # 3: 2, 3 and 4""",
 best = max(best, 3)   # 3""",
             ],
         ],
-        'byhand': 'The window is the stretch of characters you\'re looking at now, with no repeats. It starts empty. p: add it, window "p". w: add it, window "pw". The next w is already in the window, so drop the window\'s first character until it isn\'t: drop p, then drop w. Add the new w: window "w". k: window "wk". e: window "wke", length 3. The last w is in the window, so drop the first character, w: "ke". Add w: "kew", length 3. The longest was 3, so return 3.',
+        'byhand': 'This is the sliding window technique. The window is the stretch of characters you\'re looking at now, with no repeats. It starts empty. p: add it, window "p". w: add it, window "pw". The next w is already in the window, so drop the window\'s first character until it isn\'t: drop p, then drop w. Add the new w: window "w". k: window "wk". e: window "wke", length 3. The last w is in the window, so drop the first character, w: "ke". Add w: "kew", length 3. The longest was 3, so return 3.',
         'why': 'Each character is added to the window once and dropped at most once, so the work grows only as fast as the string.',
         'guided': """def length_of_longest_substring(text):
     # Replace every ___ with real code, then run the tests.
@@ -325,7 +326,7 @@ for price in [3, 5]:
             ],
         ],
         'byhand': 'Keep two numbers: the running total, and the best total so far. 3: running is 3, best is 3. -4: adding it gives -1, better than starting again at -4, so running is -1. Best stays 3. 2: starting again at 2 beats adding it to -1 (which gives 1), so running is 2. Best stays 3. -1: adding it gives 1, better than -1 alone, so running is 1. Best stays 3. 4: adding it gives 5, better than 4 alone, so running is 5 and best is 5. Return 5.',
-        'why': 'One walk with two numbers to update. Checking every possible start and end would take far longer on long lists.',
+        'why': "This is called Kadane's algorithm. One walk with two numbers to update. Checking every possible start and end would take far longer on long lists.",
         'guided': """def max_sub_array(numbers):
     # Replace every ___ with real code, then run the tests.
 
@@ -428,7 +429,7 @@ teams['red'].append('ana')""",
 list(ages.values())   # [1, 2]""",
             ],
         ],
-        'byhand': 'Sort each word\'s letters to get its label. "eat" gives "aet": a new group. "tan" gives "ant": a new group. "tea" gives "aet", so it joins "eat". "nat" gives "ant", so it joins "tan". "bat" gives "abt": a new group. Return [["eat", "tea"], ["tan", "nat"], ["bat"]].',
+        'byhand': 'Sort each word\'s letters to get its label, the dict key every anagram of it shares. "eat" gives "aet": a new group. "tan" gives "ant": a new group. "tea" gives "aet", so it joins "eat". "nat" gives "ant", so it joins "tan". "bat" gives "abt": a new group. Return [["eat", "tea"], ["tan", "nat"], ["bat"]].',
         'why': 'Each word is sorted once to make its label, and stored once in its group.',
         'guided': """def group_anagrams(words):
     # Replace every ___ with real code, then run the tests.
@@ -468,14 +469,14 @@ board[1][0]   # 'c'""",
 # left (2, 2)   right (2, 4)""",
             ],
             [
-                'A function that calls itself',
-                'A function can call itself to do the same job on a nearby piece. It needs a rule that stops it, or it would never end.',
+                'Recursion: a function that calls itself',
+                'A function can call itself to do the same job on a nearby piece. This is called recursion. It needs a rule that stops it (the base case), or it would never end.',
                 """def countdown(k):
     if k > 0:
         countdown(k - 1)""",
             ],
             [
-                'A function inside a function',
+                'A nested function: one inside another',
                 'A function defined inside another one can use the outer one\'s names, like `grid`, `height` and `width`.',
                 """def outer():
     name = 'Ana'
@@ -495,7 +496,7 @@ count += 1   # now 1""",
             ],
         ],
         'byhand': 'Scan row by row. The top-left square is land you haven\'t visited: that\'s island 1. Sink it: it turns to water, and so does the land joined to it, the square to its right and the square below it. Keep scanning. Everything else is water until the bottom-right square, which is land: island 2. Sink it. No land touches it. Return 2.',
-        'why': 'Each square is looked at only a few times: once by the scan, and at most once from each of its four neighbours.',
+        'why': 'Sinking an island this way is a flood fill, done with depth-first search (DFS). Each square is looked at only a few times: once by the scan, and at most once from each of its four neighbours.',
         'guided': """def num_islands(grid):
     # Replace every ___ with real code, then run the tests.
 

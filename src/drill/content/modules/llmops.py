@@ -373,7 +373,7 @@ The cache starts empty. Go through `prompts` in order:
 Return the number of hits.""",
         pattern='Keep the cache as a list in order of use: used longest ago at the front, newest at the end.',
         target='one walk through the prompts',
-        realworld='Prompt and response caching cuts cost and waiting time for repeated questions. Model providers also offer cheaper prices when many prompts start with the same opening text.',
+        realworld='Prompt and response caching cuts cost and waiting time for repeated questions. Model providers also offer prompt caching: cheaper prices when many prompts start with the same opening text (the same prefix).',
         starter="""def cache_hits(prompts, capacity):
     # your code here
     pass

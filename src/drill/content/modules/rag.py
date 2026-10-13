@@ -23,7 +23,7 @@ lesson(MODULE, 'chunk_text',
         why='Without overlap, an answer split across two chunks may never be retrieved in one piece.',
     ),
     angle=angle(
-        pattern='Overlapping slices along the text',
+        pattern='Sliding window with overlap',
         text='The big idea: documents are cut into small chunks for search, and chunks overlap a little so a sentence on a boundary appears whole in one of them. Your code starts at character 0 and cuts out `size` characters. Then it moves forward by `size - overlap`, so each chunk repeats the last few characters of the one before. It stops once a chunk reaches the end of the text, so no extra chunk is made. It is like roof tiles, each one covering the edge of the last.',
         say='"I cut the text into fixed-size chunks that overlap a little, so a sentence that crosses a boundary appears whole in at least one chunk."',
         classic='longest_unique_substring',
@@ -48,7 +48,7 @@ lesson(MODULE, 'chunk_text',
 The first chunk starts at character 0. Each next chunk starts `size - overlap` characters later. Stop once a chunk includes the last character of the text. The last chunk can be shorter than `size`.
 
 Return the chunks as a list, in order. Empty text gives `[]`.""",
-        pattern='Move a fixed-size slice along the text in equal jumps, and know exactly when to stop.',
+        pattern='A sliding window: move a fixed-size slice along the text in equal jumps, and know exactly when to stop.',
         target='one pass along the text, in equal jumps',
         realworld='The first step of RAG (retrieval-augmented generation). The overlap stops a sentence from being cut in half and lost.',
         starter="""def chunk_text(text, size, overlap):
@@ -536,7 +536,7 @@ lesson(MODULE, 'ndcg_at_k',
     title='Ranking quality: nDCG',
     learn=[
         "Recall@k asks whether the right documents made the top k. It ignores the order inside the top k, and it treats every relevant document as equally good. When order matters, for example when comparing rerankers (models that reorder search results), use **nDCG@k**.",
-        "Give each document a **grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: position 1 counts in full, position 2 about 63%, position 3 half, position 4 about 43%. Add those up to get the **DCG**.",
+        "Give each document a **relevance grade** for a question: say 0 useless, 1 related, 2 helpful, 3 answers it. A document's grade counts less the lower it appears: position 1 counts in full, position 2 about 63%, position 3 half, position 4 about 43%. Add those up to get the **DCG**, short for discounted cumulative gain: \"discounted\" because lower places count less, \"cumulative gain\" because you add up the grades.",
         'Then divide by the best possible DCG for those grades, the **ideal DCG**, where the best documents come first. So nDCG runs from 0 to 1, and 1 means perfectly ordered. Grades come from people or an LLM judge, on a sample of questions.',
         'Another common metric, MRR (mean reciprocal rank), only looks at where the first relevant document sits. nDCG uses every graded document.',
     ],
@@ -712,7 +712,7 @@ lesson(MODULE, 'rerank_check',
     title='Did the reranker help?',
     learn=[
         "A **reranker** takes the retriever's candidates, say the top 20, and puts them in a better order, so the top few that reach the model are the most useful. It costs time on every request, so measure what it actually does.",
-        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back: that question is **out of reach**, and the fix belongs in retrieval (chunking, embeddings, hybrid search). Only then compare the top k before and after reranking, on the same candidate lists.",
+        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back: that question is **out of reach** (a **retrieval miss**: the right document is not in the candidate set), and the fix belongs in retrieval (chunking, embeddings, hybrid search). Only then compare the top k before and after reranking, on the same candidate lists.",
         "Count four outcomes per question: **helped** (the right document entered the top k), **hurt** (it was pushed out), **no change**, and **out of reach**. If most misses are out of reach, a better reranker won't help, and you have learned where to spend effort next.",
     ],
     example=example('Before and after, on the same candidates', """question        right doc   top 3 before        top 3 after        outcome
@@ -747,7 +747,7 @@ mlflow.log_metric("out_of_reach", int(gold not in candidates))"""),
         fn='rerank_check',
         prompt="""Your function gets two things:
 
-- `questions`: one dict per question, with three keys. `gold` is the right document id, like `"d12"`. `before` is the search results, best first, like `["d4", "d9", "d12"]`. `after` is the same ids, reordered by the reranker.
+- `questions`: one dict per question, with three keys. `gold` is the right document id (the **gold label**: the answer you know is right), like `"d12"`. `before` is the search results, best first, like `["d4", "d9", "d12"]`. `after` is the same ids, reordered by the reranker.
 - `k`: how many top results count, like `2`.
 
 Give each question one outcome, checking in this order:
@@ -861,7 +861,7 @@ Return a dict counting each outcome. Include all four, even at 0.""",
 lesson(MODULE, 'abstention_rates',
     title='Knowing when not to answer',
     learn=[
-        "Retrieval always finds *something*, even when your documents don't contain the answer. A model handed weak chunks will often answer anyway, confidently. If every question in your eval set can be answered from your documents, you never measure this.",
+        "Retrieval always finds *something*, even when your documents don't contain the answer. A model handed weak chunks will often answer anyway, confidently. If every question in your eval set can be answered from your documents, you never measure this. Declining to answer on purpose is called **abstention**.",
         "So put **unanswerable questions** in the eval set on purpose: questions on nearby topics that your documents really don't cover, written by someone who knows the documents. Then measure two rates separately. **Missed refusals**: of the unanswerable questions, how often did it answer anyway? That's the dangerous one. **Over-refusals**: of the answerable questions, how often did it decline? That's the annoying one.",
         "There is no standard name or formula for this yet; these two rates are a practical choice. They pull against each other: pushing one rate down usually pushes the other up. So decide which matters more for your app before you tune.",
     ],
@@ -1026,7 +1026,7 @@ if not task['done']:
 lesson(MODULE, 'claim_gate',
     title='Checking each claim before release',
     learn=[
-        'Evals check quality **before** release, on a fixed set. A **claim gate** checks every answer **at request time**, before the user sees it. The model writes one short statement per line, each citing the passage it came from. A verifier (a small specialised model, or an LLM judge) labels each statement **supported**, **unsupported** or **contradicted** by its cited passage.',
+        'Evals check quality **before** release, on a fixed set. A **groundedness check** is a **guardrail** that checks every answer **at request time**, before the user sees it; this lesson calls it a claim gate. The model writes one short statement (a **claim**) per line, each citing the passage it came from. A verifier (a small specialised model such as an NLI, natural language inference, model, or an LLM judge) labels each statement **supported**, **unsupported** or **contradicted** by its cited passage.',
         'A gate then decides: **release** if every claim is supported, **revise** by dropping the unsupported claims, or **abstain** ("I couldn\'t verify an answer") if nothing is supported. A safe policy also abstains if any claim is **contradicted**, because a contradiction means the answer says the opposite of its source.',
         'Know its limits. **Supported is not relevant**: a claim can match its passage and still not answer the question. A claim with the **wrong citation** gets dropped even when it is true. **Dropping** a claim can change the meaning, for example by removing a "do not". And the verifier is a judge, so check it against human labels like any judge. The share of answers revised or abstained also makes a good monitoring signal.',
     ],
@@ -1047,7 +1047,7 @@ You can also get store credit instead.              [3]    unsupported
     ),
     angle=angle(
         pattern='Keep supported claims, then decide',
-        text='The big idea: a claim gate checks each statement at request time, before the user sees the answer. Your code goes through the verdicts once. It keeps the text of every supported claim in a list and notes if any claim is contradicted. Then it decides. Any contradiction, or nothing supported, means abstain and keep nothing. If every claim was supported, it releases them all. Otherwise it revises, keeping only the supported claims in their original order. An empty list has nothing supported, so it abstains too.',
+        text='The big idea: a claim gate, a groundedness check, checks each statement at request time, before the user sees the answer. Your code goes through the verdicts once. It keeps the text of every supported claim in a list and notes if any claim is contradicted. Then it decides. Any contradiction, or nothing supported, means abstain and keep nothing. If every claim was supported, it releases them all. Otherwise it revises, keeping only the supported claims in their original order. An empty list has nothing supported, so it abstains too.',
         say='"Before the user sees an answer, I check each claim. All supported means release, some means revise, and none supported or any contradicted means abstain."',
         classic=None,
     ),
@@ -1163,7 +1163,7 @@ n == 0 or n > 5   # True""",
 lesson(MODULE, 'pick_config',
     title='Designing a RAG experiment',
     learn=[
-        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination, so you can see what each one did.',
+        'The settings that matter most in RAG: **chunk size** and **overlap**, **k** (how many chunks go into the prompt), the **embedding model**, and whether you **rerank**. Try a few values of one or two of them, keeping everything else fixed. If you vary two, try every combination (a **grid search**), so you can see what each one did.',
         'Hold the eval set, the judge and the answering model fixed. Log retrieval quality, answer quality, p95 latency (how slow it is: 95 out of 100 requests are faster than this) and cost for every run. Then pick a **config** (one combination of settings) using the rule you wrote down: best answer quality within the latency budget, the slowest you can accept.',
     ],
     example=example('Two settings, every combination, a 1500 ms budget', """chunk  k  quality  p95 ms

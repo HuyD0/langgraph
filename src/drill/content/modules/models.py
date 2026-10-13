@@ -8,7 +8,7 @@ lesson(MODULE, 'percentile',
     title='Latency that users feel',
     learn=[
         '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.',
-        "Measure the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
+        "Measure **end-to-end latency**: the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
     ],
     example=example('Finding slow traces in MLflow', """slow = mlflow.search_traces(
     filter_string="attributes.execution_time_ms > 5000",
@@ -42,7 +42,7 @@ Your function gets two things:
 - `latencies`: response times in milliseconds, like `[820, 640, 4100]`.
 - `percent`: which percentile you want, like `95` for p95.
 
-Sort the latencies, fastest first. Multiply the list's length by `percent`, divide by 100, and round up to a whole number. That is the position of your answer, counting from 1. For example, 5 items at 50 percent is 5 times 50 divided by 100, which is 2.5, so round up to position 3. Return the latency at that position.
+Sort the latencies, fastest first. Multiply the list's length by `percent`, divide by 100, and round up to a whole number. That is the position of your answer, counting from 1. This way of finding a percentile is called the **nearest-rank method**. For example, 5 items at 50 percent is 5 times 50 divided by 100, which is 2.5, so round up to position 3. Return the latency at that position.
 
 If `latencies` is empty, return `None`.""",
         pattern='Sort, then pick by position.',
@@ -129,7 +129,7 @@ lesson(MODULE, 'pareto_models',
     title='Comparing LLMs for a task',
     learn=[
         'To choose a model for a task, run each candidate on the **same eval set**, with the **same judge**, and record **quality, cost and p95 latency** as one MLflow run per model.',
-        "Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the **Pareto front**.",
+        "Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. The usual term is that the winner **dominates** the loser. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the **Pareto front**.",
     ],
     example=example('One run per model, same eval set', """from mlflow.genai.scorers import Correctness
 
@@ -167,7 +167,7 @@ for endpoint in candidates:
 - `cost`: dollars per 1,000 calls. Lower is better.
 - `p95_ms`: the p95 latency in milliseconds. Lower is better.
 
-Model A **beats** model B when A is at least as good on all three, and better on at least one. So two models with the same numbers do not beat each other.
+Model A **beats** model B (the usual term is **dominates**) when A is at least as good on all three, and better on at least one. So two models with the same numbers do not beat each other.
 
 Return the names of the models that no other model beats, in their original order. These are called the Pareto front, which is where the name `pareto_models` comes from.""",
         pattern='Compare every pair: keep a model only if no other model beats it.',

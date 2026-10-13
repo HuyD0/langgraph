@@ -25,9 +25,9 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="hash-map",
         difficulty="easy",
         pattern=(
-            "Remember what you've already seen. A dictionary lets you ask \"have I "
-            'already seen the partner I need?" instantly, so you only walk through the '
-            "list once."
+            "Remember what you've already seen. The complement is the number you still "
+            "need: target minus this number. A dictionary lets you ask \"have I already "
+            'seen the complement?" instantly, so you only walk through the list once.'
         ),
         target_complexity="one pass over the list (a dict to remember numbers is fine)",
         prompt=(
@@ -68,7 +68,8 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         difficulty="easy",
         pattern=(
             "Use a stack, like a pile of plates. Put each opening bracket on top. When a "
-            "closing bracket shows up, the plate on top must be its partner."
+            "closing bracket shows up, the plate on top must be its matching opening "
+            "bracket."
         ),
         target_complexity="one pass over the string",
         prompt=(
@@ -116,10 +117,11 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="binary-search",
         difficulty="easy",
         pattern=(
-            "Halve the search area each step. Like finding a word in a paper dictionary: "
+            "Halve the search space (the part where the target could still be) each "
+            "step. Like finding a word in a paper dictionary: "
             "open the middle, decide which half it's in, ignore the other half, and repeat."
         ),
-        target_complexity="halve the search area each step, instead of checking every item",
+        target_complexity="halve the search space each step, instead of checking every item",
         prompt=(
             "Your function gets two things:\n\n"
             "- `numbers`: a list sorted from smallest to largest, like `[1, 3, 5, 7, 9]`. "
@@ -164,7 +166,7 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="dynamic-programming",
         difficulty="easy",
         pattern=(
-            "Build the answer from smaller answers. The ways to reach step 5 are the ways "
+            "Dynamic programming: build the answer from smaller answers. The ways to reach step 5 are the ways "
             "to reach step 4 plus the ways to reach step 3, so you only need to remember "
             "the last two counts."
         ),
@@ -209,7 +211,7 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="sliding-window",
         difficulty="medium",
         pattern=(
-            "Slide a window along the string. Stretch it on the right. When a character "
+            "Sliding window: slide a window along the string. Stretch it on the right. When a character "
             "repeats, shrink it from the left until the repeat is gone."
         ),
         target_complexity=(
@@ -259,7 +261,7 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="dynamic-programming",
         difficulty="medium",
         pattern=(
-            "Keep a running total as you walk the list. At each number, ask: am I better "
+            "Kadane's algorithm: keep a running total as you walk the list. At each number, ask: am I better "
             "off adding this to my running total, or starting fresh from here?"
         ),
         target_complexity="one pass over the list, keeping just two totals",
@@ -345,8 +347,8 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         topic="hash-map",
         difficulty="medium",
         pattern=(
-            "Give every word a label that's identical for words with the same letters, such"
-            " as its letters in alphabetical order. Then group words by label in a "
+            "Give every word a key that's identical for words with the same letters, such"
+            " as its letters in alphabetical order. Then group words by that key in a "
             "dictionary."
         ),
         target_complexity="one pass over the words",
@@ -396,7 +398,8 @@ ALL_PROBLEMS: tuple[Problem, ...] = (
         pattern=(
             "When you find land you haven't visited yet, that's a new island. Count it, "
             "then sink it: turn it and all the land joined to it into water, so you "
-            "don't count it twice."
+            "don't count it twice. Sinking it is a flood fill, usually done with "
+            "depth-first search (DFS)."
         ),
         target_complexity=(
             "look at each square only a few times. A loop over the rows with a loop over "
