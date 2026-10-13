@@ -69,7 +69,7 @@ them before making a new one; a new one gets a row here.
 | Stepper | `.stepbtn` | Top of a lesson | Learn, Check, Build, Explain (a content-pack lesson says Practice for Build); the current one carries `accent` |
 | Bottom bar | `#foot` (rendered by `renderFoot`) | Lessons | One primary on the right, a quiet Back on the left |
 | Phase tabs and room | `.phasebox`, `.rail.phtabs`, `.book.room`, `.titlecard`, `.paper0`–`.paper5` | Home | Violet `--path*`; the room's paper matches its phase shape |
-| Track room | `.book.room.track`, `.paper6`, `.trackcap` | Home, track lessons | Teal `--track*`; inside it teal stands in for `accent` |
+| Track room | `.book.room.track`, `.paper6`, `.lb-shape.track` | Home, track lessons | Teal `--track*`; inside it teal stands in for `accent` |
 | Sticker | `.stk` (`.done`, `.now`, `.next`, `.ahead`, `.soon`), `.stickers`, `.ministk` | Home, done screen | Shape from `phShape`; `soon` is a faded, unopenable placeholder |
 | Phase badge | `.bdg` (`.now`, `.done`), `badgeSvg()` | Tabs, title cards | The glow (`#aura`, `#aura-track`) is only on what's current |
 | Check options | `.opts`, `.opt`, `.verdict` | Check step | The verdict scrolls into view after an answer |
@@ -92,7 +92,7 @@ them before making a new one; a new one gets a row here.
 for light, dark and dusk in `tokens.css`. Teal is used only for the Platform track. Inside
 `.book.room.track` the rule `--accent: var(--track)` recolours everything "current" (Next, the
 rim, the title glow) without new component rules; outside the track, track lessons use teal only
-in their caption (`.trackcap`).
+in their lesson line (`.lessonbar`: the octagon and the P-number).
 
 ## The looks
 

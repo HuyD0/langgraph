@@ -37,7 +37,7 @@ then the path: six phase tabs on a violet strip, joined to the phase's room belo
 shows "How it works" instead of the next lesson.
 
 **What draws it.** `renderHome()` in the `home: the learning path` section; the tabs are
-`railHtml(false, ...)`; the card is `.next`. Colours: `--accent` for the button, `--path*` for the
+`railHtml(null, viewing)`; the card is `.next`. Colours: `--accent` for the button, `--path*` for the
 strip.
 
 **Change it safely.** Keep one primary button. New home sections go between `${upnext}` and
@@ -77,11 +77,13 @@ teal comes from the `--track*` tokens.
 
 ![The Learn step on a phone](lesson-learn-phone-dusk.webp)
 
-**What the learner sees.** Where they are, the title and the sticker they'll earn, the four-step
-stepper, then the lesson text and its example.
+**What the learner sees.** One line saying where they are (back, the phase's shape, "1.1 Use case
+and fit"), the title and the sticker they'll earn, the four-step stepper, then the lesson text and
+its example.
 
-**What draws it.** `openLesson()` then `setStep(0)` → `learnPane()`; the stepper and bottom bar
-are `setStep()` and `renderFoot()`.
+**What draws it.** `openLesson()` → `lessonBar()` for the line, then `setStep(0)` → `learnPane()`;
+the stepper and bottom bar are `setStep()` and `renderFoot()`. Styles `.lessonbar`, `.lb-shape`,
+`.lb-t`.
 
 **Change it safely.** Lesson words live in `modules/<module>.py` (`learn=`, `example=`). The
 bottom bar has one primary button, "Next".
@@ -183,15 +185,41 @@ they did in the lesson, and what's next. "Done for today" is the primary button.
 
 **What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step.
 
-## The study tray
+## A lesson: Practice (platform lessons)
 
-![The study tray open on a phone](study-tray-phone-dusk.webp)
+![A practice question on a phone](practice-phone-dusk.webp)
 
-**What the learner sees.** Everything they saved, in three tabs (To review, Still learning, Got
-it), with seals for each spaced review. Closed, it is a small bar at the bottom.
+**What the learner sees.** In platform lessons, Build is a short run of questions instead of code:
+a piece of evidence (a YAML file, a chain of stops, a plan, a claim, a prompt), then one plain
+question with three answers. "Give me a clue" comes first, then the answer; the dots show how far
+along they are. Some questions are "Fix the YAML": edit the file until it passes. Python stays
+one tap away.
 
-**What draws it.** `renderPocket()`, `openPocket()` in `the pocket`; saved items come from the
-backend (`study` docs).
+**What draws it.** `qfRender()`, `qfPick()`, `qfHelp()` and `QF` in the `practice questions` section; Fix the
+YAML is `yamlRead()` and `yamlCheck()`, mirrored in Python by `content/yaml_rules.py`. The content
+is `exercise(practice=practice(asks=[ask(...), fix(...)]))` in the lesson.
+
+**Change it safely.** One question per screen, clue before answer. Each `ask` needs exactly one
+right answer and a `clue`; a `fix` needs a start that fails and an answer that passes (tests check
+both).
+
+## The study list
+
+| On Home | Opened |
+|---|---|
+| ![The study list row on Home](study-row-phone-dusk.webp) | ![The study list opened](study-list-phone-dusk.webp) |
+
+**What the learner sees.** Closed, one quiet row under the Today card: a ring with a count and
+"3 learning · 2 to review". It never floats over a lesson or pulses. Tapping it opens the sheet:
+everything they saved, in three tabs (To review, Still learning, Got it), with seals for each
+spaced review. Due reviews also show as one line on the Today card ("Also: 2 quick reviews").
+
+**What draws it.** `studyRowHtml()`, `renderPocket()` and `openPocket()` in
+`page/study-list.js`; styles `.studyrow`, `.reviewline` and `.pocket` in `page/pocket.css`. Saved
+items come from the backend (`study` docs).
+
+**Change it safely.** Keep it out of the lesson screens: it appears when asked for. The row is
+hidden when nothing is saved.
 
 ## Search
 

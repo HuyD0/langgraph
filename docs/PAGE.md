@@ -37,8 +37,9 @@ Home shows the path as a sticker book, with the six phases always in view:
   Tap a tab (or use the arrow keys, Home and End) to see its page of stickers; "Back to today"
   returns to the current phase. It is a real tab list (`role="tablist"`, `tab`, `tabpanel`).
   The look lives in `.phasebox`, `.rail.phtabs` and `.book.room` in `page.html`; the colours are
-  the `--path*` tokens. Above every lesson the small rail is a reminder only, so a tap never
-  leaves the lesson.
+  the `--path*` tokens. Above every lesson one line says where it lives: a back button, the
+  phase's shape, the lesson's number and its module ("← ◯ 1.1 Use case and fit"; `lessonBar()`).
+  Hovering the line names the phase and how far through the module it is.
 - **One shape per phase**: circle (Frame), rounded square (Design), hexagon (Build and trace),
   diamond (Evaluate), shield (Ship), pentagon (Monitor). Every lesson is a sticker in its phase's
   shape, with its module's icon inside, so one sticker tells you where an idea lives.
@@ -166,8 +167,13 @@ Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__
   module file), faded with a dotted outline. They can't be opened; the tutor lists them as not
   built yet.
 - **It never moves the path**: the Today card, "Next" on the phases and the AI path's order ignore
-  track lessons. Inside a lesson the track shows one caption line instead of the phase rail, and
-  finishing it points to the track's next lesson.
+  track lessons. Inside a lesson the same one line shows the teal octagon and the P-number
+  ("P1.3 How the platform repos fit together"), and finishing it points to the track's next lesson.
+- **Order and independence**: how the pieces fit (P1), then each tool in the order a change meets
+  it (Azure Databricks, Terraform, Spacelift), then Troubleshooting a run, then the deeper
+  workspace, access and platform modules. Each module stands on its own: opening a lesson further
+  on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
+  done. Home's track box has no Continue button when the Today card already opens the same lesson.
 
 ## Your own use case
 
