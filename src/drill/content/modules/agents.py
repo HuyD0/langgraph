@@ -8,7 +8,7 @@ lesson(MODULE, 'run_agent',
     title='The agent loop',
     learn=[
         'An **agent** is a loop: the model picks a tool, your code runs it, the result goes back to the model, repeat until it gives a final answer.',
-        'Two rules keep it safe: a **hard step limit**, and turning tool errors into messages the model can read instead of crashes.',
+        'Two rules keep it safe: a **hard step limit** (LangGraph calls it the **recursion limit**), and turning tool errors into messages the model can read instead of crashes.',
         "Don't count on LangGraph's built-in limit. It is about 10,000 steps, so a stuck agent can spend money for a long time first. Always set your own small limit.",
     ],
     example=example('The shape of every agent', """for step in range(MAX_STEPS):
@@ -535,8 +535,8 @@ lesson(MODULE, 'fact_history',
     title='When a new fact replaces an old one',
     learn=[
         'When a new fact replaces an old one, **overwriting** the old one loses the history. You can no longer answer "where was the office in March?", or see what the agent believed when it made an old decision. In LangGraph, `store.put` on a key that already exists replaces the whole value, with no warning.',
-        "Instead, **close** the old fact. Give each fact a `from` day (when it became true) and a `to` day (`None` while it is still true). When a new fact arrives, set the old fact's `to` to the new fact's `from`, and save the new fact next to it under its own key.",
-        'Now "what\'s true now?" means the facts whose `to` is `None`. "What was true on day 30?" means the fact that started on or before day 30 and hadn\'t ended yet. Some systems also save a second date, the day they **learned** the fact, because it can differ from the day it became true.',
+        "Instead, **close** the old fact. Give each fact a `from` day (when it became true) and a `to` day (`None` while it is still true). When a new fact arrives, set the old fact's `to` to the new fact's `from`, and save the new fact next to it under its own key. Data teams know this pattern as **SCD Type 2** (slowly changing dimension, type 2).",
+        'Now "what\'s true now?" means the facts whose `to` is `None`. "What was true on day 30?" means the fact that started on or before day 30 and hadn\'t ended yet. Some systems also save a second date, the day they **learned** the fact, because it can differ from the day it became true. Keeping both dates is called **bitemporal** data.',
         'One exception is **personal data**. When a person asks to be forgotten, deleting wins over keeping history (see the "Personal data" lesson in Security).',
     ],
     example=example('Two facts about the office', """value  from  to
@@ -725,7 +725,7 @@ n is None or n > 3   # True""",
 lesson(MODULE, 'tool_schema',
     title='Tools from Unity Catalog',
     learn=[
-        "An agent's tools are described to the model as a **name**, a **description** and **parameters** (the inputs the tool takes). The model picks a tool by reading those descriptions, so they are part of your prompt.",
+        "An agent's tools are described to the model as a **name**, a **description** and **parameters** (the inputs the tool takes). The model picks a tool by reading those descriptions, so they are part of your prompt. Together they are called the **tool schema**, written in a format called JSON Schema.",
         'On Databricks, a common pattern is to write tools as **Unity Catalog functions**: governed, permissioned and reusable. `UCFunctionToolkit` turns them into LangChain tools, using the function and parameter comments as descriptions.',
     ],
     example=example('A tool as the model sees it', """{"type": "function", "function": {
@@ -946,7 +946,7 @@ names.append('Ana')   # ['Ana']""",
 lesson(MODULE, 'tool_pairs',
     title='Tool calls and results',
     learn=[
-        'When a model calls tools, each call gets an **id**, and each result must reference it. Model APIs reject a conversation where a call has no matching result.',
+        'When a model calls tools, each call gets an **id**, and each result must reference it. Model APIs reject a conversation where a call has no matching result. A call left without a result is often called a **dangling tool call**.',
         'This breaks most often after trimming history, or when a tool crashes and no result is sent. Send the error as the result instead.',
     ],
     example=example('A call and its result', """{'role': 'assistant', 'tool_calls': [{'id': 'call_1', 'name': 'search'}]}
@@ -1627,7 +1627,7 @@ sorted(['a', 'b'])   # ['a', 'b']
 lesson(MODULE, 'compare_designs',
     title='Comparing agent designs',
     learn=[
-        'There are several ways to build the same agent. **ReAct**: think, call a tool, look, repeat. **Plan then execute**: write the plan first, then follow it.',
+        'There are several ways to build the same agent. **ReAct**: think, call a tool, look, repeat. **Plan-and-execute**: write the plan first, then follow it.',
         'A **supervisor** is a main agent whose tools are specialist helper agents. In LangGraph each design is a different graph. Which is better depends on your tasks, so measure it instead of guessing.',
         'Run every design on **the same tasks**, several times each. Compare how often a run succeeds, and how many tasks succeed on **every** try (the pass^k idea). Also compare the **cost per success**: the cost of all runs, failed ones included, spread over the runs that worked.',
         'Then read the tasks one design fails and another passes, trace by trace. Planning first often wastes fewer tool calls but breaks when the plan is wrong. A supervisor adds overhead that only pays off on tasks with genuinely separate parts.',
@@ -1968,7 +1968,7 @@ names.append('Ana')   # ['Ana']""",
         gotchas=[
             [
                 'Steps before the pause may run twice',
-                'When LangGraph resumes, the node containing interrupt() runs again from its start. Put actions that change things, like sending an email, after the interrupt, or make them safe to run twice.',
+                'When LangGraph resumes, the node containing interrupt() runs again from its start. Put actions that change things, like sending an email, after the interrupt, or make them **idempotent** (safe to run twice).',
             ],
             [
                 "Show the person what they're approving",
@@ -1982,8 +1982,8 @@ lesson(MODULE, 'next_action',
     title='An agent that runs code',
     learn=[
         'Code a model writes often fails on the first try. A **coding agent** runs its code, reads the error, writes a fix and runs it again. Each run ends with an **exit code**: 0 means no error, and anything else means it failed.',
-        'Give the loop a **round limit**: the most tries it gets, such as 3. Without one, a stuck agent keeps spending money.',
-        "Some errors are **setup errors**, not bugs in the code, so rewriting the code rarely helps. A package that isn't installed (code someone else wrote, like pandas) or a **permission error** (the code isn't allowed to touch that file) fails the same way every round. Send those to a person instead of retrying.",
+        'Give the loop a **retry limit** (often called max retries): the most rounds it gets, such as 3. Without one, a stuck agent keeps spending money.',
+        "Some errors are **environment errors** (problems with the setup), not bugs in the code, so rewriting the code rarely helps. Teams call these **non-retryable** errors. A missing **dependency** (a package of code someone else wrote, like pandas, that isn't installed) or a **permission error** (the code isn't allowed to touch that file) fails the same way every round. Send those to a person instead of retrying.",
         "Run the code in a **sandbox**: a locked-down computer of its own, with a time limit and no internet, so a bad run can't touch real data. When the agent says \"done\", check the real result yourself: run the tests, or read the table. Agents often report success that never happened.",
     ],
     example=example('Four separate runs, with 3 rounds allowed', """exit  round  last line         next
@@ -2003,8 +2003,8 @@ lesson(MODULE, 'next_action',
     ),
     angle=angle(
         pattern='Rules checked in order',
-        text="The big idea: a coding agent retries after errors, but it needs a round limit, and setup errors should go to a person. Your code checks rules in order and stops at the first match. Exit code 0 means done. Reaching the round limit means stop, because there are no tries left. A permission error or a missing package means ask a person, since rewriting the code won't help. Anything else is a bug the agent can try to fix. The order matters: a run that passes on its last round still returns done.",
-        say='"Success goes to a real check, the round limit stops the loop, setup and permission errors go to a person, and only code errors get another try."',
+        text="The big idea: a coding agent retries after errors, but it needs a retry limit, and environment errors should go to a person. Your code checks rules in order and stops at the first match. Exit code 0 means done. Reaching the retry limit means stop, because there are no tries left. A permission error or a missing package means ask a person, since rewriting the code won't help. Anything else is a bug the agent can try to fix. The order matters: a run that passes on its last round still returns done.",
+        say='"Success goes to a real check, the retry limit stops the loop, environment and permission errors go to a person, and only code errors get another try."',
         classic=None,
     ),
     stack=stack('LangGraph: route after each run', '''# startswith can take a tuple: it is
@@ -2094,7 +2094,7 @@ Check these rules in order, and return at the first one that matches:
     if ___:
         return "stop"
 
-    # Step 3: setup errors go to a person.
+    # Step 3: environment errors go to a person.
     if last_line.startswith("PermissionError"):
         return "ask"
     # Same again, for "ModuleNotFoundError".
@@ -2140,7 +2140,7 @@ Check these rules in order, and return at the first one that matches:
         why='A few checks one after another, with nothing to loop over.',
         gotchas=[
             [
-                'Retrying setup errors',
+                'Retrying environment errors',
                 'A package that isn\'t installed or a blocked file fails the same way every round, so the agent burns all its rounds. Worse, it may "fix" it by working around the block. Send these to a person.',
             ],
             [

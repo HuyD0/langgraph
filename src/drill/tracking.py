@@ -85,25 +85,50 @@ def drill_run(problem: Problem, settings: DrillSettings, thread_id: str) -> Iter
         yield None
         return
 
+    # Start the run on its own: if that fails, practise without one. The session itself
+    # runs outside any try below, so its own errors (Ollama down, say) reach you as they
+    # are, instead of being caught here and turned into a confusing RuntimeError.
+    run = None
     try:
-        with mlflow.start_run(run_name=f"{problem.id}") as run:
-            mlflow.log_params(
-                {
-                    "problem_id": problem.id,
-                    "topic": problem.topic,
-                    "difficulty": problem.difficulty,
-                    "pattern": problem.pattern,
-                    "max_attempts": settings.max_attempts,
-                }
-            )
-            from drill import mlflow_names
-            from drill.server.observe import app_version
+        run = mlflow.start_run(run_name=f"{problem.id}")
+        mlflow.log_params(
+            {
+                "problem_id": problem.id,
+                "topic": problem.topic,
+                "difficulty": problem.difficulty,
+                "pattern": problem.pattern,
+                "max_attempts": settings.max_attempts,
+            }
+        )
+        from drill import mlflow_names
+        from drill.server.observe import app_version
 
-            mlflow.set_tags({"thread_id": thread_id, "app": "daily-drill", **mlflow_names.context_tags(app_version())})
-            yield run
+        mlflow.set_tags({"thread_id": thread_id, "app": "daily-drill", **mlflow_names.context_tags(app_version())})
     except Exception:
-        # A tracking failure must never cost you a practice session.
+        if run is not None:  # only end a run we started, never one that was already open
+            _end_run_quietly("FAILED")
         yield None
+        return
+
+    status = "FINISHED"
+    try:
+        yield run
+    except BaseException:
+        status = "FAILED"
+        raise
+    finally:
+        # A tracking failure must never cost you a practice session, even at the very end.
+        _end_run_quietly(status)
+
+
+def _end_run_quietly(status: str) -> None:
+    try:
+        import mlflow
+
+        if mlflow.active_run() is not None:
+            mlflow.end_run(status=status)
+    except Exception:
+        pass
 
 
 def log_session_metrics(state: DrillState) -> None:

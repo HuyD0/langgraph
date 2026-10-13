@@ -166,7 +166,7 @@ for name in ages:
             ],
             [
                 'Keep tags to a few values',
-                'Tags like config or model have only a few values, so they split your results into a few clear groups. Put unique values like request ids in span attributes instead.',
+                'Tags like config or model have only a few values (**low cardinality**), so they split your results into a few clear groups. Put unique values like request ids in span attributes instead.',
             ],
         ],
     ),
@@ -176,7 +176,7 @@ lesson(MODULE, 'slowest_chain',
     title='Reading agent traces',
     learn=[
         'A **trace** records one agent run as nested **spans**: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their **parent**; the spans directly inside it are its **children**.',
-        "To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. The answer is usually one tool or one model call.",
+        "To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. That chain of slowest steps is the **critical path**. The answer is usually one tool or one model call.",
         "An agent team makes the same kind of tree when each helper is traced under its own name: one span on top for the whole team run, one span for each helper agent, and each helper's tool calls inside its span. Following the slowest child then shows which helper held the run up.",
     ],
     example=example('Spans form a tree', """agent_run      4200 ms
@@ -533,7 +533,7 @@ lesson(MODULE, 'context_fill',
     title='How full is the context?',
     learn=[
         "Answers get worse as the prompt gets longer, even when the right fact is in it. A model's **context window** is the most tokens it can read in one call. This drop is called **context rot**, and a model with a bigger window does not fix it.",
-        'An agent sends its whole history again on every call, so each call reads more than the last. Measure the **fill** of each call: its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).',
+        'An agent sends its whole history again on every call, so each call reads more than the last. Measure the **context usage** of each call (how full it is, the fill): its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).',
         'Three habits keep the context small and useful. Put the question after the retrieved text, and keep a short goal and plan near the end of the prompt, where models pay the most attention. Fewer, better chunks often beat more: try 5 retrieved chunks against 50 and compare the eval scores.',
     ],
     example=example('The fill grows on every call', """window: 128000 tokens
@@ -685,7 +685,7 @@ lesson(MODULE, 'summary_recall',
     learn=[
         'When the context gets too full, agents **compact** it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.',
         'Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.',
-        'To test a summary, **plant facts**: put a few details you will ask about later, like a table name, into a long run. Compact it, then ask **probe questions** about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.',
+        'To test a summary, **plant facts**: put a few details you will ask about later, like a table name, into a long run. It is the same idea as a **needle-in-a-haystack** test. Compact it, then ask **probe questions** about those details, like "Which table did we write to?", and count how many the agent still gets right. Judge a summary by whether the agent can still finish the task, not by how short it is.',
     ],
     example=example('A probe question after compaction', """planted: goal, table, ticket_id
 summary: "Fix the HR tickets.
@@ -1009,9 +1009,9 @@ score += 1   # score is now 1""",
 lesson(MODULE, 'failure_counts',
     title='Label failures, then count',
     learn=[
-        'With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one **failure label**: a short name for what went wrong. Then count the labels and fix the biggest group first.',
-        'Use a fixed list of labels, so the same problem always gets the same name. A research list called **MAST** names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.',
-        'A person labels the first batch by hand. A judge model can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.',
+        'With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one label for its **failure mode**: a short name for what went wrong. Then count the labels and fix the biggest group first. This is called **error analysis**.',
+        'Use a fixed list of labels, so the same problem always gets the same name. A research **taxonomy** (a fixed list of categories) called **MAST** names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.',
+        'A person labels the first batch by hand. An **LLM judge** (a model that grades) can help label more later, once its labels match yours. Save each label on its trace in MLflow, and keep a few example ids per label so you can open and read them.',
     ],
     example=example('Failed runs, counted by label', """label           count  read first
 repeated step      41  t-193, t-207
@@ -1180,7 +1180,7 @@ pets.sort(key=lambda p: (-p[1], p[0]))
             ],
             [
                 'Trusting a tool to find the broken step',
-                'A judge model can name the kind of failure fairly well, but tools that claim to find the exact step where a run went wrong are still unreliable. A person checks before you act on it.',
+                'An LLM judge can name the failure mode fairly well, but tools that claim to find the exact step where a run went wrong are still unreliable. A person checks before you act on it.',
             ],
         ],
     ),

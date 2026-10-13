@@ -618,7 +618,7 @@ lesson(MODULE, 'parse_labels',
     title='Testing AI code',
     learn=[
         'Model calls are slow, cost money and give different answers each time, which makes tests **flaky**: passing one run, failing the next.',
-        "Keep the model call thin and separate. Test the logic around it (parsing, routing, error handling) with **fake** replies, in **unit tests**: small automatic checks of your code. Test the model's quality with **evals**: example inputs with expected answers, plus a way to score them.",
+        "Keep the model call thin and separate. Test the logic around it (parsing, routing, error handling) with **fake** replies (a stand-in for the model, also called a **mock** or **stub**), in **unit tests**: small automatic checks of your code. Test the model's quality with **evals**: example inputs with expected answers, plus a way to score them.",
     ],
     example=example('Fake the model, test the logic', """fake replies: ["Billing.", " refund ", "I think it's billing"]
 expected:     ["billing",  "refund",   "unknown"]"""),
@@ -719,7 +719,7 @@ These replies are fake, the kind you use in unit tests (small automatic checks o
             ],
             [
                 'Pin the weird cases',
-                'Every strange reply you see in production is a free test case. Add it to the scripted fakes.',
+                'Every strange reply you see in production is a free **regression test**: a test that keeps an old bug from coming back. Add it to the scripted fakes.',
             ],
         ],
     ),

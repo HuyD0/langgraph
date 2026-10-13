@@ -8,7 +8,7 @@ lesson(MODULE, 'cost_per_finished_task',
     title='Cost per finished task',
     learn=[
         'Work out what an AI task costs, and what it saves, before you build it. One forecast said at least 30 percent of generative AI projects would be dropped after the trial stage, partly over rising costs and unclear value. Pricing first also tells your trial which numbers it must measure.',
-        "Don't price only the tokens. The **cost per finished task** is the model's bill, plus a person checking some answers, plus redoing the answers that fail. In an HR ticket bot the model is under 4 percent of it.",
+        "Don't price only the tokens. The **cost per finished task** (its **fully loaded cost**) is the model's bill, plus a person checking some answers (**human review**), plus redoing the answers that fail (**rework**). In an HR ticket bot the model is under 4 percent of it.",
         'Mistakes nobody catches cost extra on top: in the HR ticket bot, 5 in 100 wrong answers slip through and cost $10 each to sort out later, so 50 cents a ticket. Some write-ups add this in, which makes about $2.37 a ticket. Here we keep it apart, and the payback lesson takes it off the saving.',
         "Each number has a source. The **price list** gives the token price, and the **POC** (proof of concept, a small trial build) measures the tokens and how often answers fail. The **business owner** gives the hourly rate, today's cost of a task, how many answers get checked and how long a check takes.",
     ],
@@ -299,7 +299,7 @@ lesson(MODULE, 'total_cost',
     title='Total cost of ownership',
     learn=[
         "The **total cost of ownership** (TCO) is everything it costs to have the system for its whole life, not just to call the model. It is the cost side of every business case, and the tokens are often the smallest part.",
-        "Its variables fall into three groups. **Build**, paid once: people's time, preparing data, building the eval set, the security review. **Run**, paid every month: the model's tokens, hosting and compute, the vector search index, tracing and monitoring, and people checking and redoing answers. **Keep it working**, also monthly: re-running evals when the model or prompt changes, updating prompts, and someone on call.",
+        "Its variables fall into three groups. **Build**, paid once: people's time, preparing data, building the eval set, the security review. **Run**, paid every month: the model's tokens, hosting and compute, the vector search index, tracing and monitoring, and people checking and redoing answers. **Maintain** (keeping it working), also monthly: re-running evals when the model or prompt changes, updating prompts, and someone on call.",
         "For a typical **RAG pipeline** on Azure, the monthly lines are: LLM calls (the answers, plus embeddings for new documents and every question), retrieval (Azure AI Search, or Databricks Vector Search), Databricks compute for the jobs that chunk and embed documents, and storage for documents, chunks and traces. The first indexing of all the documents is a one-off.",
         "Microsoft's cost guidance for AI says to find the cost drivers first: how much data you index, how many queries arrive, the throughput you need, and the hidden costs of the services underneath, like the step that prepares documents before they are indexed.",
         'Add it up over the years you plan to run it: the one-off costs, plus every monthly cost times 12 times the years. Then look at the biggest single item, because that is where a saving matters most.',
@@ -439,7 +439,7 @@ lesson(MODULE, 'payback_plan',
     learn=[
         'A task that saves money every time can still lose money overall. Running costs come every month, and the build has to be paid back. Three numbers tell you whether it is worth building.',
         '**Monthly net** is the saving per task times tasks a month, minus the fixed monthly costs (search, logging, monitoring). **Payback** is the build cost divided by the monthly net: how many months until the build has paid for itself. **Break-even** is the fixed monthly costs divided by the saving per task: how many tasks a month you need just to cover the running costs.',
-        "Where the numbers come from: **saving per task** is today's cost, minus the cost per finished task, minus what mistakes nobody caught cost later. The business owner confirms the staff time saved is real money: fewer new hires or less overtime, not just quieter afternoons. They also guess tasks a month, and the POC checks that guess.",
+        "Where the numbers come from: **saving per task** is today's cost, minus the cost per finished task, minus what mistakes nobody caught cost later. The business owner confirms the staff time saved is real money, a **hard saving**: fewer new hires or less overtime, not just quieter afternoons (a **soft saving**). They also guess tasks a month, and the POC checks that guess.",
         'In the HR example, $8 today minus about $1.87 with AI, minus 50 cents for mistakes nobody caught, saves about $5.64 a ticket. With 6,000 tickets a month and $10,000 of fixed costs, a $150,000 build pays back in about 6.3 months.',
     ],
     example=example('The HR ticket plan', """saving = 5.635   # a ticket
@@ -595,11 +595,11 @@ if boxes * 6 < 25:
         gotchas=[
             [
                 'Counting saved minutes as money',
-                'Staff time saved is money only if the business hires less, cuts overtime or moves people to work it would pay for anyway. Otherwise the saving is not real.',
+                'Staff time saved is money only if the business hires less, cuts overtime or moves people to work it would pay for anyway. Otherwise it is a soft saving, and finance will not count it.',
             ],
             [
                 'Payback ignores the slow start',
-                'People start using it slowly. If the first 3 months run at half volume, the 6.3 months becomes about 8.4.',
+                'People start using it slowly, which is called the **adoption ramp**. If the first 3 months run at half volume, the 6.3 months becomes about 8.4.',
             ],
         ],
     ),
@@ -608,10 +608,10 @@ if boxes * 6 < 25:
 lesson(MODULE, 'biggest_swing',
     title='Which guess matters most',
     learn=[
-        "Every business case rests on guesses: how many tasks, how often the AI is right, how much each one saves. If you don't know which guess matters most, the trial measures the easy things and misses the one that sinks the plan.",
-        'A **sensitivity check** changes one guess at a time, from a bad value to a good one, and keeps the others at their expected values. The **swing** is how far the answer moves. The guess with the biggest swing is the one to measure hardest.',
+        "Every business case rests on guesses, called **assumptions**: how many tasks, how often the AI is right, how much each one saves. If you don't know which guess matters most, the trial measures the easy things and misses the one that sinks the plan.",
+        'A **sensitivity analysis** changes one guess at a time, from a bad value to a good one, and keeps the others at their expected values. The **swing** is how far the answer moves. The guess with the biggest swing is the one to measure hardest.',
         'In the HR example, doubling the token price lowers the monthly net by only about $390. If half the staff use the bot instead of 80 percent, the net falls from about $23,800 to about $11,100.',
-        'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess. Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right, and run a small pilot to see how many staff really use it.',
+        'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess (the **worst case**, **base case** and **best case**). Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right, and run a small pilot to see how many staff really use it.',
     ],
     example=example('One guess, low and high', """# value = tasks * success * saving - fixed
 # tasks 6000, saving 7, fixed 10000
@@ -784,7 +784,7 @@ g["size"] = 5   # base["size"] is still 1""",
 lesson(MODULE, 'peak_capacity',
     title='Size for the busiest minute',
     learn=[
-        'Traffic is never spread evenly through the day. If you **size** (decide how many tokens a minute to ask for) from the daily average, the busiest minute hits your limit, and users get error 429, "too many requests". So size for the **busiest minute**.',
+        'Traffic is never spread evenly through the day. If you **size** capacity (decide how many tokens a minute to ask for, called **capacity planning**) from the daily average, the busiest minute hits your limit, and users get error 429, "too many requests". So size for the **busiest minute**.',
         'Take tasks a day times the share that arrive in the busiest hour, and divide by 60 to get tasks a minute. Multiply by a **burst factor**: how much busier the busiest minute is than an average minute of that hour (3 is a fair first guess).',
         "Multiply by the tokens one task asks for, to get tokens in the busiest minute. Check that against every limit on the path: the Foundry deployment's **tokens per minute** (TPM) and the gateway's rate limits.",
         'Where the numbers come from: the business owner gives tasks a day. The POC measures the busiest hour, the burst from 1-minute peaks, and the tokens per task. The platform team gives the deployment quota and the gateway limits.',
@@ -911,7 +911,7 @@ big = 7 <= 3   # False""",
         gotchas=[
             [
                 'Reserving capacity too early',
-                'Reserved capacity (PTUs, provisioned throughput units) costs the same every hour, busy or idle. Start on pay-as-you-go, paying per token used, and reserve only once traffic is high and steady.',
+                '**Provisioned throughput** (reserved capacity, bought in PTUs, provisioned throughput units) costs the same every hour, busy or idle. Start on pay-as-you-go, paying per token used, and reserve only once traffic is high and steady.',
             ],
             [
                 'Counting tokens used, not tokens asked for',
@@ -925,7 +925,7 @@ lesson(MODULE, 'make_a_skill',
     title='Turn your vetting into a skill',
     learn=[
         "Everything in Frame so far, from the one-line use case and the gates to the review, the cost and the bars, is a routine you will repeat for every new idea. A **Claude skill** packages a routine so Claude follows it the same way every time: a folder holding a **SKILL.md** file of instructions, plus any reference files and scripts it needs.",
-        "SKILL.md starts with two lines of settings between `---` markers. The **name** is lowercase letters, numbers and hyphens, at most 64 characters, and may not contain \"claude\" or \"anthropic\". The **description**, up to 1,024 characters, says what the skill does and when to use it, in the third person (\"Vets a proposed AI use case. Use when...\"). Claude reads only the name and description of every skill up front, and loads the rest when a request matches: so the description decides whether your skill is ever used.",
+        "SKILL.md starts with **YAML frontmatter**: two lines of settings between `---` markers. The **name** is lowercase letters, numbers and hyphens, at most 64 characters, and may not contain \"claude\" or \"anthropic\". The **description**, up to 1,024 characters, says what the skill does and when to use it, in the third person (\"Vets a proposed AI use case. Use when...\"). Claude reads only the name and description of every skill up front, and loads the rest when a request matches: so the description decides whether your skill is ever used.",
         "The body holds the steps and an output format, kept short (Anthropic suggests under 500 lines), with details in reference files it opens only when needed. Anything that must be exact, like adding up the total cost of ownership, goes in a **script** the skill runs, because a model can get sums wrong and a script cannot. This repository ships one: `.claude/skills/vet-ai-use-case`, whose `scripts/tco.py` prints the cost table.",
         "To use it in Claude Code, put the folder in `~/.claude/skills/` (just for you) or a project's `.claude/skills/` (for everyone on the project), then ask Claude to assess an idea or type `/vet-ai-use-case`. On claude.ai, zip the folder and upload it in Settings, with code execution turned on. Then test it like any prompt: run it on a few use cases with known gaps, read what it misses, and change the instructions.",
     ],
@@ -954,7 +954,7 @@ description: Vets a proposed AI use case before
     ),
     angle=angle(
         pattern='Check the rules, then write the file',
-        text='The big idea: a skill is a SKILL.md file whose name and description Claude reads first, so the file must follow the rules exactly or it will not load. Your code first collects every rule the name or description breaks: characters, length, the reserved words, an empty or too-long description, angle brackets. If there are any, it returns them all, so they can be fixed in one go. Otherwise it builds the file line by line: the settings between --- markers, a title made from the name, and the steps numbered from 1. It is like filling in a form that is checked before it is sent.',
+        text='The big idea: a skill is a SKILL.md file whose name and description Claude reads first, so the file must follow the rules exactly or it will not load. Your code first collects every rule the name or description breaks: characters, length, the reserved words, an empty or too-long description, angle brackets. If there are any, it returns them all, so they can be fixed in one go. Otherwise it builds the file line by line: the frontmatter (the settings between --- markers), a title made from the name, and the steps numbered from 1. It is like filling in a form that is checked before it is sent.',
         say='"I package a routine I repeat, like vetting a use case, as a Claude skill: a SKILL.md with a name, a description that says what it does and when to use it, short steps, and scripts for anything that must be exact, like the cost sums. Then I test it on cases with known answers."',
         classic=None,
     ),

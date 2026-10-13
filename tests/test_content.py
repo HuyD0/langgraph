@@ -264,3 +264,18 @@ def test_a_sorting_lesson_explains_itself_to_someone_who_sorted(loaded):
             labels = {b["id"]: f'{b["label"]} {b["who"]}'.lower() for b in sort["bins"]}
             if "gate" in labels and "shelve" in labels:  # the lesson says a failed gate is shelved; the board must agree
                 assert "gate" in labels["shelve"] and "shelved" in labels["gate"], entry["id"]
+
+
+def test_every_look_is_readable():
+    """Text, results, the primary button and code colours meet contrast minimums in light, dark and dusk."""
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).parent.parent / "scripts" / "contrast.py"
+    spec = importlib.util.spec_from_file_location("contrast", path)
+    contrast = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contrast)
+    rows = contrast.check()
+    assert len(rows) == 3 * len(contrast.PAIRS), "every pair checked in every look"
+    bad = [f"{look}: {fg} on {bg} is {r:.2f}:1, needs {m}" for look, fg, bg, r, m, _ in rows if r < m]
+    assert not bad, bad

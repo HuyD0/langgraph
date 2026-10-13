@@ -342,9 +342,6 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .btn .ic { width: 18px; height: 18px; }
 .tab { display: inline-flex; align-items: center; gap: 6px; }
 .tab .ic { width: 17px; height: 17px; }
-.savestate { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.savestate i { width: 8px; height: 8px; border-radius: 50%; background: var(--hint); display: inline-block; }
-.savestate.cloud i { background: var(--pass); }
 .mlbox { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; }
 .mlbox b { font-weight: 600; }
 .sets h3 { font: 800 18px/1.2 var(--display); margin: 8px 0 0; }
@@ -540,6 +537,8 @@ body.no-ai .ai-only { display: none; }
 #taskExample { white-space: pre-wrap; overflow-wrap: anywhere; }
 .task ul, .task ol { margin: 0 0 10px; padding-left: 22px; display: grid; gap: 6px; max-width: 65ch; }
 .byhand { margin: 0; padding: 10px 12px; background: var(--sunk); border-radius: 10px; max-width: 65ch; }
+.byhand ol.steps { margin: 6px 0 0; padding-left: 22px; display: grid; gap: 4px; }
+.byhand ol.steps li::marker { font: 600 12px var(--mono); color: var(--muted); }
 @media (pointer: coarse), (max-width: 560px) { textarea#code { white-space: pre-wrap; overflow-wrap: anywhere; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* spot the gotcha */
@@ -665,7 +664,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .morepanel { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .morepanel .kbd { font: 12px var(--mono); color: var(--muted); }
 @media (pointer: coarse) { .morepanel .kbd { display: none; } }
-.savestate { justify-content: center; padding-top: 8px; }
 
 /* the sticker book: six phases, one shape each, always in view */
 .rail { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px 4px; }
@@ -1790,8 +1788,7 @@ function renderHome() {
     <div class="phasebox${nidx === today_ && nid ? " here" : ""}" data-showing="${nidx}">${railHtml(false, null, nidx)}${book}</div>
     ${upnext}
     <div class="sets"><h3>Practice sets</h3></div>
-    <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>
-    <div class="savestate${progressDoc ? " cloud" : ""}"><i></i>${progressDoc ? "Saved to your Claude account" : "Saved in this browser only"}</div>`;
+    <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
   if (!pathOpened) { pathOpened = true; requestAnimationFrame(() => phaseFx(null)); }
 }
@@ -2652,6 +2649,8 @@ async function saveAsk(i) {
 
 // ---------- build step ----------
 let hintLevel = 0, lastRun = null, sample = null, sampleOff = true, busy = false, taskFolds = true;
+// The tutor's own flags, apart from `busy` (tests running): a slow hint must not block Run tests.
+let hintBusy = false, reviewBusy = false;
 const runBtns = () => [...document.querySelectorAll("[data-run]")];
 const draftKey = id => "drill-draft-" + id;
 let runs = 0, failedRun = false, curtainDone = false;  // this exercise, since it was opened: for its effects
@@ -2671,7 +2670,7 @@ function loadProblem(p) {
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
   $("taskByhand").hidden = !Ln.byhand;
-  $("taskByhand").innerHTML = Ln.byhand ? "<b>The example, step by step.</b> " + md(Ln.byhand) : "";
+  $("taskByhand").innerHTML = Ln.byhand ? "<b>The example, step by step.</b>" + byhandSteps(Ln.byhand) : "";
   $("help").open = false; $("morePanel").hidden = true; $("moreBtn").setAttribute("aria-expanded", "false");
   let draft = null; try { draft = localStorage.getItem(draftKey(p.id)); } catch {}
   $("code").value = draft || startCode(p);
@@ -3044,13 +3043,13 @@ function tutorContext(p) {
 }
 const LEARNER = "The student is new to programming and is learning AI engineering (ML, LLM apps, RAG, agents, evals, LLMOps, MLOps, AgentOps); at work they maintain Azure Databricks infrastructure in Terraform with Spacelift. They find math hard: use plain, everyday words, no math notation, no formulas and no Big-O (like O(n)). A small example with real values beats an abstract rule.";
 async function hint() {
-  if (busy) return;
+  if (hintBusy) return;
   const p = cur.p;
   if (sampleOff || !sample) { hintLevel = 1; updateHintBtn(); fxOn(addNote("hint", "The pattern", p.pattern), "unveil", FX.unveil); return; }
   const level = hintLevel + 1;
   const note = addNote("hint", `Hint ${level} of 3`, "Thinking…"); fxOn(note, "unveil", FX.unveil);
   const para = note.querySelector("p");
-  busy = true; $("hintBtn").disabled = true;
+  hintBusy = true; $("hintBtn").disabled = true;
   const prompt = `You are a patient tutor. ${LEARNER} Give hint ${level} of 3 for this exercise.
 
 Rules:
@@ -3065,19 +3064,20 @@ ${tutorContext(p)}`;
   try {
     const { text } = await sample(prompt, withTrace({ modelTier: "quick", onText: ({ text }) => { para.innerHTML = inline(text); } },
       { feature: "hint", lesson_id: cur.id, exercise_fn: p.fn, hint_level: level, word_limit: 80 }));
-    para.innerHTML = inline(text); hintLevel = level;
+    para.innerHTML = inline(text);
+    if (cur && cur.p === p) hintLevel = level;  // you may have moved to another exercise meanwhile
   } catch (e) {
-    if (e && e.code === "not_granted") { sampleOff = true; note.remove(); hintLevel = 0; updateHintBtn(); busy = false; return hint(); }
+    if (e && e.code === "not_granted") { sampleOff = true; note.remove(); hintLevel = 0; updateHintBtn(); hintBusy = false; return hint(); }
     para.textContent = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.text) || "The hint didn't come through. Try again in a moment.";
-  }
-  busy = false; updateHintBtn();
+  } finally { hintBusy = false; }
+  updateHintBtn();
 }
 async function review() {
-  if (!sample || busy) return;
+  if (!sample || reviewBusy) return;
   const btn = $("reviewBtn"); if (btn) btn.disabled = true;
   const note = addNote("review", "Review", "Thinking…");
   const para = note.querySelector("p");
-  busy = true;
+  reviewBusy = true;
   const prompt = `You are a friendly reviewer. ${LEARNER} Their solution passes all tests. Review it briefly.
 
 Cover, in under 140 words of prose:
@@ -3094,9 +3094,8 @@ ${tutorContext(cur.p)}`;
     para.innerHTML = inline(text);
   } catch (e) {
     if (e && e.code === "not_granted") { sampleOff = true; note.remove(); }
-    else para.textContent = (e && e.text) || "The review didn't come through. Try again in a moment.";
-  }
-  busy = false;
+    else { para.textContent = (e && e.text) || "The review didn't come through. Try again in a moment."; if (btn) btn.disabled = false; }
+  } finally { reviewBusy = false; }
 }
 function showSolution() {
   $("solConfirm").hidden = true;
@@ -3260,6 +3259,16 @@ async function removeItem(id) {
 function flashStudy(msg) { toast(msg); }
 // Model replies: code blocks, paragraphs, bullet and numbered lists, headings, **bold**, *italics*, `code`.
 const emph = s => md(s).replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1<i>$2</i>");
+// The worked example, one sentence per line: as a paragraph, "add up to 0.6. 0.6 divided by 2"
+// reads like a broken number. Decimals have no space after their dot, so ". " always ends a
+// sentence; a very short one ("No.") stays on the line before.
+function byhandSteps(text) {
+  const steps = [];
+  for (const s of text.trim().split(/(?<=[.!?])\s+(?=\S)/)) {
+    if (steps.length && s.length < 6) steps[steps.length - 1] += " " + s; else steps.push(s);
+  }
+  return `<ol class="steps">${steps.map(s => `<li>${md(s)}</li>`).join("")}</ol>`;
+}
 function blockHtml(block) {
   const out = []; let list = null, para = [];
   const flushPara = () => { if (para.length) { out.push("<p>" + para.map(emph).join("<br>") + "</p>"); para = []; } };
@@ -3910,19 +3919,33 @@ async function localBackend() {
     const d = (body && body.detail) || body || {};
     throw Object.assign(new Error(d.text || res.statusText), { code: d.code || (res.status === 429 ? "rate_limited" : "error"), text: d.text });
   };
+  // A request that goes quiet for 2 minutes, or runs past 4, is given up on, so a dropped
+  // connection or a stopped app can't leave the tutor's buttons stuck until a reload.
+  // (The server tries two models for up to 45 s each before the first word.)
+  const QUIET_MS = 120000, MAX_MS = 240000;
   async function ask(body, onText) {
     body = { ...body, trace: { session: VISIT, ...(body.trace || {}) } };
-    const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!res.ok) await fail(res);
-    if (body.json) return (await res.json()).value;
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    let text = "";
-    for (;;) {
-      const { value, done } = await reader.read(); if (done) break;
-      text += dec.decode(value, { stream: true });
-      if (onText) onText({ text, delta: text });
-    }
-    return { text, truncated: false };
+    const ctl = new AbortController();
+    let quiet = setTimeout(() => ctl.abort(), QUIET_MS);
+    const whole = setTimeout(() => ctl.abort(), MAX_MS);
+    const awake = () => { clearTimeout(quiet); quiet = setTimeout(() => ctl.abort(), QUIET_MS); };
+    try {
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal });
+      if (!res.ok) await fail(res);
+      if (body.json) return (await res.json()).value;
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let text = "";
+      for (;;) {
+        const { value, done } = await reader.read(); if (done) break;
+        awake();
+        text += dec.decode(value, { stream: true });
+        if (onText) onText({ text, delta: text });
+      }
+      return { text, truncated: false };
+    } catch (e) {
+      if (ctl.signal.aborted) throw Object.assign(new Error("timeout"), { code: "timeout", text: "The tutor took too long to answer. Try again in a moment." });
+      throw e;
+    } finally { clearTimeout(quiet); clearTimeout(whole); }
   }
   const s = !health.ai ? null : Object.assign(
     (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", trace: opts.trace }, opts.onText),

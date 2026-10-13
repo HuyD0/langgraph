@@ -252,10 +252,18 @@ def start_cmd(
             console.print(Panel(Markdown(payload["feedback"]), title=title,
                                 border_style="green" if payload["solved"] else "yellow"))
 
-    outcome = run_session(
-        build_drill_graph(), deps, edit_submission,
-        problem_id=problem, topic=topic, on_event=on_event,
-    )
+    try:
+        outcome = run_session(
+            build_drill_graph(), deps, edit_submission,
+            problem_id=problem, topic=topic, on_event=on_event,
+        )
+    except (ConnectionError, TimeoutError) as exc:
+        _model_unreachable(exc)
+    except Exception as exc:
+        # The model SDKs raise their own error types for "couldn't connect" and "timed out".
+        if "connect" in type(exc).__name__.lower() or "timeout" in type(exc).__name__.lower():
+            _model_unreachable(exc)
+        raise
 
     verb = "Solved" if outcome.solved else "Not solved"
     console.print(f"\n{verb} [bold]{outcome.problem.title}[/bold] in {outcome.attempts} "
@@ -566,6 +574,12 @@ TARGET = typer.Option("personal", "--target", "-t", help="Which workspace, from 
 PROFILE = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target).")
 
 
+def _model_unreachable(exc: Exception) -> None:
+    console.print(f"[red]The tutor's model didn't answer ({type(exc).__name__}: {exc}).[/red]\n"
+                  "Is Ollama running (`ollama serve`), or is your hosted model set in .env?")
+    raise typer.Exit(1) from None
+
+
 def _cloud(step):
     """Run one cloud step, turning its errors into a red line instead of a traceback."""
     from drill.cloud import CloudError
@@ -695,6 +709,65 @@ def _show_findings(found) -> None:
                   + (" Run with --fix to grant what you can." if any(f.grant for f in missing) else ""))
 
 
+@cloud_app.command("port")
+def cloud_port_cmd(
+    target: str = TARGET,
+    profile: str = PROFILE,
+    catalog: str = typer.Option(None, "--catalog", help="A catalog your team owns: traces go in <catalog>.drill_traces, prompts in <catalog>.daily_drill."),
+    model: str = typer.Option(None, "--model", help="The governed Unity Gateway model service, catalog.schema.service."),
+    project: str = typer.Option("daily-drill", "--lakebase-project", help="The Lakebase project for progress (created if missing)."),
+    experiment: str = typer.Option(None, "--experiment", help="MLflow experiment path (default /Shared/daily-drill)."),
+    warehouse: str = typer.Option(None, "--warehouse", help="A serverless SQL warehouse id (default: find or create 'daily-drill')."),
+    learner: list[str] = typer.Option([], "--learner", help="Email of someone who may use the app (repeat it)."),
+    managers: str = typer.Option(None, "--managers", help="A group that may use the app and read the managers' dashboard."),
+    do_apply: bool = typer.Option(False, "--apply", help="Create, grant, deploy and share. Without it, only the plan is shown."),
+    no_deploy: bool = typer.Option(False, "--no-deploy", help="With --apply: set everything up but don't deploy yet."),
+) -> None:
+    """Move Daily Drill into a workspace: check everything, then (with --apply) create, grant, deploy and share."""
+    from drill import cloud, port
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    the_plan = _cloud(lambda: port.plan(target, prof, catalog=catalog, model=model, project=project,
+                                       experiment=experiment, warehouse=warehouse))
+    for step in the_plan.steps:
+        line = f"{step.mark} {step.name}" + (f"  [dim]{step.detail}[/dim]" if step.detail else "")
+        console.print(line)
+        if step.state == "blocked" and step.todo:
+            console.print(f"    [red]{step.todo}[/red]")
+    if the_plan.blocked:
+        console.print(f"\n[red]{len(the_plan.blocked)} blocked.[/red] Fix those, then run this again.")
+        raise typer.Exit(1)
+    if not do_apply:
+        console.print("\nNothing changed. Run again with --apply to create, grant, deploy and share.")
+        return
+    done = _cloud(lambda: port.apply(the_plan, learners=learner, managers=managers, deploy=not no_deploy, say=console.print))
+    for g in done.get("granted", []):
+        console.print(f"  granted {g}")
+    if done.get("app"):
+        _show_status(done["app"])
+    if done.get("dashboard"):
+        console.print(f"Managers' dashboard: {done['dashboard']['url']}")
+    for s in done.get("shared", []):
+        console.print(f"  {s}")
+    for m in done.get("missing", []):
+        console.print(f"[red]  still missing: {m}[/red] (see uv run drill cloud check --target {target})")
+
+
+@cloud_app.command("share")
+def cloud_share_cmd(
+    emails: list[str] = typer.Argument(None, help="Emails of people who may use the app."),
+    target: str = TARGET,
+    profile: str = PROFILE,
+    managers: str = typer.Option(None, "--managers", help="A group that may also read the managers' dashboard and its catalog."),
+) -> None:
+    """Let people use the app (and a managers group read the dashboard)."""
+    from drill import cloud, port
+
+    prof = _cloud(lambda: cloud.profile_for(target, profile))
+    for line in _cloud(lambda: port.share(target, prof, emails or [], managers)):
+        console.print(line)
+
+
 @cloud_app.command("manager-view")
 def cloud_manager_view_cmd(
     target: str = TARGET,
@@ -750,7 +823,7 @@ def cloud_requirements_cmd() -> None:
     """Rewrite requirements.txt from uv.lock. Run it after changing dependencies, before deploying."""
     from drill import cloud
 
-    path = cloud.requirements()
+    path = _cloud(cloud.requirements)
     console.print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
 
 if __name__ == "__main__":

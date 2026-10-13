@@ -123,6 +123,30 @@ its access: the same path as at work, which `drill cloud check` then confirms.
 
 ## Moving it to work
 
+**The short way:** `./scripts/port-to-workspace.sh` (see [PORTING.md](PORTING.md)), or one command. Sign in, then look at the plan (it changes nothing):
+
+```bash
+databricks auth login --host https://adb-<id>.azuredatabricks.net --profile work
+uv run drill cloud port --target work --catalog <team catalog> --model <catalog.schema.service>
+```
+
+It checks your CLI and sign-in, that the workspace has Apps, serverless and Lakebase, and
+that the model service, catalog, schemas, warehouse, Lakebase project and experiment exist,
+marking each ✓ ready, ＋ to be created or ✗ blocked (with what to do). When nothing is blocked:
+
+```bash
+uv run drill cloud port --target work --catalog <team catalog> --model <catalog.schema.service> \
+  --apply --managers <managers group> --learner <email> --learner <email>
+```
+
+That creates what is missing (`<catalog>.drill_traces` for traces, `<catalog>.daily_drill` for
+prompts, a 2X-Small serverless warehouse that stops after 5 idle minutes, the Lakebase project,
+the experiment), saves the settings (git-ignored), grants the app what it needs, deploys,
+builds the managers' dashboard and shares: learners may use the app; the managers group may use
+it and read the dashboard and its catalog. Run it again any time: it only fills gaps.
+`uv run drill cloud share <email>...` adds people later. The rest of this section is what the
+command does, step by step, for when you'd rather do it by hand.
+
 Porting is setup and deploy against the `work` target. Before you start, check these with
 your platform team; each one is a setting, not a code change:
 

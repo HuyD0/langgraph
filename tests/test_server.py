@@ -439,6 +439,29 @@ def test_mcp_tools_share_the_store_and_bank(store, bank):
         mcp_door.get_drill("no_such_lesson")
 
 
+def test_a_slow_hint_run_does_not_freeze_the_server(store, bank, monkeypatch):
+    """Running the learner's code for a hint happens off the main loop, so other requests go on."""
+    mcp_door.configure(store=store, router=ModelRouter(Route("local", "fake", fake("Look at .get")), None, store), bank=bank)
+    real = mcp_door.tutor.run_exercise
+    monkeypatch.setattr(mcp_door.tutor, "run_exercise", lambda *a: (time.sleep(0.5), real(*a))[1])
+
+    async def both():
+        ticks = 0
+
+        async def other_requests():
+            nonlocal ticks
+            while True:
+                await asyncio.sleep(0.05)
+                ticks += 1
+
+        other = asyncio.create_task(other_requests())
+        await mcp_door.hint("resolve_prompt", "def resolve_prompt(r, u): pass")
+        other.cancel()
+        return ticks
+
+    assert run(both()) >= 5  # the other task kept running while the code ran
+
+
 def test_mcp_tool_calls_are_traced_with_the_model_call_inside(store, bank, mlflow_store):
     from mlflow.entities import SpanType, TraceState
 

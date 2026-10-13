@@ -10,6 +10,8 @@ you paste something untrusted in here, it runs with your privileges.
 from __future__ import annotations
 
 import json
+import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -21,6 +23,7 @@ from drill.problems import Problem
 from drill.state import CaseResult, SubmissionResult
 
 _HARNESS = Path(__file__).with_name("_harness.py")
+MAX_OUTPUT_BYTES = 8 * 1024 * 1024  # how much a submission may print before its writes start failing
 
 
 def _empty_result(fatal: str, duration: float, timed_out: bool = False) -> SubmissionResult:
@@ -67,6 +70,7 @@ def run_cases(
         "function_name": function_name,
         "unordered": unordered,
         "cases": [{"args": list(c["args"]), "expected": c["expected"]} for c in cases],
+        "max_output_bytes": MAX_OUTPUT_BYTES,
     }
 
     started = time.perf_counter()
@@ -74,35 +78,49 @@ def run_cases(
         payload_path = Path(tmp) / "payload.json"
         payload_path.write_text(json.dumps(payload), encoding="utf-8")
 
-        try:
-            proc = subprocess.run(
+        out_path, err_path = Path(tmp) / "stdout.txt", Path(tmp) / "stderr.txt"
+        # Output goes to files, not into this process's memory: a print in an endless loop
+        # would otherwise pile up hundreds of megabytes here. Its own session (process
+        # group) lets us stop anything the submission started, not just the submission.
+        with out_path.open("wb") as out, err_path.open("wb") as err:
+            proc = subprocess.Popen(
                 [sys.executable, "-I", str(_HARNESS), str(payload_path)],
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=tmp,
+                stdout=out, stderr=err, cwd=tmp, start_new_session=True,
             )
-        except subprocess.TimeoutExpired:
-            return _empty_result(
-                f"Your solution ran for more than {timeout}s and was stopped.\n"
-                "That usually means an infinite loop, or a complexity blow-up on "
-                "the larger hidden test cases.",
-                time.perf_counter() - started,
-                timed_out=True,
-            )
+            try:
+                proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                _stop_all(proc)
+                return _empty_result(
+                    f"Your solution ran for more than {timeout}s and was stopped.\n"
+                    "That usually means an infinite loop, or a complexity blow-up on "
+                    "the larger hidden test cases.",
+                    time.perf_counter() - started,
+                    timed_out=True,
+                )
+            _stop_all(proc)  # anything it left running in the background
+        stdout = out_path.read_text(encoding="utf-8", errors="replace")
+        stderr = _tail(err_path)
+        printed_too_much = out_path.stat().st_size >= MAX_OUTPUT_BYTES
 
     duration = time.perf_counter() - started
 
-    if SENTINEL not in proc.stdout:
-        # The child died before reporting: a segfault, a sys.exit, an OOM kill.
-        detail = (proc.stderr or proc.stdout or "").strip()[-2000:]
+    if SENTINEL not in stdout:
+        # The child died before reporting: a segfault, a sys.exit, an OOM kill, or too much output.
+        if printed_too_much:
+            return _empty_result(
+                f"Your solution printed more than {MAX_OUTPUT_BYTES // (1024 * 1024)} MB and was stopped.\n"
+                "That usually means a print inside a loop that never ends.",
+                duration,
+            )
+        detail = (stderr or stdout[-2000:]).strip()[-2000:]
         return _empty_result(
             "The solution process exited without reporting results "
             f"(exit code {proc.returncode}).\n{detail}",
             duration,
         )
 
-    raw = proc.stdout.split(SENTINEL, 1)[1].strip()
+    raw = stdout.split(SENTINEL, 1)[1].strip()
     try:
         report = json.loads(raw)
     except json.JSONDecodeError:
@@ -129,6 +147,25 @@ def run_cases(
         timed_out=False,
         duration_s=duration,
     )
+
+
+def _stop_all(proc: subprocess.Popen) -> None:
+    """Kill the submission and every process it started, then reap it."""
+    if hasattr(os, "killpg"):
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass  # already gone
+    else:
+        proc.kill()
+    proc.wait()
+
+
+def _tail(path: Path, size: int = 4000) -> str:
+    """The last ``size`` bytes of a file, as text."""
+    with path.open("rb") as f:
+        f.seek(max(0, path.stat().st_size - size))
+        return f.read().decode("utf-8", errors="replace")
 
 
 def first_failure(result: SubmissionResult) -> CaseResult | None:

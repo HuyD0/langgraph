@@ -224,6 +224,8 @@ and two guards still stop any answer from writing the exercise's code.
 
 ## Motion
 
+(The wider design system, its tokens and how to change them: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).)
+
 Short effects mark real moments: finishing something, getting something right, fixing a bug.
 They decorate what already happened and never change a lesson's order, wording or difficulty.
 
