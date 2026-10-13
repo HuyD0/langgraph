@@ -12,7 +12,7 @@ lesson(MODULE, 'use_case_score',
         "Ideas that pass the gates go on a **map** with two axes, usually called a value-versus-feasibility matrix, as in Microsoft's business, experience and technology framework. **Value**: what the problem costs and how much the business cares. **Doable** (feasibility): the data is ready, AI suits the task, and the team can change how it works. High value and doable: **accelerate** to a pilot. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Neither, or failed a gate: **shelve**.",
         "Keep the two axes apart rather than adding scores together: a risky, valuable idea and a safe, trivial one can add up to the same total. Where an idea lands tells you what to do next.",
     ],
-    example=example('Six ideas on the map', """             hard to do       doable
+    example=example('Six ideas on the map', """             not doable yet   doable
 high value   research:        accelerate:
              contract review  HR policy answers
 low value    shelve:          incubate:
@@ -159,13 +159,14 @@ for n in [1, 2, 3]:
             ],
         ],
         sort=sort_task(
+            explain='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. The order matters. The gates come first, because a valuable idea that does harm unchecked is still shelved. Then two separate questions, value and doable, pick one of four corners: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It is like sorting post into four trays by two questions, after binning the junk.',
             intro="Six ideas came in. Check the gates first, then how valuable and how doable each one is. Tap where it goes, or drag it there.",
             bins=[
                 ('research', 'Research', 'valuable, not doable yet'),
                 ('accelerate', 'Accelerate', 'valuable and doable: pilot it'),
-                ('shelve', 'Shelve', 'small, and hard to do'),
+                ('shelve', 'Shelve', 'low value and not doable, or stopped at a gate'),
                 ('incubate', 'Incubate', 'doable but small: learn on it'),
-                ('gate', 'Failed a gate', 'a rule does it, nothing to test on, or harm nobody checks'),
+                ('gate', 'Stopped at a gate', 'shelved: a rule does it, nothing to test on, or harm nobody checks'),
             ],
             items=[
                 {'name': 'Rejecting job applicants', 'say': 'Reads CVs and sends rejections on its own. Nobody looks before they go out.',
