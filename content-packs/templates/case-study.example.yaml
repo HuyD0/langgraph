@@ -1,0 +1,53 @@
+# A case study (for the capstone, or any end-to-end lesson): one real, approved situation told
+# as a story. It is an ordinary lesson whose learn.views carry the evidence and whose practice
+# asks the learner to reason through it. Fill it in only inside the private pack.
+
+id: CASE_STUDY_ID_TODO
+status: draft
+title: CASE_TITLE_TODO               # e.g. "Why did the new group get more access than asked?"
+summary: SUMMARY_TODO
+objective: Work one case from the request to a decision, with evidence at each step.
+difficulty: advanced
+prerequisites: []
+learn:
+  text:
+    - CONTEXT_TODO                   # what was asked for, and what happened, in two sentences
+  views:
+    - kind: relationships            # 1. the request and the files it touched
+      links: [{from: FILE_TODO, ref: FIELD_TODO, to: FILE_TODO}]
+    - kind: trace                    # 2. one field, from the file to the plan
+      field: FIELD_TODO
+      layers: [{layer: LAYER_TODO, value: VALUE_TODO, state: same}]
+    - kind: plan_review              # 3. what the plan would change
+      changes: [{action: update, address: RESOURCE_TODO, risk: medium}]
+    - kind: walkthrough              # 4. what went wrong and how it was found
+      symptom: SYMPTOM_TODO
+      steps: [{look: WHERE_YOU_LOOKED_TODO, found: WHAT_YOU_FOUND_TODO}]
+      root_cause: ROOT_CAUSE_TODO
+      resolution: RESOLUTION_TODO
+  screenshots: []
+  sources: [ev_case]
+check:
+  question: QUESTION_TODO
+  options: [OPTION_TODO, OPTION_TODO, OPTION_TODO]
+  answer: 0
+  why: WHY_TODO
+practice:
+  kind: reasoning
+  prompt: Work through the case. Answer each question, then compare.
+  questions:
+    - {ask: What does the request ask for?, expected: EXPECTED_RESULT_TODO, why: WHY_TODO}
+    - {ask: Which file and field drive the change?, expected: EXPECTED_RESULT_TODO, why: WHY_TODO}
+    - {ask: What would the plan change, and how risky is it?, expected: EXPECTED_RESULT_TODO, why: WHY_TODO}
+    - {ask: What can't you verify yet?, expected: EXPECTED_RESULT_TODO, why: WHY_TODO}
+    - {ask: What do you decide, and what do you send to the owner?, expected: EXPECTED_RESULT_TODO, why: WHY_TODO}
+  success: You can explain the evidence, say what you still can't verify, and name the safe next check.
+explain:
+  pattern: Follow the evidence
+  reasoning: REASONING_TODO
+  say: SAY_IT_TODO
+  mistakes: [MISTAKE_TODO]
+  steps: [Request, Configure, Validate, Trace, Review, Diagnose, Decide]
+  evidence: [ev_case]
+evidence:
+  - {id: ev_case, kind: run, title: SOURCE_TITLE_TODO, ref: SOURCE_REFERENCE_TODO, revision: REVISION_TODO, status: unverified}

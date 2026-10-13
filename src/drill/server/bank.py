@@ -12,8 +12,9 @@ from drill.content import build_data, render_page
 class Bank:
     """Modules in path order, lessons by id, exercises by id."""
 
-    def __init__(self, data: dict):
+    def __init__(self, data: dict, packs: list | None = None):
         self.data = data
+        self.packs = packs or []  # content packs shown on this server (DRILL_CONTENT_PACKS)
         self.modules: list[dict] = data["modules"]
         self.lessons: dict[str, dict] = data["lessons"]
         self.problems: dict[str, dict] = {p["id"]: p for p in data["bank"]}
@@ -22,7 +23,18 @@ class Bank:
 
     @classmethod
     def load(cls) -> "Bank":
-        return cls(build_data())
+        """The curriculum, plus any content packs ``DRILL_CONTENT_PACKS`` names (none by default)."""
+        from drill.content import modules
+        from drill.content.packs import load_packs
+
+        loaded = modules.load()
+        packs = load_packs(taken={lesson["id"] for m in loaded for lesson in m.lessons})
+        return cls(build_data(loaded, packs), packs)
+
+    def pack_asset(self, pack_id: str, path: str) -> str | None:
+        """The file on disk for one of a loaded pack's assets, or ``None``: only files its lessons name."""
+        pack = next((p for p in self.packs if p.id == pack_id), None)
+        return pack.assets.get(path) if pack else None
 
     @property
     def page(self) -> str:
@@ -56,6 +68,15 @@ class Bank:
         module = self.module_of(lesson_id) or {}
         question, options, answer, why = lesson["check"]
         pattern, text, say, classic = lesson["angle"][:4]
+        if problem.get("practice"):  # a content-pack lesson: a practice exercise, not code
+            extra = lesson["pack"]
+            return {
+                "id": lesson_id, "title": lesson["title"], "module": module.get("title"), "learn": lesson["learn"],
+                "objective": extra["objective"],
+                "check": {"question": question, "options": options, "answer_index": answer, "why": why},
+                "practice": {"kind": extra["practice"]["kind"], "prompt": extra["practice"]["prompt"]},
+                "explain": {"reasoning": text, "say_it_like_this": say},
+            }
         cases = problem.get("cases", [])
         sample = next((c for c in cases if c.get("sample")), cases[0] if cases else None)
         card = {

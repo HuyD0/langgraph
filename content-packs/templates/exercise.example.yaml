@@ -1,0 +1,131 @@
+# The practice step: one exercise per lesson. Every kind needs `kind`, `prompt` and a `why`
+# (or per-item whys). Any kind can show `artifacts` above the question: code, config, log, plan,
+# text, a diff (before/after) or one of the views below. Copy the kind you need into a lesson.
+
+multiple_choice:
+  kind: multiple_choice
+  prompt: Which explanation fits the evidence?
+  options: [OPTION_TODO, OPTION_TODO, OPTION_TODO]
+  answer: 1                          # counting from 0
+  why: WHY_TODO
+
+identify_error:
+  kind: identify_error
+  prompt: What is wrong in this configuration?
+  artifacts:
+    - {kind: config, label: CONFIG_FILE_TODO, content: "EXERCISE_CONTENT_TODO"}
+  options: [OPTION_TODO, OPTION_TODO, OPTION_TODO]
+  answer: 0
+  why: WHY_TODO
+
+troubleshooting:
+  kind: troubleshooting
+  prompt: Given this error, what is the most likely cause?
+  artifacts:
+    - {kind: log, label: RUN_LOG_TODO, content: "EXERCISE_CONTENT_TODO"}
+  options: [OPTION_TODO, OPTION_TODO, OPTION_TODO]
+  answer: 0
+  why: WHY_TODO
+  next_check: NEXT_SAFE_CHECK_TODO   # required: the safe thing to check next
+  handoff: HANDOFF_TODO              # optional: what to send to the owner
+
+review_decision:
+  kind: review_decision              # options default to Approve / Request changes / Escalate
+  prompt: Would you approve this change?
+  artifacts:
+    - {kind: diff, label: RESOURCE_TODO, before: "BEFORE_TODO", after: "AFTER_TODO"}
+  answer: 1
+  why: WHY_TODO
+  next_check: NEXT_SAFE_CHECK_TODO
+
+source_tracing:
+  kind: source_tracing
+  prompt: Which layer gave this field its value?
+  artifacts:
+    - kind: trace
+      label: FIELD_TODO, layer by layer
+      field: FIELD_TODO
+      layers:
+        - {layer: LAYER_TODO, value: VALUE_TODO, state: same}
+        - {layer: LAYER_TODO, value: VALUE_TODO, state: added}   # same, added, changed, unknown
+  options: [LAYER_TODO, LAYER_TODO]
+  answer: 1
+  why: WHY_TODO
+
+difference_review:
+  kind: difference_review            # needs a diff artifact
+  prompt: What does this change do?
+  artifacts:
+    - {kind: diff, label: FILE_TODO, before: "BEFORE_TODO", after: "AFTER_TODO"}
+  options: [OPTION_TODO, OPTION_TODO]
+  answer: 0
+  why: WHY_TODO
+
+ordering:
+  kind: ordering
+  prompt: Put these steps in order.
+  steps: [STEP_TODO, STEP_TODO, STEP_TODO]   # listed in the RIGHT order; the page shuffles them
+  why: WHY_TODO
+
+relationship_mapping:
+  kind: relationship_mapping
+  prompt: Match each reference to what it points at.
+  pairs:
+    - {from: REFERENCE_TODO, to: TARGET_TODO}
+    - {from: REFERENCE_TODO, to: TARGET_TODO}
+  why: WHY_TODO
+
+configuration_repair:
+  kind: configuration_repair
+  prompt: Fix this configuration.
+  broken: |
+    EXERCISE_CONTENT_TODO
+  fixed: |
+    EXPECTED_RESULT_TODO
+  rules:                             # each rule is checked against the learner's text
+    - {must_contain: "EXPECTED_RESULT_TODO", why: WHY_TODO}
+    - {must_not_contain: "WRONG_VALUE_TODO", why: WHY_TODO}
+  why: WHY_TODO
+
+reasoning:
+  kind: reasoning                    # write an answer, then compare with the expected one
+  prompt: Answer in your own words, then compare.
+  questions:
+    - {ask: QUESTION_TODO, expected: EXPECTED_RESULT_TODO, why: WHY_TODO}
+  success: SUCCESS_CRITERION_TODO    # e.g. "You can explain the evidence and name the next safe check."
+
+# Views: pictures of an investigation, shown in learn.views or as artifacts.
+views:
+  relationships:
+    kind: relationships
+    links:
+      - {from: FILE_TODO, ref: FIELD_TODO, to: FILE_TODO}
+  trace:
+    kind: trace
+    field: FIELD_TODO
+    layers:
+      - {layer: LAYER_TODO, value: VALUE_TODO, state: same, source: EVIDENCE_ID_TODO}
+  walkthrough:
+    kind: walkthrough
+    symptom: SYMPTOM_TODO
+    steps:
+      - {look: WHERE_YOU_LOOKED_TODO, found: WHAT_YOU_FOUND_TODO}
+    suspects:
+      - {cause: CAUSE_TODO, verdict: ruled out, why: WHY_TODO}   # ruled out, or confirmed
+    root_cause: ROOT_CAUSE_TODO
+    resolution: RESOLUTION_TODO
+    cannot_verify: CANNOT_VERIFY_TODO
+  plan_review:
+    kind: plan_review
+    changes:
+      - {action: update, address: RESOURCE_TODO, risk: medium, note: NOTE_TODO}   # create, update, replace, destroy, read, no_op
+    decision: Request changes
+    reason: REASON_TODO
+  tour:                               # a guided tour of a screenshot: one box per stop
+    kind: tour
+    title: TOUR_TITLE_TODO               # e.g. "Find your way around a run"
+    image: assets/SCREENSHOT_TODO.png    # a file in this pack (private copy only)
+    ratio: 0.5                           # the image's height divided by its width
+    alt: ALT_TEXT_TODO                   # what the screenshot shows, for screen readers
+    stops:                               # x, y, w, h: the box, as percentages of the image
+      - {x: 5, y: 8, w: 30, h: 6, title: STOP_TITLE_TODO, text: STOP_TEXT_TODO}

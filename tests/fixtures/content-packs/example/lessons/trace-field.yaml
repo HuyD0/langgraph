@@ -1,0 +1,44 @@
+id: ex_trace_field
+status: ready
+title: Follow one field from file to plan
+summary: A made-up retention setting changes on its way to the plan.
+objective: Find the layer where a value changes.
+difficulty: core
+prerequisites: [ex_config_links]
+learn:
+  text:
+    - A value passes through layers before it reaches the plan; any layer can fill in a **default** or **transform** it.
+  views:
+    - kind: trace
+      field: retention_days
+      layers:
+        - {layer: team.yaml, value: "(not set)", state: same, source: ev_files}
+        - {layer: parser, value: "30 (default)", state: added, source: ev_parser}
+        - {layer: module, value: "30", state: same, source: ev_module}
+        - {layer: plan, value: "30", state: same, source: ev_files}
+check:
+  question: The plan shows retention_days = 30, but team.yaml doesn't set it. Where did 30 come from?
+  options: [The provider, A default in the parser, The previous run]
+  answer: 1
+  why: The trace shows the value first appears in the parser layer, marked added.
+practice:
+  kind: source_tracing
+  prompt: In the trace, which layer gave retention_days its value?
+  artifacts:
+    - kind: trace
+      label: retention_days, layer by layer
+      field: retention_days
+      layers:
+        - {layer: team.yaml, value: "(not set)", state: same}
+        - {layer: parser, value: "30 (default)", state: added}
+        - {layer: module, value: "30", state: same}
+  options: [team.yaml, parser, module]
+  answer: 1
+  why: The parser adds a default when the file leaves it out.
+explain:
+  reasoning: A value you didn't write came from a layer in between; the trace shows which.
+  say: When a value appears that nobody wrote, I trace it layer by layer to the one that added it.
+evidence:
+  - {id: ev_files, kind: code, title: Example config files, ref: example/config, revision: abc1234, status: unverified}
+  - {id: ev_parser, kind: code, title: Example parser, ref: example/parser.py, revision: abc1234, status: unverified}
+  - {id: ev_module, kind: code, title: Example module, ref: example/module/main.tf, revision: abc1234, status: unverified}

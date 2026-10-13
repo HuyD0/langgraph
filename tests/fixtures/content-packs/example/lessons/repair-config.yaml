@@ -1,0 +1,30 @@
+id: ex_repair_config
+status: ready
+title: Fix a broken team file
+summary: A made-up team file names an environment that doesn't exist.
+objective: Correct an invalid configuration.
+difficulty: core
+learn:
+  text:
+    - Validation fails when a file refers to something that isn't defined, like an environment with a typo in its name.
+check:
+  question: Validation says "unknown environment example-evn". What is the likely cause?
+  options: [A typo in the reference, The plan failed, Missing permissions]
+  answer: 0
+  why: The name doesn't match any environment file.
+practice:
+  kind: configuration_repair
+  prompt: Fix team.yaml so it refers to the existing environment, example-env.
+  broken: |
+    team: orbit
+    environment: example-evn
+  fixed: |
+    team: orbit
+    environment: example-env
+  rules:
+    - {must_contain: "environment: example-env", why: The environment must match an existing file.}
+    - {must_not_contain: example-evn, why: The misspelt name must be gone.}
+  why: References must match a defined name exactly.
+explain:
+  reasoning: Most validation errors name the field that failed; start there.
+  say: I read the validation error for the field it names, then check that value against what exists.

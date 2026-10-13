@@ -1,0 +1,11 @@
+# A content slot. It is never shown until it is filled in and its status is changed.
+# To fill it: copy content-packs/templates/lesson.example.yaml over this file, keep the id,
+# write the lesson, run `uv run drill content check`, then set status to draft or ready.
+id: iac_b5_failed_runs
+status: slot
+title: "Troubleshoot failed runs"
+summary: "Start from the first error, collect evidence, rule causes in or out, find the root cause, and say what to send to the owner."
+planned:                       # a suggestion for the author, not shown to learners
+  practice: [troubleshooting, reasoning]
+  views: [walkthrough]
+  sources: SOURCE_REFERENCE_TODO

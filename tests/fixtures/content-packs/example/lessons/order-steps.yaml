@@ -1,0 +1,22 @@
+id: ex_order_steps
+status: ready
+title: From request to applied change
+summary: The order a made-up change moves through.
+objective: Put the steps of a change in order.
+difficulty: intro
+learn:
+  text:
+    - A change moves through the same steps every time; knowing the order tells you where to look when one fails.
+check:
+  question: What comes straight after the configuration is changed?
+  options: [Apply, Validation, Review]
+  answer: 1
+  why: Checks run on the change before anything is planned.
+practice:
+  kind: ordering
+  prompt: Put these steps in the order a change goes through.
+  steps: [Request, Change the configuration, Validate, Plan, Review the plan, Apply]
+  why: Each step needs the one before it to have finished.
+explain:
+  reasoning: Knowing the order tells you which step to check first.
+  say: I place a failure by the step it happened in, then look at the step before it.
