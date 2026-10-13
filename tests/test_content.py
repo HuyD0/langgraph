@@ -417,3 +417,46 @@ def test_every_walkthrough_screen_can_be_drawn_and_explained():
     assert walks, "the Spacelift run lesson has a walkthrough"
     for lid, w in walks:
         assert w["steps"] and w["caption"], lid
+
+
+def test_new_components_get_dusk_from_surface_tokens_not_their_own_rules():
+    """Dusk's glass, shadows and glow come from the surface tokens in tokens.css (--card-*,
+    --aside-*, --glow-*). A Dusk-only rule that sets a background, shadow or blur on a new
+    component means that component looks flat in every other place a new look is added: use the
+    tokens instead. The ones below predate the tokens."""
+    import re
+    from drill.content.build import PAGE_TEMPLATE
+
+    known = {".btn.primary", ".btn.primary.soft", ".callout.ahead", ".drawer", ".foot", ".keyidea", ".mfn",
+             ".mfn.busy", '.stepbtn[aria-current="step"] i', '[data-theme="dusk"] .stepbtn[aria-current="step"] i',
+             ".top", "body"}
+    page = PAGE_TEMPLATE.read_text()
+    css = page[page.index("<style>"):page.index("</style>")]
+    new = set()
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        if 'data-theme="dusk"' not in sel or not re.search(r"(^|;)\s*(background|box-shadow|backdrop-filter)\s*:", body):
+            continue
+        for part in sel.split(","):
+            if 'data-theme="dusk"' in part:
+                new.add(re.sub(r"\s+", " ", part.strip().split("]", 1)[1].strip()))
+    assert not new - known, f"use the surface tokens (--card-bg, --aside-bg, --glow-current...) instead of Dusk-only rules for: {sorted(new - known)}"
+    tokens = (PAGE_TEMPLATE.parent / "tokens.css").read_text()
+    for name in ("--card-bg", "--card-shadow", "--aside-bg", "--aside-blur", "--glow-current", "--glow-look"):
+        assert tokens.count(name + ":") >= 2, f"{name} needs a default and a Dusk value in tokens.css"
+
+
+def test_practice_sets_can_be_drawn_and_answered():
+    """Platform lessons can practise on real evidence (model.practice): the page needs a drawing
+    for every kind of evidence, and every question a valid answer and a clue."""
+    from drill.content.build import PAGE_TEMPLATE
+    from drill.content.model import EVIDENCE_KINDS
+
+    page = PAGE_TEMPLATE.read_text()
+    for kind in EVIDENCE_KINDS:
+        assert f'e.kind === "{kind}"' in page, f"page.html can't draw {kind!r} evidence"
+    sets = [(p["id"], p["practice"]) for p in build_data()["bank"] if p.get("practice")]
+    assert len(sets) >= 6
+    for pid, pr in sets:
+        for a in pr["asks"]:
+            n = len(a["evidence"]["changes"]) if a["pick"] else len(a["options"])
+            assert 0 <= a["answer"] < n and a["clue"] and a["why"], pid

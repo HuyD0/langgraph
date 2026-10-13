@@ -83,6 +83,7 @@ def exercise(
     unordered: bool = False,
     machine: dict | None = None,
     sort: dict | None = None,
+    practice: dict | None = None,
 ) -> dict:
     """The Build step of a lesson.
 
@@ -98,7 +99,7 @@ def exercise(
         "title": title, "topic": topic, "difficulty": difficulty, "fn": fn,
         "prompt": prompt, "pattern": pattern, "target": target, "realworld": realworld,
         "starter": starter, "solution": solution, "cases": cases, "unordered": unordered,
-        "guided": guided, "fills": fills, "machine": machine, "sort": sort,
+        "guided": guided, "fills": fills, "machine": machine, "sort": sort, "practice": practice,
         "concepts": concepts, "byhand": byhand, "why": why, "gotchas": gotchas,
     }
 
@@ -138,6 +139,46 @@ def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict]
         assert not missing, f"{item.get('name')}: missing {sorted(missing)}"
         assert item["bin"] in ids, f"{item['name']}: unknown bin {item['bin']!r}"
     return {"intro": intro, "bins": [{"id": i, "label": l, "who": w} for i, l, w in bins], "items": items, "explain": explain}
+
+
+EVIDENCE_KINDS = ("code", "chain", "plan", "claim", "prompt")
+
+
+def evidence(kind: str, **data: Any) -> dict:
+    """What a practice question is about, drawn above it: ``code`` (YAML, HCL or a log, with
+    ``text`` and optional ``title``), ``chain`` (a field's stops from YAML to provider, each
+    ``{"label", "sub", "state"}`` with state ok, now or later, plus an optional ``snippet``),
+    ``plan`` (``summary`` counts and ``changes`` rows ``{"sym", "address", "note"}``), ``claim``
+    (something an AI assistant said) or ``prompt`` (a prompt to an AI assistant, ``___`` for the gap)."""
+    assert kind in EVIDENCE_KINDS, f"unknown evidence kind {kind!r}"
+    return {"kind": kind, **data}
+
+
+def ask(question: str, options: list[str], *, answer: int, clue: str, why: str,
+        evidence: dict | None = None, wrong: list[str | None] | None = None, pick: bool = False) -> dict:
+    """One practice question: one screen, one plain question about the evidence above it.
+
+    A wrong pick shows its line from ``wrong`` (or a plain "not quite"); help is ``clue`` first,
+    then the answer. ``why`` is shown once it's right. With ``pick``, the plan's own rows are the
+    options (tap the change you'd stop on), and ``answer`` is a row's position.
+    """
+    n = len(evidence["changes"]) if pick else len(options)
+    assert 2 <= n <= 6 and 0 <= answer < n, f"{question[:40]}: answer {answer} out of {n} options"
+    assert not pick or (evidence and evidence["kind"] == "plan"), "pick needs plan evidence"
+    right = evidence["changes"][answer]["address"] if pick else options[answer]
+    assert right.lower() not in clue.lower(), f"{question[:40]}: the clue gives the answer away"
+    assert wrong is None or len(wrong) == n, f"{question[:40]}: one wrong line per option"
+    return {"question": question, "options": options, "answer": answer, "clue": clue, "why": why,
+            "evidence": evidence, "wrong": wrong, "pick": pick}
+
+
+def practice(*, intro: str, asks: list[dict], explain: str | None = None) -> dict:
+    """The Build step as a few questions about real evidence, for platform lessons where the job
+    is reading YAML, plans and logs rather than writing Python. Three to five asks, easy to
+    tricky; the Python exercise stays one tap away. ``explain`` is the Explain step's big idea
+    for someone who practised this way (like ``sort_task``)."""
+    assert 2 <= len(asks) <= 6, "a practice set has two to six questions"
+    return {"intro": intro, "asks": asks, "explain": explain}
 
 
 def example(caption: str, code: str) -> dict:

@@ -47,6 +47,7 @@ artifact gets updated.
 | Track | `track`, `track-on`, `track-soft`, `track-line`, `track-ink` | The Platform track only: its room, caption and glow |
 | Code | `syn-kw`, `syn-str`, `syn-num`, `syn-com`, `syn-fn`, `syn-bi` | Code colours; never green or red |
 | Machine | `tok-a` to `tok-d` | The row pills |
+| Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
 | Type | `display`, `body`, `mono` | Headings, reading, anything the computer said |
 | Motion | `dur-tap`, `dur-step`, `dur-moment`, `dur-big`, `dur-slide`, `ease-out`, `ease-in`, `ease-pop` | How long things move, and how |
 | Effects | `fx-core`, `fx-glow`, `fx-veil`, `fx-red`, `fx-mix` | Only the motion effects |
@@ -70,6 +71,8 @@ them before making a new one; a new one gets a row here.
 | Check options | `.opts`, `.opt`, `.verdict` | Check step | The verdict scrolls into view after an answer |
 | Sorting board | `.smap`, `.sbin`, `.shelp` | Build, judgement lessons | One idea at a time |
 | Fill the gaps | `.cloze`, `.clz`, `.gap` (`.now`, `.later`, `.filled`), `.clzchip` (`.no`, `.shown`), `.clzclue` | Explain | Help is a clue, then the answer; the clue uses `hint` colours |
+| Practice questions | `.qfbox`, `.qf-chain`, `.qf-rows`, `.qf-row` (`.right`, `.wrong`), `.qf-claim`, `.qf-sum` | Platform Build steps | One question per screen; evidence above; uses the surface tokens |
+| Walkthrough | `.walk`, `.sl`, `.sl-view`, `.sl-mark`, `.sl-n`, `.sl-steps`, `.sl-tips` | Tool lessons (Spacelift) | Numbered callouts in the hint colours match numbered steps |
 | Study tray | `.pocket`, `.pk-row`, `.seals` | Every screen | Collapsed by default; the aura only when something is due |
 | Hover card | `#stkTip` | Stickers | Long press on phones |
 | Toast | `#toast` | After saving | Short, plain, disappears by itself |
@@ -104,7 +107,7 @@ uv run drill build-page && uv run pytest -q tests/test_content.py
 the dark and dusk blocks if it should differ there. Use it as `var(--name)`. A test fails if the
 page uses a name `tokens.css` doesn't define.
 
-**Style a new component.** Build it from existing tokens and the spacing and radius steps the
+**Style a new component.** Pick its surface first: a card (`--card-*`), an aside (`--aside-*`), and `--glow-current` on the one thing that's current. That is what gives it Dusk's glass and glow; colours alone don't. Never write a `:root[data-theme="dusk"]` rule for a new component's background, shadow or blur: a test fails if you do. Then build it from existing tokens and the spacing and radius steps the
 page already uses (gaps of 4 to 24px; corners of 4, 8, 10, 12, 14 or pill). Start from the
 nearest existing component in `page.html`. If it needs a new colour, that's a new token, not a
 hex value in the rule.

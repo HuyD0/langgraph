@@ -2,7 +2,7 @@
 it, the modules and providers it calls, and the Spacelift stacks that run it. All names are invented."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, stack
 
 MODULE = module('platform-repos', 'How the platform repos fit together',
                 'Follow one request from YAML through the runbook and Spacelift to Azure Databricks.',
@@ -74,6 +74,36 @@ Return one word, asking in this order:
         pattern='Ask the questions in a fixed order and return at the first one that fits.',
         target='a few checks, no loops',
         realworld="This is how a careful reviewer reads a config PR on a Databricks platform team: for each changed YAML field, find where the runbook reads it and where the module passes it to the provider. A field that stops on the way is the classic \"I changed the YAML but the plan didn't change\".",
+        practice=practice(
+            intro='Follow fields down the chain and name what happened to each, the way a reviewer reads a config PR.',
+            explain='A field only matters if it reaches the provider. You followed it stop by stop: the YAML, the check, the runbook, the module, the provider, and named what happened: supported, defaulted, transformed, dropped or invalid.',
+            asks=[
+                ask('Does the runbook pass `autoscale_note` on?', ['Yes', 'No'], answer=1,
+                    evidence=evidence('chain', stops=[
+                        {'label': 'clusters.yml', 'sub': 'autoscale_note: "keep it small"', 'state': 'ok', 'tag': 'IN YAML'},
+                        {'label': 'Pydantic check', 'sub': 'free text: accepted', 'state': 'ok', 'tag': 'VALID'},
+                        {'label': 'The runbook', 'sub': 'Service/parsing_clusters.tf', 'state': 'now', 'tag': 'NOW'},
+                        {'label': 'Workspace module', 'state': 'later'},
+                        {'label': 'Provider', 'state': 'later'},
+                    ], snippet='dbx_clusters = [for c in local.clusters : {\n  name        = lower("${c.code}_${c.name}")\n  policy_name = try(c.policy_name, "Personal Compute")\n  min_workers = try(c.min_workers, null)\n  max_workers = try(c.max_workers, null)\n}]'),
+                    clue='Look for the field\'s name among the ones the snippet reads from `c`.',
+                    why='The runbook reads name, code, policy_name and the worker counts. `autoscale_note` isn\'t one of them, so it stops here.',
+                    wrong=['Check the snippet again: which fields does it read from `c`?', None]),
+                ask('So what happened to `autoscale_note`?', ['SUPPORTED', 'DROPPED', 'INVALID'], answer=1,
+                    clue='It passed the check, then went no further.',
+                    why='Accepted by the check, never passed on: dropped. It looks fine in the YAML and does nothing, so nobody should rely on it.',
+                    wrong=['Supported means it reaches the provider as written. Did it?', None, 'Invalid means the check rejects it. Pydantic accepted it.']),
+                ask('A cluster leaves out `policy_name`. What happened to that field?', ['SUPPORTED', 'DEFAULTED', 'DROPPED'], answer=1,
+                    evidence=evidence('code', title='The runbook line', text='policy_name = try(c.policy_name, "Personal Compute")'),
+                    clue='`try()` uses its second value when the first one is missing.',
+                    why='Left out, and the runbook filled in Personal Compute: defaulted.',
+                    wrong=['The team never wrote it, so it can\'t reach the provider as written.', None, 'Something still reaches the provider: the runbook\'s fallback.']),
+                ask('The team writes `name: Daily-Report` with `code: SALES`, and the plan creates `sales_daily-report`. What happened to `name`?', ['SUPPORTED', 'TRANSFORMED', 'DEFAULTED'], answer=1,
+                    clue='Compare what was typed with what was built.',
+                    why='The runbook put the code in front and lowered the case: transformed. Search the plan for the new name, not the one in the YAML.',
+                    wrong=['It reached the provider, but not as written.', None, 'The team did write a name, so nothing was filled in for them.']),
+            ],
+        ),
         starter="""def field_status(trace):
     # your code here
     pass
@@ -233,6 +263,35 @@ Return a dict from group name to permission.""",
         pattern='Start from the defaults, then add each grant, keeping the higher permission for a group seen before.',
         target='one pass over the grants',
         realworld="This is exactly why a Spacelift plan for a team folder shows more access than the YAML lists. Review the result group by group: the databricks_permissions resource is authoritative, so it also removes any access someone added by hand.",
+        practice=practice(
+            intro='Read the team\'s YAML and predict what the plan will give each group, including what the runbook adds.',
+            explain='The plan\'s permissions are the YAML plus what the runbook adds: the owner group gets CAN_MANAGE, every user gets CAN_READ, and a group listed twice keeps the higher permission.',
+            asks=[
+                ask('What does `grp-sales-dev-analysts` get on the folder?', ['CAN_EDIT', 'CAN_MANAGE', 'CAN_READ'], answer=0,
+                    evidence=evidence('code', title='team.yml', text='# config/DEV/team-sales/team.yml\nteam:\n  owner_group: grp-sales-dev-owners\n  folder_grants:\n    - group_name: grp-sales-dev-analysts\n      privilege: CAN_EDIT'),
+                    clue='Analysts aren\'t the owner; read their own grant.',
+                    why='Their grant says CAN_EDIT, and nothing else gives them more.',
+                    wrong=[None, 'Only the owner group gets CAN_MANAGE from the runbook.', 'Everyone gets CAN_READ, but analysts were also given something higher.']),
+                ask('What does `grp-sales-dev-owners` get?', ['Nothing: it isn\'t in folder_grants', 'CAN_MANAGE', 'CAN_EDIT'], answer=1,
+                    evidence=evidence('code', title='team.yml', text='# config/DEV/team-sales/team.yml\nteam:\n  owner_group: grp-sales-dev-owners\n  folder_grants:\n    - group_name: grp-sales-dev-analysts\n      privilege: CAN_EDIT'),
+                    clue='The runbook adds something for whoever is named as owner.',
+                    why='The runbook gives the owner group CAN_MANAGE, even though the YAML only names it as owner.',
+                    wrong=['The YAML isn\'t the whole story: the runbook adds access for the owner.', None, 'Nobody typed CAN_EDIT for the owners. What does the runbook add?']),
+                ask('Which group gets access that nobody typed at all?', ['users', 'grp-sales-dev-analysts', 'Nobody'], answer=0,
+                    clue='Think of everyone in the workspace.',
+                    why='The runbook adds `users` with CAN_READ to every team folder.',
+                    wrong=[None, 'The analysts were typed in folder_grants.', 'Look again: the runbook adds a default for everyone.']),
+                ask('Now the owners are also granted `CAN_EDIT` in folder_grants. What do they end up with?', ['CAN_EDIT', 'CAN_MANAGE', 'Both, as two permissions'], answer=1,
+                    evidence=evidence('code', title='team.yml', text="""team:
+  owner_group: grp-sales-dev-owners
+  folder_grants:
+    - group_name: grp-sales-dev-owners
+      privilege: CAN_EDIT"""),
+                    clue='A group listed twice keeps one permission, the stronger one.',
+                    why='The runbook adds CAN_MANAGE and the YAML adds CAN_EDIT. The plan may list both blocks, but the group can manage.',
+                    wrong=['The runbook\'s owner rule still applies.', None, 'The plan can show two blocks, but a group ends up with one level: the higher.']),
+            ],
+        ),
         starter="""LEVELS = ["CAN_READ", "CAN_RUN", "CAN_EDIT", "CAN_MANAGE"]
 
 def folder_permissions(team):
@@ -401,6 +460,43 @@ Otherwise return the cluster the runbook would build:
         pattern='Collect every problem first; only if there are none, build the result with the defaults filled in.',
         target='a few checks and one dict',
         realworld="Product teams on a Databricks platform ask for clusters in YAML exactly like this, and the runbook renames them, applies a default policy and adds the owner. Predicting the result before opening the Spacelift plan is how you spot a surprise in review instead of in production.",
+        practice=practice(
+            intro='Predict what the runbook will build from a team\'s clusters.yml, and catch what the check would reject.',
+            explain='Before reading the plan, you predicted it from the YAML: the code in front of the name in lower case, Personal Compute if no policy is named, and the size as given. You also caught the two things a team can\'t write: a raw policy_id, or a size that mixes num_workers with min and max.',
+            asks=[
+                ask('What will the cluster be called?', ['daily-report', 'sales_daily-report', 'SALES_daily-report'], answer=1,
+                    evidence=evidence('code', title='config/DEV/team-sales/clusters.yml', text="""clusters:
+  - name: daily-report
+    code: SALES
+    min_workers: 1
+    max_workers: 4"""),
+                    clue='The runbook puts the team\'s code in front, then lowers the case.',
+                    why='lower("SALES" + "_" + "daily-report"): sales_daily-report.',
+                    wrong=['The runbook changes the name on the way.', None, 'Close, but the runbook lowers the case too.']),
+                ask('Which policy will it use?', ['Personal Compute', 'Shared Compute - Standard', 'None: the plan fails'], answer=0,
+                    clue='No policy is named, so the runbook falls back to its default.',
+                    why='`try(c.policy_name, "Personal Compute")`: with no policy_name, Personal Compute.',
+                    wrong=[None, 'Nobody named that policy here.', 'Leaving it out is allowed; the runbook fills it in.']),
+                ask('This cluster has `num_workers: 2` and `max_workers: 6`. What happens?', ['It autoscales from 2 to 6', 'It\'s rejected: use num_workers, or both min and max', 'Terraform ignores max_workers'], answer=1,
+                    evidence=evidence('code', title='clusters.yml', text="""clusters:
+  - name: etl
+    code: HR
+    num_workers: 2
+    max_workers: 6"""),
+                    clue='Size is one style or the other, never a mix.',
+                    why='A fixed size is num_workers alone; autoscaling is min_workers and max_workers together. A mix is rejected.',
+                    wrong=['Autoscaling needs min_workers and max_workers together.', None, 'It isn\'t ignored: the mix is caught before the plan.']),
+                ask('What\'s wrong with this one?', ['Nothing', 'policy_id isn\'t allowed: name the policy', 'policy_id must be lower case'], answer=1,
+                    evidence=evidence('code', title='clusters.yml', text="""clusters:
+  - name: etl
+    code: HR
+    num_workers: 1
+    policy_id: ABC123"""),
+                    clue='Teams name the policy; the module looks up its id.',
+                    why='A raw policy_id isn\'t allowed in team YAML. Use policy_name, and the workspace module finds the id.',
+                    wrong=['Look at the last line: teams don\'t write ids.', None, 'Case isn\'t the problem: teams don\'t write ids at all.']),
+            ],
+        ),
         starter="""def build_cluster(cluster, owner_group):
     # your code here
     pass
@@ -565,6 +661,34 @@ Check them in that order and return the first one that is `False`, as one of: `"
         pattern='Walk the stages in the order they must happen and return at the first gap.',
         target='one pass over five facts',
         realworld="This is the order a platform team works through a \"Cannot find service principal\" plan failure on Azure Databricks. The answer also tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.",
+        practice=practice(
+            intro='Work through a "Cannot find service principal" failure stage by stage, and stop at the first gap.',
+            explain='A lookup fails when an earlier stage isn\'t done. You checked the stages in the order they must happen: the run\'s commit, Entra ID, declared in YAML, Foundation applied, assigned by Service, and stopped at the first one that wasn\'t true.',
+            asks=[
+                ask('What does `data.databricks_service_principal` in the error tell you?', ['Terraform tried to create the SP', 'Terraform looked up an SP that should already exist', 'The SP was deleted'], answer=1,
+                    evidence=evidence('code', title='The first error in the planning log', text="""Error: Cannot find service principal: sp-sales-etl-uat
+  with module.dbx_credentials[0]
+    .data.databricks_service_principal.by_name["sp-sales-etl-uat"]"""),
+                    clue='In Terraform, `data` means read, not make.',
+                    why='A data source only reads. The SP had to exist and be registered before this plan could find it.',
+                    wrong=['A create would be a `resource`, not `data`.', None, 'Nothing here says it was deleted, only that it wasn\'t found.']),
+                ask('The SP is named only in the connector\'s permissions. Where does the trail stop?', ['Declared: Foundation never sees it', 'Foundation applied', 'Entra ID'], answer=0,
+                    evidence=evidence('chain', stops=[
+                        {'label': 'Same commit as the run', 'state': 'ok', 'tag': 'YES'},
+                        {'label': 'Exists in Entra ID', 'state': 'ok', 'tag': 'YES'},
+                        {'label': 'Declared in service_principals.yml', 'sub': 'only in dbx_access_connector.yml', 'state': 'now', 'tag': '?'},
+                        {'label': 'Foundation applied', 'state': 'later'},
+                        {'label': 'Assigned by Service', 'state': 'later'},
+                    ]),
+                    clue='Foundation only collects SPs from the files that declare them.',
+                    why='A name in a connector grant isn\'t a declaration, so Foundation never registers it. Declare it in service_principals.yml.',
+                    wrong=[None, 'Foundation can\'t register an SP it was never told about. Look one stage earlier.', 'Entra ID was checked: it exists there.']),
+                ask('Now it\'s declared, and Foundation shows a finished proposed run. The Service plan still fails. What next?', ['Ask for evidence that Foundation was applied', 'Re-run the Service plan until it passes', 'Recreate the SP in Entra ID'], answer=0,
+                    clue='A proposed run is a preview.',
+                    why='Finished and proposed only means planning worked. Ask the platform owner for the applied run, or the account showing the SP.',
+                    wrong=[None, 'Re-running changes nothing if the earlier stage isn\'t done, and hides the cause.', 'Never change identities to make an error go away.']),
+            ],
+        ),
         starter="""def next_check(facts):
     # your code here
     pass
@@ -634,6 +758,173 @@ def next_check(facts):
             [
                 "Don't fix blindly",
                 'Never reset state, recreate identities or rerun a plan over and over to make an error go away. Find the missing stage and send the evidence to the platform owner.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'ai_unstuck',
+    title='Getting unstuck with AI, safely',
+    learn=[
+        "AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: **explaining** an unfamiliar term or error, **tracing** a name across files (YAML, then the runbook, then the module), and **suggesting checks**. They are not evidence. Anything they say is a lead until you've seen it yourself.",
+        "A good prompt gives the AI what a person would need: **the run** (stack, environment, run link), **the first error** (a short excerpt, not the whole log), **the repo and the commit the run used**, and the rules: **read-only**, link every source, mark guesses as guesses, give one safe next check, and don't edit or deploy anything.",
+        "Then check the answer against **three rules**. *Version*: does it read the same commit as the run, not today's main branch? *Evidence*: does each claim point at a file and line you can open, and does that line really say it? *Safety*: did you paste anything secret, and does it suggest changing something without approval?",
+        "Never paste secrets, tokens, keys, state files or whole logs with credentials in them. And never let an assistant change infrastructure for you: re-running a plan, resetting state or recreating an identity to make an error go away hides the cause.",
+    ],
+    example=example('A prompt for an unfamiliar Spacelift failure', """I am new to Databricks IaC. Investigate READ-ONLY.
+Run: dbx-service-uat, run 4182 (UAT)
+First error: Cannot find service principal: sp-sales-etl-uat
+Config repo and commit: config-repo @ 300d269 (the run's commit)
+Explain the error plainly. Trace YAML -> check -> runbook -> module -> provider.
+Link each source. Mark guesses as guesses.
+Give one safe next check. Do not edit or deploy."""),
+    check=question(
+        'An AI assistant says the service principal "must be registered, because it is declared in service_principals.yml on main". What is wrong with relying on that?',
+        [
+            'Nothing: it names the file',
+            'It read main, not the run\'s commit, and a declaration doesn\'t prove Foundation registered it',
+            'It should have suggested deleting and recreating the SP',
+        ],
+        answer=1,
+        why='Two of the three rules fail: the version (main, not the run\'s commit) and the evidence (a name in YAML isn\'t proof that an earlier stage ran). Recreating identities would break the safety rule.',
+    ),
+    angle=angle(
+        pattern='Give it the facts, check its claims',
+        text='The big idea: an AI assistant is a fast reader, not a witness. You give it what a person would need (the run, the first error, the repo and the commit, read-only), then treat every claim as a lead until you have seen the file yourself, at the run\'s commit. Your code checks a prompt before it is sent: it lists what is missing, in a fixed order, and flags anything that looks like a secret. It is like briefing a new colleague: give them the facts and the ground rules, then check their findings before you act.',
+        say="\"I give the AI the run, the first error and the [[commit|branch name|state file::The exact version the failed run used.]] the run used, and tell it to stay read-only. Then I check every claim against the [[file|chat|summary::Open the source it points at, yourself.]] at that commit, and I never paste [[secrets|error messages|run links::Tokens, keys and passwords stay out.]].\"",
+        classic=None,
+    ),
+    stack=stack('A prompt for reviewing a config pull request', """Review this Databricks configuration PR READ-ONLY: <PR link>.
+Explain each important YAML change in plain language.
+Find where the runbook and modules read each changed field;
+say which are transformed, defaulted or dropped.
+Call out permissions, destruction, dependencies and validation.
+Link evidence. Do not merge, apply or change any file."""),
+    exercise=exercise(
+        title='Is This Prompt Ready?',
+        topic='iac-review',
+        difficulty='easy',
+        fn='prompt_gaps',
+        prompt="""Your function gets `prompt`, the text you are about to send to an AI assistant about a failed run.
+
+Return a list of what is missing or wrong, in this order (compare in lower case):
+
+- no `"read-only"` in it -> `"say read-only"`
+- no `"run"` in it -> `"name the run"`
+- no `"error"` in it -> `"add the first error"`
+- no `"commit"` in it -> `"add the commit"`
+- any of `"password"`, `"token"`, `"secret"`, `"private key"` in it -> `"remove secrets"`
+
+A ready prompt returns `[]`.""",
+        pattern='Check each required fact in a fixed order, then look for anything secret.',
+        target='a few checks on one string',
+        realworld="Platform teams that allow AI assistants on infrastructure ask for exactly this: read-only questions with the run, the first error and the commit, and no secrets. A prompt missing the commit is the most common reason an assistant explains the wrong version of the code.",
+        practice=practice(
+            intro='Build a good prompt for a failed run, then check what the AI says, the way the platform team\'s guidance asks.',
+            explain='You gave the assistant the facts a person would need and the read-only rule, kept secrets out, and then checked its claims against the three rules: the same version as the run, evidence you have seen yourself, and nothing changed without approval.',
+            asks=[
+                ask('What goes in the commit line?', ['The commit the failed run used', 'Today\'s main branch', 'The Terraform state file'], answer=0,
+                    evidence=evidence('prompt', title='Your prompt', text="""I am new to Databricks IaC. Investigate READ-ONLY.
+Run: dbx-service-uat, run 4182 (UAT)
+First error: Cannot find service principal: sp-sales-etl-uat
+Config repo and commit: ___
+Trace YAML -> check -> runbook -> module -> provider.
+Link each source. Mark guesses as guesses.
+Give one safe next check. Do not edit or deploy."""),
+                    clue='The assistant must read the same version of the code that the run did.',
+                    why='The run planned one exact commit. If the assistant reads main, it may explain code that has changed since.',
+                    wrong=[None, 'Main may have moved on since the run. Which version did the run use?', 'Never paste state: it can hold secrets, and it isn\'t the code.']),
+                ask('Can you send this?', ['Yes: more detail helps', 'No: take the secret out first', 'Only to Copilot, not ChatGPT'], answer=1,
+                    evidence=evidence('code', title='Part of the log you were about to paste', text="""Initializing provider "azurerm"...
+  ARM_CLIENT_ID     = 9a1c...
+  ARM_CLIENT_SECRET = Qx8~kD2...
+Error: Cannot find service principal: sp-sales-etl-uat"""),
+                    clue='Look for anything that would let someone sign in.',
+                    why='A client secret lets anyone act as that identity. Send only the first error, redacted.',
+                    wrong=['Detail helps, but not a credential.', None, 'No assistant should get secrets, whichever one it is.']),
+                ask('What\'s wrong with this answer?', ['Nothing: it names the file', 'Wrong version, and a guess about Foundation', 'It should delete the SP first'], answer=1,
+                    evidence=evidence('claim', text='"The SP is declared in `service_principals.yml` on **main**, so Foundation must have registered it. **Re-run the Service plan** to fix it."'),
+                    clue='Which commit did the run use? And does a declaration prove an earlier stage ran?',
+                    why='It read main instead of the run\'s commit, it guessed that Foundation ran, and re-running a plan isn\'t a fix.',
+                    wrong=['Naming a file isn\'t enough: check the version and whether it\'s evidence or a guess.', None, 'Deleting identities would break the safety rule.']),
+                ask('Can you rely on this one?', ['Yes, once you open that file at that commit and see the line', 'Yes: it cites a file, so it\'s true', 'No: never trust an AI answer'], answer=0,
+                    evidence=evidence('claim', text='"In `Service/parsing_teams.tf` at commit 300d269, the runbook adds `CAN_MANAGE` for `owner_group` (the `team_workspace_folders` block)."'),
+                    clue='A good claim points somewhere you can check yourself.',
+                    why='This is a good answer: right commit, an exact place to look. It becomes evidence when you have read the line yourself.',
+                    wrong=[None, 'A citation is a lead, not proof, until you\'ve read it.', 'A precise, checkable claim is useful: check it, don\'t throw it away.']),
+            ],
+        ),
+        starter="""def prompt_gaps(prompt):
+    # your code here
+    pass
+""",
+        solution="""def prompt_gaps(prompt):
+    text = prompt.lower()
+    gaps = []
+    if "read-only" not in text:
+        gaps.append("say read-only")
+    if "run" not in text:
+        gaps.append("name the run")
+    if "error" not in text:
+        gaps.append("add the first error")
+    if "commit" not in text:
+        gaps.append("add the commit")
+    if any(word in text for word in ("password", "token", "secret", "private key")):
+        gaps.append("remove secrets")
+    return gaps
+""",
+        cases=[
+            case('Investigate READ-ONLY. Run: dbx-service-uat 4182. First error: Cannot find service principal. Commit: 300d269.', expected=[], sample=True),
+            case('Why does my plan fail? Error: Cannot find service principal.', expected=['say read-only', 'name the run', 'add the commit']),
+            case('Read-only please. Run 4182, error below, commit 300d269. ARM_CLIENT_SECRET = Qx8', expected=['remove secrets']),
+            case('READ-ONLY. Run 4182 at commit 300d269 failed.', expected=['add the first error']),
+            case('', expected=['say read-only', 'name the run', 'add the first error', 'add the commit']),
+        ],
+        guided="""def prompt_gaps(prompt):
+    # Replace every ___ with real code, then run the tests.
+    text = prompt.lower()
+    gaps = []
+    if "read-only" not in text:
+        gaps.append("say read-only")
+    if "run" not in text:
+        gaps.append("name the run")
+    if "error" not in text:
+        gaps.append("add the first error")
+    if ___:
+        gaps.append("add the commit")
+    # Anything that looks secret has to go before you send it.
+    if any(word in text for word in ___):
+        gaps.append("remove secrets")
+    return gaps
+""",
+        fills=['"commit" not in text', '("password", "token", "secret", "private key")'],
+        concepts=[
+            [
+                'lower()',
+                '`text.lower()` makes the comparison ignore capitals: "READ-ONLY" and "read-only" match.',
+                '"READ-ONLY".lower()   # \'read-only\'',
+            ],
+            [
+                'in on a string',
+                '`"run" in text` asks whether those letters appear anywhere in the text.',
+                '"run" in "run 4182"   # True',
+            ],
+            [
+                'any()',
+                '`any(...)` is True if at least one item is True: here, if any secret word appears.',
+                'any(w in "a token" for w in ("password", "token"))   # True',
+            ],
+        ],
+        byhand='The sample, in lower case, has "read-only", "run", "error" and "commit", and none of the secret words. Nothing is missing: return [].',
+        why='Five checks on one lower-cased string.',
+        gotchas=[
+            [
+                'A citation is a lead, not proof',
+                'Open the file at the run\'s commit and read the line before you repeat what the assistant said.',
+            ],
+            [
+                'Never let it act',
+                'Assistants suggest re-running, resetting state or recreating identities. Those hide the cause: find the missing stage instead.',
             ],
         ],
     ),

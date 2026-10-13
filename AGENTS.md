@@ -56,7 +56,10 @@ The server **caches the page when it starts**: restart it after every `build-pag
 
 1. `scripts/check.sh` passes.
 2. You looked at the change in the preview at **375×812 (phone) and 1366×860 (desktop)**, in
-   **Dusk and Light**, with Motion on and off if anything moves. No sideways scroll.
+   **Dusk and Light**, with Motion on and off if anything moves. No sideways scroll. In Dusk, new
+   boxes should look like the rest (glass, depth, a glow on what's current): if one looks flat, it
+   isn't using the surface tokens.
+   Mockups load `tokens.css` and the page's styles too, never hand-copied colours.
 3. Docs that describe what you changed are updated (the table above says which). If the change
    is visible, retake the screen gallery (`node scripts/screenshots.mjs`, see
    [docs/screens/README.md](docs/screens/README.md)) so the pictures stay true.

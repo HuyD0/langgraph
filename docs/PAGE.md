@@ -83,6 +83,19 @@ The sentence is what you'd say to a colleague, so it must sound like a person ta
 short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
 before keeping it.
 
+## Practice on real evidence (platform Build steps)
+
+For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
+questions instead of code: `exercise(..., practice=practice(intro=..., asks=[ask(...)]))`. Each
+`ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
+one plain question, three or so options, a plain line for each wrong one, a clue first and then
+the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
+The Python exercise stays one tap away ("Rather write it in Python?"). Used by the repos module,
+Spotting dangerous replacements and "Getting unstuck with AI, safely".
+
+Code boxes wrap long lines, so nothing runs off a phone; Terraform, plan output, state JSON and
+lock errors are coloured by `hlInfra` (plan marks, attribute names, "forces replacement").
+
 ## Walkthroughs: a tool's screens, redrawn
 
 A lesson can show a tool's real screens step by step: `walkthrough=[screen(kind, caption=...,
