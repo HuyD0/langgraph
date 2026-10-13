@@ -327,4 +327,4 @@ def test_every_explain_gap_is_answerable_and_the_plain_sentence_reads_right():
         for g in (p for p in pieces if not isinstance(p, str)):
             assert len({g["answer"], *g["wrong"]}) == 3, (lid, g)
             assert g["answer"].lower() not in g["clue"].lower(), f"{lid}: the clue gives away {g['answer']!r}"
-    assert with_gaps >= 9
+    assert with_gaps == len(build_data()["lessons"]), "every lesson's Explain sentence has gaps"

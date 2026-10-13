@@ -77,7 +77,11 @@ A gap is written inside `say` as `[[answer|wrong|wrong::clue]]`. `model.cloze` t
 plain sentence (used by the tutor, the MCP tools and the done screen) and the pieces the page
 shows. Every gap needs two wrong words and a clue that doesn't contain the answer
 (`tests/test_content.py` checks). A lesson whose `say` has no gaps keeps the old "say it in your
-own words" box, so lessons can be converted a module at a time.
+own words" box (every lesson has gaps today; a test keeps it that way).
+
+The sentence is what you'd say to a colleague, so it must sound like a person talking: one or two
+short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
+before keeping it.
 
 ## Tracks
 

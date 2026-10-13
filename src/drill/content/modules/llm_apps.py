@@ -25,7 +25,7 @@ template.format(q='hi')   # KeyError: '"ok"'"""),
     angle=angle(
         pattern='Replace only your own placeholders',
         text='The big idea: prompts often hold JSON or code with their own curly braces, so you replace only the placeholders you mean to. Your code goes through each name and value you were given. It builds the placeholder text, like `{question}`, and uses `replace` to swap it for the value everywhere it appears. Any other braces in the prompt are left alone. It is like filling in a form letter: you write in the name and date, and the rest of the letter stays as it was.',
-        say='"I replace exactly the placeholders I was given, so any other braces in the prompt, like JSON examples, stay as they are."',
+        say='"I fill in only the [[placeholders|braces|lines::The named slots, like {question}.]] I was given. Any other curly braces in the prompt, like [[JSON|comments|names::A data format written with curly braces.]] examples, stay [[as they are|deleted|replaced::Like a form letter: only the blanks change.]]."',
         classic='valid_parentheses',
     ),
     stack=stack('LangChain (a Python library for building LLM apps): braces you want to keep are doubled', """from langchain_core.prompts import ChatPromptTemplate
@@ -156,7 +156,7 @@ load_prompt("prompts:/main.support.answer@production")  → v2"""),
     angle=angle(
         pattern='Split the address, then look up',
         text="The big idea: treat prompts like code, with versions that never change and an alias like `production` that points at one of them. Your code removes `prompts:/` from the address and splits the rest at `@` into a name and an alias. Then it uses dicts, lookup tables from a key to a value: it finds the prompt by name, the version number for the alias, then that version's text. If the name or alias is missing, it returns `None`. Moving an alias is like moving a bookmark to a different page.",
-        say='"Prompt versions never change. The app loads by alias, so shipping or rolling back a prompt means moving the alias, with no code change."',
+        say='"Prompt versions never [[change|load|expire::Once saved, a version stays exactly as it was.]]. My app loads the [[alias|newest version|file::A nickname like production that points at one version.]], so shipping or rolling back is just moving it, with no code change."',
         classic=None,
     ),
     stack=stack('MLflow Prompt Registry in Unity Catalog', """import mlflow
@@ -317,7 +317,7 @@ lesson(MODULE, 'extract_code_block',
     angle=angle(
         pattern='Find the fences, then cut',
         text='The big idea: models often wrap their answer in chatter or a code fence, so you look for the part you expect and have a fallback. Your code uses `find` to look for three backticks. If there are none, `find` gives -1 and the code returns the whole reply, trimmed. Otherwise it skips to the end of that opening line, finds the closing fence, and cuts out the text between them. `strip` trims spaces and line breaks from both ends, like cutting the crusts off bread.',
-        say='"I find the fences and take the text between them. If there\'s no fence, I fall back to the whole reply, trimmed."',
+        say='"Models often wrap their answer in a code [[fence|comment|error::Three backticks above and below the answer.]]. I take the text [[inside|before|after::The answer sits between the backticks.]] it, and if there isn\'t one, I [[fall back|give up|retry::Have a plan B instead of crashing.]] to the whole reply, trimmed."',
         classic=None,
     ),
     stack=stack('LangChain: ask for structured output instead', """from pydantic import BaseModel
@@ -417,7 +417,7 @@ for start in range(0, 7, 3):
     angle=angle(
         pattern='Step through in jumps',
         text='The big idea: sending items in batches saves the fixed delay each request carries, but the smaller last batch is easy to lose. Your code uses `range(0, len(items), size)` to get starting points one batch apart, like 0, 3, 6 for a size of 3. At each start it slices out the next `size` items. A slice that runs past the end just stops at the end, so the last batch is shorter and nothing is dropped. It is like slicing a loaf: the last slice may be thin, but you keep it.',
-        say='"I step through the list in jumps of the batch size and slice each batch. The last slice is just shorter, so no item is lost."',
+        say='"I send items in batches to save the [[fixed delay|memory|storage::Every request has a wait before any work starts.]] on each request. The last batch is usually [[shorter|bigger|empty::The leftovers rarely fill a whole one.]], and I make sure it still gets [[sent|merged|skipped::Losing it means a document silently goes missing.]]."',
         classic=None,
     ),
     stack=stack('Databricks: batch inference (a model run on every row) with ai_query', """-- Turn each ticket into an embedding (a list of numbers)
@@ -518,7 +518,7 @@ for attempt in range(5):
     angle=angle(
         pattern='Double each wait, with a cap',
         text='The big idea: when a request fails for a temporary reason, retry with waits that double each time, but never longer than a cap. Your code starts the wait at `base`. Each retry adds the smaller of the wait and the cap to the list, using `min`. Then it doubles the wait for next time. With a base of 1 and a cap of 5, the waits are 1, 2, 4 and 5. It is like knocking on a door and waiting longer each time before you knock again.',
-        say='"I retry only errors that can fix themselves, like rate limits, and double the wait each time, with a cap so it doesn\'t grow forever."',
+        say='"I only retry errors that can [[fix themselves|be reproduced|crash the app::Like rate limits or timeouts, not a wrong key.]], like rate limits. I [[double|halve|keep::1 second, then 2, then 4.]] the wait each time, but never past a [[cap|reset|minimum::A ceiling on how long you\'ll wait.]]."',
         classic='climbing_stairs',
     ),
     stack=stack('LangChain: retries with growing waits', """llm = ChatDatabricks(endpoint=ENDPOINT).with_retry(
@@ -631,7 +631,7 @@ expected:     ["billing",  "refund",   "unknown"]"""),
     angle=angle(
         pattern='Clean each reply, then check it',
         text='The big idea: keep the model call separate, so you can test the logic around it with fake replies that never change. Your code cleans each reply: it trims spaces from both ends, makes it lowercase, and removes one full stop from the end. Then it checks whether the cleaned reply is in the allowed list. If it is, that is the label. If not, the label is `"unknown"`. Like a mail sorter, anything without a known address goes to one pile, and the labels keep the order of the replies.',
-        say='"I keep the model call separate and test the cleanup logic with fake replies. I check the model\'s quality separately, with evals."',
+        say='"I keep the model call [[separate|inline|hidden::Thin and on its own, so it\'s easy to swap out.]] and test the logic around it with [[fake replies|real calls|user data::Stand-ins that give the same answer every time.]]. I check the model\'s quality another way, with [[evals|unit tests|logs::Example inputs with expected answers, plus a score.]]."',
         classic=None,
     ),
     stack=stack('LangChain: a fake chat model for tests', 'from langchain_core.language_models.fake_chat_models import GenericFakeChatModel\nfrom langchain_core.messages import AIMessage\n\nfake = GenericFakeChatModel(messages=iter([AIMessage(content="Billing.")]))\n# classify is your own function: it calls llm, then cleans up the reply\nassert classify("Why was I charged twice?", llm=fake) == "billing"'),

@@ -28,7 +28,7 @@ tags = merge(local.tags, { component = "dbw" })"""),
     angle=angle(
         pattern='List the gaps per resource',
         text='The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can\'t be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn\'t empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out.',
-        say='"I skip resources that can\'t be tagged, then list the required tags each one is missing. The result pairs each address with its gaps."',
+        say='"Tags decide [[who pays|who owns|who logs in::Think about splitting the cloud bill.]] for what. I skip resources that [[can\'t be tagged|are already tagged|cost nothing::They have no tags field at all.]], then list the [[required|optional|extra::The tags every resource must have.]] tags each one is missing."',
         classic=None,
     ),
     exercise=exercise(
@@ -179,7 +179,7 @@ lesson(MODULE, 'grants_to_revoke',
     angle=angle(
         pattern='Live minus code, per principal',
         text="The big idea: `databricks_grants` makes the live grants match the code exactly, so anything not in code is removed at the next apply. Your code goes through each principal in `live`. It finds that principal's privileges in `code` with `code.get(principal, [])`, which gives an empty list if the principal is missing, so they lose everything. Each live privilege not in that list is added to a list called `gone`. Principals who lose something are stored in a dict, a lookup table from name to list.",
-        say='"For each principal, I take the live privileges and drop the ones in code. Whatever is left is what the next apply will remove."',
+        say='"databricks_grants makes the live grants match the code [[exactly|roughly|eventually::Terraform owns the whole list for that object.]]. So anything someone added by hand, that [[isn\'t in the code|is in the code|was added today::Terraform only keeps what it can see written down.]], gets [[removed|kept|logged::The next apply puts things back to what the code says.]] on the next apply."',
         classic=None,
     ),
     exercise=exercise(
@@ -307,7 +307,7 @@ lesson(MODULE, 'overlapping_subnets',
     angle=angle(
         pattern='Turn blocks into ranges, compare pairs',
         text='The big idea: the host and container subnets must not overlap each other or anything they connect to. Your code uses `to_range` to turn each CIDR into its first and last address as plain numbers. Then a loop inside a loop compares every subnet with each one after it. A loop is code that repeats for each item. Two ranges overlap when each starts at or before the other ends, like two bookings that share a time. Checking every pair is fine for a handful of subnets.',
-        say='"I turn each CIDR into a first and last number, then compare every pair. Two ranges overlap when each starts at or before the other ends."',
+        say='"I turn each CIDR into a [[first and last|middle|single::The two ends of the range, as plain numbers.]] address, then compare every [[pair|row|third::Each subnet against each one after it.]]. Two ranges overlap when each [[starts|ends|grows::Like two bookings that share a time.]] at or before the other ends."',
         classic='merge_intervals',
     ),
     exercise=exercise(
@@ -470,7 +470,7 @@ the sandbox apps split the 12,500"""),
     angle=angle(
         pattern='Serve tiers in order of importance',
         text='The big idea: decide who comes first before capacity runs out, by serving tiers most important first. Your code first puts the apps into three piles by tier. Critical apps take what they want, or all that is left. What remains is split evenly among graduated apps with `//`, whole-number division, and each takes its share or less. Then every sandbox app gets an equal share of whatever is still left, even if it wanted less. Spare is never offered to graduated apps a second time.',
-        say='"Critical apps are served first. Graduated apps get up to an even share each, so no big app crowds out the rest. Whatever is left goes to the sandbox."',
+        say='"I serve the most important tier first. [[Critical|Sandbox|Graduated::The apps that must never go short.]] apps take what they need, graduated apps split the rest [[evenly|by size|randomly::So no big app crowds out the others.]], and the [[sandbox|top tier|first tier::Where people try things out.]] gets whatever\'s left."',
         classic=None,
     ),
     stack=stack('Terraform: a PTU deployment with spillover (azapi provider)', """# The critical app's reserved capacity,
@@ -706,7 +706,7 @@ team-b:  120,000, more than the space"""),
     angle=angle(
         pattern='Three rules, three fixed messages',
         text="The big idea: in a shared space, user and group limits must sit below the whole space's limit, and the sandbox needs its own deployment. Your code checks three rules in order. The user limit fails if it is `None` or at least the space limit. For groups, it looks at every group's limit and raises one flag if any is too high, so that message is added only once. Last, it checks whether the sandbox deployment is in the production list.",
-        say='"I check each rule separately and add a fixed message for each failure, so a reviewer sees every problem at once, not just the first."',
+        say='"In a shared space, user and group limits must sit [[below|above|equal to::They can\'t reach the limit of the whole space.]] the space\'s limit. I check each rule [[separately|in one go|only once::Don\'t stop at the first one that breaks.]] and report [[every failure|the first failure|one failure::A reviewer can fix them all in one pass.]], not just the first."',
         classic=None,
     ),
     stack=stack('Unity Gateway (AI gateway): limits for the space, each user and a group', """# Rate limits on the sandbox's model

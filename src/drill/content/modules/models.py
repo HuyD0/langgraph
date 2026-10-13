@@ -23,7 +23,7 @@ lesson(MODULE, 'percentile',
     angle=angle(
         pattern='Sort, then pick by position',
         text='The big idea: averages hide slow requests, so teams look at p95, the time that 95 out of 100 requests finish within. Your code sorts the times, fastest first. Then it works out the position: length times percent, divided by 100, rounded up. Adding 99 before whole-number division with `//` is a trick that rounds up. Python counts list places from 0, so position 3 is `ordered[2]`, which is why the code subtracts 1. Mixing those two up is the most common bug.',
-        say='"I sort the latencies, work out the position by rounding up, and subtract one because Python counts from zero."',
+        say='"Averages hide slow requests, so I look at [[p95|the average|the fastest::The time 95 out of 100 requests finish within.]]. I sort the times, find the position, and subtract one, because Python counts list places from [[zero|one|the end::The first item is at position 0.]]."',
         classic=None,
     ),
     stack=stack('MLflow: p95 of your real traces', """traces = mlflow.search_traces(max_results=1000)
@@ -147,7 +147,7 @@ for model in ["fast-model", "smart-model"]:
     angle=angle(
         pattern='Compare every pair',
         text="The big idea: throw out any model that another model beats, and what's left is a short list of real trade-offs. A helper, `beats`, says model A beats B if A is at least as good on quality, cost and latency, and better on at least one. Your code compares each model with every model in the list and keeps it only if none beats it. That is fine for a handful of models, but with thousands the number of comparisons grows very fast.",
-        say='"A model is out if another is at least as good on quality, cost and latency and better on one. The ones left are the Pareto front."',
+        say='"I drop any model that another one beats: at least as good on quality, cost and speed, and [[better on one|worse on one|equal on all::Matching everywhere isn\'t enough; it has to win somewhere.]]. What\'s left is the [[Pareto front|best model|test set::The models nothing else beats.]], a short list of real [[trade-offs|winners|mistakes::Each one is better at something and worse at something else.]]."',
         classic=None,
     ),
     stack=stack('MLflow: one run per candidate endpoint', """# candidates: names of the models you can call in Databricks.
@@ -333,7 +333,7 @@ lesson(MODULE, 'better_option',
     angle=angle(
         pattern='Work out the net, keep the best',
         text='The big idea: choose a model by the money it makes after paying for its calls, not by its price or success rate alone. For each option, your code works out the net: volume times success rate times value per success, minus volume times cost per call. It remembers the best net so far, like holding on to the highest card you have seen. A new option replaces it only if its net is strictly bigger, so on a tie the one listed first wins.',
-        say='"I work out each model\'s net value per month with the same formula and pick the highest. The value of a success comes from the team that owns the outcome."',
+        say='"For each model, I take what good answers earn and [[subtract|add|multiply by::Paying for calls takes money away.]] what the calls cost. I pick the one that leaves the most money each month, not just the [[cheapest|fastest|newest::A low price per call can still lose if it fails often.]]."',
         classic=None,
     ),
     stack=stack('MLflow: log each option\'s inputs', """for option in options:   # one run per model

@@ -22,7 +22,7 @@ terraform show -json tfplan > plan.json"""),
     angle=angle(
         pattern='Three counters, one check each',
         text="The big idea: checks and policies read the plan as data, so you count its changes the way Terraform's summary line does. Your code starts three counters at 0: add, change and destroy. For each change it asks three separate questions. Does `actions` include create? Update? Delete? Each yes adds 1 to its counter. Because the questions are separate, a replacement counts once in add and once in destroy, and a no-op counts nowhere.",
-        say='"I go through the plan\'s changes and count by action. A replacement counts as both an add and a destroy, the same as Terraform\'s summary."',
+        say='"I count the plan\'s changes by [[action|resource|file::Create, update or delete.]], like Terraform\'s summary line. A [[replacement|no-op|update::It destroys the old one and makes a new one.]] counts as both an add and a destroy."',
         classic=None,
     ),
     exercise=exercise(
@@ -172,7 +172,7 @@ lesson(MODULE, 'find_replacements',
     angle=angle(
         pattern='Keep changes with delete and create',
         text='The big idea: a replacement destroys a resource and makes a new one, so on a Databricks workspace you must find every one before approving. Your code goes through the changes in order. For each one it asks whether `actions` has both `"delete"` and `"create"`. The `and` means both must be there, so a plain delete or a plain create is skipped. Matching addresses go into a list, which keeps them in the same order as the plan.',
-        say='"I keep every change whose actions include both delete and create, because that is how a replacement shows up in the plan JSON."',
+        say='"A replacement [[destroys|updates|moves::The old resource is gone for good.]] a resource and makes a new one, so I find every one before approving. In the plan JSON it shows up as a change with [[both|either|neither::It needs delete and create, not just one.]] delete and create."',
         classic=None,
     ),
     exercise=exercise(
@@ -293,7 +293,7 @@ Lock Info:
     angle=angle(
         pattern='Start reading at the heading',
         text='The big idea: before you force-unlock state, read the lock error to see who holds the lock. Your code goes through the lines with a yes-or-no flag called `inside`, which starts at no. When it reaches `Lock Info:`, the flag turns to yes. Every line after that is cut at its first colon only, with `split(":", 1)`, so the `Created` time keeps its own colons. Both parts are trimmed with `strip` and stored in a dict, a lookup table from each key to its value.',
-        say='"I skip lines until the Lock Info heading, then split each line at its first colon only, so the time stays whole. That tells me who holds the lock."',
+        say='"Before I force-unlock, I read the lock error to see [[who holds|who wants|who made::The person or job that has it right now.]] the lock. I split each line at its [[first colon|last colon|every colon::The time has colons in it too, so cut only once.]], so the time stays whole."',
         classic=None,
     ),
     exercise=exercise(
@@ -446,7 +446,7 @@ lesson(MODULE, 'count_shift',
     angle=angle(
         pattern='Compare names position by position',
         text="The big idea: `count` knows copies by position, so removing one item shifts every later name and Terraform replaces them. Your code finds the longer list's length and checks every position up to it. If `new` has run out, the action is delete. If `old` has run out, it is create. Otherwise a different name means replace and the same name means keep. It is like numbered lockers: take out the first person, everyone moves along, and every locker gets a new owner.",
-        say='"I compare the old and new names position by position. A different name at the same position is a replacement, which is why naming by key is safer."',
+        say='"With count, Terraform knows each copy by its [[position|name|key::Like numbered lockers.]]. Remove one item and every later one [[shifts|stays|vanishes::Everyone moves along a locker.]], so Terraform replaces them. That\'s why I name copies by [[key|number|position::A stable name, not a place in line.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -585,7 +585,7 @@ lesson(MODULE, 'apply_order',
     angle=angle(
         pattern='Add whatever is ready next',
         text='The big idea: Terraform creates each resource after the ones it needs, and resources that wait on each other in a loop cause `Error: Cycle`. Your code repeats until every resource is in the list. Each round it goes through the names A to Z and picks the first one not yet listed whose dependencies are all listed already. It is like getting dressed: socks before shoes. If a round finds nothing ready, the leftovers are waiting on each other, so it returns `None`.',
-        say='"I keep adding a resource whose dependencies are already in the list. If some are left but none is ready, they wait on each other in a cycle."',
+        say='"Terraform makes each resource only after the ones it [[needs|replaces|names::Socks before shoes.]]. I keep picking a resource whose needs are all done. If some are left but none is ready, they\'re stuck in a [[cycle|queue|batch::They all wait on each other in a loop.]]."',
         classic=None,
     ),
     exercise=exercise(
