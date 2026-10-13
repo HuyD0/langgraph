@@ -1,0 +1,1872 @@
+<title>Inside page.html</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a course outline beside one reading column (it folds above the column on phones).
+   The palette and type are Daily Drill's own tokens, so this page is an example of what it teaches. */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --sunk: #e4e8ee; --code-bg: #f6f8fb; --line: #d3d9e1;
+  --fg: #17202b; --muted: #5b6878;
+  --accent: #2346d1; --accent-ink: #ffffff; --accent-soft: #e6ebfd;
+  --pass: #157347; --pass-bg: #e3f4ea; --fail: #b42318; --fail-bg: #fdecea; --hint: #8a5a00; --hint-bg: #fdf3dc;
+  --path: #6a3fd0; --path-bg: #efeafc;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --col: 760px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #07070f; --surface: #13121c; --sunk: #0c0b14; --code-bg: #0c0b14; --line: #2b2836;
+  --fg: #eeedf4; --muted: #a7a2b5;
+  --accent: #5b8cff; --accent-ink: #0a1233; --accent-soft: #1c1a26;
+  --pass: #7fd6b0; --pass-bg: #10261f; --fail: #ff8f9e; --fail-bg: #351723; --hint: #e8c47a; --hint-bg: #2a2517;
+  --path: #8b5cf6; --path-bg: #150f28; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #07070f; --surface: #13121c; --sunk: #0c0b14; --code-bg: #0c0b14; --line: #2b2836;
+  --fg: #eeedf4; --muted: #a7a2b5;
+  --accent: #5b8cff; --accent-ink: #0a1233; --accent-soft: #1c1a26;
+  --pass: #7fd6b0; --pass-bg: #10261f; --fail: #ff8f9e; --fail-bg: #351723; --hint: #e8c47a; --hint-bg: #2a2517;
+  --path: #8b5cf6; --path-bg: #150f28; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+button, textarea { font: inherit; color: inherit; }
+code { font: 0.88em var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+b { font-weight: 600; }
+/* code shows exactly what you type: no joined symbols like => turning into one arrow */
+code, pre, textarea.code { font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+
+.shell { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 860px) { .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+
+/* the course outline */
+.outline { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 14px; }
+.brand { display: grid; gap: 4px; }
+.brand h1 { margin: 0; font: 800 26px/1.05 var(--display); letter-spacing: -0.015em; }
+.brand p { margin: 0; font-size: 14px; color: var(--muted); }
+.meter { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--pass); transition: width .3s; }
+.meterline { font: 600 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.parts { display: grid; gap: 12px; }
+.part h2 { margin: 0 0 4px; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.part ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lsn { width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: center; text-align: left; background: none; border: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer; font-size: 14px; color: var(--fg); min-height: 36px; }
+.lsn:hover { background: var(--sunk); }
+.lsn[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.lsn .n { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font: 600 10px var(--mono); color: var(--muted); }
+.lsn.done .n { background: var(--pass); border-color: var(--pass); color: var(--surface); }
+.lsn[aria-current="page"] .n { border-color: var(--accent); color: var(--accent); }
+.lsn.done[aria-current="page"] .n { color: var(--surface); }
+.outline .themes { display: flex; gap: 6px; }
+@media (max-width: 860px) {
+  .outline { position: static; }
+  .parts { display: none; }
+  .outline.open .parts { display: grid; }
+}
+.outtoggle { display: none; }
+@media (max-width: 860px) { .outtoggle { display: inline-flex; } }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 15px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.quiet { border-color: transparent; background: none; color: var(--muted); }
+.btn.small { min-height: 32px; padding: 4px 10px; font-size: 13px; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.btn:focus-visible, .lsn:focus-visible, .opt:focus-visible, .tab:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (pointer: coarse) { .btn { min-height: 44px; } .lsn { min-height: 44px; } }
+
+/* the lesson */
+.lesson { display: grid; gap: 22px; max-width: var(--col); min-width: 0; }
+.lesson > * { min-width: 0; }
+.eyebrow { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.lesson h1 { margin: 4px 0 0; font: 800 clamp(28px, 5vw, 38px)/1.08 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+.lesson h2 { margin: 0; font: 800 20px/1.2 var(--display); }
+.idea p { margin: 0 0 12px; max-width: 65ch; }
+.idea p:last-child { margin: 0; }
+.keyidea { display: grid; gap: 4px; background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; font-size: 17px; }
+.keyidea b { color: var(--accent); font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; }
+.sec { display: grid; gap: 10px; }
+.real { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.real .file { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; font: 600 13px var(--mono); }
+.real .file span { font: 400 13px var(--body); color: var(--muted); }
+pre.code { margin: 0; font: 13.5px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre; overflow-x: auto; tab-size: 2; }
+.real .note { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* the playground */
+.play { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; min-width: 0; }
+.task { padding: 16px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+.task p { margin: 0; }
+.taskhead { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.taskhead .tag { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--path); background: var(--path-bg); border-radius: 999px; padding: 2px 9px; }
+.ed { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; }
+@media (max-width: 980px) { .ed { grid-template-columns: minmax(0, 1fr); } }
+.editor { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; border-right: 1px solid var(--line); min-width: 0; }
+@media (max-width: 980px) { .editor { border-right: 0; border-bottom: 1px solid var(--line); } }
+.tabs { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--line); background: var(--code-bg); }
+.tab { border: 0; background: none; padding: 8px 12px; font: 600 13px var(--mono); color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; min-height: 40px; }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tab .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--hint); margin-left: 6px; vertical-align: middle; }
+textarea.code { width: 100%; min-height: 260px; resize: vertical; border: 0; outline: none; background: var(--code-bg); color: var(--fg); font: 13.5px/1.6 var(--mono); padding: 12px 14px; white-space: pre; overflow: auto; tab-size: 2; display: block; }
+@media (pointer: coarse) { textarea.code { font-size: 16px; } }
+.edbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px; border-top: 1px solid var(--line); }
+.edbar .grow { flex: 1; }
+.kbd { font: 12px var(--mono); color: var(--muted); }
+@media (pointer: coarse) { .kbd { display: none; } }
+.preview { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; }
+.pvbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); font: 600 12px var(--mono); color: var(--muted); }
+.pvbar .grow { flex: 1; }
+.stagewrap { overflow-x: auto; background: var(--sunk); padding: 12px; min-height: 200px; }
+.stage { margin: 0 auto; width: 100%; background: var(--surface); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); transition: width .25s; }
+.console { margin: 0; border-top: 1px solid var(--line); background: var(--code-bg); font: 12.5px/1.5 var(--mono); padding: 8px 12px; min-height: 40px; max-height: 140px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
+.console .err { color: var(--fail); }
+.console .out { color: var(--fg); }
+.verdict { margin: 0 16px 16px; border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; }
+.verdict.ok { background: var(--pass-bg); color: var(--pass); }
+.verdict.no { background: var(--fail-bg); color: var(--fail); }
+.verdict.clue { background: var(--hint-bg); color: var(--hint); }
+.verdict p { margin: 0; color: var(--fg); }
+.help { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* the check question */
+.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; }
+.quiz .q { margin: 0; font-weight: 600; font-size: 17px; }
+.opts { display: grid; gap: 8px; }
+.opt { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; min-height: 48px; display: flex; gap: 10px; align-items: center; }
+.opt .k { font: 600 13px var(--mono); color: var(--muted); }
+.opt.right { border-color: var(--pass); background: var(--pass-bg); }
+.opt.wrong { border-color: var(--fail); background: var(--fail-bg); }
+.opt[disabled] { cursor: default; }
+.why { margin: 0; font-size: 15px; }
+
+.where { display: grid; gap: 6px; font-size: 15px; }
+.where ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.nav { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (prefers-reduced-motion: reduce) { .stage, .meter i { transition: none; } }
+/* Ask in line: a button under each part, a small conversation that opens right there */
+.askbtn { display: none; align-items: center; gap: 6px; justify-self: start; border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 999px; padding: 4px 12px; min-height: 36px; font: 600 13px var(--body); cursor: pointer; }
+body.ask-on .askbtn { display: inline-flex; }
+.askbtn svg { width: 15px; height: 15px; }
+@media (pointer: coarse) { .askbtn { min-height: 44px; } }
+.askbox { display: grid; gap: 10px; background: var(--accent-soft); border-radius: 12px; padding: 12px; min-width: 0; }
+.askbox[hidden] { display: none; }
+.askhead { display: flex; align-items: center; gap: 8px; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent); }
+.askhead .grow { flex: 1; }
+.askquote { margin: 0; font-size: 14px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.turn { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.turn.q { justify-self: end; max-width: 90%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 4px 12px; padding: 8px 12px; }
+.turn.a { background: var(--surface); border-radius: 12px 12px 12px 4px; padding: 10px 12px; }
+.turn.a p { margin: 0 0 8px; } .turn.a p:last-child { margin: 0; }
+.turn.a pre { margin: 0 0 8px; font: 13px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; overflow-wrap: normal; }
+.turn.a ul { margin: 0 0 8px; padding-left: 20px; }
+.turn .meta { font-size: 13px; color: var(--muted); }
+.turn.err { color: var(--fail); background: var(--fail-bg); }
+.askchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.askchip { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 4px 12px; min-height: 36px; font-size: 14px; cursor: pointer; text-align: left; }
+@media (pointer: coarse) { .askchip { min-height: 44px; } }
+.askform { display: flex; gap: 8px; align-items: flex-end; }
+.askform textarea { flex: 1; min-width: 0; resize: vertical; min-height: 44px; font: 15px/1.4 var(--body); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); padding: 10px 12px; }
+.askform textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.askoff { margin: 0; font-size: 13px; color: var(--muted); }
+#selAsk { position: absolute; z-index: 30; display: none; }
+#selAsk.on { display: inline-flex; }
+#selAsk .askbtn { display: inline-flex; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+/* Guiding AI: the cheat sheet and one situation at a time */
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.sheet ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.sheet li::marker { font: 600 13px var(--mono); color: var(--accent); }
+.sheet li b { display: block; }
+.sheet li span { color: var(--muted); font-size: 15px; }
+.judge { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; }
+.jtop { display: flex; align-items: center; gap: 10px; }
+.jdots { display: flex; gap: 5px; margin-left: auto; }
+.jdots i { width: 22px; height: 4px; border-radius: 2px; background: var(--line); }
+.jdots i.ok { background: var(--pass); } .jdots i.no { background: var(--fail); } .jdots i.now { background: var(--accent); }
+.judge .sit { margin: 0; font-size: 17px; }
+.judge .who { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--path); }
+.judge .clue { background: var(--hint-bg); color: var(--fg); border-radius: 10px; padding: 10px 12px; margin: 0; }
+.judge .clue b { color: var(--hint); }
+.score { font: 800 22px var(--display); }
+</style>
+
+<div class="shell">
+  <aside class="outline" id="outline">
+    <div class="brand">
+      <div class="eyebrow">A course built on Daily Drill</div>
+      <h1>Inside page.html</h1>
+      <p>Front end from scratch, using the app you already use.</p>
+    </div>
+    <div>
+      <div class="meter" aria-hidden="true"><i id="meterFill"></i></div>
+      <div class="meterline" id="meterText">0 of 19 done</div>
+    </div>
+    <button class="btn small outtoggle" id="outToggle" aria-expanded="false" aria-controls="parts">All lessons</button>
+    <nav class="parts" id="parts" aria-label="Lessons"></nav>
+    <div class="themes" role="group" aria-label="Look">
+      <button class="btn small" data-look="light">Light</button>
+      <button class="btn small" data-look="dark">Dusk</button>
+      <button class="btn small" data-look="">System</button>
+    </div>
+  </aside>
+  <main class="lesson" id="lesson" aria-live="polite"></main>
+</div>
+<div id="selAsk"><button class="askbtn" id="selAskBtn" type="button">Ask about this</button></div>
+
+<!-- Lines this course shows from the project. tests/test_course.py fails when one disappears, naming the lesson to update. -->
+<script type="application/json" id="anchors">
+[
+ {
+  "file": "src/drill/content/page.html",
+  "find": "<main id=\"home\" class=\"wrap\"></main>",
+  "lesson": "one-file"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "const D = /*DATA*/;",
+  "lesson": "one-file"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "<main id=\"lesson\" class=\"wrap\" hidden>",
+  "lesson": "html"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "data-open=\"${nid}\"",
+  "lesson": "html"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": ".btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }",
+  "lesson": "css"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--accent: #2346d1;",
+  "lesson": "tokens"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": ":root[data-theme=\"dusk\"]",
+  "lesson": "tokens"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "document.documentElement.setAttribute(\"data-theme\", look);",
+  "lesson": "tokens"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": ".wrap { max-width: var(--col); margin: 0 auto; padding-inline: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }",
+  "lesson": "layout"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "@media (pointer: coarse) { .btn { min-height: 44px; }",
+  "lesson": "phone"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "@media (max-width: 420px) { .nblabel",
+  "lesson": "phone"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "let progress = { solved: {}, days: [], lessons: {}, gotchas: {}, current: null };",
+  "lesson": "js"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "const lp = id => progress.lessons[id] || (progress.lessons[id] = { step: 0, checked: null, done: false });",
+  "lesson": "js"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "const $ = id => document.getElementById(id);",
+  "lesson": "dom"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "function show(view) {",
+  "lesson": "dom"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "const esc = s => String(s).replace(/[&<>\"]/g,",
+  "lesson": "render"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "function learnPane() {",
+  "lesson": "render"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "// ---------- events ----------",
+  "lesson": "events"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "const open = t.closest(\"[data-open]\"); if (open) { openLesson(open.dataset.open); return; }",
+  "lesson": "events"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "function saveLocal() { try { localStorage.setItem(\"drill-progress\", JSON.stringify(progress)); } catch {} }",
+  "lesson": "storage"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "@media (prefers-reduced-motion: reduce)",
+  "lesson": "access"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": ".btn:focus-visible",
+  "lesson": "access"
+ },
+ {
+  "file": "src/drill/content/build.py",
+  "find": ".replace(\"/*DATA*/\", json.dumps(data, ensure_ascii=False))",
+  "lesson": "together"
+ },
+ {
+  "file": "scripts/check.sh",
+  "find": "uv run drill build-page",
+  "lesson": "together"
+ },
+ {
+  "file": "docs/FRONTEND.md",
+  "find": "## Map of the script",
+  "lesson": "together"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "if (L.pack) return packLearnPane(L, L.pack);",
+  "lesson": "render"
+ },
+ {
+  "file": "src/drill/content/page.html",
+  "find": "withTrust(cur.id, first,",
+  "lesson": "render"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "/* verdicts: the strong color is for text and icons, its -bg twin is the fill behind them */",
+  "lesson": "ds-what"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--pass: #157347; --pass-bg: #e3f4ea;",
+  "lesson": "ds-what"
+ },
+ {
+  "file": "docs/DESIGN_SYSTEM.md",
+  "find": "2. **Colour means one thing.**",
+  "lesson": "ds-what"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--aside-bg: var(--sunk); --aside-line: transparent;",
+  "lesson": "ds-build"
+ },
+ {
+  "file": "src/drill/content/tokens.css",
+  "find": "--aside-blur: blur(12px);",
+  "lesson": "ds-build"
+ },
+ {
+  "file": "docs/DESIGN_SYSTEM.md",
+  "find": "**Style a new component.** Pick its surface first",
+  "lesson": "ds-build"
+ },
+ {
+  "file": "docs/DESIGN_SYSTEM.md",
+  "find": "4. **Thumb first.** Controls are at least 44px tall on touch",
+  "lesson": "ds-standards"
+ }
+]
+</script>
+
+<!-- ===== Real code from the project (copied from page.html, build.py and tokens.css) ===== -->
+<script type="text/plain" id="r-onefile">
+<style>
+  /*TOKENS*/            ← build.py pastes tokens.css here
+  .btn { ... }          ← how buttons, cards, chips look
+</style>
+
+<main id="home" class="wrap"></main>
+<main id="lesson" class="wrap" hidden> ... </main>
+<main id="done" class="wrap" hidden aria-live="polite"></main>
+<main id="search" class="wrap" hidden> ... </main>
+
+<script>
+  const D = /*DATA*/;   ← build.py pastes every lesson here, as data
+  ... about 5,000 lines: what happens when you tap ...
+<\/script>
+</script>
+<script type="text/plain" id="r-html">
+<main id="home" class="wrap"></main>
+<main id="lesson" class="wrap" hidden>
+<main id="done" class="wrap" hidden aria-live="polite"></main>
+
+<!-- and a button the script draws on Home: -->
+<button class="btn primary" data-open="split_by_key">Start the first lesson</button>
+</script>
+<script type="text/plain" id="r-css">
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--fg); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--accent-ink);
+  border-color: var(--accent); font-weight: 600; }
+</script>
+<script type="text/plain" id="r-tokens">
+/* tokens.css: the light look */
+:root {
+  --bg: #eef1f4;          /* the page */
+  --surface: #ffffff;     /* cards, rows, the drawer */
+  --accent: #2346d1;      /* the one thing to do next */
+}
+
+/* the Dusk look: the same names, new values */
+:root[data-theme="dusk"] {
+  --bg: #07070f; --surface: #13121c;
+  --accent: #5b8cff;
+}
+
+/* page.html: switching looks is one attribute */
+function applyLook(look) {
+  document.documentElement.setAttribute("data-theme", look);
+}
+</script>
+<script type="text/plain" id="r-layout">
+.wrap { max-width: var(--col); margin: 0 auto; padding-inline: 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+
+.card { background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+</script>
+<script type="text/plain" id="r-phone">
+/* Phones: every button at least 44px tall, so a thumb can hit it */
+@media (pointer: coarse) { .btn { min-height: 44px; } }
+
+/* Small phones: the Notebook button keeps its icon, hides its word */
+@media (max-width: 420px) { .nblabel { position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+</script>
+<script type="text/plain" id="r-js">
+// Everything the learner has done, as one plain object
+let progress = { solved: {}, days: [], lessons: {}, gotchas: {}, current: null };
+
+// One lesson's record: get it, or make an empty one the first time
+const lp = id => progress.lessons[id] || (progress.lessons[id] = { step: 0, checked: null, done: false });
+</script>
+<script type="text/plain" id="r-dom">
+const $ = id => document.getElementById(id);
+
+function show(view) {
+  $("home").hidden = view !== "home";
+  $("lesson").hidden = view !== "lesson";
+  $("done").hidden = view !== "done";
+  $("search").hidden = view !== "search";
+}
+</script>
+<script type="text/plain" id="r-render">
+// Make text safe to put inside HTML: < becomes &lt; and so on
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Lesson text may use `code` and **bold**: escape first, then add those two
+const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+const md = s => inline(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+
+// A screen is a function that returns HTML text (cut down: the real one goes on to the example)
+function learnPane() {
+  const L = LESSONS[cur.id];
+  if (L.pack) return packLearnPane(L, L.pack);   // a content-pack lesson is drawn differently
+  const [cap, code] = L.example, [first, ...rest] = L.learn;
+  closeTrust();
+  // withTrust() runs md() on the text, and adds a trust mark where one belongs
+  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}
+    ${rest.map(p => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>`).join("")}
+    ...`;
+}
+</script>
+<script type="text/plain" id="r-events">
+// ---------- events ----------
+// One listener for the whole page. Each button says what it is with a data- attribute.
+document.addEventListener("click", async e => {
+  const t = e.target;
+  ...
+  const open = t.closest("[data-open]"); if (open) { openLesson(open.dataset.open); return; }
+  ...
+  const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
+  ...
+});
+</script>
+<script type="text/plain" id="r-store">
+// Save: object → text → this browser's storage. try/catch because some browsers refuse.
+function saveLocal() { try { localStorage.setItem("drill-progress", JSON.stringify(progress)); } catch {} }
+
+// Load: text → object, merged into the defaults
+function loadLocal() { try { const raw = localStorage.getItem("drill-progress");
+  if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch {} }
+
+// Saving everywhere: this browser first, then your account if you're signed in
+async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
+</script>
+<script type="text/plain" id="r-access">
+/* Keyboard users see where they are */
+.btn:focus-visible, .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* People who asked their phone for less motion get none */
+@media (prefers-reduced-motion: reduce) { .mtok, .editor .codebar { transition: none; } }
+
+/* An icon-only button still says what it does, for screen readers */
+<button class="iconbtn" aria-label="Replay from the start">...</button>
+</script>
+<script type="text/plain" id="r-build">
+# build.py: Python lessons in, one HTML file out
+def render_page(data: dict) -> str:
+    """page.html with the design tokens and the content embedded: still one HTML file."""
+    template = PAGE_TEMPLATE.read_text(encoding="utf-8")
+    tokens = TOKENS.read_text(encoding="utf-8")
+    return (template
+            .replace("/*TOKENS*/", tokens, 1)
+            .replace("/*DATA*/", json.dumps(data, ensure_ascii=False)))
+
+// page.html: after the build, D holds every lesson
+const D = /*DATA*/;
+</script>
+
+<!-- ===== Starter code for the exercises ===== -->
+<script type="text/plain" id="p1-html">
+<h1>Daily Drill</h1>
+<p>One short lesson a day.</p>
+<button class="btn">Start</button>
+</script>
+<script type="text/plain" id="p1-css">
+h1 { font-family: "Bricolage Grotesque", sans-serif; margin: 0 0 4px; }
+.btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+</script>
+<script type="text/plain" id="p1-js">
+// JavaScript runs each time you press Run.
+// log() writes to the box under the preview.
+log("This page has", root.querySelectorAll("*").length, "elements");
+</script>
+<script type="text/plain" id="a1-html">
+<h1>Daily Drill</h1>
+<p>One short lesson a day.</p>
+<button class="btn">Start the first lesson</button>
+</script>
+
+<script type="text/plain" id="p2-html">
+<h2>Your path</h2>
+<button class="btn" data-open="split_by_key">Train, validation and test data</button>
+<button class="btn" data-open="best_threshold">From scores to decisions</button>
+
+<p hidden>You can't see this paragraph: it has the hidden attribute.</p>
+</script>
+<script type="text/plain" id="p2-css">
+.btn { display: block; margin-bottom: 8px; padding: 8px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface); text-align: left; }
+</script>
+<script type="text/plain" id="a2-html">
+<h2>Your path</h2>
+<button class="btn" data-open="split_by_key">Train, validation and test data</button>
+<button class="btn" data-open="best_threshold">From scores to decisions</button>
+<button class="btn" data-open="precision_recall">Precision and recall</button>
+
+<p hidden>You can't see this paragraph: it has the hidden attribute.</p>
+</script>
+
+<script type="text/plain" id="p3-html">
+<button class="btn">Back</button>
+<button class="btn primary">Next: Check</button>
+</script>
+<script type="text/plain" id="p3-css">
+.btn {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.btn.primary {
+  background: #2346d1;
+  color: #ffffff;
+}
+</script>
+<script type="text/plain" id="a3-css">
+.btn {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 10px;
+}
+
+.btn.primary {
+  background: #2346d1;
+  color: #ffffff;
+  font-weight: 600;
+}
+</script>
+
+<script type="text/plain" id="p4-html">
+<p>Switch the preview between Light and Dusk with the buttons above it.</p>
+<button class="btn primary">Next: Build</button>
+</script>
+<script type="text/plain" id="p4-css">
+/* The names, with their Light values */
+.page {
+  --accent: #2346d1;
+  --accent-ink: #ffffff;
+}
+
+/* Dusk: the same names, new values. One is missing! */
+.page[data-theme="dusk"] {
+  --accent-ink: #0a1233;
+}
+
+.btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--accent); font-weight: 600; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+</script>
+<script type="text/plain" id="a4-css">
+/* The names, with their Light values */
+.page {
+  --accent: #2346d1;
+  --accent-ink: #ffffff;
+}
+
+/* Dusk: the same names, new values */
+.page[data-theme="dusk"] {
+  --accent: #5b8cff;
+  --accent-ink: #0a1233;
+}
+
+.btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--accent); font-weight: 600; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+</script>
+
+<script type="text/plain" id="p5-html">
+<div class="chips">
+  <span class="chip">Frame</span>
+  <span class="chip">Design</span>
+  <span class="chip">Build and trace</span>
+  <span class="chip">Evaluate</span>
+  <span class="chip">Ship</span>
+  <span class="chip">Monitor</span>
+</div>
+</script>
+<script type="text/plain" id="p5-css">
+.chips {
+  /* your layout here */
+}
+
+.chip { background: var(--sunk); border-radius: 999px; padding: 4px 12px; font-size: 14px; white-space: nowrap; }
+</script>
+<script type="text/plain" id="a5-css">
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip { background: var(--sunk); border-radius: 999px; padding: 4px 12px; font-size: 14px; white-space: nowrap; }
+</script>
+
+<script type="text/plain" id="p6-html">
+<button class="btn"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6"/></svg> <span class="label">Notebook</span></button>
+<p>Try the Phone and Wide buttons above the preview.</p>
+</script>
+<script type="text/plain" id="p6-css">
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+
+/* The real page uses @media, which looks at the whole window.
+   This preview is a box inside a page, so here we use @container,
+   which looks at the box. Same idea. */
+@container (max-width: 420px) {
+  /* your rule here */
+}
+</script>
+<script type="text/plain" id="a6-css">
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+
+@container (max-width: 420px) {
+  .label { display: none; }
+}
+</script>
+
+<script type="text/plain" id="p7-js">
+const progress = {
+  lessons: {
+    split_by_key: { step: 3, done: true },
+    precision_recall: { step: 1, done: false },
+    best_threshold: { step: 3, done: true },
+  },
+};
+
+function doneCount(progress) {
+  let count = 0;
+  for (const id in progress.lessons) {
+    // Step 1: if this lesson's record says done, add 1 to count
+  }
+  return count;
+}
+
+log("Finished:", doneCount(progress));
+</script>
+<script type="text/plain" id="a7-js">
+const progress = {
+  lessons: {
+    split_by_key: { step: 3, done: true },
+    precision_recall: { step: 1, done: false },
+    best_threshold: { step: 3, done: true },
+  },
+};
+
+function doneCount(progress) {
+  let count = 0;
+  for (const id in progress.lessons) {
+    if (progress.lessons[id].done) count += 1;
+  }
+  return count;
+}
+
+log("Finished:", doneCount(progress));
+</script>
+
+<script type="text/plain" id="p8-html">
+<nav>
+  <button class="btn" id="goHome">Home</button>
+  <button class="btn" id="goLesson">Lesson</button>
+  <button class="btn" id="goDone">Done</button>
+</nav>
+<main id="home">Home: the path</main>
+<main id="lesson">A lesson</main>
+<main id="done">Finished</main>
+</script>
+<script type="text/plain" id="p8-css">
+.btn { padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+nav { display: flex; gap: 6px; margin-bottom: 12px; }
+main { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 8px; }
+</script>
+<script type="text/plain" id="p8-js">
+function show(view) {
+  $("home").hidden = view !== "home";
+  // Step 1: do the same for "lesson" and "done"
+}
+
+$("goHome").onclick = () => show("home");
+$("goLesson").onclick = () => show("lesson");
+$("goDone").onclick = () => show("done");
+
+show("lesson");
+</script>
+<script type="text/plain" id="a8-js">
+function show(view) {
+  $("home").hidden = view !== "home";
+  $("lesson").hidden = view !== "lesson";
+  $("done").hidden = view !== "done";
+}
+
+$("goHome").onclick = () => show("home");
+$("goLesson").onclick = () => show("lesson");
+$("goDone").onclick = () => show("done");
+
+show("lesson");
+</script>
+
+<script type="text/plain" id="p9-html">
+<h2>Your path</h2>
+<div id="list"></div>
+</script>
+<script type="text/plain" id="p9-css">
+.row { display: block; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+</script>
+<script type="text/plain" id="p9-js">
+const lessons = [
+  { id: "split_by_key", title: "Train, validation and test data" },
+  { id: "precision_recall", title: "Precision, recall and why accuracy lies" },
+  { id: "sneaky", title: "A title with <b>tags</b> in it" },
+];
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Step 1: return one button for one lesson, like
+// <button class="row" data-open="split_by_key">Train, validation and test data</button>
+// Use esc() around the title.
+function row(lesson) {
+  return ``;
+}
+
+$("list").innerHTML = lessons.map(row).join("");
+</script>
+<script type="text/plain" id="a9-js">
+const lessons = [
+  { id: "split_by_key", title: "Train, validation and test data" },
+  { id: "precision_recall", title: "Precision, recall and why accuracy lies" },
+  { id: "sneaky", title: "A title with <b>tags</b> in it" },
+];
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function row(lesson) {
+  return `<button class="row" data-open="${esc(lesson.id)}">${esc(lesson.title)}</button>`;
+}
+
+$("list").innerHTML = lessons.map(row).join("");
+</script>
+
+<script type="text/plain" id="p10-html">
+<div id="list">
+  <button class="row" data-open="split_by_key">Train, validation and test data</button>
+  <button class="row" data-open="precision_recall">Precision and recall</button>
+  <button class="row" data-open="best_threshold">From scores to decisions</button>
+</div>
+<p>You opened: <b id="picked">nothing yet</b></p>
+</script>
+<script type="text/plain" id="p10-css">
+.row { display: block; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+</script>
+<script type="text/plain" id="p10-js">
+// One listener for the whole preview, like Daily Drill's one listener for the page.
+root.addEventListener("click", e => {
+  const open = e.target.closest("[data-open]");
+  // Step 1: if open was found, put its lesson id into #picked
+  //   (the id is open.dataset.open; set $("picked").textContent)
+});
+</script>
+<script type="text/plain" id="a10-js">
+root.addEventListener("click", e => {
+  const open = e.target.closest("[data-open]");
+  if (open) {
+    $("picked").textContent = open.dataset.open;
+  }
+});
+</script>
+
+<script type="text/plain" id="p11-html">
+<p>Lessons done today: <b id="count">0</b></p>
+<button class="btn" id="plus">I finished one</button>
+<p>Press the button, then press Run again. Does the number survive?</p>
+</script>
+<script type="text/plain" id="p11-css">
+.btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+</script>
+<script type="text/plain" id="p11-js">
+const KEY = "inside-page-html-demo";
+let state = { count: 0 };
+
+// Step 1: load. Read localStorage.getItem(KEY); if it gave text, state = JSON.parse(it)
+
+function render() { $("count").textContent = state.count; }
+
+$("plus").onclick = () => {
+  state.count += 1;
+  // Step 2: save. localStorage.setItem(KEY, JSON.stringify(state))
+  render();
+};
+
+render();
+</script>
+<script type="text/plain" id="a11-js">
+const KEY = "inside-page-html-demo";
+let state = { count: 0 };
+
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) state = JSON.parse(raw);
+} catch {}
+
+function render() { $("count").textContent = state.count; }
+
+$("plus").onclick = () => {
+  state.count += 1;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+  render();
+};
+
+render();
+</script>
+
+<script type="text/plain" id="p12-html">
+<button class="btn">Run tests</button>
+<button class="btn primary">Next: Explain</button>
+<p>Click in the preview, then press Tab: can you see which button you're on?</p>
+</script>
+<script type="text/plain" id="p12-css">
+.btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  transition: transform .15s; }
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: #2346d1; color: #fff; border-color: #2346d1; }
+
+/* Step 1: show a 2px accent outline when a button has keyboard focus */
+
+/* Step 2: no movement for people who asked for less */
+</script>
+<script type="text/plain" id="a12-css">
+.btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  transition: transform .15s; }
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: #2346d1; color: #fff; border-color: #2346d1; }
+
+.btn:focus-visible { outline: 2px solid #2346d1; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+}
+</script>
+
+<script type="text/plain" id="p13-html">
+<div id="app"></div>
+</script>
+<script type="text/plain" id="p13-css">
+.page { --accent: #2346d1; --pass: #157347; --pass-bg: #e3f4ea; }
+.page[data-theme="dusk"] { --accent: #5b8cff; --pass: #7fd6b0; --pass-bg: #10261f; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.card.done { background: var(--pass-bg); border-color: var(--pass); }
+.card h3 { margin: 0; font-family: "Bricolage Grotesque", sans-serif; }
+.btn { justify-self: start; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--accent);
+  background: var(--accent); color: #fff; font-weight: 600; min-height: 44px; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</script>
+<script type="text/plain" id="p13-js">
+// Everything together: data → render function → event → save.
+const KEY = "inside-page-html-capstone";
+const lesson = { id: "precision_recall", title: "Precision, recall and why accuracy lies" };
+let progress = { lessons: {} };
+try { const raw = localStorage.getItem(KEY); if (raw) progress = JSON.parse(raw); } catch {}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lp = id => progress.lessons[id] || (progress.lessons[id] = { done: false });
+
+function card() {
+  const done = lp(lesson.id).done;
+  // Step 1: add the class "done" to the card when the lesson is done
+  return `<section class="card">
+    <h3>${esc(lesson.title)}</h3>
+    <p>${done ? "Done. Nice work." : "Not done yet."}</p>
+    ${done ? "" : `<button class="btn" data-done="${esc(lesson.id)}">Mark as done</button>`}
+  </section>`;
+}
+
+function render() { $("app").innerHTML = card(); }
+
+root.addEventListener("click", e => {
+  const b = e.target.closest("[data-done]");
+  if (!b) return;
+  // Step 2: mark it done: lp(b.dataset.done).done = true
+  // Step 3: save progress to localStorage under KEY, then render()
+});
+
+render();
+</script>
+<script type="text/plain" id="a13-js">
+const KEY = "inside-page-html-capstone";
+const lesson = { id: "precision_recall", title: "Precision, recall and why accuracy lies" };
+let progress = { lessons: {} };
+try { const raw = localStorage.getItem(KEY); if (raw) progress = JSON.parse(raw); } catch {}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lp = id => progress.lessons[id] || (progress.lessons[id] = { done: false });
+
+function card() {
+  const done = lp(lesson.id).done;
+  return `<section class="card${done ? " done" : ""}">
+    <h3>${esc(lesson.title)}</h3>
+    <p>${done ? "Done. Nice work." : "Not done yet."}</p>
+    ${done ? "" : `<button class="btn" data-done="${esc(lesson.id)}">Mark as done</button>`}
+  </section>`;
+}
+
+function render() { $("app").innerHTML = card(); }
+
+root.addEventListener("click", e => {
+  const b = e.target.closest("[data-done]");
+  if (!b) return;
+  lp(b.dataset.done).done = true;
+  try { localStorage.setItem(KEY, JSON.stringify(progress)); } catch {}
+  render();
+});
+
+render();
+</script>
+
+
+<script type="text/plain" id="r-ds1">
+/* tokens.css: each name says what a colour MEANS, not what it looks like */
+  /* the one accent: the next thing to do, focus rings */
+  --accent: #2346d1;
+  /* verdicts: the strong color is for text and icons, its -bg twin is the fill behind them */
+  --pass: #157347; --pass-bg: #e3f4ea;
+  --fail: #b42318; --fail-bg: #fdecea;
+  --hint: #8a5a00; --hint-bg: #fdf3dc;
+
+/* docs/DESIGN_SYSTEM.md, rule 2 */
+Colour means one thing. pass only means passed or done, fail only failed or wrong,
+hint only a hint or a warning, accent the one thing to do next.
+</script>
+<script type="text/plain" id="r-ds2">
+/* tokens.css: surfaces say what a box IS */
+  card = something you read; aside = a note beside it (key idea, tips, what an
+  AI said); glow-current = the one thing you're on; glow-look = "look here" in hint colours.
+  --card-bg: var(--surface); --card-line: var(--line); --card-shadow: none;
+  --aside-bg: var(--sunk); --aside-line: transparent; --aside-shadow: none; --aside-blur: none;
+
+/* the Dusk look makes the same names glass */
+  --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10);
+  --aside-blur: blur(12px);
+
+/* docs/DESIGN_SYSTEM.md, "Style a new component" */
+Pick its surface first ... Never write a :root[data-theme="dusk"] rule for a new
+component's background, shadow or blur: a test fails if you do.
+</script>
+<script type="text/plain" id="p17-html">
+<div class="result pass"><b>5/5 passed</b><span>Every case passed. Nice.</span></div>
+<div class="result fail"><b>2/5 passed</b><span>First failing case: split_by_key([], "id")</span></div>
+</script>
+<script type="text/plain" id="p17-css">
+/* The design system: names and their meaning, for Light, then for Dusk */
+.page {
+  --pass: #157347; --pass-bg: #e3f4ea;
+  --fail: #b42318; --fail-bg: #fdecea;
+}
+.page[data-theme="dusk"] {
+  --pass: #7fd6b0; --pass-bg: #10261f;
+  --fail: #ff8f9e; --fail-bg: #351723;
+}
+
+/* A component someone built without the system. Swap each # colour for a token. */
+.result { border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; margin-bottom: 8px; }
+.result span { color: var(--fg); }
+.result.pass { background: #e3f4ea; color: #157347; }
+.result.fail { background: #fdecea; color: #b42318; }
+</script>
+<script type="text/plain" id="a17-css">
+/* The design system: names and their meaning, for Light, then for Dusk */
+.page {
+  --pass: #157347; --pass-bg: #e3f4ea;
+  --fail: #b42318; --fail-bg: #fdecea;
+}
+.page[data-theme="dusk"] {
+  --pass: #7fd6b0; --pass-bg: #10261f;
+  --fail: #ff8f9e; --fail-bg: #351723;
+}
+
+.result { border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; margin-bottom: 8px; }
+.result span { color: var(--fg); }
+.result.pass { background: var(--pass-bg); color: var(--pass); }
+.result.fail { background: var(--fail-bg); color: var(--fail); }
+</script>
+<script type="text/plain" id="p18-html">
+<section class="card">
+  <h3>Precision and recall</h3>
+  <p>Precision: of the ones you said yes to, how many were right.</p>
+  <aside class="tip"><b>Key idea</b> Accuracy hides the rare cases. Look at both numbers.</aside>
+</section>
+</script>
+<script type="text/plain" id="p18-css">
+/* The design system's surfaces (the real values, cut down) */
+.page {
+  --card-bg: var(--surface); --card-line: var(--line);
+  --aside-bg: var(--sunk); --aside-line: transparent; --aside-blur: none;
+}
+.page[data-theme="dusk"] {
+  --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10); --aside-blur: blur(12px);
+}
+
+/* A card: already built from the system */
+.card { background: var(--card-bg); border: 1px solid var(--card-line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.card h3 { margin: 0; }
+
+/* Your new component: a tip beside the text. It's an aside.
+   Use the aside tokens, corners of 12px, padding 12px 14px. No # colours, no Dusk rule of its own. */
+.tip {
+}
+</script>
+<script type="text/plain" id="a18-css">
+/* The design system's surfaces (the real values, cut down) */
+.page {
+  --card-bg: var(--surface); --card-line: var(--line);
+  --aside-bg: var(--sunk); --aside-line: transparent; --aside-blur: none;
+}
+.page[data-theme="dusk"] {
+  --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10); --aside-blur: blur(12px);
+}
+
+.card { background: var(--card-bg); border: 1px solid var(--card-line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.card h3 { margin: 0; }
+
+.tip {
+  background: var(--aside-bg);
+  border: 1px solid var(--aside-line);
+  backdrop-filter: var(--aside-blur);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+</script>
+
+<script>
+(() => {
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+const text = id => { const el = document.getElementById(id); if (!el) return ""; const lines = el.textContent.replace(/<\\\/script>/g, "<\/script>").replace(/^\n/, "").replace(/\s+$/, "").split("\n"); return lines.join("\n"); };
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+// ---------- the preview's own small design system (inside the sandbox) ----------
+const BASE = `
+.page { --bg: #eef1f4; --surface: #ffffff; --sunk: #e4e8ee; --line: #d3d9e1; --fg: #17202b; --muted: #5b6878;
+  container-type: inline-size; background: var(--bg); color: var(--fg); padding: 16px; min-height: 140px;
+  font: 15px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
+.page[data-theme="dusk"] { --bg: #07070f; --surface: #13121c; --sunk: #0c0b14; --line: #2b2836; --fg: #eeedf4; --muted: #a7a2b5; color-scheme: dark; }
+.page button { font: inherit; color: inherit; cursor: pointer; }
+.page p { margin: 0 0 10px; }
+.page h1, .page h2 { margin: 0 0 8px; }
+`;
+
+// Answer positions vary per question (a fixed rotation from its text), so "always B" never works
+const spin = (q, n) => { let h = 0; for (const ch of q) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const r = h % n; return Array.from({ length: n }, (_, k) => (k + r) % n); };
+const ASK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+const askSlot = (sec, label) => `<button class="askbtn" data-ask="${sec}" type="button">${ASK_ICON}${label || "Ask about this"}</button><div class="askbox" data-askbox="${sec}" hidden></div>`;
+// ---------- the course ----------
+const PARTS = ["The page", "How it looks", "How it behaves", "Putting it together", "Guiding AI", "Design systems"];
+const L = [
+{ id: "one-file", part: 0, title: "One file, three languages",
+  idea: [
+    "A web page is text that the browser reads and draws. It's written in three languages, each with one job:",
+    "**HTML** says what's on the page: a heading, a paragraph, a button. **CSS** says how it looks: colours, sizes, spacing. **JavaScript** says what happens when you do something: tap a button, and a lesson opens.",
+    "Most web apps split these into hundreds of files and use a framework (a big helper library such as React). Daily Drill doesn't. Its whole front end is **one file**, `src/drill/content/page.html`, with no framework. That makes it a good place to learn: everything you see is in one place, written with the plain tools every browser understands.",
+  ],
+  key: "HTML is what's there, CSS is how it looks, JavaScript is what it does.",
+  real: { id: "r-onefile", file: "src/drill/content/page.html", sub: "its shape, top to bottom", note: "A `<style>` block, a few empty `<main>` boxes, and one big `<script>`. Open the real file and search for `<main id=\"home\"` to find these lines." },
+  play: { html: "p1-html", css: "p1-css", js: "p1-js", tab: "html" },
+  task: "Change the button's words to **Start the first lesson**, then press Run.",
+  check: (r) => { const b = r.querySelector("button"); if (!b) return [false, "The button is gone. Put it back between <button class=\"btn\"> and </button>."]; const t = b.textContent.trim(); return t === "Start the first lesson" ? [true, "That's how every word on Daily Drill's screens gets there: as text inside an element."] : [false, `The button says "${t}". It should say "Start the first lesson".`]; },
+  clue: "The words you see are between the opening tag `<button class=\"btn\">` and the closing tag `</button>`.",
+  answer: { html: "a1-html" },
+  quiz: { q: "Which of the three decides what happens when you tap a button?", opts: ["HTML", "CSS", "JavaScript"], a: 2, why: "HTML puts the button there and CSS styles it; JavaScript runs when it's tapped." },
+},
+{ id: "html", part: 0, title: "HTML: boxes with labels",
+  idea: [
+    "An **element** is an opening tag, its content, and a closing tag: `<button>Start</button>`. Elements sit inside each other like boxes in boxes.",
+    "**Attributes** add information to an element. Four matter most in Daily Drill: `class` (a name for CSS to style), `id` (a unique name JavaScript can find), `hidden` (don't show this), and `data-` attributes, which are your own labels.",
+    "Daily Drill's HTML is mostly **empty boxes**: `<main id=\"home\"></main>` has nothing inside until JavaScript fills it with your path. And the buttons JavaScript draws carry a label like `data-open=\"split_by_key\"`, which tells the script which lesson to open. You'll use that in lesson 10.",
+  ],
+  key: "class is for CSS, id is for JavaScript, data- carries your own information.",
+  real: { id: "r-html", file: "src/drill/content/page.html", sub: "the screens, and a button the script draws", note: "Four `<main>` screens; all but one are `hidden` at any moment. The button's `data-open` names the lesson it opens." },
+  play: { html: "p2-html", css: "p2-css", tab: "html" },
+  task: "Add a third button for the lesson **Precision and recall**. Give it `class=\"btn\"` and `data-open=\"precision_recall\"`.",
+  check: (r) => { const b = r.querySelector('button[data-open="precision_recall"]'); if (!b) return [false, "No button with data-open=\"precision_recall\" yet. Check the spelling and the quotes."]; if (!b.classList.contains("btn")) return [false, "The button is there but has no class=\"btn\", so it isn't styled like the others."]; return [true, "That's exactly what Home's buttons look like. Notice the hidden paragraph stays hidden."]; },
+  clue: "Copy one of the existing `<button ...>...</button>` lines, then change the `data-open` value and the words.",
+  answer: { html: "a2-html" },
+  quiz: { q: "What does the hidden attribute do?", opts: ["Deletes the element", "Keeps the element on the page but doesn't show it", "Makes it see-through but still clickable"], a: 1, why: "The element is still there, so JavaScript can show it again by removing hidden. That's how Daily Drill switches screens." },
+},
+{ id: "css", part: 1, title: "CSS: rules that style elements",
+  idea: [
+    "A CSS **rule** is a selector and some declarations: `.btn { padding: 8px 14px; }`. The **selector** picks elements; each **declaration** is a property and a value.",
+    "A dot means a class: `.btn` picks every element with `class=\"btn\"`. Two classes stuck together, `.btn.primary`, pick only elements that have **both**. That's how Daily Drill makes one main button per screen stand out: every button is `.btn`, and the one next step is also `.primary`.",
+    "When two rules set the same property, the more specific one wins (`.btn.primary` beats `.btn`), and if they're equal, the later one wins.",
+  ],
+  key: "Selector picks, property says what, value says how much.",
+  real: { id: "r-css", file: "src/drill/content/page.html", sub: "every button, and the one primary", note: "`.primary` only changes colours and weight; everything else comes from `.btn`. Search the file for `.btn.primary {`." },
+  play: { html: "p3-html", css: "p3-css", tab: "css" },
+  task: "Give **every** button rounded corners (`border-radius: 10px`), and make **only the primary** one bold (`font-weight: 600`).",
+  check: (r) => { const [back, next] = r.querySelectorAll("button"); if (!back || !next) return [false, "Keep both buttons in the HTML."]; const a = getComputedStyle(back), b = getComputedStyle(next); if (a.borderTopLeftRadius !== "10px" || b.borderTopLeftRadius !== "10px") return [false, "Both buttons need border-radius: 10px. Put it in the .btn rule so it reaches both."]; if (+b.fontWeight < 600) return [false, "The primary button isn't bold yet. Add font-weight: 600 to .btn.primary."]; if (+a.fontWeight >= 600) return [false, "Back is bold too. Only .btn.primary should be bold."]; return [true, "Shared looks go in .btn, the difference goes in .btn.primary. Same as the real file."]; },
+  clue: "Corners for everyone go in `.btn { }`. Bold for one goes in `.btn.primary { }`. Each declaration ends with `;`.",
+  answer: { css: "a3-css" },
+  quiz: { q: "Which selector picks <button class=\"btn primary\"> but not <button class=\"btn\">?", opts: [".btn", ".btn.primary", "button"], a: 1, why: ".btn.primary needs both classes. The other two pick both buttons." },
+},
+{ id: "tokens", part: 1, title: "Tokens: name a colour once",
+  idea: [
+    "Daily Drill's blue appears in dozens of places. Instead of typing `#2346d1` each time, it's **named once**: `--accent: #2346d1;`. Everywhere else says `var(--accent)`. These named values are called **design tokens** (or CSS custom properties).",
+    "Change the value in one place and every button, ring and highlight follows. That's also how the **looks** work: Light and Dusk use the same names with different values. Switching looks just changes one attribute, `data-theme`, on the page.",
+    "All of Daily Drill's tokens live in `src/drill/content/tokens.css`. The build pastes that file into the page. The rule in this project: **never a raw colour in a component**, always a token.",
+  ],
+  key: "Name it once with --name, use it everywhere with var(--name).",
+  real: { id: "r-tokens", file: "src/drill/content/tokens.css + page.html", sub: "two looks, one set of names", note: "The real file has about 45 colours, plus fonts and timings. docs/DESIGN_SYSTEM.md lists what each one is for." },
+  play: { html: "p4-html", css: "p4-css", tab: "css" },
+  task: "Switch the preview to **Dusk**: the button stays dark blue. Add `--accent: #5b8cff;` to the Dusk block so it gets Dusk's blue.",
+  check: (r, ctx) => { const b = r.querySelector(".btn.primary"); if (!b) return [false, "Keep the primary button in the HTML."]; const was = ctx.page.getAttribute("data-theme"); ctx.page.setAttribute("data-theme", "dusk"); const dusk = getComputedStyle(b).backgroundColor; ctx.page.setAttribute("data-theme", "light"); const light = getComputedStyle(b).backgroundColor; ctx.page.setAttribute("data-theme", was || "light"); if (light !== "rgb(35, 70, 209)") return [false, "In Light the button should still be #2346d1. Leave the first block as it was."]; if (dusk !== "rgb(91, 140, 255)") return [false, "In Dusk the button isn't #5b8cff yet. Add --accent to the .page[data-theme=\"dusk\"] block."]; return [true, "One value changed, and everything using var(--accent) follows. That's the whole trick behind Daily Drill's looks."]; },
+  clue: "The second block, `.page[data-theme=\"dusk\"] { }`, only redefines names. Add a line inside it that redefines `--accent`.",
+  answer: { css: "a4-css" },
+  quiz: { q: "You want every Dusk button to be a different blue. Where do you change it?", opts: ["In every button's rule", "The --accent value in the Dusk block of tokens.css", "In the HTML of each button"], a: 1, why: "Components only say var(--accent). Changing the token changes them all, and only in that look." },
+},
+{ id: "layout", part: 1, title: "Layout: rows, columns and gaps",
+  idea: [
+    "By default, block elements stack top to bottom and small ones (like `<span>`) flow along a line. To arrange things on purpose, CSS has two tools:",
+    "**Flexbox** (`display: flex`) puts children in a row. `flex-wrap: wrap` lets them move to the next line when they run out of room. **Grid** (`display: grid`) makes columns and rows. Both use `gap` for the space between children, instead of margins on each child.",
+    "Daily Drill uses one reading column: `.wrap` is a grid at most `--col` (760px) wide, centred. Cards are grids too. One small trick appears everywhere: `min-width: 0`, which lets long code scroll inside its box instead of pushing the page wider than the phone.",
+  ],
+  key: "Flex for a row, grid for columns, gap for the space between.",
+  real: { id: "r-layout", file: "src/drill/content/page.html", sub: "the column and the card", note: "Search for `.wrap {`. Every screen sits in this one column." },
+  play: { html: "p5-html", css: "p5-css", tab: "css" },
+  task: "Make the six phase chips sit in a **row that wraps**, with **8px** between them. Try the Phone button to see them wrap.",
+  check: (r) => { const c = r.querySelector(".chips"); if (!c) return [false, "Keep the .chips box in the HTML."]; const s = getComputedStyle(c); if (s.display !== "flex" && s.display !== "inline-flex") return [false, "The chips aren't in a row yet. Add display: flex to .chips."]; if (s.flexWrap !== "wrap") return [false, "They're in a row but won't wrap. Add flex-wrap: wrap."]; if (s.columnGap !== "8px" || s.rowGap !== "8px") return [false, "Add gap: 8px for the space between chips."]; return [true, "That's the pattern for chips, tags and buttons in a row all over Daily Drill."]; },
+  clue: "Three declarations inside `.chips { }`: one for the row, one for wrapping, one for the space.",
+  answer: { css: "a5-css" },
+  quiz: { q: "Why use gap instead of a margin on each chip?", opts: ["gap is faster to load", "gap puts space only between children, never at the edges", "margins don't work in flexbox"], a: 1, why: "A margin on each child also adds space at the ends, and margins can double up. gap is just the space between." },
+},
+{ id: "phone", part: 1, title: "Phone first",
+  idea: [
+    "Most people learn on a phone, so Daily Drill is designed for a **375px-wide** screen first. Two habits do most of the work.",
+    "**Big enough to tap:** anything you tap is at least **44px** tall on a touchscreen. `@media (pointer: coarse)` means \"on a touch screen\".",
+    "**Change at narrow widths:** a **media query** applies rules only when the screen fits a condition. `@media (max-width: 420px) { ... }` only applies on small phones. Daily Drill uses one to hide the word \"Notebook\" on its button (keeping the icon), so the top bar fits.",
+  ],
+  key: "Design for 375px first; taps at least 44px; adjust with @media.",
+  real: { id: "r-phone", file: "src/drill/content/page.html", sub: "touch size and small phones", note: "The label is hidden in a way screen readers can still read it. Every change in this project gets checked at 375 by 812 before it ships." },
+  play: { html: "p6-html", css: "p6-css", tab: "css" },
+  task: "When the preview is **phone-sized** (420px or less), hide the word **Notebook** but keep the icon.",
+  check: (r, ctx) => { const label = r.querySelector(".label"); if (!label) return [false, "Keep the <span class=\"label\"> in the HTML."]; const w = ctx.stage.style.width; ctx.stage.style.transition = "none"; ctx.stage.style.width = "375px"; const small = getComputedStyle(label).display; ctx.stage.style.width = "700px"; const wide = getComputedStyle(label).display; ctx.stage.style.width = w; ctx.stage.offsetWidth; ctx.stage.style.transition = ""; if (small !== "none") return [false, "At phone width the word still shows. Inside the @container block, set .label { display: none; }."]; if (wide === "none") return [false, "The word is hidden on wide screens too. Only hide it inside the @container block."]; return [true, "Narrow: icon only. Wide: icon and word. Press Phone and Wide to watch it switch."]; },
+  clue: "Put a rule for `.label` inside the `@container (max-width: 420px) { }` block. `display: none` hides an element.",
+  answer: { css: "a6-css" },
+  quiz: { q: "Why are Daily Drill's buttons at least 44px tall on touch screens?", opts: ["It looks more modern", "So a thumb can hit them reliably", "Browsers require it"], a: 1, why: "44px is about the size of a fingertip. Smaller targets get missed." },
+},
+{ id: "js", part: 2, title: "JavaScript: values, objects, functions",
+  idea: [
+    "JavaScript keeps **values** in names: `let count = 0;` (can change later) or `const name = \"Ana\";` (stays the same).",
+    "An **object** groups named values: `{ step: 3, done: true }`. Read a value with a dot: `record.done`. Daily Drill keeps everything you've done in one object called `progress`.",
+    "A **function** takes input and gives back a result. `const lp = id => ...` is a short way to write one (an **arrow function**). `lp(\"split_by_key\")` gives that lesson's record, and makes an empty one the first time.",
+  ],
+  key: "State is plain objects; functions read and change them.",
+  real: { id: "r-js", file: "src/drill/content/page.html", sub: "your progress, and one lesson's record", note: "Search for `let progress =`. Nearly every feature reads or writes this object." },
+  play: { js: "p7-js", tab: "js" },
+  task: "Finish `doneCount` so it counts the lessons with `done: true`. The box under the preview should say **Finished: 2**.",
+  check: (r, ctx) => { const line = ctx.logs.find(l => /^Finished:/.test(l)); if (!line) return [false, "Nothing was logged. Keep the log(\"Finished:\", ...) line at the end."]; return line.trim() === "Finished: 2" ? [true, "That loop-and-count is the same shape as Daily Drill's \"7 of 12 done\" counters."] : [false, `It says "${line}". Two of the three lessons are done.`]; },
+  clue: "Inside the loop, `progress.lessons[id]` is one record. If its `.done` is true, add 1: `count += 1`.",
+  answer: { js: "a7-js" },
+  quiz: { q: "What does lp(\"new_lesson\") do the first time it's called?", opts: ["Throws an error", "Makes an empty record for that lesson and returns it", "Returns nothing"], a: 1, why: "The `||` says: use the record if there is one, otherwise make { step: 0, checked: null, done: false } and store it." },
+},
+{ id: "dom", part: 2, title: "The DOM: changing the page",
+  idea: [
+    "The browser turns HTML into a tree of objects, called the **DOM**. JavaScript changes the page by finding an element and changing it.",
+    "Daily Drill finds elements with a tiny helper, `$`: `$(\"home\")` is short for `document.getElementById(\"home\")`. Then it changes them: `.hidden = true` hides, `.textContent = \"...\"` sets words, `.classList.add(\"done\")` adds a class.",
+    "Switching screens is just that. `show(\"lesson\")` sets `hidden` on every screen except the lesson. No page reload, no new file: the same page, different boxes showing.",
+  ],
+  key: "Find it ($), then change it (hidden, textContent, classList).",
+  real: { id: "r-dom", file: "src/drill/content/page.html", sub: "the helper, and switching screens", note: "The real show() also hides the hover card and updates the bottom bar. Search for `function show(`." },
+  play: { html: "p8-html", css: "p8-css", js: "p8-js", tab: "js" },
+  task: "Finish `show()` so only the chosen screen is visible. Right now all three show. Then try the three buttons.",
+  check: (r, ctx) => { const h = ctx.$("home"), l = ctx.$("lesson"), d = ctx.$("done"); if (!h || !l || !d) return [false, "Keep the three <main> elements with their ids."]; if (!h.hidden && !l.hidden && !d.hidden) return [false, "All three are still showing. Set .hidden for lesson and done too."]; const btn = ctx.$("goDone"); if (btn) btn.click(); const ok = h.hidden && l.hidden && !d.hidden; const btn2 = ctx.$("goLesson"); if (btn2) btn2.click(); return ok ? [true, "Exactly how Daily Drill moves between Home, a lesson and the done screen."] : [false, "Pressing Done should hide Home and Lesson and show Done. Check each line compares with its own name."]; },
+  clue: "Copy the first line twice. Change `\"home\"` to `\"lesson\"` (both places), then to `\"done\"`.",
+  answer: { js: "a8-js" },
+  quiz: { q: "What does $(\"lesson\").hidden = true do?", opts: ["Deletes the lesson screen", "Hides the element with id=\"lesson\"", "Hides every lesson"], a: 1, why: "$ finds the one element with that id; hidden = true stops it showing." },
+},
+{ id: "render", part: 2, title: "Screens are functions that return HTML",
+  idea: [
+    "Daily Drill draws every screen the same way: a function takes data and **returns HTML as text**. Then `element.innerHTML = thatText` puts it on the page. When the data changes, call the function again.",
+    "The text is built with a **template literal**: backticks with `${...}` holes, like `` `<b>${title}</b>` ``. Whatever is in the hole is pasted in.",
+    "That's also the danger. If a lesson title contains `<b>` or `<script>`, pasting it in raw makes it real HTML. So text from content or from a person always goes through `esc()` first, which turns `<` into `&lt;` so it shows as a character. This project's rule: **never put raw text into HTML**.",
+  ],
+  key: "data → function → HTML text → innerHTML; always esc() the data.",
+  real: { id: "r-render", file: "src/drill/content/page.html", sub: "safe text, and the Learn step", note: "learnPane() builds the Learn step you read every day. md() escapes the text, then allows **bold** and `code`; withTrust() uses it too." },
+  play: { html: "p9-html", css: "p9-css", js: "p9-js", tab: "js" },
+  task: "Make `row()` return a button for one lesson, like the comment shows. Use `esc()` on the title: the third title has tags in it that must show as plain text.",
+  check: (r) => { const rows = r.querySelectorAll("button.row[data-open]"); if (rows.length !== 3) return [false, `Found ${rows.length} rows. row() should return one <button class="row" data-open="..."> per lesson.`]; if (r.querySelector("button.row b")) return [false, "The third title turned into real bold text: wrap the title in esc()."]; const last = rows[2]; if (!last.textContent.includes("<b>")) return [false, "The third row should show the characters <b> as text."]; if (rows[0].dataset.open !== "split_by_key") return [false, "The first row's data-open should be the lesson id, split_by_key."]; return [true, "Three rows, and the sneaky title shows its <b> as plain characters. That's esc() doing its job."]; },
+  clue: "Inside the backticks: `<button class=\"row\" data-open=\"${lesson.id}\">${esc(lesson.title)}</button>`.",
+  answer: { js: "a9-js" },
+  quiz: { q: "Why does Daily Drill wrap titles in esc() before using innerHTML?", opts: ["To make them shorter", "So characters like < show as text instead of becoming HTML", "So they load faster"], a: 1, why: "Without it, a title with <script> in it would run as code. esc() keeps text as text." },
+},
+{ id: "events", part: 2, title: "Events: one listener for the page",
+  idea: [
+    "When you tap, the browser fires a **click event**. `element.addEventListener(\"click\", e => { ... })` runs your function each time. `e.target` is the exact thing that was tapped.",
+    "You could add a listener to every button. Daily Drill doesn't: its buttons are redrawn all the time, and new ones would have no listener. Instead there's **one listener on the whole page**, which asks \"was it a button with `data-open`?\" using `e.target.closest(\"[data-open]\")`. This is called **event delegation**.",
+    "So adding a button is two steps: draw it with a new `data-` label, and add one line to that one listener.",
+  ],
+  key: "One listener; buttons say what they are with data- labels; closest() finds them.",
+  real: { id: "r-events", file: "src/drill/content/page.html", sub: "the one click listener (cut down)", note: "Search for `// ---------- events ----------`. Each line handles one kind of button." },
+  play: { html: "p10-html", css: "p10-css", js: "p10-js", tab: "js" },
+  task: "When a lesson row is clicked, show its id in **You opened**. Run, then click a row.",
+  check: (r, ctx) => { const rows = r.querySelectorAll("[data-open]"); if (rows.length < 2) return [false, "Keep the three rows in the HTML."]; rows[1].click(); const p = ctx.$("picked"); const got = p && p.textContent.trim(); return got === "precision_recall" ? [true, "Clicking the second row showed precision_recall. One listener handles every row, even ones drawn later."] : [false, `Clicking the second row should show "precision_recall"; it shows "${got}".`]; },
+  clue: "Under the `const open = ...` line: `if (open) { $(\"picked\").textContent = open.dataset.open; }`. `dataset.open` reads `data-open`.",
+  answer: { js: "a10-js" },
+  quiz: { q: "Why one listener on the page instead of one per button?", opts: ["Buttons drawn later still work, and there's one place to look", "It's the only way JavaScript allows", "It makes buttons bigger"], a: 0, why: "Screens are redrawn with innerHTML, which would throw away per-button listeners. The page-wide one never goes away." },
+},
+{ id: "storage", part: 2, title: "Remembering: saving progress",
+  idea: [
+    "Reload a page and its JavaScript starts from scratch. To remember things, save them. **localStorage** keeps text for this website in this browser, even after you close it.",
+    "It only stores text, so objects are turned into text with `JSON.stringify(progress)`, and back with `JSON.parse(text)`.",
+    "Some browsers refuse storage (private windows, for example), so Daily Drill wraps every read and write in `try { ... } catch {}`: if saving fails, the page still works. When you're signed in it also saves to your account through a **backend**, so your progress follows you between devices.",
+  ],
+  key: "Save: JSON.stringify then setItem. Load: getItem then JSON.parse. Always try/catch.",
+  real: { id: "r-store", file: "src/drill/content/page.html", sub: "saving and loading progress", note: "Search for `function saveLocal`. The key \"drill-progress\" is where your real progress lives in this browser." },
+  play: { html: "p11-html", css: "p11-css", js: "p11-js", tab: "js" },
+  task: "Make the count **survive Run**: load it at the start, save it on each click. Click the button, press Run, and the number should stay.",
+  check: (r, ctx) => { store.set("inside-page-html-demo", ""); try { localStorage.removeItem("inside-page-html-demo"); } catch {} ctx.run(); const plus = ctx.$("plus"); if (!plus) return [false, "Keep the button with id=\"plus\"."]; plus.click(); ctx.run(); const n = ctx.$("count") && ctx.$("count").textContent.trim(); return n === "1" ? [true, "Clicked once, ran again, and it remembered 1. That's how Daily Drill remembers where you were."] : [false, `After one click and a fresh Run the count shows ${n}. It should show 1: save in the click, load at the top.`]; },
+  clue: "Step 1: `const raw = localStorage.getItem(KEY); if (raw) state = JSON.parse(raw);` Step 2: `localStorage.setItem(KEY, JSON.stringify(state));` Wrap each in try { } catch { }.",
+  answer: { js: "a11-js" },
+  quiz: { q: "Why does Daily Drill wrap localStorage in try/catch?", opts: ["It makes saving faster", "Some browsers refuse storage, and the page should keep working", "JSON needs it"], a: 1, why: "In a private window setItem can throw. Without try/catch, one refusal would break the whole page." },
+},
+{ id: "access", part: 3, title: "Motion and access for everyone",
+  idea: [
+    "A good page works for everyone, not only people with a mouse and good eyesight. Three habits in Daily Drill:",
+    "**Visible focus.** People who use the keyboard move with Tab. `:focus-visible` styles the element they're on, so they can see it. Never remove the focus ring without a replacement.",
+    "**Motion only when wanted.** Some people get dizzy from animation and ask their phone for less. `@media (prefers-reduced-motion: reduce)` turns it off for them, and Daily Drill also has its own Motion: Off switch. **Words for icons:** an icon-only button gets an `aria-label`, so a screen reader can say what it does. And colour never works alone: a pass also says \"passed\".",
+  ],
+  key: "Focus you can see, motion you can turn off, words for every icon.",
+  real: { id: "r-access", file: "src/drill/content/page.html", sub: "focus, reduced motion, labels", note: "Every change gets checked with the keyboard and with Motion off. docs/FRONTEND.md, \"Before you call it done\"." },
+  play: { html: "p12-html", css: "p12-css", tab: "css" },
+  task: "Add a **2px outline** for buttons with keyboard focus (`.btn:focus-visible`), and turn the hover movement **off** for people who prefer reduced motion.",
+  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); if (!/\.btn:focus-visible\s*\{[^}]*outline\s*:[^;}]*2px/.test(css)) return [false, "Add a rule .btn:focus-visible { outline: 2px solid ...; }."]; const m = css.match(/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{([\s\S]*)\}/); if (!m) return [false, "Add @media (prefers-reduced-motion: reduce) { ... }."]; if (!/\.btn[^{]*\{[^}]*transition\s*:\s*none/.test(m[1])) return [false, "Inside the reduced-motion block, set .btn { transition: none; }."]; return [true, "Keyboard users can see where they are, and nobody gets motion they asked not to have."]; },
+  clue: "`.btn:focus-visible { outline: 2px solid #2346d1; outline-offset: 2px; }` and `@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }`.",
+  answer: { css: "a12-css" },
+  quiz: { q: "Someone can't use a mouse. What helps them most on this page?", opts: ["Bigger fonts", "A visible focus ring as they Tab through buttons", "More animation"], a: 1, why: "Without a visible focus, keyboard users can't tell which button Enter will press." },
+},
+{ id: "together", part: 3, title: "How it all comes together",
+  idea: [
+    "You never edit the finished page. The lessons are written in Python, in `src/drill/content/modules/*.py`. Running `uv run drill build-page` turns them into data and pastes it into `page.html` at `/*DATA*/`, and pastes `tokens.css` at `/*TOKENS*/`. Out comes one file, `dist/daily-drill.html`.",
+    "That one file runs in two places: on claude.ai as an artifact, and on your Mac from `drill-server`. Saving and asking the AI go through a **backend** with the same functions in both places, so features don't care where they run.",
+    "To change something: find its section in `page.html` by its marker (like `// ---------- events ----------`), change it, run `scripts/check.sh` (build plus tests), and look at it at phone width in Dusk and Light. The map of every section is in `docs/FRONTEND.md`.",
+  ],
+  key: "Content in Python, look in tokens and CSS, behaviour in one script, joined by the build.",
+  real: { id: "r-build", file: "src/drill/content/build.py + page.html", sub: "how one file gets made", note: "That's the whole build: two find-and-replaces. No bundler, no framework." },
+  play: { html: "p13-html", css: "p13-css", js: "p13-js", tab: "js" },
+  task: "The final build, using everything: make **Mark as done** work. Mark the lesson done, save, re-render, and give the card the `done` class so it turns green. It should still be done after Run.",
+  check: (r, ctx) => { try { localStorage.removeItem("inside-page-html-capstone"); } catch {} ctx.run(); const b = ctx.root.querySelector("[data-done]"); if (!b) return [false, "Keep the Mark as done button in card()."]; b.click(); const c1 = ctx.root.querySelector(".card"); if (!c1 || !/Done\./.test(c1.textContent)) return [false, "After clicking, the card should say Done. Set lp(b.dataset.done).done = true, then render()."]; if (!c1.classList.contains("done")) return [false, "It says Done but isn't green: add \"done\" to the card's class when done is true."]; ctx.run(); const c2 = ctx.root.querySelector(".card"); if (!c2 || !c2.classList.contains("done")) return [false, "After Run it forgot. Save progress to localStorage in the click handler."]; return [true, "Data, a render function, a delegated click, a token-styled card and saved progress. That's Daily Drill in miniature."]; },
+  clue: "Step 1: `class=\"card${done ? \" done\" : \"\"}\"`. Step 2: `lp(b.dataset.done).done = true;` Step 3: `localStorage.setItem(KEY, JSON.stringify(progress)); render();`",
+  answer: { js: "a13-js" },
+  quiz: { q: "You want to fix a typo in a lesson's Learn text. Which file do you edit?", opts: ["dist/daily-drill.html", "src/drill/content/page.html", "The lesson's module file in src/drill/content/modules/"], a: 2, why: "Lesson text is content, written in Python. The build carries it into the page; page.html never holds lesson text." },
+},
+
+{ id: "layers", part: 4, kind: "judge", title: "Where does this change go?",
+  idea: [
+    "Most of guiding AI well is one question you can answer without reading code: **which layer should this change touch?** You learned the layers in this course. Decide the layer first, then check the AI changed that layer and not others.",
+    "If the answer surprises you (a colour fix that edits lesson files, a typo fix that edits the page's script), stop and ask why. That one question catches most wrong turns.",
+  ],
+  key: "Name the layer before asking; check the change stayed in it.",
+  sheet: [
+    ["Words in a lesson", "its module file, src/drill/content/modules/<module>.py"],
+    ["A colour or font, everywhere", "src/drill/content/tokens.css"],
+    ["How one kind of thing looks", "the CSS rules in page.html"],
+    ["What appears on a screen", "that screen's render function, like learnPane() or renderHome()"],
+    ["What a tap does", "the one click listener, // ---------- events ----------"],
+    ["Never", "dist/daily-drill.html: the build makes it, and the next build overwrites it"],
+  ],
+  cases: [
+    { who: "You want", sit: "The Dusk blue is too bright, everywhere it appears.", opts: ["tokens.css: the --accent value in the Dusk block", "Every button's CSS rule", "dist/daily-drill.html"], a: 0, clue: "\"Everywhere\" means one named value.", why: "One token, one line. Every button, ring and highlight follows." },
+    { who: "You want", sit: "Fix a typo in the Learn text of \"Precision, recall and why accuracy lies\".", opts: ["page.html, in learnPane()", "The module file in src/drill/content/modules/ (foundations.py)", "tokens.css"], a: 1, clue: "Lesson words are content. Where is content written?", why: "Lesson text lives in Python module files; learnPane() only draws whatever text it's given." },
+    { who: "You want", sit: "A new Skip button on the Check step.", opts: ["tokens.css", "checkPane() to draw it, plus one line in the click listener", "The lesson's module file"], a: 1, clue: "Two layers: something new on a screen, and something that happens when it's tapped.", why: "Draw it with a data- label in the render function, handle it with one line in the one listener." },
+    { who: "The AI said", sit: "\"Fixed! I changed the colour in dist/daily-drill.html.\"", opts: ["Great, done", "It'll be lost at the next build: ask it to change tokens.css or page.html instead", "Fine, as long as the tests pass"], a: 1, clue: "Who makes the dist file?", why: "dist/daily-drill.html is generated by drill build-page. Edits there vanish the next time anyone builds." },
+    { who: "You want", sit: "The phase chips should wrap onto two lines on phones.", opts: ["JavaScript that measures the screen", "CSS: flex-wrap and gap on the chips' box", "A new token"], a: 1, clue: "Is this about what happens, or how it looks?", why: "Layout is CSS. JavaScript for layout is a sign the AI is working too hard." },
+  ],
+},
+{ id: "review", part: 4, kind: "judge", title: "Reading an AI's change",
+  idea: [
+    "You don't need to write the code to judge it. Look for a few things that are easy to spot: **is it small**, **is it in the right layer**, does it follow **the house rules**, and **was it checked**.",
+    "Some things are **stop signs**: when you see one, pause and ask before accepting.",
+  ],
+  key: "Small, right layer, house rules, checked. Stop at the stop signs.",
+  sheet: [
+    ["House rule: tokens, not raw colours", "a # colour in a component rule means a missing token"],
+    ["House rule: esc() around any text in HTML", "content or user text pasted raw into innerHTML is a bug"],
+    ["House rule: one primary button per screen", "and every tap target at least 44px"],
+    ["House rule: buttons use data- labels and the one listener", "not a listener stuck on each button"],
+    ["Stop sign: tests removed or skipped", "tests protect you; fix the cause, not the test"],
+    ["Stop sign: many unrelated files, or a new library", "this app is one file with no framework, on purpose"],
+  ],
+  cases: [
+    { who: "The change", code: ".chip.new { background: #ff6b00; color: #fff; }", sit: "A new chip style.", opts: ["Looks fine", "Raw colours: ask for a token (and a Dusk value)", "Too short"], a: 1, clue: "Look at the values after background and color.", why: "A raw colour won't change with the look and breaks the tokens-only rule. It needs a token with Light and Dusk values." },
+    { who: "The change", code: "$(\"list\").innerHTML = lessons.map(l => `<b>${l.title}</b>`).join(\"\");", sit: "Draws the lesson list.", opts: ["Fine", "l.title goes into HTML without esc()", "Should use a for loop"], a: 1, clue: "What's inside the ${ } hole, and where does it come from?", why: "A title with < in it would become real HTML. Wrap it: ${esc(l.title)}." },
+    { who: "The AI said", sit: "\"Renamed the Next button. 14 files changed.\"", opts: ["Thorough, nice", "Ask why each file changed; a label change should touch very few", "Ask it to rename more"], a: 1, clue: "How many layers does a button's words live in?", why: "Big diffs for small asks hide mistakes. Ask for the list of files and the reason for each." },
+    { who: "The change", code: "- def test_every_lesson_picture_belongs_to_a_real_lesson():\n-     ...", sit: "\"This test kept failing, so I removed it.\"", opts: ["Fine if everything else passes", "Stop: the test caught something. Ask what it caught and fix that", "Ask it to remove the others too"], a: 1, clue: "What is a failing test telling you?", why: "Tests are the app's memory of what must stay true. Deleting one hides the problem." },
+    { who: "The change", code: "document.querySelectorAll(\".row\").forEach(b =>\n  b.addEventListener(\"click\", () => openLesson(b.dataset.open)));", sit: "Makes rows clickable.", opts: ["Fine", "Breaks after the list is redrawn: use a data- label and the one listener", "Too long"], a: 1, clue: "Lesson 10: what happens to these listeners when innerHTML redraws the rows?", why: "Redrawn rows are new elements with no listener. The page's one delegated listener handles them all." },
+    { who: "The AI said", sit: "\"I added React to make the new panel easier.\"", opts: ["Great, React is popular", "Stop: this app is one file with no framework; ask it to follow docs/FRONTEND.md", "Ask for Vue instead"], a: 1, clue: "How is Daily Drill built, and why?", why: "One file with no framework is a deliberate choice: it publishes as an artifact unchanged. A framework would break that." },
+  ],
+},
+{ id: "asking", part: 4, kind: "judge", title: "Asking well, then checking",
+  idea: [
+    "A good request does three things: it says **what you want** and where you think it goes, it asks the AI to **explain before changing**, and it decides **how you'll know it worked**.",
+    "Then you check by **results**, not by reading every line: run the checks, look at it on a phone in both looks, and try it with the keyboard. And whenever a word in the answer is new to you, ask for it in plain words with an example from this project.",
+  ],
+  key: "Explain first, one change at a time, and decide how you'll know it works.",
+  sheet: [
+    ["Say the goal and the layer", "\"On Home, the Today button is hard to see in Dusk. I think it's a token.\""],
+    ["Ask for the plan first", "\"Before changing anything, tell me which files and functions you'll touch, and why.\""],
+    ["Point at the house rules", "\"Follow docs/FRONTEND.md and docs/DESIGN_SYSTEM.md.\""],
+    ["One change per request", "small steps are easy to check and easy to undo"],
+    ["Decide the proof", "\"Run scripts/check.sh, then tell me what to look at on a phone in Dusk and Light.\""],
+    ["Name the risk", "\"What else uses this? What could break?\""],
+    ["Keep new words", "\"Explain event delegation in plain words with an example from this project\", then save it to your study list"],
+  ],
+  cases: [
+    { who: "Which request", sit: "You want the Home screen's main button easier to see in Dusk.", opts: ["\"Make the home page better.\"", "\"On Home, the Today card's button is hard to see in Dusk. Explain which token or rule controls it before changing anything.\"", "\"Redesign everything in Dusk.\""], a: 1, clue: "Which one names the place, the problem and a first step?", why: "It's specific, names the look, and asks for the plan first, so you can catch a wrong layer before any code changes." },
+    { who: "The AI said", sit: "\"Done! It should work now.\"", opts: ["\"Thanks!\"", "\"Which files changed, did scripts/check.sh pass, and what should I look at to see it?\"", "\"Can you make it nicer?\""], a: 1, clue: "\"Should\" isn't proof. What would be?", why: "You want the list of changes, the checks it ran, and what to look at yourself." },
+    { who: "You check", sit: "A change to how something looks. What do you look at?", opts: ["The desktop view only", "Phone width (375px) in Dusk and Light, Tab through it with the keyboard, and Motion off", "Nothing: the tests passed"], a: 1, clue: "Who uses Daily Drill, and on what?", why: "Most use phones, in Dusk. Tests don't see colours or layout; your eyes do." },
+    { who: "The change", sit: "It edits function show(view), which switches screens.", opts: ["Ask: \"What else calls show()? What could break?\"", "Accept it: it's a small function", "Ask it to rename show()"], a: 0, clue: "A function many places use is a function many places can break.", why: "show() runs on every screen change. Asking about callers and risks makes the AI check them." },
+    { who: "The AI said", sit: "\"I used event delegation so redrawn rows keep working.\" You don't know that word.", opts: ["Pretend it's fine", "Ask: \"Explain event delegation in plain words, with an example from this project\"", "Ask it to avoid that word"], a: 1, clue: "Lesson 10 might help, but it's always fine to ask.", why: "Unknown words are where mistakes hide. A plain explanation with a local example turns them into knowledge." },
+  ],
+},
+
+{ id: "ds-what", part: 5, title: "What a design system is",
+  idea: [
+    "A **design system** is a team's shared decisions about how things look and behave, written down so everyone (people and AI) builds the same way. It has four parts: **tokens** (named values: colours, fonts, sizes, timings), **components** (reusable pieces: buttons, cards, chips), **rules** (how to use them), and **docs** (where all of that is explained, with examples).",
+    "Good tokens are named by **meaning**, not looks. Many systems have two layers: **primitive** tokens that just name a colour (`blue-600: #2346d1`) and **semantic** tokens that say what it's for (`accent: var(--blue-600)`). Components only use the semantic ones. Daily Drill keeps it simple and names colours by meaning straight away: `--accent` is \"the next thing to do\", `--pass` is \"passed or done\".",
+    "That's why a design system makes changes safe. To make Dusk's green softer, you change one value, and every passed result, done step and tick follows, while nothing else changes by accident.",
+  ],
+  key: "Tokens named by meaning, components built only from tokens, rules that say how.",
+  real: { id: "r-ds1", file: "src/drill/content/tokens.css + docs/DESIGN_SYSTEM.md", sub: "names by meaning, and the rule behind them", note: "The full list, with what each name is for, is the tokens table in docs/DESIGN_SYSTEM.md." },
+  play: { html: "p17-html", css: "p17-css", tab: "css" },
+  task: "Someone built these results with raw colours, so they **don't change in Dusk**. Replace every `#` colour in the `.result` rules with the right token. Then switch the preview to Dusk to see the difference.",
+  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); const comp = css.replace(/\.page(\[data-theme="dusk"\])?\s*\{[^}]*\}/g, ""); const hex = comp.match(/#[0-9a-fA-F]{3,8}\b/); if (hex) return [false, `There's still a raw colour, ${hex[0]}, in a component rule. Swap it for var(--pass), var(--pass-bg), var(--fail) or var(--fail-bg).`]; const pass = r.querySelector(".result.pass"), fail = r.querySelector(".result.fail"); if (!pass || !fail) return [false, "Keep both results in the HTML."]; const was = ctx.page.getAttribute("data-theme"); ctx.page.setAttribute("data-theme", "dusk"); const a = getComputedStyle(pass), b = getComputedStyle(fail); const ok = a.backgroundColor === "rgb(16, 38, 31)" && a.color === "rgb(127, 214, 176)" && b.backgroundColor === "rgb(53, 23, 35)" && b.color === "rgb(255, 143, 158)"; ctx.page.setAttribute("data-theme", was || "light"); return ok ? [true, "No raw colours left, and both results follow the look. The strong colour for the words, its -bg twin behind them, just like the real verdicts."] : [false, "In Dusk the colours aren't the Dusk ones yet. Each result needs its strong colour for color and its -bg twin for background."]; },
+  clue: "`.result.pass` gets `background: var(--pass-bg); color: var(--pass);`. Do the same with fail.",
+  answer: { css: "a17-css" },
+  quiz: { q: "Which token name is better for the blue of the main button?", opts: ["--blue", "--accent", "--button-color-2"], a: 1, why: "--accent says what it's for. If the brand turns green next year, --blue would be a lie; --accent still tells the truth." },
+},
+{ id: "ds-build", part: 5, title: "Building with it: pick the surface, then reuse",
+  idea: [
+    "When you need something new, **look for an existing component first**. The components table in `docs/DESIGN_SYSTEM.md` lists them. Most \"new\" things are an existing piece with different words.",
+    "If you really need a new one, start by asking **what kind of box it is**. Daily Drill has surface tokens for that: a **card** is something you read, an **aside** is a note beside it (a key idea, a tip, what an AI said), a **pop** floats over the page. Light fills them plainly; Dusk makes them glass. Use the surface's tokens and your component gets every look for free, with no Dusk rule of its own.",
+    "Then size and space it from the system's steps (gaps of 4 to 24px; corners of 4, 8, 10, 12, 14 or a pill), give it every state it needs (hover, keyboard focus, disabled), and add a row to the components table so the next person finds it.",
+  ],
+  key: "Reuse first; if new, pick its surface, use the steps, cover every state, write it down.",
+  real: { id: "r-ds2", file: "src/drill/content/tokens.css + docs/DESIGN_SYSTEM.md", sub: "surfaces, and the rule for new components", note: "A test fails if a new component writes its own Dusk rule for background, shadow or blur. The surfaces handle that." },
+  play: { html: "p18-html", css: "p18-css", tab: "css" },
+  task: "Build the `.tip` as an **aside**: use the aside tokens for its background, border and blur, 12px corners and 12px 14px padding. No `#` colours and no Dusk rule of its own. Check it in Light and Dusk.",
+  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); const tipRules = (css.match(/[^{}]*\.tip[^{]*\{[^}]*\}/g) || []).join("\n"); if (/data-theme/.test(tipRules)) return [false, "There's a Dusk rule for .tip. Remove it: the aside tokens already change in Dusk."]; if (/#[0-9a-fA-F]{3,8}\b/.test(tipRules)) return [false, "The .tip rule has a raw colour. Use var(--aside-bg) and var(--aside-line)."]; const tip = r.querySelector(".tip"); if (!tip) return [false, "Keep the <aside class=\"tip\"> in the HTML."]; const was = ctx.page.getAttribute("data-theme"); ctx.page.setAttribute("data-theme", "light"); const L1 = getComputedStyle(tip); const light = [L1.backgroundColor, L1.borderTopLeftRadius, L1.paddingTop, L1.paddingLeft]; ctx.page.setAttribute("data-theme", "dusk"); const D1 = getComputedStyle(tip); const dusk = [D1.backgroundColor, D1.borderTopStyle]; ctx.page.setAttribute("data-theme", was || "light"); if (light[0] !== "rgb(228, 232, 238)") return [false, "In Light the tip isn't the aside colour yet. Set background: var(--aside-bg)."]; if (dusk[0] !== "rgba(93, 85, 103, 0.22)") return [false, "In Dusk the tip should turn to glass by itself. Use var(--aside-bg), not a fixed colour."]; if (dusk[1] !== "solid") return [false, "Give it border: 1px solid var(--aside-line), so Dusk can draw its faint edge."]; if (light[1] !== "12px") return [false, "Corners should be 12px, one of the system's steps."]; if (light[2] !== "12px" || light[3] !== "14px") return [false, "Padding should be 12px 14px."]; return [true, "Plain in Light, glass in Dusk, with no Dusk rule of its own. That's what picking the surface buys you."]; },
+  clue: "Five lines inside `.tip { }`: `background: var(--aside-bg);`, `border: 1px solid var(--aside-line);`, `backdrop-filter: var(--aside-blur);`, `border-radius: 12px;`, `padding: 12px 14px;`.",
+  answer: { css: "a18-css" },
+  quiz: { q: "You need a box that shows what the AI said, next to a lesson. What do you do first?", opts: ["Pick a nice new colour for it", "Check the components table, then build it as an aside from the aside tokens", "Copy a card and add a Dusk rule"], a: 1, why: "What the AI said is a note beside the content: an aside. Reuse first, and the surface gives you every look." },
+},
+{ id: "ds-standards", part: 5, kind: "judge", title: "Standards and good practice",
+  idea: [
+    "Some rules come from **standards** that everyone shares. The main one is **WCAG 2.2**, the web's accessibility guidelines; teams usually aim for level **AA**. Others are a team's **house rules**, often stricter than the standard. A good design system says which is which.",
+    "For sharing tokens between tools (design apps, code, docs), there's now a common file format: the **W3C Design Tokens format**, whose first stable version, 2025.10, came out in October 2025. Daily Drill keeps its tokens in CSS; the Design System artifact holds them as a list for its own pages.",
+    "And there's good practice for **changing** a system: change values, not meanings; add a new token rather than reuse one for something else; remove a token only when nothing uses it; and write down what changed.",
+  ],
+  key: "Meet the standard (WCAG 2.2 AA), keep the house rules, and change meanings carefully.",
+  sheet: [
+    ["Text contrast: at least 4.5:1", "WCAG 1.4.3 (AA); 3:1 for large text. Daily Drill checks its pairs with scripts/contrast.py"],
+    ["Icons, borders and focus rings: 3:1", "WCAG 1.4.11 (AA): parts you need to see to use the page"],
+    ["Never colour alone", "WCAG 1.4.1: a failed result also says \"failed\" or shows a cross"],
+    ["Tap targets: 24px is the floor, 44px is the house rule", "WCAG 2.2 asks at least 24 by 24 (2.5.8, AA); Daily Drill asks 44px on touch"],
+    ["Focus you can see, never hidden", "WCAG 2.4.7 (AA), and 2.4.11 (AA, new in 2.2): not covered by a sticky bar"],
+    ["Name by meaning", "--accent, not --blue; --pass, not --green"],
+    ["Change values, not meanings", "need a new meaning? add a new token; deprecate before you delete"],
+    ["Write it down", "a row in the components table, and a line in the PR saying what changed"],
+  ],
+  cases: [
+    { who: "A designer asks", sit: "\"Make the new 'New lesson' badge green, like the pass colour.\"", opts: ["Use --pass: it's green", "Don't: --pass means passed or done. Use a neutral chip, or add a token that means 'new'", "Use --hint"], a: 1, clue: "In this system, what does --pass mean?", why: "Colour means one thing. A green 'New' badge would read as 'done' to anyone who knows the app." },
+    { who: "The change", code: ".note { color: #9aa0a6; background: #ffffff; }  /* 2.7:1 */", sit: "Body text in a new note.", opts: ["Fine, it's readable on my screen", "Fails WCAG 1.4.3: body text needs 4.5:1. Use --muted, which is 7.4:1 on the page", "Make it bold instead"], a: 1, clue: "Find the number in the comment, and compare it with the text rule on your cheat sheet.", why: "2.7:1 is too faint for many people, in sunlight or with tired eyes. --muted is already tuned and checked." },
+    { who: "The change", code: ".iconbtn { width: 20px; height: 20px; }", sit: "A small icon button for phones.", opts: ["Fine: icons are small", "Too small: WCAG's floor is 24px, and Daily Drill's touch rule is 44px", "Make it 21px"], a: 1, clue: "Two numbers on your cheat sheet: the standard's floor and the house rule.", why: "A fingertip is about 44px. Below 24px fails the standard; below 44px breaks this app's own rule on touch." },
+    { who: "The AI suggests", sit: "\"The new feature wants purple, so I changed --hint to purple.\"", opts: ["Good, one line", "Stop: every hint and warning would turn purple. Add a new token for the new meaning", "Change --accent instead"], a: 1, clue: "Who else uses --hint?", why: "Changing a token's value changes everything that means 'hint'. A new meaning needs a new name." },
+    { who: "You find", sit: "--finish-ink is defined in tokens.css, but nothing uses it.", opts: ["Delete it quietly with some other change", "Search to confirm it's unused, then remove it in its own small PR that says so", "Leave it forever"], a: 1, clue: "How would the next person know why it disappeared?", why: "Unused tokens confuse people (\"should I use this?\"). Removing one is fine, done on its own and written down." },
+    { who: "The change", code: ".field.error { border-color: var(--fail); }", sit: "How a wrong answer shows in a form.", opts: ["Fine: red means wrong", "Add words or an icon too: never colour alone (WCAG 1.4.1)", "Make the border thicker"], a: 1, clue: "Someone can't tell red from grey. What do they see?", why: "About 1 in 12 men has some colour blindness. A message like \"Not quite: it's B\" works for everyone." },
+  ],
+},
+];
+
+// ---------- saved progress (this browser only) ----------
+const KEY = "inside-page-html-v1";
+let S = { done: {}, quiz: {}, at: 0, drafts: {}, judge: {} };
+try { const raw = store.get(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch {}
+S.judge = S.judge || {};
+const save = () => store.set(KEY, JSON.stringify(S));
+if (location.hash) { const i = L.findIndex(x => x.id === location.hash.slice(1)); if (i >= 0) S.at = i; }
+
+// ---------- the look switch for this page ----------
+function setLook(v) {
+  if (v) document.documentElement.setAttribute("data-theme", v); else document.documentElement.removeAttribute("data-theme");
+  document.querySelectorAll("[data-look]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.look === v)));
+  store.set(KEY + "-look", v);
+}
+document.querySelectorAll("[data-look]").forEach(b => b.addEventListener("click", () => setLook(b.dataset.look)));
+setLook(store.get(KEY + "-look") || "");
+
+// ---------- outline ----------
+function renderOutline() {
+  $("parts").innerHTML = PARTS.map((p, pi) => `<div class="part"><h2>${esc(p)}</h2><ol>${L.map((x, i) => x.part !== pi ? "" :
+    `<li><button class="lsn${S.done[x.id] ? " done" : ""}" data-go="${i}"${i === S.at ? ' aria-current="page"' : ""}><span class="n">${S.done[x.id] ? "✓" : i + 1}</span><span>${esc(x.title)}</span></button></li>`).join("")}</ol></div>`).join("");
+  const n = L.filter(x => S.done[x.id]).length;
+  $("meterFill").style.width = (100 * n / L.length) + "%";
+  $("meterText").textContent = `${n} of ${L.length} done`;
+}
+
+// ---------- a lesson ----------
+let pg = null;  // the playground for the open lesson
+function renderLesson() {
+  const x = L[S.at], i = S.at;
+  if (x.kind === "judge") return renderJudge(x, i);
+  const q = x.quiz, qa = S.quiz[x.id];
+  $("lesson").innerHTML = `
+    <header>
+      <div class="eyebrow">Lesson ${i + 1} of ${L.length} · ${esc(PARTS[x.part])}</div>
+      <h1>${esc(x.title)}</h1>
+    </header>
+    <section class="idea sec" data-sec="idea">${x.idea.map(p => `<p>${inline(p)}</p>`).join("")}</section>
+    <div class="keyidea"><b>The idea in one line</b><span>${inline(x.key)}</span></div>
+    ${askSlot("idea", "Ask about this idea")}
+    <section class="sec" data-sec="code">
+      <h2>In Daily Drill</h2>
+      <div class="real">
+        <div class="file">${esc(x.real.file)} <span>${esc(x.real.sub)}</span></div>
+        <pre class="code">${esc(text(x.real.id))}</pre>
+        <p class="note">${inline(x.real.note)}</p>
+      </div>
+      ${askSlot("code", "Ask about this code")}
+    </section>
+    <section class="sec" data-sec="task">
+      <h2>Try it</h2>
+      <div class="play" id="play">
+        <div class="task">
+          <div class="taskhead"><span class="tag">Your task</span>${S.done[x.id] ? '<span class="eyebrow" style="color:var(--pass)">✓ Done</span>' : ""}</div>
+          <p>${inline(x.task)}</p>
+        </div>
+        <div class="ed">
+          <div class="editor">
+            <div class="tabs" role="tablist" aria-label="Code">${["html", "css", "js"].filter(k => x.play[k]).map(k => `<button class="tab" role="tab" data-tab="${k}">${k.toUpperCase()}</button>`).join("")}</div>
+            <textarea class="code" id="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code editor"></textarea>
+            <div class="edbar"><button class="btn primary" id="runBtn">Run</button><button class="btn" id="checkBtn">Check my work</button><span class="grow"></span><button class="btn quiet small" id="resetBtn">Start over</button><span class="kbd">⌘/Ctrl + Enter runs</span></div>
+          </div>
+          <div class="preview">
+            <div class="pvbar"><span class="grow">Preview</span>
+              <button class="btn small" data-w="375">Phone</button><button class="btn small" data-w="">Wide</button>
+              <button class="btn small" data-pv="light">Light</button><button class="btn small" data-pv="dusk">Dusk</button></div>
+            <div class="stagewrap"><div class="stage" id="stage"></div></div>
+            <pre class="console" id="console" aria-live="polite"></pre>
+          </div>
+        </div>
+        <div id="verdict"></div>
+      </div>
+      ${askSlot("task", "Ask for help with the task")}
+    </section>
+    <section class="quiz sec" aria-labelledby="qq" data-sec="quiz">
+      <div class="eyebrow">Check</div>
+      <p class="q" id="qq">${esc(q.q)}</p>
+      <div class="opts">${spin(q.q, q.opts.length).map((k, pos) => `<button class="opt${qa != null && k === q.a ? " right" : qa === k && k !== q.a ? " wrong" : ""}" data-opt="${k}"${qa != null ? " disabled" : ""}><span class="k">${"ABC"[pos]}</span><span>${esc(q.opts[k])}</span></button>`).join("")}</div>
+      ${qa != null ? `<p class="why"><b>${qa === q.a ? "Right." : `It's ${"ABC"[spin(q.q, q.opts.length).indexOf(q.a)]}.`}</b> ${esc(q.why)}</p>` : ""}
+      ${askSlot("quiz", "Ask about this question")}
+    </section>
+    ${i === L.length - 1 ? whereNext() : ""}
+    ${navHtml(i)}`;
+  setupPlay(x);
+  renderAllAsk();
+}
+
+
+// ---------- Guiding AI: a cheat sheet, then one situation at a time ----------
+// One primary button per screen: "next lesson" only becomes primary once this lesson is done
+function navHtml(i, quiet) {
+  const primary = S.done[L[i].id] && !quiet ? " primary" : "";
+  return `<nav class="nav" aria-label="Lessons">
+      ${i > 0 ? `<button class="btn" data-go="${i - 1}">← ${esc(L[i - 1].title)}</button>` : "<span></span>"}
+      ${i < L.length - 1 ? `<button class="btn${primary}" data-go="${i + 1}">Next: ${esc(L[i + 1].title)} →</button>` : ""}
+    </nav>`;
+}
+function whereNext() {
+  return `<section class="where sec"><h2>Where to go next</h2><ul>
+      <li><b>docs/FRONTEND.md</b>: the map of every section in page.html, and recipes for common changes.</li>
+      <li><b>docs/DESIGN_SYSTEM.md</b>: every token and component, and how to change them safely.</li>
+      <li><b>docs/screens/</b>: a picture of every screen, with the function that draws it.</li>
+      <li>A good first real change: add one line of help text somewhere, using the request from "Asking well, then checking". Run <code>scripts/check.sh</code> and look at it at 375px in Dusk and Light.</li></ul></section>`;
+}
+function renderJudge(x, i) {
+  const J = S.judge[x.id] || (S.judge[x.id] = { at: 0, picks: {}, clue: {} });
+  const n = x.cases.length, finished = Object.keys(J.picks).length === n;
+  const c = x.cases[J.at], pick = J.picks[J.at];
+  const right = Object.keys(J.picks).filter(k => J.picks[k] === x.cases[k].a).length;
+  const dots = x.cases.map((cs, k) => `<i class="${J.picks[k] == null ? (k === J.at ? "now" : "") : J.picks[k] === cs.a ? "ok" : "no"}"></i>`).join("");
+  const body = finished && J.at === n ? `
+      <div class="eyebrow">All ${n} done</div>
+      <div class="score">${right} of ${n} right first time</div>
+      <p class="sit">${right === n ? "You'd catch every one of these." : "Go back through the ones you missed: the why is the part to keep."}</p>
+      <div class="help"><button class="btn" data-jgo="0">Look through them again</button><button class="btn quiet" data-jreset>Start these again</button></div>` : `
+      <div class="jtop"><span class="eyebrow">Situation ${J.at + 1} of ${n}</span><span class="jdots" aria-hidden="true">${dots}</span></div>
+      <div class="who">${esc(c.who)}</div>
+      <p class="sit">${esc(c.sit)}</p>
+      ${c.code ? `<pre class="code">${esc(c.code)}</pre>` : ""}
+      ${J.clue[J.at] && pick == null ? `<p class="clue"><b>Clue:</b> ${esc(c.clue)}</p>` : ""}
+      <div class="opts">${spin(c.sit, c.opts.length).map((k, pos) => `<button class="opt${pick != null && k === c.a ? " right" : pick === k && k !== c.a ? " wrong" : ""}" data-jpick="${k}"${pick != null ? " disabled" : ""}><span class="k">${"ABC"[pos]}</span><span>${esc(c.opts[k])}</span></button>`).join("")}</div>
+      ${pick != null ? `<p class="why"><b>${pick === c.a ? "Right." : `It's ${"ABC"[spin(c.sit, c.opts.length).indexOf(c.a)]}.`}</b> ${esc(c.why)}</p>` : ""}
+      <div class="help">${pick == null ? (J.clue[J.at] ? "" : '<button class="btn small" data-jclue>Give me a clue</button>') : `<button class="btn primary" data-jgo="${J.at + 1}">${J.at + 1 < n ? "Next situation" : "See how you did"}</button>`}</div>`;
+  $("lesson").innerHTML = `
+    <header>
+      <div class="eyebrow">Lesson ${i + 1} of ${L.length} · ${esc(PARTS[x.part])}</div>
+      <h1>${esc(x.title)}</h1>
+    </header>
+    <section class="idea sec" data-sec="idea">${x.idea.map(p => `<p>${inline(p)}</p>`).join("")}</section>
+    <div class="keyidea"><b>The idea in one line</b><span>${inline(x.key)}</span></div>
+    ${askSlot("idea", "Ask about this idea")}
+    <section class="sheet" data-sec="sheet"><div class="eyebrow">Your cheat sheet</div><ol>${x.sheet.map(([h, t]) => `<li><b>${esc(h)}</b><span>${esc(t)}</span></li>`).join("")}</ol>${askSlot("sheet", "Ask about the cheat sheet")}</section>
+    <section class="sec" data-sec="sit"><h2>Practise</h2><div class="judge" aria-live="polite">${body}</div>${J.at < n ? askSlot("sit", "Ask about this situation") : ""}</section>
+    ${i === L.length - 1 ? whereNext() : ""}
+    ${navHtml(i, J.at < n)}`;
+  renderAllAsk();
+}
+
+// ---------- the playground ----------
+function setupPlay(x) {
+  const draft = S.drafts[x.id] || {};
+  const src = {}; for (const k of ["html", "css", "js"]) src[k] = draft[k] != null ? draft[k] : (x.play[k] ? text(x.play[k]) : "");
+  const stage = $("stage"), root = stage.attachShadow({ mode: "open" });
+  pg = { x, src, tab: x.play.tab, stage, root, theme: "light", logs: [], help: 0 };
+  showTab(pg.tab);
+  run();
+  markPv();
+}
+function showTab(k) {
+  pg.tab = k;
+  document.querySelectorAll("[data-tab]").forEach(b => { b.setAttribute("aria-selected", String(b.dataset.tab === k)); });
+  $("code").value = pg.src[k];
+}
+function out(cls, parts) {
+  const line = parts.map(v => typeof v === "string" ? v : (() => { try { return JSON.stringify(v); } catch { return String(v); } })()).join(" ");
+  pg.logs.push(line);
+  const c = $("console"); const s = document.createElement("div"); s.className = cls; s.textContent = line; c.appendChild(s); c.scrollTop = c.scrollHeight;
+}
+function run() {
+  const { root, src } = pg;
+  pg.logs = []; $("console").textContent = "";
+  root.innerHTML = `<style>${BASE}${src.css}</style><div class="page" data-theme="${pg.theme}">${src.html}</div>`;
+  pg.page = root.querySelector(".page");
+  // "root" in the lesson code is the preview's page box: it's redrawn each run, so old listeners go with it.
+  if (src.js.trim()) {
+    try { new Function("root", "$", "log", src.js)(pg.page, id => root.getElementById(id), (...a) => out("out", a)); }
+    catch (e) { out("err", [String(e && e.message || e)]); }
+  }
+  if (!pg.logs.length) $("console").innerHTML = '<span>Nothing logged. log("…") in JavaScript writes here.</span>';
+}
+function ctx() {
+  return { root: pg.root, page: pg.page, stage: pg.stage, logs: pg.logs, src: pg.src, $: id => pg.root.getElementById(id), run: () => run() };
+}
+function verdict(kind, title, body) {
+  $("verdict").innerHTML = `<div class="verdict ${kind}" role="status"><b>${esc(title)}</b><p>${inline(body)}</p>${kind === "no" ? `<div class="help">${pg.help === 0 ? '<button class="btn small" id="clueBtn">Give me a clue</button>' : '<button class="btn small" id="ansBtn">Show me the answer</button>'}</div>` : ""}</div>`;
+}
+function check() {
+  pg.src[pg.tab] = $("code").value; run();
+  let res;
+  try { res = pg.x.check(pg.root, ctx()); } catch (e) { res = [false, "Something in the code stopped it: " + (e.message || e)]; }
+  run();
+  if (res[0]) { S.done[pg.x.id] = true; save(); renderOutline(); verdict("ok", "That works.", res[1]); $("runBtn").classList.remove("primary"); document.querySelector(".nav .btn:last-child")?.classList.add("primary"); const tag = document.querySelector(".taskhead"); if (tag && !/Done/.test(tag.textContent)) tag.insertAdjacentHTML("beforeend", '<span class="eyebrow" style="color:var(--pass)">✓ Done</span>'); }
+  else verdict("no", "Not yet.", res[1]);
+}
+function saveDraft() { S.drafts[pg.x.id] = Object.assign({}, pg.src); save(); }
+function markPv() {
+  document.querySelectorAll("[data-pv]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.pv === pg.theme)));
+  document.querySelectorAll("[data-w]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.w === (pg.stage.style.width === "375px" ? "375" : ""))));
+}
+
+// ---------- events: one listener, like Daily Drill ----------
+document.addEventListener("click", e => {
+  const t = e.target;
+  const go = t.closest("[data-go]"); if (go) { S.at = +go.dataset.go; save(); renderOutline(); renderLesson(); try { history.replaceState(null, "", "#" + L[S.at].id); } catch {} window.scrollTo({ top: 0, behavior: "smooth" }); if (window.innerWidth <= 860) { $("outline").classList.remove("open"); $("outToggle").setAttribute("aria-expanded", "false"); } return; }
+  const tab = t.closest("[data-tab]"); if (tab) { pg.src[pg.tab] = $("code").value; showTab(tab.dataset.tab); return; }
+  if (t.closest("#runBtn")) { pg.src[pg.tab] = $("code").value; saveDraft(); run(); return; }
+  if (t.closest("#checkBtn")) { saveDraft(); check(); return; }
+  if (t.closest("#resetBtn")) { delete S.drafts[pg.x.id]; save(); renderLesson(); return; }
+  if (t.closest("#clueBtn")) { pg.help = 1; $("verdict").innerHTML = `<div class="verdict clue" role="status"><b>A clue</b><p>${inline(pg.x.clue)}</p><div class="help"><button class="btn small" id="ansBtn">Show me the answer</button></div></div>`; return; }
+  if (t.closest("#ansBtn")) { for (const k in pg.x.answer) pg.src[k] = text(pg.x.answer[k]); showTab(Object.keys(pg.x.answer)[0]); saveDraft(); run(); $("verdict").innerHTML = `<div class="verdict clue" role="status"><b>Here's one way</b><p>Read it line by line and compare it with yours, then press Check my work.</p></div>`; return; }
+  const w = t.closest("[data-w]"); if (w) { pg.stage.style.width = w.dataset.w ? w.dataset.w + "px" : ""; markPv(); return; }
+  const pv = t.closest("[data-pv]"); if (pv) { pg.theme = pv.dataset.pv; if (pg.page) pg.page.setAttribute("data-theme", pg.theme); markPv(); return; }
+  const opt = t.closest("[data-opt]"); if (opt) { S.quiz[L[S.at].id] = +opt.dataset.opt; save(); const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
+  const jp = t.closest("[data-jpick]"); if (jp) { const x = L[S.at], J = S.judge[x.id]; if (J.picks[J.at] == null) { J.picks[J.at] = +jp.dataset.jpick; if (Object.keys(J.picks).length === x.cases.length) { S.done[x.id] = true; renderOutline(); } save(); } const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
+  if (t.closest("[data-jclue]")) { const J = S.judge[L[S.at].id]; J.clue[J.at] = true; save(); const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
+  const jg = t.closest("[data-jgo]"); if (jg) { const J = S.judge[L[S.at].id]; J.at = +jg.dataset.jgo; save(); renderLesson(); document.querySelector(".judge")?.scrollIntoView({ block: "center" }); return; }
+  if (t.closest("[data-jreset]")) { delete S.judge[L[S.at].id]; delete S.done[L[S.at].id]; save(); renderOutline(); renderLesson(); return; }
+  if (t.closest("#outToggle")) { const o = $("outline").classList.toggle("open"); $("outToggle").setAttribute("aria-expanded", String(o)); return; }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.id !== "code") return;
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); pg.src[pg.tab] = e.target.value; saveDraft(); run(); return; }
+  if (e.key === "Tab" && !e.shiftKey && !e.altKey) {
+    e.preventDefault(); const ta = e.target, s = ta.selectionStart, en = ta.selectionEnd;
+    ta.value = ta.value.slice(0, s) + "  " + ta.value.slice(en); ta.selectionStart = ta.selectionEnd = s + 2; pg.src[pg.tab] = ta.value;
+  }
+});
+document.addEventListener("input", e => { if (e.target.id === "code" && pg) { pg.src[pg.tab] = e.target.value; clearTimeout(pg.t); pg.t = setTimeout(saveDraft, 500); } });
+
+// ---------- ask in line: each part of a lesson can open a small conversation with Claude ----------
+// Uses the page's `sample` capability: the viewer's own Claude, asked on a click, never on load.
+let sampleFn = null, askOff = false;
+const ASKKEY = KEY + "-ask";
+let ASK = {};
+try { const raw = store.get(ASKKEY); if (raw) ASK = JSON.parse(raw) || {}; } catch {}
+const saveAsk = () => { try { const keep = {}; for (const k of Object.keys(ASK).slice(-40)) keep[k] = { turns: ASK[k].turns.filter(t => t.content).slice(-12), quote: ASK[k].quote }; store.set(ASKKEY, JSON.stringify(keep)); } catch {} };
+const askKey = sec => L[S.at].id + ":" + sec + (sec === "sit" ? ":" + ((S.judge[L[S.at].id] || {}).at || 0) : "");
+const running = {};
+
+const SUGGEST = {
+  idea: ["Explain this in plainer words", "Give me an everyday example", "Where would I see this in Daily Drill?"],
+  code: ["Walk me through this line by line", "What would break if I changed this?", "Why is it written this way?"],
+  task: ["Give me a clue, not the answer", "What does my code do right now?", "Why didn't my check pass?"],
+  quiz: ["Help me think it through, without the answer", "Why is that the right answer?"],
+  sit: ["What should I look for here?", "What would you ask the AI next?"],
+  sheet: ["Which of these matter most for me?", "Give me an example of each from Daily Drill"],
+  sel: ["Explain this", "Why does this matter?"],
+};
+
+function ctxFor(sec, quote) {
+  const x = L[S.at];
+  const parts = [
+    'Course: "Inside page.html", a beginner course on how the Daily Drill learning app\'s front end is built (one HTML file, no framework, design tokens in tokens.css).',
+    `Lesson ${S.at + 1} of ${L.length}: ${x.title} (part: ${PARTS[x.part]}).`,
+    `The lesson's idea:\n${x.idea.join("\n")}\nIn one line: ${x.key}`,
+  ];
+  if (quote) parts.push(`The learner selected this text on the page:\n"""${quote}"""`);
+  if (sec === "code" && x.real) parts.push(`Real code shown from ${x.real.file} (${x.real.sub}):\n${text(x.real.id)}\nNote: ${x.real.note}`);
+  if (sec === "task" && pg) {
+    parts.push(`The learner's task: ${x.task}`);
+    for (const k of ["html", "css", "js"]) if (pg.src[k] && pg.src[k].trim()) parts.push(`Their current ${k.toUpperCase()}:\n${pg.src[k].slice(0, 6000)}`);
+    const v = $("verdict") && $("verdict").textContent.trim(); if (v) parts.push(`What the checker last said: ${v}`);
+    if (pg.logs && pg.logs.length) parts.push(`What their code logged: ${pg.logs.slice(-10).join(" | ")}`);
+    parts.push(S.done[x.id] ? "They have already passed this task." : "They have NOT passed this task yet: give a clue first, never the whole answer, unless they clearly ask for the answer.");
+  }
+  if (sec === "quiz" && x.quiz) {
+    const q = x.quiz, qa = S.quiz[x.id];
+    parts.push(`Quiz question: ${q.q}\nOptions: ${q.opts.join(" / ")}`);
+    parts.push(qa == null ? "They have NOT answered yet: help them reason, but do not reveal or hint which option is right." : `They answered "${q.opts[qa]}". The right answer is "${q.opts[q.a]}" because: ${q.why}`);
+  }
+  if (sec === "sit" && x.cases) {
+    const J = S.judge[x.id] || { at: 0, picks: {} }, c = x.cases[J.at];
+    if (c) {
+      parts.push(`Practice situation (${c.who}): ${c.sit}${c.code ? "\nCode: " + c.code : ""}\nOptions: ${c.opts.join(" / ")}`);
+      parts.push(J.picks[J.at] == null ? "They have NOT chosen yet: help them reason, but do not reveal which option is right." : `They chose "${c.opts[J.picks[J.at]]}". The right one is "${c.opts[c.a]}" because: ${c.why}`);
+    }
+  }
+  if (sec === "sheet" && x.sheet) parts.push("The lesson's cheat sheet:\n" + x.sheet.map(([h, t]) => `- ${h}: ${t}`).join("\n"));
+  return parts.join("\n\n");
+}
+const RULES = `You are a patient tutor inside a beginner course. The learner is new to coding and finds maths hard.
+Answer in plain everyday words and short sentences. Explain any technical term the first time you use it. Never use Big-O or maths notation.
+Keep answers short: about 40 to 150 words, unless they ask for more. Use examples from the Daily Drill app and this lesson where you can.
+Formatting: plain paragraphs; short lists with "- " if useful; backticks for code names; a fenced code block only for a few lines of code.
+When the context says not to reveal an answer, don't: ask a guiding question or give a clue instead.
+If the question is unrelated to the lesson, answer briefly and kindly, then point back to the lesson.`;
+
+function fmt(t) {
+  const out = [], lines = String(t).split("\n");
+  let code = null, list = null;
+  const flushList = () => { if (list) { out.push(`<ul>${list.map(li => `<li>${inline(li)}</li>`).join("")}</ul>`); list = null; } };
+  for (const ln of lines) {
+    if (/^```/.test(ln.trim())) { if (code) { out.push(`<pre>${esc(code.join("\n"))}</pre>`); code = null; } else { flushList(); code = []; } continue; }
+    if (code) { code.push(ln); continue; }
+    const m = ln.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+    if (m) { (list = list || []).push(m[1]); continue; }
+    flushList();
+    if (ln.trim()) out.push(`<p>${inline(ln.replace(/^#+\s*/, ""))}</p>`);
+  }
+  if (code) out.push(`<pre>${esc(code.join("\n"))}</pre>`);
+  flushList();
+  return out.join("");
+}
+
+function renderAsk(sec) {
+  const box = document.querySelector(`[data-askbox="${sec}"]`); if (!box) return;
+  const k = askKey(sec), th = ASK[k];
+  if (!th || !th.open || askOff) { box.hidden = true; return; }
+  box.hidden = false;
+  const busy = running[k];
+  const turns = th.turns.map(t => t.role === "user"
+    ? `<div class="turn q">${esc(t.content)}</div>`
+    : `<div class="turn a${t.err ? " err" : ""}">${t.content ? fmt(t.content) : '<span class="meta">Thinking…</span>'}</div>`).join("");
+  const chips = th.turns.length ? "" : `<div class="askchips">${(SUGGEST[th.quote ? "sel" : sec] || SUGGEST.idea).map(q => `<button class="askchip" type="button" data-askq="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+  box.innerHTML = `<div class="askhead"><span class="grow">Ask Claude</span>${th.turns.length && !busy ? '<button class="btn quiet small" type="button" data-askclear>Clear</button>' : ""}<button class="btn quiet small" type="button" data-askclose>Close</button></div>
+    ${th.quote ? `<p class="askquote">${esc(th.quote)}</p>` : ""}
+    ${turns}${chips}
+    <form class="askform" data-askform>
+      <textarea rows="1" aria-label="Your question" placeholder="${th.turns.length ? "Ask a follow-up…" : "Ask anything about this…"}"${busy ? " disabled" : ""}></textarea>
+      ${busy ? '<button class="btn" type="button" data-askstop>Stop</button>' : '<button class="btn" type="submit">Ask</button>'}
+    </form>
+    <p class="askoff">Answers come from Claude on your own account. Check anything important against the docs.</p>`;
+}
+function openAsk(sec, quote) {
+  if (askOff) return;
+  const k = askKey(sec);
+  ASK[k] = ASK[k] || { turns: [] };
+  ASK[k].open = true;
+  if (quote) ASK[k].quote = quote.slice(0, 600);
+  renderAsk(sec);
+  const box = document.querySelector(`[data-askbox="${sec}"]`);
+  if (box) { box.querySelector("textarea")?.focus({ preventScroll: true }); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+}
+async function ask(sec, question) {
+  const k = askKey(sec), th = ASK[k];
+  if (!th || running[k] || !question.trim() || !sampleFn) return;
+  th.turns.push({ role: "user", content: question.trim() });
+  const ans = { role: "assistant", content: "" };
+  th.turns.push(ans);
+  const ctl = new AbortController(); running[k] = ctl; renderAsk(sec);
+  const history = th.turns.slice(0, -1).filter(t => !t.err && t.content).slice(-8);
+  while (history.length && history[0].role !== "user") history.shift();
+  const input = [{ role: "user", content: RULES + "\n\nContext for this question:\n\n" + ctxFor(sec, th.quote) }, ...history];
+  try {
+    await sampleFn(input, { cache: false, signal: ctl.signal, onText: ({ text: t }) => { ans.content = t; renderAsk(sec); } });
+  } catch (e) {
+    const code = e && e.code;
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(code)) {
+      askOff = true; document.body.classList.remove("ask-on");
+    } else if (code === "cancelled") { ans.content = e.text ? e.text + "\n\n(Stopped.)" : "Stopped."; }
+    else if (code === "rate_limited") { ans.content = (e.text ? e.text + "\n\n" : "") + "That's a lot of questions at once. Wait a minute, then ask again."; ans.err = !e.text; }
+    else if (code === "session_expired") { ans.content = "Your Claude session has expired. Sign in again, then ask."; ans.err = true; }
+    else if (code === "refused") { ans.content = "Claude didn't answer that one. Try asking it a different way."; ans.err = true; }
+    else { ans.content = (e && e.text ? e.text + "\n\n" : "") + "Something went wrong reaching Claude. Ask again in a moment."; ans.err = !(e && e.text); }
+  } finally {
+    delete running[k]; saveAsk(); renderAsk(sec);
+    const box = document.querySelector(`[data-askbox="${sec}"]`);
+    if (box && !askOff) box.querySelector("textarea")?.focus({ preventScroll: true });
+  }
+}
+function renderAllAsk() { document.querySelectorAll("[data-askbox]").forEach(b => renderAsk(b.dataset.askbox)); }
+
+document.addEventListener("click", e => {
+  const t = e.target;
+  const ab = t.closest("[data-ask]");
+  if (ab) { const sec = ab.dataset.ask, k = askKey(sec); if (ASK[k] && ASK[k].open) { ASK[k].open = false; renderAsk(sec); } else openAsk(sec); return; }
+  const box = t.closest("[data-askbox]"); if (!box) return;
+  const sec = box.dataset.askbox;
+  const q = t.closest("[data-askq]"); if (q) { ask(sec, q.dataset.askq); return; }
+  if (t.closest("[data-askclose]")) { ASK[askKey(sec)].open = false; renderAsk(sec); return; }
+  if (t.closest("[data-askclear]")) { ASK[askKey(sec)] = { turns: [], open: true }; saveAsk(); renderAsk(sec); return; }
+  if (t.closest("[data-askstop]")) { running[askKey(sec)]?.abort(); return; }
+});
+document.addEventListener("submit", e => {
+  const f = e.target.closest && e.target.closest("[data-askform]"); if (!f) return;
+  e.preventDefault();
+  const box = f.closest("[data-askbox]"), ta = f.querySelector("textarea"), v = ta.value;
+  ta.value = ""; ask(box.dataset.askbox, v);
+});
+document.addEventListener("keydown", e => {
+  const ta = e.target.closest && e.target.closest("[data-askform] textarea"); if (!ta) return;
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ta.form.requestSubmit(); }
+});
+
+// Select words in a lesson, and a button offers to ask about them
+let selQuote = "", selSec = "idea";
+function placeSelAsk() {
+  const wrap = $("selAsk"), sel = window.getSelection();
+  if (askOff || !sampleFn || !sel || sel.isCollapsed || !sel.rangeCount) { wrap.classList.remove("on"); return; }
+  const txt = sel.toString().trim(), a = sel.anchorNode, node = a && (a.nodeType === 1 ? a : a.parentElement);
+  if (!txt || txt.length < 2 || !node || !node.closest("#lesson") || node.closest("textarea, [data-askbox], button")) { wrap.classList.remove("on"); return; }
+  const host = node.closest("[data-sec]");
+  selSec = host && document.querySelector(`[data-askbox="${host.dataset.sec}"]`) ? host.dataset.sec : "idea";
+  selQuote = txt;
+  const r = sel.getRangeAt(0).getBoundingClientRect();
+  wrap.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 170)) + "px";
+  wrap.style.top = (window.scrollY + r.bottom + 8) + "px";
+  wrap.classList.add("on");
+}
+document.addEventListener("selectionchange", () => { clearTimeout(placeSelAsk.t); placeSelAsk.t = setTimeout(placeSelAsk, 250); });
+$("selAskBtn").addEventListener("mousedown", e => e.preventDefault());
+$("selAskBtn").addEventListener("click", () => {
+  $("selAsk").classList.remove("on");
+  ASK[askKey(selSec)] = { turns: [], open: true };
+  openAsk(selSec, selQuote);
+  window.getSelection()?.removeAllRanges();
+});
+
+// Turn the feature on only where this page may ask Claude
+(async () => {
+  try { sampleFn = window.claude && typeof window.claude.use === "function" ? await window.claude.use("sample") : null; } catch { sampleFn = null; }
+  if (sampleFn) { document.body.classList.add("ask-on"); renderAllAsk(); }
+})();
+
+// ---------- boot ----------
+renderOutline();
+renderLesson();
+})();
+</script>
