@@ -2055,7 +2055,7 @@ So when a plan shows `CAN_MANAGE` for a group that only asked for `CAN_EDIT`, Te
 
 ### 134. What will Terraform build from clusters.yml? (`cluster_from_yaml`)
 
-A team asks for a cluster in its own `clusters.yml`, and `team.yml` points to that file. The first file is only a pointer; the second describes the cluster: a name, the team's short code, its size and a cluster policy, the set of rules that limits what a cluster may be.
+A team asks for a cluster in its own `clusters.yml`. Its `team.yml` only points to that file; `clusters.yml` is what describes the cluster: a name, the team's short code, its size and a cluster policy, the set of rules that limits what a cluster may be.
 The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in lower case: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses Personal Compute. It also gives the team's owner group permission to manage the cluster.
 Some things are not allowed in YAML. A raw `policy_id` is rejected: teams name the policy, and the module looks up its id. Size is either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling, never a mix and never neither.
 Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the default policy) or a mistake, and you should be able to say which.
@@ -2563,7 +2563,7 @@ Coming soon, not built yet (say so if asked; don't teach them as if they exist):
 
 A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
 Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
-Then the Changes tab: how many resources would be added, changed, replaced or destroyed, and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
+Then the Changes tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
 A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.
 
 - **Check:** A run on the UAT stack shows FINISHED and Proposed, and the planning log says "Plan checks are GO". What has been deployed? Right answer: Nothing: a proposed run only previews. Why: Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.

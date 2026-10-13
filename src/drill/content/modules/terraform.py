@@ -193,11 +193,11 @@ Return the `address` of every replacement, in the same order as `changes`.""",
         realworld='Approving a plan without spotting a `-/+` is how workspaces get recreated by accident. Changing `managed_resource_group_name`, `location`, or the VNet settings in `custom_parameters` all force a new workspace.',
         practice=practice(
             intro='Review a Spacelift plan the way a reviewer does: find the change you\'d stop on, then decide.',
-            explain='A replacement destroys a resource and makes a new one, and the summary\'s "0 to destroy" doesn\'t count it. You found the -/+ change before approving, then asked what depended on it instead of approving or resetting anything.',
+            explain='A replacement destroys a resource and makes a new one, and the summary counts it as one add and one destroy. You found which -/+ change the destroy belonged to before approving, then asked what depended on it instead of approving or resetting anything.',
             asks=[
                 ask('Which change would you stop on?', [], answer=3, pick=True,
                     evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
-                        summary=[['+2', 'add', 'a'], ['~1', 'change', ''], ['-/+1', 'replace', 'r'], ['0', 'destroy', 'd']],
+                        summary=[['3', 'to add', 'a'], ['1', 'to change', ''], ['1', 'to destroy', 'd']],
                         changes=[
                             {'sym': '+', 'address': 'databricks_cluster.sales_daily-report', 'note': 'new cluster from clusters.yml'},
                             {'sym': '+', 'address': 'databricks_permissions.team_folder', 'note': 'owner CAN_MANAGE, users CAN_READ'},
@@ -207,10 +207,10 @@ Return the `address` of every replacement, in the same order as `changes`.""",
                     clue='Look for the mark that means destroyed, then made again.',
                     why='Replacing the external location removes it before the new one exists: its grants go, and anything reading it fails.',
                     wrong=['A new cluster is expected from the YAML.', 'New access is worth reading, but nothing is lost here.', 'An in-place change to a limit: worth a look, but nothing is destroyed.', None]),
-                ask('The summary says **0 to destroy**. Does that mean nothing is lost?', ['Yes: 0 destroy means nothing is lost', 'No: a replacement is counted separately, and it still destroys'], answer=1,
-                    clue='-/+ means the old one goes first.',
-                    why='Replacements have their own count. "0 to destroy" can still lose a resource.',
-                    wrong=['Look at the -/+1 replace count next to it.', None]),
+                ask('The summary says **1 to destroy**, but nobody asked to delete anything. Where does it come from?', ['The replacement: the old one is destroyed, then a new one is added', 'A glitch in the plan: ignore it'], answer=0,
+                    clue='Look for the change marked -/+.',
+                    why='Terraform counts a replacement as one add and one destroy. That "1 to destroy" is the external location going away before the new one exists.',
+                    wrong=[None, 'The count is right. Find which change it belongs to before you approve.']),
                 ask('The author says nothing reads `sales_raw` on weekends, so it\'s fine. What do you do?', ['Approve: the author knows the data', 'Ask which grants and jobs depend on it, and agree a window', 'Stop and reset the state'], answer=1,
                     evidence=evidence('code', title='From the planning log', text="""# databricks_external_location.sales_raw must be replaced
 -/+ resource "databricks_external_location" "sales_raw" {

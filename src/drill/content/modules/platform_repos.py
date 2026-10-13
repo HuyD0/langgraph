@@ -410,7 +410,7 @@ d.get("b")   # None""",
 lesson(MODULE, 'cluster_from_yaml',
     title='What will Terraform build from clusters.yml?',
     learn=[
-        "A team asks for a cluster in its own `clusters.yml`, and `team.yml` points to that file. The first file is only a **pointer**; the second describes the cluster: a name, the team's short **code**, its size and a **cluster policy**, the set of rules that limits what a cluster may be.",
+        "A team asks for a cluster in its own `clusters.yml`. Its `team.yml` only **points** to that file; `clusters.yml` is what describes the cluster: a name, the team's short **code**, its size and a **cluster policy**, the set of rules that limits what a cluster may be.",
         "The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in **lower case**: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses **Personal Compute**. It also gives the team's owner group permission to manage the cluster.",
         "Some things are **not allowed** in YAML. A raw `policy_id` is rejected: teams name the policy, and the module looks up its id. Size is either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling, never a mix and never neither.",
         "Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the default policy) or a mistake, and you should be able to say which.",

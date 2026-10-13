@@ -11,7 +11,7 @@ lesson(MODULE, 'read_a_run',
     learn=[
         "A **run** is one go of Terraform on a **stack**. A **proposed** run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A **tracked** run deploys: it plans, then applies. Most runs a reviewer sees are proposed.",
         "Read a run from the top. The header says **which stack, which environment, which commit, and what state**. *Finished* on a proposed run means planning worked. It never means anything was deployed.",
-        "Then the **Changes** tab: how many resources would be added, changed, replaced or destroyed, and which. Then the **planning log**: the plan summary line, the first error if it failed, and whether the **plan policies** said GO. A GO is an automatic check passing, not a person approving.",
+        "Then the **Changes** tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the **planning log**: the plan summary line, the first error if it failed, and whether the **plan policies** said GO. A GO is an automatic check passing, not a person approving.",
         "A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.",
     ],
     walkthrough=[
@@ -447,7 +447,7 @@ lesson(MODULE, 'guard_destroys',
         "A **plan policy** runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.",
         "Start with the resources you can't rebuild: workspaces, storage accounts, metastores.",
     ],
-    example=example("A Rego rule (Rego is Spacelift's policy language) that blocks destroying protected resource types", """deny contains msg if {
+    example=example("A Rego rule (Rego is the policy language from Open Policy Agent, which Spacelift uses) that blocks destroying protected resource types", """deny contains msg if {
   rc := input.terraform.resource_changes[_]
   "delete" in rc.change.actions
   rc.type in protected
