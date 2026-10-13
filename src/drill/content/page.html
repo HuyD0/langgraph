@@ -2434,8 +2434,9 @@ function showDone(id, after, fresh) {
     <div><span class="eyebrow">Promoted</span><h2>${gradeName(g)}</h2><p>${total} lessons done.${nextAt ? ` The next grade is at ${nextAt}.` : " That is the top grade."}</p></div></section>`;
   const L = LESSONS[id], s = lp(id), p = byId[id], ph = phaseOf[modOf[id].id];
   const ids = ph.modules.flatMap(mid => MOD[mid].lessons), doneN = ids.filter(isDoneL).length;
+  const inPh = (trackOf[id] ? "the " : "") + ph.name;  // "in the Platform track", "in Frame"
   const days = new Set(progress.days), weekN = weekDays().filter(k => days.has(k)).length;
-  const head = doneN === ids.length ? `Done. ${ph.name} is finished.` : `Done. That’s ${doneN} of ${ids.length} in ${ph.name}.`;
+  const head = doneN === ids.length ? `Done. ${ph.name} is finished.` : `Done. That’s ${doneN} of ${ids.length} in ${inPh}.`;
   const left = ids.length - doneN;
   const sub = `${weekN === 1 ? "Your first day" : weekN + " days"} this week.` + (left === 1 ? ` One more and ${ph.name} is finished.` : "");
   const sol = progress.solved[p.id], [, , ans] = L.check;
@@ -2450,7 +2451,7 @@ function showDone(id, after, fresh) {
     : `<section class="next"><span class="eyebrow">Path complete</span><h2>That was the last lesson.</h2></section>`;
   $("done").innerHTML = `<div class="donehead"><span class="donecheck">${ic("check")}</span><h1>${head}</h1><p>${sub}</p></div>
     ${promo}
-    <section class="newstk"><span class="eyebrow">New sticker · ${doneN} of ${ids.length} in ${esc(ph.name)}</span><span class="stk done">${stickerSvg(id, "done", 24)}</span><h2>${esc(L.title)}</h2><p>${esc(modOf[id].title)}, in the ${esc(ph.name)}${trackOf[id] ? "" : " phase"}. Every sticker in ${esc(ph.name)} has this shape.</p></section>
+    <section class="newstk"><span class="eyebrow">New sticker · ${doneN} of ${ids.length} in ${esc(inPh)}</span><span class="stk done">${stickerSvg(id, "done", 24)}</span><h2>${esc(L.title)}</h2><p>${esc(modOf[id].title)}, in the ${esc(ph.name)}${trackOf[id] ? "" : " phase"}. Every sticker in ${esc(ph.name)} has this shape.</p></section>
     <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
     <div class="keyidea">${ic("quote")}<div>${(s.said || "").trim() ? `<b>You said</b><p>${esc(s.said.trim())}</p><b class="ours">Ours</b>` : "<b>Say it like this</b>"}<p>${md(L.angle[2])}</p></div></div>
     ${next}`;

@@ -340,3 +340,26 @@ def test_every_platform_module_tells_the_tutor_its_setting():
     for mid in track["modules"]:
         assert "Azure Databricks" in by_id[mid]["setting"], mid
     assert "modOf[cur.id].setting" in PAGE_TEMPLATE.read_text(), "the tutor's lesson context must include the setting"
+
+
+def test_the_frontend_guide_and_screen_gallery_match_the_code():
+    """docs/FRONTEND.md's map names page.html's section markers, and docs/screens/README.md shows
+    every shot scripts/screenshots.mjs takes: renaming one without the other fails here."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    page = (root / "src/drill/content/page.html").read_text()
+    guide = (root / "docs/FRONTEND.md").read_text()
+    table = guide.split("## Map of the script", 1)[1].split("\n## ", 1)[0]
+    markers = [m for cell in re.findall(r"^\| `([^`]+)`(?: / `([^`]+)`)? \|", table, re.M) for m in cell if m]
+    assert len(markers) >= 20
+    for marker in markers:
+        assert f"// ---------- {marker}" in page, f"docs/FRONTEND.md names a section page.html doesn't have: {marker}"
+
+    shots = re.findall(r'^\s*\["([a-z0-9-]+)",', (root / "scripts/screenshots.mjs").read_text(), re.M)
+    gallery = (root / "docs/screens/README.md").read_text()
+    assert len(shots) >= 10
+    for name in shots:
+        assert f"({name}.webp)" in gallery, f"docs/screens/README.md doesn't show {name}"
+        assert (root / "docs/screens" / f"{name}.webp").exists(), f"run scripts/screenshots.mjs: {name}.webp is missing"

@@ -15,6 +15,9 @@ lives, the rules, and how to make the common changes safely.
 | **Design canvas** (why things look the way they do) | https://claude.ai/artifact/DA8WMYSJh7jTSwnsyDgQVa | Boards for colour, type, spacing, components and patterns |
 | **Explorations** (palettes, the Dusk look, animation drafts) | https://claude.ai/artifact/SSb5sYRyKLtgnY1owsTY2o | Playable drafts; nothing here ships until it's built into the page |
 
+| **How the page's code works** (state, rendering, events, a map of the script) | [FRONTEND.md](FRONTEND.md) | Read before changing behaviour |
+| **Screen gallery** (every main screen, phone and desktop, with what draws it) | [screens/README.md](screens/README.md) | Regenerate with `node scripts/screenshots.mjs` |
+
 The code is the truth. The artifacts describe it; when they disagree, the code wins and the
 artifact gets updated.
 
@@ -23,7 +26,7 @@ artifact gets updated.
 1. **One reading column**, at most `--col` (760px) wide. Side things slide in as a drawer.
 2. **Colour means one thing.** `pass` only means passed or done, `fail` only failed or wrong,
    `hint` only a hint or a warning, `accent` the one thing to do next. `--path` (violet) marks
-   the route through the phases. Effects use only the `--fx-*` colours.
+   the route through the phases; `--track` (teal) marks only the Platform track. Effects use only the `--fx-*` colours.
 3. **One primary button per screen**, for the next step.
 4. **Thumb first.** Controls are at least 44px tall on touch; check every change at phone width.
 5. **Readable in every look.** Text 4.5:1 against its background, icons and borders 3:1
@@ -41,12 +44,43 @@ artifact gets updated.
 | Accent | `accent`, `accent-ink`, `accent-soft` | The next action, focus rings, the current step |
 | Verdicts | `pass`/`pass-bg`, `fail`/`fail-bg`, `hint`/`hint-bg` | Strong colour for text and icons, `-bg` twin for the fill behind |
 | Path | `path`, `path-bg`, `path-line`, `path-ink` | The phase tabs on Home |
+| Track | `track`, `track-on`, `track-soft`, `track-line`, `track-ink` | The Platform track only: its room, caption and glow |
 | Code | `syn-kw`, `syn-str`, `syn-num`, `syn-com`, `syn-fn`, `syn-bi` | Code colours; never green or red |
 | Machine | `tok-a` to `tok-d` | The row pills |
 | Type | `display`, `body`, `mono` | Headings, reading, anything the computer said |
 | Motion | `dur-tap`, `dur-step`, `dur-moment`, `dur-big`, `dur-slide`, `ease-out`, `ease-in`, `ease-pop` | How long things move, and how |
 | Effects | `fx-core`, `fx-glow`, `fx-veil`, `fx-red`, `fx-mix` | Only the motion effects |
 | Layout | `col` | The column width |
+
+## The components
+
+Each is a class (or a few) in the `<style>` block of `page.html`, built only from tokens. Reuse
+them before making a new one; a new one gets a row here.
+
+| Component | Classes | Where it's used | Notes |
+|---|---|---|---|
+| Button | `.btn`, `.btn.primary`, `.btn.quiet`, `.btn.soft`, `.linkbtn` | Everywhere | One `primary` per screen. `soft` = looks waiting but still answers a tap with a nudge |
+| Card | `.card`, `.callout`, `.keyidea` | Lesson panes, notes | `surface` background, `line` border, 12–14px corners |
+| Stepper | `.stepbtn` | Top of a lesson | Learn, Check, Build, Explain; the current one carries `accent` |
+| Bottom bar | `#foot` (rendered by `renderFoot`) | Lessons | One primary on the right, a quiet Back on the left |
+| Phase tabs and room | `.phasebox`, `.rail.phtabs`, `.book.room`, `.titlecard`, `.paper0`–`.paper5` | Home | Violet `--path*`; the room's paper matches its phase shape |
+| Track room | `.book.room.track`, `.paper6`, `.trackcap` | Home, track lessons | Teal `--track*`; inside it teal stands in for `accent` |
+| Sticker | `.stk` (`.done`, `.now`, `.next`, `.ahead`, `.soon`), `.stickers`, `.ministk` | Home, done screen | Shape from `phShape`; `soon` is a faded, unopenable placeholder |
+| Phase badge | `.bdg` (`.now`, `.done`), `badgeSvg()` | Tabs, title cards | The glow (`#aura`, `#aura-track`) is only on what's current |
+| Check options | `.opts`, `.opt`, `.verdict` | Check step | The verdict scrolls into view after an answer |
+| Sorting board | `.smap`, `.sbin`, `.shelp` | Build, judgement lessons | One idea at a time |
+| Fill the gaps | `.cloze`, `.clz`, `.gap` (`.now`, `.later`, `.filled`), `.clzchip` (`.no`, `.shown`), `.clzclue` | Explain | Help is a clue, then the answer; the clue uses `hint` colours |
+| Study tray | `.pocket`, `.pk-row`, `.seals` | Every screen | Collapsed by default; the aura only when something is due |
+| Hover card | `#stkTip` | Stickers | Long press on phones |
+| Toast | `#toast` | After saving | Short, plain, disappears by itself |
+
+## The track colour
+
+`--track`, `--track-on` (text on it), `--track-soft`, `--track-line`, `--track-ink` are defined
+for light, dark and dusk in `tokens.css`. Teal is used only for the Platform track. Inside
+`.book.room.track` the rule `--accent: var(--track)` recolours everything "current" (Next, the
+rim, the title glow) without new component rules; outside the track, track lessons use teal only
+in their caption (`.trackcap`).
 
 ## The looks
 
