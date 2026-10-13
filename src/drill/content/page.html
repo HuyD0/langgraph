@@ -3304,12 +3304,12 @@ function loadProblem(p) {
   $("code").value = draft || startCode(p);
   renderMode(); renderKeys(p);
   $("feed").innerHTML = "";
-  $("result").className = "result idle";
+  $("result").className = "result idle codeonly";
   $("result").textContent = "Write your code, then run the tests. Python runs right here in the page.";
   $("stdout").hidden = true; $("solConfirm").hidden = true; $("guideConfirm").hidden = true;
   updateHintBtn(); markSaved();
 }
-function setResult(kind, head, body) { $("result").className = "result " + kind; $("result").innerHTML = `<div class="score">${esc(head)}</div><div>${esc(body)}</div>`; }
+function setResult(kind, head, body) { $("result").className = "result codeonly " + kind; $("result").innerHTML = `<div class="score">${esc(head)}</div><div>${esc(body)}</div>`; }
 async function runTests() {
   if (busy) return;
   if (typeof Sk === "undefined") { setResult("fail", "The Python engine didn't load", "Check your connection and reload the page."); return; }
@@ -3344,7 +3344,7 @@ async function runTests() {
       lastRun = { summary: `All ${total} tests passed.` };
       const prev = progress.solved[p.id];
       progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: hintLevel, mode: "code" };
-      $("result").className = "result pass";
+      $("result").className = "result codeonly pass";
       $("result").innerHTML = `<div class="score">${ic("check")} ${total}/${total} passed</div><div class="dots">${dots}</div>
         <div>Solved. The pattern: <em>${md(p.pattern)}</em></div>${habitLine("pass")}
         <div class="tools"><button class="btn" id="reviewBtn"${sampleOff ? " hidden" : ""}>Review my code</button></div>`;
@@ -3359,7 +3359,7 @@ async function runTests() {
       const gotLabel = r.status === "err" ? "error" : "got";
       failedRun = true;
       lastRun = { summary: `${passed}/${total} passed. First failing case: ${callText(p, c)} expected ${py(c.expected)}, ${gotLabel}: ${r.got}` };
-      $("result").className = "result fail";
+      $("result").className = "result codeonly fail";
       $("result").innerHTML = `<div class="score">${passed}/${total} passed</div><div class="dots">${dots}</div>
         <div class="case"><span>call</span><span>${esc(callText(p, c))}</span><span>expected</span><span>${esc(short(py(c.expected), 200))}</span><span>${gotLabel}</span><span>${esc(short(r.got, 200))}</span></div>
         <div class="meta">Most mistakes show up with unusual inputs, like an empty list or a single item. Try this example by hand before asking for a hint.</div>${habitLine(r.status === "err" ? "error" : "fail")}`;
