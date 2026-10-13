@@ -2,7 +2,7 @@
 it, the modules and providers it calls, and the Spacelift stacks that run it. All names are invented."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, fix, lesson, module, planned, practice, question, stack
 
 MODULE = module('platform-repos', 'How the platform repos fit together',
                 'Follow one request from YAML through the runbook and Spacelift to Azure Databricks.',
@@ -290,6 +290,26 @@ Return a dict from group name to permission.""",
                     clue='A group listed twice keeps one permission, the stronger one.',
                     why='The runbook adds CAN_MANAGE and the YAML adds CAN_EDIT. The plan may list both blocks, but the group can manage.',
                     wrong=['The runbook\'s owner rule still applies.', None, 'The plan can show two blocks, but a group ends up with one level: the higher.']),
+                fix('The check rejects this team.yml. Fix it so the analysts can edit the folder.',
+                    file='config/DEV/team-sales/team.yml',
+                    start="""team:
+  owner_group: grp-sales-dev-owners
+  folder_grants:
+    - group: grp-sales-dev-analysts
+      privilage: CAN_EDIT
+""",
+                    answer="""team:
+  owner_group: grp-sales-dev-owners
+  folder_grants:
+    - group_name: grp-sales-dev-analysts
+      privilege: CAN_EDIT
+""",
+                    rules={'path': 'team.folder_grants', 'required': ['group_name', 'privilege'], 'allowed': ['group_name', 'privilege'],
+                           'types': {'group_name': 'str', 'privilege': 'str'},
+                           'enum': {'privilege': ['CAN_READ', 'CAN_RUN', 'CAN_EDIT', 'CAN_MANAGE']}},
+                    goal=[{'field': 'group_name', 'contains': 'grp-sales-dev-analysts', 'message': 'The analysts\' group should be in folder_grants.'}],
+                    clue='Two field names are spelled differently from the contract. Compare them with the example in Learn.',
+                    why='Pydantic only knows group_name and privilege. A misspelled field is rejected, not guessed at, so nothing quietly goes wrong.'),
             ],
         ),
         starter="""LEVELS = ["CAN_READ", "CAN_RUN", "CAN_EDIT", "CAN_MANAGE"]
@@ -495,6 +515,31 @@ Otherwise return the cluster the runbook would build:
                     clue='Teams name the policy; the module looks up its id.',
                     why='A raw policy_id isn\'t allowed in team YAML. Use policy_name, and the workspace module finds the id.',
                     wrong=['Look at the last line: teams don\'t write ids.', None, 'Case isn\'t the problem: teams don\'t write ids at all.']),
+                fix('Make this cluster valid. It should autoscale from 1 to 6 workers on the `Shared Compute - Standard` policy.',
+                    file='config/DEV/team-hr/clusters.yml',
+                    start="""clusters:
+  - name: etl
+    code: HR
+    num_workers: 2
+    max_workers: 6
+    policy_id: ABC123
+""",
+                    answer="""clusters:
+  - name: etl
+    code: HR
+    min_workers: 1
+    max_workers: 6
+    policy_name: Shared Compute - Standard
+""",
+                    rules={'path': 'clusters', 'required': ['name', 'code'],
+                           'allowed': ['name', 'code', 'num_workers', 'min_workers', 'max_workers', 'policy_name', 'autotermination_minutes'],
+                           'types': {'name': 'str', 'code': 'str', 'num_workers': 'int', 'min_workers': 'int', 'max_workers': 'int', 'policy_name': 'str'},
+                           'forbid': {'policy_id': "policy_id isn't allowed: name the policy with policy_name."}, 'size': True},
+                    goal=[{'field': 'min_workers', 'equals': 1, 'message': 'It should start at 1 worker.'},
+                          {'field': 'max_workers', 'equals': 6, 'message': 'It should grow to at most 6 workers.'},
+                          {'field': 'policy_name', 'equals': 'Shared Compute - Standard', 'message': 'It should use the Shared Compute - Standard policy.'}],
+                    clue='Swap the fixed size for a range, and replace the id line with the policy\'s name.',
+                    why='Autoscaling is min_workers and max_workers together, and teams name the policy; the module looks up its id.'),
             ],
         ),
         starter="""def build_cluster(cluster, owner_group):
@@ -687,6 +732,22 @@ Check them in that order and return the first one that is `False`, as one of: `"
                     clue='A proposed run is a preview.',
                     why='Finished and proposed only means planning worked. Ask the platform owner for the applied run, or the account showing the SP.',
                     wrong=[None, 'Re-running changes nothing if the earlier stage isn\'t done, and hides the cause.', 'Never change identities to make an error go away.']),
+                fix('Declare the service principal so Foundation picks it up.',
+                    file='config/UAT/team-sales/service_principals.yml',
+                    start="""servicePrincipals:
+  - name: sp-sales-reporting-uat
+    workspace_access: true
+""",
+                    answer="""servicePrincipals:
+  - name: sp-sales-reporting-uat
+    workspace_access: true
+  - name: sp-sales-etl-uat
+    workspace_access: true
+""",
+                    rules={'path': 'servicePrincipals', 'required': ['name'], 'allowed': ['name', 'workspace_access'], 'types': {'name': 'str'}},
+                    goal=[{'field': 'name', 'contains': 'sp-sales-etl-uat', 'message': 'sp-sales-etl-uat still isn\'t declared.'}],
+                    clue='Add a second item to the list, shaped like the first one.',
+                    why='Declared here, Foundation registers it in the Databricks account on its next apply; then Service can assign it to the workspace.'),
             ],
         ),
         starter="""def next_check(facts):

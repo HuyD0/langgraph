@@ -172,6 +172,16 @@ def ask(question: str, options: list[str], *, answer: int, clue: str, why: str,
             "evidence": evidence, "wrong": wrong, "pick": pick}
 
 
+def fix(question: str, *, start: str, answer: str, rules: dict, goal: list[dict] | None = None,
+        clue: str, why: str, file: str = "") -> dict:
+    """A practice question where the learner edits a YAML file until the check passes, like a
+    product team's pull request. ``rules`` is the contract and ``goal`` what the fix must do (see
+    :mod:`drill.content.yaml_rules`); ``answer`` is one fixed version, shown after the clue."""
+    assert start.strip() and answer.strip() and rules.get("path"), f"{question[:40]}: a fix needs start, answer and rules"
+    return {"kind": "fix", "question": question, "start": start, "answer": answer, "rules": rules,
+            "goal": goal or [], "clue": clue, "why": why, "file": file}
+
+
 def practice(*, intro: str, asks: list[dict], explain: str | None = None) -> dict:
     """The Build step as a few questions about real evidence, for platform lessons where the job
     is reading YAML, plans and logs rather than writing Python. Three to five asks, easy to

@@ -458,5 +458,19 @@ def test_practice_sets_can_be_drawn_and_answered():
     assert len(sets) >= 6
     for pid, pr in sets:
         for a in pr["asks"]:
+            if a.get("kind") == "fix":
+                continue
             n = len(a["evidence"]["changes"]) if a["pick"] else len(a["options"])
             assert 0 <= a["answer"] < n and a["clue"] and a["why"], pid
+
+
+def test_every_fix_the_yaml_question_starts_broken_and_can_be_fixed():
+    """The starting YAML must fail the check (else there's nothing to fix) and the model answer
+    must pass it, goals included. content/yaml_rules.py runs the same checks as the page."""
+    from drill.content.yaml_rules import problems
+
+    fixes = [(p["id"], a) for p in build_data()["bank"] if p.get("practice") for a in p["practice"]["asks"] if a.get("kind") == "fix"]
+    assert len(fixes) >= 3
+    for pid, a in fixes:
+        assert problems(a["start"], a["rules"], a["goal"]), f"{pid}: the starting YAML already passes"
+        assert problems(a["answer"], a["rules"], a["goal"]) == [], f"{pid}: the model answer fails: {problems(a['answer'], a['rules'], a['goal'])}"
