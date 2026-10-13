@@ -29,6 +29,7 @@ const SHOTS = [
   ["track-phone-dusk", PHONE, "dusk", `goHome(); at("#track-platform");`],
   ["track-desktop-light", DESKTOP, "light", `goHome(); at("#track-platform");`],
   ["lesson-learn-phone-dusk", PHONE, "dusk", `openLesson("use_case_score", 0);`],
+  ["trust-mark-phone-dusk", PHONE, "dusk", `openLesson("redact_pii", 0); document.querySelector(".trustmark").click(); at(".trustpop");`],
   ["lesson-check-phone-dusk", PHONE, "dusk", `openLesson("can_read_table", 1); lp("can_read_table").checked = 1; setStep(1, true); at(".verdict");`],
   ["build-code-desktop-dusk", DESKTOP, "dusk", `openLesson("runs_after", 2);`],
   ["sorting-board-phone-dusk", PHONE, "dusk", `openLesson("use_case_score", 2);`],

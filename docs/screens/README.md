@@ -86,6 +86,22 @@ are `setStep()` and `renderFoot()`.
 **Change it safely.** Lesson words live in `modules/<module>.py` (`learn=`, `example=`). The
 bottom bar has one primary button, "Next".
 
+## A lesson: a trust mark
+
+![A trust mark's tooltip, opened](trust-mark-phone-dusk.webp)
+
+**What the learner sees.** A small ember right after the words where the lesson touches
+responsible AI, privacy or governance. Tapping it opens a tooltip: the trustworthy-AI trait, the
+NIST AI RMF reference, a perspective, one tip, and seven dots for the traits practised so far.
+Unopened marks give off embers; with Motion off (as here) they are a still glow.
+
+**What draws it.** `learnPane()` calls `withTrust()` for each paragraph, which places
+`trustMarkHtml()` after the note's phrase and adds `trustPopHtml()`; `openTrust()` and
+`closeTrust()` run from their own click and Escape listeners in the `trust marks` section.
+
+**Change it safely.** The notes are `content/trust.py`, one per lesson at most; the phrase must
+appear once in the Learn text (a test checks). Colours are `--mark` and `--mark-glow`.
+
 ## A lesson: Check
 
 ![The Check step after answering](lesson-check-phone-dusk.webp)
