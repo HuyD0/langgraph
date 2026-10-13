@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 156 lessons in 24 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 156 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 157 lessons in 24 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 157 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -1962,7 +1962,7 @@ Alert on how fast you're using up the budget (the burn rate), not on every error
 
 Follow one request from YAML through the runbook and Spacelift to Azure Databricks.
 
-Coming soon, not built yet (say so if asked; don't teach them as if they exist): Which repo do I change?; Upgrade a module through DEV, UAT and PROD; Proposed, applied, failed: reading a Spacelift run; What to send the platform owner.
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): Which repo do I change?; Upgrade a module through DEV, UAT and PROD; What to send the platform owner.
 
 ### 126. What happened to my YAML field? (`field_status`)
 
@@ -2479,9 +2479,20 @@ Give the sandbox its own Foundry deployment. If it shares a production deploymen
 
 Stacks, runs and the policies that guard every change.
 
-Coming soon, not built yet (say so if asked; don't teach them as if they exist): A run's life: queued, planning, unconfirmed, applying; Drift detection; Contexts and secrets; Testing a policy before it blocks.
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): Drift detection; Contexts and secrets; Testing a policy before it blocks.
 
-### 154. What runs after a change? (`runs_after`)
+### 154. Reading a Spacelift run (`read_a_run`)
+
+A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
+Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
+Then the Changes tab: how many resources would be added, changed, replaced or destroyed, and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
+A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.
+
+- **Check:** A run on the UAT stack shows FINISHED and Proposed, and the planning log says "Plan checks are GO". What has been deployed? Right answer: Nothing: a proposed run only previews. Why: Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.
+- **Exercise:** What Does This Run Prove?, writing `what_it_proves`. Approach: Check the cases that apply to any run first, then the ones that depend on the type.
+- **Explain:** the pattern is Header first, then changes, then the log. Why this pattern: The big idea: a run's type and state together say what it proves. A proposed run is only ever a preview; a tracked run deploys once someone confirms it. Your code reads those two fields and returns what the run proves, checking the cases that apply to any run first (not started yet), then proposed runs, then tracked ones. It is like reading a parcel's tracking page: "label printed" and "delivered" are both finished steps, but only one means it arrived. What to say: "I read a run from the top: the stack, the environment and the commit, then the Changes tab, then the log. A finished proposed run is only a preview, and GO means the policies passed, not that a person approved it."
+
+### 155. What runs after a change? (`runs_after`)
 
 In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
 Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
@@ -2492,7 +2503,7 @@ Stacks that don't depend on the change, directly or through another stack, don't
 - **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
 - **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When one stack changes, every stack that uses it has to run again. I list those, then run them in an order where each one waits for the stacks it needs."
 
-### 155. Policies as guardrails (`guard_destroys`)
+### 156. Policies as guardrails (`guard_destroys`)
 
 A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
 Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
@@ -2519,7 +2530,7 @@ Start with the resources you can't rebuild: workspaces, storage accounts, metast
   }
   ```
 
-### 156. Policy as code (`plan_policy`)
+### 157. Policy as code (`plan_policy`)
 
 Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
 Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.

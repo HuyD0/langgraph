@@ -83,6 +83,17 @@ The sentence is what you'd say to a colleague, so it must sound like a person ta
 short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
 before keeping it.
 
+## Walkthroughs: a tool's screens, redrawn
+
+A lesson can show a tool's real screens step by step: `walkthrough=[screen(kind, caption=...,
+steps=[...], tips=[...], **data)]` in the lesson. The page redraws each screen from its data in the
+app's own look, so it fits a phone, follows Dusk and Light, and long names wrap instead of being
+cut off. Kinds: `flow`, `header`, `changes`, `log`, `diff` and `history` (Spacelift's run views).
+Any part with `"n": 2` gets a numbered badge and a hint-coloured outline; step 2 explains it.
+"Reading a Spacelift run" (the first Spacelift lesson) uses it, with the same content as the
+annotated screenshots in the platform team's workbook, and tips checked against Spacelift's docs
+(proposed and tracked runs, run promotion, plan policies, contexts, Spacelift-managed state).
+
 ## Tracks
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the

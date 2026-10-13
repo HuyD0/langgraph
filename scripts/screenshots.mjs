@@ -38,6 +38,7 @@ const SHOTS = [
   ["explain-done-phone-light", PHONE, "light", `lp("runs_after").filled = 2; openLesson("runs_after", 3); at(".cloze");`],
   ["done-screen-phone-dusk", PHONE, "dusk", `progress.solved.field_status = true; lp("field_status").filled = 3;
      openLesson("field_status", 3); goNext();`],
+  ["walkthrough-phone-dusk", PHONE, "dusk", `openLesson("read_a_run", 0); at(".walk figure:nth-of-type(2)");`],
   ["study-tray-phone-dusk", PHONE, "dusk", `goHome(); openPocket();`],
   ["search-phone-dusk", PHONE, "dusk", `goHome(); openSearch();`],
 ];

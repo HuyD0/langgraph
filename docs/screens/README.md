@@ -143,6 +143,21 @@ styles `.cloze`, `.gap`, `.clzchip`, `.clzclue`.
 `[[answer|wrong|wrong::clue]]`. It must sound like a person talking (see [../PAGE.md](../PAGE.md)).
 Tests check every gap.
 
+## A walkthrough of a tool's screens
+
+![A Spacelift run header, redrawn with numbered callouts](walkthrough-phone-dusk.webp)
+
+**What the learner sees.** In "Reading a Spacelift run", the real screens of a Spacelift run
+(header, Changes tab, planning log, plan diff, run history) redrawn in the app's look, so they fit a
+phone and follow the theme. Numbered callouts in the hint colour match the numbered steps under
+each screen, followed by "Good habits" tips.
+
+**What draws it.** `walkHtml()` and `SL_VIEW` (one function per kind of screen) in the
+`walkthrough` section; styles `.sl-*`. The content is `walkthrough=[screen(...)]` in the lesson.
+
+**Change it safely.** Each part with `"n": 3` needs step 3; `screen()` fails at build time if the
+numbers and steps don't match. A new kind of screen needs a renderer in `SL_VIEW` (a test checks).
+
 ## Finishing a lesson
 
 ![The done screen](done-screen-phone-dusk.webp)

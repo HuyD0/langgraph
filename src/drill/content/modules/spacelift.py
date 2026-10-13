@@ -1,9 +1,292 @@
 """Spacelift: stacks, runs and the policies that guard every change."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, screen, stack
 
 MODULE = module('spacelift', 'Spacelift', 'Stacks, runs and the policies that guard every change.', setting=PLATFORM_SETTING)
+
+
+lesson(MODULE, 'read_a_run',
+    title='Reading a Spacelift run',
+    learn=[
+        "A **run** is one go of Terraform on a **stack**. A **proposed** run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A **tracked** run deploys: it plans, then applies. Most runs a reviewer sees are proposed.",
+        "Read a run from the top. The header says **which stack, which environment, which commit, and what state**. *Finished* on a proposed run means planning worked. It never means anything was deployed.",
+        "Then the **Changes** tab: how many resources would be added, changed, replaced or destroyed, and which. Then the **planning log**: the plan summary line, the first error if it failed, and whether the **plan policies** said GO. A GO is an automatic check passing, not a person approving.",
+        "A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.",
+    ],
+    walkthrough=[
+        screen('flow', caption='Where a run fits: from YAML to a decision',
+            boxes=[
+                {'title': 'YAML', 'sub': 'Desired changes'},
+                {'title': 'Validate + PR', 'sub': 'Pydantic and checks'},
+                {'title': 'Spacelift', 'sub': 'Proposed run', 'n': 1},
+                {'title': 'Terraform', 'sub': 'Read, compare, plan'},
+                {'title': 'Human review', 'sub': 'Decide or escalate', 'n': 2},
+            ],
+            note='Only an approved tracked run applies changes. A finished proposed run is still a preview.',
+            steps=[
+                'Opening a pull request starts a proposed run on every stack the change touches. It plans and reports; it never applies.',
+                'A person reads the plan and decides: approve the PR, ask a question, or stop. Deploying happens later, in a tracked run.',
+            ],
+            tips=['Review the plan, not just the diff of the YAML: the runbook adds things the YAML never says.'],
+        ),
+        screen('header', caption='Step 1 · The run header: what you are looking at',
+            title={'text': 'Databricks IaC plan review', 'n': 2},
+            state={'text': 'FINISHED', 'n': 1},
+            path={'text': '.../Platf.../Databricks/DBX_AIML/DEV', 'n': 4},
+            meta=['Terraform 1.5.7', 'DEV', 'feature/iac-review'],
+            commit={'text': '300d269', 'n': 3},
+            started='Started on Oct 9th, 11:25:43 PM by a Git commit',
+            line2=['Committed on Oct 9th, 11:19:40 PM', 'State managed by Spacelift'],
+            run_type={'text': 'Proposed', 'n': 4},
+            tabs=[{'text': 'History'}, {'text': 'Changes', 'count': '~ 14', 'n': 5}],
+            steps=[
+                'FINISHED: planning completed without errors. On a proposed run that is all it means.',
+                'The run is named after the commit or pull request: the change you are reviewing.',
+                'The commit (300d269) is the exact Git version this plan used. Check it matches the newest commit in the PR.',
+                'The stack path ends in DEV: the environment. "Proposed" (under it) says this run only previews.',
+                'Changes ~ 14: fourteen resources would change in place. Open this tab next.',
+            ],
+            tips=[
+                'Write down three things before anything else: the stack, the environment (DEV, UAT or PROD) and the commit.',
+                '"State managed by Spacelift" means Spacelift keeps Terraform\'s state for this stack and locks it during runs. Never try to fix state by hand.',
+                'If the PR has newer commits than the run, wait for the newer run: an old plan reviews old code.',
+            ],
+        ),
+        screen('changes', caption='Step 2 · The Changes tab: the whole change set',
+            count={'text': 'Showing 14 of 14', 'n': 1},
+            search='Search by name, address, or resource type...',
+            filters={'items': ['Address', 'Change type', 'Name', 'Resource type', 'Terraform provider'], 'n': 2},
+            expand={'text': 'Expand all', 'n': 4},
+            rows=[
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.folder_permissions["team_pit_folder"]', 'status': 'PLANNED', 'n': 3},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["txat-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["sdlc-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["pit-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["enterprise-arch-shared-compute"]', 'status': 'PLANNED'},
+            ],
+            more='+ 9 more',
+            steps=[
+                '"Showing 14 of 14": the full count. Write it down before you filter anything.',
+                'Filters narrow the list by change type, resource type or provider. Use them after you have the full count, so nothing hides.',
+                'Each row is one resource. ~ means changed in place, + added, - destroyed, -/+ replaced. PLANNED means not applied yet.',
+                'Expand only the resource you are investigating; Expand all when you need to read everything.',
+            ],
+            tips=[
+                'An in-place change (~) can still remove someone\'s access. "0 to destroy" is not enough to approve.',
+                'Fourteen permission changes from one team\'s YAML edit? Ask why the shared clusters changed too before approving.',
+            ],
+        ),
+        screen('log', caption='Step 3 · The planning log: the summary and the checks',
+            phase='Planning', duration='00:46', at='Oct 9th, 11:26:10 PM',
+            tail=['    + group_name       = "users"', '    + permission_level = "CAN_READ"', '  }', '', '  # (1 unchanged block hidden)', '}'],
+            summary={'text': 'Plan: 0 to add, 14 to change, 0 to destroy.', 'n': 1},
+            run_id='01M464E9KFVWE0PJJWH8MFV9PW',
+            lines=[
+                {'text': 'Changes are GO'},
+                {'text': 'Generating JSON representation of the plan...'},
+                {'text': 'JSON representation is GO'},
+                {'text': 'Uploading the list of managed resources...'},
+                {'text': 'Please be aware that the run changes calculation includes output changes.', 'warn': True},
+                {'text': 'Resource list upload is GO'},
+                {'text': 'Loading custom plan policy inputs...'},
+                {'text': '0 custom plan policy inputs found'},
+                {'text': 'Evaluated 2 plan policies', 'n': 2},
+                {'text': 'Plan checks are GO', 'n': 2},
+            ],
+            tools={'items': ['Search', 'Full screen', 'Copy', 'Download'], 'n': 3},
+            steps=[
+                'The plan summary: the same counts as the Changes tab. If they disagree, you are reading two different runs.',
+                'Two plan policies were checked and both passed. GO is an automatic check, written in Rego by the platform team, not a reviewer\'s approval.',
+                'Search jumps to the first error or the summary in a long log; Copy and Download keep it for your notes.',
+            ],
+            tips=[
+                'When a plan fails, the first error is the useful one. Search for "Error" rather than reading the last line.',
+                'A deny policy fails the run in red; a warn policy prints in yellow and lets it through for a person to judge.',
+            ],
+        ),
+        screen('diff', caption='Step 4 · Who gets access: read by group, not by position',
+            blocks=[
+                {'group': 'AP-PIT-BA', 'level': 'CAN_EDIT', 'n': 1},
+                {'group': 'AP-PIT-DEV', 'level': 'CAN_EDIT', 'n': 2},
+                {'group': 'AP-PIT-DEV', 'level': 'CAN_MANAGE', 'hidden': '# (2 unchanged attributes hidden)', 'n': 3},
+                {'group': 'users', 'level': 'CAN_READ', 'n': 4},
+            ],
+            hidden={'text': '# (1 unchanged block hidden)', 'n': 5},
+            steps=[
+                'An explicit grant from team.yml: the BA group can edit.',
+                'The owner group\'s own CAN_EDIT grant, also typed in team.yml.',
+                'CAN_MANAGE for the same owner group: the runbook adds it for every owner. Listed twice, the group ends up with the higher one.',
+                'users CAN_READ: a default the runbook adds to every team folder.',
+                'Hidden blocks are unchanged. Expand them before you conclude who has access.',
+            ],
+            tips=[
+                'Check each group and what it ends up with. The order of access_control blocks can shuffle without changing anything.',
+                'A permissions resource owns the whole list: access someone clicked in by hand disappears on the next apply.',
+            ],
+        ),
+        screen('history', caption='Step 5 · Run history: finished and proposed is still a preview',
+            title={'text': 'Remove ac', 'n': 1},
+            state='FINISHED',
+            path={'text': '.../Platf.../Databricks/DBX_RISK/UAT', 'n': 1},
+            context={'text': 'UAT review context', 'n': 2},
+            run_type='Proposed',
+            changes='~ 3',
+            events=[{'state': 'Finished', 'at': 'Oct 5th, 3:06:37 PM', 'buttons': ['Promote', 'Retry'], 'n': 5}],
+            phase='Planning', duration='00:48', at='Oct 5th, 3:05:49 PM',
+            lines=[
+                {'text': '        + service_principal = "SP-RSAI-RiskAIClient-UAT"', 'code': True, 'n': 3},
+                {'text': '      ]', 'code': True},
+                {'text': '      name              = "ac-dbx-rsai-default-uat-service-credential"', 'code': True},
+                {'text': 'Changes are GO'},
+                {'text': 'Evaluated 2 plan policies', 'n': 4},
+                {'text': 'Plan checks are GO', 'n': 4},
+            ],
+            steps=[
+                'A different stack: the path ends in UAT. Check the environment every time; DEV and UAT runs look alike.',
+                'A context is attached: shared settings (and maybe secrets) that many stacks reuse. Changing a context changes every stack it is attached to.',
+                'The plan names a service principal. A name in a plan is not proof the identity exists in the workspace yet.',
+                'Policies passed again. Still only a preview.',
+                'Promote would turn this preview into a tracked run that deploys. Retry plans again. Reviewers don\'t press either.',
+            ],
+            tips=[
+                'Promote only appears when the stack allows it and you hold the promote role. Even then, deploying follows your team\'s approval process.',
+                'A proposed run is a snapshot of one commit. If the YAML changed since, the run is out of date.',
+            ],
+        ),
+    ],
+    example=example('What each run state proves', """proposed  FINISHED      a preview worked; nothing was deployed
+proposed  FAILED        the plan failed: read the first error
+tracked   UNCONFIRMED   a plan waits for someone to confirm or discard it
+tracked   FINISHED      applied (or nothing to change)
+tracked   DISCARDED     someone rejected the plan; nothing was applied
+any       QUEUED/READY  not started: waiting for a lock or a worker"""),
+    check=question(
+        'A run on the UAT stack shows **FINISHED** and **Proposed**, and the planning log says "Plan checks are GO". What has been deployed?',
+        [
+            'Everything in the plan: it finished and passed the checks',
+            'Nothing: a proposed run only previews',
+            'Only the resources the policies approved',
+        ],
+        answer=1,
+        why='Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.',
+    ),
+    angle=angle(
+        pattern='Header first, then changes, then the log',
+        text='The big idea: a run\'s type and state together say what it proves. A proposed run is only ever a preview; a tracked run deploys once someone confirms it. Your code reads those two fields and returns what the run proves, checking the cases that apply to any run first (not started yet), then proposed runs, then tracked ones. It is like reading a parcel\'s tracking page: "label printed" and "delivered" are both finished steps, but only one means it arrived.',
+        say="\"I read a run from the top: the stack, the [[environment|author|cost::DEV, UAT or PROD.]] and the commit, then the Changes tab, then the log. A finished proposed run is only a [[preview|deployment|backup::It plans and reports, and stops.]], and GO means the [[policies|reviewers|tests::Automatic checks written in Rego.]] passed, not that a person approved it.\"",
+        classic=None,
+    ),
+    stack=stack('Spacelift: the same states in its Terraform provider', """resource "spacelift_stack" "dbx_service_dev" {
+  name           = "dbx-service-dev"
+  branch         = "main"         # pushes here start tracked runs
+  autodeploy     = false          # tracked runs wait in UNCONFIRMED for a person
+  enable_local_preview = false
+}
+
+# A pull request from feature/iac-review starts a proposed run:
+# it plans, reports to the PR, and stops."""),
+    exercise=exercise(
+        title='What Does This Run Prove?',
+        topic='spacelift',
+        difficulty='easy',
+        fn='what_it_proves',
+        prompt="""Your function gets `run`, a dict with `"type"` (`"proposed"` or `"tracked"`) and `"state"` (in capitals, like `"FINISHED"`).
+
+Return what the run proves, checking in this order:
+
+- state `"QUEUED"` or `"READY"` (any type) -> `"not started"`
+- proposed and `"FINISHED"` -> `"preview only"`
+- `"FAILED"` (any type) -> `"failed: read the first error"`
+- tracked and `"UNCONFIRMED"` -> `"waiting for approval"`
+- tracked and `"FINISHED"` -> `"applied"`
+- tracked and `"DISCARDED"` -> `"rejected"`
+- anything else -> `"still running"`""",
+        pattern='Check the cases that apply to any run first, then the ones that depend on the type.',
+        target='a few checks, no loops',
+        realworld="Spacelift shows a run's type and state at the top of every run. Reviewers who mix up \"finished\" with \"deployed\" approve things that were never applied, or think a fix is live when it isn't. The run list's filters use these same states.",
+        starter="""def what_it_proves(run):
+    # your code here
+    pass
+""",
+        solution="""def what_it_proves(run):
+    kind, state = run["type"], run["state"]
+    if state in ("QUEUED", "READY"):
+        return "not started"
+    if kind == "proposed" and state == "FINISHED":
+        return "preview only"
+    if state == "FAILED":
+        return "failed: read the first error"
+    if kind == "tracked" and state == "UNCONFIRMED":
+        return "waiting for approval"
+    if kind == "tracked" and state == "FINISHED":
+        return "applied"
+    if kind == "tracked" and state == "DISCARDED":
+        return "rejected"
+    return "still running"
+""",
+        cases=[
+            case({'type': 'proposed', 'state': 'FINISHED'}, expected='preview only', sample=True),
+            case({'type': 'tracked', 'state': 'FINISHED'}, expected='applied'),
+            case({'type': 'tracked', 'state': 'UNCONFIRMED'}, expected='waiting for approval'),
+            case({'type': 'proposed', 'state': 'FAILED'}, expected='failed: read the first error'),
+            case({'type': 'tracked', 'state': 'DISCARDED'}, expected='rejected'),
+            case({'type': 'tracked', 'state': 'QUEUED'}, expected='not started'),
+            case({'type': 'proposed', 'state': 'PLANNING'}, expected='still running'),
+            case({'type': 'tracked', 'state': 'APPLYING'}, expected='still running'),
+        ],
+        guided="""def what_it_proves(run):
+    # Replace every ___ with real code, then run the tests.
+    kind, state = run["type"], run["state"]
+    # Cases for any run first.
+    if state in ("QUEUED", "READY"):
+        return "not started"
+    if kind == "proposed" and state == "FINISHED":
+        return ___
+    if state == "FAILED":
+        return "failed: read the first error"
+    # Tracked runs: they can deploy.
+    if kind == "tracked" and state == "UNCONFIRMED":
+        return "waiting for approval"
+    if ___:
+        return "applied"
+    if kind == "tracked" and state == "DISCARDED":
+        return "rejected"
+    return "still running"
+""",
+        fills=['"preview only"', 'kind == "tracked" and state == "FINISHED"'],
+        concepts=[
+            [
+                'Two names at once',
+                '`a, b = x, y` sets two names in one line.',
+                """kind, state = "tracked", "FINISHED"
+kind   # 'tracked'""",
+            ],
+            [
+                'in on a tuple',
+                '`state in ("QUEUED", "READY")` is True if state is either one.',
+                '"READY" in ("QUEUED", "READY")   # True',
+            ],
+            [
+                'and',
+                '`a and b` is True only when both are.',
+                '"tracked" == "tracked" and "FINISHED" == "FAILED"   # False',
+            ],
+        ],
+        byhand='The sample is proposed and FINISHED. Not QUEUED or READY. Proposed and FINISHED: return "preview only". Nothing was deployed.',
+        why='At most six checks on two fields.',
+        gotchas=[
+            [
+                'Finished is not deployed',
+                'On a proposed run, FINISHED only means planning worked. Look for "Proposed" in the header before you say anything is live.',
+            ],
+            [
+                'Unconfirmed runs expire',
+                'A tracked run waiting for confirmation is discarded after 30 days. If a change "never went out", look for an old unconfirmed run.',
+            ],
+        ],
+    ),
+)
 
 
 lesson(MODULE, 'runs_after',
@@ -470,7 +753,6 @@ if task['done']: print('finished')""",
     ),
 )
 
-planned(MODULE, 'run_states', "A run's life: queued, planning, unconfirmed, applying", 'What each run state means, and when a person has to confirm.')
 planned(MODULE, 'drift_detection', 'Drift detection', 'Finding changes made outside Terraform before they surprise the next apply.')
 planned(MODULE, 'contexts_secrets', 'Contexts and secrets', 'Sharing settings and credentials between stacks without copying them.')
 planned(MODULE, 'policy_testing', 'Testing a policy before it blocks', 'Rolling out a new rule as a warning, and testing it against real plans.')

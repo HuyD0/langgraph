@@ -641,5 +641,4 @@ def next_check(facts):
 
 planned(MODULE, 'which_repo', 'Which repo do I change?', 'A request comes in: is it YAML in the config repo, the runbook, a module, or a question for the platform owner?')
 planned(MODULE, 'promote_upgrade', 'Upgrade a module through DEV, UAT and PROD', 'Bump a module or provider version and promote it one environment at a time, with a plan reviewed at each step.')
-planned(MODULE, 'run_states', 'Proposed, applied, failed: reading a Spacelift run', 'What each run state proves, and what it doesn\'t.')
 planned(MODULE, 'evidence_note', 'What to send the platform owner', 'The stack, the run, the first error, the YAML and runbook links, and the decision you need.')

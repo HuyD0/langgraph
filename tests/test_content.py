@@ -400,3 +400,20 @@ def test_the_page_script_parses(data, tmp_path):
     (tmp_path / "page.js").write_text(script)
     result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-800:]
+
+
+def test_every_walkthrough_screen_can_be_drawn_and_explained():
+    """A lesson's walkthrough screens (model.screen) each need a renderer in page.html, and every
+    numbered callout needs its step: screen() checks the numbers, this checks the page."""
+    import re
+    from drill.content.build import PAGE_TEMPLATE
+    from drill.content.model import SCREEN_KINDS
+
+    page = PAGE_TEMPLATE.read_text()
+    views = re.search(r"const SL_VIEW = \{(.*?)\n\};", page, re.S).group(1)
+    for kind in SCREEN_KINDS:
+        assert re.search(rf"^\s*{kind}: d =>", views, re.M), f"page.html can't draw a {kind!r} screen"
+    walks = [(lid, w) for lid, lesson in build_data()["lessons"].items() for w in lesson.get("walk", [])]
+    assert walks, "the Spacelift run lesson has a walkthrough"
+    for lid, w in walks:
+        assert w["steps"] and w["caption"], lid

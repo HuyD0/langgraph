@@ -201,6 +201,35 @@ def source(title: str, url: str) -> list[str]:
     return [title, url]
 
 
+SCREEN_KINDS = ("flow", "header", "changes", "log", "diff", "history")
+
+
+def screen(kind: str, *, caption: str, steps: list[str], tips: list[str] | None = None, **data: Any) -> dict:
+    """One view of a tool, redrawn on the page with numbered callouts: a Spacelift run's header,
+    its Changes list, its planning log, a plan diff, its history, or a flow of steps.
+
+    The page draws it from ``data`` in the app's own look, so it fits a phone and follows the
+    theme. Parts of the view carry a number (``"n": 2``); ``steps`` explain them in order, so
+    step 1 is about the part marked 1. The content can match a real screenshot exactly.
+    ``tips`` are good habits for this view, shown under the steps.
+    """
+    assert kind in SCREEN_KINDS, f"unknown screen kind {kind!r}"
+    used = sorted({n for n in _numbers(data)})
+    assert used == list(range(1, len(steps) + 1)), f"{caption}: callouts {used} need one step each, in order"
+    return {"kind": kind, "caption": caption, "steps": steps, "tips": tips or [], "data": data}
+
+
+def _numbers(value: Any):
+    if isinstance(value, dict):
+        if isinstance(value.get("n"), int):
+            yield value["n"]
+        for v in value.values():
+            yield from _numbers(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _numbers(v)
+
+
 def lesson(
     owner: Module,
     id: str,
@@ -214,6 +243,7 @@ def lesson(
     stack: dict | None = None,
     checked: str | None = None,
     sources: list[list[str]] | None = None,
+    walkthrough: list[dict] | None = None,
 ) -> dict:
     """Add one lesson to a module. Lessons appear on the page in the order they are added.
 
@@ -229,6 +259,7 @@ def lesson(
     entry = {
         "id": id, "title": title, "learn": learn, "example": example, "check": check,
         "angle": angle, "stack": stack, "exercise": exercise, "checked": checked, "sources": sources,
+        "walkthrough": walkthrough,
     }
     owner.lessons.append(entry)
     return entry
