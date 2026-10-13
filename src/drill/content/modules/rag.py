@@ -1,8 +1,8 @@
-"""RAG with AI Search (formerly Vector Search): Chunking, indexing and retrieval, then measuring which settings actually work."""
+"""RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
 
-MODULE = module('rag', 'RAG with AI Search', 'Chunking, indexing and retrieval, then measuring which settings actually work.')
+MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
 
 lesson(MODULE, 'chunk_text',
     title='Chunking documents',
@@ -1444,6 +1444,374 @@ pairs.sort()
             [
                 'Rerankers come after fusion',
                 'A reranker model re-scores the fused top results more carefully, at extra latency and cost.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'vector_index_setup',
+    title='Databricks Vector Search: endpoints, indexes and sync',
+    learn=[
+        'Databricks Vector Search (now called Databricks AI Search; the code still says vector search) has two parts. An **endpoint** is the serving compute: machines kept running to answer searches. An **index** is the searchable copy of your chunks. It lives in Unity Catalog, Databricks\' catalog of data and who may use it, under a three-part name like `main.support.docs_index`, and it sits on an endpoint.',
+        'There are two endpoint types. **Standard** answers in tens of milliseconds (thousandths of a second). **Storage-optimized** takes a few hundred milliseconds but costs much less per vector when you have a lot of them. It is a good fit from around 10 million vectors.',
+        'There are two index types. A **Delta Sync** index follows a Delta table (a Databricks table) and keeps itself up to date. The table needs **Change Data Feed** turned on: a setting that keeps a log of which rows changed, so the index only updates those. Without it, creating the index fails. Databricks can make the embeddings (the lists of numbers that capture meaning) for you, called **managed embeddings**: you name an embedding model endpoint such as `databricks-gte-large-en`. Or you bring a column of your own, called **self-managed embeddings**. A **Direct Vector Access** index has no source table: you write the vectors yourself through the SDK (the Python library) or the API.',
+        'A Delta Sync index has a **sync mode**. **Triggered** updates only when you call sync, so it is the cheapest. **Continuous** updates within moments, but costs more because a streaming job runs all the time. Storage-optimized endpoints only do Triggered.',
+        'Access has two locks. In Unity Catalog you need USE CATALOG, USE SCHEMA and SELECT on the index. On the endpoint you need its own permission, CAN_USE or CAN_MANAGE, and admins can limit who may create endpoints at all. An endpoint bills for every hour it is up, even with no searches, so delete ones you no longer use. Queries can also filter on columns and run hybrid search (keywords plus meaning) with `query_type="hybrid"`, as in "Hybrid search and rank fusion".',
+    ],
+    example=example('Turn on Change Data Feed first', """-- Without this, creating a Delta Sync index fails
+ALTER TABLE main.support.doc_chunks
+SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+
+-- 200,000 chunks, no embeddings yet, an hour old is fine:
+-- delta sync, managed embeddings, standard endpoint, triggered"""),
+    check=question(
+        'You try to create a Delta Sync index on a table and it fails straight away. What is the most likely cause?',
+        [
+            'Change Data Feed is not turned on for the source table',
+            'The endpoint is Standard instead of Storage-optimized',
+            'The table has too few rows',
+        ],
+        answer=0,
+        why='A Delta Sync index reads the table\'s change log to know what to update. No Change Data Feed, no change log, so creation fails.',
+    ),
+    angle=angle(
+        pattern='Rules checked in a fixed order',
+        text='The big idea: setting up Databricks Vector Search is four choices, and each one follows from a plain fact about your data. Your code asks the questions in order. Is the source a Delta table? Then Delta Sync, otherwise Direct Vector Access. Do you already have embeddings? Then self-managed, otherwise managed (and Direct Vector Access is always self-managed). Ten million vectors or more? Then storage-optimized. Last comes sync: none for Direct Vector Access, triggered on storage-optimized, and continuous only when the data must be fresh within 5 minutes. The order matters, because an earlier answer can rule out a later option.',
+        say='"I pick the index type from where the data lives, the endpoint type from how many vectors there are, and the sync mode from how fresh the answers must be. Continuous sync only when minutes matter, because it runs all the time."',
+        classic=None,
+    ),
+    stack=stack('Databricks Vector Search: endpoint, index, sync', """from databricks.vector_search.client import VectorSearchClient
+
+vsc = VectorSearchClient()
+vsc.create_endpoint(name="vs-endpoint", endpoint_type="STANDARD")
+
+index = vsc.create_delta_sync_index(
+    endpoint_name="vs-endpoint",
+    index_name="main.support.docs_index",
+    source_table_name="main.support.doc_chunks",
+    pipeline_type="TRIGGERED",
+    primary_key="id",
+    embedding_source_column="text",
+    embedding_model_endpoint_name="databricks-gte-large-en",
+)
+index.sync()   # Triggered: pull in the latest table changes now"""),
+    exercise=exercise(
+        title='Plan a Vector Index',
+        topic='rag',
+        difficulty='easy',
+        fn='vector_index_setup',
+        prompt="""Your function gets one thing:
+
+- `needs`: a dict (a lookup table of names and values) describing your data, like `{"source_is_delta": True, "vectors": 200000, "has_embeddings": False, "fresh_within_minutes": 60}`.
+
+Return a list of four choices, in this order:
+
+1. **Index type**: `"delta sync"` if `source_is_delta` is true, otherwise `"direct access"`.
+2. **Embeddings**: `"self-managed"` if `has_embeddings` is true, otherwise `"managed"`. For direct access it is always `"self-managed"`, because you write the vectors yourself.
+3. **Endpoint type**: `"storage-optimized"` if `vectors` is 10000000 (ten million) or more, otherwise `"standard"`.
+4. **Sync**: `"none"` for direct access. `"triggered"` on a storage-optimized endpoint. Otherwise `"continuous"` if `fresh_within_minutes` is 5 or less, else `"triggered"`.""",
+        pattern='A few if / else checks in a fixed order, where an earlier answer can decide a later one.',
+        target='a few checks, the same however big the data is',
+        realworld='The four choices you make before creating a Databricks Vector Search index. Getting sync wrong is the usual cost surprise: Continuous runs a streaming job all day.',
+        starter="""def vector_index_setup(needs):
+    # your code here
+    pass
+""",
+        solution="""def vector_index_setup(needs):
+    if needs["source_is_delta"]:
+        index_type = "delta sync"
+        if needs["has_embeddings"]:
+            embeddings = "self-managed"
+        else:
+            embeddings = "managed"
+    else:
+        index_type = "direct access"
+        embeddings = "self-managed"
+    if needs["vectors"] >= 10000000:
+        endpoint_type = "storage-optimized"
+    else:
+        endpoint_type = "standard"
+    if index_type == "direct access":
+        sync = "none"
+    elif endpoint_type == "storage-optimized":
+        sync = "triggered"
+    elif needs["fresh_within_minutes"] <= 5:
+        sync = "continuous"
+    else:
+        sync = "triggered"
+    return [index_type, embeddings, endpoint_type, sync]
+""",
+        cases=[
+            case({'source_is_delta': True, 'vectors': 200000, 'has_embeddings': False, 'fresh_within_minutes': 60},
+                 expected=['delta sync', 'managed', 'standard', 'triggered'], sample=True),
+            case({'source_is_delta': True, 'vectors': 50000, 'has_embeddings': True, 'fresh_within_minutes': 5},
+                 expected=['delta sync', 'self-managed', 'standard', 'continuous']),
+            case({'source_is_delta': True, 'vectors': 25000000, 'has_embeddings': False, 'fresh_within_minutes': 1},
+                 expected=['delta sync', 'managed', 'storage-optimized', 'triggered']),
+            case({'source_is_delta': False, 'vectors': 300000, 'has_embeddings': False, 'fresh_within_minutes': 1},
+                 expected=['direct access', 'self-managed', 'standard', 'none']),
+            case({'source_is_delta': True, 'vectors': 10000000, 'has_embeddings': True, 'fresh_within_minutes': 30},
+                 expected=['delta sync', 'self-managed', 'storage-optimized', 'triggered']),
+        ],
+        guided="""def vector_index_setup(needs):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: index type, and who makes the embeddings.
+    if needs["source_is_delta"]:
+        index_type = "delta sync"
+        if ___:
+            embeddings = "self-managed"
+        else:
+            embeddings = "managed"
+    else:
+        index_type = "direct access"
+        embeddings = "self-managed"   # you write vectors yourself
+
+    # Step 2: ten million vectors or more -> storage-optimized.
+    if ___:
+        endpoint_type = "storage-optimized"
+    else:
+        endpoint_type = "standard"
+
+    # Step 3: sync mode. Check these rules in this order.
+    if index_type == "direct access":
+        sync = "none"
+    elif endpoint_type == "storage-optimized":
+        sync = "triggered"
+    elif ___:
+        sync = "continuous"
+    else:
+        sync = "triggered"
+
+    return [index_type, embeddings, endpoint_type, sync]
+""",
+        fills=['needs["has_embeddings"]', 'needs["vectors"] >= 10000000', 'needs["fresh_within_minutes"] <= 5'],
+        concepts=[
+            [
+                'Reading from a dict',
+                '`d["name"]` gives the value stored under that name.',
+                """needs = {'vectors': 500}
+needs['vectors']   # 500""",
+            ],
+            [
+                'if / elif / else',
+                'Python checks each condition from the top and runs the first one that is true. `elif` means "else if". The rest are skipped.',
+                """if size > 100:
+    label = 'big'
+elif size > 10:
+    label = 'medium'
+else:
+    label = 'small'""",
+            ],
+            [
+                'Comparing numbers',
+                '`>=` means "at least" and `<=` means "at most". Both include the number itself.',
+                """10 >= 10   # True
+5 <= 4     # False""",
+            ],
+            [
+                'Returning a list',
+                'Square brackets make a list. Here it holds the four answers in a fixed order.',
+                """return ['a', 'b', 'c', 'd']""",
+            ],
+        ],
+        byhand='The sample needs are: source is Delta, 200,000 vectors, no embeddings yet, an hour old is fine. Source is Delta, so the index type is "delta sync". No embeddings yet, so Databricks makes them: "managed". 200,000 is less than ten million, so "standard". Not direct access and not storage-optimized, so look at freshness: 60 minutes is more than 5, so "triggered". Return ["delta sync", "managed", "standard", "triggered"].',
+        why='A few checks, each done once, however big the index is.',
+        gotchas=[
+            [
+                'Idle endpoints still cost money',
+                'An endpoint bills while it is up, even with no searches. Delete endpoints for finished experiments.',
+            ],
+            [
+                'Two locks, two keys',
+                'A user needs Unity Catalog grants (USE CATALOG, USE SCHEMA, SELECT on the index) and CAN_USE on the endpoint. Missing either one gives a permission error.',
+            ],
+            [
+                'Continuous is not free',
+                'Continuous sync keeps a streaming job running all the time. Pick it only when answers must reflect changes within minutes; otherwise run Triggered sync on a schedule.',
+            ],
+            [
+                'Storage-optimized is slower',
+                'A few hundred milliseconds per search is fine for most chat apps, but check it against your latency budget (how long a user can wait) before switching.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'pick_search_service',
+    title='Databricks Vector Search or Azure AI Search?',
+    learn=[
+        'Many companies have both Databricks Vector Search and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now also sold as part of Foundry IQ). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
+        'Databricks Vector Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: Agent Bricks, Model Serving, or the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
+        'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as an Azure AI Foundry or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and private endpoints (a private network address, so traffic never crosses the public internet).',
+        'Azure AI Search adds two extras. The **semantic ranker** is a reranker that re-scores the top results by meaning. **Agentic retrieval** splits a hard question into smaller searches and merges the results, using **knowledge bases**: these are generally available in REST API version 2026-04-01, while query planning is still in preview. Pricing is by tier, paid in **search units** (blocks of capacity), with a newer serverless option in preview. The semantic ranker and agentic retrieval are billed on top.',
+        'Running both is common: curated tables in Databricks Vector Search, SharePoint documents in Azure AI Search. Keep **one evaluation set** (see "Measuring retrieval") so you compare them on the same questions.',
+    ],
+    example=example('Two common setups side by side', """curated tables in Unity Catalog
+  -> Databricks Vector Search -> agent on Model Serving
+
+policy documents in SharePoint
+  -> Azure AI Search indexer -> app in Azure AI Foundry
+
+same eval questions -> compare recall@k for both"""),
+    check=question(
+        'The policy documents live in SharePoint and the chat app runs in Azure AI Foundry. Which service fits more naturally?',
+        ['Databricks Vector Search', 'Azure AI Search', 'Neither can do this'],
+        answer=1,
+        why='An Azure AI Search indexer can pull from SharePoint on a schedule, and the app already runs in Azure, so there is no copy into Delta tables to keep in step.',
+    ),
+    angle=angle(
+        pattern='Count the points for each side, then compare',
+        text='The big idea: the choice follows where the data lives and where the app runs, not which tool is "better". Your code walks through the facts once. A fact on the Databricks list gives Databricks Vector Search a point, a fact on the Azure list gives Azure AI Search a point, and anything else is ignored. More points wins. A tie is an honest answer too: test both on the same eval set and let the numbers decide.',
+        say='"I put the index next to the data and the app. Delta tables and agents on Databricks point to Databricks Vector Search; SharePoint, Blob and apps in Azure point to Azure AI Search. If it is close, I test both on one eval set."',
+        classic=None,
+    ),
+    stack=stack('Same question, two services', """# Databricks Vector Search
+results = index.similarity_search(
+    query_text="how many days of annual leave?",
+    columns=["id", "text"],
+    query_type="hybrid",
+    num_results=5,
+)
+
+# Azure AI Search (azure-search-documents)
+from azure.search.documents.models import VectorizableTextQuery
+results = search_client.search(
+    search_text="how many days of annual leave?",
+    vector_queries=[VectorizableTextQuery(
+        text="how many days of annual leave?",
+        k_nearest_neighbors=5, fields="text_vector")],
+    query_type="semantic",
+    semantic_configuration_name="default",
+    top=5,
+)"""),
+    exercise=exercise(
+        title='Pick a Search Service',
+        topic='rag',
+        difficulty='easy',
+        fn='pick_search_service',
+        prompt="""Your function gets one thing:
+
+- `facts`: a list of short strings about your project, like `["data in delta", "agent on databricks", "docs in sharepoint"]`.
+
+These facts give Databricks Vector Search a point each: `"data in delta"`, `"need uc grants"`, `"agent on databricks"`, `"sync from table"`.
+
+These facts give Azure AI Search a point each: `"docs in sharepoint"`, `"docs in blob"`, `"app outside databricks"`, `"need semantic ranker"`, `"need entra rbac"`.
+
+Any other string is ignored.
+
+Return a list of three things: `[choice, databricks_points, azure_points]`. The choice is `"databricks vector search"` if Databricks has more points, `"azure ai search"` if Azure has more, and `"either: test both on your eval set"` if they are equal.""",
+        pattern='Count matches into two totals in one pass, then compare them.',
+        target='one pass over the facts, then one comparison',
+        realworld='A quick, honest way to frame the choice in a design review: list the facts, see which side they point to, and treat a tie as a reason to measure.',
+        starter="""def pick_search_service(facts):
+    # your code here
+    pass
+""",
+        solution="""def pick_search_service(facts):
+    databricks_signs = ["data in delta", "need uc grants", "agent on databricks", "sync from table"]
+    azure_signs = ["docs in sharepoint", "docs in blob", "app outside databricks", "need semantic ranker", "need entra rbac"]
+    databricks_points = 0
+    azure_points = 0
+    for fact in facts:
+        if fact in databricks_signs:
+            databricks_points += 1
+        elif fact in azure_signs:
+            azure_points += 1
+    if databricks_points > azure_points:
+        choice = "databricks vector search"
+    elif azure_points > databricks_points:
+        choice = "azure ai search"
+    else:
+        choice = "either: test both on your eval set"
+    return [choice, databricks_points, azure_points]
+""",
+        cases=[
+            case(['data in delta', 'agent on databricks', 'docs in sharepoint'],
+                 expected=['databricks vector search', 2, 1], sample=True),
+            case(['docs in blob', 'app outside databricks', 'need semantic ranker'],
+                 expected=['azure ai search', 0, 3]),
+            case([], expected=['either: test both on your eval set', 0, 0]),
+            case(['need uc grants', 'need entra rbac', 'team likes python'],
+                 expected=['either: test both on your eval set', 1, 1]),
+            case(['sync from table', 'docs in sharepoint', 'need entra rbac', 'budget is tight'],
+                 expected=['azure ai search', 1, 2]),
+        ],
+        guided="""def pick_search_service(facts):
+    # Replace every ___ with real code, then run the tests.
+
+    databricks_signs = ["data in delta", "need uc grants", "agent on databricks", "sync from table"]
+    azure_signs = ["docs in sharepoint", "docs in blob", "app outside databricks", "need semantic ranker", "need entra rbac"]
+    databricks_points = 0
+    azure_points = 0
+
+    for fact in facts:
+        # Step 1: give a point to the side this fact belongs to.
+        if fact in databricks_signs:
+            databricks_points += 1
+        elif ___:
+            azure_points += 1
+        # any other fact is ignored
+
+    # Step 2: more points wins; equal points means test both.
+    if ___:
+        choice = "databricks vector search"
+    elif azure_points > databricks_points:
+        choice = "azure ai search"
+    else:
+        choice = ___
+
+    return [choice, databricks_points, azure_points]
+""",
+        fills=['fact in azure_signs', 'databricks_points > azure_points', '"either: test both on your eval set"'],
+        concepts=[
+            [
+                'in on a list',
+                '`x in items` is True if x is one of the items in the list.',
+                """'bo' in ['ana', 'bo']    # True
+'cy' in ['ana', 'bo']    # False""",
+            ],
+            [
+                'Counting with +=',
+                '`n += 1` adds 1 to n. Start the count at 0 before the loop.',
+                """count = 0
+count += 1   # 1""",
+            ],
+            [
+                'for loop',
+                'Visits each item of a list in turn.',
+                """for name in ['ana', 'bo']:
+    print(name)""",
+            ],
+            [
+                'if / elif / else',
+                'Runs the first branch whose condition is true. `else` catches everything left, here the tie.',
+                """if a > b:
+    winner = 'a'
+elif b > a:
+    winner = 'b'
+else:
+    winner = 'tie'""",
+            ],
+        ],
+        byhand='The sample facts are "data in delta", "agent on databricks" and "docs in sharepoint". The first two are on the Databricks list, so Databricks has 2 points. "docs in sharepoint" is on the Azure list, so Azure has 1. 2 is more than 1, so return ["databricks vector search", 2, 1].',
+        why='One look at each fact, then one comparison at the end.',
+        gotchas=[
+            [
+                'Say the full name',
+                'Always say "Azure AI Search" or "Databricks Vector Search". A bare "AI Search" could mean either company\'s product.',
+            ],
+            [
+                'Check what is in preview',
+                'Some features, such as query planning, the serverless tier and some indexers, have been in preview (not yet fully supported). Check the docs before you build on one.',
+            ],
+            [
+                'Copies drift',
+                'Copying the same documents into both services means two indexes to keep in step. Pick one home per source unless you are deliberately comparing.',
+            ],
+            [
+                'Points are a starting point',
+                'One hard rule, such as "data may not leave Azure", can outweigh several points. Use the count to start the conversation, then check the evaluation numbers.',
             ],
         ],
     ),

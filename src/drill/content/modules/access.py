@@ -201,7 +201,7 @@ lesson(MODULE, 'missing_acls',
     learn=[
         'Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own **access control list** (ACL): a list of who may do what to that one object.',
         'Each object type has its own **permission levels**, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.',
-        'SQL warehouses: `CAN_VIEW` < `CAN_MONITOR` < `CAN_USE` < `CAN_MANAGE`. Model serving endpoints: `CAN_VIEW` < `CAN_QUERY` < `CAN_MANAGE`. Compute policies (rules for what clusters people may create): `CAN_USE`.',
+        'SQL warehouses: `CAN_VIEW` < `CAN_MONITOR` < `CAN_USE` < `CAN_MANAGE`. Model serving endpoints: `CAN_VIEW` < `CAN_QUERY` < `CAN_MANAGE`. Compute policies (rules for what clusters people may create): `CAN_USE`. Databricks Vector Search endpoints: `CAN_USE` < `CAN_MANAGE`, and querying an index also needs `SELECT` on the index in Unity Catalog.',
         'Registered models live in Unity Catalog, so they use UC grants such as `EXECUTE` instead of an ACL.',
         '**Experiments are the classic miss.** You log runs and traces to an experiment in your own user folder, and a teammate cannot see any of it. Put team experiments in a shared folder and give the team group `CAN_READ` or `CAN_EDIT`.',
     ],
