@@ -6,6 +6,7 @@ import re
 
 from drill import tutor
 from drill.content import build_data
+from drill.content.build import page_source
 
 
 def test_the_committed_map_matches_the_content():
@@ -23,7 +24,7 @@ def test_the_map_has_no_maths_symbols():
 
 
 def test_the_right_answer_rule_matches_the_page():
-    page = (tutor.PROJECT_ROOT / "src" / "drill" / "content" / "page.html").read_text()
+    page = page_source()
     assert "const answer = i % 3" in page  # gotcha_cards() mirrors this line
     cards = tutor.gotcha_cards(build_data())
     assert cards["run_agent"]["title"] == "Always put a limit on agent loops" and cards["run_agent"]["answer"] == 0

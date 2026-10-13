@@ -1,0 +1,32 @@
+/* study list: sections, lesson groups, one line per item until opened */
+#items { gap: 6px; }
+.ssec, .sgroup, .srows { display: grid; gap: 6px; min-width: 0; }
+.ssec { gap: 10px; }
+.ssec h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.ssec h3 span, .sgroup h4 span { font-weight: 400; color: var(--muted); }
+details.ssec > summary { list-style: none; cursor: pointer; min-height: 36px; display: flex; align-items: center; gap: 8px; }
+details.ssec > summary::-webkit-details-marker { display: none; }
+details.ssec > summary::after { content: "+"; font: 600 15px var(--mono); color: var(--muted); }
+details.ssec[open] > summary::after { content: "−"; }
+details.ssec > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sgroup h4 { margin: 4px 0 0; font: 600 14px var(--body); }
+.items .item { padding: 0; gap: 0; }
+.itemrow { display: grid; gap: 2px; width: 100%; min-width: 0; text-align: left; background: none; border: 0; border-radius: 12px; padding: 10px 12px; min-height: 48px; cursor: pointer; color: inherit; font: inherit; }
+.itemrow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.itemrow .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itemrow .t.code { font: 13px var(--mono); }
+.item.open .itemrow .t { white-space: normal; overflow-wrap: anywhere; }
+.itemrow .m { font-size: 13px; color: var(--muted); }
+.itemrow .due { color: var(--hint); }
+.itembody { display: grid; gap: 10px; padding: 0 12px 12px; min-width: 0; }
+@media (hover: hover) { .itemrow:hover { background: var(--sunk); } }
+#selbar { position: absolute; z-index: 50; display: flex; gap: 4px; padding: 4px; background: var(--fg); border-radius: 10px; box-shadow: 0 6px 20px color-mix(in srgb, var(--fg) 25%, transparent); }
+#selbar button { font: 600 14px var(--body); background: none; color: var(--bg); border: 0; border-radius: 7px; padding: 8px 12px; cursor: pointer; min-height: 40px; }
+#selbar button:focus-visible { outline: 2px solid var(--bg); }
+@media (pointer: coarse) { #selbar button { min-height: 44px; padding: 10px 14px; } }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) .pane, :root:not([data-motion="off"]) .note, :root:not([data-motion="off"]) .result, :root:not([data-motion="off"]) .verdict { animation: rise .2s ease-out }
+  @keyframes rise { from { opacity: .4; transform: translateY(4px) } }
+  :root:not([data-motion="off"]) .drawer { animation: slide .22s ease-out } @keyframes slide { from { transform: translateX(24px); opacity: .6 } }
+}
