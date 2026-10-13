@@ -29,7 +29,30 @@ from drill.content.model import TRAITS, Module
 
 HERE = Path(__file__).resolve().parent
 PAGE_TEMPLATE = HERE / "page.html"
+PAGE_PARTS = HERE / "page"  # parts of page.html kept in their own files, pulled in by /*INCLUDE page/<file>*/
 TOKENS = HERE / "tokens.css"  # the design tokens, inlined into the page at /*TOKENS*/
+
+_INCLUDE = re.compile(r"^/\*INCLUDE (page/[A-Za-z0-9_.-]+)\*/$", re.M)
+
+
+def page_source() -> str:
+    """page.html with its parts filled in: the whole page as one text, before tokens and content.
+
+    Parts of the page live in ``page/`` (one file per section, like ``page/study-list.js``) and
+    sit in page.html as a line of their own, ``/*INCLUDE page/study-list.js*/``, at the exact spot
+    they belong: CSS order matters. The same comment form works inside <style> and <script>.
+    Everything that reads the page (the build, the tests) reads it through here.
+    """
+    template = PAGE_TEMPLATE.read_text(encoding="utf-8")
+
+    def part(m: re.Match) -> str:
+        path = HERE / m.group(1)
+        assert path.is_file(), f"page.html includes {m.group(1)}, which doesn't exist"
+        text = path.read_text(encoding="utf-8")
+        assert not _INCLUDE.search(text), f"{m.group(1)} includes another part; keep parts one level deep"
+        return text[:-1] if text.endswith("\n") else text
+
+    return _INCLUDE.sub(part, template)
 
 _EXERCISE_FIELDS = ("title", "topic", "difficulty", "fn", "prompt", "pattern", "target",
                     "realworld", "starter", "solution", "cases", "unordered", "machine", "sort", "practice")
@@ -178,7 +201,7 @@ def skill_files() -> dict:
 
 def render_page(data: dict) -> str:
     """page.html with the design tokens and the content embedded: still one HTML file."""
-    template = PAGE_TEMPLATE.read_text(encoding="utf-8")
+    template = page_source()
     assert "/*DATA*/" in template, "page.html has lost its /*DATA*/ marker"
     assert "/*TOKENS*/" in template, "page.html has lost its /*TOKENS*/ marker"
     tokens = TOKENS.read_text(encoding="utf-8")

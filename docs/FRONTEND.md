@@ -1,9 +1,15 @@
 # The front end: how the page is built, and how to change it safely
 
-The whole front end is one file, `src/drill/content/page.html`: styles, markup and JavaScript,
-with no framework and no build tools beyond `uv run drill build-page`. That keeps it publishable
-as a single claude.ai artifact and servable by `drill-server` unchanged. This page explains how
+The front end ships as one file, `dist/daily-drill.html`: styles, markup and JavaScript, with no
+framework and no build tools beyond `uv run drill build-page`. That keeps it publishable as a
+single claude.ai artifact and servable by `drill-server` unchanged. Its source is
+`src/drill/content/page.html` plus the sections kept in their own files under
+`src/drill/content/page/` (see "Parts", below). This page explains how
 it is organised so you can find things, change them and leave them as tidy as you found them.
+
+New to front-end code? Start with the course, [course/inside-page-html.html](course/inside-page-html.html)
+(published at https://claude.ai/artifact/TYnPBikbTkiCJoGLdkQ9Ws): 19 short lessons built on this page,
+with live exercises, how to guide an AI through changes here, and how to use the design system.
 
 Read with: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) (tokens, rules, looks), [PAGE.md](PAGE.md)
 (what each feature does, for the learner) and [SERVER.md](SERVER.md) (the `/api/*` it talks to).
@@ -17,7 +23,8 @@ page.html (template) ────────────────┘    /*DA
 ```
 
 - `build.py` turns every lesson into plain data and inlines it at `/*DATA*/`; `tokens.css` goes
-  in at `/*TOKENS*/`. Nothing else is generated.
+  in at `/*TOKENS*/`; each part in `page/` goes in at its `/*INCLUDE page/<file>*/` line. Nothing
+  else is generated.
 - The page reads its content from that data (`D`, then `LESSONS`, `MOD`, `ORDER`, `TRACKS` ...).
   **Never hard-code lesson text in `page.html`**: put it in the module file, and add a field to
   `build_data()` if the page needs something new.
@@ -82,7 +89,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `the machine` | Rows travelling through the learner's function |
 | `hints, review, solution` | Hint levels, code review, showing the answer |
 | `notebook` | The drawer: glossary, look and motion switches |
-| `study list` / `the pocket` | Saved items, the tray, spaced review |
+| `study list` / `the pocket` | Saved items, the tray, spaced review. **In `page/study-list.js`** (styles: `page/pocket.css`, `page/study-list.css`) |
 | `selection toolbar` | Save or explain selected text |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |
@@ -91,6 +98,45 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 
 The CSS follows the same order, with its own markers (`/* ---------- the pocket ... */`,
 `/* fx: start */ ... /* fx: end */`).
+
+## Parts: sections in their own files
+
+`page.html` grew to over 5,000 lines, and every session edited it, so merges kept colliding and
+names clashed across thousands of lines. Sections are moving into their own files under
+`src/drill/content/page/`, one at a time. The **output doesn't change**: the build pastes each part
+back at its spot, so `dist/daily-drill.html` is still one file and the artifact still publishes
+as one page.
+
+- A part sits in `page.html` as a line of its own: `/*INCLUDE page/study-list.js*/`. The same
+  comment works inside `<style>` and `<script>`. It goes **at the exact spot** the section was:
+  CSS order decides which rule wins, and script order decides what's defined first.
+- Read the page through `build.page_source()` (page.html with its parts filled in), never
+  `page.html` alone. The build and the tests do.
+- `test_every_page_part_is_included_exactly_once` fails if a part isn't included, or is included
+  twice.
+- Parts share one scope, like the sections did. Moving a section doesn't change what it can see;
+  it only gives it a file of its own.
+
+**How to move a section** (each move is its own PR):
+
+1. Note the build's fingerprint: `uv run drill build-page && shasum -a 256 dist/daily-drill.html`.
+2. Cut the section's lines (from its `// ---------- name ----------` marker to the line before the
+   next marker, and its CSS block likewise) into `page/<name>.js` / `page/<name>.css`, leaving the
+   include line in their place.
+3. Build again: the fingerprint must be **identical**. Then `scripts/check.sh`.
+4. Note the file in the map above.
+
+**The plan, in order** (smallest risk first; each is self-contained):
+
+| # | Section | Part files | Why this order |
+|---|---|---|---|
+| 1 | study list, the pocket | `study-list.js`, `pocket.css`, `study-list.css` | **Done.** Self-contained, and edited often |
+| 2 | notebook, selection toolbar | `notebook.js`, `selection.js` | Small drawers with their own state |
+| 3 | the machine, the sorting board, practice questions | `machine.js`, `sorting.js`, `practice.js` | Feature-local state (`M`, `SO`, `QF`) |
+| 4 | walkthrough, trust marks, spot the gotcha | `walkthrough.js`, `trust.js`, `gotcha.js` | Each draws one kind of thing in a step |
+| 5 | content packs | `packs.js` | Only used when a pack is loaded |
+| 6 | ask about this lesson, backends | `ask.js`, `backends.js` | Touch the model and storage: move with care |
+| 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |
 
 ## Recipes
 

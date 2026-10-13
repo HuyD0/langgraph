@@ -64,6 +64,12 @@ The server **caches the page when it starts**: restart it after every `build-pag
    is visible, retake the screen gallery (`node scripts/screenshots.mjs`, see
    [docs/screens/README.md](docs/screens/README.md)) so the pictures stay true.
 4. Content changes: `uv run drill tutor map` was run.
+5. Front-end changes: the beginner course [docs/course/inside-page-html.html](docs/course/inside-page-html.html)
+   still tells the truth. It shows real lines from `page.html`, `tokens.css` and `build.py`;
+   `tests/test_course.py` fails when one of them disappears and names the lesson to update. If
+   you change a pattern it teaches (how screens render, events, saving, tokens, the build),
+   update that lesson's snippet and its `anchors` entry, then republish it to its artifact
+   (https://claude.ai/artifact/TYnPBikbTkiCJoGLdkQ9Ws; read the live one first).
 
 ## House rules
 
@@ -96,5 +102,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `page.html` (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
 - `dist/` is git-ignored; the page is built, never committed.
+- Some sections of `page.html` live in `src/drill/content/page/` and come back in at their
+  `/*INCLUDE page/<file>*/` line. Search both places, read the page through `build.page_source()`,
+  and when moving a section, check the build's fingerprint is unchanged ([docs/FRONTEND.md](docs/FRONTEND.md), "Parts").
 - Other sessions publish the claude.ai artifact too: compare the live page with your build
   before publishing, so you don't undo someone else's work.

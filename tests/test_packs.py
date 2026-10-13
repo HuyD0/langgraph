@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from drill.content import build, modules, packs
+from drill.content.build import page_source
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLE = ROOT / "tests" / "fixtures" / "content-packs" / "example"
@@ -89,7 +90,7 @@ def test_slots_and_empty_journeys_leave_no_gaps(copy):
 
 
 def test_every_practice_kind_has_a_renderer_and_a_contract():
-    page = (ROOT / "src" / "drill" / "content" / "page.html").read_text()
+    page = page_source()
     shapes = page.split("const PX_SHAPE = {")[1].split("};")[0]
     for kind, shape in packs.PRACTICE_KINDS.items():
         assert f'{kind}: "{shape}"' in shapes, f"page.html has no renderer for {kind}"
@@ -150,7 +151,7 @@ def test_aliases_carry_progress_over(copy):
     pack = packs.load_pack(copy)
     lesson = next(lesson for m in pack.modules for lesson in m.lessons if lesson["id"] == "ex_config_links_v2")
     assert lesson["pack"]["aliases"] == ["ex_config_links"]
-    page = (ROOT / "src" / "drill" / "content" / "page.html").read_text()
+    page = page_source()
     assert "function migrateAliases()" in page and page.count("migrateAliases();") >= 2
 
 

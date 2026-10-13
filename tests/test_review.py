@@ -8,6 +8,7 @@ from drill.content.build import build_data
 from drill.review_checks import flags_gap, missing_pillars, review_checks
 from drill.review_eval import CASES, score
 from drill.server.observe import answer_checks, clean_context
+from drill.content.build import page_source
 
 GOOD = """**Reliability**
 Risk: medium. Findings: "HR reviews each draft before sending".
@@ -33,7 +34,7 @@ def test_the_prompt_lists_the_card_every_pillar_and_the_rules():
 def test_the_page_and_the_lesson_use_the_shared_card_and_prompt():
     data = build_data()
     assert data["review"]["cardFields"] == review.CARD_FIELDS and data["review"]["pillars"] == review.PILLARS
-    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    page = page_source()
     assert "const RV = D.review;" in page and "Reliability" not in page.split("const RV = D.review;")[1].split("// ---------- views")[0]
     lesson = {p["id"]: p for p in data["bank"]}["use_case_card"]
     fields = re.findall(r'"(\w+)"', lesson["solution"].split("fields = [")[1].split("]")[0])
@@ -119,7 +120,7 @@ def test_the_pilot_outcome_and_ratings_reach_the_snapshot():
     text = tutor.snapshot({"lessons": {}, "mine": own}, [], build_data(), today="2026-10-12")
     assert "Their pilot's call, by their own bars: fix." in text
     assert "1 useful, 1 not; reasons given: missed a risk" in text
-    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    page = page_source()
     assert 'sendFeedback(request, feature, "pilot_outcome", call)' in page
 
 

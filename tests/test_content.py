@@ -16,6 +16,7 @@ from drill.content import big_o_leftovers, build_data, build_page, check_exercis
 from drill.content import modules
 from drill.content.model import Module
 from drill.problems import ALL_PROBLEMS
+from drill.content.build import page_source
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +54,7 @@ def test_every_module_has_an_icon_for_its_stickers():
     # Each sticker shows its module's icon inside its phase's shape.
     import re
     from pathlib import Path
-    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    page = page_source()
     icons = page.split("const MOD_ICON = {", 1)[1].split("};", 1)[0]
     named = set(re.findall(r'"?([a-z-]+)"?\s*:', icons))
     missing = [mid for mid in modules.ORDER if mid not in named]
@@ -64,7 +65,7 @@ def test_every_lesson_picture_belongs_to_a_real_lesson():
     # A lesson's own sticker picture is a sprite symbol "s-<lesson id>"; a typo would silently fall back.
     import re
     from pathlib import Path
-    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    page = page_source()
     pictures = re.findall(r'<symbol id="s-([a-z0-9_]+)"', page)
     lessons = {lid for m in modules.load(modules.ORDER) for lid in m.lesson_ids}
     assert pictures, "no lesson pictures found"
@@ -109,7 +110,7 @@ def test_page_embeds_the_design_tokens(data):
     from pathlib import Path
 
     here = Path(__file__).parent.parent / "src" / "drill" / "content"
-    tokens, page = (here / "tokens.css").read_text(), (here / "page.html").read_text()
+    tokens, page = (here / "tokens.css").read_text(), page_source()
     defined = set(re.findall(r"(--[a-z][a-z0-9-]*)\s*:", tokens))
     used = set(re.findall(r"var\((--[a-z][a-z0-9-]*)", page))
     page_local = set(re.findall(r"(?<!var\()(--[a-z][a-z0-9-]*)", page))  # e.g. --toph, set by the script
@@ -141,7 +142,7 @@ def test_the_page_only_looks_up_elements_that_exist():
     import re
     from pathlib import Path
 
-    page = (Path(__file__).parent.parent / "src" / "drill" / "content" / "page.html").read_text()
+    page = page_source()
     static = set(re.findall(r'id="([A-Za-z0-9_-]+)"', page))
     looked_up = set(re.findall(r'\$\("([A-Za-z0-9_-]+)"\)', page))
     assert looked_up <= static, f"looked up but not on the page: {sorted(looked_up - static)}"
@@ -206,7 +207,7 @@ def test_motion_effects_keep_their_promises():
     import re
     from pathlib import Path
 
-    page = (Path(__file__).parent.parent / "src" / "drill" / "content" / "page.html").read_text()
+    page = page_source()
     fx = page.split("/* fx: start */")[1].split("/* fx: end */")[0]
     assert "infinite" not in fx and "blur(" not in fx, "effects must end on their own and stay cheap to draw"
     played = set(re.findall(r'fxScreen\("([a-z]+)"', page)) | set(re.findall(r'fxOn\(.*?, "([a-z]+)", FX\.', page))
@@ -241,7 +242,7 @@ def test_phase_tabs_are_one_piece_with_their_room():
     """Home's phases are a real tab list joined to the room below, and only the room's title shape glows."""
     from pathlib import Path
 
-    page = (Path(__file__).parent.parent / "src" / "drill" / "content" / "page.html").read_text()
+    page = page_source()
     rail = page.split("function railHtml(")[1].split("\n}")[0]
     assert 'role="tablist"' in rail and 'role="tab"' in rail and "aria-selected" in rail and 'aria-controls="phasePanel"' in rail
     assert 'badgeSvg(i, 11, st === "done" ? "done" : "")' in rail, "the tabs never get the glowing 'now' badge"
@@ -311,7 +312,7 @@ def test_trust_marks_are_wired_into_the_learn_step():
     from pathlib import Path
 
     root = Path(__file__).parent.parent / "src" / "drill" / "content"
-    page, tokens = (root / "page.html").read_text(), (root / "tokens.css").read_text()
+    page, tokens = page_source(), (root / "tokens.css").read_text()
     learn = page.split("function learnPane()")[1].split("\n}")[0]
     assert "withTrust(cur.id, first" in learn and "withTrust(cur.id, p" in learn
     for name in ("--mark", "--mark-glow"):
@@ -377,7 +378,7 @@ def test_every_platform_module_tells_the_tutor_its_setting():
     by_id = {m["id"]: m for m in data["modules"]}
     for mid in track["modules"]:
         assert "Azure Databricks" in by_id[mid]["setting"], mid
-    assert "modOf[cur.id].setting" in PAGE_TEMPLATE.read_text(), "the tutor's lesson context must include the setting"
+    assert "modOf[cur.id].setting" in page_source(), "the tutor's lesson context must include the setting"
 
 
 def test_the_frontend_guide_and_screen_gallery_match_the_code():
@@ -387,7 +388,7 @@ def test_the_frontend_guide_and_screen_gallery_match_the_code():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    page = (root / "src/drill/content/page.html").read_text()
+    page = page_source()
     guide = (root / "docs/FRONTEND.md").read_text()
     table = guide.split("## Map of the script", 1)[1].split("\n## ", 1)[0]
     markers = [m for cell in re.findall(r"^\| `([^`]+)`(?: / `([^`]+)`)? \|", table, re.M) for m in cell if m]
@@ -416,7 +417,7 @@ def test_fast_changing_lessons_say_when_they_were_checked():
         for lesson in mod.lessons:
             if mod.id in dated:
                 assert lesson["checked"] and lesson["sources"], f"{lesson['id']} needs checked= and sources="
-    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    page = page_source()
     assert f"const STALE_DAYS = {STALE_DAYS};" in page, "the page and drill content stale agree on when to warn"
     later = freshness(modules.load(), datetime.date(2030, 1, 1))
     total = sum(len(m.lesson_ids) for m in modules.load())
@@ -448,7 +449,7 @@ def test_every_walkthrough_screen_can_be_drawn_and_explained():
     from drill.content.build import PAGE_TEMPLATE
     from drill.content.model import SCREEN_KINDS
 
-    page = PAGE_TEMPLATE.read_text()
+    page = page_source()
     views = re.search(r"const SL_VIEW = \{(.*?)\n\};", page, re.S).group(1)
     for kind in SCREEN_KINDS:
         assert re.search(rf"^\s*{kind}: d =>", views, re.M), f"page.html can't draw a {kind!r} screen"
@@ -469,7 +470,7 @@ def test_new_components_get_dusk_from_surface_tokens_not_their_own_rules():
     known = {".btn.primary", ".btn.primary.soft", ".callout.ahead", ".drawer", ".foot", ".keyidea", ".mfn",
              ".mfn.busy", '.stepbtn[aria-current="step"] i', '[data-theme="dusk"] .stepbtn[aria-current="step"] i',
              ".top", "body"}
-    page = PAGE_TEMPLATE.read_text()
+    page = page_source()
     css = page[page.index("<style>"):page.index("</style>")]
     new = set()
     for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
@@ -490,7 +491,7 @@ def test_practice_sets_can_be_drawn_and_answered():
     from drill.content.build import PAGE_TEMPLATE
     from drill.content.model import EVIDENCE_KINDS
 
-    page = PAGE_TEMPLATE.read_text()
+    page = page_source()
     for kind in EVIDENCE_KINDS:
         assert f'e.kind === "{kind}"' in page, f"page.html can't draw {kind!r} evidence"
     sets = [(p["id"], p["practice"]) for p in build_data()["bank"] if p.get("practice")]
@@ -513,3 +514,18 @@ def test_every_fix_the_yaml_question_starts_broken_and_can_be_fixed():
     for pid, a in fixes:
         assert problems(a["start"], a["rules"], a["goal"]), f"{pid}: the starting YAML already passes"
         assert problems(a["answer"], a["rules"], a["goal"]) == [], f"{pid}: the model answer fails: {problems(a['answer'], a['rules'], a['goal'])}"
+
+
+def test_every_page_part_is_included_exactly_once():
+    # page.html keeps some sections in src/drill/content/page/ and pulls each in with a line of its
+    # own, /*INCLUDE page/<file>*/, at the spot it belongs. A part nobody includes would silently
+    # vanish from the page; a part included twice would run twice.
+    import re
+
+    from drill.content.build import PAGE_PARTS, PAGE_TEMPLATE
+    template = PAGE_TEMPLATE.read_text()
+    included = re.findall(r"^/\*INCLUDE (page/[A-Za-z0-9_.-]+)\*/$", template, re.M)
+    on_disk = sorted(f"page/{p.name}" for p in PAGE_PARTS.iterdir() if p.is_file())
+    assert sorted(included) == on_disk, f"included {sorted(included)}, but page/ holds {on_disk}"
+    assert len(included) == len(set(included)), "a part is included twice"
+    assert "/*INCLUDE" not in page_source(), "every include is filled in"
