@@ -663,7 +663,7 @@ GLOSSARY = [
         [
             [
                 'state',
-                "Terraform's record of which real objects it manages and their last known settings. Here it lives in an Azure storage blob or in Spacelift.",
+                "In Terraform (not the LangGraph meaning): the record of which real objects it manages and their last known settings. Here it lives in an Azure storage blob or in Spacelift.",
             ],
             [
                 'plan / apply',
@@ -675,8 +675,8 @@ GLOSSARY = [
                 'A resource\'s name in Terraform, like `module.uc.databricks_catalog.sales` or `azurerm_storage_container.lake["bronze"]`.',
             ],
             [
-                'root module / stack',
-                'The folder you run Terraform in. In Spacelift, each stack runs one root module with its own state.',
+                'stack (Spacelift)',
+                'In Spacelift (not the data structure): one set of Terraform code, its root module (the folder you run Terraform in), with its own state, planned and applied on its own.',
             ],
             ['module', 'A reusable folder of Terraform code with inputs (variables) and outputs.'],
             [
@@ -760,6 +760,54 @@ GLOSSARY = [
             [
                 'spillover',
                 'Sending the requests that overflow a provisioned deployment to a pay-as-you-go deployment instead of failing them. Reserve the steady baseline and spill the peaks.',
+            ],
+            [
+                'YAML',
+                'A plain-text format for settings, written as `name: value` lines, with indents to show what belongs inside what. Platform teams use YAML files so product teams can ask for things without writing code.',
+            ],
+            [
+                'Terraform',
+                'A tool that builds cloud infrastructure from code. You describe what you want; Terraform works out the changes (the plan) and makes them (the apply).',
+            ],
+            [
+                'Spacelift',
+                'A service that runs Terraform for a team: it plans every change, shows it for review, checks it with policies, and applies it once approved.',
+            ],
+            [
+                'runbook',
+                "On a platform team, often the name for the Terraform code that reads the team's YAML and turns it into resources. Elsewhere it means a written how-to for operating something, like the steps to restart a service.",
+            ],
+            [
+                'Pydantic',
+                "A Python library that checks data against a model you describe, such as which fields exist and what type each is. It rejects data that doesn't fit, with a message saying what was wrong.",
+            ],
+            [
+                'Rego',
+                'The policy language of Open Policy Agent (OPA). Spacelift policies are written in it: short rules that look at a plan and say allow, warn or deny.',
+            ],
+            [
+                'Microsoft Entra ID',
+                "Microsoft's sign-in and identity service, formerly Azure Active Directory. It holds the people, groups and service principals that Azure and Databricks give access to.",
+            ],
+            [
+                'pull request (PR)',
+                'A request to merge your changes into the main branch, where others can review them, comment and approve first. Spacelift posts its proposed plan on the PR.',
+            ],
+            [
+                'commit',
+                'One saved snapshot of changes in a repository, with a message and an ID. Saying which commit a run used tells you exactly which version of the code it read.',
+            ],
+            [
+                'branch',
+                'A separate line of work in a repository. You make changes on a branch, then merge it into the main branch through a pull request.',
+            ],
+            [
+                'repository (repo)',
+                "A project's folder of files kept in Git, with the full history of every change. A config repo holds settings, such as a platform team's YAML.",
+            ],
+            [
+                'CIDR',
+                'A way to write a block of network addresses, like `10.20.0.0/24`. The number after the slash sets the size: the smaller the number, the bigger the block.',
             ],
         ],
     ],
@@ -878,8 +926,8 @@ GLOSSARY = [
             ],
             ['hash map', 'Another name for a dict: a structure with instant lookup by key.'],
             [
-                'stack',
-                'A pile where the last thing added is the first taken off (last in, first out, or LIFO). Good for matching nested things.',
+                'stack (data structure)',
+                'In code (not the Spacelift meaning): a pile where the last thing added is the first taken off (last in, first out, or LIFO). Good for matching nested things.',
             ],
             [
                 'two pointers',
@@ -925,8 +973,8 @@ GLOSSARY = [
                 'A function whose output depends only on its inputs and that changes nothing outside itself. Easiest kind to test.',
             ],
             [
-                'state',
-                'The data a LangGraph app carries from step to step, such as attempts, hints and the latest result.',
+                'state (LangGraph)',
+                'In LangGraph (not the Terraform meaning): the data a LangGraph app carries from step to step, such as attempts, hints and the latest result.',
             ],
             [
                 'partial update',

@@ -1,13 +1,15 @@
 """Terraform foundations: read a plan, keep state safe, and change infrastructure in the right order."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, stack, source
 
 MODULE = module('terraform', 'Terraform foundations', 'Read a plan, keep state safe, and change infrastructure in the right order.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'summarize_plan',
     title='What a Terraform plan really says',
+    checked='2026-10-13',
+    sources=[source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan'), source('JSON output format', 'https://developer.hashicorp.com/terraform/internals/json-format')],
     learn=[
         '`terraform plan` compares your code with **state** (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy.',
         '`terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.',
@@ -158,6 +160,8 @@ count += 1   # count is now 1""",
 
 lesson(MODULE, 'find_replacements',
     title='Spotting dangerous replacements',
+    checked='2026-10-13',
+    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace')],
     learn=[
         "Some attributes can't change in place. Changing them **forces replacement**: Terraform destroys the resource and creates a new one.",
         'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan\'s mark for a replacement) before approving.',
@@ -308,6 +312,8 @@ names.append('ana')   # ['ana']""",
 
 lesson(MODULE, 'lock_info',
     title='State and locking',
+    checked='2026-10-13',
+    sources=[source('State locking', 'https://developer.hashicorp.com/terraform/language/state/locking'), source('terraform force-unlock', 'https://developer.hashicorp.com/terraform/cli/commands/force-unlock')],
     learn=[
         "**State** is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a **lock** first.",
         'A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead.',
@@ -471,6 +477,8 @@ ages['ana'] = 30   # {'ana': 30}""",
 
 lesson(MODULE, 'count_shift',
     title='count vs for_each',
+    checked='2026-10-13',
+    sources=[source('count meta-argument', 'https://developer.hashicorp.com/terraform/language/meta-arguments/count'), source('for_each meta-argument', 'https://developer.hashicorp.com/terraform/language/meta-arguments/for_each'), source('Refactor modules (moved blocks)', 'https://developer.hashicorp.com/terraform/language/modules/develop/refactoring')],
     learn=[
         '`count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).',
         'Remove the first item from a `count` list and every later item shifts position. Terraform sees changed names and replaces them, and for storage containers that deletes their data. Use `for_each`, and `moved` blocks to migrate.',
@@ -606,6 +614,8 @@ else: size = 'small'""",
 
 lesson(MODULE, 'apply_order',
     title='Dependencies and stacks',
+    checked='2026-10-13',
+    sources=[source('Dependency graph', 'https://developer.hashicorp.com/terraform/internals/graph'), source('Stack dependencies', 'https://docs.spacelift.io/concepts/stack/stack-dependencies')],
     learn=[
         'Terraform builds a **dependency graph** (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.',
         "A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift **stacks** (a stack is one set of Terraform code with its own state, planned and applied on its own), with a **stack dependency** between them.",

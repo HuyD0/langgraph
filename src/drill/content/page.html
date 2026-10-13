@@ -271,8 +271,16 @@ body.pk-on #home { padding-bottom: 96px; }
 .duechip .ic { width: 15px; height: 15px; }
 .duechip .n { font: 600 12px var(--mono); color: var(--fg); background: var(--sunk); border-radius: 999px; padding: 0 7px; }
 .duechip.due { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--accent-soft); }
-.duechip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-:root:not([data-motion="off"]) .duechip .dot { animation: pk-pulse 1.8s ease-in-out infinite; }
+.duechip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.studyrow { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 14px; border-radius: 14px; border: 1px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.studyrow .pk-ring { width: 34px; height: 34px; font-size: 14px; }
+.studyrow .sr-t { flex: 1; min-width: 0; display: grid; } .studyrow .sr-t b { font-size: 15px; } .studyrow .sr-t span { font-size: 13px; color: var(--muted); }
+.studyrow.due .sr-t span { color: var(--accent); }
+.studyrow .chev { color: var(--muted); transform: rotate(-90deg); }
+@media (hover: hover) { .studyrow:hover { border-color: var(--accent); } }
+.reviewline { justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0; font-size: 14px; }
+.reviewline .ic { width: 16px; height: 16px; }
+/* the chip's dot stays still: due reviews are worth knowing about, not worth flashing */
 @keyframes pk-pulse { 50% { box-shadow: 0 0 2px var(--accent); opacity: .6; } }
 /* the aura on a tray with something due (dusk theme) */
 :root[data-theme="dusk"] .pocket.burn { border-color: rgba(91, 140, 255, .5); }
@@ -374,7 +382,8 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .example { display: grid; gap: 6px; }
 pre.code { margin: 0; font: 14px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
 /* long lines wrap rather than run off the edge on a phone; wide tables scroll, with a fade saying there's more */
-.dtwrap.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
+pre.code.aligned { white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+pre.code.aligned.more, .dtwrap.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
 /* Terraform, plan output, state JSON and lock errors: the plan's marks, attribute names, and what forces a replacement */
 .syn .pm { font-weight: 700; } .syn .pm.a { color: var(--pass); } .syn .pm.d { color: var(--fail); } .syn .pm.u { color: var(--accent); } .syn .pm.r { color: var(--hint); }
 .syn .key { color: var(--syn-fn); }
@@ -2159,7 +2168,8 @@ function renderHome() {
       <h2>${esc(LESSONS[tid].title)}</h2>
       <span class="meta">${esc(why)}</span>
       ${go ? `<div class="steps" aria-hidden="true">${STEPS.map((_, k) => `<i class="${k < s.step ? "done" : k === s.step ? "now" : ""}"></i>`).join("")}</div>` : ""}
-      <button class="btn primary" data-open="${tid}">${label}</button></section>`;
+      <button class="btn primary" data-open="${tid}">${label}</button>
+      ${dueList().length ? `<button class="linkbtn reviewline" data-review-start>${ic("clock")}Also: ${dueList().length} quick review${dueList().length === 1 ? "" : "s"} · about ${Math.max(1, Math.round(dueList().length * .7))} min</button>` : ""}</section>`;
   } else {
     hello = `<h1>${wd}.</h1><p class="meta">AI engineering on Databricks.</p>`;
     card = `<section class="next"><span class="eyebrow">Path complete</span><h2>You've finished every lesson.</h2></section>`;
@@ -2182,6 +2192,7 @@ function renderHome() {
   $("home").innerHTML = `<div class="hello">${hello}</div>
     ${card}
     ${aiOffNote()}
+    ${studyRowHtml()}
     ${!progress.focus && !fresh && TRACKS.length ? `<div class="callout focusask"><b>New: a platform track</b><p>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift. What do you want to practise?</p><div class="seg" role="group" aria-label="What you practise"><button data-focus-pick="ai">AI</button><button data-focus-pick="platform">Platform</button><button data-focus-pick="both">Both</button></div></div>` : ""}
     ${progress.focus === "platform" ? TRACKS.map(trackPage).join("") : ""}
 
@@ -2573,10 +2584,13 @@ function renderSearch() {
   const q = $("searchIn").value.trim(), terms = searchTerms(q), out = $("searchOut");
   if (!terms.length) {
     const recent = ALL_LESSONS.filter(id => started(id) && !isDoneL(id)).slice(0, 3);
-    const nid = nextInOrder();
-    const phases = PHASES.map((ph, i) => `<button class="chipbtn sphase" data-phase-go="${i}">${badgeSvg(i, 7, phState(i))}${esc(ph.name)}</button>`).join("");
-    const tries = ["leakage", "retries", "Unity Catalog", "canary", "split_by_key"].map(t => `<button class="chipbtn" data-try="${esc(t)}">${esc(t)}</button>`).join("");
-    out.innerHTML = `<section class="sgrp"><h3>Jump to a phase</h3><div class="sphases">${phases}</div></section>
+    const nid = todayLesson();
+    const phases = PHASES.map((ph, i) => `<button class="chipbtn sphase" data-phase-go="${i}">${badgeSvg(i, 7, phState(i))}${esc(ph.name)}</button>`).join("")
+      + TRACKS.map(tr => `<button class="chipbtn sphase strack" data-track-go="${tr.id}"><svg viewBox="-12 -12 24 24" width="18" height="18" aria-hidden="true">${phShape(TRACK_SHAPE, 8)}</svg>${esc(tr.name)}</button>`).join("");
+    const tries = (progress.focus === "platform" ? ["runbook", "Spacelift", "Unity Catalog", "state lock", "service principal"]
+      : progress.focus === "both" ? ["leakage", "Spacelift", "Unity Catalog", "canary", "runbook"]
+      : ["leakage", "retries", "Unity Catalog", "canary", "split_by_key"]).map(t => `<button class="chipbtn" data-try="${esc(t)}">${esc(t)}</button>`).join("");
+    out.innerHTML = `<section class="sgrp"><h3>Jump to a phase or track</h3><div class="sphases">${phases}</div></section>
       ${nid || recent.length ? `<section class="sgrp"><h3>Pick up where you are</h3><div class="slist">${[...new Set([nid, ...recent].filter(Boolean))].map(id => lessonHit(id, [])).join("")}</div></section>` : ""}
       <section class="sgrp"><h3>Try</h3><div class="minis">${tries}</div></section>
       <p class="meta">Searches lesson titles and text, the functions you write, the glossary and your study list.</p>`;
@@ -2767,7 +2781,9 @@ function showDone(id, after, fresh) {
   const item = (ok, html) => `<li class="${ok ? "" : "skip"}">${ic(ok ? "check" : "arrowr")}<span>${html}</span></li>`;
   const recap = [
     s.checked === null ? item(false, "You skipped the check.") : item(true, s.checked === ans ? "Got the check right first time." : "Worked through the check."),
-    sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
+    sol && sol.mode === "practice" && p.practice ? item(true, `Answered the practice questions: ${Math.max(0, p.practice.asks.length - (sol.hints || 0))} of ${p.practice.asks.length} right first time.`)
+    : sol && sol.mode === "sort" && p.sort ? item(true, `Sorted the ideas: ${Math.max(0, p.sort.items.length - (sol.hints || 0))} of ${p.sort.items.length} right first time.`)
+    : sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
         : item(false, `Skipped <b>${esc(p.title)}</b>.<button class="linkbtn" data-build="${id}">Try it now</button>`),
     item(true, `Learned the pattern: <b>${esc(L.angle[0])}</b>.`),
   ].join("");
@@ -2953,18 +2969,29 @@ function checkedNote(L) {
   if (!sources.length) return `<p class="checked${old ? " old" : ""}">${ic("clock")}<span>${esc(head)}</span></p>`;
   return `<details class="checked${old ? " old" : ""}"><summary>${ic("clock")}<span>${esc(head)}</span></summary><ul>${links}</ul></details>`;
 }
+// The options in a fixed shuffled order per lesson, so the right one isn't always in the same place
+// (it was B in most lessons). Answers are still saved by their original position, so progress and
+// the managers' dashboard don't change.
+function checkOrder(id, n) {
+  let h = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 2166136261);
+  const order = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; const j = h % (i + 1); [order[i], order[j]] = [order[j], order[i]]; }
+  return order;
+}
 function checkPane() {
   const L = LESSONS[cur.id], s = lp(cur.id);
   const [q, opts, ans, why] = L.check, answered = s.checked !== null;
-  const buttons = opts.map((o, k) => {
+  const order = checkOrder(cur.id, opts.length), letter = k => "ABCDEF"[order.indexOf(k)];
+  const buttons = order.map(k => {
+    const o = opts[k];
     let cls = "opt";
     if (answered && k === ans) cls += " right";
     else if (answered && k === s.checked) cls += " wrong";
-    return `<button class="${cls}" data-opt="${k}"${answered ? " disabled" : ""}><span class="k">${"ABC"[k]}</span><span>${md(o)}</span></button>`;
+    return `<button class="${cls}" data-opt="${k}"${answered ? " disabled" : ""}><span class="k">${letter(k)}</span><span>${md(o)}</span></button>`;
   }).join("");
   const verdict = !answered ? "" : s.checked === ans
     ? `<div class="verdict ok">${ic("check")}<div><b>Right.</b> ${md(why)}</div></div>`
-    : `<div class="verdict no">${ic("x")}<div><b>Not quite: it's ${"ABC"[ans]}.</b> ${md(why)}</div></div>`;
+    : `<div class="verdict no">${ic("x")}<div><b>Not quite: it's ${letter(ans)}.</b> ${md(why)}</div></div>`;
   return `<p class="q">${md(q)}</p><div class="opts">${buttons}</div>${verdict}${answered ? `<button class="linkbtn" data-retry>Try again</button>${askPanel()}` : ""}`;
 }
 const SAY_WORDS = 4;  // "one sentence": enough words to be a thought, not a box ticked
@@ -4257,9 +4284,11 @@ function pkDetail(it) {
 function renderPocket() {
   const due = dueList(), learn = learnList(), got = gotList(), total = studyItems.length;
   const onHome = !$("home").hidden;
-  const show = total > 0 && (onHome || pkOpen) && $("focus").hidden;
-  document.body.classList.toggle("pk-on", total > 0 && onHome);
-  $("pocket").hidden = !show; $("pocket").classList.toggle("open", pkOpen); $("pocket").classList.toggle("burn", due.length > 0);
+  // It opens as a sheet when asked for, and otherwise stays out of the way: no bar over the page, no
+  // aura. Home shows it as one quiet row in the page; other pages show a small header chip.
+  const show = pkOpen && $("focus").hidden;
+  document.body.classList.remove("pk-on");
+  $("pocket").hidden = !show; $("pocket").classList.toggle("open", pkOpen); $("pocket").classList.remove("burn");
   $("pkScrim").hidden = !(pkOpen && show);
   $("pkToggle").setAttribute("aria-expanded", String(pkOpen));
   $("pkNum").textContent = due.length || learn.length || got.length;
@@ -4271,13 +4300,21 @@ function renderPocket() {
     : learn.length ? `${things(learn.length)} you saved and are still learning`
     : got.length ? `All learned · next review ${whenText(got[0].reviewAt)}` : "Select text in a lesson to save it here";
   $("pkStart").hidden = !due.length;
-  // the header chip, on pages where the tray is not waiting at the bottom
+  const row = $("studyRow"); if (row) row.outerHTML = studyRowHtml();
+  // the header chip, on pages other than Home (Home has its row)
   const chip = $("dueChip");
   chip.hidden = !total || onHome;
   document.body.classList.toggle("chip-on", !chip.hidden);
   chip.classList.toggle("due", due.length > 0);
   chip.innerHTML = due.length ? `<span class="dot"></span>${due.length} to review` : `Study list <b class="n">${learn.length || total}</b>`;
   chip.setAttribute("aria-label", due.length ? `${due.length} due for review: open your study list` : "Open your study list");
+}
+// Home's study list: one row in the page, under Today. Nothing when nothing is saved.
+function studyRowHtml() {
+  const total = studyItems.length; if (!total) return `<span id="studyRow" hidden></span>`;
+  const due = dueList().length, learn = learnList().length, got = gotList().length;
+  const bits = [learn ? `${learn} learning` : "", due ? `${due} to review` : "", got && !learn && !due ? `all ${got} learned` : ""].filter(Boolean).join(" · ");
+  return `<button class="studyrow${due ? " due" : ""}" id="studyRow" data-study-open><span class="pk-ring" style="--p:${Math.round(100 * got / total)}"><span>${due || learn || got}</span></span><span class="sr-t"><b>Study list</b><span>${bits}</span></span>${ic("chevron", "chev")}</button>`;
 }
 function renderStudy() {
   markSaved();
@@ -4591,11 +4628,13 @@ function colourCode() {
     const t = pre.textContent;
     if (pre.dataset.hl === String(t.length)) return;
     pre.innerHTML = looksInfra(t) ? hlInfra(t) : hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
+    // columns lined up with spaces lose their meaning when wrapped: those boxes scroll sideways instead
+    pre.classList.toggle("aligned", t.split("\n").filter(l => /\S {2,}\S/.test(l)).length >= 2);
   });
-  document.querySelectorAll(".dtwrap").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
+  document.querySelectorAll(".dtwrap, pre.code.aligned").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
 }
 { let queued = false; new MutationObserver(() => { if (queued) return; queued = true; setTimeout(() => { queued = false; colourCode(); }, 0); }).observe(document.body, { childList: true, subtree: true, characterData: true }); colourCode(); }
-document.addEventListener("scroll", e => { const w = e.target.closest && e.target.closest(".dtwrap"); if (w) w.classList.toggle("more", w.scrollLeft + w.clientWidth < w.scrollWidth - 4); }, true);
+document.addEventListener("scroll", e => { const w = e.target.closest && e.target.closest(".dtwrap, pre.code.aligned"); if (w) w.classList.toggle("more", w.scrollLeft + w.clientWidth < w.scrollWidth - 4); }, true);
 function syncCodeScroll() { const hl = $("codeHl"); hl.scrollLeft = ed.scrollLeft; hl.style.setProperty("--sl", ed.scrollLeft + "px"); }
 function drawCode() {
   $("codeHl").innerHTML = hlPython(ed.value).split("\n").map(l => `<span class="ln">${l}</span>`).join("\n") + "\n";
@@ -4689,6 +4728,9 @@ document.addEventListener("click", async e => {
   if (t.closest("#searchClose")) { closeSearch(); return; }
   const tr = t.closest("[data-try]"); if (tr) { $("searchIn").value = tr.dataset.try; renderSearch(); $("searchIn").focus(); return; }
   const wd = t.closest("[data-word]"); if (wd) { wordOpen = wordOpen === wd.dataset.word ? null : wd.dataset.word; renderSearch(); return; }
+  if (t.closest("[data-study-open]")) { openPocket(); return; }
+  const rs = t.closest("[data-review-start]"); if (rs) { startReview(null, rs); return; }
+  const trk = t.closest("[data-track-go]"); if (trk) { goHome(); requestAnimationFrame(() => { const el = $("track-" + trk.dataset.trackGo); if (el) el.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); }); return; }
   const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
   const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openPocket(sn.dataset.snote); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }

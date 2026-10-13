@@ -69,7 +69,8 @@ FROM {t('events')} e WHERE e.{LEARNER}
 GROUP BY 1, 2""",
         "ds_wrong_checks": f"""
 SELECT e.owner AS learner, timestamp_seconds(e.at) AS at, l.no || ' ' || l.title AS lesson, l.phase,
-  substr('ABC', CAST(get_json_object(e.detail, '$.answer') AS INT) + 1, 1) AS picked, substr('ABC', l.check_answer + 1, 1) AS right_answer
+  coalesce(get_json_object(e.detail, '$.picked'), substr('ABC', CAST(get_json_object(e.detail, '$.answer') AS INT) + 1, 1)) AS picked,
+  coalesce(get_json_object(e.detail, '$.right'), substr('ABC', l.check_answer + 1, 1)) AS right_answer
 FROM {t('events')} e JOIN {t('lessons')} l ON l.id = e.lesson_id
 WHERE e.kind = 'checked' AND e.{LEARNER} AND CAST(get_json_object(e.detail, '$.answer') AS INT) <> l.check_answer""",
         "ds_hints": f"""

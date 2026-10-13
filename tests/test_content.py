@@ -410,7 +410,8 @@ def test_fast_changing_lessons_say_when_they_were_checked():
     from pathlib import Path
 
     from drill.content.freshness import STALE_DAYS, freshness
-    dated = {"workspace", "access", "databricks-ai"}
+    # ...and every platform-track lesson, which teaches products (Spacelift, Terraform, Unity Catalog) that change
+    dated = {"workspace", "access", "databricks-ai"} | {mid for _, _, _, ms in modules.TRACKS for mid in ms}
     for mod in modules.load():
         for lesson in mod.lessons:
             if mod.id in dated:

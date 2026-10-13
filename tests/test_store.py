@@ -126,6 +126,10 @@ def test_the_page_saving_progress_and_asking_are_logged(tmp_path):
                      ("lesson_done", "claim_gate"), ("asked", "claim_gate")]
     assert store.events()[-1]["detail"] == {"feature": "hint", "hint_level": 2}
     assert client.get("/api/health").json()["owner"] == "local"
+    # the page shuffles Check options, so the event keeps the words, not just the position
+    checked = next(e for e in store.events() if e["kind"] == "checked")
+    options, right = Bank.load().lessons["claim_gate"]["check"][1:3]
+    assert checked["detail"] == {"answer": 0, "picked": options[0], "right": options[right]}
 
 
 # -- saving ---------------------------------------------------------------------
