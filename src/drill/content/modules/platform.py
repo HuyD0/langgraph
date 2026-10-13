@@ -1,8 +1,9 @@
 """Databricks as code: the workspace, catalogs and network of an ML platform, kept in Terraform."""
 
+from drill.content.modules.platform_world import PLATFORM_SETTING
 from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
 
-MODULE = module('platform', 'Databricks as code', 'The workspace, catalogs and network of an ML platform, kept in Terraform.')
+MODULE = module('platform', 'Databricks as code', 'The workspace, catalogs and network of an ML platform, kept in Terraform.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'missing_tags',

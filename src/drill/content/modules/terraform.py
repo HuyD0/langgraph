@@ -1,8 +1,9 @@
 """Terraform foundations: read a plan, keep state safe, and change infrastructure in the right order."""
 
+from drill.content.modules.platform_world import PLATFORM_SETTING
 from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
 
-MODULE = module('terraform', 'Terraform foundations', 'Read a plan, keep state safe, and change infrastructure in the right order.')
+MODULE = module('terraform', 'Terraform foundations', 'Read a plan, keep state safe, and change infrastructure in the right order.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'summarize_plan',

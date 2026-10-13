@@ -86,8 +86,17 @@ before keeping it.
 ## Tracks
 
 A track is a set of modules that sits beside the six phases, with its own order. The first is the
-**Platform track** (Azure Databricks, Terraform foundations, Databricks as code, Spacelift), set in
-`TRACKS` in `src/drill/content/modules/__init__.py`.
+**Platform track** (How the platform repos fit together, Azure Databricks, Terraform foundations,
+Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__init__.py`.
+
+- **How the platform repos fit together** comes first because it is the map: product teams ask in
+  YAML (config repo), the Terraform runbook reads it and adds defaults and access, modules and
+  providers build it, and Spacelift runs each stage (Foundation, Service) as a reviewed plan. Its
+  lessons follow one request through that chain. Every name in it is invented.
+- **The tutor stays in that world.** Each track module passes `setting=PLATFORM_SETTING`
+  (`modules/platform_world.py`) to `module(...)`; the page adds it to every tutor request, so
+  "Give me a harder one like this" asks about workspaces, stacks and service principals, not
+  web apps. A test checks every platform module has it.
 
 - **On the path page** it has its own box under the phases, one scene per module. Its lessons are
   numbered P1.1 (module 1, lesson 1) and all share one sticker shape, the octagon, so they never
