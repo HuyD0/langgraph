@@ -20,6 +20,9 @@ const PORT = 9333;
 const PHONE = { width: 375, height: 812, mobile: true };
 const DESKTOP = { width: 1366, height: 860, mobile: false };
 
+// A few saved items, so the study list has something to show on a fresh database.
+const STUDY = `for (const t of ["A gate is a question that can stop an idea outright.", "terraform plan shows what would change, before anything does.", "The runbook reads the team's YAML."]) await addItem(t, "screens");`;
+
 // name, size, look, then the page script that reaches the screen (it may be async).
 const SHOTS = [
   ["home-phone-dusk", PHONE, "dusk", `goHome();`],
@@ -40,7 +43,9 @@ const SHOTS = [
   ["done-screen-phone-dusk", PHONE, "dusk", `progress.solved.field_status = true; lp("field_status").filled = 3;
      openLesson("field_status", 3); goNext();`],
   ["walkthrough-phone-dusk", PHONE, "dusk", `openLesson("read_a_run", 0); at(".walk figure:nth-of-type(2)");`],
-  ["study-tray-phone-dusk", PHONE, "dusk", `goHome(); openPocket();`],
+  ["practice-phone-dusk", PHONE, "dusk", `openLesson("folder_access", 2); at(".shead");`],
+  ["study-row-phone-dusk", PHONE, "dusk", `${STUDY} goHome(); at(".next");`],
+  ["study-list-phone-dusk", PHONE, "dusk", `${STUDY} goHome(); openPocket();`],
   ["search-phone-dusk", PHONE, "dusk", `goHome(); openSearch();`],
 ];
 
