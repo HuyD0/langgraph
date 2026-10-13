@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 164 lessons in 24 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 164 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 164 lessons in 25 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 164 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -2029,7 +2029,7 @@ Alert on how fast you're using up the budget (the burn rate), not on every error
 
 Follow one request from YAML through the runbook and Spacelift to Azure Databricks.
 
-Coming soon, not built yet (say so if asked; don't teach them as if they exist): Which repo do I change?; Upgrade a module through DEV, UAT and PROD; What to send the platform owner.
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): Which repo do I change?; Upgrade a module through DEV, UAT and PROD.
 
 ### 132. What happened to my YAML field? (`field_status`)
 
@@ -2064,35 +2064,13 @@ Reading the plan, you compare what Terraform will build with what the YAML asked
 - **Exercise:** Predict the Cluster, writing `build_cluster`. Approach: Collect every problem first; only if there are none, build the result with the defaults filled in.
 - **Explain:** the pattern is Check it, then build what the runbook would. Why this pattern: The big idea: before you trust a plan, predict it from the YAML. Your code first collects problems: a raw policy_id, or a size that is not exactly num_workers or both min and max. Any problem means you return the list of problems. Otherwise it builds the cluster the way the runbook does: code and name joined and lower-cased, the named policy or Personal Compute, the size as given, and the owner group as manager. It is like checking an order form before the kitchen cooks it: send back the impossible ones, then make the rest the house way. What to say: "Before I read the plan, I work out what the runbook will build. I reject a raw policy_id and a size that mixes the two styles. Then I add the team's code to the name and use Personal Compute if no policy is named."
 
-### 135. Why can't the plan find the service principal? (`lookup_failed`)
-
-A service principal (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word data in the error path means Terraform tried to look up something that should already exist; it was never going to create it.
-An SP has to pass several stages, in order, before a lookup works. It must exist in Microsoft Entra ID. It must be declared in the team's `service_principals.yml`. The Foundation stack must have been applied, which registers it in the Databricks account. Then the Service stack assigns it to the workspace.
-Each stage is separate: one being done says nothing about the next. A name in YAML is not proof the SP exists. A green proposed run in Spacelift is a preview, not an apply. And an SP named only in a connector's permissions, not in `service_principals.yml`, is never picked up by Foundation.
-So you check the stages in order and stop at the first one that isn't true. Before anything else, make sure you are reading the config at the same commit the failed run used: the repo may have changed since.
-
-- **Check:** The SP is declared in `service_principals.yml` and the Foundation stack shows a proposed run that finished. The Service plan still cannot find it. What do you check next? Right answer: Whether Foundation was actually applied. Why: A finished proposed run is only a preview: it does not register anything. Ask for evidence that Foundation was applied. Rerunning or recreating identities changes things without knowing the cause.
-- **Exercise:** Find the First Missing Stage, writing `next_check`. Approach: Walk the stages in the order they must happen and return at the first gap.
-- **Explain:** the pattern is Check the stages in order, stop at the first gap. Why this pattern: The big idea: a lookup fails when an earlier stage is not done, so you check the stages in the order they must happen and stop at the first one that is not true. Your code goes through the facts in a fixed order: the same commit as the run, the SP in Entra ID, declared in service_principals.yml, Foundation applied, assigned by Service. It returns the name of the first missing step. If all are true, what is left is the name or scope. It is like a parcel that never arrived: check it was sent, then that it reached the depot, then the van, in that order. What to say: "A failed lookup means an earlier stage isn't done. I check them in order: Entra ID, declared in the YAML, Foundation applied, then assigned to the workspace. I stop at the first one that's missing."
-
-### 136. Getting unstuck with AI, safely (`ai_unstuck`)
-
-AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: explaining an unfamiliar term or error, tracing a name across files (YAML, then the runbook, then the module), and suggesting checks. They are not evidence. Anything they say is a lead until you've seen it yourself.
-A good prompt gives the AI what a person would need: the run (stack, environment, run link), the first error (a short excerpt, not the whole log), the repo and the commit the run used, and the rules: read-only, link every source, mark guesses as guesses, give one safe next check, and don't edit or deploy anything.
-Then check the answer against three rules. *Version*: does it read the same commit as the run, not today's main branch? *Evidence*: does each claim point at a file and line you can open, and does that line really say it? *Safety*: did you paste anything secret, and does it suggest changing something without approval?
-Never paste secrets, tokens, keys, state files or whole logs with credentials in them. And never let an assistant change infrastructure for you: re-running a plan, resetting state or recreating an identity to make an error go away hides the cause.
-
-- **Check:** An AI assistant says the service principal "must be registered, because it is declared in service_principals.yml on main". What is wrong with relying on that? Right answer: It read main, not the run's commit, and a declaration doesn't prove Foundation registered it. Why: Two of the three rules fail: the version (main, not the run's commit) and the evidence (a name in YAML isn't proof that an earlier stage ran). Recreating identities would break the safety rule.
-- **Exercise:** Is This Prompt Ready?, writing `prompt_gaps`. Approach: Check each required fact in a fixed order, then look for anything secret.
-- **Explain:** the pattern is Give it the facts, check its claims. Why this pattern: The big idea: an AI assistant is a fast reader, not a witness. You give it what a person would need (the run, the first error, the repo and the commit, read-only), then treat every claim as a lead until you have seen the file yourself, at the run's commit. Your code checks a prompt before it is sent: it lists what is missing, in a fixed order, and flags anything that looks like a secret. It is like briefing a new colleague: give them the facts and the ground rules, then check their findings before you act. What to say: "I give the AI the run, the first error and the commit the run used, and tell it to stay read-only. Then I check every claim against the file at that commit, and I never paste secrets."
-
 ## Azure Databricks (stage: Platform track)
 
 The workspace, Unity Catalog and who can see what, before any of it goes into code.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace, a metastore and a catalog; Private networking: VNet injection and Private Link.
 
-### 137. Who can read this table? (`can_read_table`)
+### 135. Who can read this table? (`can_read_table`)
 
 In Azure Databricks every table lives at a three-part address: catalog.schema.table, like `main.sales.orders`. Unity Catalog is the part of Databricks that keeps those addresses and decides who may use them. A catalog is the top folder, a schema is a folder inside it, and a table sits in a schema.
 To read a table you need a key at every level on the way down: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.
@@ -2103,169 +2081,13 @@ Keys are given to principals: a person, a group, or a service principal (an iden
 - **Exercise:** Can They Read It?, writing `can_read`. Approach: Collect the keys they hold, then check each level: catalog, schema, table, each on its own place or above.
 - **Explain:** the pattern is A key at every level on the way down. Why this pattern: The big idea: Unity Catalog checks three keys before you read a table: USE CATALOG on its catalog, USE SCHEMA on its schema, SELECT on the table. A key given higher up counts below it, and ALL PRIVILEGES counts as any key. Your code first collects every key the person holds, through any of their groups, as a set of (privilege, where) pairs. Then it asks three questions: USE CATALOG on the catalog; USE SCHEMA on the catalog or the schema; SELECT on the catalog, the schema or the table. Only three yeses mean yes. It is like walking into an office: the front door, then the floor, then the room, and a master key opens all three. What to say: "To read a table in Unity Catalog, I need three keys: USE CATALOG, USE SCHEMA and SELECT. A key given higher up covers everything below it, but one missing key means no access."
 
-## Databricks building blocks (stage: Platform track)
-
-Compute, runtimes, jobs, bundles, tags and what they cost.
-
-### 138. Which compute for which work (`pick_compute`)
-
-Compute is the machines that run your code. Databricks bills it in DBUs (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.
-All-purpose compute (also called classic compute) is a cluster you start, share and work in from notebooks. Jobs compute is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose.
-Serverless compute means Databricks runs the machines for you. It starts in seconds and there is nothing to size. It works for notebooks, jobs and pipelines.
-A SQL warehouse runs SQL, dashboards and Genie (ask questions of your data in plain words). A serverless SQL warehouse is the recommended kind.
-Serverless doesn't take init scripts (a script that sets up each machine as it starts) or other custom machine setup. Work that needs a GPU (a chip built for training models) usually means classic compute too.
-
-- **Check:** A nightly job needs an init script that installs a company certificate on every machine. Which compute fits? Right answer: Jobs compute. Why: Serverless doesn't run init scripts, so it needs classic compute. Jobs compute is classic, made just for the run and cheaper per DBU than all-purpose.
-- **Exercise:** Pick the Compute, writing `pick_compute`. Approach: Walk the list once. For each item, an if / elif / else chain where the first rule that fits decides.
-- **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: the kind of work and its special needs decide the compute. Your code goes through the workloads one by one and asks questions in a fixed order. Is it SQL? Then a SQL warehouse, whatever else it needs. If not, does it need a GPU or an init script? Then classic compute: all-purpose for a notebook, jobs compute for a job. Anything left goes to serverless. The order matters: the first rule that fits decides. What to say: "I check SQL first and send it to a SQL warehouse, then special machine needs, and default the rest to serverless. For anything scheduled, jobs compute beats all-purpose."
-
-### 139. Databricks Runtime versions (`unsupported_runtimes`)
-
-The Databricks Runtime (DBR) is the software image on the compute: Spark, Python and a set of libraries, each at a fixed version. You pick it when you create classic compute.
-LTS means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.
-The ML runtime adds machine learning libraries on top. Terraform and the API name a runtime with a `spark_version` string: `"15.4.x-scala2.12"` is 15.4, `"16.4.x-cpu-ml-scala2.13"` is the 16.4 ML runtime, `"14.3.x-gpu-ml-scala2.12"` is 14.3 ML for GPU machines.
-Support dates, as of October 2026: 12.2 LTS ended in March 2026 and 13.3 LTS in August 2026. 14.3 LTS is supported until February 2027 and 15.4 LTS until August 2027. The docs keep a table for every version.
-Serverless picks and upgrades its runtime for you. Some features need a newer runtime: tables protected by ABAC (access rules driven by tags) need 16.4 or later on classic compute.
-
-- **Check:** It is October 2026 and a cluster runs `13.3.x-scala2.12`. What should you do? Right answer: Move it to a supported LTS such as 15.4 or 16.4, because 13.3 LTS support ended in August 2026. Why: Once support ends there are no more fixes, security ones included. Restarting doesn't change the version; you have to change `spark_version`.
-- **Exercise:** Find Old Runtimes, writing `unsupported_runtimes`. Approach: Filter: split each string to get the key, then keep the ones not in the list.
-- **Explain:** the pattern is Cut out the key, then check membership. Why this pattern: The big idea: every cluster names its runtime in one string, so you can check a whole workspace against the supported list. Your code goes through the clusters in order. For each one it cuts the version out of `spark_version` by splitting the text at `".x"` and keeping the first piece. Then it asks one question: is that version in the supported list? If not, the cluster's name goes into the result. What to say: "I take the version from each cluster's spark_version, the part before .x, and flag every cluster whose version isn't on the supported list, so it can move to a current LTS runtime."
-
-### 140. Cluster policies (`policy_violations`)
-
-A compute policy (older docs say cluster policy) limits what people can set when they create compute. Each rule targets one setting.
-A rule can fix a value, allow only values from an allowlist, or keep a number in a range. Typical targets are `autotermination_minutes`, `node_type_id` (the machine size) and `custom_tags.team`.
-This keeps cost and tags in line without anyone checking by hand. Users need the CAN_USE permission on a policy to create compute with it.
-
-- **Check:** A policy has `"autotermination_minutes": {"type": "range", "maxValue": 60}`. Someone sets it to 0. Does the policy stop them? Right answer: No, 0 is a number between nothing and 60, so it passes. Add a minValue too. Why: 0 means "never auto-terminate", but the rule only compares numbers. With no `minValue`, 0 is inside the range. Set `"minValue": 10` as well.
-- **Exercise:** Check Against the Policy, writing `policy_violations`. Approach: Go through the rules. For each, look up the setting, then pick the test by the rule's type.
-- **Explain:** the pattern is Look up each rule, check by its type. Why this pattern: The big idea: a policy is a set of rules, one per setting, and each rule type has its own simple test. Your code goes through the policy's rules in order. For each one it first looks up the setting in the cluster. Missing breaks the rule. Otherwise it checks by type: fixed means equal, allowlist means in the list, range means not below `minValue` and not above `maxValue`, checking only the limits that are given. What to say: "I check every policy rule against the cluster: a fixed value must match, an allowlist must contain it, and a range must hold it. A missing setting breaks the rule too."
-
-### 141. Jobs: tasks that depend on each other (`skipped_tasks`)
-
-Lakeflow Jobs (formerly Databricks Workflows) run your work on a schedule. A job has tasks, and `depends_on` says which tasks must finish before a task starts.
-Each task has a Run if condition. The default is "all succeeded": run only if every task it depends on succeeded.
-So when a task fails, every task downstream of it (depending on it, directly or through others) doesn't run. The run marks them as upstream failed, not as failures of their own.
-A repair run reruns only the failed tasks and the ones that were skipped because of them, not the whole job. Run production jobs as a service principal (an identity for software, not a person), so they keep working when someone leaves.
-
-- **Check:** `clean` failed and `features` and `report` were skipped. You fix the bug. What does a repair run do? Right answer: Reruns clean, features and report, and keeps the earlier results of ingest and audit. Why: A repair run picks up the failed task and everything skipped after it. Tasks that succeeded keep their results, which saves time and compute.
-- **Exercise:** Find the Skipped Tasks, writing `skipped_tasks`. Approach: Keep a list of stopped tasks. Walk the tasks in order; any task that depends on a stopped one is skipped and becomes stopped too.
-- **Explain:** the pattern is Spread through a list in order. Why this pattern: The big idea: a failure spreads downstream, so you track which tasks are stopped. Your code starts a list of stopped tasks with only the failed one. Because each task comes after the tasks it depends on, one pass in order is enough. For each task it asks: does it depend on any stopped task? If yes, it is skipped. Add it to the result and to the stopped list, so the tasks after it see it too. What to say: "I keep a list of stopped tasks, starting with the failed one. Going in order, any task that depends on a stopped task is skipped and joins the list."
-
-### 142. Bundles: one source, many targets (`resolve_variables`)
-
-Declarative Automation Bundles (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files.
-`databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev target, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.
-Variables have defaults and are used as `${var.catalog}`. A target can set its own value, which wins over the default.
-`mode: development` puts your name in front of resource names, so people don't overwrite each other in dev. In prod, set `run_as` to a service principal so jobs don't run as a person.
-
-- **Check:** `catalog` has a default of `dev_sales`, and the prod target sets it to `prod_sales`. What does `${var.catalog}` become in `deploy -t prod`? Right answer: prod_sales. Why: The target's value wins over the default. The default is what's used when nothing else sets it.
-- **Exercise:** Fill In the Variables, writing `resolve_variables`. Approach: Go through the declared names, check the more specific source first, and collect what falls through.
-- **Explain:** the pattern is Layered lookup: specific value, then default. Why this pattern: The big idea: one set of files deploys to many places, and each place fills in its own values. Your code goes through the declared variables. For each name it asks in order: does the target set it? Use that. Is there a default? Use that. Neither? Then it's missing. The missing names are sorted at the end, so the error message is the same every time. What to say: "For each variable, the target value wins, then the default. Anything with neither is missing, and bundle validate should fail on it."
-
-### 143. Why tagging matters (`tag_coverage`)
-
-Tags are key-value labels, like `team = data`. On Databricks they do four jobs.
-Cost. Compute `custom_tags`, and serverless budget policies (newer docs: serverless usage policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.
-Access. Governed tags on catalogs, schemas, tables and columns drive ABAC policies (attribute-based access control): column masks and row filters that follow the tag, wherever the data is.
-Finding and classifying data. Tags make data searchable, and data classification can tag sensitive columns for you. Ownership and clean-up. An `owner` tag says who to ask before deleting something.
-Databricks adds its own default tags too: Vendor, Creator, ClusterName and ClusterId. Tags only apply to usage after they're set, never backwards. Untagged spend is spend nobody owns.
-
-- **Check:** You add `team = ml` to a cluster today. What happens to last month's usage rows for that cluster? Right answer: They stay untagged. Tags only apply from now on. Why: Usage rows record the tags that were there at the time. Tag early, ideally through a policy, because you can't fix the past.
-- **Exercise:** Measure Tag Coverage, writing `tag_coverage`. Approach: Two running totals in one pass, then one division, guarded against a total of 0.
-- **Explain:** the pattern is Two running totals, then a share. Why this pattern: The big idea: tags only help if most of the spend carries them, so you measure coverage. Your code keeps two running totals. For each usage row it asks one question: does `custom_tags` have the key? Its cost goes into tagged or untagged. At the end the percent is tagged divided by the total, times 100. If the total is 0, the percent is 0, so you never divide by zero. What to say: "I add up tagged and untagged cost, and report the tagged share. Untagged spend is what nobody owns, so that is the number to drive down."
-
-### 144. Who spent what (`cost_by_tag`)
-
-`system.billing.usage` has one row per piece of usage: `usage_quantity` (how many DBUs), `sku_name` (what kind of compute, which sets the price), `custom_tags` (a map of tags) and `usage_date`.
-`system.billing.list_prices` has the list price per DBU for each SKU. It is the public price, not any discount you have agreed, so treat the result as a guide, not the invoice.
-Join the two on `sku_name`, multiply DBUs by the price, and group by a tag to see who spent what. Budgets in the account console send email alerts when spend passes a threshold you choose.
-
-- **Check:** Your query says the ml team spent $4,000 last month at list price. Finance says the invoice was lower. Who's right? Right answer: Both can be right. List price ignores your discount, so it's a fair way to compare teams, not the exact invoice. Why: `list_prices` holds public prices. Use it to compare and trend; use the invoice or your agreed rates for exact money.
-- **Exercise:** Spend by Team, writing `cost_by_tag`. Approach: Group by a key in a dict: add to the total if the group is there, start it if not. Round at the end.
-- **Explain:** the pattern is Group and add up. Why this pattern: The big idea: spend only means something when you can say whose it is. Your code keeps a dict from tag value to dollars. For each usage row it finds the group: the tag value, or "untagged" if the row has no such tag. Then it works out the dollars, DBUs times the price for that SKU, and adds them to the group, starting it at the first dollars if it is new. At the end it rounds each total. What to say: "I group usage by the tag, price each row from its SKU, and add it up. Untagged gets its own line so it can't hide."
-
-### 145. Idle compute is the quiet bill (`idle_cost`)
-
-A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until auto-termination stops it.
-`autotermination_minutes` sets how long a cluster may sit idle before it stops. 0 means never: it runs until someone stops it.
-SQL warehouses have auto stop (`auto_stop_mins`). Serverless compute stops quickly on its own. A compute policy can force a maximum, so no one can set 0.
-
-- **Check:** A cluster uses 4 DBUs an hour at $0.55 a DBU, and sits idle 5 hours every day with auto-termination off. Roughly what does the idle time cost in 30 days? Right answer: About $330. Why: 5 hours a day for 30 days is 150 hours. 150 times 4 DBUs is 600 DBUs, times $0.55 is $330, plus the Azure machine bill on top.
-- **Exercise:** Price the Idle Time, writing `idle_cost`. Approach: Work out one number per item, then sort the pairs by that number, biggest first.
-- **Explain:** the pattern is Cap each value, work out the cost, sort. Why this pattern: The big idea: idle minutes are paid for but do nothing, and auto-termination caps them. Your code goes through the clusters. For each one it works out the idle minutes billed each day: all of them if auto-termination is 0, otherwise whichever is smaller, the idle minutes or the auto-termination setting. Turn minutes into hours, times the days, times DBUs an hour, times the price. Round it, and sort with the most expensive first. What to say: "For each cluster I cap the idle time at its auto-termination setting, price the idle hours, and sort so the biggest waste is at the top."
-
-## Databricks access control (stage: Platform track)
-
-Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.
-
-### 146. Workspace objects have their own permissions (`missing_acls`)
-
-Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own access control list (ACL): a list of who may do what to that one object.
-Each object type has its own permission levels, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.
-SQL warehouses: `CAN_VIEW` < `CAN_MONITOR` < `CAN_USE` < `CAN_MANAGE`. Model serving endpoints: `CAN_VIEW` < `CAN_QUERY` < `CAN_MANAGE`. Compute policies (rules for what clusters people may create): `CAN_USE`. Databricks Vector Search endpoints: `CAN_USE` < `CAN_MANAGE`, and querying an index also needs `SELECT` on the index in Unity Catalog.
-Registered models live in Unity Catalog, so they use UC grants such as `EXECUTE` instead of an ACL.
-Experiments are the classic miss. You log runs and traces to an experiment in your own user folder, and a teammate cannot see any of it. Put team experiments in a shared folder and give the team group `CAN_READ` or `CAN_EDIT`.
-
-- **Check:** A teammate has `SELECT` on every table you used, but cannot see your MLflow runs. What is missing? Right answer: A permission on the experiment itself, like CAN_READ. Why: Experiments are workspace objects with their own ACL. Table grants do not reach them.
-- **Exercise:** Find the Missing ACLs, writing `missing_acls`. Approach: Look up, then compare positions. `levels[kind].index(level)` turns a level name into a number you can compare.
-- **Explain:** the pattern is Compare positions in an ordered list. Why this pattern: The big idea: each object type has its levels in order, weakest first, so "is this level high enough?" becomes "does it sit at the same place or later in the list?". Your code goes through each need. It finds the object type from the name, looks up what the principal has on that object, and if they have nothing, the need is missing. Otherwise it compares positions with `list.index`: a smaller position means a weaker level, so the need is missing too. What to say: "For each need I look up the principal's current level on that object. No level, or a level earlier than the need, means the ACL is missing."
-
-### 147. Access connectors, storage credentials and external locations (`location_for_path`)
-
-On Azure, Unity Catalog reaches your storage through a chain of four links. Miss one and reads fail with a "permission denied" that is hard to trace.
-1. An access connector (`azurerm_databricks_access_connector`) is an Azure resource with a managed identity: an identity Azure looks after for you, so there is no password or secret to rotate. 2. In Azure, give that identity the Storage Blob Data Contributor role on the storage account.
-3. In Unity Catalog, a storage credential points at the access connector. 4. An external location is a storage path, like `abfss://raw@lakefict.dfs.core.windows.net/sales`, plus that credential.
-Then grant the external location to groups: `READ FILES`, `WRITE FILES`, `CREATE EXTERNAL TABLE`. People never get the credential itself.
-External locations cannot overlap: Unity Catalog refuses one inside another. So any path belongs to at most one location, and it must match a whole folder: `.../sales` covers `.../sales/2026` but not `.../sales-archive`.
-
-- **Check:** An external location is set up and granted, but every read fails with a 403 from Azure storage. What is the likely gap? Right answer: The access connector's identity has no role on the storage account. Why: Unity Catalog allowed the read, but Azure refused the identity behind the credential. The Azure role is link 2 of the chain.
-- **Exercise:** Which Location Covers This Path?, writing `location_for_path`. Approach: Go through the locations; return as soon as one covers the path. Return None after the loop.
-- **Explain:** the pattern is Prefix match on whole folders. Why this pattern: The big idea: a path is covered by a location when it is the location's path or sits in a folder under it. Your code goes through the locations and, for each, checks two things: is the path exactly the url, or does the path start with the url followed by "/"? Adding the "/" is what stops `sales` from matching `sales-archive`. Because locations cannot overlap, the first match is the answer. No match means no location covers it. What to say: "I look for the location whose url is the path or a parent folder of it, matching on a whole folder. Locations can't overlap, so at most one matches."
-
-### 148. Service credentials and connections (`pick_securable`)
-
-Different targets need different Unity Catalog objects. Using the wrong one is a common reason "the permissions look right but nothing works".
-Files in cloud storage (`abfss://...`): a storage credential plus an external location (last lesson).
-Code that calls other Azure services, like Key Vault, Event Hubs or Azure OpenAI: a service credential. It is also built on an access connector, and users need the `ACCESS` privilege on it. It is not for reading storage.
-Another database, like PostgreSQL or SQL Server: a connection plus a foreign catalog. This is Lakehouse Federation: you query the other database as if it were a catalog. Creating one needs `CREATE CONNECTION`; then grant `USE CONNECTION` or `CREATE FOREIGN CATALOG`.
-An outside web API: an HTTP connection, which agents can call as a tool; users need `USE CONNECTION`. A plain secret value for a notebook: a secret scope, with its own ACL of `READ`, `WRITE` or `MANAGE`.
-
-- **Check:** Your agent must call an outside ticketing API with a bearer token. Which object fits best? Right answer: An HTTP connection, with USE CONNECTION granted to the agent's principal. Why: An HTTP connection stores the host and the token, and you control who can call it with USE CONNECTION.
-- **Exercise:** Pick the Right Object, writing `pick_securable`. Approach: One small function with if / elif in rule order, called for each target.
-- **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: you choose the object by looking at where the target lives. Your code checks each target against simple rules in order: storage paths first, then Azure service hosts, then any other web address, then database addresses. The first rule that fits gives the answer, and anything unknown goes to a person. Checking the Azure hosts before the general "https://" rule matters, because both start the same way. What to say: "I route by target: storage paths to external locations, Azure service calls to service credentials, other web APIs to HTTP connections, and databases to federation connections."
-
-### 149. ABAC: policies that follow tags (`masked_columns`)
-
-ABAC (attribute-based access control) means rules follow labels on the data, not a list of tables. You write the rule once and it covers every table that carries the label.
-The labels are governed tags: tags defined for the whole account with a fixed set of allowed values, like `pii` with values `email`, `phone`, `ssn`. Data stewards put them on columns or tables.
-A column mask policy or row filter policy is attached to a catalog, schema or table. It matches columns by tag, applies `TO` some groups `EXCEPT` others, and runs a SQL function (a UDF, user-defined function) that does the hiding.
-New tables with the tag are covered at once, with no per-table work. That is why ABAC is recommended over per-table masks and filters when the same rule repeats.
-It needs serverless compute or Databricks Runtime 16.4 or above. Creating or changing a policy needs `MANAGE` on the object or ownership, plus `EXECUTE` on the function.
-
-- **Check:** A policy masks columns tagged `pii=email` in schema `sales.crm`. Tomorrow someone adds a new table there with a tagged email column. What happens? Right answer: The column is masked straight away, because the policy follows the tag. Why: ABAC policies match by tag, so any new table with the tag is covered automatically.
-- **Exercise:** Which Columns Are Masked?, writing `masked_columns`. Approach: Nested loops: for each column, try each policy. One policy that applies is enough to mask it.
-- **Explain:** the pattern is For each item, does any rule match?. Why this pattern: The big idea: a column is masked for you when some policy matches its tag and applies to you. Your code goes through the columns in order. For each one it tries every policy: does the column have that tag with that value? Are you in one of the "to" groups, or does "to" say everyone? Are you in none of the "except" groups? If one policy says yes to all three, the column goes in the list and you move on. What to say: "For each column I look for a policy whose tag and value match, that targets one of my groups, and that doesn't exempt any of my groups. One such policy is enough to mask it."
-
-### 150. Grant to groups, run as service principals (`grants_to_people`)
-
-Grant to groups, not to people. People move teams and leave; a grant to a person goes stale, while a group's membership is managed in one place.
-Groups usually come from Entra ID (Azure's sign-in and user directory), synced by SCIM provisioning (a standard way to copy users and groups between systems) or by automatic identity management.
-Jobs and production apps should run as a service principal: an identity for software, not a person. On Azure its name is an application ID, a long id like `6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10`.
-Owners should be groups too. If a person owns a catalog, job or experiment and leaves, things break or nobody can change them.
-This applies to every list in this module: table grants, experiment and cluster ACLs, service credentials and connections. A person's email in any of them is a smell.
-
-- **Check:** A nightly job runs as Ana and reads three tables. Ana moves to another team and loses access. What should have been done? Right answer: Run the job as a service principal with its own grants. Why: A service principal belongs to no one, so the job keeps working when people move.
-- **Exercise:** Find Grants to People, writing `grants_to_people`. Approach: Filter, then reshape: keep the matching dicts and turn each into a short list.
-- **Explain:** the pattern is Filter by a simple mark. Why this pattern: The big idea: people show up in grant lists by their email address, so an "@" is a cheap, reliable sign of a grant to a person. Your code goes through the grants in order and keeps every one whose principal contains "@". Groups have plain names and service principals have application IDs, so neither contains "@" and neither is flagged. What to say: "I flag every grant whose principal is an email address, because those are grants to people. Groups and service principals pass."
-
 ## Terraform foundations (stage: Platform track)
 
 Read a plan, keep state safe, and change infrastructure in the right order.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): Variables, outputs and modules; Bringing existing resources under Terraform; Renaming without destroying; Pinning provider versions.
 
-### 151. What a Terraform plan really says (`summarize_plan`)
+### 136. What a Terraform plan really says (`summarize_plan`)
 
 `terraform plan` compares your code with state (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy.
 `terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.
@@ -2290,7 +2112,7 @@ Coming soon, not built yet (say so if asked; don't teach them as if they exist):
   # the 1 to destroy is the workspace itself: stop and fix it
   ```
 
-### 152. Spotting dangerous replacements (`find_replacements`)
+### 137. Spotting dangerous replacements (`find_replacements`)
 
 Some attributes can't change in place. Changing them forces replacement: Terraform destroys the resource and creates a new one.
 On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan's mark for a replacement) before approving.
@@ -2321,7 +2143,7 @@ On an Azure Databricks workspace, that means a new URL and losing everything ins
   }
   ```
 
-### 153. State and locking (`lock_info`)
+### 138. State and locking (`lock_info`)
 
 State is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a lock first.
 A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead.
@@ -2351,7 +2173,7 @@ A crashed run can leave the lock behind. Before `terraform force-unlock`, check 
   # and commit .terraform.lock.hcl
   ```
 
-### 154. count vs for_each (`count_shift`)
+### 139. count vs for_each (`count_shift`)
 
 `count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).
 Remove the first item from a `count` list and every later item shifts position. Terraform sees changed names and replaces them, and for storage containers that deletes their data. Use `for_each`, and `moved` blocks to migrate.
@@ -2379,7 +2201,7 @@ Remove the first item from a `count` list and every later item shifts position. 
   }
   ```
 
-### 155. Dependencies and stacks (`apply_order`)
+### 140. Dependencies and stacks (`apply_order`)
 
 Terraform builds a dependency graph (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.
 A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks (a stack is one set of Terraform code with its own state, planned and applied on its own), with a stack dependency between them.
@@ -2404,13 +2226,279 @@ A Databricks provider configured from a workspace that doesn't exist yet can't p
   }
   ```
 
+## Spacelift (stage: Platform track)
+
+Stacks, runs and the policies that guard every change.
+
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): Drift detection; Contexts and secrets; Testing a policy before it blocks.
+
+### 141. Reading a Spacelift run (`read_a_run`)
+
+A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
+Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
+Then the Changes tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
+A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.
+
+- **Check:** A run on the UAT stack shows FINISHED and Proposed, and the planning log says "Plan checks are GO". What has been deployed? Right answer: Nothing: a proposed run only previews. Why: Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.
+- **Exercise:** What Does This Run Prove?, writing `what_it_proves`. Approach: Check the cases that apply to any run first, then the ones that depend on the type.
+- **Explain:** the pattern is Header first, then changes, then the log. Why this pattern: The big idea: a run's type and state together say what it proves. A proposed run is only ever a preview; a tracked run deploys once someone confirms it. Your code reads those two fields and returns what the run proves, checking the cases that apply to any run first (not started yet), then proposed runs, then tracked ones. It is like reading a parcel's tracking page: "label printed" and "delivered" are both finished steps, but only one means it arrived. What to say: "I read a run from the top: the stack, the environment and the commit, then the Changes tab, then the log. A finished proposed run is only a preview, and GO means the policies passed, not that a person approved it."
+
+### 142. What runs after a change? (`runs_after`)
+
+In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
+Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
+Order matters. A stack only runs once every stack it waits for has finished, if that stack is running too. If `jobs` waits for `workspace` and `catalogs`, it goes after both, even though `workspace` changed first.
+Stacks that don't depend on the change, directly or through another stack, don't run at all. That keeps a small change small.
+
+- **Check:** `network` changes. `jobs` waits for `workspace` and `catalogs`, and `catalogs` waits for `workspace`. When can `jobs` run? Right answer: Once workspace and catalogs have both finished. Why: A stack runs only after every stack it waits for has finished, when those are running too. workspace runs first, then catalogs, and only then jobs.
+- **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
+- **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When one stack changes, every stack that uses it has to run again. I list those, then run them in an order where each one waits for the stacks it needs."
+
+### 143. Policies as guardrails (`guard_destroys`)
+
+A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
+Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
+
+- **Check:** A plan policy blocks destroying storage accounts. Can someone still lose one? Right answer: Yes, by deleting it in the Azure portal, with the Azure CLI, or with a local apply outside Spacelift, none of which go through the policy. Why: Policies only see plans. Pair them with RBAC (role-based access control: rules for who may do what) and resource locks.
+- **Exercise:** Write a Plan Policy, writing `guard_destroys`. Approach: Filter, then format. Turn the protected list into a set first so each check is instant.
+- **Explain:** the pattern is Check each change against a set. Why this pattern: The big idea: a plan policy checks every run automatically, starting with the resources you can't rebuild. Your code first turns the protected types into a set, a collection built to answer "is this in it?" instantly, like a book's index. Then it goes through the changes in order. A change gets a message only if its type is protected and its actions include delete. A replacement includes delete, so it counts too. An empty list means the run may go ahead. What to say: "My plan policy checks every run for changes that would delete something we can't rebuild, like a workspace. A replacement counts too. If nothing is flagged, the run can go ahead."
+- **Spot the gotcha:** "Protect the resources you can't rebuild". Workspaces, the lake storage account and the metastore hold things Terraform can't recreate. Make destroying them an error. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  resource "azurerm_databricks_workspace" "this" {
+    ...
+  }
+  ```
+
+  The fix:
+
+  ```
+  resource "azurerm_databricks_workspace" "this" {
+    ...
+    lifecycle {
+      prevent_destroy = true
+    }
+  }
+  ```
+
+### 144. Policy as code (`plan_policy`)
+
+Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
+Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.
+
+- **Check:** Why roll out a new policy as a warning first? Right answer: To see what it would block before it blocks anyone. Why: You find false positives without stopping deploys.
+- **Exercise:** Policy as Code, writing `plan_policy`. Approach: One pass, two independent rules, each adding its own message.
+- **Explain:** the pattern is Two separate rules per change. Why this pattern: The big idea: policy as code runs your review rules on every plan, starting with never destroying data you can't recreate and never opening things to the public internet. Your code goes through the changes in order and asks two separate `if` questions about each one. The first flags a protected type with a delete action. The second flags `public_access` being `True`. Neither question stops the other, so one change can get both messages, rule 1 first. What to say: "Policy as code checks our review rules on every plan. I check each change against every rule separately, so I report every problem, even two from the same change."
+- **Spot the gotcha:** "Upgrade providers on purpose". "locked provider registry.terraform.io/hashicorp/azurerm 3.116.0 does not match configured version constraint ~> 4.0; must use terraform init -upgrade" means the lock file and the constraint disagree. Run `terraform init -upgrade` in a branch, read the plan, then commit the new lock file. The learner sees this risky code and picks the rule it breaks:
+
+  ```
+  # every CI run
+  terraform init -upgrade
+  terraform apply -auto-approve
+  ```
+
+  The fix:
+
+  ```
+  # every CI run: exactly the versions in .terraform.lock.hcl
+  terraform init
+  terraform plan
+  
+  # upgrades get their own branch: read the plan, commit the new lock file
+  terraform init -upgrade
+  ```
+
+## Troubleshooting a run (stage: Platform track)
+
+When a run fails: find the first error, trace it back, and ask for help well.
+
+Coming soon, not built yet (say so if asked; don't teach them as if they exist): What to send the platform owner.
+
+### 145. Why can't the plan find the service principal? (`lookup_failed`)
+
+A service principal (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word data in the error path means Terraform tried to look up something that should already exist; it was never going to create it.
+An SP has to pass several stages, in order, before a lookup works. It must exist in Microsoft Entra ID. It must be declared in the team's `service_principals.yml`. The Foundation stack must have been applied, which registers it in the Databricks account. Then the Service stack assigns it to the workspace.
+Each stage is separate: one being done says nothing about the next. A name in YAML is not proof the SP exists. A green proposed run in Spacelift is a preview, not an apply. And an SP named only in a connector's permissions, not in `service_principals.yml`, is never picked up by Foundation.
+So you check the stages in order and stop at the first one that isn't true. Before anything else, make sure you are reading the config at the same commit the failed run used: the repo may have changed since.
+
+- **Check:** The SP is declared in `service_principals.yml` and the Foundation stack shows a proposed run that finished. The Service plan still cannot find it. What do you check next? Right answer: Whether Foundation was actually applied. Why: A finished proposed run is only a preview: it does not register anything. Ask for evidence that Foundation was applied. Rerunning or recreating identities changes things without knowing the cause.
+- **Exercise:** Find the First Missing Stage, writing `next_check`. Approach: Walk the stages in the order they must happen and return at the first gap.
+- **Explain:** the pattern is Check the stages in order, stop at the first gap. Why this pattern: The big idea: a lookup fails when an earlier stage is not done, so you check the stages in the order they must happen and stop at the first one that is not true. Your code goes through the facts in a fixed order: the same commit as the run, the SP in Entra ID, declared in service_principals.yml, Foundation applied, assigned by Service. It returns the name of the first missing step. If all are true, what is left is the name or scope. It is like a parcel that never arrived: check it was sent, then that it reached the depot, then the van, in that order. What to say: "A failed lookup means an earlier stage isn't done. I check them in order: Entra ID, declared in the YAML, Foundation applied, then assigned to the workspace. I stop at the first one that's missing."
+
+### 146. Getting unstuck with AI, safely (`ai_unstuck`)
+
+AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: explaining an unfamiliar term or error, tracing a name across files (YAML, then the runbook, then the module), and suggesting checks. They are not evidence. Anything they say is a lead until you've seen it yourself.
+A good prompt gives the AI what a person would need: the run (stack, environment, run link), the first error (a short excerpt, not the whole log), the repo and the commit the run used, and the rules: read-only, link every source, mark guesses as guesses, give one safe next check, and don't edit or deploy anything.
+Then check the answer against three rules. *Version*: does it read the same commit as the run, not today's main branch? *Evidence*: does each claim point at a file and line you can open, and does that line really say it? *Safety*: did you paste anything secret, and does it suggest changing something without approval?
+Never paste secrets, tokens, keys, state files or whole logs with credentials in them. And never let an assistant change infrastructure for you: re-running a plan, resetting state or recreating an identity to make an error go away hides the cause.
+
+- **Check:** An AI assistant says the service principal "must be registered, because it is declared in service_principals.yml on main". What is wrong with relying on that? Right answer: It read main, not the run's commit, and a declaration doesn't prove Foundation registered it. Why: Two of the three rules fail: the version (main, not the run's commit) and the evidence (a name in YAML isn't proof that an earlier stage ran). Recreating identities would break the safety rule.
+- **Exercise:** Is This Prompt Ready?, writing `prompt_gaps`. Approach: Check each required fact in a fixed order, then look for anything secret.
+- **Explain:** the pattern is Give it the facts, check its claims. Why this pattern: The big idea: an AI assistant is a fast reader, not a witness. You give it what a person would need (the run, the first error, the repo and the commit, read-only), then treat every claim as a lead until you have seen the file yourself, at the run's commit. Your code checks a prompt before it is sent: it lists what is missing, in a fixed order, and flags anything that looks like a secret. It is like briefing a new colleague: give them the facts and the ground rules, then check their findings before you act. What to say: "I give the AI the run, the first error and the commit the run used, and tell it to stay read-only. Then I check every claim against the file at that commit, and I never paste secrets."
+
+## Databricks building blocks (stage: Platform track)
+
+Compute, runtimes, jobs, bundles, tags and what they cost.
+
+### 147. Which compute for which work (`pick_compute`)
+
+Compute is the machines that run your code. Databricks bills it in DBUs (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.
+All-purpose compute (also called classic compute) is a cluster you start, share and work in from notebooks. Jobs compute is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose.
+Serverless compute means Databricks runs the machines for you. It starts in seconds and there is nothing to size. It works for notebooks, jobs and pipelines.
+A SQL warehouse runs SQL, dashboards and Genie (ask questions of your data in plain words). A serverless SQL warehouse is the recommended kind.
+Serverless doesn't take init scripts (a script that sets up each machine as it starts) or other custom machine setup. Work that needs a GPU (a chip built for training models) usually means classic compute too.
+
+- **Check:** A nightly job needs an init script that installs a company certificate on every machine. Which compute fits? Right answer: Jobs compute. Why: Serverless doesn't run init scripts, so it needs classic compute. Jobs compute is classic, made just for the run and cheaper per DBU than all-purpose.
+- **Exercise:** Pick the Compute, writing `pick_compute`. Approach: Walk the list once. For each item, an if / elif / else chain where the first rule that fits decides.
+- **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: the kind of work and its special needs decide the compute. Your code goes through the workloads one by one and asks questions in a fixed order. Is it SQL? Then a SQL warehouse, whatever else it needs. If not, does it need a GPU or an init script? Then classic compute: all-purpose for a notebook, jobs compute for a job. Anything left goes to serverless. The order matters: the first rule that fits decides. What to say: "I check SQL first and send it to a SQL warehouse, then special machine needs, and default the rest to serverless. For anything scheduled, jobs compute beats all-purpose."
+
+### 148. Databricks Runtime versions (`unsupported_runtimes`)
+
+The Databricks Runtime (DBR) is the software image on the compute: Spark, Python and a set of libraries, each at a fixed version. You pick it when you create classic compute.
+LTS means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.
+The ML runtime adds machine learning libraries on top. Terraform and the API name a runtime with a `spark_version` string: `"15.4.x-scala2.12"` is 15.4, `"16.4.x-cpu-ml-scala2.13"` is the 16.4 ML runtime, `"14.3.x-gpu-ml-scala2.12"` is 14.3 ML for GPU machines.
+Support dates, as of October 2026: 12.2 LTS ended in March 2026 and 13.3 LTS in August 2026. 14.3 LTS is supported until February 2027 and 15.4 LTS until August 2027. The docs keep a table for every version.
+Serverless picks and upgrades its runtime for you. Some features need a newer runtime: tables protected by ABAC (access rules driven by tags) need 16.4 or later on classic compute.
+
+- **Check:** It is October 2026 and a cluster runs `13.3.x-scala2.12`. What should you do? Right answer: Move it to a supported LTS such as 15.4 or 16.4, because 13.3 LTS support ended in August 2026. Why: Once support ends there are no more fixes, security ones included. Restarting doesn't change the version; you have to change `spark_version`.
+- **Exercise:** Find Old Runtimes, writing `unsupported_runtimes`. Approach: Filter: split each string to get the key, then keep the ones not in the list.
+- **Explain:** the pattern is Cut out the key, then check membership. Why this pattern: The big idea: every cluster names its runtime in one string, so you can check a whole workspace against the supported list. Your code goes through the clusters in order. For each one it cuts the version out of `spark_version` by splitting the text at `".x"` and keeping the first piece. Then it asks one question: is that version in the supported list? If not, the cluster's name goes into the result. What to say: "I take the version from each cluster's spark_version, the part before .x, and flag every cluster whose version isn't on the supported list, so it can move to a current LTS runtime."
+
+### 149. Cluster policies (`policy_violations`)
+
+A compute policy (older docs say cluster policy) limits what people can set when they create compute. Each rule targets one setting.
+A rule can fix a value, allow only values from an allowlist, or keep a number in a range. Typical targets are `autotermination_minutes`, `node_type_id` (the machine size) and `custom_tags.team`.
+This keeps cost and tags in line without anyone checking by hand. Users need the CAN_USE permission on a policy to create compute with it.
+
+- **Check:** A policy has `"autotermination_minutes": {"type": "range", "maxValue": 60}`. Someone sets it to 0. Does the policy stop them? Right answer: No, 0 is a number between nothing and 60, so it passes. Add a minValue too. Why: 0 means "never auto-terminate", but the rule only compares numbers. With no `minValue`, 0 is inside the range. Set `"minValue": 10` as well.
+- **Exercise:** Check Against the Policy, writing `policy_violations`. Approach: Go through the rules. For each, look up the setting, then pick the test by the rule's type.
+- **Explain:** the pattern is Look up each rule, check by its type. Why this pattern: The big idea: a policy is a set of rules, one per setting, and each rule type has its own simple test. Your code goes through the policy's rules in order. For each one it first looks up the setting in the cluster. Missing breaks the rule. Otherwise it checks by type: fixed means equal, allowlist means in the list, range means not below `minValue` and not above `maxValue`, checking only the limits that are given. What to say: "I check every policy rule against the cluster: a fixed value must match, an allowlist must contain it, and a range must hold it. A missing setting breaks the rule too."
+
+### 150. Jobs: tasks that depend on each other (`skipped_tasks`)
+
+Lakeflow Jobs (formerly Databricks Workflows) run your work on a schedule. A job has tasks, and `depends_on` says which tasks must finish before a task starts.
+Each task has a Run if condition. The default is "all succeeded": run only if every task it depends on succeeded.
+So when a task fails, every task downstream of it (depending on it, directly or through others) doesn't run. The run marks them as upstream failed, not as failures of their own.
+A repair run reruns only the failed tasks and the ones that were skipped because of them, not the whole job. Run production jobs as a service principal (an identity for software, not a person), so they keep working when someone leaves.
+
+- **Check:** `clean` failed and `features` and `report` were skipped. You fix the bug. What does a repair run do? Right answer: Reruns clean, features and report, and keeps the earlier results of ingest and audit. Why: A repair run picks up the failed task and everything skipped after it. Tasks that succeeded keep their results, which saves time and compute.
+- **Exercise:** Find the Skipped Tasks, writing `skipped_tasks`. Approach: Keep a list of stopped tasks. Walk the tasks in order; any task that depends on a stopped one is skipped and becomes stopped too.
+- **Explain:** the pattern is Spread through a list in order. Why this pattern: The big idea: a failure spreads downstream, so you track which tasks are stopped. Your code starts a list of stopped tasks with only the failed one. Because each task comes after the tasks it depends on, one pass in order is enough. For each task it asks: does it depend on any stopped task? If yes, it is skipped. Add it to the result and to the stopped list, so the tasks after it see it too. What to say: "I keep a list of stopped tasks, starting with the failed one. Going in order, any task that depends on a stopped task is skipped and joins the list."
+
+### 151. Bundles: one source, many targets (`resolve_variables`)
+
+Declarative Automation Bundles (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files.
+`databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev target, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.
+Variables have defaults and are used as `${var.catalog}`. A target can set its own value, which wins over the default.
+`mode: development` puts your name in front of resource names, so people don't overwrite each other in dev. In prod, set `run_as` to a service principal so jobs don't run as a person.
+
+- **Check:** `catalog` has a default of `dev_sales`, and the prod target sets it to `prod_sales`. What does `${var.catalog}` become in `deploy -t prod`? Right answer: prod_sales. Why: The target's value wins over the default. The default is what's used when nothing else sets it.
+- **Exercise:** Fill In the Variables, writing `resolve_variables`. Approach: Go through the declared names, check the more specific source first, and collect what falls through.
+- **Explain:** the pattern is Layered lookup: specific value, then default. Why this pattern: The big idea: one set of files deploys to many places, and each place fills in its own values. Your code goes through the declared variables. For each name it asks in order: does the target set it? Use that. Is there a default? Use that. Neither? Then it's missing. The missing names are sorted at the end, so the error message is the same every time. What to say: "For each variable, the target value wins, then the default. Anything with neither is missing, and bundle validate should fail on it."
+
+### 152. Why tagging matters (`tag_coverage`)
+
+Tags are key-value labels, like `team = data`. On Databricks they do four jobs.
+Cost. Compute `custom_tags`, and serverless budget policies (newer docs: serverless usage policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.
+Access. Governed tags on catalogs, schemas, tables and columns drive ABAC policies (attribute-based access control): column masks and row filters that follow the tag, wherever the data is.
+Finding and classifying data. Tags make data searchable, and data classification can tag sensitive columns for you. Ownership and clean-up. An `owner` tag says who to ask before deleting something.
+Databricks adds its own default tags too: Vendor, Creator, ClusterName and ClusterId. Tags only apply to usage after they're set, never backwards. Untagged spend is spend nobody owns.
+
+- **Check:** You add `team = ml` to a cluster today. What happens to last month's usage rows for that cluster? Right answer: They stay untagged. Tags only apply from now on. Why: Usage rows record the tags that were there at the time. Tag early, ideally through a policy, because you can't fix the past.
+- **Exercise:** Measure Tag Coverage, writing `tag_coverage`. Approach: Two running totals in one pass, then one division, guarded against a total of 0.
+- **Explain:** the pattern is Two running totals, then a share. Why this pattern: The big idea: tags only help if most of the spend carries them, so you measure coverage. Your code keeps two running totals. For each usage row it asks one question: does `custom_tags` have the key? Its cost goes into tagged or untagged. At the end the percent is tagged divided by the total, times 100. If the total is 0, the percent is 0, so you never divide by zero. What to say: "I add up tagged and untagged cost, and report the tagged share. Untagged spend is what nobody owns, so that is the number to drive down."
+
+### 153. Who spent what (`cost_by_tag`)
+
+`system.billing.usage` has one row per piece of usage: `usage_quantity` (how many DBUs), `sku_name` (what kind of compute, which sets the price), `custom_tags` (a map of tags) and `usage_date`.
+`system.billing.list_prices` has the list price per DBU for each SKU. It is the public price, not any discount you have agreed, so treat the result as a guide, not the invoice.
+Join the two on `sku_name`, multiply DBUs by the price, and group by a tag to see who spent what. Budgets in the account console send email alerts when spend passes a threshold you choose.
+
+- **Check:** Your query says the ml team spent $4,000 last month at list price. Finance says the invoice was lower. Who's right? Right answer: Both can be right. List price ignores your discount, so it's a fair way to compare teams, not the exact invoice. Why: `list_prices` holds public prices. Use it to compare and trend; use the invoice or your agreed rates for exact money.
+- **Exercise:** Spend by Team, writing `cost_by_tag`. Approach: Group by a key in a dict: add to the total if the group is there, start it if not. Round at the end.
+- **Explain:** the pattern is Group and add up. Why this pattern: The big idea: spend only means something when you can say whose it is. Your code keeps a dict from tag value to dollars. For each usage row it finds the group: the tag value, or "untagged" if the row has no such tag. Then it works out the dollars, DBUs times the price for that SKU, and adds them to the group, starting it at the first dollars if it is new. At the end it rounds each total. What to say: "I group usage by the tag, price each row from its SKU, and add it up. Untagged gets its own line so it can't hide."
+
+### 154. Idle compute is the quiet bill (`idle_cost`)
+
+A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until auto-termination stops it.
+`autotermination_minutes` sets how long a cluster may sit idle before it stops. 0 means never: it runs until someone stops it.
+SQL warehouses have auto stop (`auto_stop_mins`). Serverless compute stops quickly on its own. A compute policy can force a maximum, so no one can set 0.
+
+- **Check:** A cluster uses 4 DBUs an hour at $0.55 a DBU, and sits idle 5 hours every day with auto-termination off. Roughly what does the idle time cost in 30 days? Right answer: About $330. Why: 5 hours a day for 30 days is 150 hours. 150 times 4 DBUs is 600 DBUs, times $0.55 is $330, plus the Azure machine bill on top.
+- **Exercise:** Price the Idle Time, writing `idle_cost`. Approach: Work out one number per item, then sort the pairs by that number, biggest first.
+- **Explain:** the pattern is Cap each value, work out the cost, sort. Why this pattern: The big idea: idle minutes are paid for but do nothing, and auto-termination caps them. Your code goes through the clusters. For each one it works out the idle minutes billed each day: all of them if auto-termination is 0, otherwise whichever is smaller, the idle minutes or the auto-termination setting. Turn minutes into hours, times the days, times DBUs an hour, times the price. Round it, and sort with the most expensive first. What to say: "For each cluster I cap the idle time at its auto-termination setting, price the idle hours, and sort so the biggest waste is at the top."
+
+## Databricks access control (stage: Platform track)
+
+Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.
+
+### 155. Workspace objects have their own permissions (`missing_acls`)
+
+Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own access control list (ACL): a list of who may do what to that one object.
+Each object type has its own permission levels, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.
+SQL warehouses: `CAN_VIEW` < `CAN_MONITOR` < `CAN_USE` < `CAN_MANAGE`. Model serving endpoints: `CAN_VIEW` < `CAN_QUERY` < `CAN_MANAGE`. Compute policies (rules for what clusters people may create): `CAN_USE`. Databricks Vector Search endpoints: `CAN_USE` < `CAN_MANAGE`, and querying an index also needs `SELECT` on the index in Unity Catalog.
+Registered models live in Unity Catalog, so they use UC grants such as `EXECUTE` instead of an ACL.
+Experiments are the classic miss. You log runs and traces to an experiment in your own user folder, and a teammate cannot see any of it. Put team experiments in a shared folder and give the team group `CAN_READ` or `CAN_EDIT`.
+
+- **Check:** A teammate has `SELECT` on every table you used, but cannot see your MLflow runs. What is missing? Right answer: A permission on the experiment itself, like CAN_READ. Why: Experiments are workspace objects with their own ACL. Table grants do not reach them.
+- **Exercise:** Find the Missing ACLs, writing `missing_acls`. Approach: Look up, then compare positions. `levels[kind].index(level)` turns a level name into a number you can compare.
+- **Explain:** the pattern is Compare positions in an ordered list. Why this pattern: The big idea: each object type has its levels in order, weakest first, so "is this level high enough?" becomes "does it sit at the same place or later in the list?". Your code goes through each need. It finds the object type from the name, looks up what the principal has on that object, and if they have nothing, the need is missing. Otherwise it compares positions with `list.index`: a smaller position means a weaker level, so the need is missing too. What to say: "For each need I look up the principal's current level on that object. No level, or a level earlier than the need, means the ACL is missing."
+
+### 156. Access connectors, storage credentials and external locations (`location_for_path`)
+
+On Azure, Unity Catalog reaches your storage through a chain of four links. Miss one and reads fail with a "permission denied" that is hard to trace.
+1. An access connector (`azurerm_databricks_access_connector`) is an Azure resource with a managed identity: an identity Azure looks after for you, so there is no password or secret to rotate. 2. In Azure, give that identity the Storage Blob Data Contributor role on the storage account.
+3. In Unity Catalog, a storage credential points at the access connector. 4. An external location is a storage path, like `abfss://raw@lakefict.dfs.core.windows.net/sales`, plus that credential.
+Then grant the external location to groups: `READ FILES`, `WRITE FILES`, `CREATE EXTERNAL TABLE`. People never get the credential itself.
+External locations cannot overlap: Unity Catalog refuses one inside another. So any path belongs to at most one location, and it must match a whole folder: `.../sales` covers `.../sales/2026` but not `.../sales-archive`.
+
+- **Check:** An external location is set up and granted, but every read fails with a 403 from Azure storage. What is the likely gap? Right answer: The access connector's identity has no role on the storage account. Why: Unity Catalog allowed the read, but Azure refused the identity behind the credential. The Azure role is link 2 of the chain.
+- **Exercise:** Which Location Covers This Path?, writing `location_for_path`. Approach: Go through the locations; return as soon as one covers the path. Return None after the loop.
+- **Explain:** the pattern is Prefix match on whole folders. Why this pattern: The big idea: a path is covered by a location when it is the location's path or sits in a folder under it. Your code goes through the locations and, for each, checks two things: is the path exactly the url, or does the path start with the url followed by "/"? Adding the "/" is what stops `sales` from matching `sales-archive`. Because locations cannot overlap, the first match is the answer. No match means no location covers it. What to say: "I look for the location whose url is the path or a parent folder of it, matching on a whole folder. Locations can't overlap, so at most one matches."
+
+### 157. Service credentials and connections (`pick_securable`)
+
+Different targets need different Unity Catalog objects. Using the wrong one is a common reason "the permissions look right but nothing works".
+Files in cloud storage (`abfss://...`): a storage credential plus an external location (last lesson).
+Code that calls other Azure services, like Key Vault, Event Hubs or Azure OpenAI: a service credential. It is also built on an access connector, and users need the `ACCESS` privilege on it. It is not for reading storage.
+Another database, like PostgreSQL or SQL Server: a connection plus a foreign catalog. This is Lakehouse Federation: you query the other database as if it were a catalog. Creating one needs `CREATE CONNECTION`; then grant `USE CONNECTION` or `CREATE FOREIGN CATALOG`.
+An outside web API: an HTTP connection, which agents can call as a tool; users need `USE CONNECTION`. A plain secret value for a notebook: a secret scope, with its own ACL of `READ`, `WRITE` or `MANAGE`.
+
+- **Check:** Your agent must call an outside ticketing API with a bearer token. Which object fits best? Right answer: An HTTP connection, with USE CONNECTION granted to the agent's principal. Why: An HTTP connection stores the host and the token, and you control who can call it with USE CONNECTION.
+- **Exercise:** Pick the Right Object, writing `pick_securable`. Approach: One small function with if / elif in rule order, called for each target.
+- **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: you choose the object by looking at where the target lives. Your code checks each target against simple rules in order: storage paths first, then Azure service hosts, then any other web address, then database addresses. The first rule that fits gives the answer, and anything unknown goes to a person. Checking the Azure hosts before the general "https://" rule matters, because both start the same way. What to say: "I route by target: storage paths to external locations, Azure service calls to service credentials, other web APIs to HTTP connections, and databases to federation connections."
+
+### 158. ABAC: policies that follow tags (`masked_columns`)
+
+ABAC (attribute-based access control) means rules follow labels on the data, not a list of tables. You write the rule once and it covers every table that carries the label.
+The labels are governed tags: tags defined for the whole account with a fixed set of allowed values, like `pii` with values `email`, `phone`, `ssn`. Data stewards put them on columns or tables.
+A column mask policy or row filter policy is attached to a catalog, schema or table. It matches columns by tag, applies `TO` some groups `EXCEPT` others, and runs a SQL function (a UDF, user-defined function) that does the hiding.
+New tables with the tag are covered at once, with no per-table work. That is why ABAC is recommended over per-table masks and filters when the same rule repeats.
+It needs serverless compute or Databricks Runtime 16.4 or above. Creating or changing a policy needs `MANAGE` on the object or ownership, plus `EXECUTE` on the function.
+
+- **Check:** A policy masks columns tagged `pii=email` in schema `sales.crm`. Tomorrow someone adds a new table there with a tagged email column. What happens? Right answer: The column is masked straight away, because the policy follows the tag. Why: ABAC policies match by tag, so any new table with the tag is covered automatically.
+- **Exercise:** Which Columns Are Masked?, writing `masked_columns`. Approach: Nested loops: for each column, try each policy. One policy that applies is enough to mask it.
+- **Explain:** the pattern is For each item, does any rule match?. Why this pattern: The big idea: a column is masked for you when some policy matches its tag and applies to you. Your code goes through the columns in order. For each one it tries every policy: does the column have that tag with that value? Are you in one of the "to" groups, or does "to" say everyone? Are you in none of the "except" groups? If one policy says yes to all three, the column goes in the list and you move on. What to say: "For each column I look for a policy whose tag and value match, that targets one of my groups, and that doesn't exempt any of my groups. One such policy is enough to mask it."
+
+### 159. Grant to groups, run as service principals (`grants_to_people`)
+
+Grant to groups, not to people. People move teams and leave; a grant to a person goes stale, while a group's membership is managed in one place.
+Groups usually come from Entra ID (Azure's sign-in and user directory), synced by SCIM provisioning (a standard way to copy users and groups between systems) or by automatic identity management.
+Jobs and production apps should run as a service principal: an identity for software, not a person. On Azure its name is an application ID, a long id like `6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10`.
+Owners should be groups too. If a person owns a catalog, job or experiment and leaves, things break or nobody can change them.
+This applies to every list in this module: table grants, experiment and cluster ACLs, service credentials and connections. A person's email in any of them is a smell.
+
+- **Check:** A nightly job runs as Ana and reads three tables. Ana moves to another team and loses access. What should have been done? Right answer: Run the job as a service principal with its own grants. Why: A service principal belongs to no one, so the job keeps working when people move.
+- **Exercise:** Find Grants to People, writing `grants_to_people`. Approach: Filter, then reshape: keep the matching dicts and turn each into a short list.
+- **Explain:** the pattern is Filter by a simple mark. Why this pattern: The big idea: people show up in grant lists by their email address, so an "@" is a cheap, reliable sign of a grant to a person. Your code goes through the grants in order and keeps every one whose principal contains "@". Groups have plain names and service principals have application IDs, so neither contains "@" and neither is flagged. What to say: "I flag every grant whose principal is an email address, because those are grants to people. Groups and service principals pass."
+
 ## Databricks as code (stage: Platform track)
 
 The workspace, catalogs and network of an ML platform, kept in Terraform.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace in Terraform; Cluster policies as code; The metastore and catalogs as code; Service principals and their permissions.
 
-### 156. Tagging for cost and policy (`missing_tags`)
+### 160. Tagging for cost and policy (`missing_tags`)
 
 Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
 The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
@@ -2419,7 +2507,7 @@ The azurerm provider (Terraform's plugin for Azure) has no provider-wide default
 - **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
 - **Explain:** the pattern is List the gaps per resource. Why this pattern: The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can't be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn't empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out. What to say: "Tags decide who pays for what. I skip resources that can't be tagged, then list the required tags each one is missing."
 
-### 157. Unity Catalog grants (`grants_to_revoke`)
+### 161. Unity Catalog grants (`grants_to_revoke`)
 
 Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
 Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
@@ -2446,7 +2534,7 @@ Grants added by hand in Catalog Explorer disappear at the next apply. Put them i
   }
   ```
 
-### 158. Networking for Databricks (`overlapping_subnets`)
+### 162. Networking for Databricks (`overlapping_subnets`)
 
 VNet injection puts a Databricks workspace's clusters in your own virtual network, using a host and a container subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.
 A subnet's addresses are written as a CIDR block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.
@@ -2481,7 +2569,7 @@ Each node (one machine in a cluster) uses an address in each subnet, and Azure r
   }
   ```
 
-### 159. Who gets capacity when it's scarce (`allocate_capacity`)
+### 163. Who gets capacity when it's scarce (`allocate_capacity`)
 
 When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide who comes first before it happens, by putting each app in a tier: a group with its own rule, served most important first.
 Once its traffic is steady, a critical app moves to provisioned throughput: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on spillover: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.
@@ -2511,7 +2599,7 @@ Critical apps come first and get what they ask for. Each graduated app gets what
   }
   ```
 
-### 160. A shared space with fair limits (`check_limits`)
+### 164. A shared space with fair limits (`check_limits`)
 
 In a shared experiment space (the sandbox), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A per-user rate limit stops that: each person gets a slice, well below the whole.
 The Databricks AI gateway (now called Unity Gateway) sets limits on a service (the whole space), a default for each user, and custom ones for a group. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.
@@ -2551,88 +2639,6 @@ Give the sandbox its own Foundry deployment. If it shares a production deploymen
       renewal_period = "minute"
     }
   }
-  ```
-
-## Spacelift (stage: Platform track)
-
-Stacks, runs and the policies that guard every change.
-
-Coming soon, not built yet (say so if asked; don't teach them as if they exist): Drift detection; Contexts and secrets; Testing a policy before it blocks.
-
-### 161. Reading a Spacelift run (`read_a_run`)
-
-A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
-Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
-Then the Changes tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
-A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.
-
-- **Check:** A run on the UAT stack shows FINISHED and Proposed, and the planning log says "Plan checks are GO". What has been deployed? Right answer: Nothing: a proposed run only previews. Why: Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.
-- **Exercise:** What Does This Run Prove?, writing `what_it_proves`. Approach: Check the cases that apply to any run first, then the ones that depend on the type.
-- **Explain:** the pattern is Header first, then changes, then the log. Why this pattern: The big idea: a run's type and state together say what it proves. A proposed run is only ever a preview; a tracked run deploys once someone confirms it. Your code reads those two fields and returns what the run proves, checking the cases that apply to any run first (not started yet), then proposed runs, then tracked ones. It is like reading a parcel's tracking page: "label printed" and "delivered" are both finished steps, but only one means it arrived. What to say: "I read a run from the top: the stack, the environment and the commit, then the Changes tab, then the log. A finished proposed run is only a preview, and GO means the policies passed, not that a person approved it."
-
-### 162. What runs after a change? (`runs_after`)
-
-In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
-Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
-Order matters. A stack only runs once every stack it waits for has finished, if that stack is running too. If `jobs` waits for `workspace` and `catalogs`, it goes after both, even though `workspace` changed first.
-Stacks that don't depend on the change, directly or through another stack, don't run at all. That keeps a small change small.
-
-- **Check:** `network` changes. `jobs` waits for `workspace` and `catalogs`, and `catalogs` waits for `workspace`. When can `jobs` run? Right answer: Once workspace and catalogs have both finished. Why: A stack runs only after every stack it waits for has finished, when those are running too. workspace runs first, then catalogs, and only then jobs.
-- **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
-- **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When one stack changes, every stack that uses it has to run again. I list those, then run them in an order where each one waits for the stacks it needs."
-
-### 163. Policies as guardrails (`guard_destroys`)
-
-A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
-Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
-
-- **Check:** A plan policy blocks destroying storage accounts. Can someone still lose one? Right answer: Yes, by deleting it in the Azure portal, with the Azure CLI, or with a local apply outside Spacelift, none of which go through the policy. Why: Policies only see plans. Pair them with RBAC (role-based access control: rules for who may do what) and resource locks.
-- **Exercise:** Write a Plan Policy, writing `guard_destroys`. Approach: Filter, then format. Turn the protected list into a set first so each check is instant.
-- **Explain:** the pattern is Check each change against a set. Why this pattern: The big idea: a plan policy checks every run automatically, starting with the resources you can't rebuild. Your code first turns the protected types into a set, a collection built to answer "is this in it?" instantly, like a book's index. Then it goes through the changes in order. A change gets a message only if its type is protected and its actions include delete. A replacement includes delete, so it counts too. An empty list means the run may go ahead. What to say: "My plan policy checks every run for changes that would delete something we can't rebuild, like a workspace. A replacement counts too. If nothing is flagged, the run can go ahead."
-- **Spot the gotcha:** "Protect the resources you can't rebuild". Workspaces, the lake storage account and the metastore hold things Terraform can't recreate. Make destroying them an error. The learner sees this risky code and picks the rule it breaks:
-
-  ```
-  resource "azurerm_databricks_workspace" "this" {
-    ...
-  }
-  ```
-
-  The fix:
-
-  ```
-  resource "azurerm_databricks_workspace" "this" {
-    ...
-    lifecycle {
-      prevent_destroy = true
-    }
-  }
-  ```
-
-### 164. Policy as code (`plan_policy`)
-
-Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
-Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.
-
-- **Check:** Why roll out a new policy as a warning first? Right answer: To see what it would block before it blocks anyone. Why: You find false positives without stopping deploys.
-- **Exercise:** Policy as Code, writing `plan_policy`. Approach: One pass, two independent rules, each adding its own message.
-- **Explain:** the pattern is Two separate rules per change. Why this pattern: The big idea: policy as code runs your review rules on every plan, starting with never destroying data you can't recreate and never opening things to the public internet. Your code goes through the changes in order and asks two separate `if` questions about each one. The first flags a protected type with a delete action. The second flags `public_access` being `True`. Neither question stops the other, so one change can get both messages, rule 1 first. What to say: "Policy as code checks our review rules on every plan. I check each change against every rule separately, so I report every problem, even two from the same change."
-- **Spot the gotcha:** "Upgrade providers on purpose". "locked provider registry.terraform.io/hashicorp/azurerm 3.116.0 does not match configured version constraint ~> 4.0; must use terraform init -upgrade" means the lock file and the constraint disagree. Run `terraform init -upgrade` in a branch, read the plan, then commit the new lock file. The learner sees this risky code and picks the rule it breaks:
-
-  ```
-  # every CI run
-  terraform init -upgrade
-  terraform apply -auto-approve
-  ```
-
-  The fix:
-
-  ```
-  # every CI run: exactly the versions in .terraform.lock.hcl
-  terraform init
-  terraform plan
-  
-  # upgrades get their own branch: read the plan, commit the new lock file
-  terraform init -upgrade
   ```
 
 ## Practice sets
