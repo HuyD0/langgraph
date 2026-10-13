@@ -101,7 +101,7 @@ def machine(*, bins: list[str], who: list[str], label_field: str | None = None,
     return {"bins": bins, "who": who, "label_field": label_field, "label_arg": label_arg, "leak_arg": leak_arg}
 
 
-def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict]) -> dict:
+def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict], explain: str | None = None) -> dict:
     """The Build step as a judgement task, for lessons where the skill is deciding, not coding.
 
     The learner places each item in a bin, by tapping or dragging, and sees its ``why`` after
@@ -109,6 +109,8 @@ def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict]
     bottom left, bottom right); a fifth is a tray under it. Each bin is ``(id, label, who)``.
     Each item is ``{"name", "say", "bin", "why"}``, plus any facts a test wants to check the
     item against the exercise's own solution. The Python exercise stays, one click away.
+    ``explain`` is the big idea as the Explain step tells it to someone who sorted rather than
+    coded: the lesson's own angle text, without its sentence about the Python version.
     """
     assert len(bins) in (4, 5), "a sort task is a 2 by 2 map, with an optional tray under it"
     ids = [b[0] for b in bins]
@@ -117,7 +119,7 @@ def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict]
         missing = {"name", "say", "bin", "why"} - set(item)
         assert not missing, f"{item.get('name')}: missing {sorted(missing)}"
         assert item["bin"] in ids, f"{item['name']}: unknown bin {item['bin']!r}"
-    return {"intro": intro, "bins": [{"id": i, "label": l, "who": w} for i, l, w in bins], "items": items}
+    return {"intro": intro, "bins": [{"id": i, "label": l, "who": w} for i, l, w in bins], "items": items, "explain": explain}
 
 
 def example(caption: str, code: str) -> dict:

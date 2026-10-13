@@ -742,7 +742,12 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 :root[data-theme="dusk"] .keyidea { background: rgba(93,85,103,.22); border: 1px solid rgba(220,221,235,.10); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 :root[data-theme="dusk"] .btn.primary { background: linear-gradient(180deg, #7aa2ff, #5b8cff); border-color: #5b8cff; box-shadow: 0 0 22px rgba(91,140,255,.35), inset 0 1px 0 rgba(255,255,255,.35); }
 :root[data-theme="dusk"] .drawer { background: var(--surface); }
-:root[data-theme="dusk"] .btn.primary[disabled] { opacity: 1; background: var(--sunk); color: var(--muted); border-color: var(--line); box-shadow: none; }
+:root[data-theme="dusk"] .btn.primary.soft { opacity: .55; box-shadow: none; }
+.saynote.nudge { color: var(--hint); font-weight: 600; }
+/* scrolling something into view leaves room for the sticky header and the bottom bar */
+#paneText .verdict, #sayIn { scroll-margin-bottom: 100px; }
+#paneText .q { scroll-margin-top: 90px; }
+.btn.primary[disabled] { opacity: 1; background: var(--sunk); color: var(--muted); border-color: var(--line); box-shadow: none; }
 :root[data-theme="dusk"] .bdg.now { filter: url(#aura); }
 :root[data-theme="dusk"] .stepbtn[aria-current="step"] i { animation: dd-bar 2.4s ease-in-out infinite; }
 :root[data-theme="dusk"] .btn.primary:not([disabled]) { animation: dd-flame 3.2s ease-in-out infinite; }
@@ -980,7 +985,8 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .scard b { font: 800 17px/1.25 var(--display); }
 .scard span { color: var(--muted); line-height: 1.45; }
 .scard:active { cursor: grabbing; }
-.sskip { justify-self: start; padding: 0; font-size: 14px; }
+.shelp { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.shelp .linkbtn { min-height: 44px; font-size: 14px; }
 .snote { border-radius: 10px; padding: 10px 12px; line-height: 1.45; }
 .snote.ok { background: var(--pass-bg); }
 .snote.ok b { color: var(--pass); }
@@ -2259,7 +2265,7 @@ function stepDone(i) {
   if (i === 2) return !!progress.solved[cur.id];
   return s.done;
 }
-function setStep(i) {
+function setStep(i, keep) {  // keep: stay where you are on the page (answering a check), instead of going to the top
   const was = cur.step; cur.step = i;
   if (cur.kind === "lesson") { const s = lp(cur.id); if (!s.done) s.step = Math.max(s.step, i); saveProgress(); }
   $("stepper").innerHTML = STEPS.map((name, k) => `<button class="stepbtn${stepDone(k) ? " done" : ""}" data-step="${k}"${k === i ? ' aria-current="step"' : ""}><i></i><span>${ic(STEP_ICON[k])}${name}</span></button>`).join("");
@@ -2268,7 +2274,7 @@ function setStep(i) {
   $("paneText").hidden = i === 2;
   if (i !== 2) $("paneText").innerHTML = i === 0 ? learnPane() : i === 1 ? checkPane() : anglePane();
   renderFoot();
-  window.scrollTo(0, 0);
+  if (!keep) window.scrollTo(0, 0);
   if (was != null && was !== i) {  // the next step turns in from the side you are heading to
     fxMove(i === 2 ? $("paneBuild") : $("paneText"), [{ opacity: 0, transform: `scale(.92) rotate(${i > was ? -3 : 3}deg)` }, { opacity: 1, transform: "none" }]);
     fxScreen("turn", FX.turn, $("stepper").children[i]);
@@ -2289,9 +2295,8 @@ function renderFoot() {
   prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
-  if (building() && sorting() && !solvedNow()) {
-    label = "Place one for me"; icon = "bulb"; quiet = true;
-    if (cur.kind === "lesson") { mid.hidden = false; mid.textContent = "Skip"; mid.dataset.act = "skip"; }
+  if (building() && sorting() && !sortFinished()) {
+    label = cur.kind === "lesson" ? "Skip to Explain" : (cur.from ? "Back to lesson" : "Done"); quiet = true;
   } else if (building() && sorting()) {
     mid.hidden = false; mid.textContent = "Sort again"; mid.dataset.act = "resort";
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
@@ -2303,9 +2308,12 @@ function renderFoot() {
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
   } else if (i === 0) label = "Next: Check";
   else if (i === 1) { if (lp(cur.id).checked === null) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
-  else { label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path"; icon = "check"; next.disabled = !canFinish(); }
+  else { label = ORDER.indexOf(cur.id) < ORDER.length - 1 ? "Finish lesson" : "Finish the path"; icon = "check"; }
   next.innerHTML = icon === "play" || icon === "bulb" ? ic(icon) + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
   next.className = quiet ? "btn quiet" : "btn primary";
+  // Finish waits for your sentence, but still answers a tap: it takes you to the box and says why.
+  const waiting = cur.kind === "lesson" && i === 3 && !canFinish();
+  next.classList.toggle("soft", waiting); next.setAttribute("aria-disabled", String(waiting));
 }
 function goPrev() {
   if (cur.kind === "done") { if (cur.after) openLesson(cur.after, 0); return; }
@@ -2314,11 +2322,11 @@ function goPrev() {
 }
 function goNext() {
   if (cur.kind === "done") { goHome(); return; }
-  if (building() && sorting() && !solvedNow()) { sortHint(); return; }
+  if (building() && sorting() && !sortFinished()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
-  if (!canFinish()) { $("sayIn").focus(); return; }
+  if (!canFinish()) { const box = $("sayIn"); box.focus(); box.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" }); $("sayNote").textContent = "Write one sentence here to finish: what you did and why."; $("sayNote").classList.add("nudge"); return; }
   const s = lp(cur.id), id = cur.id, fresh = !s.done; s.done = true; s.step = 3; markDay();
   const after = ORDER[ORDER.indexOf(id) + 1];
   progress.current = after || null;
@@ -2402,9 +2410,10 @@ function anglePane() {
   const [pattern, text, say, classic] = L.angle;
   const gotchas = (Ln.gotchas || []).map(([h, t]) => `<li><b>${esc(h)}.</b> ${md(t)}</li>`).join("");
   const said = lp(cur.id).said || "", ready = words(said) >= SAY_WORDS;
-  return `<section class="sec"><h3>How your code did it</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(text)}</p></section>
+  const sorted = !!(p.sort && p.sort.explain && sorting());  // the Build step was the sorting board, not code
+  return `<section class="sec"><h3>${sorted ? "How you sorted them" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(sorted ? p.sort.explain : text)}</p></section>
     <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
-      <textarea id="sayIn" rows="3" maxlength="600" placeholder="I used … because …">${esc(said)}</textarea>
+      <textarea id="sayIn" rows="3" maxlength="600" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea>
       <div class="saynote" id="sayNote">${ready ? "" : "Write one sentence to finish the lesson."}</div>
       <details class="quiet" id="sayOurs"${ready ? "" : " hidden"}><summary>Compare with ours</summary><div><p class="say">${md(say)}</p></div></details></section>
     ${p.realworld ? `<section class="sec"><h3>At work</h3><p>${md(p.realworld)}</p></section>` : ""}
@@ -2738,11 +2747,11 @@ async function runTests() {
 // ---------- the sorting board: Build as a judgement task (content/model.py sort_task) ----------
 // One idea at a time: place it on the map or in the tray, and the reason shows straight away.
 // Right first time counts; a wrong move teaches and the card stays. The Python version is one click away.
-const SO = { p: null, placed: {}, first: {}, skip: [], note: null, code: false };
+const SO = { p: null, placed: {}, first: {}, skip: [], note: null, code: false, again: false };
 const sortKey = id => "drill-sort-" + id, codeKey = id => "drill-code-" + id;
 const sorting = () => !!(SO.p && cur && cur.p === SO.p && !SO.code);
 function sortLoad(p) {
-  Object.assign(SO, { p: p.sort ? p : null, placed: {}, first: {}, skip: [], note: null, code: false });
+  Object.assign(SO, { p: p.sort ? p : null, placed: {}, first: {}, skip: [], note: null, code: false, again: false });
   if (SO.p) try {
     const s = JSON.parse(localStorage.getItem(sortKey(p.id)) || "null");
     if (s) { SO.placed = s.placed || {}; SO.first = s.first || {}; }
@@ -2764,36 +2773,50 @@ function sortLeft() {
   return [...left.filter(i => !SO.skip.includes(i)), ...SO.skip.filter(i => left.includes(i))];
 }
 const sortRight = () => Object.keys(SO.placed).filter(i => SO.first[i]).length;
+// Done before (here or on another device) and not started again: the board says so, and agrees with the bottom bar.
+const sortDoneBefore = () => !!(SO.p && progress.solved[SO.p.id] && !SO.again && !Object.keys(SO.placed).length);
+const sortFinished = () => !!(SO.p && progress.solved[SO.p.id] && !SO.again);
 function sortRender() {
   const t = SO.p.sort, items = t.items, left = sortLeft(), now = left[0], n = items.length;
+  if (sortDoneBefore()) {
+    const sv = progress.solved[SO.p.id], right = Math.max(0, n - (sv.hints || 0));
+    $("sortBox").innerHTML = `<div class="shead"><h2>Sort the ideas</h2><span class="scount">done</span></div>
+      <div class="sdone"><b>${ic("check")} You sorted these before: ${right} of ${n} right first time.</b><p>The pattern: <em>${md((LESSONS[SO.p.id] || {}).angle ? LESSONS[SO.p.id].angle[0] : SO.p.pattern)}</em></p></div>
+      <div class="sfoot"><button class="linkbtn" data-sort-reset>${ic("reset")}Sort them again</button><button class="linkbtn" data-sort-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
+    return;
+  }
   const binOf = id => t.bins.find(b => b.id === id);
   const chip = i => `<button class="schip ${SO.first[i] ? "ok" : "late"}" data-sort-why="${i}" title="${SO.first[i] ? "Right first time" : "Took another try"}">${esc(items[i].name)}</button>`;
   const bin = (b, cls) => `<div class="sbin${cls ? " " + cls : ""}${now == null ? " off" : ""}" data-sort-bin="${b.id}"><button class="sput"${now == null ? " disabled" : ""} aria-label="${esc(now == null ? `${b.label}: ${b.who}` : `Put “${items[now].name}” in ${b.label}: ${b.who}`)}"><b>${esc(b.label)}</b><span>${esc(b.who)}</span></button><div class="schips">${items.map((_, i) => i).filter(i => SO.placed[i] === b.id).map(chip).join("")}</div></div>`;
   const note = `<div class="snote ${SO.note ? SO.note.kind : ""}" aria-live="polite"${SO.note ? "" : " hidden"}>${SO.note ? SO.note.html : ""}</div>`;
   const top = now != null
     ? `<button class="scard" draggable="true" data-sort-item="${now}" aria-describedby="sortHelp"><b>${esc(items[now].name)}</b><span>${esc(items[now].say)}</span></button>
-       ${left.length > 1 ? `<button class="linkbtn sskip" data-sort-skip>Not sure? Come back to this one</button>` : ""}`
+       <div class="shelp">${left.length > 1 ? `<button class="linkbtn" data-sort-skip>Not sure? Come back to it later</button>` : ""}<button class="linkbtn" data-sort-hint>Tell me the answer</button></div>`
     : `<div class="sdone"><b>${ic("check")} All ${n} placed. ${sortRight()} of ${n} right first time.</b><p>The pattern: <em>${md((LESSONS[SO.p.id] || {}).angle ? LESSONS[SO.p.id].angle[0] : SO.p.pattern)}</em></p><p class="meta">Tap any idea on the map to see why it goes there.</p></div>`;
   $("sortBox").innerHTML = `<div class="shead"><h2>Sort the ideas</h2><span class="scount">${n - left.length} of ${n} placed</span></div>
     <p id="sortHelp">${md(t.intro)}</p>${top}${note}
     ${t.bins[4] ? bin(t.bins[4], "tray") : ""}
-    <div class="smapwrap"><span class="sy">more value →</span><div class="smap">${t.bins.slice(0, 4).map(b => bin(b)).join("")}</div><span class="sx">easier to do →</span></div>
+    <div class="smapwrap"><span class="sy">more value →</span><div class="smap">${t.bins.slice(0, 4).map(b => bin(b)).join("")}</div><span class="sx">more doable →</span></div>
     <div class="sfoot">${Object.keys(SO.placed).length ? `<button class="linkbtn" data-sort-reset>${ic("reset")}Start over</button>` : ""}<button class="linkbtn" data-sort-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
 }
 function sortPlace(i, binId, byHint) {
   const t = SO.p.sort, it = t.items[i], right = t.bins.find(b => b.id === it.bin);
   if (i in SO.placed) return;
-  if (binId === it.bin || byHint) {
+  // An idea that fails a gate is shelved, as the lesson says: Shelve is right for it too.
+  const viaShelf = it.bin === "gate" && binId === "shelve";
+  if (binId === it.bin || viaShelf || byHint) {
     if (!(i in SO.first)) SO.first[i] = !byHint;
     SO.placed[i] = it.bin; SO.skip = SO.skip.filter(x => x !== i);
-    SO.note = { kind: "ok", html: `<b>${byHint ? "Placed for you" : ic("check") + " Right"}: ${esc(right.label)}.</b> ${esc(it.why)}` };
+    SO.note = { kind: "ok", html: byHint ? `<b>The answer: ${esc(right.label)}.</b> ${esc(it.why)}`
+      : viaShelf ? `<b>${ic("check")} Right: shelved, because it stops at a gate.</b> ${esc(it.why)}`
+      : `<b>${ic("check")} Right: ${esc(right.label)}.</b> ${esc(it.why)}` };
   } else {
     SO.first[i] = false;
     const wrong = t.bins.find(b => b.id === binId);
     SO.note = { kind: "no", html: `<b>Not ${esc(wrong.label.toLowerCase())}.</b> ${esc(it.why)} Try again.` };
   }
   sortSave();
-  if (!sortLeft().length) sortSolved();
+  if (!sortLeft().length) { sortSolved(); SO.again = false; }
   sortRender(); renderFoot();
 }
 function sortSolved() {
@@ -2805,8 +2828,8 @@ function sortSolved() {
   saveProgress(); renderTop();
 }
 function sortHint() { const now = sortLeft()[0]; if (now != null) sortPlace(now, null, true); }
-function sortReset() {
-  Object.assign(SO, { placed: {}, first: {}, skip: [], note: null }); sortSave(); sortRender(); renderFoot();
+function sortReset() {  // a fresh try; the lesson stays solved, and finishing again counts again
+  Object.assign(SO, { placed: {}, first: {}, skip: [], note: null, again: true }); sortSave(); sortRender(); renderFoot();
   $("sortBox").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 function sortSetCode(on) {
@@ -2819,6 +2842,7 @@ $("sortBox").addEventListener("click", e => {
   const b = t.closest("[data-sort-bin]"), why = t.closest("[data-sort-why]");
   if (why) { const it = SO.p.sort.items[+why.dataset.sortWhy], bn = SO.p.sort.bins.find(x => x.id === it.bin); SO.note = { kind: "info", html: `<b>${esc(it.name)}: ${esc(bn.label)}.</b> ${esc(it.why)}` }; sortRender(); return; }
   if (b) { const now = sortLeft()[0]; if (now != null && !b.classList.contains("off")) sortPlace(now, b.dataset.sortBin); return; }
+  if (t.closest("[data-sort-hint]")) { sortHint(); return; }
   if (t.closest("[data-sort-skip]")) { const now = sortLeft()[0]; SO.skip = [...SO.skip.filter(x => x !== now), now]; SO.note = null; sortRender(); return; }
   if (t.closest("[data-sort-reset]")) { sortReset(); return; }
   if (t.closest("[data-sort-mode]")) sortSetCode(true);
@@ -3798,11 +3822,13 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-gotcha-retry]")) { delete progress.gotchas[cur.id]; saveProgress(); renderGotcha(); return; }
   if (t.closest("[data-gotcha-save]")) { saveGotcha(); return; }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) {
-    lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1);
+    lp(cur.id).checked = +op.dataset.opt; saveProgress(); setStep(1, true);
+    const verdict = $("paneText").querySelector(".verdict");
+    if (verdict) verdict.scrollIntoView({ block: "nearest", behavior: motionOn() ? "smooth" : "auto" });
     if (+op.dataset.opt === LESSONS[cur.id].check[2]) fxOn($("paneText").querySelector(".opt.right"), "seal", FX.seal());
     return;
   }
-  if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1); return; }
+  if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1, true); const q = $("paneText").querySelector(".q"); if (q) q.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); return; }
   const tag = t.closest("[data-tag], [data-explain]");
   if (tag && tag.matches("[data-tag]")) { const ex = studyItems.find(i => i.text === tag.dataset.text); if (ex) removeItem(ex.id); else { addItem(tag.dataset.text, tag.dataset.src, "text"); toast("Saved to your study list"); } return; }
   if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); openPocket(it.id); if (!it.explanation) explainItem(it.id); }

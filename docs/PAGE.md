@@ -299,7 +299,7 @@ where it should appear. Copy a neighbour; every field is named. In short:
   makes the Build step a sorting board: one idea at a time, placed by tapping or dragging
   onto a 2 by 2 map (the first four bins, in map order) or a tray above it (a fifth bin).
   Every move shows the item's `why`; a wrong move keeps the card, and the score is how many
-  were right first time. "Place one for me" is the hint. The Python exercise stays, behind
+  were right first time. "Tell me the answer" (on the board, beside "Not sure? Come back to it later") gives the answer and why; it then counts as not right first time. An idea that stops at a gate is shelved, so the Shelve box is right for it too. The Python exercise stays, behind
   "Rather write it in Python?", and the page remembers which one the learner chose.
   Lesson 1.1 uses it; `tests/test_content.py` checks its answers match the Python solution's.
 

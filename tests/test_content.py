@@ -249,3 +249,18 @@ def test_phase_tabs_are_one_piece_with_their_room():
     for rule in (".phasebox {", ".phasebox.here {", ".rail.phtabs {", ".rail.phtabs .sleeve {", ".book.room {"):
         assert rule in page, rule
     assert 'class="phasebox' in page and "data-showing=" in page, "the box must not carry data-phase, or any tap inside it would switch phase"
+
+
+def test_a_sorting_lesson_explains_itself_to_someone_who_sorted(loaded):
+    """Explain must not tell a learner who sorted cards about the Python lists they never wrote."""
+    for mod in loaded:
+        for entry in mod.lessons:
+            sort = entry["exercise"]["sort"]
+            if not sort:
+                continue
+            assert sort["explain"], f"{entry['id']}: a sort_task needs explain text"
+            assert "Python" not in sort["explain"] and "elif" not in sort["explain"], entry["id"]
+            assert sort["explain"] in entry["angle"]["text"], f"{entry['id']}: explain should be the lesson's own words"
+            labels = {b["id"]: f'{b["label"]} {b["who"]}'.lower() for b in sort["bins"]}
+            if "gate" in labels and "shelve" in labels:  # the lesson says a failed gate is shelved; the board must agree
+                assert "gate" in labels["shelve"] and "shelved" in labels["gate"], entry["id"]
