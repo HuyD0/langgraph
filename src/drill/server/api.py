@@ -327,6 +327,12 @@ def create_app(
 
     def _log_progress(docs, before: dict | None, after: dict) -> None:
         for kind, lesson_id, detail in activity.progress_events(before, after):
+            lesson = app.state.bank.lessons.get(lesson_id) if kind == "checked" else None
+            if lesson and isinstance(detail.get("answer"), int):
+                # the page shows Check options shuffled, so letters mean nothing later: keep the words
+                options, right = lesson["check"][1], lesson["check"][2]
+                if 0 <= detail["answer"] < len(options):
+                    detail = {**detail, "picked": options[detail["answer"]], "right": options[right]}
             docs.log(kind, lesson_id, **detail)
 
     @app.put("/api/docs/{path:path}")

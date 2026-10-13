@@ -66,6 +66,14 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
+## Check: the options are shuffled
+
+Each lesson's three Check options show in a fixed shuffled order (`checkOrder` in the page,
+seeded by the lesson id), so the right answer isn't always in the same place; across the lessons
+it lands on A, B and C about equally. Answers are still saved by their original position, and the
+server stores the words of the picked and right answers with each Check event, so the managers'
+dashboard shows words, not letters.
+
 ## Explain: finish the sentence
 
 The Explain step ends with the lesson's own sentence (the `say` in `angle(...)`) with two or
@@ -241,10 +249,12 @@ you were.
 
 ## The study list
 
-Select any text in a lesson, or a line of your code, to save it to the study list. It lives in
-a **tray**: on the path it waits at the bottom, one line tall, saying what's due; on any other
-page a chip in the header opens it (glowing, with a count, when something is due). Tap the tray
-to slide it up. Three tabs:
+Select any text in a lesson, or a line of your code, to save it to the study list. It stays out
+of the way: on Home it's one quiet row under the Today card ("Study list · 4 learning · 2 to
+review"); on other pages a small chip in the header opens it, with a still dot when something is
+due. When reviews are due, the Today card also offers them as an optional line ("Also: 2 quick
+reviews · about 1 min"). Nothing floats over the page and nothing pulses. Tap the row or chip and
+the list opens as a sheet; close it and it's gone. Three tabs:
 
 - **To review**: items you marked "Got it" whose review has come round.
 - **Still learning**: everything you saved and haven't marked "Got it" yet.

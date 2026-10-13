@@ -2055,7 +2055,7 @@ So when a plan shows `CAN_MANAGE` for a group that only asked for `CAN_EDIT`, Te
 
 ### 134. What will Terraform build from clusters.yml? (`cluster_from_yaml`)
 
-A team asks for a cluster in its own `clusters.yml`, and `team.yml` points to that file. The first file is only a pointer; the second describes the cluster: a name, the team's short code, its size and a cluster policy, the set of rules that limits what a cluster may be.
+A team asks for a cluster in its own `clusters.yml`. Its `team.yml` only points to that file; `clusters.yml` is what describes the cluster: a name, the team's short code, its size and a cluster policy, the set of rules that limits what a cluster may be.
 The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in lower case: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses Personal Compute. It also gives the team's owner group permission to manage the cluster.
 Some things are not allowed in YAML. A raw `policy_id` is rejected: teams name the policy, and the module looks up its id. Size is either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling, never a mix and never neither.
 Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the default policy) or a mistake, and you should be able to say which.
@@ -2563,7 +2563,7 @@ Coming soon, not built yet (say so if asked; don't teach them as if they exist):
 
 A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
 Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
-Then the Changes tab: how many resources would be added, changed, replaced or destroyed, and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
+Then the Changes tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the planning log: the plan summary line, the first error if it failed, and whether the plan policies said GO. A GO is an automatic check passing, not a person approving.
 A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.
 
 - **Check:** A run on the UAT stack shows FINISHED and Proposed, and the planning log says "Plan checks are GO". What has been deployed? Right answer: Nothing: a proposed run only previews. Why: Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.
@@ -2884,11 +2884,11 @@ The definitions the page uses; use the same ones.
 
 ### Terraform, Azure and Databricks
 
-- **state**: Terraform's record of which real objects it manages and their last known settings. Here it lives in an Azure storage blob or in Spacelift.
+- **state**: In Terraform (not the LangGraph meaning): the record of which real objects it manages and their last known settings. Here it lives in an Azure storage blob or in Spacelift.
 - **plan / apply**: Plan works out the changes needed to make reality match the code. Apply makes them.
 - **provider**: The plugin that talks to one API: azurerm for Azure, databricks for Databricks.
 - **resource address**: A resource's name in Terraform, like `module.uc.databricks_catalog.sales` or `azurerm_storage_container.lake["bronze"]`.
-- **root module / stack**: The folder you run Terraform in. In Spacelift, each stack runs one root module with its own state.
+- **stack (Spacelift)**: In Spacelift (not the data structure): one set of Terraform code, its root module (the folder you run Terraform in), with its own state, planned and applied on its own.
 - **module**: A reusable folder of Terraform code with inputs (variables) and outputs.
 - **data source**: Reads something that already exists without managing it, like `data.azurerm_client_config.current`.
 - **drift**: When the real resource no longer matches state, usually because someone changed it in the portal or UI.
@@ -2912,6 +2912,18 @@ The definitions the page uses; use the same ones.
 - **stack dependency**: Tells Spacelift to run one stack after another and can pass outputs along, such as a workspace URL.
 - **provisioned throughput (PTU)**: Model capacity in Azure AI Foundry that you rent by the hour, month or year, counted in PTUs. You pay for it busy or idle, so it pays off only when it is busy nearly all the time.
 - **spillover**: Sending the requests that overflow a provisioned deployment to a pay-as-you-go deployment instead of failing them. Reserve the steady baseline and spill the peaks.
+- **YAML**: A plain-text format for settings, written as `name: value` lines, with indents to show what belongs inside what. Platform teams use YAML files so product teams can ask for things without writing code.
+- **Terraform**: A tool that builds cloud infrastructure from code. You describe what you want; Terraform works out the changes (the plan) and makes them (the apply).
+- **Spacelift**: A service that runs Terraform for a team: it plans every change, shows it for review, checks it with policies, and applies it once approved.
+- **runbook**: On a platform team, often the name for the Terraform code that reads the team's YAML and turns it into resources. Elsewhere it means a written how-to for operating something, like the steps to restart a service.
+- **Pydantic**: A Python library that checks data against a model you describe, such as which fields exist and what type each is. It rejects data that doesn't fit, with a message saying what was wrong.
+- **Rego**: The policy language of Open Policy Agent (OPA). Spacelift policies are written in it: short rules that look at a plan and say allow, warn or deny.
+- **Microsoft Entra ID**: Microsoft's sign-in and identity service, formerly Azure Active Directory. It holds the people, groups and service principals that Azure and Databricks give access to.
+- **pull request (PR)**: A request to merge your changes into the main branch, where others can review them, comment and approve first. Spacelift posts its proposed plan on the PR.
+- **commit**: One saved snapshot of changes in a repository, with a message and an ID. Saying which commit a run used tells you exactly which version of the code it read.
+- **branch**: A separate line of work in a repository. You make changes on a branch, then merge it into the main branch through a pull request.
+- **repository (repo)**: A project's folder of files kept in Git, with the full history of every change. A config repo holds settings, such as a platform team's YAML.
+- **CIDR**: A way to write a block of network addresses, like `10.20.0.0/24`. The number after the slash sets the size: the smaller the number, the bigger the block.
 
 ### Databricks platform
 
@@ -3001,7 +3013,7 @@ The definitions the page uses; use the same ones.
 - **test case**: One input with its expected output. Passing all of them is how you know the code works.
 - **pattern**: A reusable idea that solves a whole family of problems, like "use a dict to remember what you've seen".
 - **hash map**: Another name for a dict: a structure with instant lookup by key.
-- **stack**: A pile where the last thing added is the first taken off (last in, first out, or LIFO). Good for matching nested things.
+- **stack (data structure)**: In code (not the Spacelift meaning): a pile where the last thing added is the first taken off (last in, first out, or LIFO). Good for matching nested things.
 - **two pointers**: Two indices that move through a list, often from both ends or at different speeds.
 - **sliding window**: Two pointers that mark a stretch of a list or string, grown on one side and shrunk on the other.
 - **binary search**: Find something in sorted data by repeatedly checking the middle and dropping half.
@@ -3016,7 +3028,7 @@ The definitions the page uses; use the same ones.
 - **dataclass**: A short way to define a class that mostly holds data. @dataclass writes the boilerplate for you.
 - **mutate**: Change a value in place, like list.append. Mutating something other code still holds causes surprising bugs.
 - **pure function**: A function whose output depends only on its inputs and that changes nothing outside itself. Easiest kind to test.
-- **state**: The data a LangGraph app carries from step to step, such as attempts, hints and the latest result.
+- **state (LangGraph)**: In LangGraph (not the Terraform meaning): the data a LangGraph app carries from step to step, such as attempts, hints and the latest result.
 - **partial update**: A node returns only the keys it changed, like {'attempts': 2}. LangGraph merges it into the state.
 - **reducer**: A rule for combining several updates to one state key, like Annotated[list, operator.add], which joins the lists together. Without one, two updates to the same key in one step stop the run with an error.
 - **node**: One step in a LangGraph graph: a function that takes the state and returns a partial update.

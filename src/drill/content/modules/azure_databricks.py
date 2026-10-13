@@ -1,13 +1,15 @@
 """Azure Databricks: the workspace, Unity Catalog and who can see what, before any of it goes into Terraform."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack, source
 
 MODULE = module('azure-databricks', 'Azure Databricks', 'The workspace, Unity Catalog and who can see what, before any of it goes into code.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'can_read_table',
     title='Who can read this table?',
+    checked='2026-10-13',
+    sources=[source('Unity Catalog permissions model concepts', 'https://learn.microsoft.com/azure/databricks/data-governance/unity-catalog/access-control/permissions-concepts'), source('Identity best practices', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/best-practices')],
     learn=[
         "In Azure Databricks every table lives at a three-part address: **catalog.schema.table**, like `main.sales.orders`. **Unity Catalog** is the part of Databricks that keeps those addresses and decides who may use them. A **catalog** is the top folder, a **schema** is a folder inside it, and a **table** sits in a schema.",
         "To read a table you need a key at **every level on the way down**: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.",
@@ -50,7 +52,7 @@ GRANT SELECT ON TABLE main.sales.orders TO analysts;
         prompt="""Your function gets three things:
 
 - `table`: a three-part name like `"main.sales.orders"` (catalog, schema, table).
-- `principals`: everyone the person counts as: their own name and their groups, like `["ana@corp.com", "analysts"]`.
+- `principals`: everyone the person counts as: their own name and their groups, like `["ana@example.com", "analysts"]`.
 - `grants`: a list of dicts, each one key given to one principal on one place, like `{"to": "analysts", "privilege": "SELECT", "on": "main.sales"}`. `"on"` is a catalog (`"main"`), a schema (`"main.sales"`) or a table (`"main.sales.orders"`).
 
 The person can read the table when they hold all three:
@@ -86,34 +88,34 @@ A grant counts when its `"to"` is one of `principals`. `ALL PRIVILEGES` counts a
             and has("SELECT", [catalog, schema_name, table]))
 """,
         cases=[
-            case('main.sales.orders', ['ana@corp.com', 'analysts'], [
+            case('main.sales.orders', ['ana@example.com', 'analysts'], [
                 {'to': 'analysts', 'privilege': 'USE CATALOG', 'on': 'main'},
                 {'to': 'analysts', 'privilege': 'USE SCHEMA', 'on': 'main.sales'},
                 {'to': 'analysts', 'privilege': 'SELECT', 'on': 'main.sales.orders'},
             ], expected=True, sample=True),
-            case('main.sales.orders', ['ana@corp.com', 'analysts'], [
+            case('main.sales.orders', ['ana@example.com', 'analysts'], [
                 {'to': 'analysts', 'privilege': 'USE CATALOG', 'on': 'main'},
                 {'to': 'analysts', 'privilege': 'SELECT', 'on': 'main.sales.orders'},
             ], expected=False),
-            case('main.sales.orders', ['bo@corp.com', 'finance'], [
+            case('main.sales.orders', ['bo@example.com', 'finance'], [
                 {'to': 'finance', 'privilege': 'USE CATALOG', 'on': 'main'},
                 {'to': 'finance', 'privilege': 'USE SCHEMA', 'on': 'main'},
                 {'to': 'finance', 'privilege': 'SELECT', 'on': 'main.sales'},
             ], expected=True),
-            case('main.sales.orders', ['cy@corp.com', 'platform-admins'], [
+            case('main.sales.orders', ['cy@example.com', 'platform-admins'], [
                 {'to': 'platform-admins', 'privilege': 'ALL PRIVILEGES', 'on': 'main'},
             ], expected=True),
-            case('main.sales.orders', ['ana@corp.com', 'analysts'], [
+            case('main.sales.orders', ['ana@example.com', 'analysts'], [
                 {'to': 'engineers', 'privilege': 'USE CATALOG', 'on': 'main'},
                 {'to': 'engineers', 'privilege': 'USE SCHEMA', 'on': 'main.sales'},
                 {'to': 'engineers', 'privilege': 'SELECT', 'on': 'main.sales.orders'},
             ], expected=False),
-            case('main.hr.salaries', ['ana@corp.com', 'analysts'], [
+            case('main.hr.salaries', ['ana@example.com', 'analysts'], [
                 {'to': 'analysts', 'privilege': 'USE CATALOG', 'on': 'main'},
                 {'to': 'analysts', 'privilege': 'USE SCHEMA', 'on': 'main.sales'},
                 {'to': 'analysts', 'privilege': 'SELECT', 'on': 'main.sales'},
             ], expected=False),
-            case('main.sales.orders', ['ana@corp.com'], [], expected=False),
+            case('main.sales.orders', ['ana@example.com'], [], expected=False),
         ],
         guided="""def can_read(table, principals, grants):
     # Replace every ___ with real code, then run the tests.
@@ -167,7 +169,7 @@ b   # 'sales'""",
                 'True and True and False   # False',
             ],
         ],
-        byhand='Ana counts as ana@corp.com and analysts. All three grants are to analysts, so she holds (USE CATALOG, main), (USE SCHEMA, main.sales) and (SELECT, main.sales.orders). USE CATALOG on main: yes. USE SCHEMA on main or main.sales: yes. SELECT on main, main.sales or main.sales.orders: yes. Three yeses: True.',
+        byhand='Ana counts as ana@example.com and analysts. All three grants are to analysts, so she holds (USE CATALOG, main), (USE SCHEMA, main.sales) and (SELECT, main.sales.orders). USE CATALOG on main: yes. USE SCHEMA on main or main.sales: yes. SELECT on main, main.sales or main.sales.orders: yes. Three yeses: True.',
         why='One pass over the grants to collect the keys, then three quick checks.',
         gotchas=[
             [

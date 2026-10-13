@@ -33,6 +33,18 @@
         "drill-server"
       ],
       "port": 8791
+    },
+    {
+      "name": "drill-server-journey",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DRILL_PORT=8792",
+        "DRILL_DATABASE_URL=sqlite:///.drill/journey.db",
+        "uv",
+        "run",
+        "drill-server"
+      ],
+      "port": 8792
     }
   ]
 }

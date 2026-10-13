@@ -1,13 +1,15 @@
 """Databricks as code: the workspace, catalogs and network of an ML platform, kept in Terraform."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack, source
 
 MODULE = module('platform', 'Databricks as code', 'The workspace, catalogs and network of an ML platform, kept in Terraform.', setting=PLATFORM_SETTING)
 
 
 lesson(MODULE, 'missing_tags',
     title='Tagging for cost and policy',
+    checked='2026-10-13',
+    sources=[source('Use tags to organize your Azure resources', 'https://learn.microsoft.com/azure/azure-resource-manager/management/tag-resources'), source('Manage tag governance with Azure Policy', 'https://learn.microsoft.com/azure/governance/policy/tutorials/govern-tags')],
     learn=[
         'Azure tags drive **cost allocation** and **Azure Policy**. Missing tags mean spend nobody can attribute.',
         'The azurerm provider (Terraform\'s plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.',
@@ -160,6 +162,8 @@ ages['ana'] = 30   # {'ana': 30}""",
 
 lesson(MODULE, 'grants_to_revoke',
     title='Unity Catalog grants',
+    checked='2026-10-13',
+    sources=[source('databricks_grants resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grants'), source('databricks_grant resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/grant')],
     learn=[
         '**Unity Catalog** controls who can use which data. `databricks_grants` is **authoritative**: on apply it makes the grants match the code exactly, removing anything else.',
         'Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).',
@@ -292,6 +296,8 @@ if basket: print('not empty')   # prints nothing""",
 
 lesson(MODULE, 'overlapping_subnets',
     title='Networking for Databricks',
+    checked='2026-10-13',
+    sources=[source('Deploy Azure Databricks in your Azure virtual network (VNet injection)', 'https://learn.microsoft.com/azure/databricks/security/network/classic/vnet-inject')],
     learn=[
         "**VNet injection** puts a Databricks workspace's clusters in your own virtual network, using a **host** and a **container** subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.",
         "A subnet's addresses are written as a **CIDR** block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.",
@@ -445,6 +451,8 @@ name   # 'ana'""",
 
 lesson(MODULE, 'allocate_capacity',
     title="Who gets capacity when it's scarce",
+    checked='2026-10-13',
+    sources=[source('Provisioned throughput billing and cost management', 'https://learn.microsoft.com/azure/foundry/openai/concepts/provisioned-throughput-billing'), source('Manage traffic with spillover for provisioned deployments', 'https://learn.microsoft.com/azure/foundry/openai/how-to/spillover-traffic-management')],
     learn=[
         'When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide **who comes first** before it happens, by putting each app in a **tier**: a group with its own rule, served most important first.',
         'Once its traffic is steady, a **critical** app moves to **provisioned throughput**: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.',
@@ -680,6 +688,8 @@ ages['ana'] = 30   # {'ana': 30}""",
 
 lesson(MODULE, 'check_limits',
     title='A shared space with fair limits',
+    checked='2026-10-13',
+    sources=[source('Apply rate limits to model and MCP services', 'https://learn.microsoft.com/azure/databricks/ai-gateway/rate-limits')],
     learn=[
         'In a shared experiment space (the **sandbox**), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A **per-user rate limit** stops that: each person gets a slice, well below the whole.',
         'The Databricks AI gateway (now called Unity Gateway) sets limits on a **service** (the whole space), a default for each **user**, and custom ones for a **group**. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.',

@@ -170,9 +170,11 @@ function pkDetail(it) {
 function renderPocket() {
   const due = dueList(), learn = learnList(), got = gotList(), total = studyItems.length;
   const onHome = !$("home").hidden;
-  const show = total > 0 && (onHome || pkOpen) && $("focus").hidden;
-  document.body.classList.toggle("pk-on", total > 0 && onHome);
-  $("pocket").hidden = !show; $("pocket").classList.toggle("open", pkOpen); $("pocket").classList.toggle("burn", due.length > 0);
+  // It opens as a sheet when asked for, and otherwise stays out of the way: no bar over the page, no
+  // aura. Home shows it as one quiet row in the page; other pages show a small header chip.
+  const show = pkOpen && $("focus").hidden;
+  document.body.classList.remove("pk-on");
+  $("pocket").hidden = !show; $("pocket").classList.toggle("open", pkOpen); $("pocket").classList.remove("burn");
   $("pkScrim").hidden = !(pkOpen && show);
   $("pkToggle").setAttribute("aria-expanded", String(pkOpen));
   $("pkNum").textContent = due.length || learn.length || got.length;
@@ -184,13 +186,21 @@ function renderPocket() {
     : learn.length ? `${things(learn.length)} you saved and are still learning`
     : got.length ? `All learned · next review ${whenText(got[0].reviewAt)}` : "Select text in a lesson to save it here";
   $("pkStart").hidden = !due.length;
-  // the header chip, on pages where the tray is not waiting at the bottom
+  const row = $("studyRow"); if (row) row.outerHTML = studyRowHtml();
+  // the header chip, on pages other than Home (Home has its row)
   const chip = $("dueChip");
   chip.hidden = !total || onHome;
   document.body.classList.toggle("chip-on", !chip.hidden);
   chip.classList.toggle("due", due.length > 0);
   chip.innerHTML = due.length ? `<span class="dot"></span>${due.length} to review` : `Study list <b class="n">${learn.length || total}</b>`;
   chip.setAttribute("aria-label", due.length ? `${due.length} due for review: open your study list` : "Open your study list");
+}
+// Home's study list: one row in the page, under Today. Nothing when nothing is saved.
+function studyRowHtml() {
+  const total = studyItems.length; if (!total) return `<span id="studyRow" hidden></span>`;
+  const due = dueList().length, learn = learnList().length, got = gotList().length;
+  const bits = [learn ? `${learn} learning` : "", due ? `${due} to review` : "", got && !learn && !due ? `all ${got} learned` : ""].filter(Boolean).join(" · ");
+  return `<button class="studyrow${due ? " due" : ""}" id="studyRow" data-study-open><span class="pk-ring" style="--p:${Math.round(100 * got / total)}"><span>${due || learn || got}</span></span><span class="sr-t"><b>Study list</b><span>${bits}</span></span>${ic("chevron", "chev")}</button>`;
 }
 function renderStudy() {
   markSaved();

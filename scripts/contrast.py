@@ -31,6 +31,17 @@ PAIRS = [
     ("syn-com", "code-bg", 4.5, "comments in the editor"),
     ("mark", "bg", 3.0, "the trust mark on the page"),
     ("mark", "surface", 3.0, "the trust mark on a card"),
+    # a tool's screen, redrawn (the Spacelift walkthrough): its own colours, checked like ours
+    ("tool-fg", "tool-bg", 4.5, "text in the tool's window"),
+    ("tool-muted", "tool-bg", 4.5, "secondary text in the tool's window"),
+    ("tool-link", "tool-bg", 4.5, "links in the tool's window"),
+    ("tool-change", "tool-bg", 4.5, "the tool's change badge"),
+    ("tool-fg", "tool-log", 4.5, "the tool's log text"),
+    ("tool-link", "tool-log", 4.5, "run ids in the tool's log"),
+    ("tool-on", "tool-ok", 4.5, "text on the tool's FINISHED pill"),
+    ("tool-on", "tool-planned", 4.5, "text on the tool's PLANNED pill"),
+    ("tool-anno-ink", "tool-anno-dot", 4.5, "the number in a callout's circle"),
+    ("tool-anno", "tool-bg", 3.0, "a callout's outline on the window"),
 ]
 
 

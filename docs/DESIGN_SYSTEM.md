@@ -77,7 +77,7 @@ them before making a new one; a new one gets a row here.
 | Fill the gaps | `.cloze`, `.clz`, `.gap` (`.now`, `.later`, `.filled`), `.clzchip` (`.no`, `.shown`), `.clzclue` | Explain | Help is a clue, then the answer; the clue uses `hint` colours |
 | Practice questions | `.qfbox`, `.qf-chain`, `.qf-rows`, `.qf-row` (`.right`, `.wrong`), `.qf-claim`, `.qf-sum` | Platform Build steps | One question per screen; evidence above; uses the surface tokens |
 | Walkthrough | `.walk`, `.sl`, `.sl-view`, `.sl-mark`, `.sl-n`, `.sl-steps`, `.sl-tips` | Tool lessons (Spacelift) | Numbered callouts in the hint colours match numbered steps |
-| Study tray | `.pocket`, `.pk-row`, `.seals` | Every screen | Collapsed by default; the aura only when something is due |
+| Study list | `.studyrow` (Home), `.duechip` (header), `.pocket` (the sheet), `.pk-row`, `.seals` | Home row, header chip elsewhere | Never floats over the page or pulses; the sheet opens only when asked for |
 | Trust mark | `.trustmark`, `.trustpop` | Learn text | An ember after the words that matter; `mark` colours only |
 | Date note | `.checked` (`p.checked`, `details.checked`, `.old`) | Under Learn | "Checked against the docs on …" with its sources, or "Content as of …"; turns `hint` after 180 days |
 | Practice step | `.px`, `.px-seq`, `.px-match`, `.px-edit`, `.px-rules`, `.px-q`, `.px-next` | Content-pack lessons | Replaces the editor: choose, order, match, repair or reason; the next safe check in `accent-soft` |

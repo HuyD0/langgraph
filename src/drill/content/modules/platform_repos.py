@@ -2,7 +2,7 @@
 it, the modules and providers it calls, and the Spacelift stacks that run it. All names are invented."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, ask, case, evidence, example, exercise, fix, lesson, module, planned, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, fix, lesson, module, planned, practice, question, stack, source
 
 MODULE = module('platform-repos', 'How the platform repos fit together',
                 'Follow one request from YAML through the runbook and Spacelift to Azure Databricks.',
@@ -11,6 +11,8 @@ MODULE = module('platform-repos', 'How the platform repos fit together',
 
 lesson(MODULE, 'field_status',
     title='What happened to my YAML field?',
+    checked='2026-10-13',
+    sources=[source('Pydantic Validation', 'https://pydantic.dev/docs/validation/latest/get-started/'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan')],
     learn=[
         "On a platform team, product teams don't write Terraform. They ask for things in **YAML** in the **config repo**: `env.yml` lists the teams in an environment, each team's `team.yml` names its owner group and points to resource files like `clusters.yml`. **Pydantic** checks each file against a contract: a field it doesn't know, or a value of the wrong type, is rejected.",
         "The **runbook** is Terraform code that reads that YAML. It loads the files, fills in **defaults** for anything left out, **transforms** some values (a cluster's name gets the team's short code in front), and passes the result to **modules**, which call the Databricks and Azure **providers**. **Spacelift** runs all of it as a plan someone reviews before anything is applied.",
@@ -189,6 +191,8 @@ False is False   # True""",
 
 lesson(MODULE, 'folder_access',
     title='Where did that access come from?',
+    checked='2026-10-13',
+    sources=[source('Access control lists (folder permissions)', 'https://learn.microsoft.com/azure/databricks/security/auth/access-control/'), source('databricks_permissions resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/permissions')],
     learn=[
         "A team's `team.yml` can name an `owner_group` and list `folder_grants`: other groups and the permission each should have on the team's workspace folder, like `CAN_EDIT`. A **group** is a named set of people or identities from Microsoft Entra ID.",
         "The runbook doesn't copy that list as it is. It **adds access you didn't type**: the owner group gets `CAN_MANAGE`, and every workspace user gets `CAN_READ` by default. Then it joins those with the explicit grants and hands the whole list to the module.",
@@ -409,8 +413,10 @@ d.get("b")   # None""",
 
 lesson(MODULE, 'cluster_from_yaml',
     title='What will Terraform build from clusters.yml?',
+    checked='2026-10-13',
+    sources=[source('Create and manage compute policies', 'https://learn.microsoft.com/azure/databricks/admin/clusters/policies'), source('Default policies and policy families', 'https://learn.microsoft.com/azure/databricks/admin/clusters/policy-families'), source('databricks_permissions resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/permissions')],
     learn=[
-        "A team asks for a cluster in its own `clusters.yml`, and `team.yml` points to that file. The first file is only a **pointer**; the second describes the cluster: a name, the team's short **code**, its size and a **cluster policy**, the set of rules that limits what a cluster may be.",
+        "A team asks for a cluster in its own `clusters.yml`. Its `team.yml` only **points** to that file; `clusters.yml` is what describes the cluster: a name, the team's short **code**, its size and a **cluster policy**, the set of rules that limits what a cluster may be.",
         "The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in **lower case**: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses **Personal Compute**. It also gives the team's owner group permission to manage the cluster.",
         "Some things are **not allowed** in YAML. A raw `policy_id` is rejected: teams name the policy, and the module looks up its id. Size is either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling, never a mix and never neither.",
         "Reading the plan, you compare what Terraform will build with what the YAML asked for. A difference can be on purpose (the name prefix, the default policy) or a mistake, and you should be able to say which.",
@@ -652,6 +658,8 @@ fixed == auto   # True: both styles at once, a problem""",
 
 lesson(MODULE, 'lookup_failed',
     title="Why can't the plan find the service principal?",
+    checked='2026-10-13',
+    sources=[source('Service principals', 'https://learn.microsoft.com/azure/databricks/admin/users-groups/service-principals'), source('Query infrastructure data (data sources)', 'https://developer.hashicorp.com/terraform/language/data-sources'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed')],
     learn=[
         "A **service principal** (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word **data** in the error path means Terraform tried to **look up** something that should already exist; it was never going to create it.",
         "An SP has to pass several **stages**, in order, before a lookup works. It must exist in **Microsoft Entra ID**. It must be **declared** in the team's `service_principals.yml`. The **Foundation** stack must have been **applied**, which registers it in the Databricks account. Then the **Service** stack assigns it to the workspace.",
@@ -826,6 +834,8 @@ def next_check(facts):
 
 lesson(MODULE, 'ai_unstuck',
     title='Getting unstuck with AI, safely',
+    checked='2026-10-13',
+    sources=[source('Run', 'https://docs.spacelift.io/concepts/run'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan')],
     learn=[
         "AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: **explaining** an unfamiliar term or error, **tracing** a name across files (YAML, then the runbook, then the module), and **suggesting checks**. They are not evidence. Anything they say is a lead until you've seen it yourself.",
         "A good prompt gives the AI what a person would need: **the run** (stack, environment, run link), **the first error** (a short excerpt, not the whole log), **the repo and the commit the run used**, and the rules: **read-only**, link every source, mark guesses as guesses, give one safe next check, and don't edit or deploy anything.",

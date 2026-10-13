@@ -258,7 +258,8 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .example { display: grid; gap: 6px; }
 pre.code { margin: 0; font: 14px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
 /* long lines wrap rather than run off the edge on a phone; wide tables scroll, with a fade saying there's more */
-.dtwrap.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
+pre.code.aligned { white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+pre.code.aligned.more, .dtwrap.more { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); }
 /* Terraform, plan output, state JSON and lock errors: the plan's marks, attribute names, and what forces a replacement */
 .syn .pm { font-weight: 700; } .syn .pm.a { color: var(--pass); } .syn .pm.d { color: var(--fail); } .syn .pm.u { color: var(--accent); } .syn .pm.r { color: var(--hint); }
 .syn .key { color: var(--syn-fn); }
@@ -792,13 +793,13 @@ button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
 .sl-chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--tool-line); }
 .sl-chrome span { margin-left: 8px; font: 600 11.5px var(--body); color: var(--tool-muted); background: var(--tool-bg); border: 1px solid var(--tool-line); border-radius: 6px; padding: 1px 10px; }
 .sl-body { padding: 12px; display: grid; gap: 8px; min-width: 0; }
-.sl-view .sl-n { background: var(--tool-anno-dot); color: #fff; box-shadow: none; font-family: var(--body); }
+.sl-view .sl-n { background: var(--tool-anno-dot); color: var(--tool-anno-ink); box-shadow: none; font-family: var(--body); }
 .sl-view .sl-mark, .sl-view .sl-hitbox { outline: 2px solid var(--tool-anno); box-shadow: none; }
-.sl-now .sl-n, .sl-more .sl-n { background: var(--tool-anno-dot); color: #fff; box-shadow: none; border: 1.5px solid var(--tool-anno); }
+.sl-now .sl-n, .sl-more .sl-n { background: var(--tool-anno-dot); color: var(--tool-anno-ink); box-shadow: none; border: 1.5px solid var(--tool-anno); }
 .sl-count { color: var(--muted); }
 .sl-view .sl-h1 b { font: 700 18px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: var(--tool-fg); }
-.sl-view .sl-pill { background: var(--tool-ok); color: #fff; font: 700 11px/1.6 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: .02em; padding: 1px 9px; border-radius: 999px; }
-.sl-view .sl-pill.sl-planned { background: var(--tool-planned); color: #fff; font-size: 10px; border-radius: 6px; }
+.sl-view .sl-pill { background: var(--tool-ok); color: var(--tool-on); font: 700 11px/1.6 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: .02em; padding: 1px 9px; border-radius: 999px; }
+.sl-view .sl-pill.sl-planned { background: var(--tool-planned); color: var(--tool-on); font-size: 10px; border-radius: 6px; }
 .sl-view .sl-meta, .sl-view .sl-bar, .sl-view .sl-muted { color: var(--tool-muted); }
 .sl-view .sl-link, .sl-view .sl-id { color: var(--tool-link); }
 .sl-view .sl-tab { color: var(--tool-muted); } .sl-view .sl-tab.on { background: var(--tool-sunk); color: var(--tool-fg); }
@@ -810,9 +811,9 @@ button.qf-row { cursor: pointer; } button.qf-row:disabled { cursor: default; }
 .sl-view .sl-code { color: var(--tool-fg); } .sl-view .sl-add { color: var(--tool-ok); }
 .sl-view .sl-warn { color: var(--tool-change); }
 .sl-view .sl-line.sl-hit { background: color-mix(in srgb, var(--tool-anno) 12%, transparent); }
-.sl-view .sl-dot { background: var(--tool-ok); color: #fff; }
+.sl-view .sl-dot { background: var(--tool-ok); color: var(--tool-on); }
 .sl-view .sl-flow li { background: var(--tool-sunk); border-color: var(--tool-line); color: var(--tool-fg); } .sl-view .sl-flow li > span:last-child { color: var(--tool-muted); }
-.sl-view .sl-step { color: #fff; background: var(--tool-anno-dot); border-radius: 6px; width: 22px; text-align: center; }
+.sl-view .sl-step { color: var(--tool-anno-ink); background: var(--tool-anno-dot); border-radius: 6px; width: 22px; text-align: center; }
 .sl-view .sl-note { color: var(--tool-anno); }
 .sl-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 @media (min-width: 620px) { .sl-cols { grid-template-columns: 170px minmax(0, 1fr); } }
@@ -2012,7 +2013,8 @@ function renderHome() {
       <h2>${esc(LESSONS[tid].title)}</h2>
       <span class="meta">${esc(why)}</span>
       ${go ? `<div class="steps" aria-hidden="true">${STEPS.map((_, k) => `<i class="${k < s.step ? "done" : k === s.step ? "now" : ""}"></i>`).join("")}</div>` : ""}
-      <button class="btn primary" data-open="${tid}">${label}</button></section>`;
+      <button class="btn primary" data-open="${tid}">${label}</button>
+      ${dueList().length ? `<button class="linkbtn reviewline" data-review-start>${ic("clock")}Also: ${dueList().length} quick review${dueList().length === 1 ? "" : "s"} · about ${Math.max(1, Math.round(dueList().length * .7))} min</button>` : ""}</section>`;
   } else {
     hello = `<h1>${wd}.</h1><p class="meta">AI engineering on Databricks.</p>`;
     card = `<section class="next"><span class="eyebrow">Path complete</span><h2>You've finished every lesson.</h2></section>`;
@@ -2035,6 +2037,7 @@ function renderHome() {
   $("home").innerHTML = `<div class="hello">${hello}</div>
     ${card}
     ${aiOffNote()}
+    ${studyRowHtml()}
     ${!progress.focus && !fresh && TRACKS.length ? `<div class="callout focusask"><b>New: a platform track</b><p>Azure Databricks as code: YAML, the runbook, Terraform and Spacelift. What do you want to practise?</p><div class="seg" role="group" aria-label="What you practise"><button data-focus-pick="ai">AI</button><button data-focus-pick="platform">Platform</button><button data-focus-pick="both">Both</button></div></div>` : ""}
     ${progress.focus === "platform" ? TRACKS.map(trackPage).join("") : ""}
 
@@ -2426,10 +2429,13 @@ function renderSearch() {
   const q = $("searchIn").value.trim(), terms = searchTerms(q), out = $("searchOut");
   if (!terms.length) {
     const recent = ALL_LESSONS.filter(id => started(id) && !isDoneL(id)).slice(0, 3);
-    const nid = nextInOrder();
-    const phases = PHASES.map((ph, i) => `<button class="chipbtn sphase" data-phase-go="${i}">${badgeSvg(i, 7, phState(i))}${esc(ph.name)}</button>`).join("");
-    const tries = ["leakage", "retries", "Unity Catalog", "canary", "split_by_key"].map(t => `<button class="chipbtn" data-try="${esc(t)}">${esc(t)}</button>`).join("");
-    out.innerHTML = `<section class="sgrp"><h3>Jump to a phase</h3><div class="sphases">${phases}</div></section>
+    const nid = todayLesson();
+    const phases = PHASES.map((ph, i) => `<button class="chipbtn sphase" data-phase-go="${i}">${badgeSvg(i, 7, phState(i))}${esc(ph.name)}</button>`).join("")
+      + TRACKS.map(tr => `<button class="chipbtn sphase strack" data-track-go="${tr.id}"><svg viewBox="-12 -12 24 24" width="18" height="18" aria-hidden="true">${phShape(TRACK_SHAPE, 8)}</svg>${esc(tr.name)}</button>`).join("");
+    const tries = (progress.focus === "platform" ? ["runbook", "Spacelift", "Unity Catalog", "state lock", "service principal"]
+      : progress.focus === "both" ? ["leakage", "Spacelift", "Unity Catalog", "canary", "runbook"]
+      : ["leakage", "retries", "Unity Catalog", "canary", "split_by_key"]).map(t => `<button class="chipbtn" data-try="${esc(t)}">${esc(t)}</button>`).join("");
+    out.innerHTML = `<section class="sgrp"><h3>Jump to a phase or track</h3><div class="sphases">${phases}</div></section>
       ${nid || recent.length ? `<section class="sgrp"><h3>Pick up where you are</h3><div class="slist">${[...new Set([nid, ...recent].filter(Boolean))].map(id => lessonHit(id, [])).join("")}</div></section>` : ""}
       <section class="sgrp"><h3>Try</h3><div class="minis">${tries}</div></section>
       <p class="meta">Searches lesson titles and text, the functions you write, the glossary and your study list.</p>`;
@@ -2620,7 +2626,9 @@ function showDone(id, after, fresh) {
   const item = (ok, html) => `<li class="${ok ? "" : "skip"}">${ic(ok ? "check" : "arrowr")}<span>${html}</span></li>`;
   const recap = [
     s.checked === null ? item(false, "You skipped the check.") : item(true, s.checked === ans ? "Got the check right first time." : "Worked through the check."),
-    sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
+    sol && sol.mode === "practice" && p.practice ? item(true, `Answered the practice questions: ${Math.max(0, p.practice.asks.length - (sol.hints || 0))} of ${p.practice.asks.length} right first time.`)
+    : sol && sol.mode === "sort" && p.sort ? item(true, `Sorted the ideas: ${Math.max(0, p.sort.items.length - (sol.hints || 0))} of ${p.sort.items.length} right first time.`)
+    : sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
         : item(false, `Skipped <b>${esc(p.title)}</b>.<button class="linkbtn" data-build="${id}">Try it now</button>`),
     item(true, `Learned the pattern: <b>${esc(L.angle[0])}</b>.`),
   ].join("");
@@ -2806,18 +2814,29 @@ function checkedNote(L) {
   if (!sources.length) return `<p class="checked${old ? " old" : ""}">${ic("clock")}<span>${esc(head)}</span></p>`;
   return `<details class="checked${old ? " old" : ""}"><summary>${ic("clock")}<span>${esc(head)}</span></summary><ul>${links}</ul></details>`;
 }
+// The options in a fixed shuffled order per lesson, so the right one isn't always in the same place
+// (it was B in most lessons). Answers are still saved by their original position, so progress and
+// the managers' dashboard don't change.
+function checkOrder(id, n) {
+  let h = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 2166136261);
+  const order = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; const j = h % (i + 1); [order[i], order[j]] = [order[j], order[i]]; }
+  return order;
+}
 function checkPane() {
   const L = LESSONS[cur.id], s = lp(cur.id);
   const [q, opts, ans, why] = L.check, answered = s.checked !== null;
-  const buttons = opts.map((o, k) => {
+  const order = checkOrder(cur.id, opts.length), letter = k => "ABCDEF"[order.indexOf(k)];
+  const buttons = order.map(k => {
+    const o = opts[k];
     let cls = "opt";
     if (answered && k === ans) cls += " right";
     else if (answered && k === s.checked) cls += " wrong";
-    return `<button class="${cls}" data-opt="${k}"${answered ? " disabled" : ""}><span class="k">${"ABC"[k]}</span><span>${md(o)}</span></button>`;
+    return `<button class="${cls}" data-opt="${k}"${answered ? " disabled" : ""}><span class="k">${letter(k)}</span><span>${md(o)}</span></button>`;
   }).join("");
   const verdict = !answered ? "" : s.checked === ans
     ? `<div class="verdict ok">${ic("check")}<div><b>Right.</b> ${md(why)}</div></div>`
-    : `<div class="verdict no">${ic("x")}<div><b>Not quite: it's ${"ABC"[ans]}.</b> ${md(why)}</div></div>`;
+    : `<div class="verdict no">${ic("x")}<div><b>Not quite: it's ${letter(ans)}.</b> ${md(why)}</div></div>`;
   return `<p class="q">${md(q)}</p><div class="opts">${buttons}</div>${verdict}${answered ? `<button class="linkbtn" data-retry>Try again</button>${askPanel()}` : ""}`;
 }
 const SAY_WORDS = 4;  // "one sentence": enough words to be a thought, not a box ticked
@@ -3157,12 +3176,12 @@ function loadProblem(p) {
   $("code").value = draft || startCode(p);
   renderMode(); renderKeys(p);
   $("feed").innerHTML = "";
-  $("result").className = "result idle";
+  $("result").className = "result idle codeonly";
   $("result").textContent = "Write your code, then run the tests. Python runs right here in the page.";
   $("stdout").hidden = true; $("solConfirm").hidden = true; $("guideConfirm").hidden = true;
   updateHintBtn(); markSaved();
 }
-function setResult(kind, head, body) { $("result").className = "result " + kind; $("result").innerHTML = `<div class="score">${esc(head)}</div><div>${esc(body)}</div>`; }
+function setResult(kind, head, body) { $("result").className = "result codeonly " + kind; $("result").innerHTML = `<div class="score">${esc(head)}</div><div>${esc(body)}</div>`; }
 async function runTests() {
   if (busy) return;
   if (typeof Sk === "undefined") { setResult("fail", "The Python engine didn't load", "Check your connection and reload the page."); return; }
@@ -3197,7 +3216,7 @@ async function runTests() {
       lastRun = { summary: `All ${total} tests passed.` };
       const prev = progress.solved[p.id];
       progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: hintLevel, mode: "code" };
-      $("result").className = "result pass";
+      $("result").className = "result codeonly pass";
       $("result").innerHTML = `<div class="score">${ic("check")} ${total}/${total} passed</div><div class="dots">${dots}</div>
         <div>Solved. The pattern: <em>${md(p.pattern)}</em></div>${habitLine("pass")}
         <div class="tools"><button class="btn" id="reviewBtn"${sampleOff ? " hidden" : ""}>Review my code</button></div>`;
@@ -3212,7 +3231,7 @@ async function runTests() {
       const gotLabel = r.status === "err" ? "error" : "got";
       failedRun = true;
       lastRun = { summary: `${passed}/${total} passed. First failing case: ${callText(p, c)} expected ${py(c.expected)}, ${gotLabel}: ${r.got}` };
-      $("result").className = "result fail";
+      $("result").className = "result codeonly fail";
       $("result").innerHTML = `<div class="score">${passed}/${total} passed</div><div class="dots">${dots}</div>
         <div class="case"><span>call</span><span>${esc(callText(p, c))}</span><span>expected</span><span>${esc(short(py(c.expected), 200))}</span><span>${gotLabel}</span><span>${esc(short(r.got, 200))}</span></div>
         <div class="meta">Most mistakes show up with unusual inputs, like an empty list or a single item. Try this example by hand before asking for a hint.</div>${habitLine(r.status === "err" ? "error" : "fail")}`;
@@ -4086,11 +4105,13 @@ function colourCode() {
     const t = pre.textContent;
     if (pre.dataset.hl === String(t.length)) return;
     pre.innerHTML = looksInfra(t) ? hlInfra(t) : hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
+    // columns lined up with spaces lose their meaning when wrapped: those boxes scroll sideways instead
+    pre.classList.toggle("aligned", t.split("\n").filter(l => /\S {2,}\S/.test(l)).length >= 2);
   });
-  document.querySelectorAll(".dtwrap").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
+  document.querySelectorAll(".dtwrap, pre.code.aligned").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
 }
 { let queued = false; new MutationObserver(() => { if (queued) return; queued = true; setTimeout(() => { queued = false; colourCode(); }, 0); }).observe(document.body, { childList: true, subtree: true, characterData: true }); colourCode(); }
-document.addEventListener("scroll", e => { const w = e.target.closest && e.target.closest(".dtwrap"); if (w) w.classList.toggle("more", w.scrollLeft + w.clientWidth < w.scrollWidth - 4); }, true);
+document.addEventListener("scroll", e => { const w = e.target.closest && e.target.closest(".dtwrap, pre.code.aligned"); if (w) w.classList.toggle("more", w.scrollLeft + w.clientWidth < w.scrollWidth - 4); }, true);
 function syncCodeScroll() { const hl = $("codeHl"); hl.scrollLeft = ed.scrollLeft; hl.style.setProperty("--sl", ed.scrollLeft + "px"); }
 function drawCode() {
   $("codeHl").innerHTML = hlPython(ed.value).split("\n").map(l => `<span class="ln">${l}</span>`).join("\n") + "\n";
@@ -4184,6 +4205,9 @@ document.addEventListener("click", async e => {
   if (t.closest("#searchClose")) { closeSearch(); return; }
   const tr = t.closest("[data-try]"); if (tr) { $("searchIn").value = tr.dataset.try; renderSearch(); $("searchIn").focus(); return; }
   const wd = t.closest("[data-word]"); if (wd) { wordOpen = wordOpen === wd.dataset.word ? null : wd.dataset.word; renderSearch(); return; }
+  if (t.closest("[data-study-open]")) { openPocket(); return; }
+  const rs = t.closest("[data-review-start]"); if (rs) { startReview(null, rs); return; }
+  const trk = t.closest("[data-track-go]"); if (trk) { goHome(); requestAnimationFrame(() => { const el = $("track-" + trk.dataset.trackGo); if (el) el.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); }); return; }
   const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
   const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openPocket(sn.dataset.snote); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
