@@ -42,3 +42,8 @@ mlflow.db
 
 # written by `drill cloud deploy`: the commit a Databricks App runs, since it has no git history
 .drill-version
+
+# Private content packs: keep them outside the repo, or here, where git won't pick them up
+content-packs/private/
+content-packs/**/private/
+*.private.yaml

@@ -1,0 +1,19 @@
+# Evidence: where a lesson's claims come from. Each lesson lists its own under `evidence:`;
+# learn.sources and explain.evidence name them by id. The page shows the title, the reference,
+# the revision and whether someone has verified it, so learners see how far to trust a claim.
+# References point into your private environment, so they live in the private pack only.
+
+- id: ev_doc
+  kind: doc                    # doc, code, run, screenshot or other
+  title: SOURCE_TITLE_TODO     # e.g. "Team configuration guide"
+  ref: SOURCE_REFERENCE_TODO   # a path or link that only your organisation can open
+  revision: REVISION_TODO      # the version you read: a commit, a release or a date
+  status: verified             # verified, unverified or outdated
+  reviewed: 2026-01-01         # required when verified: the date someone checked it
+
+- id: ev_code
+  kind: code
+  title: SOURCE_TITLE_TODO     # e.g. "The parser that reads team files"
+  ref: SOURCE_REFERENCE_TODO   # e.g. path/to/parser.py#L40
+  revision: REVISION_TODO
+  status: unverified

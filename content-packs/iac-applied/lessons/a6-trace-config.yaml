@@ -1,0 +1,11 @@
+# A content slot. It is never shown until it is filled in and its status is changed.
+# To fill it: copy content-packs/templates/lesson.example.yaml over this file, keep the id,
+# write the lesson, run `uv run drill content check`, then set status to draft or ready.
+id: iac_a6_trace_config
+status: slot
+title: "Trace configuration to implementation"
+summary: "Follow one field from the configuration file, through the code that reads and transforms it, into the module and the provider that applies it."
+planned:                       # a suggestion for the author, not shown to learners
+  practice: [source_tracing]
+  views: [trace]
+  sources: SOURCE_REFERENCE_TODO

@@ -1,0 +1,3 @@
+This file marks the public copy of the repository. While it is here, tests/test_packs.py checks
+that every lesson under content-packs/ is still a slot and that no pack holds screenshots or
+other files. Delete this file in the approved private copy, where real lessons are written.

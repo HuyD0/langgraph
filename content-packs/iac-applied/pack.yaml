@@ -1,0 +1,33 @@
+# Infrastructure as Code: Applied Practice. The slots for an internal curriculum.
+# Every lesson here is a slot (status: slot), so this pack shows nothing to learners until
+# someone fills lessons in, inside an approved private copy. See docs/CONTENT_PACKS.md.
+id: iac-applied
+title: "Infrastructure as Code: Applied Practice"
+version: 0.0.1
+phase: Ship
+journeys:
+  - id: iac-configure
+    title: "Applied IaC: configure infrastructure"
+    blurb: From a request to a configuration that passes its checks and does what was asked.
+    lessons:
+      - lessons/a1-workflow.yaml
+      - lessons/a2-config-files.yaml
+      - lessons/a3-validation.yaml
+      - lessons/a4-identities.yaml
+      - lessons/a5-dependencies.yaml
+      - lessons/a6-trace-config.yaml
+  - id: iac-review
+    title: "Applied IaC: review and troubleshoot"
+    blurb: Read a plan, trace each change to its cause, fix failed runs and decide on a change.
+    lessons:
+      - lessons/b1-plan-run.yaml
+      - lessons/b2-planned-changes.yaml
+      - lessons/b3-trace-changes.yaml
+      - lessons/b4-unexpected.yaml
+      - lessons/b5-failed-runs.yaml
+      - lessons/b6-review-change.yaml
+  - id: iac-capstone
+    title: "Applied IaC: capstone"
+    blurb: "Request, configure, validate, trace, review, diagnose, decide: one case end to end."
+    lessons:
+      - lessons/c1-capstone.yaml
