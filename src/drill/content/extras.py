@@ -771,6 +771,8 @@ GLOSSARY = [
             ['Azure AI Search', 'Microsoft\'s search service (formerly Azure Cognitive Search, now part of Foundry IQ): indexers pull documents from Blob or SharePoint, with hybrid search, a semantic ranker and agentic retrieval. A different product from Databricks AI Search.'],
             ['Delta Sync index', 'A Databricks Vector Search index that follows a Delta table. The table needs Change Data Feed turned on.'],
             ['Direct Vector Access index', 'A Databricks Vector Search index with no source table: you write the vectors yourself.'],
+            ['system.ai.web_search', 'A built-in MCP service (Beta) that searches the public web and answers with citations. Anything it returns is untrusted text.'],
+            ['EXECUTE', 'The Unity Catalog privilege to call a function. An agent\'s identity needs it on every function it uses as a tool.'],
             ['Unity Gateway', 'Where Databricks routes, governs and logs calls to models and MCP services, with Unity Catalog permissions and policies.'],
         ],
     ],

@@ -552,3 +552,433 @@ tool['space_id']   # '01f0aa'
         ],
     ),
 )
+
+lesson(MODULE, 'callable_tools',
+    title='Unity Catalog functions: tools with permissions',
+    learn=[
+        'The lesson "Tools from Unity Catalog" showed how a function becomes a tool the model can read. This lesson is about the other half: who is allowed to run it. A **Unity Catalog function** lives at `catalog.schema.function`, like `main.support.lookup_order`, the same three parts as a table.',
+        'There are two kinds. A **SQL function** says `LANGUAGE SQL` and then `RETURN` with one expression or one query. A **Python function** says `LANGUAGE PYTHON`, puts its code between two `$$` marks, and declares its **return type** (the kind of value it gives back, like `STRING`). If the Python code needs extra packages, an `ENVIRONMENT` clause lists them (from PyPI, volumes or URLs), and then `environment_version` must be set too.',
+        'Write a `COMMENT` on the function and on each parameter. Those comments become the tool description the model reads, so a vague comment leads to wrong tool picks.',
+        'To **create** a function you need `USE CATALOG`, `USE SCHEMA` and `CREATE FUNCTION` on the schema. To **call** one you need `EXECUTE` on the function, plus `USE CATALOG` and `USE SCHEMA`. `EXECUTE` granted on a schema or a catalog flows down to every function inside, the same idea as in "Unity Catalog privileges flow down".',
+        "Agents call functions through `UCFunctionToolkit` or the managed MCP functions server, `https://<host>/api/2.0/mcp/functions/{catalog}/{schema}/{function}`. Every call runs with the **caller's** permissions. A deployed agent often runs as a **service principal** (an identity for an app, not a person), so that service principal needs `EXECUTE`. The classic miss: the team grants it to people, tests in a notebook, it works, and then the deployed agent is refused.",
+    ],
+    example=example('A SQL function, described and granted', """CREATE FUNCTION main.support.lookup_order(
+  order_id STRING COMMENT 'The order number, like A-1042')
+RETURNS STRING
+COMMENT 'Look up the status of one order'
+LANGUAGE SQL
+RETURN SELECT status FROM main.support.orders
+       WHERE id = order_id;
+
+-- People who test it:
+GRANT EXECUTE ON FUNCTION main.support.lookup_order TO `support-agents`;
+-- The group the agent's service principal is in:
+GRANT EXECUTE ON FUNCTION main.support.lookup_order TO `support-bots`;"""),
+    check=question(
+        "Mai is in `support-agents`, which has `EXECUTE` on `main.support.lookup_order`. The agent works when she tests it in a notebook, but once deployed it gets a permission error on that tool. What is the most likely cause?",
+        [
+            "The function's COMMENT is too short",
+            "The agent's service principal has no EXECUTE on the function, its schema or its catalog",
+            'SQL functions cannot be called by deployed agents',
+        ],
+        answer=1,
+        why="Every call runs with the caller's permissions. In the notebook the caller was Mai; once deployed it is the agent's service principal. Grant EXECUTE, plus USE CATALOG and USE SCHEMA, to a group the service principal is in.",
+    ),
+    angle=angle(
+        pattern='Three checks per function, each looking up the tree',
+        text='The big idea: an agent can call a function only when three privileges line up, and each one can come from the place itself or a place above it. Your code goes through the functions one by one and splits each name into catalog and schema. A small helper, `has`, asks one question: "does any of the agent\'s names have this privilege on one of these places?" You ask it three times: USE CATALOG on the catalog; USE SCHEMA on the catalog or schema; EXECUTE on the catalog, schema or function. When all three say yes, the function goes on the list.',
+        say='"An agent calls Unity Catalog functions as its own identity. So before deploying, I check that its service principal, or a group it is in, has USE CATALOG, USE SCHEMA and EXECUTE, each granted on the object or above it."',
+        classic=None,
+    ),
+    stack=stack('A Python function an agent can call', """CREATE OR REPLACE FUNCTION
+  main.support.parcel_size(
+    weight_kg DOUBLE
+      COMMENT 'Parcel weight in kilograms')
+RETURNS STRING
+COMMENT 'Size band for a parcel: small, medium or large'
+LANGUAGE PYTHON
+AS $$
+if weight_kg <= 2:
+    return "small"
+if weight_kg <= 20:
+    return "medium"
+return "large"
+$$;
+
+-- The agent's group needs all three.
+-- EXECUTE on the schema covers every
+-- function in main.support.
+GRANT USE CATALOG ON CATALOG main TO `support-bots`;
+GRANT USE SCHEMA ON SCHEMA main.support TO `support-bots`;
+GRANT EXECUTE ON SCHEMA main.support TO `support-bots`;"""),
+    exercise=exercise(
+        title='Which Tools Can the Agent Call?',
+        topic='unity-catalog',
+        difficulty='easy',
+        fn='callable_tools',
+        prompt="""An agent has a list of Unity Catalog functions as tools. Find the ones it is really allowed to call.
+
+Your function gets three things:
+
+- `functions`: full function names, like `"main.support.lookup_order"`.
+- `grants`: a list of grants. Each one is a dict like `{"principal": "support-bots", "privilege": "EXECUTE", "on": "main.support"}`. `on` is a catalog (`"main"`), a schema (`"main.support"`) or a function (`"main.support.lookup_order"`).
+- `principals`: every name the agent counts as: its service principal plus the groups it is in, like `["order-bot", "support-bots"]`.
+
+The agent can call a function only when all three of these are true, through a grant to any name in `principals`:
+
+1. `USE CATALOG` on the catalog.
+2. `USE SCHEMA` on the schema, or on the catalog.
+3. `EXECUTE` on the function, its schema or its catalog.
+
+A grant of `ALL PRIVILEGES` counts as any privilege. Return the functions the agent can call, in the same order as `functions`.""",
+        pattern='Write one helper that answers "is this privilege granted to the agent on any of these places?", then ask it three times for each function.',
+        target='one pass over the grants for each check, for each function',
+        realworld="Run this check for the agent's service principal before every deploy, on every function in its tool list. In SQL, `SHOW GRANTS ON FUNCTION main.support.lookup_order` lists who has what on one function.",
+        starter="""def callable_tools(functions, grants, principals):
+    # your code here
+    pass
+""",
+        solution="""def callable_tools(functions, grants, principals):
+    def has(privilege, places):
+        for grant in grants:
+            if grant["principal"] in principals and grant["on"] in places:
+                if grant["privilege"] == privilege or grant["privilege"] == "ALL PRIVILEGES":
+                    return True
+        return False
+
+    usable = []
+    for name in functions:
+        parts = name.split(".")
+        catalog = parts[0]
+        schema = parts[0] + "." + parts[1]
+        if (has("USE CATALOG", [catalog])
+                and has("USE SCHEMA", [catalog, schema])
+                and has("EXECUTE", [catalog, schema, name])):
+            usable.append(name)
+    return usable
+""",
+        cases=[
+            case(
+                ['main.support.lookup_order', 'main.support.refund_order', 'main.billing.invoice_total'],
+                [
+                    {'principal': 'support-bots', 'privilege': 'USE CATALOG', 'on': 'main'},
+                    {'principal': 'support-bots', 'privilege': 'USE SCHEMA', 'on': 'main.support'},
+                    {'principal': 'support-bots', 'privilege': 'EXECUTE', 'on': 'main.support.lookup_order'},
+                    {'principal': 'support-agents', 'privilege': 'EXECUTE', 'on': 'main.support.refund_order'},
+                    {'principal': 'support-bots', 'privilege': 'EXECUTE', 'on': 'main.billing'},
+                ],
+                ['order-bot', 'support-bots'],
+                expected=['main.support.lookup_order'], sample=True),
+            case(
+                ['main.support.lookup_order', 'main.hr.leave_balance', 'main.support.order_status'],
+                [
+                    {'principal': 'support-bots', 'privilege': 'USE CATALOG', 'on': 'main'},
+                    {'principal': 'support-bots', 'privilege': 'USE SCHEMA', 'on': 'main'},
+                    {'principal': 'support-bots', 'privilege': 'EXECUTE', 'on': 'main.support'},
+                    {'principal': 'support-bots', 'privilege': 'EXECUTE', 'on': 'main.hr.leave_balance_v2'},
+                ],
+                ['order-bot', 'support-bots'],
+                expected=['main.support.lookup_order', 'main.support.order_status']),
+            case(
+                ['tools.web.fetch_page', 'main.support.lookup_order', 'tools.math.add_tax'],
+                [
+                    {'principal': 'sp-helpdesk', 'privilege': 'ALL PRIVILEGES', 'on': 'tools'},
+                ],
+                ['sp-helpdesk', 'helpdesk-bots'],
+                expected=['tools.web.fetch_page', 'tools.math.add_tax']),
+            case(
+                [],
+                [
+                    {'principal': 'support-bots', 'privilege': 'USE CATALOG', 'on': 'main'},
+                ],
+                ['order-bot', 'support-bots'],
+                expected=[]),
+            case(
+                ['main.support.lookup_order', 'main.support.order_status'],
+                [
+                    {'principal': 'analysts', 'privilege': 'USE CATALOG', 'on': 'main'},
+                    {'principal': 'support-bots', 'privilege': 'USE SCHEMA', 'on': 'main.support'},
+                    {'principal': 'support-bots', 'privilege': 'EXECUTE', 'on': 'main.support'},
+                ],
+                ['order-bot', 'support-bots'],
+                expected=[]),
+        ],
+        guided="""def callable_tools(functions, grants, principals):
+    # Replace every ___ with real code, then run the tests.
+
+    def has(privilege, places):
+        # True when one of the agent's names has this privilege on one of these places.
+        for grant in grants:
+            if grant["principal"] in principals and grant["on"] in places:
+                # ALL PRIVILEGES counts as any privilege.
+                if grant["privilege"] == privilege or grant["privilege"] == "ALL PRIVILEGES":
+                    return True
+        return False
+
+    usable = []
+    for name in functions:
+        parts = name.split(".")
+        catalog = parts[0]
+
+        # Step 1: the schema is the first two parts, joined by a dot.
+        schema = ___
+
+        # Step 2: all three must be True. Each list holds the places
+        # the privilege may come from.
+        if (has("USE CATALOG", [catalog])
+                and has("USE SCHEMA", [catalog, schema])
+                and has("EXECUTE", ___)):
+            # Step 3: the agent can call this one, so keep it.
+            ___
+
+    return usable
+""",
+        fills=['parts[0] + "." + parts[1]', '[catalog, schema, name]', 'usable.append(name)'],
+        concepts=[
+            [
+                'A helper inside a function',
+                'A function written inside another one can read the outer one\'s variables. Here `has` reads `grants` and `principals` without being handed them.',
+                """def greet_all(names, greeting):
+    def greet(name):
+        return greeting + ', ' + name
+    return [greet(n) for n in names]
+
+greet_all(['Ada', 'Bo'], 'Hi')   # ['Hi, Ada', 'Hi, Bo']""",
+            ],
+            [
+                'Joining checks with and',
+                '`a and b and c` is True only when all three are True. Python stops at the first False, so later checks are skipped.',
+                """age = 20
+has_ticket = False
+age >= 18 and has_ticket   # False""",
+            ],
+            [
+                'in on a list',
+                '`x in a_list` compares whole items. So `"main.hr.leave_balance"` is not in `["main.hr.leave_balance_v2"]`, even though the text starts the same.',
+                """'main.hr' in ['main', 'main.hr']   # True
+'main.h' in ['main', 'main.hr']    # False""",
+            ],
+        ],
+        byhand='The agent counts as order-bot and support-bots. lookup_order: USE CATALOG on main, yes; USE SCHEMA on main.support, yes; EXECUTE on main.support.lookup_order, yes. Keep it. refund_order: EXECUTE went to support-agents, the people, not to the agent, so no. invoice_total: EXECUTE on main.billing is there, but nobody gave support-bots USE SCHEMA on main.billing or on main, so no. The answer is ["main.support.lookup_order"].',
+        why='For each function, at most three passes over the grants, one for each check.',
+        gotchas=[
+            [
+                'Tested as a person, deployed as an app',
+                'A notebook test runs as you, so it passes with your own grants. The deployed agent runs as its service principal. Put the service principal in a group and grant that group USE CATALOG, USE SCHEMA and EXECUTE.',
+            ],
+            [
+                'Python functions and the network',
+                'Python functions on serverless or standard access mode compute may use network ports 80, 443 and 53. A **port** is a numbered door on a machine; 443 is the usual one for `https` links. To call an Azure service from a Python function, use a service credential (see "Service credentials and connections"); whoever creates the function needs `ACCESS` on it.',
+            ],
+            [
+                'Where Python functions run',
+                'Python functions run on serverless compute, pro or serverless SQL warehouses, or classic compute with Databricks Runtime 13.3 LTS and above. `STRICT ISOLATION` is for functions that run arbitrary code (any code at all, not one fixed job).',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'cited_sources',
+    title='Web search for agents',
+    learn=[
+        '`system.ai.web_search` is a built-in MCP service that searches the public web. It gives back a **synthesized** answer (one answer written from several pages) with **citations**: links to the pages it used. Its URL is `https://<host>/ai-gateway/mcp-services/system.ai.web_search`.',
+        'It is a Unity Catalog securable reached through Unity Gateway: grants decide who can call it, and policies govern each call. It is **Beta**: an account admin turns on the Unity Gateway beta on the Previews page of the account console. It is not available in workspaces with HIPAA compliance enabled (HIPAA is a US rule for health data). It is available in supported US regions, or in workspaces that allow **cross-Geo processing**, which means your data may be processed outside your region. Check with your data team before you turn that on.',
+        'Good practice: answer company questions from **internal retrieval** (searching your own data), such as Databricks Vector Search, Azure AI Search or Genie. Use web search only for public, fresh information, like a product release from last week. Never put private or personal data in a search query, because the query leaves your workspace.',
+        'Treat everything that comes back as untrusted text: a web page can carry prompt injection (see "Prompt injection"). Keep the citations, show them to the user, and check they come from sources you trust. Log which answers used the web, so you can find them in your **traces** (the step-by-step record of each agent run).',
+        'To check a source, look at the link\'s **host**: the site name, which is the text after `://` up to the next `/`. In `https://learn.microsoft.com/azure/search`, the host is `learn.microsoft.com`.',
+    ],
+    example=example('Citations checked against an allow list', """allowed: microsoft.com, databricks.com
+
+link                                     host                        result
+https://learn.microsoft.com/azure/x      learn.microsoft.com         kept
+https://docs.databricks.com/genai/mcp    docs.databricks.com         kept
+https://evilmicrosoft.com/azure          evilmicrosoft.com           dropped
+https://microsoft.com.fake-docs.example  microsoft.com.fake-docs...  dropped"""),
+    check=question(
+        'A user asks your agent: "What is our refund policy for business customers?" Where should the answer come from?',
+        [
+            'Web search, because it always has the newest information',
+            'Internal retrieval over your own policy documents, such as Databricks Vector Search or Azure AI Search',
+            "Web search with the customer's name in the query, so it finds the right page",
+        ],
+        answer=1,
+        why="Company facts live in company documents. The web may hold old or wrong copies, and a query with a customer's name sends personal data out of your workspace.",
+    ),
+    angle=angle(
+        pattern='Cut out the host, then match the end',
+        text='The big idea: a citation only helps if it comes from a site you trust, and the host in the link tells you which site that is. Your code goes through the links in order. It cuts the text after `"://"`, then cuts again at the first `"/"`, to get the host. A link with no `"://"` has no host, so it can never match. Then it checks each allowed domain: the host is that domain exactly, or ends with `"."` plus it. The dot matters: it stops `evilmicrosoft.com` from passing as `microsoft.com`. Each link goes in kept or dropped, in order.',
+        say='"I use web search only for public, fresh facts, and keep company questions on internal retrieval. I check every citation\'s host against an allow list, matching the exact domain or a dot before it, so lookalike sites fail."',
+        classic=None,
+    ),
+    stack=stack('databricks-mcp: connect to web search', """# pip install databricks-mcp databricks-sdk
+from databricks.sdk import WorkspaceClient
+from databricks_mcp import DatabricksMCPClient
+
+w = WorkspaceClient()
+url = (w.config.host
+       + "/ai-gateway/mcp-services/"
+       + "system.ai.web_search")
+
+client = DatabricksMCPClient(
+    server_url=url,
+    workspace_client=w)
+
+for tool in client.list_tools():
+    print(tool.name, tool.inputSchema)
+
+# Call it with client.call_tool(name, arguments).
+# Then check each citation's host before
+# you show the answer, and fence the text
+# as data, not instructions."""),
+    exercise=exercise(
+        title='Keep Trusted Citations',
+        topic='mcp',
+        difficulty='easy',
+        fn='cited_sources',
+        prompt="""Web search sends back an answer with citations: links to the pages it used. Before you show them, keep only links from sites your team trusts.
+
+Your function gets two things:
+
+- `urls`: the citation links, like `"https://learn.microsoft.com/azure/search/x"`.
+- `allowed`: trusted domains, like `["microsoft.com", "databricks.com"]`.
+
+For each link:
+
+1. If it has no `"://"`, drop it.
+2. Its **host** is the text after `"://"` up to the next `"/"` (or to the end, if there is no `"/"`). For the link above, that is `"learn.microsoft.com"`.
+3. Keep the link when its host equals an allowed domain, or ends with `"."` plus that domain. So `"learn.microsoft.com"` matches `"microsoft.com"`, but `"evilmicrosoft.com"` does not.
+
+Return `[kept, dropped]`: two lists, each in the same order as `urls`.""",
+        pattern='Cut each link down to its host, then compare the host with each allowed domain.',
+        target='one pass over the links, checking each against the allow list',
+        realworld="Run this check in the agent right after each web search call, before the answer reaches the user. Record the kept and dropped links in the trace, so a reviewer can see which answers used the web and which sources were thrown away.",
+        starter="""def cited_sources(urls, allowed):
+    # your code here
+    pass
+""",
+        solution="""def cited_sources(urls, allowed):
+    kept = []
+    dropped = []
+    for url in urls:
+        host = ""
+        if "://" in url:
+            after = url.split("://")[1]
+            host = after.split("/")[0]
+        trusted = False
+        for domain in allowed:
+            if host == domain or host.endswith("." + domain):
+                trusted = True
+        if trusted:
+            kept.append(url)
+        else:
+            dropped.append(url)
+    return [kept, dropped]
+""",
+        cases=[
+            case(
+                [
+                    'https://learn.microsoft.com/azure/search/x',
+                    'https://evilmicrosoft.com/azure/search',
+                    'https://docs.databricks.com/genai/mcp',
+                    'https://microsoft.com.fake-docs.example/x',
+                ],
+                ['microsoft.com', 'databricks.com'],
+                expected=[
+                    ['https://learn.microsoft.com/azure/search/x', 'https://docs.databricks.com/genai/mcp'],
+                    ['https://evilmicrosoft.com/azure/search', 'https://microsoft.com.fake-docs.example/x'],
+                ], sample=True),
+            case(
+                ['https://databricks.com', 'https://www.databricks.com/blog/x', 'docs.databricks.com/genai'],
+                ['databricks.com'],
+                expected=[
+                    ['https://databricks.com', 'https://www.databricks.com/blog/x'],
+                    ['docs.databricks.com/genai'],
+                ]),
+            case([], ['microsoft.com'], expected=[[], []]),
+            case(
+                ['https://learn.microsoft.com/x', 'https://docs.databricks.com/y'],
+                [],
+                expected=[[], ['https://learn.microsoft.com/x', 'https://docs.databricks.com/y']]),
+            case(
+                [
+                    'https://news-fict.example/microsoft.com/x',
+                    'http://azure.microsoft.com/updates/y',
+                    'https://notdatabricks.com/z',
+                ],
+                ['microsoft.com', 'databricks.com'],
+                expected=[
+                    ['http://azure.microsoft.com/updates/y'],
+                    ['https://news-fict.example/microsoft.com/x', 'https://notdatabricks.com/z'],
+                ]),
+        ],
+        guided="""def cited_sources(urls, allowed):
+    # Replace every ___ with real code, then run the tests.
+
+    kept = []
+    dropped = []
+    for url in urls:
+        # Step 1: cut out the host. A link without "://" has no host.
+        host = ""
+        if "://" in url:
+            after = url.split("://")[1]
+            host = ___
+
+        # Step 2: is the host an allowed domain, or does it end with "." + one?
+        trusted = False
+        for domain in allowed:
+            if host == domain or ___:
+                trusted = True
+
+        # Put the link in the right list.
+        if trusted:
+            kept.append(url)
+        else:
+            dropped.append(url)
+
+    # Step 3: both lists, kept first.
+    return ___
+""",
+        fills=['after.split("/")[0]', 'host.endswith("." + domain)', '[kept, dropped]'],
+        concepts=[
+            [
+                'Splitting and picking a piece',
+                '`text.split(sep)` cuts the text at every `sep` and gives a list of pieces. `[0]` is the first piece, `[1]` the second.',
+                """'https://a.com/b/c'.split('://')   # ['https', 'a.com/b/c']
+'a.com/b/c'.split('/')[0]          # 'a.com'
+'a.com'.split('/')[0]              # 'a.com' (no '/' at all)""",
+            ],
+            [
+                'endswith',
+                '`text.endswith(end)` is True when the text finishes with exactly `end`. Adding the dot first makes it match a whole part of the name, not just the last letters.',
+                """'learn.microsoft.com'.endswith('.microsoft.com')   # True
+'evilmicrosoft.com'.endswith('.microsoft.com')     # False
+'evilmicrosoft.com'.endswith('microsoft.com')      # True, which is why you add the dot""",
+            ],
+            [
+                'A yes/no flag',
+                'Start a variable at `False`, and set it to `True` when you find a match. After the loop it tells you whether any match was found.',
+                """found = False
+for word in ['tea', 'milk']:
+    if word == 'milk':
+        found = True
+found   # True""",
+            ],
+        ],
+        byhand='Link 1: after "://" is "learn.microsoft.com/azure/search/x"; cut at the first "/" to get "learn.microsoft.com". It ends with ".microsoft.com", so keep it. Link 2: the host is "evilmicrosoft.com". It is not "microsoft.com" and does not end with ".microsoft.com" (there is no dot before "microsoft"), so drop it. Link 3: "docs.databricks.com" ends with ".databricks.com", keep. Link 4: "microsoft.com.fake-docs.example" starts with microsoft.com but ends with ".example", drop. Return [[link 1, link 3], [link 2, link 4]].',
+        why='One pass over the links; each host is checked against the short allow list.',
+        gotchas=[
+            [
+                'Trusted site, untrusted text',
+                'A page on an allowed site can still hold text that tries to give your model orders, for example in a comment. The allow list checks where the text came from, not what it says. Fence it as data too.',
+            ],
+            [
+                'The domain in the path',
+                '`https://news-fict.example/microsoft.com/x` mentions microsoft.com, but the site is news-fict.example. Always cut out the host first; never search the whole link for the domain.',
+            ],
+            [
+                'Your query leaves the workspace',
+                'Whatever the agent searches for goes out to the public web. Keep customer names, order numbers and other private data out of search queries.',
+            ],
+        ],
+    ),
+)
