@@ -1,0 +1,11 @@
+# A content slot. It is never shown until it is filled in and its status is changed.
+# To fill it: copy content-packs/templates/lesson.example.yaml over this file, keep the id,
+# write the lesson, run `uv run drill content check`, then set status to draft or ready.
+id: iac_a4_identities
+status: slot
+title: "Understand identities and access"
+summary: "How an identity (a user, group or service principal) is registered, assigned where it is needed and given permissions, and what has to exist before each step works."
+planned:                       # a suggestion for the author, not shown to learners
+  practice: [troubleshooting, ordering]
+  views: [trace]
+  sources: SOURCE_REFERENCE_TODO

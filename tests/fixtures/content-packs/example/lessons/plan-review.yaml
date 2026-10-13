@@ -1,0 +1,36 @@
+id: ex_plan_review
+status: ready
+title: Review a made-up plan
+summary: Three changes, one of them a replacement.
+objective: Decide whether to approve a plan, with evidence.
+difficulty: advanced
+learn:
+  text:
+    - A plan lists what would change. **Replace** means destroy and create again; ask what is lost in between.
+  views:
+    - kind: plan_review
+      changes:
+        - {action: create, address: orbit_store.logs, risk: low}
+        - {action: update, address: orbit_store.main, risk: medium, note: Retention changes from 7 to 30 days.}
+        - {action: replace, address: orbit_db.main, risk: high, note: The database would be recreated.}
+      decision: Request changes
+      reason: The replacement would delete data; it needs a migration plan first.
+check:
+  question: The plan replaces a database. What does that mean?
+  options: [It is changed in place, It is destroyed and created again, Nothing changes]
+  answer: 1
+  why: Replace means a new resource takes the old one's place.
+practice:
+  kind: review_decision
+  prompt: Would you approve this change?
+  artifacts:
+    - kind: diff
+      label: orbit_db.main (fictional)
+      before: "engine_version = 14"
+      after: "engine_version = 15"
+  answer: 1
+  why: The version change forces a replacement, and nothing shows the data is safe.
+  next_check: Ask for the migration plan and a backup before approving.
+explain:
+  reasoning: Approve only what the evidence shows is safe; say what you can't verify.
+  say: I approve a plan when the evidence covers every risky change, and say what I couldn't verify.

@@ -1,0 +1,188 @@
+# Screen gallery
+
+Every main screen of the Daily Drill page, as it looks today, at phone (375×812) and desktop
+(1366×860) size, in the Dusk and Light looks. Each picture says what the learner sees, which code
+draws it, and how to change it safely. Use it to find your way around before you open
+`page.html`, and to compare after a change.
+
+How the code is organised: [../FRONTEND.md](../FRONTEND.md). Tokens, rules and components:
+[../DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md).
+
+## Retake the pictures
+
+After any change you can see, retake them and look at the difference in the PR:
+
+```bash
+uv run drill build-page
+DRILL_PORT=8791 DRILL_DATABASE_URL=sqlite:///.drill/screens.db uv run drill-server   # fresh database, leave it running
+node scripts/screenshots.mjs http://127.0.0.1:8791
+```
+
+Delete `.drill/screens.db` first for a clean start (the done screen marks a lesson finished). The
+script uses the Google Chrome on this Mac; set `CHROME=/path/to/chrome` if it lives elsewhere. To
+add a screen, add a line to `SHOTS` in `scripts/screenshots.mjs` and a section here.
+
+---
+
+## Home: today and the path
+
+| Phone, Dusk | Phone, Light |
+|---|---|
+| ![Home on a phone in Dusk](home-phone-dusk.webp) | ![Home on a phone in Light](home-phone-light.webp) |
+
+![Home on a desktop in Dusk](home-desktop-dusk.webp)
+
+**What the learner sees.** The greeting, one card with the next lesson and one primary button,
+then the path: six phase tabs on a violet strip, joined to the phase's room below. A first visit
+shows "How it works" instead of the next lesson.
+
+**What draws it.** `renderHome()` in the `home: the learning path` section; the tabs are
+`railHtml(false, ...)`; the card is `.next`. Colours: `--accent` for the button, `--path*` for the
+strip.
+
+**Change it safely.** Keep one primary button. New home sections go between `${upnext}` and
+"Practice sets" in `renderHome()`. Text comes from the content (`D.lifecycle`), not the page.
+
+## A phase room
+
+![A phase room on a phone](phase-room-phone-dusk.webp)
+
+**What the learner sees.** The chosen phase as a room: its shape glowing in the title card, what
+you come out with, then one scene per module. The scene with the next lesson is open; the
+others fold to a row of small shapes.
+
+**What draws it.** `phasePage()` (scenes, `sticker()`, `minis()`), `.book.room`, `.paperN` (each
+phase has its own paper), `badgeSvg()` for the title shape.
+
+**Change it safely.** A new phase is a content change (`LIFECYCLE` in `modules/__init__.py`) plus
+a shape in `phShape` and a paper. The six-phase count is tested.
+
+## The Platform track
+
+| Phone, Dusk | Desktop, Light |
+|---|---|
+| ![The Platform track on a phone](track-phone-dusk.webp) | ![The Platform track on a desktop](track-desktop-light.webp) |
+
+**What the learner sees.** A teal side track under the path: the same room design on blueprint
+paper, octagon stickers numbered P1.1, and faded "Soon" stickers for lessons not written yet.
+It never moves the path's next lesson.
+
+**What draws it.** `trackPage()`, `TRACKS`, `trackOf`, `.book.room.track`, `.paper6`, `.stk.soon`;
+teal comes from the `--track*` tokens.
+
+**Change it safely.** Add modules to the track in `TRACKS` (`modules/__init__.py`). Placeholders are
+`planned(...)` in the module file. Keep teal for the track only.
+
+## A lesson: Learn
+
+![The Learn step on a phone](lesson-learn-phone-dusk.webp)
+
+**What the learner sees.** Where they are, the title and the sticker they'll earn, the four-step
+stepper, then the lesson text and its example.
+
+**What draws it.** `openLesson()` then `setStep(0)` → `learnPane()`; the stepper and bottom bar
+are `setStep()` and `renderFoot()`.
+
+**Change it safely.** Lesson words live in `modules/<module>.py` (`learn=`, `example=`). The
+bottom bar has one primary button, "Next".
+
+## A lesson: a trust mark
+
+![A trust mark's tooltip, opened](trust-mark-phone-dusk.webp)
+
+**What the learner sees.** A small ember right after the words where the lesson touches
+responsible AI, privacy or governance. Tapping it opens a tooltip: the trustworthy-AI trait, the
+NIST AI RMF reference, a perspective, one tip, and seven dots for the traits practised so far.
+Unopened marks give off embers; with Motion off (as here) they are a still glow.
+
+**What draws it.** `learnPane()` calls `withTrust()` for each paragraph, which places
+`trustMarkHtml()` after the note's phrase and adds `trustPopHtml()`; `openTrust()` and
+`closeTrust()` run from their own click and Escape listeners in the `trust marks` section.
+
+**Change it safely.** The notes are `content/trust.py`, one per lesson at most; the phrase must
+appear once in the Learn text (a test checks). Colours are `--mark` and `--mark-glow`.
+
+## A lesson: Check
+
+![The Check step after answering](lesson-check-phone-dusk.webp)
+
+**What the learner sees.** One multiple-choice question. After an answer, the verdict scrolls into
+view with the reason, and the tutor offers "Why not ...?" and "Give me a harder one like this".
+
+**What draws it.** `checkPane()`; answers are handled by `data-opt` in the `events` section; the
+tutor chips are `askPanel()`, and the tutor gets `askContext()`, which includes the module's
+`setting`.
+
+**Change it safely.** Questions are `question(...)` in the lesson. Keep exactly one right answer
+and a plain `why`.
+
+## A lesson: Build (code)
+
+![The Build step with code on a desktop](build-code-desktop-dusk.webp)
+
+**What the learner sees.** The task, a fill-in-the-blanks scaffold (or a blank start), Run tests
+in the bottom bar, hints that go step by step, and a Learn panel with the ideas it needs.
+
+**What draws it.** `loadProblem()` and the `build step`, `hints, review, solution` and `editor`
+sections; the code runs in the browser with Skulpt (`Python literals and test harness`).
+
+**Change it safely.** Everything about an exercise is `exercise(...)` in the lesson.
+`drill build-page` fills each scaffold's blanks with `fills` and runs the tests, so they can't
+drift apart.
+
+## A lesson: Build (sorting board)
+
+![The sorting board on a phone](sorting-board-phone-dusk.webp)
+
+**What the learner sees.** For judgement lessons, ideas to place on a 2 by 2 map instead of code,
+one at a time, with a reason after each placement. The Python version is one tap away.
+
+**What draws it.** `sortRender()`, `sortPlace()` and `SO` in `the sorting board`; the data is
+`sort_task(...)` in the lesson.
+
+**Change it safely.** One question per screen; help is a clue first, then the answer.
+
+## A lesson: Explain
+
+| Gaps, with a clue (Dusk) | Finished (Light) |
+|---|---|
+| ![Explain with a gap and a clue](explain-gaps-phone-dusk.webp) | ![Explain finished](explain-done-phone-light.webp) |
+
+**What the learner sees.** The lesson's sentence with two or three gaps, filled one at a time from
+three words. A wrong word is crossed out; "Give me a clue" comes first, then "Tell me the answer".
+Writing it your own way is optional, underneath.
+
+**What draws it.** `clozeHtml()`, `clozePick()` and `CLZ` in `step panes`, inside `anglePane()`;
+styles `.cloze`, `.gap`, `.clzchip`, `.clzclue`.
+
+**Change it safely.** The sentence and its gaps are `angle(say=...)`, written
+`[[answer|wrong|wrong::clue]]`. It must sound like a person talking (see [../PAGE.md](../PAGE.md)).
+Tests check every gap.
+
+## Finishing a lesson
+
+![The done screen](done-screen-phone-dusk.webp)
+
+**What the learner sees.** A check, how far they are in the phase or track, the new sticker, what
+they did in the lesson, and what's next. "Done for today" is the primary button.
+
+**What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step.
+
+## The study tray
+
+![The study tray open on a phone](study-tray-phone-dusk.webp)
+
+**What the learner sees.** Everything they saved, in three tabs (To review, Still learning, Got
+it), with seals for each spaced review. Closed, it is a small bar at the bottom.
+
+**What draws it.** `renderPocket()`, `openPocket()` in `the pocket`; saved items come from the
+backend (`study` docs).
+
+## Search
+
+![Search on a phone](search-phone-dusk.webp)
+
+**What the learner sees.** One box that finds lessons, glossary words and study-list items.
+
+**What draws it.** `openSearch()`, `renderSearch()` in `search: lessons, glossary words and the
+study list`; the index is `SEARCH_INDEX`.

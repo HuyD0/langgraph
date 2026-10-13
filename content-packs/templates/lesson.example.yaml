@@ -1,0 +1,58 @@
+# One lesson. Copy this file into your pack's lessons/ folder, fill it in, add it to pack.yaml,
+# then run:  uv run drill content check <your pack>
+# Anything ending in _TODO must be replaced before the lesson can be "ready".
+# Write for someone new: short sentences, plain words, explain a term the first time it appears.
+
+id: LESSON_ID_TODO        # permanent: progress is saved under it. lowercase_with_underscores
+status: draft             # slot (hidden), draft (shown only in previews), ready (shown)
+aliases: []               # old ids, if you ever rename this lesson, so progress carries over
+title: TITLE_TODO         # a plain question or task, e.g. "Why did the lookup fail?"
+summary: SUMMARY_TODO     # one sentence: what this lesson covers
+objective: OBJECTIVE_TODO # what the learner can do afterwards, e.g. "Find the layer that set a value."
+difficulty: core          # intro, core or advanced
+prerequisites: []         # ids of lessons to do first (in this pack or the curriculum)
+
+learn:                    # Step 1: read. Order: why it matters, the idea, an example, the picture
+  text:
+    - EXPLANATION_TODO    # first paragraph: why this matters, in one or two sentences
+    - EXPLANATION_TODO    # the idea itself. **bold** a term the first time you use it
+  concepts:               # key terms, shown as a short glossary
+    - {term: TERM_TODO, meaning: MEANING_TODO}
+  examples:               # approved configuration or code, cut down to what the lesson needs
+    - caption: EXAMPLE_CAPTION_TODO
+      code: |
+        EXAMPLE_CODE_TODO
+  views: []               # investigation views: see exercise.example.yaml, "Views"
+  diagram: null           # e.g. assets/flow.svg (a file in this pack)
+  screenshots: []         # e.g. - {file: assets/run-summary.png, caption: The run summary}
+  sources: [ev_main]      # evidence ids (below) that back up what this step says
+
+check:                    # Step 2: one multiple-choice question about the main idea
+  question: QUESTION_TODO
+  options: [OPTION_TODO, OPTION_TODO, OPTION_TODO]
+  answer: 0               # which option is right, counting from 0
+  why: WHY_TODO           # shown after answering, right or wrong
+
+practice:                 # Step 3: one exercise. Pick a kind from exercise.example.yaml
+  kind: multiple_choice
+  prompt: EXERCISE_CONTENT_TODO
+  options: [OPTION_TODO, OPTION_TODO]
+  answer: 0
+  why: EXPECTED_RESULT_TODO
+
+explain:                  # Step 4: the learner writes their own sentence first, then sees this
+  pattern: PATTERN_TODO   # a short name for the habit, e.g. "Start from the first error"
+  reasoning: REASONING_TODO
+  say: SAY_IT_TODO        # one sentence to compare with theirs
+  mistakes: [MISTAKE_TODO]
+  steps: [STEP_TODO]      # how to investigate, in order
+  evidence: [ev_main]
+
+evidence:                 # where each claim comes from. Kept inside the private pack only
+  - id: ev_main
+    kind: doc             # doc, code, run, screenshot or other
+    title: SOURCE_TITLE_TODO
+    ref: SOURCE_REFERENCE_TODO   # a path or link in your private environment
+    revision: REVISION_TODO      # commit, version or date of the source you read
+    status: unverified           # verified, unverified or outdated
+    reviewed: null               # the date someone checked it; required when verified

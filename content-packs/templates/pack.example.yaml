@@ -1,0 +1,13 @@
+# A content pack's manifest: pack.yaml at the top of the pack folder.
+id: PACK_ID_TODO          # lowercase, e.g. my-team-iac
+title: PACK_TITLE_TODO
+version: 0.1.0            # bump it when lessons change; it is shown with each lesson's evidence
+phase: Ship               # the phase of the path its journeys join: Frame, Design, Build and trace,
+                          # Evaluate, Ship or Monitor. Or, instead of phase, the track beside the
+                          # path they join: track: platform
+journeys:                 # each journey shows as a module on the path, lessons in this order
+  - id: JOURNEY_ID_TODO   # lowercase-with-hyphens; must not match an existing module
+    title: JOURNEY_TITLE_TODO
+    blurb: ONE_LINE_TODO
+    lessons:
+      - lessons/LESSON_FILE_TODO.yaml

@@ -1,0 +1,49 @@
+id: ex_config_links
+status: ready
+title: How the team file finds its environment
+summary: A made-up team file points at an environment file by name.
+objective: Say which file each reference in team.yaml points at.
+difficulty: intro
+learn:
+  text:
+    - A **team file** names the environment it deploys into; the **environment file** holds the settings every team in it shares.
+    - When a value is missing from the team file, look for it in the file the team file points at.
+  concepts:
+    - {term: reference, meaning: A name in one file that points at something defined in another.}
+  examples:
+    - caption: team.yaml (fictional)
+      code: |
+        team: orbit
+        environment: example-env
+        storage: orbit-store
+  diagram: assets/request-flow.svg
+  views:
+    - kind: relationships
+      title: What team.yaml points at
+      links:
+        - {from: team.yaml, ref: environment, to: environments/example-env.yaml}
+        - {from: team.yaml, ref: storage, to: resources/orbit-store.yaml}
+  sources: [ev_team_doc]
+check:
+  question: team.yaml says environment example-env. Where are its shared settings?
+  options:
+    - In team.yaml itself
+    - In environments/example-env.yaml
+    - In the plan
+  answer: 1
+  why: The team file only names the environment; the environment file defines it.
+practice:
+  kind: relationship_mapping
+  prompt: Match each reference in team.yaml to the file it points at.
+  pairs:
+    - {from: environment, to: environments/example-env.yaml}
+    - {from: storage, to: resources/orbit-store.yaml}
+  why: Each reference names a file by the value it holds.
+explain:
+  reasoning: Following references file by file is how you find where a value really comes from.
+  say: I follow each reference to the file that defines it before I trust a value.
+  mistakes: [Assuming a value missing from the team file is unset.]
+  steps: [Find the reference, open the file it names, read the value there.]
+  evidence: [ev_team_doc]
+evidence:
+  - {id: ev_team_doc, kind: doc, title: Example configuration guide, ref: docs/example-config.md, revision: v1, status: verified, reviewed: 2026-01-01}

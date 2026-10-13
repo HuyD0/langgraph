@@ -38,8 +38,10 @@ def test_modules_are_in_order_and_lessons_are_unique(loaded):
     ids = [lesson_id for m in loaded for lesson_id in m.lesson_ids]
     assert len(ids) == len(set(ids)), "a lesson id appears twice"
     lifecycle_modules = [mid for _, _, ms in modules.LIFECYCLE for mid in ms]
-    assert sorted(lifecycle_modules) == sorted(modules.ORDER), "every module belongs to one lifecycle stage"
-    assert lifecycle_modules == modules.ORDER, "the path teaches the stages in order, so ORDER follows LIFECYCLE"
+    track_modules = [mid for _, _, _, ms in modules.TRACKS for mid in ms]
+    assert lifecycle_modules == modules.PATH, "the path teaches the stages in order, so PATH follows LIFECYCLE"
+    assert modules.ORDER == modules.PATH + track_modules, "every module is in one lifecycle stage or one track, path first"
+    assert len(set(modules.ORDER)) == len(modules.ORDER), "a module is in only one place"
 
 
 def test_the_path_has_six_phases_one_sticker_shape_each():
@@ -317,3 +319,122 @@ def test_trust_marks_are_wired_into_the_learn_step():
     moving = page.split(".trustmark:not(.seen) .em {")[0].rsplit("@media", 1)[1]
     assert "prefers-reduced-motion: no-preference" in moving and ':root:not([data-motion="off"])' in page.split(".trustmark:not(.seen) .em {")[0][-80:]
     assert 'store.set("drill-trust-seen"' in page and "aria-expanded" in page.split("function trustMarkHtml")[1].split("\n}")[0]
+
+
+def test_placeholders_are_coming_soon_not_lessons(loaded, data):
+    """A planned lesson has a title and a line, never an exercise, and never shares an id with a real lesson."""
+    lesson_ids = {lid for m in loaded for lid in m.lesson_ids}
+    for m in loaded:
+        for p in m.planned:
+            assert set(p) == {"id", "title", "blurb"} and p["title"] and p["blurb"], (m.id, p)
+            assert p["id"] not in lesson_ids, f"{p['id']} is both a lesson and a placeholder"
+    shown = {p["id"] for m in data["modules"] for p in m["planned"]}
+    assert shown and not (shown & set(data["lessons"])), "placeholders reach the page, and never as lessons"
+
+
+def test_the_platform_track_has_a_real_lesson_in_every_module(loaded):
+    """Each track module opens with a lesson you can do, so a placeholder is never all there is."""
+    by_id = {m.id: m for m in loaded}
+    for _, _, _, mids in modules.TRACKS:
+        for mid in mids:
+            assert by_id[mid].lessons, f"{mid} has only placeholders"
+
+
+def test_a_sentence_with_gaps_is_stored_plain_and_in_pieces():
+    from drill.content.model import cloze
+
+    plain, pieces = cloze("I find everything [[downstream|upstream|beside it::Which way?]] of it, then wait for [[inputs|outputs|logs::What it needs.]].")
+    assert plain == "I find everything downstream of it, then wait for inputs."
+    assert pieces[1] == {"answer": "downstream", "wrong": ["upstream", "beside it"], "clue": "Which way?"}
+    assert cloze("No gaps here.") == ("No gaps here.", [])
+    with pytest.raises(AssertionError):  # help is a clue first, so every gap needs one
+        cloze("One [[gap|a|b]] and [[two|c|d::ok]].")
+
+
+def test_every_explain_gap_is_answerable_and_the_plain_sentence_reads_right():
+    from drill.content.build import build_data
+
+    with_gaps = 0
+    for lid, lesson in build_data()["lessons"].items():
+        pattern, text, say, classic, pieces = lesson["angle"]
+        if not pieces:
+            continue
+        with_gaps += 1
+        assert "[[" not in say and "]]" not in say, lid
+        assert "".join(p if isinstance(p, str) else p["answer"] for p in pieces) == say, lid
+        for g in (p for p in pieces if not isinstance(p, str)):
+            assert len({g["answer"], *g["wrong"]}) == 3, (lid, g)
+            assert g["answer"].lower() not in g["clue"].lower(), f"{lid}: the clue gives away {g['answer']!r}"
+    assert with_gaps == len(build_data()["lessons"]), "every lesson's Explain sentence has gaps"
+
+
+def test_every_platform_module_tells_the_tutor_its_setting():
+    """Without a setting, "give me a harder one" drifts to generic web-app examples."""
+    from drill.content.build import PAGE_TEMPLATE
+
+    data = build_data()
+    track = next(t for t in data["tracks"] if t["id"] == "platform")
+    by_id = {m["id"]: m for m in data["modules"]}
+    for mid in track["modules"]:
+        assert "Azure Databricks" in by_id[mid]["setting"], mid
+    assert "modOf[cur.id].setting" in PAGE_TEMPLATE.read_text(), "the tutor's lesson context must include the setting"
+
+
+def test_the_frontend_guide_and_screen_gallery_match_the_code():
+    """docs/FRONTEND.md's map names page.html's section markers, and docs/screens/README.md shows
+    every shot scripts/screenshots.mjs takes: renaming one without the other fails here."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    page = (root / "src/drill/content/page.html").read_text()
+    guide = (root / "docs/FRONTEND.md").read_text()
+    table = guide.split("## Map of the script", 1)[1].split("\n## ", 1)[0]
+    markers = [m for cell in re.findall(r"^\| `([^`]+)`(?: / `([^`]+)`)? \|", table, re.M) for m in cell if m]
+    assert len(markers) >= 20
+    for marker in markers:
+        assert f"// ---------- {marker}" in page, f"docs/FRONTEND.md names a section page.html doesn't have: {marker}"
+
+    shots = re.findall(r'^\s*\["([a-z0-9-]+)",', (root / "scripts/screenshots.mjs").read_text(), re.M)
+    gallery = (root / "docs/screens/README.md").read_text()
+    assert len(shots) >= 10
+    for name in shots:
+        assert f"({name}.webp)" in gallery, f"docs/screens/README.md doesn't show {name}"
+        assert (root / "docs/screens" / f"{name}.webp").exists(), f"run scripts/screenshots.mjs: {name}.webp is missing"
+
+
+def test_fast_changing_lessons_say_when_they_were_checked():
+    # Databricks products are renamed and moved often, so these lessons carry the day their
+    # facts were checked and the pages they were checked against; the page shows both.
+    import datetime
+    from pathlib import Path
+
+    from drill.content.freshness import STALE_DAYS, freshness
+    dated = {"workspace", "access", "databricks-ai"}
+    for mod in modules.load():
+        for lesson in mod.lessons:
+            if mod.id in dated:
+                assert lesson["checked"] and lesson["sources"], f"{lesson['id']} needs checked= and sources="
+    page = (Path(__file__).resolve().parents[1] / "src/drill/content/page.html").read_text()
+    assert f"const STALE_DAYS = {STALE_DAYS};" in page, "the page and drill content stale agree on when to warn"
+    later = freshness(modules.load(), datetime.date(2030, 1, 1))
+    total = sum(len(m.lesson_ids) for m in modules.load())
+    assert not later["fresh"] and len(later["due"]) == total, "every lesson comes due as time passes"
+    data = build_data(modules.load())
+    assert data["lessons"]["masked_columns"]["checked"][1][0][1].startswith("https://")
+    assert all(lesson["checked"][0] for lesson in data["lessons"].values()), "every lesson has a date on the page"
+
+
+def test_the_page_script_parses(data, tmp_path):
+    # A clash of names or a stray bracket stops the whole page, and no other test runs its script.
+    import re
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    html = build_page(data)
+    script = max(re.findall(r"<script>(.*?)</script>", html, re.S), key=len)
+    (tmp_path / "page.js").write_text(script)
+    result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr[-800:]

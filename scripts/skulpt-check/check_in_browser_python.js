@@ -10,8 +10,8 @@ vm.runInContext(fs.readFileSync(path.join(sk, "skulpt-stdlib.js"), "utf8"), ctx)
 const html = fs.readFileSync(path.join(__dirname, "../../dist/daily-drill.html"), "utf8");
 const data = html.slice(html.indexOf("const D = ") + 10, html.indexOf(";\nconst BANK = D.bank"));
 const pyFn = html.slice(html.indexOf("function py(v)"), html.indexOf("const short ="));
-// PY_JSON (the Python that sends the example's result back as JSON) sits just above harness().
-const harnessFn = html.slice(html.indexOf("const PY_JSON"), html.indexOf("async function runPython"));
+// The harness, plus the JSON helper (PY_JSON) it pastes into every run.
+const harnessFn = html.slice(html.indexOf("const PY_JSON = String.raw`"), html.indexOf("async function runPython"));
 vm.runInContext(`var D = ${data};\n${pyFn}\n${harnessFn}`, ctx);
 async function run(src) {
   let out = "";

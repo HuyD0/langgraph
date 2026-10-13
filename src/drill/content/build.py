@@ -49,12 +49,15 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
         "learn": list(entry["learn"]),
         "example": [ex["caption"], ex["code"]],
         "check": [q["question"], list(q["options"]), q["answer"], q["why"]],
-        "angle": [a["pattern"], a["text"], a["say"], a["classic"]],
+        "angle": [a["pattern"], a["text"], a["say"], a["classic"], a.get("cloze") or []],
     }
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
     if note:
         out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
+    # [day, sources]: a lesson checked against sources, or the content date with none.
+    from drill.content.freshness import CONTENT_DATE
+    out["checked"] = [entry.get("checked") or CONTENT_DATE, [list(s) for s in entry.get("sources") or []]]
     return out
 
 
@@ -70,11 +73,37 @@ def _classic_problem(problem) -> dict:
     }
 
 
-def build_data(loaded: list[Module] | None = None) -> dict:
-    """Everything the page, the server and the MCP tools show, as plain data."""
+def _track_setting(loaded: list[Module], track_modules: list[str]) -> str:
+    """The world a track's modules are set in, so a pack joining the track tells the tutor the same."""
+    return next((m.setting for m in loaded if m.id in track_modules and m.setting), "")
+
+
+def build_data(loaded: list[Module] | None = None, packs: list | None = None, assets: str = "url") -> dict:
+    """Everything the page, the server and the MCP tools show, as plain data.
+
+    ``packs`` (from :func:`drill.content.packs.load_packs`) add their journeys as modules in the
+    phase each pack names. Nothing here reads the environment: only callers that mean to show a
+    pack pass one, so the public build never contains one. ``assets`` is ``"url"`` (the server
+    serves pack files at ``pack-assets/<pack>/<path>``) or ``"inline"`` (a static page carries them).
+    """
     from drill.problems import ALL_PROBLEMS
 
     loaded = loaded if loaded is not None else modules.load()
+    packs = packs or []
+    lifecycle = [[n, t, list(ms)] for n, t, ms in modules.LIFECYCLE]
+    tracks = [[i, n, t, list(ms)] for i, n, t, ms in modules.TRACKS]
+    loaded = list(loaded)
+    for pack in packs:
+        # A pack's journeys go after the last module of the phase or track it joins.
+        joins = next((p[2] for p in lifecycle if p[0] == pack.phase), None)
+        if joins is None:
+            track = next(tr for tr in tracks if tr[0] == pack.phase)
+            joins = track[3]
+            for m in pack.modules:
+                m.setting = m.setting or _track_setting(loaded, joins)
+        after = max((i for i, m in enumerate(loaded) if m.id in joins), default=len(loaded) - 1)
+        loaded[after + 1:after + 1] = pack.modules
+        joins += [m.id for m in pack.modules]
     bank: dict[str, dict] = {}
     learn: dict[str, dict] = {}
 
@@ -85,6 +114,15 @@ def build_data(loaded: list[Module] | None = None) -> dict:
     lessons: dict[str, dict] = {}
     for mod in loaded:
         for entry in mod.lessons:
+            if entry.get("pack"):  # a pack lesson: a practice exercise instead of Python
+                extra = entry["pack"]
+                bank[entry["id"]] = {"id": entry["id"], "title": entry["title"], "topic": mod.title,
+                                     "difficulty": extra["difficulty"], "fn": "", "prompt": extra["practice"]["prompt"],
+                                     "pattern": entry["angle"]["pattern"], "target": extra["objective"],
+                                     "cases": [], "practice": True}
+                learn[entry["id"]] = {}
+                lessons[entry["id"]] = {**_page_lesson(entry), "pack": _pack_assets(extra, assets)}
+                continue
             ex = entry["exercise"]
             bank[entry["id"]] = _without_none({"id": entry["id"], **{k: ex[k] for k in _EXERCISE_FIELDS}})
             learn[entry["id"]] = _without_none({k: ex[k] for k in _LEARN_FIELDS})
@@ -95,8 +133,9 @@ def build_data(loaded: list[Module] | None = None) -> dict:
         assert classic is None or classic in bank, f"{lesson_id}: unknown classic {classic!r}"
 
     return json.loads(json.dumps({
-        "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids} for m in loaded],
-        "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in modules.LIFECYCLE],
+        "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids, "planned": m.planned, "setting": m.setting} for m in loaded],
+        "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in lifecycle],
+        "tracks": [{"id": i, "name": n, "text": t, "modules": ms} for i, n, t, ms in tracks],
         "lessons": lessons,
         "bank": list(bank.values()),
         "learn": learn,
@@ -110,6 +149,18 @@ def build_data(loaded: list[Module] | None = None) -> dict:
         "real": real.data(),
         "skill": skill_files(),
     }, ensure_ascii=False))
+
+
+def _pack_assets(extra: dict, mode: str) -> dict:
+    """Point a pack lesson's screenshots and diagram at where the page can load them."""
+    if mode != "url":
+        return extra
+    from drill.content.packs import asset_slots
+
+    extra = json.loads(json.dumps(extra))
+    for holder, key in asset_slots(extra):
+        holder[key] = f"pack-assets/{extra['pack']}/{holder[key]}"
+    return extra
 
 
 SKILL_DIR = Path(__file__).resolve().parents[3] / ".claude" / "skills" / "vet-ai-use-case"
@@ -182,6 +233,8 @@ def check_exercises(loaded: list[Module] | None = None) -> int:
     for mod in loaded:
         for entry in mod.lessons:
             ex = entry["exercise"]
+            if ex is None:  # a pack lesson: practice, not Python
+                continue
             _run(ex["solution"], ex["fn"], ex["cases"], (mod.id, entry["id"], "solution"))
             if ex["fills"] is not None:
                 code = ex["guided"].replace(_SCAFFOLD_HEADER, "#")
@@ -212,17 +265,32 @@ def main(argv: list[str] | None = None) -> int:
     from drill.config import PROJECT_ROOT
 
     parser = argparse.ArgumentParser(description="Build the Daily Drill page.")
-    parser.add_argument("--out", type=Path, default=PROJECT_ROOT / "dist", help="where to write (default: dist/)")
+    parser.add_argument("--out", type=Path, default=None, help="where to write (default: dist/, or dist/private/ with --pack)")
+    parser.add_argument("--pack", type=Path, action="append", default=[],
+                        help="include a content pack (repeatable). The page then holds the pack: never publish it publicly.")
     args = parser.parse_args(argv)
+
+    from drill.content import packs as content_packs
 
     loaded = modules.load()
     checked = check_exercises(loaded)
-    data = build_data(loaded)
+    taken = {lesson["id"] for m in loaded for lesson in m.lessons}
+    try:
+        packs = content_packs.load_packs(args.pack, taken=taken) if args.pack else []
+    except content_packs.PackError as exc:
+        print("The content pack has problems:\n" + str(exc), file=sys.stderr)
+        return 1
+    data = build_data(loaded, packs, assets="inline")
+    if packs:
+        content_packs.inline_assets(data, packs)
+    out = args.out or PROJECT_ROOT / "dist" / ("private" if packs else "")
     leftovers = big_o_leftovers(data)
     for path, text in leftovers:
         print("BIG-O:", path, text, file=sys.stderr)
-    page, _ = write(args.out, data)
+    page, _ = write(out, data)
     print(f"checked {checked} exercises; {len(data['lessons'])} lessons, {len(data['bank'])} problems -> {page}")
+    if packs:
+        print(f"Includes {', '.join(p.id for p in packs)}: this page holds private content. Don't publish it to a public place.")
     if leftovers:
         print("Big-O notation found in learner-facing text; see the BIG-O lines above.", file=sys.stderr)
         return 1

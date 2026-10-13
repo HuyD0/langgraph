@@ -217,6 +217,16 @@ def create_app(
     def page() -> str:
         return PAGE_HEAD + bank.page + PAGE_TAIL
 
+    @app.get("/pack-assets/{pack_id}/{path:path}")
+    def pack_asset(pack_id: str, path: str):
+        """A screenshot or diagram from a loaded content pack. Only files a lesson names are served."""
+        from fastapi.responses import FileResponse
+
+        found = bank.pack_asset(pack_id, path)
+        if not found:
+            raise HTTPException(404, {"code": "not_found", "text": "No such pack file."})
+        return FileResponse(found)
+
     @app.get("/api/health")
     def health(request: Request) -> dict:
         return {

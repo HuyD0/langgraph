@@ -1,0 +1,11 @@
+# A content slot. It is never shown until it is filled in and its status is changed.
+# To fill it: copy content-packs/templates/lesson.example.yaml over this file, keep the id,
+# write the lesson, run `uv run drill content check`, then set status to draft or ready.
+id: iac_a3_validation
+status: slot
+title: "Validate configuration"
+summary: "The checks a change must pass: the file's shape (schema), whether its values make sense together (semantic), and whether everything it refers to exists (dependencies)."
+planned:                       # a suggestion for the author, not shown to learners
+  practice: [identify_error, configuration_repair]
+  views: []
+  sources: SOURCE_REFERENCE_TODO

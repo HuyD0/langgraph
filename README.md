@@ -63,7 +63,7 @@ missing, `drill start` names the variable.
 
 ## The Daily Drill page, and the tutor as a local service
 
-The repo also holds a second way to learn: the **Daily Drill** page, 136 lessons in 17
+The repo also holds a second way to learn: the **Daily Drill** page, 131 lessons in 17
 modules on AI engineering (use cases and fit, foundations, RAG, agents and agent teams, security, pricing
 and sizing, production, the Azure Databricks platform), each going Learn, Check, Build,
 Interview. It is published on claude.ai
@@ -79,6 +79,7 @@ is the server, the phone, Claude Code and the cloud.
 [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md) runs it as a Databricks App (`uv run drill cloud deploy`).
 To put it in a work workspace for a team, run `./scripts/port-to-workspace.sh` ([docs/PORTING.md](docs/PORTING.md)).
 The look (tokens, components, the Dusk and Light looks, motion) and how to change it: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
+Optional private lessons (the internal IaC curriculum) as content packs: [docs/CONTENT_PACKS.md](docs/CONTENT_PACKS.md).
 
 ## Commands
 

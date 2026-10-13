@@ -12,6 +12,8 @@ quietly producing an empty box on the page.
 
 from __future__ import annotations
 
+import re
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -24,14 +26,30 @@ class Module:
     title: str
     blurb: str
     lessons: list[dict] = field(default_factory=list)
+    planned: list[dict] = field(default_factory=list)  # "coming soon" lessons: a title and one line, no exercise yet
+    setting: str = ""  # the world every tutor example and question is set in, like the platform team's repos
 
     @property
     def lesson_ids(self) -> list[str]:
         return [lesson["id"] for lesson in self.lessons]
 
 
-def module(id: str, title: str, blurb: str) -> Module:
-    return Module(id=id, title=title, blurb=blurb)
+def module(id: str, title: str, blurb: str, *, setting: str = "") -> Module:
+    """A chapter. ``setting`` describes the world its examples live in; the AI tutor gets it with
+    every question, so a "harder one like this" stays in that world instead of inventing another."""
+    return Module(id=id, title=title, blurb=blurb, setting=setting)
+
+
+def planned(owner: Module, id: str, title: str, blurb: str) -> dict:
+    """A lesson that is coming but not written yet: shown faded as "Coming soon", never counted.
+
+    When it is written, replace this call with a ``lesson(...)`` of the same id, so nothing
+    that links to it has to change.
+    """
+    assert id not in owner.lesson_ids and id not in [p["id"] for p in owner.planned], f"{id} is already in {owner.id}"
+    entry = {"id": id, "title": title, "blurb": blurb}
+    owner.planned.append(entry)
+    return entry
 
 
 def case(*args: Any, expected: Any, sample: bool = False) -> dict:
@@ -133,10 +151,43 @@ def question(text: str, options: list[str], *, answer: int, why: str) -> dict:
     return {"question": text, "options": options, "answer": answer, "why": why}
 
 
+_GAP = re.compile(r"\[\[(.+?)\]\]")
+
+
+def cloze(say: str) -> tuple[str, list]:
+    """Split a sentence with gaps into the plain sentence and the pieces the page shows.
+
+    A gap is ``[[answer|wrong|wrong::clue]]``: the right word first, two tempting wrong ones,
+    then a clue that points at the answer without giving it. The pieces alternate text and
+    gaps: ``["When a stack changes I find everything ", {"answer": ..., "wrong": [...],
+    "clue": ...}, " of it, ..."]``. A sentence with no gaps gives an empty list.
+    """
+    pieces: list = []
+    at = 0
+    for m in _GAP.finditer(say):
+        body, _, clue = m.group(1).partition("::")
+        answer, *wrong = [w.strip() for w in body.split("|")]
+        assert len(wrong) == 2, f"gap {answer!r} needs two wrong choices, has {len(wrong)}"
+        assert clue.strip(), f"gap {answer!r} needs a clue: help is a clue first, then the answer"
+        assert answer not in wrong, f"gap {answer!r} lists its answer as a wrong choice"
+        pieces += [say[at:m.start()], {"answer": answer, "wrong": wrong, "clue": clue.strip()}]
+        at = m.end()
+    if not pieces:
+        return say, []
+    pieces.append(say[at:])
+    assert 2 <= len(pieces) // 2 <= 3, f"a sentence takes two or three gaps, not {len(pieces) // 2}"
+    plain = "".join(p if isinstance(p, str) else p["answer"] for p in pieces)
+    return plain, pieces
+
+
 def angle(*, pattern: str, text: str, say: str, classic: str | None = None) -> dict:
     """The Explain step: the pattern, why it matters, a sentence to say out loud, and the
-    classic interview problem (from :mod:`drill.problems`) that uses the same idea."""
-    return {"pattern": pattern, "text": text, "say": say, "classic": classic}
+    classic interview problem (from :mod:`drill.problems`) that uses the same idea.
+
+    ``say`` may mark two or three gaps (see :func:`cloze`); then the learner rebuilds the
+    sentence by picking words, and ``say`` itself is stored plain for everything else."""
+    plain, pieces = cloze(say)
+    return {"pattern": pattern, "text": text, "say": plain, "cloze": pieces, "classic": classic}
 
 
 def stack(title: str, code: str) -> dict:
@@ -167,6 +218,12 @@ def trust(trait: str, *, phrase: str, view: str, tip: str, rmf: str, tevv: bool 
     return {"trait": trait, "phrase": phrase, "view": view, "tip": tip, "rmf": rmf, "tevv": tevv}
 
 
+def source(title: str, url: str) -> list[str]:
+    """A page a lesson's facts were checked against: what it is, and where."""
+    assert url.startswith("https://"), f"{title}: a source needs an https link"
+    return [title, url]
+
+
 def lesson(
     owner: Module,
     id: str,
@@ -178,12 +235,23 @@ def lesson(
     angle: dict,
     exercise: dict,
     stack: dict | None = None,
+    checked: str | None = None,
+    sources: list[list[str]] | None = None,
 ) -> dict:
-    """Add one lesson to a module. Lessons appear on the page in the order they are added."""
+    """Add one lesson to a module. Lessons appear on the page in the order they are added.
+
+    ``checked`` is the day (YYYY-MM-DD) the lesson's facts were last checked against its
+    ``sources``. Lessons about products that change often must have both; the page shows the
+    date, and ``drill content stale`` lists lessons due for another look.
+    """
     assert id not in owner.lesson_ids, f"{id} is already in {owner.id}"
+    if checked is not None:
+        import datetime
+        datetime.date.fromisoformat(checked)  # fails loudly on a typo
+        assert sources, f"{id}: a checked date needs the sources it was checked against"
     entry = {
         "id": id, "title": title, "learn": learn, "example": example, "check": check,
-        "angle": angle, "stack": stack, "exercise": exercise,
+        "angle": angle, "stack": stack, "exercise": exercise, "checked": checked, "sources": sources,
     }
     owner.lessons.append(entry)
     return entry

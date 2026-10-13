@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" font-family="Helvetica, Arial, sans-serif">
+  <!-- A fictional plan-run page, drawn for the example pack. No real system, names or data. -->
+  <rect width="1200" height="640" fill="#ffffff"/>
+  <rect width="56" height="640" fill="#f3f4f6"/>
+  <g fill="#9ca3af"><circle cx="28" cy="40" r="10"/><rect x="18" y="90" width="20" height="4" rx="2"/><rect x="18" y="130" width="20" height="4" rx="2"/><rect x="18" y="170" width="20" height="4" rx="2"/></g>
+  <text x="80" y="34" font-size="15" fill="#6b7280">Stacks  ›  example-stack  ›  Add log storage</text>
+  <text x="80" y="76" font-size="26" font-weight="700" fill="#111827">Add log storage</text>
+  <rect x="300" y="56" width="104" height="26" rx="13" fill="#dcfce7"/><text x="352" y="74" font-size="13" font-weight="700" fill="#166534" text-anchor="middle">FINISHED</text>
+  <text x="80" y="108" font-size="14" fill="#2563eb">example-stack</text>
+  <text x="210" y="108" font-size="14" fill="#374151">commit a1b2c3d</text>
+  <text x="340" y="108" font-size="14" fill="#374151">env: example-dev</text>
+  <text x="820" y="108" font-size="14" fill="#6b7280">Started by a Git commit</text>
+  <text x="80" y="138" font-size="14" fill="#6b7280">Proposed (planned, not applied)</text>
+  <rect x="80" y="156" width="78" height="30" rx="6" fill="#e5e7eb"/><text x="119" y="176" font-size="14" fill="#111827" text-anchor="middle">History</text>
+  <text x="196" y="176" font-size="14" fill="#374151">Changes</text><rect x="256" y="160" width="34" height="22" rx="11" fill="#fef3c7"/><text x="273" y="176" font-size="13" fill="#92400e" text-anchor="middle">3</text>
+  <line x1="56" y1="200" x2="1200" y2="200" stroke="#e5e7eb"/>
+  <circle cx="96" cy="236" r="12" fill="#16a34a"/><text x="120" y="241" font-size="15" font-weight="700" fill="#111827">Finished</text>
+  <rect x="120" y="256" width="78" height="24" rx="5" fill="#f3f4f6"/><text x="159" y="273" font-size="12" fill="#6b7280" text-anchor="middle">Promote</text>
+  <circle cx="96" cy="312" r="12" fill="#2563eb"/><text x="120" y="317" font-size="15" font-weight="700" fill="#111827">Planning</text><text x="200" y="317" font-size="13" fill="#6b7280">00:41</text>
+  <rect x="120" y="334" width="1040" height="250" rx="8" fill="#f9fafb" stroke="#d1d5db"/>
+  <g font-family="Menlo, monospace" font-size="13" fill="#1f2937">
+    <text x="140" y="362">  + resource "example_storage" "logs" {</text>
+    <text x="140" y="384">      + name           = "orbit-logs"</text>
+    <text x="140" y="406">      + retention_days = 30</text>
+    <text x="140" y="428">    }</text>
+    <text x="140" y="458" fill="#2563eb">Plan: 1 to add, 2 to change, 0 to destroy.</text>
+    <text x="140" y="488">Changes are GO</text>
+    <text x="140" y="510">Uploading the list of managed resources...</text>
+    <text x="140" y="532">Evaluated 2 plan policies</text>
+    <text x="140" y="554">Plan checks are GO</text>
+  </g>
+</svg>

@@ -1,4 +1,9 @@
-"""The learning path, one file per module. ORDER is the order the page teaches them in."""
+"""The learning path and the platform track, one file per module.
+
+PATH is the AI engineering path, phase by phase (LIFECYCLE). TRACKS are learning tracks beside it,
+with their own order: the platform track is the Azure Databricks, Terraform and Spacelift work.
+ORDER is every module, the path first, which is the order the page and the tools load them in.
+"""
 
 from __future__ import annotations
 
@@ -7,12 +12,13 @@ import importlib
 from drill.content.model import Module
 
 # Phase by phase, as LIFECYCLE below lists them, so "next lesson" never jumps ahead a phase.
-ORDER = [
+PATH = [
     'use-case', 'foundations', 'pricing',                                  # Frame
     'experiments',                                                         # Design
-    'llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security',  # Build and trace
+    'llm-apps', 'rag', 'agents', 'agent-teams', 'databricks-ai',           # Build and trace
+    'production', 'security',
     'evals', 'models',                                                     # Evaluate
-    'shipping', 'platform',                                                # Ship
+    'shipping',                                                            # Ship
     'tracing', 'llmops', 'reliability',                                    # Monitor
 ]
 
@@ -26,17 +32,28 @@ LIFECYCLE = [
      ['experiments']),
     ('Build and trace',
      'Build with LangGraph and Databricks, traced from the first line.',
-     ['llm-apps', 'rag', 'agents', 'agent-teams', 'production', 'security']),
+     ['llm-apps', 'rag', 'agents', 'agent-teams', 'databricks-ai', 'production', 'security']),
     ('Evaluate',
      'Score runs on the same eval set; compare quality, cost and latency.',
      ['evals', 'models']),
     ('Ship',
      'Register, promote and canary with a rule you wrote down first.',
-     ['shipping', 'platform']),
+     ['shipping']),
     ('Monitor',
      'Watch real traffic in traces and feed failures back into evals.',
      ['tracing', 'llmops', 'reliability']),
 ]
+
+
+# Tracks beside the path: (id, name, one line, modules in order). A track's lessons have their own
+# order and numbering (P1.1 ...) and their own sticker shape, and never move the path's "next lesson".
+TRACKS = [
+    ('platform', 'Platform track',
+     'Azure Databricks as code: the workspace, Terraform and Spacelift work behind an ML platform.',
+     ['platform-repos', 'azure-databricks', 'workspace', 'access', 'terraform', 'platform', 'spacelift']),
+]
+
+ORDER = PATH + [mid for _, _, _, ms in TRACKS for mid in ms]
 
 
 def load(order: list[str] | None = None) -> list[Module]:

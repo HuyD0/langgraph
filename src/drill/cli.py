@@ -281,6 +281,36 @@ def build_page_cmd(
     raise typer.Exit(build_main(["--out", str(out)]))
 
 
+content_app = typer.Typer(add_completion=False, help="The curriculum's content: lessons due for a fact check, and content packs to check and preview.")
+app.add_typer(content_app, name="content")
+
+
+@content_app.command("stale")
+def content_stale(
+    days: int = typer.Option(180, help="Flag lessons last checked more than this many days ago."),
+    all_: bool = typer.Option(False, "--all", help="Also list the fresh lessons."),
+) -> None:
+    """List lessons whose facts are due for another check, with the pages to check them against."""
+    import datetime
+
+    from drill.content import modules
+    from drill.content.freshness import freshness
+
+    report = freshness(modules.load(), datetime.date.today(), days)
+    for row in report["due"]:
+        what = "content as of" if row.get("as_of") else "checked"
+        console.print(f"[yellow]due[/] {row['id']} ({row['module']}): {what} {row['checked']}, {row['age']} days ago")
+        for title, url in row["sources"]:
+            console.print(f"     {title}: {url}")
+    if all_:
+        for row in report["fresh"]:
+            what = "content as of" if row.get("as_of") else "checked"
+            console.print(f"[dim]fresh[/] {row['id']} ({row['module']}): {what} {row['checked']}")
+    sourced = sum(1 for r in report["fresh"] + report["due"] if r["sources"])
+    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {sourced} checked against sources")
+    raise typer.Exit(1 if report["due"] else 0)
+
+
 review_app = typer.Typer(add_completion=False, help="The use case review prompt: score it on cards with planted gaps before publishing a change.")
 app.add_typer(review_app, name="review")
 
@@ -565,6 +595,52 @@ def store_push_cmd() -> None:
         console.print(f"From {owner}: {counts['docs']} documents sent, {counts['skipped']} already up to date, "
                       f"{counts['events']} events sent.")
 
+
+
+
+
+@content_app.command("check")
+def content_check_cmd(packs: list[Path] = typer.Argument(None, help="Pack folders (default: DRILL_CONTENT_PACKS).")) -> None:
+    """Check content packs: every problem, each naming its file and field. Exits 1 if any."""
+    from drill.content import modules
+    from drill.content import packs as content_packs
+
+    dirs = packs or content_packs.pack_dirs()
+    if not dirs:
+        console.print("No pack given. Pass a folder, or set DRILL_CONTENT_PACKS.")
+        raise typer.Exit(1)
+    taken = {lesson["id"] for m in modules.load() for lesson in m.lessons}
+    try:
+        content_packs.load_packs(dirs, taken=taken, drafts=True)
+        for line in content_packs.report(dirs):
+            console.print(f"[green]✓[/green] {line}")
+    except content_packs.PackError as exc:
+        for problem in exc.problems:
+            console.print(f"[red]✗[/red] {problem}")
+        console.print(f"\n{len(exc.problems)} problem(s). Fix them and run this again.")
+        raise typer.Exit(1)
+
+
+@content_app.command("preview")
+def content_preview_cmd(
+    packs: list[Path] = typer.Argument(..., help="Pack folders to preview."),
+    port: int = typer.Option(8790, "--port", help="Where to serve it."),
+    drafts: bool = typer.Option(True, "--drafts/--no-drafts", help="Show draft lessons too (marked Draft)."),
+) -> None:
+    """Serve the page with these packs on this machine (a scratch progress file, not yours)."""
+    import os
+
+    from drill.config import PROJECT_ROOT
+
+    os.environ["DRILL_CONTENT_PACKS"] = os.pathsep.join(str(p.resolve()) for p in packs)
+    os.environ["DRILL_SHOW_DRAFTS"] = "1" if drafts else "0"
+    os.environ["DRILL_PORT"] = str(port)
+    os.environ.setdefault("DRILL_DATABASE_URL", f"sqlite:///{PROJECT_ROOT / '.drill' / 'preview.db'}")
+    os.environ.setdefault("DRILL_TRACING", "0")
+    console.print(f"Previewing {', '.join(p.name for p in packs)} at http://127.0.0.1:{port} (Ctrl+C to stop)")
+    from drill.server.api import main as serve
+
+    serve()
 
 
 cloud_app = typer.Typer(add_completion=False, help="Run the server as a Databricks App: setup, deploy, start, stop, status.")

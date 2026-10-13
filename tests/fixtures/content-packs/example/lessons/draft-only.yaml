@@ -1,0 +1,22 @@
+id: ex_draft_only
+status: draft
+title: A lesson still being written
+summary: Shown only when previewing drafts.
+objective: Nothing yet.
+difficulty: intro
+learn:
+  text: [EXERCISE_CONTENT_TODO]
+check:
+  question: Placeholder?
+  options: [Yes, No]
+  answer: 0
+  why: Drafts may still hold placeholders.
+practice:
+  kind: multiple_choice
+  prompt: EXERCISE_CONTENT_TODO
+  options: [A, B]
+  answer: 0
+  why: EXPECTED_RESULT_TODO
+explain:
+  reasoning: EXERCISE_CONTENT_TODO
+  say: EXERCISE_CONTENT_TODO

@@ -24,7 +24,7 @@ lesson(MODULE, 'plan_calls',
     angle=angle(
         pattern='Spend down a time budget',
         text="The big idea: give the whole request a deadline and pass the time left down, so no step starts work it can't finish. Your code starts with all of `deadline_ms` as time left and goes through the steps in order. A step runs only if its time is at most the time left, and then its time is taken off. A step that doesn't fit is skipped, but a shorter one later may still fit. It is like spending pocket money: buy what you can afford, skip what you can't.",
-        say='"I pass the time left down the request. Each step runs only if it fits in what remains, so nothing starts work it can\'t finish before the deadline."',
+        say='"I pass the [[time left|full timeout|start time::What remains of the deadline.]] down the request. A step only runs if it [[fits|is first|is fast::Its time must be no more than what remains.]] in what remains, so nothing starts work it can\'t finish."',
         classic=None,
     ),
     stack=stack('asyncio: a timeout on every call', """async with asyncio.timeout(remaining_seconds):
@@ -130,7 +130,7 @@ half-open: one trial call; success closes it,
     angle=angle(
         pattern='Remember failures and when it opened',
         text='The big idea: when a service keeps failing, stop calling it for a while instead of making the outage worse. Your code remembers two things: how many failures in a row, and when the breaker opened, which is `None` while it is closed. A call during the cooldown is blocked and changes nothing. A working call resets the count and closes the breaker. A failed call adds 1, and reaching `threshold` opens the breaker at that time, like a fuse box switch that trips.',
-        say='"After enough failures in a row, the breaker opens and blocks calls for a cooldown, so we fail fast to a fallback. A success closes it again."',
+        say='"After [[enough failures|one failure|a slow call::Several in a row, up to a set number.]] in a row, the breaker opens and blocks calls for a while, so we fail fast to a [[fallback|retry|queue::A backup answer.]]. One working call closes it again."',
         classic=None,
     ),
     stack=stack('Python: fall back while the breaker is open', """def rerank(docs):
@@ -290,7 +290,7 @@ burn rate: 7.2 / 0.5 = 14.4 → page someone"""),
     angle=angle(
         pattern='Actual errors over allowed errors',
         text='The big idea: alert on how fast you use up the error budget, not on every error. Your code first returns 0.0 if there were no requests, so it never divides by 0. Then it works out the share that failed, `errors / total`, and the share allowed, `1 - slo`. Dividing the first by the second gives the burn rate, rounded to 1 place. With 72 failures in 1000 and a 99.5% target, that is 0.072 divided by 0.005, or 14.4 times too fast.',
-        say='"I alert on how fast we use up the error budget, not on raw error counts. A burn rate of 1 is on budget. 10 is ten times too fast."',
+        say='"I alert on how fast we use up the [[error budget|error count|server budget::The failures your target allows.]], not on every error. A burn rate of 1 means [[on budget|no errors|broken::Spending at exactly the allowed pace.]], and 10 means ten times too fast."',
         classic=None,
     ),
     stack=stack('Databricks SQL: error rate over the last hour, for an alert', """SELECT try_divide(count_if(status = 'ERROR'), count(*)) AS error_rate
