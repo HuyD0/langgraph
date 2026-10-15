@@ -538,3 +538,18 @@ def test_practice_mode_hides_the_code_parts():
     page = build.page_source()
     assert '$("paneBuild").classList.toggle("flowing", on)' in page
     assert "#paneBuild.flowing .codeonly { display: none !important; }" in page
+
+
+def test_the_explain_pane_only_uses_names_it_defines():
+    """Every `${name ? ...}` choice in anglePane uses a name declared there (a leftover name from a
+    removed feature crashed every lesson's Explain step once, and the page still parsed)."""
+    page = page_source()
+    body = page[page.index("function anglePane() {"):]
+    body = body[:body.index("\n}\n")]
+    names = set()
+    for stmt in re.findall(r"\b(?:const|let)\s+([^;]*);", body):
+        names |= set(re.findall(r"(?:^|,)\s*(\w+)\s*=(?!=)", stmt))
+        for group in re.findall(r"^\[([^\]]*)\]", stmt):
+            names |= set(re.findall(r"\w+", group))
+    for used in set(re.findall(r"\$\{(\w+) \?", body)):
+        assert used in names, f"anglePane uses {used!r} without declaring it"
