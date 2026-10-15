@@ -25,7 +25,7 @@ one big line. The brand name keeps Bricolage so the logo doesn't change.
 ### 2. Ink wash (Dusk only)
 
 Soft violet-blue clouds drawn by the page itself (SVG noise, no image file), behind the cards, at
-about a quarter strength. Light stays plain. It doesn't move, so Motion: Off has nothing to stop.
+about a quarter strength. Light stays plain. It doesn't move on its own; it only stirs once on a finish (follow-up 2).
 A first version at double strength competed with the text; keep it quiet.
 
 ### 3. Motion: direction E, "Quiet ink"
@@ -38,8 +38,9 @@ Chosen from five directions (A Ink stroke, B Seal stamp, C Ember, D Panel cut, E
 - **Glyphs:** hairline strokes in `--muted` with a single `--accent` dot. Used for earned marks (result
   marks, study-list seals, Check verdicts) in Dusk; today's line icons stay for buttons and menus.
 
-Follows the existing motion rules: real moments only, nothing loops or blocks, all of it stops with
-Motion: Off and reduced motion.
+Follows the existing motion rules: real moments only, nothing loops or blocks. Since PR #98 all animation
+plays for everyone (no Motion switch, no reduced-motion fallback), so E being gentle matters more:
+nothing in it flashes, loops or moves far.
 
 ### 4. Follow-ups that make the rest of the app match
 
@@ -80,5 +81,5 @@ All marks and textures are drawn from scratch; nothing is taken from other artwo
 
 One PR on this branch: the tokens (`--head`, `--moment`, the ink layer), direction E's step change and
 finish in the fx engine, the E-style marks, and follow-ups 1 to 3. Check at 375×812 and 1366×860 in
-Dusk and Light, Motion on and off, then update the Design System artifact (type tokens, a Motion card
+Dusk and Light, then update the Design System artifact (type tokens, a Motion card
 for E) and retake the screen gallery.
