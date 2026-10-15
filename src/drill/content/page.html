@@ -2362,9 +2362,9 @@ function anglePane() {
   const practised = !!(p.practice && p.practice.explain && flowing());  // the Build step was practice questions, not code
   return `<section class="sec"><h3>${practised ? "How you worked it out" : x ? "Why it works" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(practised ? p.practice.explain : text)}</p></section>
     ${gapsOf(cur.id).length ? clozeHtml(cur.id) + `<details class="card sayback sayown"${said ? " open" : ""}><summary><b>Want to say it your way?</b><span class="meta">Optional. Writing it in your own words helps it stick.</span></summary>
-      <textarea id="sayIn" rows="3" maxlength="600" aria-label="Your own sentence" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea><div class="saynote" id="sayNote"></div><div id="sayOurs" hidden></div></details>` : `
+      <textarea id="sayIn" rows="3" maxlength="600" aria-label="Your own sentence" placeholder="${practised ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea><div class="saynote" id="sayNote"></div><div id="sayOurs" hidden></div></details>` : `
     <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
-      <textarea id="sayIn" rows="3" maxlength="600" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea>
+      <textarea id="sayIn" rows="3" maxlength="600" placeholder="${practised ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea>
       <div class="saynote" id="sayNote">${ready ? "" : "Write one sentence to finish the lesson."}</div>
       <details class="quiet" id="sayOurs"${ready ? "" : " hidden"}><summary>Compare with ours</summary><div><p class="say">${md(say)}</p></div></details></section>`}
     ${p && p.realworld ? `<section class="sec"><h3>At work</h3><p>${md(p.realworld)}</p></section>` : ""}
