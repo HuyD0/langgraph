@@ -181,10 +181,11 @@ card is `resultHtml()` in `page/share.js`.
 
 ![A practice question on a phone](practice-phone-dusk.webp)
 
-**What the learner sees.** In platform lessons and judgement lessons like 1.1 ("Where does this
-idea land?"), Build is a short run of questions instead of code:
+**What the learner sees.** In lessons whose skill is a decision or reading evidence (which compute
+for this work, is the pilot fit for purpose, what a plan really does), the step is called Practice
+and is a short run of questions instead of code:
 a piece of evidence (a YAML file, a chain of stops, a plan, a claim, a prompt), then one plain
-question with three answers. "Give me a clue" comes first, then the answer; the dots show how far
+question with two to four answers, in a fixed shuffled order. "Give me a clue" comes first, then the answer; the dots show how far
 along they are. Some questions are "Fix the YAML": edit the file until it passes. Python stays
 one tap away.
 
@@ -193,8 +194,8 @@ YAML is `yamlRead()` and `yamlCheck()`, mirrored in Python by `content/yaml_rule
 is `exercise(practice=practice(asks=[ask(...), fix(...)]))` in the lesson.
 
 **Change it safely.** One question per screen, clue before answer. Each `ask` needs exactly one
-right answer and a `clue`; a `fix` needs a start that fails and an answer that passes (tests check
-both).
+right answer and a `clue`, and the right option mustn't be much the longest; a `fix` needs a start
+that fails and an answer that passes (tests check all three).
 
 ## The study list
 
