@@ -6,7 +6,6 @@ back as "<"."""
 from __future__ import annotations
 
 import json
-import re
 
 import pytest
 
@@ -24,14 +23,20 @@ def _embedded_json(html: str) -> str:
     return html[start:html.index(";\nconst BANK = D.bank", start)]
 
 
+
+def _script_blocks(html):
+    """The text of each <script> block, cut the way a browser does: at the first </script> after it opens."""
+    return [chunk.split("</script>", 1)[0] for chunk in html.split("<script>")[1:]]
+
+
 def test_lesson_text_cannot_end_the_script_block(data):
     tricky = json.loads(json.dumps(data))
     tricky["modules"][0]["blurb"] = "stops at </script> and <!-- here"
     html = build_page(tricky)
-    blocks = re.findall(r"<script>(.*?)</script>", html, re.S)
+    blocks = _script_blocks(html)
     data_block = next(b for b in blocks if "const D = " in b)
     assert "const BANK = D.bank" in data_block, "the blurb ended the data script early"
-    assert len(blocks) == len(re.findall(r"<script>(.*?)</script>", build_page(data), re.S))
+    assert len(blocks) == len(_script_blocks(build_page(data)))
     embedded = _embedded_json(html)
     assert "<" not in embedded and "\\u003c/script>" in embedded
     assert json.loads(embedded)["modules"][0]["blurb"] == "stops at </script> and <!-- here"

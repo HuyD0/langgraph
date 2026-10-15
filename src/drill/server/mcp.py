@@ -35,7 +35,7 @@ from starlette.applications import Starlette
 from drill.server import activity, study, tutor
 from drill.server.observe import traced_tool
 from drill.server.bank import Bank
-from drill.server.router import ModelRouter
+from drill.server.router import PAGE_TIERS, ModelRouter
 from drill.server.store import DocStore, open_store
 
 READ_ONLY = ToolAnnotations(readOnlyHint=True)
@@ -175,8 +175,6 @@ async def review(lesson_id: str, code: str) -> str:
 @traced_tool
 async def ask_tutor(prompt: str, tier: str = "default") -> str:
     """Ask the local tutor model anything, in the learner's plain-language style. tier: quick or default."""
-    from drill.server.api import PAGE_TIERS  # here, not at the top: api imports this module when it mounts /mcp
-
     tier = tier if tier in PAGE_TIERS else "default"  # a client can't pick the paid tier, same as the page
     context = {"feature": "ask_tutor", "door": "mcp", "question": prompt}
     answer = await _router().ask(f"{tutor.LEARNER}\n\n{prompt}", tier=tier, context=context)

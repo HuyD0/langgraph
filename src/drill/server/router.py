@@ -74,6 +74,11 @@ _THINK_BLOCK = re.compile(r"<think>.*?</think>\s*", re.S)
 THINKING_POLICIES = ("off", "complex", "on")
 
 
+# The tiers a learner-facing door (the page, the MCP tools) may ask for; "complex" is the paid one
+# only the server's own features choose. Here, not in api.py, so mcp.py can use it without an import cycle.
+PAGE_TIERS = ("quick", "default")
+
+
 class NoModelAvailable(RuntimeError):
     """Neither a local nor a hosted model could answer.
 

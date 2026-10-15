@@ -35,7 +35,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from drill.config import PROJECT_ROOT
 from drill.server.bank import Bank
-from drill.server.router import ModelRouter, NoModelAvailable, PromptTooLong, to_messages
+from drill.server.router import PAGE_TIERS, ModelRouter, NoModelAvailable, PromptTooLong, to_messages
 from drill.server import activity, team
 from drill.server.store import DocStore, lakebase_endpoint, open_store
 
@@ -99,7 +99,6 @@ class SecurityHeaders:
 BODY_LIMITS = {"/api/docs/": 2_000_000, "/api/ask": 400_000, "/api/feedback": 20_000}
 # The tiers the page may ask for. "complex" starts with the hosted (paid) model, so only the
 # server's own features choose it; the page never sends it, and a request that does gets "default".
-PAGE_TIERS = ("quick", "default")
 
 
 class BodyLimit:

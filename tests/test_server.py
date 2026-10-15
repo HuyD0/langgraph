@@ -8,7 +8,9 @@ local first, fallback, cache, budget, the page's document protocol - not the pro
 from __future__ import annotations
 
 import asyncio
+import re
 import time
+from urllib.parse import urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
@@ -450,7 +452,8 @@ def test_page_and_health(store, bank):
     assert page.status_code == 200
     assert page.text.startswith('<!doctype html><html lang="en">') and "<title>Daily Drill</title>" in page.text
     head, body = page.text.split("<body>", 1)
-    assert "<title>Daily Drill</title>" in head and "fonts.googleapis.com" in head  # moved out of the body
+    font_hosts = {urlsplit(href).hostname for href in re.findall(r'href="([^"]+)"', head)}
+    assert "<title>Daily Drill</title>" in head and "fonts.googleapis.com" in font_hosts  # moved out of the body
     assert not body.lstrip().startswith(("<title>", "<link ")) and body.rstrip().endswith("</body></html>")
     assert page.headers["content-encoding"] == "gzip"  # 2.4 MB of text, sent small
     assert int(page.headers.get("content-length", 0)) < len(page.content) // 3  # at least three times smaller
