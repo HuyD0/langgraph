@@ -204,6 +204,7 @@ function qfSolved() {
   progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - right, mode: "practice" };
   // what a manager needs to help: every question that wasn't right first time, and how
   if (cur.kind === "lesson") lp(p.id).practice = { day: today(), right, total: n, missed: (QF.log || []).filter(x => x && !x.first).map(({ first, ...x }) => x) };
+  if (cur.kind === "lesson") firstMarks(p.id, "build", p.practice.asks.map((_, i) => QF.first[i] ? "sign" : (QF.log || [])[i] && QF.log[i].answer ? "curtain" : "knot"));
   lastRun = { summary: `Answered all ${n} practice questions, ${right} right first time.` };
   QF.again = false; markDay();
   if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");

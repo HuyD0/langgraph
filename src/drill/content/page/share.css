@@ -1,0 +1,46 @@
+/* ---------- your result: the card on the done screen. Its glass in Dusk is .card's surface tokens;
+   the marks keep the colour meanings (green on your own, amber help, grey shown, red-black spark) */
+.result { position: relative; gap: 12px; overflow: hidden; isolation: isolate; }
+.result::before { content: ""; position: absolute; left: 16px; right: 16px; top: 0; height: 2px; border-radius: 2px; background: var(--finish, var(--pass)); }
+.result > .eyebrow { color: var(--finish, var(--pass)); }
+.resrows { display: grid; gap: 8px; }
+.resrow { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 8px; }
+.resrow > span:first-child, .resskip { color: var(--muted); font-size: 14px; }
+.marks { display: flex; flex-wrap: wrap; row-gap: 4px; }
+/* a mark: an angled tile, toned and underlined in its meaning colour, with its symbol */
+.rmark { --c: var(--pass); position: relative; flex: none; width: 34px; height: 40px; margin-right: -5px; display: inline-grid; place-items: center; color: var(--c);
+  clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--c) 26%, transparent), transparent 70%), var(--sunk); }
+.rmark::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--c); }
+.rmark .ic { width: 22px; height: 22px; stroke-width: 2.1; }
+.rmark.knot { --c: var(--hint); }
+.rmark.curtain { --c: var(--muted); }
+.rmark.spark { --c: var(--fx-red); background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--fx-red) 40%, transparent), transparent 70%), var(--fx-veil); }
+.rmark.spark .ic { stroke-width: 1.8; }
+.resbadges { position: absolute; top: 12px; right: 16px; display: flex; gap: 10px; align-items: center; }
+.resbadges .rmark.spark { width: 44px; height: 52px; margin: 0; }
+.resbadges .rmark.spark .ic { width: 30px; height: 30px; }
+.resgate { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--finish, var(--pass)); color: var(--finish, var(--pass)); display: grid; place-items: center; transform: rotate(-10deg); }
+.resgate .ic { width: 24px; height: 24px; stroke-width: 2.1; }
+.rescracks { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+.rescracks polyline { fill: none; stroke: var(--fx-red); stroke-width: 1.2; opacity: .7; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.resweek { margin: 0; color: var(--muted); font-size: 14px; }
+.reskey { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; font-size: 13px; color: var(--muted); }
+.reskey > span { display: inline-flex; align-items: center; gap: 6px; }
+.reskey .rmark { width: 20px; height: 24px; margin: 0; }
+.reskey .rmark .ic { width: 14px; height: 14px; }
+.reskey .rmark::after { height: 2px; }
+.resshare { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.resshare .linkbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.resshare .linkbtn .ic { width: 16px; height: 16px; }
+.resmore { display: grid; gap: 8px; justify-items: start; }
+.resmore[hidden] { display: none; }
+.resmore img { width: min(100%, 360px); border-radius: 12px; border: 1px solid var(--line); }
+.resmore textarea { width: 100%; font: 14px/1.5 var(--mono); color: var(--fg); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: none; }
+.resmore .meta { margin: 0; color: var(--muted); font-size: 14px; }
+.resmore .linkbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+/* a flawless finish: the cracks spread out from the spark as the card arrives */
+@keyframes res-crack { from { clip-path: circle(0 at 88% 10%); } to { clip-path: circle(150% at 88% 10%); } }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) .rescracks { animation: res-crack 700ms 250ms var(--ease-out) both; }
+}

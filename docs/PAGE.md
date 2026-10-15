@@ -93,6 +93,31 @@ The sentence is what you'd say to a colleague, so it must sound like a person ta
 short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
 before keeping it.
 
+## Your result: share it like a daily puzzle
+
+The done screen shows **Your result**: a row of marks for each step (Check, Build or Practice,
+Explain), from the **first time** through the lesson, never later goes. A hand sign is on your own,
+a knot is with a clue or another go, curtains mean the answer was shown, and "Skipped" is a step
+you skipped. Every step on your own earns a spark and the card cracks; the lesson that finishes a
+module gets a gate stamp, and a streak of 2 days or more is named. The marks and symbols are in
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md), "The result marks".
+
+**Share result** copies a picture of the card (on a phone, the share sheet opens). **Copy as text**
+copies the same in emoji, for places that don't take pictures:
+
+```
+Daily Drill 2.4 · Day 12
+Check ✌️✌️🪢
+Build ✌️
+Explain ✌️🌫️
+📿 5-day streak
+```
+
+No lesson title, answers or link go out: the number and day are enough. If the browser won't
+allow copying (a plain-http address, a sandboxed frame), the picture or the text shows under the
+buttons to copy by hand. Each step saves its marks as it happens (`lp(id).first`); a lesson
+finished before this existed has no card, rather than a guess.
+
 ## Practice on real evidence (platform Build steps)
 
 For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few

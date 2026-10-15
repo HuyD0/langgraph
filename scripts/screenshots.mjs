@@ -40,6 +40,7 @@ const SHOTS = [
      document.querySelector("[data-clz-help]").click(); at(".cloze");`],
   ["explain-done-phone-light", PHONE, "light", `lp("runs_after").filled = 2; openLesson("runs_after", 3); at(".cloze");`],
   ["done-screen-phone-dusk", PHONE, "dusk", `progress.solved.field_status = true; lp("field_status").filled = 3;
+     lp("field_status").first = { check: ["sign"], build: ["sign", "knot", "sign"], explain: ["sign", "sign", "curtain"] };
      openLesson("field_status", 3); goNext();`],
   ["walkthrough-phone-dusk", PHONE, "dusk", `openLesson("read_a_run", 0); at(".walk figure:nth-of-type(2)");`],
   ["practice-phone-dusk", PHONE, "dusk", `openLesson("folder_access", 2); at(".shead");`],
