@@ -66,7 +66,7 @@ class Bank:
         problem = self.problems[lesson_id]
         learn = self.learn.get(lesson_id, {})
         module = self.module_of(lesson_id) or {}
-        question, options, answer, why = lesson["check"]
+        question, options, answer, why = lesson["check"][:4]
         pattern, text, say, classic = lesson["angle"][:4]
         if problem.get("practice"):  # a content-pack lesson: a practice exercise, not code
             extra = lesson["pack"]
@@ -86,6 +86,7 @@ class Bank:
             "learn": lesson["learn"],
             "example": {"title": lesson["example"][0], "text": lesson["example"][1]},
             "check": {"question": question, "options": options, "answer_index": answer, "why": why},
+            "more_checks": [{"question": q, "options": o, "answer_index": r, "why": w, "clue": c} for q, o, r, w, c in lesson.get("more") or []],
             "exercise": {
                 "title": problem["title"],
                 "prompt": problem["prompt"],

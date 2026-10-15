@@ -101,12 +101,14 @@ def test_platform_practice_explain_gaps_and_the_focus_choice_become_events():
     after = {
         "focus": "platform",
         "lessons": {"f": {"step": 2, "done": False, "practice": {"day": "2026-10-13", "right": 3, "total": 4, "missed": missed},
-                          "explain": {"wrong": 1, "clues": 1, "answers": 0, "done": True}}},
+                          "explain": {"wrong": 1, "clues": 1, "answers": 0, "done": True},
+                          "checks": {"at": 2, "solved": [True, True, True], "marks": ["sign", "knot", "sign"]}}},
         "solved": {"folder_access": {"count": 1, "hints": 1, "mode": "practice"}},
     }
     events = list(activity.progress_events(before, after))
     assert ("practised", "f", after["lessons"]["f"]["practice"]) in events
     assert ("explained", "f", {"wrong": 1, "clues": 1, "answers": 0}) in events
+    assert ("check_marks", "f", {"marks": ["sign", "knot", "sign"]}) in events
     assert ("solved", "folder_access", {"hints": 1, "count": 1, "mode": "practice"}) in events
     assert ("focus_set", "", {"focus": "platform"}) in events
     assert list(activity.progress_events(after, after)) == []  # saving again records nothing new

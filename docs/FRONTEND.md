@@ -82,7 +82,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) **In `page/walkthrough.js`** (styles: `page/walkthrough.css`) |
 | `your result` | The result card on the done screen: the marks each step leaves the first time through (`firstMarks`, `finishMarks`, `resultOf`), the picture Share result copies (`resultPng`, `sharePicture`) and Copy as text (`shareText`). **In `page/share.js`** (styles: `page/share.css`) |
 | `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` **In `page/trust.js`** (styles: `page/trust.css`) |
-| `step panes` | `learnPane`, `checkPane`, the Explain gaps (`clozeHtml`), `anglePane` |
+| `step panes` | `learnPane`, `checkPane` (the Check questions one at a time: `checkQs`, `checkState`, `checkPick`, `checkHelp`), the Explain gaps (`clozeHtml`), `anglePane` |
 | `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
 | `ask about this lesson` | The tutor chips and answers **In `page/ask.js`** (styles: `page/ask.css`) |
 | `build step` | `loadProblem`, the editor area, running tests |

@@ -48,6 +48,9 @@ def progress_events(before: dict | None, after: dict | None) -> Iterator[tuple[s
             yield "checked", lesson_id, {"answer": now.get("checked")}
         if now.get("done") and not was.get("done"):
             yield "lesson_done", lesson_id, {}
+        checks, was_checks = now.get("checks"), was.get("checks") or {}
+        if isinstance(checks, dict) and checks.get("marks") and checks.get("marks") != was_checks.get("marks"):
+            yield "check_marks", lesson_id, {"marks": checks.get("marks")}  # every Check question: on your own, a clue or another go, shown
         practice = now.get("practice")
         if isinstance(practice, dict) and practice != was.get("practice"):
             yield "practised", lesson_id, practice

@@ -196,10 +196,12 @@ def example(caption: str, code: str) -> dict:
     return {"caption": caption, "code": code}
 
 
-def question(text: str, options: list[str], *, answer: int, why: str) -> dict:
-    """The Check step: a multiple-choice question. ``answer`` is the index of the right option."""
+def question(text: str, options: list[str], *, answer: int, why: str, clue: str | None = None) -> dict:
+    """The Check step's first question: multiple choice. ``answer`` is the index of the right
+    option. With a ``clue``, help shows it before the answer. More questions: ``content/checks/``."""
     assert 0 <= answer < len(options), f"answer {answer} is not one of {len(options)} options"
-    return {"question": text, "options": options, "answer": answer, "why": why}
+    assert not clue or options[answer].lower() not in clue.lower(), f"{text[:40]}: the clue gives the answer away"
+    return {"question": text, "options": options, "answer": answer, "why": why, **({"clue": clue} if clue else {})}
 
 
 _GAP = re.compile(r"\[\[(.+?)\]\]")

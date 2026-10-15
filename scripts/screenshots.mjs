@@ -33,7 +33,8 @@ const SHOTS = [
   ["track-desktop-light", DESKTOP, "light", `goHome(); at("#track-platform");`],
   ["lesson-learn-phone-dusk", PHONE, "dusk", `openLesson("use_case_score", 0);`],
   ["trust-mark-phone-dusk", PHONE, "dusk", `openLesson("redact_pii", 0); document.querySelector(".trustmark").click(); at(".trustpop");`],
-  ["lesson-check-phone-dusk", PHONE, "dusk", `openLesson("can_read_table", 1); lp("can_read_table").checked = 1; setStep(1, true); at(".verdict");`],
+  ["lesson-check-phone-dusk", PHONE, "dusk", `delete lp("split_requirements").checks; lp("split_requirements").checked = null; openLesson("split_requirements", 1);
+     checkPick(LESSONS.split_requirements.check[2]); checkNext(); checkPick(2); checkHelp(); at(".chkhead");`],
   ["build-code-desktop-dusk", DESKTOP, "dusk", `openLesson("runs_after", 2);`],
   ["sorting-board-phone-dusk", PHONE, "dusk", `openLesson("use_case_score", 2);`],
   ["explain-gaps-phone-dusk", PHONE, "dusk", `lp("runs_after").filled = 0; openLesson("runs_after", 3);

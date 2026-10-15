@@ -67,10 +67,25 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
-## Check: the options are shuffled
+## Check: up to three questions, one at a time
 
-Each lesson's three Check options show in a fixed shuffled order (`checkOrder` in the page,
-seeded by the lesson id), so the right answer isn't always in the same place; across the lessons
+Each lesson's Check asks its own question first (`check=question(...)` in the lesson), then up to
+two more from `content/checks/<module>.py`, one per screen with "Question 2 of 3" and dots. They
+work like Practice: a wrong pick is crossed out and you try again; help is the clue first, then
+the answer (a question with no clue goes straight to the answer). Each question's mark (on your
+own, a clue or another go, the answer shown) goes into the shared result. `lp(id).checked` still
+keeps question 1's first pick, which the dashboard and the tutor read; `lp(id).checks` holds the
+rest, and the server logs every question's mark as a `check_marks` event.
+
+The extra questions follow the writing rules at the top of `content/checks/__init__.py`: a small
+situation to use the idea in, plain words, three believable options of about the same length, a
+clue that doesn't say the answer, and a why of one or two sentences. `tests/test_checks.py` checks
+what a test can.
+
+### The options are shuffled
+
+Each question's three options show in a fixed shuffled order (`checkOrder` in the page,
+seeded by the lesson id, and the question's number after the first), so the right answer isn't always in the same place; across the lessons
 it lands on A, B and C about equally. Answers are still saved by their original position, and the
 server stores the words of the picked and right answers with each Check event, so the managers'
 dashboard shows words, not letters.

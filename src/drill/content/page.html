@@ -2126,7 +2126,7 @@ function stepDone(i) {
   if (!cur || cur.kind !== "lesson") return false;
   const s = lp(cur.id), L = LESSONS[cur.id];
   if (i === 0) return s.step > 0 || s.done;
-  if (i === 1) return s.checked === L.check[2];
+  if (i === 1) return s.checks ? checkDone(cur.id) : s.checked === L.check[2];
   if (i === 2) return !!progress.solved[cur.id];
   return s.done;
 }
@@ -2176,7 +2176,7 @@ function renderFoot() {
     mid.hidden = false; mid.textContent = "Run again"; mid.dataset.act = "run";
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
   } else if (i === 0) label = "Next: Check";
-  else if (i === 1) { if (lp(cur.id).checked === null) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
+  else if (i === 1) { if (!checkDone(cur.id)) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
   else if (i === 2) label = "Next: Explain";
   else { const o = orderFor(cur.id); label = o.indexOf(cur.id) < o.length - 1 ? "Finish lesson" : trackOf[cur.id] ? "Finish the track" : "Finish the path"; icon = "check"; }
   next.innerHTML = icon === "play" || icon === "bulb" ? ic(icon) + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
@@ -2226,7 +2226,9 @@ function showDone(id, after, fresh) {
   const sol = progress.solved[p.id], [, , ans] = L.check, fc = (s.first || {}).check;  // the first pick, not the last
   const item = (ok, html) => `<li class="${ok ? "" : "skip"}">${ic(ok ? "check" : "arrowr")}<span>${html}</span></li>`;
   const recap = [
-    s.checked === null && !fc ? item(false, "You skipped the check.") : item(true, (fc ? fc[0] === "sign" : s.checked === ans) ? "Got the check right first time." : "Worked through the check."),
+    s.checked === null && !fc ? item(false, "You skipped the check.")
+    : fc && fc.length > 1 ? item(true, `Answered the check: ${fc.filter(m => m === "sign").length} of ${fc.length} right first time.`)
+    : item(true, (fc ? fc[0] === "sign" : s.checked === ans) ? "Got the check right first time." : "Worked through the check."),
     sol && sol.mode === "practice" && p.practice ? item(true, `Answered the practice questions: ${Math.max(0, p.practice.asks.length - (sol.hints || 0))} of ${p.practice.asks.length} right first time.`)
     : sol && sol.mode === "sort" && p.sort ? item(true, `Sorted the ideas: ${Math.max(0, p.sort.items.length - (sol.hints || 0))} of ${p.sort.items.length} right first time.`)
     : sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
@@ -2291,21 +2293,65 @@ function checkOrder(id, n) {
   for (let i = n - 1; i > 0; i--) { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; const j = h % (i + 1); [order[i], order[j]] = [order[j], order[i]]; }
   return order;
 }
+// The Check step's questions: the lesson's own, then any more. One at a time, like Practice: a wrong
+// pick is crossed out and you try again; help is a clue first (when the question has one), then
+// the answer. lp(id).checked keeps question 1's first pick: what the dashboard and the tutor read.
+const checkQs = id => [LESSONS[id].check, ...(LESSONS[id].more || [])];
+function checkState(id) {
+  const s = lp(id);
+  if (!s.checks) {  // progress from before: question 1 was answered (right, or not) and nothing else
+    const right = s.checked === LESSONS[id].check[2];
+    s.checks = { at: right && checkQs(id).length > 1 ? 1 : 0, solved: [right], tried: [s.checked !== null && !right ? [s.checked] : []], help: [], marks: [] };
+  }
+  return s.checks;
+}
+const checkDone = id => { const n = checkQs(id).length, st = lp(id).checks; return !!st && Array.from({ length: n }, (_, i) => !!st.solved[i]).every(Boolean); };
 function checkPane() {
-  const L = LESSONS[cur.id], s = lp(cur.id);
-  const [q, opts, ans, why] = L.check, answered = s.checked !== null;
-  const order = checkOrder(cur.id, opts.length), letter = k => "ABCDEF"[order.indexOf(k)];
+  const id = cur.id, qs = checkQs(id), n = qs.length, st = checkState(id), i = Math.min(st.at, n - 1);
+  const [q, opts, ans, why, clue] = qs[i], solved = !!st.solved[i], tried = st.tried[i] || [], help = st.help[i] || 0;
+  const order = checkOrder(i ? id + ":" + i : id, opts.length), letter = k => "ABCDEF"[order.indexOf(k)];
   const buttons = order.map(k => {
-    const o = opts[k];
-    let cls = "opt";
-    if (answered && k === ans) cls += " right";
-    else if (answered && k === s.checked) cls += " wrong";
-    return `<button class="${cls}" data-opt="${k}"${answered ? " disabled" : ""}><span class="k">${letter(k)}</span><span>${md(o)}</span></button>`;
+    const off = solved || tried.includes(k);
+    const cls = "opt" + (solved && k === ans ? " right" : tried.includes(k) ? " wrong" : "");
+    return `<button class="${cls}" data-opt="${k}"${off ? " disabled" : ""}><span class="k">${letter(k)}</span><span>${md(opts[k])}</span></button>`;
   }).join("");
-  const verdict = !answered ? "" : s.checked === ans
-    ? `<div class="verdict ok">${ic("check")}<div><b>Right.</b> ${md(why)}</div></div>`
-    : `<div class="verdict no">${ic("x")}<div><b>Not quite: it's ${letter(ans)}.</b> ${md(why)}</div></div>`;
-  return `<p class="q">${md(q)}</p><div class="opts">${buttons}</div>${verdict}${answered ? `<button class="linkbtn" data-retry>Try again</button>${askPanel()}` : ""}`;
+  const verdict = solved ? `<div class="verdict ok">${ic("check")}<div><b>${help === 2 ? `The answer is ${letter(ans)}.` : "Right."}</b> ${md(why)}</div></div>`
+    : tried.length ? `<div class="verdict no">${ic("x")}<div><b>Not quite.</b> Try another one${help || !clue ? "" : ", or ask for a clue"}.</div></div>` : "";
+  const helpHtml = solved ? "" : help === 0 && clue ? `<button class="linkbtn" data-chk-help>Give me a clue</button>`
+    : help === 0 ? `<button class="linkbtn" data-chk-help>Tell me the answer</button>`
+    : `<p class="clzclue">${ic("bulb")}<span>${md(clue)}</span></p><button class="linkbtn" data-chk-help>Tell me the answer</button>`;
+  const head = n > 1 ? `<div class="shead chkhead"><span class="scount">Question ${i + 1} of ${n}</span><span class="qf-dots" aria-hidden="true">${qs.map((_, j) => `<i class="${st.solved[j] ? "d" : j === i ? "n" : ""}"></i>`).join("")}</span></div>` : "";
+  const next = solved && i < n - 1 ? `<button class="btn primary chknext" data-chk-next>Next question${ic("arrowr")}</button>` : "";
+  const again = checkDone(id) ? `<button class="linkbtn" data-retry>Try the check again</button>` : "";
+  return `${head}<p class="q">${md(q)}</p><div class="opts">${buttons}</div><div aria-live="polite">${verdict}</div><div class="clzhelp">${helpHtml}${next}</div>${again}${solved ? askPanel() : ""}`;  // asking "why not B?" before it's solved would give the answer away
+}
+// A question's mark, once it's right: on your own, with a clue or another go, or the answer shown.
+function checkSolve(id, i, how) {
+  const st = checkState(id);
+  st.solved[i] = true; st.marks[i] = st.marks[i] || how;
+  if (checkDone(id)) firstMarks(id, "check", checkQs(id).map((_, j) => st.marks[j] || "knot"));
+}
+function checkPick(k) {
+  const id = cur.id, s = lp(id), st = checkState(id), i = st.at, [, , ans] = checkQs(id)[i];
+  if (st.solved[i] || (st.tried[i] || []).includes(k)) return;
+  if (i === 0 && s.checked === null) s.checked = k;
+  if (k === ans) checkSolve(id, i, (st.tried[i] || []).length || st.help[i] ? "knot" : "sign");
+  else (st.tried[i] = st.tried[i] || []).push(k);
+  saveProgress(); setStep(1, true);
+  const verdict = $("paneText").querySelector(".verdict");
+  if (verdict) verdict.scrollIntoView({ block: "nearest", behavior: motionOn() ? "smooth" : "auto" });
+  if (k === ans) fxOn($("paneText").querySelector(".opt.right"), "seal", FX.seal());
+}
+function checkHelp() {
+  const id = cur.id, st = checkState(id), i = st.at, clue = checkQs(id)[i][4];
+  st.help[i] = Math.max(st.help[i] || 0, clue ? 0 : 1) + 1;
+  if (st.help[i] >= 2) { st.help[i] = 2; checkSolve(id, i, "curtain"); }
+  saveProgress(); setStep(1, true);
+}
+function checkNext() {
+  const st = checkState(cur.id); st.at = Math.min(st.at + 1, checkQs(cur.id).length - 1);
+  saveProgress(); setStep(1, true);
+  const q = $("paneText").querySelector(".q"); if (q) q.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" });
 }
 const SAY_WORDS = 4;  // "one sentence": enough words to be a thought, not a box ticked
 const words = t => (t || "").trim().split(/\s+/).filter(Boolean).length;
@@ -2910,14 +2956,10 @@ document.addEventListener("click", async e => {
     if (CLZ.help === 1) ex.clues++; else ex.answers++;
     saveProgress(); clozeRender(); return;
   }
-  const op = t.closest("[data-opt]"); if (op && !op.disabled) {
-    lp(cur.id).checked = +op.dataset.opt; firstMarks(cur.id, "check", [+op.dataset.opt === LESSONS[cur.id].check[2] ? "sign" : "curtain"]); saveProgress(); setStep(1, true);
-    const verdict = $("paneText").querySelector(".verdict");
-    if (verdict) verdict.scrollIntoView({ block: "nearest", behavior: motionOn() ? "smooth" : "auto" });
-    if (+op.dataset.opt === LESSONS[cur.id].check[2]) fxOn($("paneText").querySelector(".opt.right"), "seal", FX.seal());
-    return;
-  }
-  if (t.closest("[data-retry]")) { lp(cur.id).checked = null; saveProgress(); setStep(1, true); const q = $("paneText").querySelector(".q"); if (q) q.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); return; }
+  const op = t.closest("[data-opt]"); if (op && !op.disabled) { checkPick(+op.dataset.opt); return; }
+  if (t.closest("[data-chk-help]")) { checkHelp(); return; }
+  if (t.closest("[data-chk-next]")) { checkNext(); return; }
+  if (t.closest("[data-retry]")) { lp(cur.id).checks = { at: 0, solved: [], tried: [], help: [], marks: [] }; saveProgress(); setStep(1, true); const q = $("paneText").querySelector(".q"); if (q) q.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); return; }
   const tag = t.closest("[data-tag], [data-explain]");
   if (tag && tag.matches("[data-tag]")) { const ex = studyItems.find(i => i.text === tag.dataset.text); if (ex) removeItem(ex.id); else { addItem(tag.dataset.text, tag.dataset.src, "text"); toast("Saved to your study list"); } return; }
   if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); openPocket(it.id); if (!it.explanation) explainItem(it.id); }
@@ -3011,7 +3053,7 @@ goHome();
           const lessons = Object.assign({}, r.lessons || {});
           for (const [k, v] of Object.entries(progress.lessons)) {
             const o = lessons[k];
-            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain, first: o.first || v.first };
+            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain, checks: v.checks || o.checks, first: o.first || v.first };
           }
           progress = {
             solved: Object.assign({}, r.solved || {}, progress.solved),
