@@ -2881,6 +2881,7 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-review]")) { startReview(null, t.closest("[data-review]")); return; }
   if (t.closest("[data-share-pic]")) { sharePicture(t.closest("[data-share-pic]")); return; }
   if (t.closest("[data-share-text]")) { shareTextNow(t.closest("[data-share-text]")); return; }
+  if (t.closest("[data-res-save]")) { savePicture(t.closest("[data-res-save]")); return; }
   if (t.closest("[data-mine-review]")) { draftReview(); return; }
   if (t.closest("[data-mine-challenge]")) { challengeIdea(); return; }
   if (t.closest("[data-skill-run]")) { runSkill(); return; }
