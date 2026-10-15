@@ -18,7 +18,7 @@ CHECKS = {
     ],
     "use_case_card": [
         ask("A card says: \"The AI drafts replies to customer emails.\" Which question does it leave open?",
-            ["Who checks a reply before it is sent", "What the AI drafts", "What the AI reads"],
+            ["Who checks each reply before it goes out", "What kind of thing the AI writes", "What the AI reads to write it"],
             answer=0,
             clue="The card says what the AI does. Look for the person who acts on its work.",
             why="The card names the task and the input, but not who acts on the draft or catches a wrong one. "
@@ -32,17 +32,20 @@ CHECKS = {
                 "stops the project later anyway, so fix it first."),
     ],
     "split_requirements": [
-        ask("\"Show the source document under each answer.\" What kind of requirement is that?",
-            ["Functional: something it must do", "Non-functional: how fast it is", "Not a requirement, just an idea"],
+        ask("\"Translate each answer into Spanish when the user asks.\" What kind of requirement "
+            "is that?",
+            ["Functional: something it must do", "Non-functional: about how well it works", "Neither: just a nice-to-have idea"],
             answer=0,
             clue="Is it about what the app does, or about how well it does it?",
-            why="Showing the source is something the app does, so it's functional. Non-functional "
+            why="Translating is something the app does, so it's functional. Non-functional "
                 "requirements are about how well: speed, cost, uptime, security."),
-        ask("Which of these could a pilot actually test?",
-            ["It should feel fast", "Under 5 seconds for 95 in 100 answers", "Users are happy with the speed"],
+        ask("Your team is writing the cost requirement for the HR assistant. Which version could "
+            "the pilot actually test?",
+            ["It should be cheap to run", "Under 50 cents per finished answer", "Cheaper than most other AI tools"],
             answer=1,
-            clue="Look for the one with a number you could measure with a stopwatch.",
-            why="A number turns a wish into a test: you can time 100 answers and count how many were quick enough."),
+            clue="Look for the one you could check against the bill at the end of the pilot.",
+            why="A number turns a wish into a test: after the pilot you work out the cost of each "
+                "answer and see if it's under 50 cents."),
     ],
     "well_architected": [
         ask("At lunchtime the model your app uses runs out of quota, and the app just shows an error. "
