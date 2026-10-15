@@ -208,25 +208,51 @@ Return what the run proves, checking in this order:
         target='a few checks, no loops',
         realworld="Spacelift shows a run's type and state at the top of every run. Reviewers who mix up \"finished\" with \"deployed\" approve things that were never applied, or think a fix is live when it isn't. The run list's filters use these same states.",
         practice=practice(
-            intro='Read what a Spacelift run proves before you act on it: its type and its state together.',
-            explain='A run proves only what its type and state say. A finished proposed run is a preview: nothing was applied. A tracked run that is unconfirmed is waiting for someone to approve it, and only a finished tracked run changed anything. A failed run starts with reading the first error.',
+            intro='Read Spacelift runs the way a reviewer does: say what each one proves before you say anything is live.',
+            explain='A run\'s type and state together say what it proves: a proposed run is only ever a preview, and a tracked run deploys only once someone confirms it. You read each run from the top, matched its state to what it proves, checked it planned the newest commit, and went to the first error when one failed.',
             asks=[
-                ask('What does this run prove?', ['It was a preview: nothing was applied', 'The change is live in DEV', 'It is waiting for approval'], answer=0,
-                    evidence=evidence('code', title='Run header', text="""Add the team-sales cluster
-✓ FINISHED
-Stack: .../Databricks/team-sales/DEV
-ⓘ Proposed"""),
-                    clue='Look at the word under the stack path.',
-                    why='Proposed runs only plan. FINISHED means planning worked; nothing reached the workspace.',
-                    wrong=[None, 'A proposed run never applies, however green it is.', 'Proposed runs have no approval step.']),
-                ask('A tracked run shows **UNCONFIRMED**. What does that mean?', ['The plan is ready and waits for someone to confirm the apply', 'It failed and needs a retry', 'It was applied but not checked'], answer=0,
-                    clue='Tracked runs can stop between plan and apply.',
-                    why='The plan finished and Spacelift is waiting for a person to confirm. Nothing has been applied yet.',
-                    wrong=[None, 'A failure says FAILED.', 'Applying comes after confirming.']),
-                ask('A run says **FAILED**. Where do you start?', ['At the first error in the log', 'At the last line of the log', 'By re-running it straight away'], answer=0,
-                    clue='Later errors are often caused by an earlier one.',
-                    why='The first error is usually the cause; the rest follow from it. Read it before retrying, or you just fail again.',
-                    wrong=[None, 'The last line is often just "run failed".', 'Without knowing why, a retry usually fails the same way.']),
+                ask('What does this run prove?', ['It was applied: tracked runs on main deploy', 'It planned, and waits for a person to confirm it', 'It failed: it never got past the plan'], answer=1,
+                    evidence=evidence('code', title='The run header', text="""Run:    Add sales_daily-report cluster
+Stack:  .../Databricks/DBX_AIML/DEV
+Type:   Tracked
+State:  UNCONFIRMED
+Commit: 7c41e0a on main"""),
+                    clue='Find UNCONFIRMED in the run states. Who is it waiting for?',
+                    why='UNCONFIRMED on a tracked run means the plan is ready and waits for a person. Nothing is applied until someone confirms it.',
+                    wrong=['Applied would be a tracked run that is FINISHED.', None, 'A failed run says FAILED.']),
+                ask('A teammate says their fix went out yesterday. This is the run. Is the fix live?', ['Yes: the run is over and nothing failed', 'No: someone rejected the plan'], answer=1,
+                    evidence=evidence('code', title='The run header', text="""Run:    Fix cluster policy limits
+Stack:  .../Databricks/DBX_AIML/DEV
+Type:   Tracked
+State:  DISCARDED
+Commit: 4e9a2b1 on main"""),
+                    clue='Look up DISCARDED in the run states.',
+                    why='DISCARDED means someone rejected the plan. Nothing was applied, so the fix isn\'t live yet: it needs a new run.',
+                    wrong=['Over isn\'t the same as applied. What does DISCARDED mean?', None]),
+                ask('This proposed run FAILED. Which line do you read first?', ['The last line: the exit code says how it ended', 'The first error: the group that wasn\'t found', 'The "Planning failed" line: it sums up the run'], answer=1,
+                    evidence=evidence('code', title='The planning log, near the end', text="""module.dbx_workspace[0].data.databricks_group.owner: Reading...
+
+Error: cannot read group: group AP-PIT-DEV not found
+
+  with module.dbx_workspace[0].data.databricks_group.owner
+
+Planning failed. Terraform encountered an error while
+generating this plan.
+
+Unexpected exit code when planning changes: 1"""),
+                    clue='The lines after the cause only say that planning stopped.',
+                    why='The first error is the cause: the plan looks up a group that doesn\'t exist in the workspace. Everything after it only says planning stopped.',
+                    wrong=['The exit code only says something failed, not what.', None, 'That line says planning failed, not why.']),
+                ask('Can you review the pull request from this run?', ['Yes: it finished and the checks are GO', 'Not yet: wait for the run on the newest commit', 'Yes, if you also read the YAML diff'], answer=1,
+                    evidence=evidence('code', title='The pull request and its run', text="""Pull request #214 · feature/iac-review
+  newest commit: 9b2f7d1   pushed 11:41 PM
+
+Run on .../DBX_AIML/DEV · Proposed · FINISHED
+  commit: 300d269          started 11:25 PM
+  Plan checks are GO"""),
+                    clue='Compare the run\'s commit with the newest one in the pull request.',
+                    why='A run is a snapshot of one commit. 300d269 is older than the newest commit, so this plan reviews old code. Wait for the run on 9b2f7d1.',
+                    wrong=['It finished, but on an older commit: this plan reviews old code.', None, 'The YAML diff doesn\'t show what the runbook adds, and this plan is for old code anyway.']),
             ],
         ),
         starter="""def what_it_proves(run):
@@ -313,6 +339,13 @@ kind   # 'tracked'""",
 )
 
 
+# The stacks from the lesson's example, shown above the practice questions.
+_STACKS = """network       waits for nothing
+workspace     waits for network
+monitoring    waits for network
+catalogs      waits for workspace
+jobs          waits for workspace, catalogs"""
+
 lesson(MODULE, 'runs_after',
     title='What runs after a change?',
     checked='2026-10-13',
@@ -363,6 +396,36 @@ Return the list of stacks that will run after it, in the order they run:
         pattern='Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.',
         target='a short loop for each stack that runs',
         realworld='This is Spacelift stack dependencies: when an upstream stack applies, its dependents get tracked runs in this order, and an upstream stack can pass its outputs (like subnet ids) down as the next stack\'s inputs. A circular dependency is refused when you set it up, so the order always exists.',
+        practice=practice(
+            intro='Work out which stacks run after a change, and when, the way a platform reviewer does before merging.',
+            explain='When a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. You followed the waits down from the changed stack, saw that stacks upstream or off to the side stay still, and caught a stack that could start too early because one of its waits was missing.',
+            asks=[
+                ask('`catalogs` changes. Which stacks run after it?', ['Only `jobs`', '`jobs` and `workspace`', 'Every stack'], answer=0,
+                    evidence=evidence('code', title='The stacks and what they wait for', text=_STACKS),
+                    clue='Only stacks downstream run. Which stack waits for catalogs?',
+                    why='Only jobs waits for catalogs. workspace and network are upstream, and monitoring doesn\'t depend on it, so they stay still. A small change stays small.',
+                    wrong=[None, 'workspace is upstream: catalogs waits for it, not the other way round.', 'Only stacks that wait for catalogs, directly or through another stack, run.']),
+                ask('`network` changes. Which stacks can start as soon as it has applied?', ['`workspace` and `catalogs`', '`workspace` and `monitoring`', 'All four, at the same time'], answer=1,
+                    evidence=evidence('code', title='The same stacks', text=_STACKS),
+                    clue='Which stacks wait for network and nothing else?',
+                    why='workspace and monitoring each wait only for network, so both can start once it has applied. catalogs and jobs wait for workspace.',
+                    wrong=['catalogs waits for workspace, which hasn\'t run yet.', None, 'catalogs and jobs wait for workspace, which hasn\'t run yet.']),
+                ask('`jobs` changes. What runs after it?', ['Nothing: no stack waits for `jobs`', '`catalogs` and `workspace`, to be safe', 'Every stack'], answer=0,
+                    evidence=evidence('code', title='The same stacks', text=_STACKS),
+                    clue='Look for any stack that lists jobs in what it waits for.',
+                    why='jobs is at the end of the line: nothing waits for it, so its change runs on its own.',
+                    wrong=[None, 'Those are upstream of jobs. A change only flows downstream.', 'Only stacks downstream of jobs run, and there are none.']),
+                ask('`jobs` uses the catalog names that `catalogs` makes, but someone set it to wait only for `workspace`. `workspace` changes. What can go wrong?', ['Nothing: jobs runs after workspace anyway', '`jobs` may run before `catalogs` is done', 'Spacelift refuses to run either one'], answer=1,
+                    evidence=evidence('code', title='The stacks now', text="""network       waits for nothing
+workspace     waits for network
+monitoring    waits for network
+catalogs      waits for workspace
+jobs          waits for workspace"""),
+                    clue='After workspace, which stacks are ready at the same moment?',
+                    why='jobs only waits for what it lists. Once workspace is done, catalogs and jobs are both ready, so jobs can run before the new catalogs exist. Add catalogs to what jobs waits for.',
+                    wrong=['It runs after workspace, but nothing makes it wait for catalogs.', None, 'Nothing here is a loop, so Spacelift runs both.']),
+            ],
+        ),
         starter="""def runs_after(depends_on, changed):
     # your code here
     pass
@@ -513,6 +576,49 @@ Return the messages in the same order as `changes`. An empty list means the run 
         pattern='Filter, then format. Turn the protected list into a set first so each check is instant.',
         target='one pass over the changes',
         realworld='The same logic, in Rego, is what a Spacelift plan policy runs against `input.terraform.resource_changes`. Teams use it to stop a merged PR from deleting a workspace, a storage account or a Unity Catalog metastore.',
+        practice=practice(
+            intro='Read a plan against a plan policy the way the platform team does: what it blocks, what it misses, and what it never sees.',
+            explain='A plan policy checks every run automatically, starting with the resources you can\'t rebuild. You flagged only the changes that were both a protected type and a delete, replacements included, noticed a type the protected list was missing, and saw what a policy can\'t catch because it never becomes a plan.',
+            asks=[
+                ask('The policy protects workspaces, storage accounts and metastores. Which change does it block?', [], answer=2, pick=True,
+                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
+                        summary=[['2', 'to add', 'a'], ['1', 'to change', ''], ['2', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-', 'address': 'databricks_cluster.shared', 'note': 'removed from clusters.yml'},
+                            {'sym': '~', 'address': 'azurerm_storage_account.lake', 'note': 'tags updated'},
+                            {'sym': '-/+', 'address': 'azurerm_databricks_workspace.this', 'note': 'managed_resource_group_name changed: forces replacement'},
+                            {'sym': '+', 'address': 'databricks_schema.raw', 'note': 'new schema'},
+                        ]),
+                    clue='It needs both: a protected type, and a delete among its actions.',
+                    why='The workspace is a protected type, and a replacement includes a delete, so the policy flags it. The cluster is deleted too, but clusters aren\'t on the protected list.',
+                    wrong=['It is deleted, but clusters aren\'t on the protected list.', 'A protected type, but a tag update deletes nothing.', None, 'A new schema destroys nothing.']),
+                ask('A plan destroys `azurerm_storage_container.lake["bronze"]`, and the lake\'s data is in it. Does this policy stop it?', ['Yes: the container is part of a protected storage account', 'No: containers aren\'t on the protected list'], answer=1,
+                    evidence=evidence('code', title='The policy', text="""protected := {
+  "azurerm_databricks_workspace",
+  "azurerm_storage_account",
+  "databricks_metastore"
+}
+
+deny contains msg if {
+  rc := input.terraform.resource_changes[_]
+  "delete" in rc.change.actions
+  rc.type in protected
+  msg := sprintf("%s would be destroyed", [rc.address])
+}"""),
+                    clue='Compare the resource\'s type, word for word, with the protected list.',
+                    why='The rule matches the type exactly. `azurerm_storage_container` isn\'t `azurerm_storage_account`, so the run goes ahead and the data goes with it. List every type whose loss you can\'t undo.',
+                    wrong=['A container is a different type from the account it lives in. The rule only matches exact types.', None]),
+                ask('You\'ve written a new rule that blocks deleting any `databricks_catalog`. How do you roll it out?', ['As a deny rule straight away, on every stack', 'As a warn rule first, then switch it to deny', 'As a deny rule on dev stacks only, for good'], answer=1,
+                    clue='Spacelift plan policies can do more than block.',
+                    why='A warn rule prints in yellow and lets the run through, so you see what it would have stopped before it stops anyone. Then switch it to deny.',
+                    wrong=['A rule nobody has seen in action can block real work on day one.', None, 'Prod is where a lost catalog hurts most. Dev is a place to try it, not to leave it.']),
+                ask('An AI assistant suggests this. What would the command really do?', ['Delete the storage account in Azure, data and all', 'Terraform forgets the account; Azure keeps it', 'Nothing: the policy blocks the command too'], answer=1,
+                    evidence=evidence('claim', text='The policy is blocking you? Run `terraform state rm azurerm_storage_account.lake`, and the plan won\'t show a delete any more.'),
+                    clue='State commands change what Terraform keeps track of, without making a plan.',
+                    why='`state rm` deletes nothing in Azure, but Terraform stops tracking the account, so no plan, and no policy, sees it again. Ask why the plan wants a delete instead.',
+                    wrong=['`state rm` never touches Azure. It only edits Terraform\'s record.', None, 'Policies only see plans, and state commands make no plan.']),
+            ],
+        ),
         starter="""def guard_destroys(changes, protected):
     # your code here
     pass

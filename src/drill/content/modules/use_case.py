@@ -283,6 +283,52 @@ Return a list of the gap field names, in the order above. A complete card gives 
         pattern='Walk the field list in order and collect the gaps.',
         target='one pass over the ten fields',
         realworld='A use case card is the first page of most AI project proposals. Reviewers send it back when the success line has no number or nobody owns the decision.',
+        practice=practice(
+            intro='Review this use case card the way a reviewer does: go down the ten boxes and send back every gap.',
+            explain='The big idea: a use case card answers ten questions on one page, and a blank line, or a success line with no number, is an open question to settle before building. You went down the boxes in order, caught the missing owner and the blank wrong-answer line, and sent back a success line nobody could measure.',
+            asks=[
+                ask('Which box is missing from this card altogether?', ['owner', 'data', 'feedback'], answer=0,
+                    evidence=evidence('code', title='The HR assistant\'s card', text="""card = {
+  "user": "HR team",
+  "task": "answer policy questions",
+  "decision": "a draft answer from the policy pages",
+  "action": "HR approves or edits it before sending",
+  "today": "15 minutes, $8",
+  "success": "faster answers",
+  "wrong_answer": "",
+  "data": "200 past questions",
+  "feedback": "edits are logged and added to the eval set",
+}"""),
+                    clue='A card has ten boxes. Count the lines here, then find the name that never appears.',
+                    why='There is no owner line at all. Without someone who wants the result and will decide, a working pilot still goes nowhere.',
+                    wrong=[None, 'data is there: 200 past questions to test on.', 'feedback is there: edits go into the eval set.']),
+                ask('`success` has words in it. Is it still a gap?', ['No: the box is filled in', 'Yes: there is no number in it'], answer=1,
+                    clue='Could a pilot measure "faster answers" and say yes or no?',
+                    why='"Faster" can\'t be tested. Success needs a number and the cases you will check it on, like 80 in 100 approved unedited on last month\'s questions.',
+                    wrong=['Filled in isn\'t enough for success: a pilot has to be able to count it.', None]),
+                ask('Do you let `wrong_answer` stay blank?', ['Yes: the action line already says HR checks every draft first', 'No: write down what a wrong answer costs, and who catches it'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"The action line already says HR approves every draft, so `wrong_answer` can stay blank."'),
+                    clue='The action line says who checks. Does it say what a wrong answer would cost?',
+                    why='A blank box is still an open question, even when the answer seems obvious. One line closes it: what a wrong answer would cost, and that HR catches it before sending.',
+                    wrong=['The action says who checks, not what a wrong answer costs. Write it on the card.', None]),
+                ask('A second card, for sending IT tickets to the right team. Which boxes go back to the author?', ['data only', 'user and data', 'user, data and success'], answer=1,
+                    evidence=evidence('code', title='The ticket triage card', text="""card = {
+  "user": "  ",
+  "task": "triage tickets",
+  "decision": "which team gets the ticket",
+  "action": "the ticket is routed; the team can bounce it back",
+  "today": "2 minutes each",
+  "success": "90% routed right",
+  "wrong_answer": "rerouted by hand",
+  "data": "",
+  "feedback": "bounced tickets are relabelled",
+  "owner": "IT lead",
+}"""),
+                    clue='A box holding only spaces is as empty as a blank one. And does the success line have a number?',
+                    why='`user` is only spaces and `data` is blank: both are gaps. Success says 90% routed right, a number a pilot can check, so it stays.',
+                    wrong=['Look at user again: spaces aren\'t an answer.', None, 'Success has a number, 90%, so a pilot can check it.']),
+            ],
+        ),
         starter="""def card_gaps(card):
     # your code here
     pass
@@ -415,6 +461,38 @@ Return `[functional, non_functional]`: two lists of the requirement dicts, each 
         pattern='Check each row for any word from a list, then put it in one of two lists.',
         target='one pass over the requirements',
         realworld='Requirement reviews often start with exactly this sort, then a person checks the edge cases. Non-functional requirements map straight onto the Well-Architected pillars.',
+        practice=practice(
+            intro='Sort the HR assistant\'s requirements the way a reviewer does: what it must do, and how well it must do it.',
+            explain='The big idea: functional requirements say what a system does and non-functional ones say how well. You put privacy and the audit record in the how-well pile, spotted a list with no how-well lines at all, and turned "always up" into a number a pilot can test.',
+            asks=[
+                ask('Which pile does **R4** go in?', ['Functional: something it must do', 'Non-functional: how it must do it'], answer=1,
+                    evidence=evidence('code', title='The HR assistant\'s requirements', text="""R1  Answer policy questions from the HR pages
+R2  Reply within 5 seconds for 95 in 100 questions
+R3  Show the source page for every answer
+R4  Keep personal data inside the EU region
+R5  Hand hard questions to a person
+R6  Serve 200 users at once
+R7  Cost under $1 per finished answer"""),
+                    clue='If R4 were ignored, would the assistant still answer questions? Then R4 is not the job itself.',
+                    why='Where personal data may go is privacy: a rule about how the job is done, not the job. Non-functional.',
+                    wrong=['It adds nothing users can ask for. It limits how the job is done.', None]),
+                ask('What is missing from that list?', ['Nothing: those three lines cover the whole job', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
+                    evidence=evidence('claim', who='The product owner said', text='"The requirements are done: it answers policy questions from the HR pages, shows the source page, and hands hard questions to a person."'),
+                    clue='Those three are R1, R3 and R5. Which pile are they all in?',
+                    why='All three are functional. A demo can do every one and still not go live, because it is too slow, too costly or sends personal data where it may not go.',
+                    wrong=['That is the whole job, but not how well it must do it.', None, 'It has enough to do. What is missing is how well.']),
+                ask('How would you rewrite R8 so the pilot can test it?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
+                    evidence=evidence('claim', who='A teammate added', text='"R8: The assistant should always be up."'),
+                    clue='"Always" can\'t be measured. What share of the time, and when?',
+                    why='A number turns a hope into a bar the pilot can check: it either stayed up 99.9 percent of working hours or it didn\'t.',
+                    wrong=['Stronger words still can\'t be measured.', None, 'That is a way to build it, not how well it must work.']),
+                ask('R9 sounds like something the assistant does. Which pile does it go in?', ['Functional: something it must do', 'Non-functional: how it must do it'], answer=1,
+                    evidence=evidence('code', title='One more line', text='R9  Keep an audit log of answers'),
+                    clue='Does a user ever ask for the log, or is it a record kept so someone can check the answers later?',
+                    why='An audit record is there so someone can check every answer later. Like speed, cost and privacy, it is about how well the system behaves, not the job users ask it to do.',
+                    wrong=['Users never ask for it: it is a record for checking later, like the other how-well lines.', None]),
+            ],
+        ),
         starter="""def split_requirements(reqs):
     # your code here
     pass
@@ -570,6 +648,50 @@ Build a list of lines, then return them joined with `"\\n"`:
         pattern='Collect lines in a list, then join them once.',
         target='one pass over the card, one over the pillars',
         realworld='Teams increasingly draft design reviews with a model and then check them. The quality of the draft comes from the prompt: full context, one question at a time, and rules against guessing.',
+        practice=practice(
+            intro='Brief a model to draft a well-architected review, then read its draft the way a reviewer does: every claim checked against the card.',
+            explain='The big idea: an AI-drafted review is only as good as its prompt, so the prompt gives the whole use case card, asks each pillar\'s questions, and sets rules that stop the model guessing or deciding. You made the blank owner visible, put a question under the right pillar, struck the model\'s go-ahead, and trusted a finding only because it quoted a line you could check.',
+            asks=[
+                ask('The card\'s owner box is blank. What goes on that line of the prompt?', ['Leave the line out', 'not written', 'Head of HR operations, the likely owner'], answer=1,
+                    evidence=evidence('prompt', title='Your review prompt', text="""Review this AI use case against the Well-Architected pillars.
+
+Use case card:
+- user: HR team
+- task: answer policy questions
+- action: HR approves or edits it before sending
+- data: last month's 200 questions
+- feedback: every edit goes into the eval set
+- owner: ___
+
+## Reliability
+- What happens if the model is down?
+
+Rules:
+- Base every finding on the card, and quote the line you used.
+- If the card does not say, write Unknown, then the question to ask the owner.
+- Give each pillar a risk: low, medium or high.
+- Do not say whether to build it. A person decides."""),
+                    clue='The model should see the gap: no silence, and no guess.',
+                    why='Writing "not written" keeps the gap visible, so the model marks it Unknown and asks who owns it, instead of skipping it or making someone up.',
+                    wrong=['Leave it out and the model never learns there is a gap.', None, 'A guess in the prompt comes back as a "fact" in the review.']),
+                ask('You want to ask "Can it handle the busiest minute?" Which pillar does it go under?', ['Reliability', 'Performance Efficiency', 'Cost Optimization'], answer=1,
+                    clue='One pillar is about staying fast as use grows.',
+                    why='Performance Efficiency is about staying fast as use grows, and the busiest minute is exactly that test.',
+                    wrong=['Reliability is about failures, like the model being down. This is about load.', None, 'Cost is what you pay. This is whether it keeps up.']),
+                ask('What do you do with the last line of the draft?', ['Keep it: the model found every pillar low risk', 'Strike it: the decision belongs to a person', 'Ask the model to double-check its recommendation'], answer=1,
+                    evidence=evidence('code', title='The end of the draft', text="""## Overall
+All five pillars look low risk.
+Recommendation: safe to build. Start the pilot."""),
+                    clue='Read the last rule you gave the model.',
+                    why='Whether a risk is fine for a pilot is a business call. The model drafts findings and questions; a person, once the card names an owner, makes the go or no-go.',
+                    wrong=['Low risk on paper is still the model\'s view. Who decides?', None, 'A second opinion from the model is still the model deciding.']),
+                ask('Can you rely on this finding?', ['Yes, once you find that line on the card', 'No: everything in an AI draft is a guess', 'Yes: the model sounds sure'], answer=0,
+                    evidence=evidence('claim', who='The draft said', text='**Operational Excellence: low risk.** The card says "feedback: every edit goes into the eval set", so each new version can be tested on real edits.'),
+                    clue='A good finding points at something you can check yourself.',
+                    why='It quotes a real line from the card, as the rules asked. Find it on the card and it becomes evidence, not a guess.',
+                    wrong=[None, 'Some findings are backed by the card. Check them instead of throwing them away.', 'Sounding sure isn\'t evidence. The quoted line is.']),
+            ],
+        ),
         starter="""RULES = [
     'Rules:',
     '- Base every finding on the card, and quote the line you used.',
@@ -738,6 +860,38 @@ Decide like this:
         pattern='Stop on a must-pass failure, then count the misses.',
         target='a few checks, no loops',
         realworld='Pilots are usually judged go, fix or stop against bars agreed up front. Writing the rule in code keeps the decision the same however the results make people feel.',
+        practice=practice(
+            intro='Judge four pilots against the bars agreed before they started: go, fix or stop.',
+            explain='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. You stopped a pilot with great averages because a must-pass case failed, gave one close miss a fix, called a result that met every bar exactly a go, and kept the cost bar where it was agreed.',
+            asks=[
+                ask('Pilot 1 looks great on quality, speed and cost. What\'s the call?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=2,
+                    evidence=evidence('code', title='Pilot 1 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
+         "cost": 2.00}
+pilot = {"quality": 0.95, "seconds": 2,
+         "cost": 0.50, "must_pass_failures": 1}"""),
+                    clue='Read must_pass_failures before you look at the averages.',
+                    why='A must-pass case is one it must never get wrong. One failure ends the pilot on its own, however good the averages look.',
+                    wrong=['Great averages can hide one dangerous mistake. Look at must_pass_failures.', 'Fix is for a near miss on a bar. A failed must-pass case is not a near miss.', None]),
+                ask('What\'s the call for pilot 2?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=1,
+                    evidence=evidence('code', title='Pilot 2 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
+         "cost": 2.00}
+pilot = {"quality": 0.82, "seconds": 5.5,
+         "cost": 1.00, "must_pass_failures": 0}"""),
+                    clue='Only one bar is missed. A miss on speed is close if it is no more than 1.2 times the bar: 6 seconds here.',
+                    why='Speed is the only miss, and 5.5 seconds is within 6, so it is close. Make it faster, then test again.',
+                    wrong=['5.5 seconds is over the 5-second bar, so one bar is missed.', None, 'It is one bar, and only just missed. That is worth another try.']),
+                ask('What\'s the call for pilot 3?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"Pilot 3: quality exactly 0.80, exactly 5 seconds, $1.20 a task, no must-pass failures. That only just scrapes through, so let\'s call it a fix to be safe."'),
+                    clue='A bar is missed only when quality falls under it, or speed or cost is above it. Is any number past its bar?',
+                    why='Meeting a bar exactly is meeting it. Calling it a fix would quietly move the bar after seeing the result, just upwards this time.',
+                    wrong=[None, 'Fix is for a missed bar. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed bars.']),
+                ask('What do you do?', ['Go: raise the bar to $3, still cheaper than by hand', 'Fix: one bar missed, so cut the cost and retest', 'Stop: it is far over the agreed cost bar'], answer=2,
+                    evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 bar, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost bar to $3 and call it a go."'),
+                    clue='A close miss on cost is at most 1.2 times its bar: $2.40 here. And when were the bars agreed?',
+                    why='$3.00 is well past $2.40, so it is not a near miss, and raising the bar after seeing the result is moving it to fit. If the cost case really has changed, agree new bars before the next pilot.',
+                    wrong=['Change the bar once you see the result and the bar meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
+            ],
+        ),
         starter="""def pilot_verdict(results, bars):
     # your code here
     pass

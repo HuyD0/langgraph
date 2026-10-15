@@ -1,6 +1,6 @@
 """Shipping models and agents: Graduating, registering, promoting and canarying on Databricks."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('shipping', 'Shipping models and agents', 'Graduating, registering, promoting and canarying on Databricks.')
 
@@ -97,6 +97,50 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
         pattern='Check every rule, add a reason for each one that fails, and sort at the end.',
         target='one check per rule, then one sort',
         realworld='A shared experiment space keeps trials cheap, but an app people rely on needs an owner, alerts and capacity sized for it. A written gate turns "is it ready?" into a list the team can work through, and the platform team sizes the app\'s capacity from the same numbers.',
+        practice=practice(
+            intro='Check graduation packs the way the platform team does: every rule against the bar written before the trial, and every failure listed.',
+            explain='An app should graduate on evidence the trial measured, so you checked every rule against the bar and listed every one that fails, so the team can fix them all in one round. Exactly at a limit passes, even one over doesn\'t, and the bar stays where it was written before the trial.',
+            asks=[
+                ask('What does the gate send back for this pack?', ['Just "no owner", the first problem it finds', 'All three: no owner, no monitoring, a must-pass fails', 'Nothing: the numbers all meet the bar'], answer=1,
+                    evidence=evidence('code', title='A graduation pack', text="""evidence = {
+  "owner": "",
+  "pass_rate": 0.93,        # bar 0.9
+  "must_pass_ok": False,
+  "cost_per_success": 0.07, # bar 0.1
+  "peak_tpm": 40000,        # capacity 75000
+  "monitoring": False}"""),
+                    clue='The gate checks every rule. Look past the numbers at the other three fields.',
+                    why='The numbers are fine, but there\'s no owner, a must-pass question fails and nothing is watching it. The gate lists all three, so the team fixes them in one round.',
+                    wrong=['The gate never stops early: the team would fix one thing, come back, and only then find the next.', None, 'The numbers are good, but three other rules fail.']),
+                ask('Does sam\'s app graduate?', ['Yes: each number is right on its limit', 'No: a pass rate of 0.9 isn\'t above the bar', 'No: the peak uses all of its capacity'], answer=0,
+                    evidence=evidence('code', title='sam\'s pack', text="""evidence = {
+  "owner": "sam",
+  "pass_rate": 0.9,         # bar 0.9
+  "must_pass_ok": True,
+  "cost_per_success": 0.1,  # bar 0.1
+  "peak_tpm": 75000,        # capacity 75000
+  "monitoring": True}"""),
+                    clue='Exactly at a limit is fine. Is any number below or above its bar?',
+                    why='Each number sits exactly on its bar, and exactly at a limit passes. The pack is complete, so it graduates.',
+                    wrong=[None, 'The bar is 0.9, and 0.9 is not below 0.9.', '75000 is the capacity itself, not above it.']),
+                ask('ana\'s peak is one token a minute over capacity. Does it graduate?', ['Yes: one token is a rounding error', 'Not yet: its peak is above capacity'], answer=1,
+                    evidence=evidence('code', title='ana\'s pack', text="""evidence = {
+  "owner": "ana",
+  "pass_rate": 0.82,        # bar 0.8
+  "must_pass_ok": True,
+  "cost_per_success": 0.3,  # bar 0.5
+  "peak_tpm": 30001,        # capacity 30000
+  "monitoring": True}"""),
+                    clue='Capacity is the most the platform can give it. What happens in its busiest minute?',
+                    why='Above capacity is above capacity: in its busiest minute it would be rate limited on day one. Size the capacity up, or bring the peak down, then check again.',
+                    wrong=['Capacity is a hard limit. Even one over means its busiest minute gets rate limited.', None]),
+                ask('What do you say?', ['Fine: 0.86 clears a bar of 0.85', 'Keep the bar at 0.9 and fix what fails', 'Drop the pass-rate rule for this app'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"We missed the pass-rate bar of 0.9 with 0.86. Let\'s move the bar to 0.85, since we\'re close."'),
+                    clue='When was the bar written down, and why then?',
+                    why='A bar picked after seeing the numbers tends to move to fit them. Keep 0.9 and fix what fails.',
+                    wrong=['Moving the bar to fit the result means the gate measures nothing.', None, 'Without a pass-rate rule, an app that is wrong half the time could graduate.']),
+            ],
+        ),
         starter="""def graduation_gate(evidence, bar):
     # your code here
     pass
@@ -278,6 +322,38 @@ A challenger counts only if its score is at least the champion's score plus `min
         pattern='Keep the best so far, and let a challenger replace it only if it clears the bar.',
         target='one pass over the challengers',
         realworld="MLflow's model registry uses aliases like `@champion` and `@challenger` for exactly this. Requiring a minimum gain stops you swapping models for noise-level differences, since every swap carries risk.",
+        practice=practice(
+            intro='Decide promotions the way a reviewer does: a challenger must beat the champion by the minimum gain, on the same data.',
+            explain='Only promote a challenger when it beats the champion by a meaningful margin on the same data. You worked out the bar from the champion\'s score and the minimum gain, kept the best challenger that cleared it, refused a score from a different test set, and rolled back by moving the alias.',
+            asks=[
+                ask('Which version should get the `@champion` alias?', ['Version 3: keep the champion', 'Version 4', 'Version 6'], answer=2,
+                    evidence=evidence('code', title='The registry', text="""champion:     version 3, score 81
+min_gain:     2
+challengers:  version 4, score 84
+              version 5, score 82
+              version 6, score 86"""),
+                    clue='A challenger must reach 81 plus 2. Of the ones that do, the highest score wins.',
+                    why='The bar is 83. Version 4 (84) and version 6 (86) clear it, version 5 (82) doesn\'t, and 86 is the highest.',
+                    wrong=['Two challengers clear the bar, so the champion is replaced.', 'Version 4 clears the bar, but version 6 scores higher.', None]),
+                ask('Version 4 scores one point more than the champion. Promote it?', ['Yes: it scores higher than the champion', 'No: keep version 3, since 82 doesn\'t reach 83'], answer=1,
+                    evidence=evidence('code', title='The registry', text="""champion:     version 3, score 81
+min_gain:     2
+challengers:  version 4, score 82"""),
+                    clue='Add the minimum gain to the champion\'s score.',
+                    why='A one-point win can be noise, and every swap carries risk. It has to win by at least 2.',
+                    wrong=['Better, but not by the minimum gain. A small win may vanish on new data.', None]),
+                ask('What do you do with version 8?', ['Promote it: 91 clears the bar by a long way', 'Score it on the same data as the champion first', 'Retrain version 3 on the new test set'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Version 8 scored 91! It was tested on last month\'s test set, but that\'s similar enough."'),
+                    clue='Scores are only comparable when they come from the same data.',
+                    why='A score on a different test set isn\'t comparable. Log the dataset version with every metric, then compare on the same one.',
+                    wrong=['91 on easier data could be worse than 81 on yours.', None, 'Nothing says version 3 needs retraining. The comparison just isn\'t fair yet.']),
+                ask('You promoted version 6. An hour later, complaints spike. What is the fastest safe undo?', ['Point `@champion` back to version 3', 'Retrain version 3 and redeploy it', 'Change the code to load version 3\'s model URI'], answer=0,
+                    evidence=evidence('code', title='What the promotion did', text="""@champion:  version 3  ->  version 6"""),
+                    clue='Look at what the promotion actually moved.',
+                    why='Promoting moved an alias, so rolling back is moving it back: instant, and nothing else changes.',
+                    wrong=[None, 'Version 3 is still in the registry. Nothing needs retraining.', 'Editing code and redeploying is slow. The alias moves in one step.']),
+            ],
+        ),
         starter="""def promote_model(champion, challengers, min_gain):
     # your code here
     pass
@@ -512,6 +588,14 @@ song["mins"]   # 3""",
     ),
 )
 
+# The rule from "Rolling out a new prompt", in the order the exercise checks it, drawn above
+# its practice questions.
+ROLLOUT_RULE = """rule, written before the canary:
+  under 100 v3 traces         → keep testing
+  10 or more points above v2  → promote v3
+  below v2                    → roll back to v2
+  otherwise                   → keep testing"""
+
 lesson(MODULE, 'prompt_rollout',
     title='Rolling out a new prompt',
     learn=[
@@ -570,6 +654,41 @@ The tests use tiny numbers so you can check them by hand; a real rollout needs h
         pattern='Count per version in one walk, then apply a rule you wrote down before looking at the numbers.',
         target='one walk through the traces',
         realworld="Tag every trace with the prompt version it used, and MLflow can split production quality by version. Decide the minimum sample and the gain you need first, so a lucky afternoon doesn't ship a worse prompt.",
+        practice=practice(
+            intro='Decide a prompt canary the way a release owner does: read each version\'s pass rate against the rule you wrote down first.',
+            explain='Tag every trace with its prompt version, then decide with a rule you wrote down first. You promoted only on the gain the rule asks for, rolled back a version that did worse, kept testing one that was better but not by enough, and refused a comparison where the two versions saw different questions.',
+            asks=[
+                ask('What does the rule say?', ['Promote v3', 'Keep testing', 'Roll back to v2'], answer=0,
+                    evidence=evidence('code', title='The canary so far', text=ROLLOUT_RULE + """
+
+v2 (production): 300 of 400 passed → 75%
+v3 (candidate):  108 of 120 passed → 90%"""),
+                    clue='Check the rule from the top: enough v3 traces, then how many points better.',
+                    why='v3 has 120 traces, over the 100 needed, and 90% is 15 points above 75%. That clears the 10 the rule asks for.',
+                    wrong=[None, 'It has enough traces and clears the gain, so the rule has an answer.', 'v3 is above v2, not below.']),
+                ask('Same rule, a different canary. What does it say?', ['Promote v3', 'Keep testing', 'Roll back to v2'], answer=1,
+                    evidence=evidence('code', title='Another canary', text=ROLLOUT_RULE + """
+
+v2 (production): 300 of 400 passed → 75%
+v3 (candidate):  112 of 140 passed → 80%"""),
+                    clue='It has enough traces. Is it 10 points better, or below production?',
+                    why='Better by 5 points, not 10, and not worse either. So it keeps its share of traffic until the rule says promote or roll back.',
+                    wrong=['5 points better is short of the 10 the rule asks for.', None, 'v3 is above v2, not below.']),
+                ask('Same rule, one more canary. What does it say?', ['Promote v3', 'Keep testing', 'Roll back to v2'], answer=2,
+                    evidence=evidence('code', title='One more canary', text=ROLLOUT_RULE + """
+
+v2 (production): 300 of 400 passed → 75%
+v3 (candidate):  105 of 150 passed → 70%"""),
+                    clue='Compare the candidate\'s rate with production\'s.',
+                    why='v3 has enough traces and does worse than production, so it rolls back to v2.',
+                    wrong=['It is below production, not 10 points above.', 'The rule has an answer for a version that does worse.', None]),
+                ask('What do you say?', ['Promote: 92% clears the rule', 'Not yet: it only saw easy questions', 'Roll back the candidate to be safe'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"The candidate is at 92% on 120 traces, against 75% for production. Ship it! The canary only sent it password-reset questions, but still."'),
+                    clue='Were the two versions answering the same kind of questions?',
+                    why='Easy questions make any prompt look good. Compare versions on the same traffic with the same scorer, or the difference may come from the questions, not the prompt.',
+                    wrong=['The number clears the rule, but it was measured on easier questions.', None, 'Nothing shows it is worse either. Make the comparison fair first.']),
+            ],
+        ),
         starter="""def prompt_rollout(traces, min_traces, min_gain):
     # your code here
     pass

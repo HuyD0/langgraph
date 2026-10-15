@@ -1,6 +1,6 @@
 """Agent teams: When one agent isn't enough: whether you need a team, splitting the work, fanning out, checking, and what it costs."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('agent-teams', 'Agent teams', "When one agent isn't enough: whether you need a team, splitting the work, fanning out, checking, and what it costs.")
 
@@ -83,6 +83,62 @@ Check these rules in order. Return the answer of the first one that fits:
         pattern='Rules checked in order: the first one that fits gives the answer.',
         target='a few checks in order, no loop',
         realworld='Every major agent builder gives the same advice: start with the simplest design that works. A team costs several times more tokens, so it has to earn its place on your eval.',
+        practice=practice(
+            intro='Place each job on the ladder the way a design review does: the lowest step that does the job.',
+            explain='Most tasks don\'t need a team, so you picked the lowest step on the ladder that does the job. Fixed steps meant a workflow, no tools meant one call, and a team only won when the work split into separate parts and one agent passed less than about 45 percent. Everything else stayed one agent.',
+            asks=[
+                ask('Which step on the ladder?', ['One call', 'A fixed workflow', 'One agent with tools', 'A team'], answer=0,
+                    evidence=evidence('code', title='Summarise one support ticket', text="""task = {
+  "fixed_steps": False,
+  "needs_tools": False,
+  "independent_parts": 1,
+  "one_agent_pass_rate": 0.9,
+}"""),
+                    clue='Does it need to look anything up or take an action?',
+                    why='No tools: one text in, one text out. A single model call does it, and anything higher only costs more.',
+                    wrong=[None, 'There are no steps to put in order: it is one piece of text.', 'There is nothing to look up and no action to take, so there is nothing for an agent to choose.', 'One small piece of work, done well already: nothing to split.']),
+                ask('Which step on the ladder?', ['One call', 'A fixed workflow', 'One agent with tools', 'A team'], answer=3,
+                    evidence=evidence('code', title='Research 6 vendors, each on its own', text="""task = {
+  "fixed_steps": False,
+  "needs_tools": True,
+  "independent_parts": 6,
+  "one_agent_pass_rate": 0.3,   # 30 percent
+}"""),
+                    clue='Count the separate pieces, and compare the pass rate with the rough 45 percent hint.',
+                    why='Six pieces that never need to talk to each other, and one agent passes only 30 percent, below the hint. Try a team, then measure it against the single agent on your eval.',
+                    wrong=['It has to search, so one call can\'t do it.', 'The steps aren\'t fixed: each vendor needs its own research.', 'One agent passes only 30 percent, and the work splits into six separate pieces.', None]),
+                ask('Which step on the ladder?', ['One call', 'A fixed workflow', 'One agent with tools', 'A team'], answer=2,
+                    evidence=evidence('code', title='Look up an order, maybe refund it', text="""task = {
+  "fixed_steps": False,
+  "needs_tools": True,
+  "independent_parts": 1,
+  "one_agent_pass_rate": 0.2,   # 20 percent
+}"""),
+                    clue='A team needs work that splits into separate pieces. How many are there here?',
+                    why='It needs tools, and there is only one piece of work, so a team has nothing to split. Keep one agent, and fix its tools and prompt to lift the 20 percent.',
+                    wrong=['It must look up the order and maybe refund it, so it needs tools.', 'Whether to refund depends on what the lookup finds, so the steps aren\'t fixed.', None, 'The pass rate is low, but there is only one piece of work to hand out.']),
+                ask('Which step on the ladder?', ['One call', 'A fixed workflow', 'One agent with tools', 'A team'], answer=1,
+                    evidence=evidence('code', title='Tag a ticket, route it, draft a reply', text="""task = {
+  "fixed_steps": True,    # same order every time
+  "needs_tools": True,
+  "independent_parts": 3,
+  "one_agent_pass_rate": 0.2,
+}"""),
+                    clue='The steps always run in the same order. Does anything need to choose them?',
+                    why='When the order never changes, your code can run the steps one after another. Fixed steps are checked first, so the three parts and the low pass rate don\'t matter here.',
+                    wrong=['It looks things up and drafts, so it is more than one call.', None, 'An agent chooses its own steps. Here the order never changes.', 'Three parts and a low rate are tempting, but nothing needs choosing: the steps are fixed.']),
+                ask('Four separate parts, and one agent passes 45 percent. Which step on the ladder?', ['One call', 'A fixed workflow', 'One agent with tools', 'A team'], answer=2,
+                    evidence=evidence('code', title='Check four suppliers\' contracts', text="""task = {
+  "fixed_steps": False,
+  "needs_tools": True,
+  "independent_parts": 4,
+  "one_agent_pass_rate": 0.45,   # 45 percent
+}"""),
+                    clue='The rule says below 45 percent. Is 45 below 45?',
+                    why='45 percent is not below 45, so one agent stays. And the 45 is a rough hint from one study: run the team and the single agent side by side on your own eval before you build.',
+                    wrong=['It needs tools to read the contracts.', 'The steps aren\'t fixed.', None, 'Exactly 45 is not below 45, and past that point extra agents tended to help little.']),
+            ],
+        ),
         starter="""def need_a_team(task):
     # your code here
     pass
@@ -239,6 +295,47 @@ Return those resources as a list, sorted A to Z. If no resource has more than on
         pattern='Count by key: count the writers of each resource in a dict, then keep the ones above 1.',
         target='one pass over the tasks, then one over the counts',
         realworld="Teams that run agents side by side give each shared thing one writer and keep the other helpers read-only. When Anthropic ran 16 coding agents on one codebase, they overwrote each other's fixes until the work was split by file.",
+        practice=practice(
+            intro='Read who reads and who writes the way a reviewer does: find anything with two writers before the helpers run side by side.',
+            explain='Each thing that changes gets one writer, because when two agents change the same thing, one quietly overwrites the other. You counted the writers of each resource, ignored the readers, and kept helpers read-only with a clear brief, so they report back and a single agent writes.',
+            asks=[
+                ask('Which resource has more than one writer?', ['`tickets`', '`tags`', '`notes`', '`drafts`'], answer=1,
+                    evidence=evidence('code', title='Who reads and who writes', text="""tasks = {
+  "triage":  {"reads": ["tickets"],  "writes": ["tags"]},
+  "billing": {"reads": ["invoices"], "writes": ["tags", "notes"]},
+  "reply":   {"reads": ["tags"],     "writes": ["drafts"]},
+}"""),
+                    clue='Look only at the writes lists, and find a name that shows up twice.',
+                    why='triage and billing both write tags, so one could quietly overwrite the other: a lost update.',
+                    wrong=['tickets is only read, and reading is fine.', None, 'Only billing writes notes.', 'Only reply writes drafts.']),
+                ask('Three helpers use `kb`. Is there a clash?', ['Yes: three helpers use kb', 'No: only one helper writes it'], answer=1,
+                    evidence=evidence('code', title='A help-centre team', text="""tasks = {
+  "wiki":   {"reads": ["kb"], "writes": []},
+  "faq":    {"reads": ["kb"], "writes": []},
+  "editor": {"reads": ["kb"], "writes": ["kb"]},
+}"""),
+                    clue='Count the writers of kb, not the readers.',
+                    why='Only editor writes kb; wiki and faq only read it. One writer means no lost updates, and sharing what you read is fine.',
+                    wrong=['Using is not the same as writing. How many write it?', None]),
+                ask('Which resources need one writer here?', ['None: every helper has a job', 'Only `drafts`', 'Both `drafts` and `orders`'], answer=2,
+                    evidence=evidence('code', title='An orders team', text="""tasks = {
+  "intake": {"reads": [],         "writes": ["orders", "drafts"]},
+  "reply":  {"reads": ["orders"], "writes": ["drafts"]},
+  "audit":  {"reads": [],         "writes": ["orders", "log"]},
+}"""),
+                    clue='Check every name in every writes list, not just the first clash you find.',
+                    why='drafts is written by intake and reply, and orders by intake and audit. Both need a single owner; log has only audit.',
+                    wrong=['Having a job is fine. Do two helpers change the same thing?', 'drafts is one clash. Look at who writes orders.', None]),
+                ask('Why does billing\'s brief say "out of scope: changing tags"?', ['So triage stays the only writer of tags', 'To keep billing\'s prompt short and cheap', 'So billing never sees the tags at all'], answer=0,
+                    evidence=evidence('code', title='BILLING_BRIEF', text="""Goal: find the invoice and any refunds for this ticket.
+Out of scope: changing tags, writing to the customer.
+Report: invoice id, amount, refund status, all in your final message.
+Tools: read_invoices only."""),
+                    clue='Who should be the only helper allowed to change tags?',
+                    why='The brief keeps billing read-only: it reports what it found, and triage writes. A brief with the goal, what is out of scope, the report\'s shape and the tools also stops helpers doing the same work twice.',
+                    wrong=[None, 'It may save a little, but the real reason is who owns tags.', 'Seeing tags is fine: reading is never a clash. Changing them is the problem.']),
+            ],
+        ),
         starter="""def one_writer(tasks):
     # your code here
     pass
@@ -634,6 +731,51 @@ If `found` is empty, return `{"kept": 1.0, "lost": []}`.""",
         pattern='Check each fact against the text, and keep the misses in a list.',
         target='one pass over the facts',
         realworld="LangChain found its simple supervisor lost quality by rewording its helpers' answers. Passing them on unchanged made answers nearly 50 percent better, and a hand-off check is how you spot the leak.",
+        practice=practice(
+            intro='Check a hand-off the way an evaluator does: list what the helper found, and see which facts reach the final answer.',
+            explain='Hand-offs lose details when the main agent rewords a helper\'s message, so you checked which facts reached the final answer. You looked for each fact\'s words in the answer, ignoring capitals, and named what fell out, including a fact that was only reworded and one that vanished. The final answer is graded first; the hand-off check shows where details leaked.',
+            asks=[
+                ask('Which fact got lost at the hand-off?', ['order 4412', 'refund approved', 'card ends 0099'], answer=2,
+                    evidence=evidence('code', title='One helper, one final answer', text="""The researcher found:
+  order 4412
+  refund approved
+  card ends 0099
+
+Final answer:
+  "Order 4412: refund approved.
+   It reaches you in 5 days.\""""),
+                    clue='Look for each fact in the final answer, ignoring capitals.',
+                    why='The card number never reaches the answer. The answer still reads well, which is exactly why you check the hand-off and not only the answer.',
+                    wrong=['"Order 4412" is there: capitals don\'t matter.', 'It is there, word for word.', None]),
+                ask('Does the check count "refund approved" as kept?', ['Yes: the answer says the refund was approved', 'No: those exact words aren\'t in the answer'], answer=1,
+                    evidence=evidence('code', title='Another run', text="""The researcher found:
+  refund approved
+  order 4412
+  ships monday
+
+Final answer:
+  "We approved the refund for order 4412.\""""),
+                    clue='Search the answer for those two words, side by side, in that order.',
+                    why='The check looks for the fact\'s own words. "We approved the refund" means the same, but rewording is how details start to slip, so the check flags it. Passing reports on word for word keeps facts findable.',
+                    wrong=['The meaning survived, but the words didn\'t. What does the check look for?', None]),
+                ask('Which fact is really gone, not just reworded?', ['refund approved', 'order 4412', 'ships monday'], answer=2,
+                    evidence=evidence('code', title='Another run', text="""The researcher found:
+  refund approved
+  order 4412
+  ships monday
+
+Final answer:
+  "We approved the refund for order 4412.\""""),
+                    clue='Does the answer say anything at all about when it goes out?',
+                    why='Nothing in the answer says when it ships. That fact fell out at the hand-off, and the customer will have to ask again.',
+                    wrong=['It was reworded, but the meaning is still there.', 'It is there, word for word.', None]),
+                ask('Is that enough?', ['Yes: the judge grades what the user sees', 'No: it can read well and still drop a fact'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Our final answers score 4.6 out of 5 on the judge, so the hand-offs must be fine."'),
+                    clue='Think back to the card number in the first run.',
+                    why='Grade the final answer first, then check the hand-offs: that is where teams lose information, even in answers that read well.',
+                    wrong=['Grading the final answer comes first, but the judge can\'t see what the helpers found.', None]),
+            ],
+        ),
         starter="""def handoff_kept(found, final):
     # your code here
     pass

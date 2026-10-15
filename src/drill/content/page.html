@@ -1089,6 +1089,8 @@ const trackOf = {}; TRACKS.forEach(tr => tr.modules.forEach((mid, k) => D.module
 const orderFor = id => trackOf[id] ? trackOf[id].tr.lessons : ORDER;
 const trackNext = tr => tr.lessons.find(id => !(progress.lessons[id] && progress.lessons[id].done)) || null;
 const STEPS = ["Learn", "Check", "Build", "Explain"];
+// A lesson whose Build step opens on practice questions calls it Practice: nothing gets built.
+const stepNames = id => byId[id] && byId[id].practice ? ["Learn", "Check", "Practice", "Explain"] : STEPS;
 const STEP_ICON = ["book", "help", "code", "quote"];
 const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "databricks-ai": "sparkle", classics: "trophy" };
 const STAGE_ICON = ["target", "compass", "wrench", "clipcheck", "rocket", "activity"];
@@ -1503,7 +1505,7 @@ function firstSentence(t) {
 function tipHtml(id) {
   const m = modOf[id], ph = phaseOf[m.id], s = progress.lessons[id], fn = (byId[id] || {}).fn, before = undoneBefore(id);
   const where = isDoneL(id) ? `<span class="ok">${ic("check")}Done</span>`
-    : started(id) ? `<span class="here">In progress · ${STEPS[s.step]} step</span>`
+    : started(id) ? `<span class="here">In progress · ${stepNames(id)[s.step]} step</span>`
     : id === nextFor(id) ? `<span class="here">Next in order</span>`
     : `<span>Comes after ${before} lesson${before === 1 ? "" : "s"} you haven’t done</span>`;
   return `<span class="eyebrow">Lesson ${lessonNo(id)} · ${esc(ph.name)} · ${esc(m.title)}</span>
@@ -1604,7 +1606,7 @@ function renderHome() {
     const m = modOf[tid], ph = phaseOf[m.id], i = m.lessons.indexOf(tid), s = lp(tid), go = started(tid);
     const leftInPhase = ph.modules.flatMap(mid => MOD[mid].lessons).filter(id => !isDoneL(id)).length;
     const why = [leftInPhase === 1 ? `Last one left in ${ph.name}.` : `${ph.name}, ${m.title}.`,
-      go ? `You stopped at the ${STEPS[s.step]} step.` : `Lesson ${i + 1} of ${m.lessons.length}.`].join(" ");
+      go ? `You stopped at the ${stepNames(tid)[s.step]} step.` : `Lesson ${i + 1} of ${m.lessons.length}.`].join(" ");
     const label = doneToday ? (go ? "Continue" : "Start the next one") : (go ? "Finish today’s lesson" : "Start today’s lesson");
     hello = doneToday
       ? `<h1>${wd}. Done for today.</h1><p class="meta">Come back tomorrow, or keep going if you have time.</p>`
@@ -2134,7 +2136,7 @@ function stepDone(i) {
 function setStep(i, keep) {  // keep: stay where you are on the page (answering a check), instead of going to the top
   const was = cur.step; cur.step = i;
   if (cur.kind === "lesson") { const s = lp(cur.id); if (!s.done) s.step = Math.max(s.step, i); saveProgress(); }
-  const pk = cur.kind === "lesson" && packOf(cur.id), names = pk ? ["Learn", "Check", "Practice", "Explain"] : STEPS;
+  const pk = cur.kind === "lesson" && packOf(cur.id), names = cur.kind === "lesson" ? stepNames(cur.id) : STEPS;
   $("stepper").innerHTML = names.map((name, k) => `<button class="stepbtn${stepDone(k) ? " done" : ""}" data-step="${k}"${k === i ? ' aria-current="step"' : ""}><i></i><span>${ic(STEP_ICON[k])}${name}</span></button>`).join("");
   $("paneBuild").hidden = i !== 2 || !!pk;
   if (i === 2 && !pk) { renderMine(); renderReal(); }

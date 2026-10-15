@@ -1,6 +1,6 @@
 """Choosing a model: Quality, cost and latency, and which option pays for itself."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('models', 'Choosing a model', 'Quality, cost and latency, and which option pays for itself.')
 
@@ -125,6 +125,13 @@ if not items:
     ),
 )
 
+# The exercise's sample runs, drawn above the practice questions in "Comparing LLMs for a task".
+MODEL_RUNS_TITLE = 'One run per model, same eval set · cost per 1,000 calls'
+MODEL_RUNS = """model         quality  cost   p95_ms
+fast-model    0.78     $0.40   900
+smart-model   0.88     $3.00  2400
+old-model     0.75     $1.20  1500"""
+
 lesson(MODULE, 'pareto_models',
     title='Comparing LLMs for a task',
     learn=[
@@ -173,6 +180,34 @@ Return the names of the models that no other model beats, in their original orde
         pattern='Compare every pair: keep a model only if no other model beats it.',
         target='compare each model with every other one (fine for a handful)',
         realworld='There is rarely one best model. A small model can be the right choice for a high-volume, simple task, and a large one for rare, hard questions. Throwing out models that lose on every measure leaves a short list to decide between on value.',
+        practice=practice(
+            intro='Read one run per model the way a reviewer does: throw out any model another one beats, and check the comparison was fair.',
+            explain='You threw out any model that another one beats on quality, cost and latency together, and kept the ones nothing beats: the Pareto front, a short list of real trade-offs. Two models with the same numbers both stay, and a score from a different judge can\'t be compared fairly.',
+            asks=[
+                ask('Which model can you throw out?', ['fast-model', 'smart-model', 'old-model'], answer=2,
+                    evidence=evidence('code', title=MODEL_RUNS_TITLE, text=MODEL_RUNS),
+                    clue='Look for a row that loses to one other row on quality, cost and p95 all at once.',
+                    why='fast-model beats old-model on all three: higher quality, cheaper and faster. Nothing makes old-model the right choice.',
+                    wrong=['Nothing is cheaper or faster than fast-model, so nothing beats it.', 'Nothing scores higher than smart-model, so nothing beats it.', None]),
+                ask('smart-model costs over seven times as much as fast-model. Does fast-model beat it?', ['Yes: it\'s far cheaper and faster', 'No: smart-model scores higher'], answer=1,
+                    evidence=evidence('code', title=MODEL_RUNS_TITLE, text=MODEL_RUNS),
+                    clue='To beat it, fast-model must be at least as good on every column, quality included.',
+                    why='fast-model is cheaper and faster but scores lower, so neither beats the other. Both stay on the shortlist, and what quality is worth to you decides between them.',
+                    wrong=['Beating needs at least as good on all three, and fast-model scores lower.', None]),
+                ask('Two endpoints come back with exactly the same numbers. Which stay on the shortlist?', ['Both: neither is better at anything', 'Neither: they cancel each other out', 'Only the first one in the list'], answer=0,
+                    evidence=evidence('code', title='Two more runs', text="""model     quality  cost   p95_ms
+model-a   0.80     $1.00  100
+model-b   0.80     $1.00  100"""),
+                    clue='To beat another model, one has to be better on at least one column.',
+                    why='Equal on everything means neither beats the other, so both stay. Choose between them on something else, like which one your team already runs.',
+                    wrong=[None, 'A model is only thrown out when something beats it, and nothing does.', 'Being listed first isn\'t a measure.']),
+                ask('What do you do?', ['Use it: the numbers are close enough', 'Rerun it with the same judge first', 'Drop smart-model from the shortlist'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"smart-model\'s 0.88 is from last month\'s run, with a different judge. Close enough to compare."'),
+                    clue='A comparison is only fair when the eval set and the judge are held fixed.',
+                    why='A different judge can score the same answers differently, so the gap might be the judge, not the model. Same eval set, same judge, then compare.',
+                    wrong=['A different judge can move a score by more than the gap between models.', None, 'It may be the best model. You just can\'t tell from this number.']),
+            ],
+        ),
         starter="""def pareto_models(models):
     # your code here
     pass

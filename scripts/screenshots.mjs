@@ -35,7 +35,7 @@ const SHOTS = [
   ["trust-mark-phone-dusk", PHONE, "dusk", `openLesson("redact_pii", 0); document.querySelector(".trustmark").click(); at(".trustpop");`],
   ["lesson-check-phone-dusk", PHONE, "dusk", `delete lp("split_requirements").checks; lp("split_requirements").checked = null; openLesson("split_requirements", 1);
      checkPick(LESSONS.split_requirements.check[2]); checkNext(); checkPick(2); checkHelp(); at(".chkhead");`],
-  ["build-code-desktop-dusk", DESKTOP, "dusk", `openLesson("runs_after", 2);`],
+  ["build-code-desktop-dusk", DESKTOP, "dusk", `openLesson("chunk_text", 2);`],
   ["explain-gaps-phone-dusk", PHONE, "dusk", `lp("runs_after").filled = 0; openLesson("runs_after", 3);
      [...document.querySelectorAll(".clzchip")].find(b => b.textContent === "it uses").click();
      document.querySelector("[data-clz-help]").click(); at(".cloze");`],

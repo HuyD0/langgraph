@@ -1,6 +1,6 @@
 """Evals: Measuring whether a change made your AI better or worse."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('evals', 'Evals', 'Measuring whether a change made your AI better or worse.')
 
@@ -560,6 +560,38 @@ Return a list of the must-pass ids that did not pass, in the order they appear i
         pattern='Walk the must-pass ids, look each one up, and treat missing as failed.',
         target='one look-up per must-pass id',
         realworld='Release pipelines run the must-pass set first and stop before the full eval if any case fails. It is fast, cheap and catches the regressions that matter most: answers that used to pass and now fail.',
+        practice=practice(
+            intro='Run the release gate the way a reviewer does: look up each must-pass case on its own, whatever the average says.',
+            explain='A version can win on average and still break the one answer that matters most, so must-pass cases are checked on their own. You looked up each one, counted a case nobody ran as failed, kept a flaky case in the set, and added a fixed production failure so it can\'t quietly come back.',
+            asks=[
+                ask('`billing-07` failed. Does that block the release?', ['Yes: any failed question blocks the release', 'No: it isn\'t on the must-pass list'], answer=1,
+                    evidence=evidence('code', title='The new version\'s results', text="""results = {"refund-01": True,
+           "fraud-03": True,
+           "billing-07": False}
+must_pass = ["refund-01", "fraud-03"]"""),
+                    clue='Look for billing-07 in `must_pass`.',
+                    why='The gate only looks up must-pass ids. billing-07 still counts in the overall score, but on its own it doesn\'t stop the release.',
+                    wrong=['The gate only checks the must-pass ids. The others count towards the average.', None]),
+                ask('`fraud-03` isn\'t in the results at all. What does the gate say?', ['It passes: nothing in the results failed', 'It fails: not tested means not passed', 'It skips fraud-03 until the next run'], answer=1,
+                    evidence=evidence('code', title='The new version\'s results', text="""results = {"refund-01": True}
+must_pass = ["refund-01", "fraud-03"]"""),
+                    clue='What does the gate know about a case nobody ran?',
+                    why='A case that wasn\'t tested hasn\'t shown it still works, so it counts as failed and the version waits.',
+                    wrong=['Nothing failed because nothing ran. The gate has to see each must-pass case pass.', None, 'Skipping a must-pass case is how the one that matters quietly breaks.']),
+                ask('What do you say?', ['Agree: a flaky case is only noise, so drop it', 'Keep it, and require a pass on every run', 'Count 2 passes out of 3 as good enough'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"fraud-03 passed on 2 of 3 runs. It\'s flaky, so let\'s take it out of the must-pass set."'),
+                    clue='Would the fraud warning be fine if it went wrong for one customer in three?',
+                    why='A must-pass case that fails some of the time is failing. Require a pass on every run, or fix the flakiness, but keep it in the set.',
+                    wrong=['Taking a case out because it failed defeats the purpose of the set.', None, 'One fraud warning in three going wrong is a failure, not a pass.']),
+                ask('You\'ve fixed it. What do you do with that question now?', ['Add it to the must-pass set', 'Nothing: it\'s fixed now', 'Add it to the general eval set'], answer=0,
+                    evidence=evidence('code', title='Last week in production', text="""customer:  How long do refunds take?
+agent:     Refunds take 60 days.
+policy:    Refunds take 14 days."""),
+                    clue='The must-pass set is for answers that would be costly or embarrassing to get wrong again.',
+                    why='Every serious production failure you fix joins the must-pass set, so a later version can\'t bring it back without the gate catching it.',
+                    wrong=[None, 'Fixed today can break again with the next prompt or model change.', 'In the general set it would only nudge the average. One failure there wouldn\'t stop a release.']),
+            ],
+        ),
         starter="""def must_pass_gate(results, must_pass):
     # your code here
     pass
@@ -1590,6 +1622,14 @@ pairs[0][1]   # 'c'""",
     ),
 )
 
+# The example's comparison, without the causes, drawn above the practice questions in
+# "Reading regressions and improvements".
+CHANGE_TABLE = """question         old  new
+return-label     ✗    ✓
+change-address   ✓    ✗
+refund-time      ✗    ✓
+charged-twice    ✗    ✗"""
+
 lesson(MODULE, 'change_report',
     title='Reading regressions and improvements',
     learn=[
@@ -1642,6 +1682,37 @@ Return `{"improvements": ..., "regressions": ...}`. Each is a dict from a cause 
         pattern='One walk through the ids, counting each change into one of two dicts of causes.',
         target='one walk through the questions',
         realworld='Error analysis like this is how teams decide what to work on next: the most common cause among regressions is usually the next fix.',
+        practice=practice(
+            intro='Read a comparison the way an analyst does: find the questions where the versions disagree, then read both traces to label why.',
+            explain='The questions where two versions disagree are the ones that explain a change, so you found each regression and improvement, read both traces to label its cause, and left out the questions with the same result in both. A question that flips on the same version is noise, so it is set aside before counting.',
+            asks=[
+                ask('Which question is a regression?', ['return-label', 'change-address', 'charged-twice'], answer=1,
+                    evidence=evidence('code', title='Old and new reranker, same questions', text=CHANGE_TABLE),
+                    clue='A regression passed in the old version and fails in the new one.',
+                    why='change-address passed before and fails now: the new version broke it.',
+                    wrong=['It failed before and passes now: an improvement.', None, 'It failed in both, so nothing changed.']),
+                ask('Which questions do you open and read?', ['Only change-address, the regression', 'The three whose result changed', 'All four'], answer=1,
+                    evidence=evidence('code', title='Old and new reranker, same questions', text=CHANGE_TABLE),
+                    clue='The informative ones are where old and new disagree, in either direction.',
+                    why='Improvements explain a change as much as regressions do. charged-twice got the same result from both, so reading it tells you nothing about the change.',
+                    wrong=['The improvements explain what the change did too.', None, 'charged-twice failed in both versions, so it says nothing about the change.']),
+                ask('You opened both traces for change-address. Which cause label fits?', ['moved right doc up', 'pushed worse doc up', 'wrong tool'], answer=1,
+                    evidence=evidence('code', title='change-address · documents the reranker ranked', text="""question: How do I change my delivery address?
+
+old  1. kb-07  Change your delivery address
+     2. kb-31  Returns policy
+new  1. kb-31  Returns policy
+     2. kb-07  Change your delivery address"""),
+                    clue='Which document is first in the new version, and is it the one the question needs?',
+                    why='The new reranker put the returns policy above the address article, so the model answered from the wrong one.',
+                    wrong=['That is what happened in the improvements. Here the right article moved down.', None, 'Both traces used the same tool. The order of the documents is what changed.']),
+                ask('How do you count refund-time?', ['As an improvement: it passed on the new version', 'As noise: set it aside until it\'s stable', 'As a regression: it failed on the new version'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"refund-time passed on one run of the new version and failed on the next."'),
+                    clue='Did the change cause this, or does the same version disagree with itself?',
+                    why='If one version gives different results on the same question, its change between versions may be luck. Set flaky questions aside before counting causes.',
+                    wrong=['It also failed on the same version, so that pass can\'t be trusted yet.', None, 'It also passed on the same version, so that failure can\'t be trusted yet.']),
+            ],
+        ),
         starter="""def change_report(old, new, causes):
     # your code here
     pass
@@ -1779,6 +1850,39 @@ Return `{"retrieval": retrieval, "answer": answer}`, with the qids in the order 
         pattern='Compare the two lists as sets, then file the qid.',
         target='one walk through the changed questions',
         realworld='Teams with large eval sets triage regressions like this every release, so they read thirty traces instead of three hundred.',
+        practice=practice(
+            intro='Sort changed questions the way an analyst does before reading them: did the two versions send different articles, or the same ones?',
+            explain='Sorting changed questions by whether the articles found changed tells you which part of the pipeline to look at. You compared the articles as a set, ignoring their order, then read a few from the bucket to find the actual cause. When the same articles come back in a new order, that can matter too.',
+            asks=[
+                ask('Which bucket does refund-11 go in?', ['Retrieval differed: new articles', 'Same articles, different answer'], answer=1,
+                    evidence=evidence('code', title='Articles each version sent', text="""refund-11
+old  kb-13 kb-16 kb-14
+new  kb-13 kb-14 kb-16"""),
+                    clue='Compare which articles are there, not the order they came in.',
+                    why='Both versions sent kb-13, kb-14 and kb-16, just in a different order. Retrieval didn\'t change, so look at the answer step.',
+                    wrong=['Only the order changed. Each version sent the same three.', None]),
+                ask('Which bucket does shipping-07 go in?', ['Retrieval differed: new articles', 'Same articles, different answer'], answer=0,
+                    evidence=evidence('code', title='Articles each version sent', text="""shipping-07
+old  kb-09 kb-03 kb-10
+new  kb-10 kb-07 kb-09"""),
+                    clue='Look for an article that\'s in one list but not the other.',
+                    why='The new version dropped kb-03 and sent kb-07 instead. One different article is enough: retrieval changed.',
+                    wrong=[None, 'Two articles match, but kb-03 became kb-07.']),
+                ask('Most changes landed in the retrieval bucket. What next?', ['Roll back the new retriever straight away', 'Read a handful of them to find the cause', 'Nothing: the bucket already names the cause'], answer=1,
+                    evidence=evidence('code', title='60 changed questions, sorted', text="""retrieval differed                 48
+same articles, different answer    12"""),
+                    clue='A bucket tells you where to look, not what went wrong.',
+                    why='Buckets point at a stage. Reading a sample tells you the cause, like a worse article pushed up, and that is what you fix.',
+                    wrong=['You don\'t know yet what went wrong, or how many of these are improvements.', None, '"Retrieval differed" says where to look. You still have to read some to find out why.']),
+                ask('What does this suggest?', ['The order matters: give it its own bucket', 'Nothing: the same articles means retrieval is fine', 'The eval set is too small to tell'], answer=0,
+                    evidence=evidence('code', title='Inside the "same articles" bucket', text="""12 changed questions
+in 10 of them, the article that was
+first is now third"""),
+                    clue='Some models pay more attention to the first article they are given.',
+                    why='The sets match, but the order changed in nearly all of them. A separate bucket for "same articles, new order" points you at the ranking, not the prompt.',
+                    wrong=[None, 'The same articles came back, but not in the same order, and order can change the answer.', 'Ten out of twelve sharing one pattern is a lead worth following.']),
+            ],
+        ),
         starter="""def sort_changes(changed):
     # your code here
     pass

@@ -135,10 +135,12 @@ allow copying (a plain-http address, a sandboxed frame), the picture or the text
 buttons to copy by hand. Each step saves its marks as it happens (`lp(id).first`); a lesson
 finished before this existed has no card, rather than a guess.
 
-## Practice on real evidence (platform Build steps)
+## Practice on real evidence (judgement lessons)
 
-For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
-questions instead of code: `exercise(..., practice=practice(intro=..., asks=[ask(...)]))`. Each
+When a lesson's real skill is a decision or reading evidence (a plan, a run, a policy, a trace),
+not writing code, the Build step is a few questions instead, and its tab says **Practice**
+(`stepNames` in the page). Lessons where the code is the skill, or where it works out a number,
+keep the Python Build. [CURRICULUM.md](CURRICULUM.md) has the rule as a table. The questions: `exercise(..., practice=practice(intro=..., asks=[ask(...)]))`. Each
 `ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
 one plain question, three or so options, a plain line for each wrong one, a clue first and then
 the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.

@@ -1,7 +1,7 @@
 """Databricks as code: the workspace, catalogs and network of an ML platform, kept in Terraform."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, stack, source
 
 MODULE = module('platform', 'Databricks as code', 'The workspace, catalogs and network of an ML platform, kept in Terraform.', setting=PLATFORM_SETTING)
 
@@ -50,6 +50,56 @@ For every other resource, list the `required` tag names that are missing from it
         pattern="Dict of results, filled only when something is missing.",
         target='one pass over the resources',
         realworld="Cost allocation and Azure Policy both depend on tags. Catching a missing `cost-center` in the PR's Spacelift run is much cheaper than finding untagged spend at the end of the month.",
+        practice=practice(
+            intro='Check a plan for missing tags the way a platform reviewer does: which resources have gaps, and which tags they lack.',
+            explain='Tags decide who pays for what, and azurerm has no default tags, so you checked the plan for gaps. You listed the required tags each resource was missing, caught a resource that forgot to merge the shared tags, and saw that cluster costs need tags of their own.',
+            asks=[
+                ask('Every resource needs `env` and `owner`. Which one is missing a tag?', ['`azurerm_storage_account.lake`', '`azurerm_databricks_workspace.this`', '`databricks_catalog.sales`'], answer=1,
+                    evidence=evidence('code', title='Resources in the plan, with their tags', text="""[
+  {"address": "azurerm_storage_account.lake",
+   "tags": {"env": "prod", "owner": "data"}},
+  {"address": "azurerm_databricks_workspace.this",
+   "tags": {"env": "prod"}},
+  {"address": "databricks_catalog.sales"}
+]"""),
+                    clue='Check each tags list for both names. Skip anything with no tags list at all.',
+                    why='The workspace has env but no owner, so its cost has nobody to go to. The storage account has both, and the catalog can\'t be tagged.',
+                    wrong=['It has both env and owner.', None, 'It has no tags at all: the databricks provider can\'t tag it, so the check skips it.']),
+                ask('Now every resource needs `owner`, `env` and `cost-center`. What is the workspace missing?', ['`env` and `cost-center`', 'Only `cost-center`', 'Nothing: it has an owner'], answer=0,
+                    evidence=evidence('code', title='Another plan', text="""[
+  {"address": "azurerm_databricks_access_connector.uc",
+   "tags": {"env": "dev"}},
+  {"address": "azurerm_subnet.host"},
+  {"address": "azurerm_databricks_workspace.this",
+   "tags": {"owner": "ana"}}
+]"""),
+                    clue='Go through the three required names one by one.',
+                    why='The workspace only has owner, so env and cost-center are both missing. List every gap, so it can be fixed in one go.',
+                    wrong=[None, 'It has no env either.', 'Owner is only one of the three.']),
+                ask('Which resource will the tag check flag?', ['`azurerm_storage_account.lake`', '`azurerm_databricks_access_connector.uc`', 'Neither: each one sets its own tags'], answer=1,
+                    evidence=evidence('code', title='storage.tf', text="""locals {
+  tags = { env = var.env, owner = "platform", cost-center = "1234" }
+}
+
+resource "azurerm_storage_account" "lake" {
+  # ...
+  tags = merge(local.tags, { component = "lake" })
+}
+
+resource "azurerm_databricks_access_connector" "uc" {
+  # ...
+  tags = { component = "uc" }
+}"""),
+                    clue='Which one leaves out the shared `local.tags`?',
+                    why='The connector sets its own tags without merging `local.tags`, so it has only component: env, owner and cost-center are all missing. azurerm has no default tags to fill them in.',
+                    wrong=['It merges the shared tags, so it has every one.', None, 'Having some tags isn\'t enough: the connector has none of the required ones.']),
+                ask('Several teams share this workspace, and an AI assistant says this. Is it right?', ['Yes: workspace tags cover everything inside it', 'No: each cluster needs its own `custom_tags`'], answer=1,
+                    evidence=evidence('claim', text='The workspace has every required tag, so each team\'s cluster costs are split out too.'),
+                    clue='Clusters have a tags field of their own, which this check doesn\'t look at.',
+                    why='Workspace tags reach the resources Databricks makes for it, but they are the same for everyone. To split compute cost by team, set `custom_tags` on each cluster.',
+                    wrong=['Every cluster gets the same workspace tags, so they can\'t tell teams apart.', None]),
+            ],
+        ),
         starter="""def missing_tags(resources, required):
     # your code here
     pass
@@ -203,6 +253,50 @@ Return a dict in the same shape, with the privileges each principal will lose, i
         pattern="For each principal, keep the live privileges that the code doesn't list. A principal missing from `code` loses everything.",
         target='one pass over the live grants',
         realworld='This is the classic surprise with `databricks_grants`: a manual grant in the UI quietly disappears at the next Spacelift apply. Either put it in code, or manage that principal with the non-authoritative `databricks_grant` instead.',
+        practice=practice(
+            intro='Predict what the next apply does to a catalog\'s grants, the way a reviewer does before approving.',
+            explain='databricks_grants makes the live grants match the code exactly, so anything not in the code is removed at the next apply. You compared live with code for each principal, found a lost privilege hiding inside an in-place change, and kept a grant the safe way: by writing it into the code.',
+            asks=[
+                ask('What does `engineers` lose at the next apply?', ['`MODIFY`', '`SELECT`', 'Nothing'], answer=0,
+                    evidence=evidence('code', title='Catalog sales: code and live', text="""# In the code (databricks_grants)
+engineers:  USE_CATALOG, SELECT
+
+# Live in Databricks right now
+engineers:  USE_CATALOG, SELECT, MODIFY
+analysts:   SELECT"""),
+                    clue='Find the privilege it has live that the code doesn\'t list.',
+                    why='The code lists USE_CATALOG and SELECT for engineers, so MODIFY, added by hand, is removed. They can still read, but no longer change data.',
+                    wrong=[None, 'SELECT is in the code, so it stays.', 'Live has one more privilege than the code lists.']),
+                ask('The plan says **0 to destroy**. Does anyone lose access?', ['No: nothing is destroyed', 'Yes: analysts lose SELECT'], answer=1,
+                    evidence=evidence('code', title='From the planning log', text="""  ~ resource "databricks_grants" "sales" {
+        id      = "catalog/sales"
+      - grant {
+          - principal  = "analysts" -> null
+          - privileges = [
+              - "SELECT",
+            ] -> null
+        }
+
+        # (1 unchanged block hidden)
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy."""),
+                    clue='Look inside the change marked ~ for lines starting with -.',
+                    why='The grants resource is changed in place, but the change removes the analysts\' grant block. "0 to destroy" only counts resources, not the access inside them.',
+                    wrong=['No resource is destroyed, but one is changed, and the change removes a grant.', None]),
+                ask('The analysts need to keep SELECT. What do you change?', ['Add analysts to the `databricks_grants` block in the code', 'Grant it again in the UI after each apply', 'Add a `databricks_grant` for analysts on the same catalog'], answer=0,
+                    evidence=evidence('code', title='catalogs.tf', text="""resource "databricks_grants" "sales" {
+  catalog = databricks_catalog.sales.name
+  grant {
+    principal  = "engineers"
+    privileges = ["USE_CATALOG", "SELECT"]
+  }
+}"""),
+                    clue='This resource owns the whole list for the catalog.',
+                    why='The code is the whole list, so the lasting fix is a second grant block for analysts in it. Then the next apply keeps their access.',
+                    wrong=[None, 'Every apply would take it away again, and nobody could review it.', 'A singular and a plural grant on the same catalog fight on every apply, and the plan never settles.']),
+            ],
+        ),
         starter="""def grants_to_revoke(code, live):
     # your code here
     pass
@@ -686,6 +780,15 @@ ages['ana'] = 30   # {'ana': 30}""",
     ),
 )
 
+# A sandbox config from the lesson's tests, shown above the first practice questions.
+_SPACE = """{
+  "space_tpm": 80000,
+  "user_tpm": None,
+  "group_tpm": {},
+  "sandbox_deployment": "shared-gpt",
+  "production_deployments": ["help-center-gpt", "shared-gpt"]
+}"""
+
 lesson(MODULE, 'check_limits',
     title='A shared space with fair limits',
     checked='2026-10-13',
@@ -766,6 +869,44 @@ Return the messages in the order above, or `[]` if all pass.""",
         pattern='Check each rule on its own, in order, and add a fixed message for each one that fails.',
         target='one look at each setting',
         realworld="This is the review a platform team runs before opening a shared space: a service limit for the whole space, a default per-user limit well below it, a few group limits, each below it too (the gateway allows at most 5 per service), and a sandbox deployment that no production app uses.",
+        practice=practice(
+            intro='Review a shared space\'s limits the way a platform team does before opening it: check each rule, and report every one that fails.',
+            explain='In a shared space, user and group limits must sit below the whole space\'s limit, and the sandbox needs a deployment of its own. You checked each rule on its own and reported every one that failed, and saw that a group\'s limit is one pool its members share, not a limit for each person.',
+            asks=[
+                ask('What is wrong with the user limit?', ['It\'s missing, so one person can use it all', 'It\'s too low for a busy team to work', 'Nothing: `None` means no limit is needed'], answer=0,
+                    evidence=evidence('code', title='The sandbox settings (tokens a minute)', text=_SPACE),
+                    clue='Look at `user_tpm`.',
+                    why='`None` means there is no per-user limit, so one looping script can use all 80,000 and everyone else gets 429s.',
+                    wrong=[None, 'There is no number to be too low.', '`None` is the problem: there is no slice at all.']),
+                ask('Which other rule fails for the same settings?', ['The sandbox uses a production deployment', 'There are no group limits for the teams', 'The space limit is too low for a sandbox'], answer=0,
+                    evidence=evidence('code', title='The same settings', text=_SPACE),
+                    clue='Compare `sandbox_deployment` with the production list.',
+                    why='`shared-gpt` is in the production list, so experiments eat the capacity the help-center app needs. Give the sandbox its own deployment.',
+                    wrong=[None, 'Group limits are optional. None at all passes.', 'The space limit is a choice, not a rule this check makes.']),
+                ask('team-a\'s limit is the same as the space limit. Is that all right?', ['Yes: it isn\'t above the space limit', 'No: team-a could use the whole space'], answer=1,
+                    evidence=evidence('code', title='Another space', text="""{
+  "space_tpm": 50000,
+  "user_tpm": 10000,
+  "group_tpm": {"team-a": 50000},
+  "sandbox_deployment": "sandbox-gpt",
+  "production_deployments": ["prod-gpt"]
+}"""),
+                    clue='The service limit always wins. What is left for everyone else?',
+                    why='A group limit at the space limit lets team-a take all of it. It has to sit below the space limit to leave room for anyone else.',
+                    wrong=['Equal is not a slice: team-a could still use everything.', None]),
+                ask('team-a has ten busy people. About how much can each one use?', ['20,000 each: the per-user limit still applies', 'About 5,000 each: they share one pool of 50,000', '50,000 each: the group limit is per person'], answer=1,
+                    evidence=evidence('code', title='A space that passes', text="""{
+  "space_tpm": 100000,
+  "user_tpm": 20000,
+  "group_tpm": {"team-a": 50000},
+  "sandbox_deployment": "sandbox-gpt",
+  "production_deployments": ["prod-gpt"]
+}"""),
+                    clue='A group limit is one pool for all its members, used instead of their per-user limit.',
+                    why='team-a\'s 50,000 is shared, and it replaces the 20,000 each for its members. Ten busy people get about 5,000 each.',
+                    wrong=['For team-a members, the group limit replaces the per-user one.', None, 'The group limit is one pool for everyone in it, not each.']),
+            ],
+        ),
         starter="""def check_limits(config):
     # your code here
     pass

@@ -269,6 +269,33 @@ def test_a_practice_lesson_explains_itself_to_someone_who_practised(loaded):
             assert not re.search(r"\b(Python|elif)\b", pr["explain"]), entry["id"]
 
 
+def test_a_practice_lesson_explains_itself_to_someone_who_answered(loaded):
+    """Explain must not tell a learner who answered practice questions about code they never wrote."""
+    for mod in loaded:
+        for entry in mod.lessons:
+            practice = entry["exercise"]["practice"]
+            if not practice:
+                continue
+            assert practice["explain"], f"{entry['id']}: a practice set needs explain text"
+            assert "Python" not in practice["explain"] and "elif" not in practice["explain"], entry["id"]
+            for a in practice["asks"]:
+                assert a["clue"] and a["why"], f"{entry['id']}: every question needs a clue and a why"
+
+
+def test_the_right_practice_option_is_not_the_one_that_stands_out(loaded):
+    """If the right option is always the longest, a learner can pick it without reading the evidence.
+    The page shuffles the order (checkOrder), so length is what's left to keep fair."""
+    for mod in loaded:
+        for entry in mod.lessons:
+            practice = entry["exercise"]["practice"]
+            for i, a in enumerate((practice or {}).get("asks", [])):
+                opts = a.get("options") or []
+                if a.get("pick") or not opts:
+                    continue
+                right, others = len(opts[a["answer"]]), [len(o) for k, o in enumerate(opts) if k != a["answer"]]
+                assert right <= 1.3 * max(others), f"{entry['id']} question {i + 1}: the right option is much the longest"
+
+
 def test_every_look_is_readable():
     """Text, results, the primary button and code colours meet contrast minimums in light, dark and dusk."""
     import importlib.util

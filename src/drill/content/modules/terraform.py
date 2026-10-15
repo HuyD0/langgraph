@@ -48,32 +48,52 @@ So a replacement counts once in `add` and once in `destroy`, and `no-op` counts 
         target='one pass over the changes',
         realworld='This is the summary line in every Spacelift run and `terraform plan` output. In the real JSON from `terraform show -json`, the list is `plan["resource_changes"]` and each entry keeps its actions at `["change"]["actions"]`. Spacelift policies and PR checks read exactly that.',
         practice=practice(
-            intro='Read plan summaries the way checks and reviewers do: count by action, and notice what the counts hide.',
-            explain='Checks read the plan as data and count each change by its actions: create, update, delete. A replacement is both a delete and a create, so it shows up as one add and one destroy, and a no-op counts nowhere. You read the counts, then looked for what they hid.',
+            intro='Read a plan\'s changes the way a reviewer does: work out what the summary line will say, then find which resources the numbers are.',
+            explain='Checks and policies read the plan as data, and the summary line only counts. You counted each create, update and delete on its own, so a replacement was one add and one destroy and a no-op was nothing. Then you found which resource each number belonged to before trusting it.',
             asks=[
-                ask('What will the summary line say?', ['Plan: 2 to add, 1 to change, 1 to destroy.', 'Plan: 1 to add, 1 to change, 0 to destroy.', 'Plan: 2 to add, 1 to change, 0 to destroy.'], answer=0,
-                    evidence=evidence('code', title='plan.json, resource_changes (shortened)', text="""databricks_cluster.sales_etl
-  actions: ["create"]
-databricks_cluster_policy.shared
-  actions: ["update"]
-databricks_external_location.raw
-  actions: ["delete", "create"]
-databricks_group.sales_dev_owners
-  actions: ["no-op"]"""),
-                    clue='Count each word separately. Which change has two words?',
-                    why='The new cluster is 1 add. The policy is 1 change. The external location is replaced: 1 more add and 1 destroy. The group has no change, so it counts nowhere: 2 to add, 1 to change, 1 to destroy.',
-                    wrong=[None, 'The replacement counts in add too, and its delete counts in destroy.', 'The replacement has a delete as well as a create.']),
-                ask('The summary says **0 to destroy**. Can you approve without reading further?', ['Yes: nothing is deleted', 'Not yet: read the changes, because an update can still matter'], answer=1,
-                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
-                        summary=[['0', 'to add', ''], ['1', 'to change', ''], ['0', 'to destroy', '']],
-                        changes=[{'sym': '~', 'address': 'databricks_permissions.team_folder', 'note': 'grp-sales-dev-analysts CAN_READ → CAN_MANAGE'}]),
-                    clue='What does that one change give to whom?',
-                    why='Nothing is destroyed, but the one update hands a group full control of the folder. Counts tell you how much changes, not whether it is safe.',
-                    wrong=['Counts say how many, not what. Read the one change first.', None]),
-                ask('Why do Spacelift policies and PR checks read `plan.json`, not the text you see in the log?', ['The JSON has every change as data, with its actions spelled out', 'The text is only for older Terraform versions', 'The JSON is shorter'], answer=0,
-                    clue='Which one can a program read without guessing?',
-                    why='The JSON lists every resource change with its address and actions, so a policy can count and check them reliably. The text is for people.',
-                    wrong=[None, 'Every version prints both. One is written for programs.', "It's usually longer: it holds everything."]),
+                ask('Which change will the summary line not count at all?', ['`azurerm_subnet.host`', '`databricks_cluster.etl`', '`databricks_schema.raw`'], answer=0,
+                    evidence=evidence('code', title='The plan\'s changes, as data', text="""[
+  {"address": "azurerm_subnet.host",      "actions": ["no-op"]},
+  {"address": "databricks_cluster.etl",   "actions": ["update"]},
+  {"address": "databricks_schema.raw",    "actions": ["create"]},
+  {"address": "databricks_catalog.sales", "actions": ["delete", "create"]}
+]"""),
+                    clue='Look for the action that means nothing will happen.',
+                    why='`no-op` means no change, so it counts nowhere. The summary only counts adds, changes and destroys.',
+                    wrong=[None, '`update` is a change in place: it counts once in "to change".', '`create` makes something new: it counts once in "to add".']),
+                ask('What will the summary line say?', ['Plan: 2 to add, 1 to change, 1 to destroy.', 'Plan: 1 to add, 1 to change, 1 to destroy.', 'Plan: 1 to add, 1 to change, 0 to destroy.'], answer=0,
+                    evidence=evidence('code', title='The same changes', text="""[
+  {"address": "azurerm_subnet.host",      "actions": ["no-op"]},
+  {"address": "databricks_cluster.etl",   "actions": ["update"]},
+  {"address": "databricks_schema.raw",    "actions": ["create"]},
+  {"address": "databricks_catalog.sales", "actions": ["delete", "create"]}
+]"""),
+                    clue='The catalog has two actions, and each one counts on its own.',
+                    why='The schema and the catalog\'s new copy are 2 adds, the cluster is 1 change, and the catalog\'s old copy is 1 destroy. The subnet counts nowhere.',
+                    wrong=[None, 'That counts the catalog only once. A replacement is an add and a destroy.', 'The catalog\'s delete counts too: a replacement destroys the old one first.']),
+                ask('The summary says **1 to destroy**, but nobody removed anything from the code. Which resource is it?', ['`azurerm_databricks_workspace.this`', '`databricks_metastore_assignment.this`', '`azurerm_databricks_access_connector.uc`'], answer=1,
+                    evidence=evidence('code', title='Another plan\'s changes', text="""[
+  {"address": "azurerm_resource_group.this",
+   "actions": ["no-op"]},
+  {"address": "azurerm_databricks_workspace.this",
+   "actions": ["update"]},
+  {"address": "azurerm_databricks_access_connector.uc",
+   "actions": ["create"]},
+  {"address": "databricks_metastore_assignment.this",
+   "actions": ["delete", "create"]}
+]"""),
+                    clue='Find the change whose actions list has more than one action.',
+                    why='Its actions are delete and create: a replacement, so the old one is destroyed first. That is the 1 to destroy, even though nobody took it out of the code.',
+                    wrong=['`update` changes it in place: it counts in "to change", not "to destroy".', None, '`create` only adds. It counts in "to add".']),
+                ask('You go to apply this morning\'s plan and get this. What do you do?', ['Force the old plan through: it was reviewed already', 'Plan again, and review the new plan before applying', 'Unlock the state, then apply the same plan again'], answer=1,
+                    evidence=evidence('code', title='The apply log', text="""Error: Saved plan is stale
+
+The given plan file can no longer be applied because the
+state was changed by another operation after the plan was
+created."""),
+                    clue='The plan was worked out against a state that has changed since.',
+                    why='A plan is worked out against the state at one moment. Someone applied since, so plan again and read the new numbers: they may not be the same.',
+                    wrong=['There\'s no safe way to force it: the old plan doesn\'t know what changed since.', None, 'Nothing is locked here. The plan is out of date.']),
             ],
         ),
         starter="""def summarize_plan(changes):
@@ -240,11 +260,11 @@ Return the `address` of every replacement, in the same order as `changes`.""",
                     clue='Look for the mark that means destroyed, then made again.',
                     why='Replacing the external location removes it before the new one exists: its grants go, and anything reading it fails.',
                     wrong=['A new cluster is expected from the YAML.', 'New access is worth reading, but nothing is lost here.', 'An in-place change to a limit: worth a look, but nothing is destroyed.', None]),
-                ask('The summary says **1 to destroy**, but nobody asked to delete anything. Where does it come from?', ['The replacement: the old one is destroyed, then a new one is added', 'A glitch in the plan: ignore it'], answer=0,
+                ask('The summary says **1 to destroy**, but nobody asked to delete anything. Where does it come from?', ['The replacement: the old one is destroyed first', 'A glitch: nobody removed anything from the code'], answer=0,
                     clue='Look for the change marked -/+.',
                     why='Terraform counts a replacement as one add and one destroy. That "1 to destroy" is the external location going away before the new one exists.',
                     wrong=[None, 'The count is right. Find which change it belongs to before you approve.']),
-                ask('The author says nothing reads `sales_raw` on weekends, so it\'s fine. What do you do?', ['Approve: the author knows the data', 'Ask which grants and jobs depend on it, and agree a window', 'Stop and reset the state'], answer=1,
+                ask('The author says nothing reads `sales_raw` on weekends, so it\'s fine. What do you do?', ['Approve: the author knows nothing reads it at weekends', 'Ask which grants and jobs use it, and agree a window', 'Reset the state, so the plan stops wanting a replacement'], answer=1,
                     evidence=evidence('code', title='From the planning log', text="""# databricks_external_location.sales_raw must be replaced
 -/+ resource "databricks_external_location" "sales_raw" {
       name            = "sales_raw"
@@ -339,6 +359,18 @@ names.append('ana')   # ['ana']""",
     ),
 )
 
+# The lock error from the lesson's example, shown above each practice question.
+_LOCK_ERROR = """Error: Error acquiring the state lock
+
+Error message: state blob is already locked
+Lock Info:
+  ID:        6a3c1f2e-8b7d-4c5a-9e10-2f4b6d8a0c13
+  Path:      tfstate/dbx-service-dev.tfstate
+  Operation: OperationTypeApply
+  Who:       spacelift@worker-7
+  Version:   1.5.7
+  Created:   2026-10-09 23:25:51 UTC"""
+
 lesson(MODULE, 'lock_info',
     title='State and locking',
     checked='2026-10-13',
@@ -389,30 +421,33 @@ Return a dict of all the fields, like `{"Who": "ana@laptop"}`. If there is no `L
         target='one pass over the lines',
         realworld="A lock left by a crashed run blocks every later plan. Force-unlocking while a run is genuinely still applying can corrupt state, so you check `Who` and `Created` first. On Spacelift-managed state, Spacelift handles locking and you'd look at the stack's runs instead.",
         practice=practice(
-            intro='A run is blocked by a state lock. Read the error, find who holds the lock, and choose the safe next step.',
-            explain='Before touching a lock, read who holds it and when it was taken, then check whether that run is still alive. Only a lock left by a run that has really stopped is safe to remove, and in Spacelift you let the stack handle it rather than unlocking by hand.',
+            intro='Read a state lock error the way a reviewer does: who holds the lock, what it was doing, and whether it\'s safe to unlock.',
+            explain='Before you force-unlock state, you read the lock error to see who holds the lock. You found the runner in Who, the apply in Operation and the age in Created, and only unlocked with the ID once you knew that run was dead.',
             asks=[
-                ask('Who holds the lock?', ['spacelift@worker-7', 'You', 'Terraform 1.5.7'], answer=0,
-                    evidence=evidence('code', title='The run log', text="""Error: Error acquiring the state lock
-
-Lock Info:
-  ID:        6a3c1f2e-8b7d-4c5a-9e10-2f4b6d8a0c13
-  Path:      tfstate/team-sales-dev.tfstate
-  Operation: OperationTypeApply
-  Who:       spacelift@worker-7
-  Version:   1.5.7
-  Created:   2026-10-09 23:25:51 UTC"""),
-                    clue='One line names the job holding it, under Lock Info.',
-                    why='"Who" names the holder: a Spacelift worker that started an apply at 23:25.',
-                    wrong=[None, 'You are the one waiting for it.', 'That is the Terraform version the holder used.']),
-                ask('What do you check before anything else?', ['Whether that apply on worker-7 is still running', 'Whether force-unlock is installed', 'Whether the state file is too big'], answer=0,
-                    clue='A lock is only stale if its owner has stopped.',
-                    why='If the apply is still going, the lock is doing its job: wait for it. Removing it would let two applies write state at once.',
-                    wrong=[None, 'Unlocking comes much later, if at all.', 'Size has nothing to do with a lock.']),
-                ask('The run on worker-7 is still in progress. What do you do?', ['Wait for it to finish, then retry your run', 'Run terraform force-unlock with the ID', 'Delete the state file and start again'], answer=0,
-                    clue='Is the lock protecting something right now?',
-                    why='A live run needs its lock. Wait, or ask the platform owner if it looks stuck. Never unlock under a running apply, and never delete state.',
-                    wrong=[None, 'That would let two applies write state at the same time.', 'Deleting state makes Terraform forget everything it manages.']),
+                ask('Who is holding the lock?', ['`spacelift@worker-7`', '`tfstate/dbx-service-dev.tfstate`', 'Terraform `1.5.7`'], answer=0,
+                    evidence=evidence('code', title='The error your run stopped on', text=_LOCK_ERROR),
+                    clue='One line names a person or a machine.',
+                    why='The Who line says which runner took the lock: a Spacelift worker, not someone on a laptop. Its run is the one to check.',
+                    wrong=[None, 'That\'s the Path: which state file is locked, not who locked it.', 'That\'s the Terraform version the run used.']),
+                ask('What was that run doing when it took the lock?', ['Making a plan', 'Applying changes', 'Unlocking the state'], answer=1,
+                    evidence=evidence('code', title='The same error', text=_LOCK_ERROR),
+                    clue='Read the Operation line.',
+                    why='`OperationTypeApply` means it was applying: writing to state. Unlocking under a live apply is how state gets corrupted.',
+                    wrong=['A plan would say `OperationTypePlan`.', None, 'Taking a lock is the opposite of unlocking. What does the Operation line say?']),
+                ask('It\'s 09:10 the next morning. What does the Created time tell you?', ['The run must be over by now, so unlock it straight away', 'A crashed run may have left it: check that run first', 'Nothing: only Who and ID matter before you unlock'], answer=1,
+                    evidence=evidence('code', title='The same error', text=_LOCK_ERROR),
+                    clue='An apply rarely takes ten hours. What could leave a lock behind?',
+                    why='An apply that started last night shouldn\'t still hold the lock, which points to a crashed run. That\'s a lead, not proof: look at the run on worker-7 before you unlock.',
+                    wrong=['Old isn\'t proof it stopped. A long apply could still be writing.', None, 'It matters: a lock this old is a clue the run crashed.']),
+                ask('The run that took the lock failed when its worker was lost. What now?', ['Force-unlock with the lock\'s ID, then plan again', 'Wait: the lock clears itself after an hour', 'Delete the state file so nothing is locked'], answer=0,
+                    evidence=evidence('code', title='That run in Spacelift', text="""Stack:   dbx-service-dev · tracked
+State:   FAILED
+Worker:  worker-7
+Started: Oct 9th, 11:25:40 PM
+Last log line: worker lost connection during apply"""),
+                    clue='Now you know the run is dead. Which line of the lock error does the unlock command need?',
+                    why='The run is dead, so unlock with the ID from Lock Info. Then plan again: the crashed apply may have changed some things before it stopped.',
+                    wrong=[None, 'With the azurerm backend the lock is a lease on the state file, and a crashed run\'s lease doesn\'t run out on its own.', 'Never delete state: Terraform would forget everything it manages.']),
             ],
         ),
         starter="""def lock_info(lines):
@@ -578,6 +613,54 @@ Return the actions in position order.""",
         pattern='Compare two lists position by position, up to the longer one. Past the end of one list is a create or a delete.',
         target='one pass up to the longer list',
         realworld='Removing `bronze` from the front of `["bronze", "silver", "gold"]` shifts every later container up one position, so Terraform plans to destroy and recreate `silver` and `gold`, along with the data in them. `for_each = toset(var.containers)` keys them by name instead, and a `moved` block migrates existing ones without destroying anything.',
+        practice=practice(
+            intro='Predict what a plan does to containers made with `count` when the list changes, the way a reviewer does before approving.',
+            explain='With count, Terraform knows each copy by its position, so you compared the old and new lists place by place. A name moving to a new place means a replace, and replacing a container loses its data. Naming copies by key with for_each, with a moved block for each one that exists, keeps the plan free of destroys.',
+            asks=[
+                ask('You add `"gold"` at the end of the list. What does the plan do?', ['Creates `lake[2]` and leaves the others alone', 'Replaces every container, because the list changed', 'Replaces `lake[0]`, because a new name was added'], answer=0,
+                    evidence=evidence('code', title='storage.tf', text="""variable "containers" {
+  default = ["bronze", "silver"]
+}
+
+resource "azurerm_storage_container" "lake" {
+  count              = length(var.containers)
+  name               = var.containers[count.index]
+  storage_account_id = azurerm_storage_account.lake.id
+}"""),
+                    clue='Do bronze and silver change position?',
+                    why='Bronze stays at [0] and silver at [1], so their names don\'t change. Gold takes a new position at the end: one create, nothing destroyed.',
+                    wrong=[None, 'Only a position whose name changes is replaced. Did any move?', 'Bronze is still at position 0.']),
+                ask('The team only removed `"silver"` from the middle of `["bronze", "silver", "gold"]`. What happens to the data in gold?', ['It\'s kept: gold is still in the list', 'It\'s lost: gold\'s old container is destroyed', 'It moves to `lake[1]`, data and all'], answer=1,
+                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
+                        summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['2', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-/+', 'address': 'azurerm_storage_container.lake[1]', 'note': 'name "silver" → "gold": forces replacement'},
+                            {'sym': '-', 'address': 'azurerm_storage_container.lake[2]', 'note': 'name "gold": destroy'},
+                        ]),
+                    clue='Look at what the plan does to lake[2], where gold lives today.',
+                    why='Gold slid from [2] to [1], so Terraform destroys the container at [2] and makes a new one at [1]. Destroying a container deletes the blobs in it.',
+                    wrong=['Gold is still in the list, but at a new position, and count only knows positions.', None, 'Terraform doesn\'t move data. It destroys one container and creates another.']),
+                ask('An AI assistant suggests this. Does it stop the shift?', ['Yes: a fixed order means every position stays fixed', 'No: removing a name still moves the ones after it'], answer=1,
+                    evidence=evidence('claim', text='Easy fix: keep the list in A to Z order, so the positions never change.'),
+                    clue='Take gold out of `["bronze", "gold", "silver"]`. Where does silver end up?',
+                    why='Sorting fixes the order, not the positions. Remove gold and silver slides from [2] to [1], so it is replaced. Only a key, like the name, stays put.',
+                    wrong=['A sorted list still shifts when something in the middle goes.', None]),
+                ask('A teammate switched the containers to `for_each` and opened this plan. Approve it?', ['Yes: `for_each` is the safe way to name them', 'Not yet: it needs `moved` blocks first'], answer=1,
+                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
+                        summary=[['3', 'to add', 'a'], ['0', 'to change', ''], ['3', 'to destroy', 'd']],
+                        changes=[
+                            {'sym': '-', 'address': 'azurerm_storage_container.lake[0]', 'note': 'bronze'},
+                            {'sym': '-', 'address': 'azurerm_storage_container.lake[1]', 'note': 'silver'},
+                            {'sym': '-', 'address': 'azurerm_storage_container.lake[2]', 'note': 'gold'},
+                            {'sym': '+', 'address': 'azurerm_storage_container.lake["bronze"]', 'note': ''},
+                            {'sym': '+', 'address': 'azurerm_storage_container.lake["silver"]', 'note': ''},
+                            {'sym': '+', 'address': 'azurerm_storage_container.lake["gold"]', 'note': ''},
+                        ]),
+                    clue='Count the destroys. To Terraform, a new address is a new container.',
+                    why='Without `moved` blocks, Terraform thinks `lake["bronze"]` is new and `lake[0]` is gone, so it destroys all three containers and their data. One `moved` block per container maps the old position to the new key, and the plan shows 0 to destroy.',
+                    wrong=['for_each is right, but this plan still deletes every container and its data.', None]),
+            ],
+        ),
         starter="""def count_shift(old, new):
     # your code here
     pass
@@ -712,6 +795,63 @@ When every resource is in the list, return it. If you get stuck, with resources 
         pattern='Topological sort: keep adding the first resource whose dependencies are all in the list. If none is ready but some are left, there is a loop.',
         target='one look over the names for each resource you add',
         realworld="Why a Databricks provider pointed at `azurerm_databricks_workspace.this.workspace_url` can't plan the first time in the same stack, why `depends_on` exists, and how Spacelift stack dependencies order a workspace stack before the Unity Catalog stack that configures it.",
+        practice=practice(
+            intro='Work out the order Terraform makes things in, the way a reviewer reads a dependency graph: what\'s ready, what waits, and what\'s stuck.',
+            explain='Terraform makes each resource only after the ones it needs. You picked what was ready, saw that two resources ready together can be made at the same time, and spotted two resources stuck waiting on each other. Then you found a dependency Terraform couldn\'t see, because nothing referred to the catalog.',
+            asks=[
+                ask('Which one can Terraform create first?', ['`rg`', '`vnet`', '`workspace`'], answer=0,
+                    evidence=evidence('code', title='What each resource needs first', text="""{
+  "workspace": ["container", "host"],
+  "host":      ["vnet"],
+  "container": ["vnet"],
+  "vnet":      ["rg"],
+  "rg":        []
+}"""),
+                    clue='Look for the one whose list is empty.',
+                    why='`rg`, the resource group, needs nothing, so it goes first. Everything else waits on something.',
+                    wrong=[None, '`vnet` needs `rg` first.', '`workspace` waits on both subnets, which wait on `vnet`.']),
+                ask('Once `vnet` exists, what is ready next?', ['Only `workspace`', 'Both subnets, `container` and `host`', 'Nothing: they wait on each other'], answer=1,
+                    evidence=evidence('code', title='The same resources', text="""{
+  "workspace": ["container", "host"],
+  "host":      ["vnet"],
+  "container": ["vnet"],
+  "vnet":      ["rg"],
+  "rg":        []
+}"""),
+                    clue='Which ones need only `vnet`?',
+                    why='`container` and `host` each need only `vnet`, so both are ready and Terraform can make them at the same time. The workspace waits until both exist.',
+                    wrong=['The workspace needs both subnets, and they don\'t exist yet.', None, 'Nothing here waits in a loop: every list leads back to `rg`.']),
+                ask('Terraform stops with `Error: Cycle`. Which two are waiting on each other?', ['`databricks_catalog.sales` and `databricks_schema.raw`', '`databricks_schema.raw` and `databricks_grants.raw`', '`databricks_catalog.sales` and `databricks_grants.raw`'], answer=1,
+                    evidence=evidence('code', title='What each resource needs first', text="""{
+  "databricks_catalog.sales": [],
+  "databricks_schema.raw": [
+    "databricks_catalog.sales",
+    "databricks_grants.raw"
+  ],
+  "databricks_grants.raw": [
+    "databricks_schema.raw"
+  ]
+}"""),
+                    clue='Find two that each list the other.',
+                    why='The schema waits for its grants, and the grants wait for the schema, so neither can go first. The catalog is fine: it needs nothing. Take out one of the two references to break the loop.',
+                    wrong=['The catalog needs nothing, so it can go first. Look further down.', None, 'The catalog needs nothing, and the grants don\'t list it.']),
+                ask('On a first deploy, the grants sometimes fail with "Catalog \'sales\' does not exist". Why?', ['The grants type `"sales"` as text, not as a reference', 'Terraform creates resources from the top of the file down', 'Grants always run before catalogs on a first deploy'], answer=0,
+                    evidence=evidence('code', title='catalogs.tf', text="""resource "databricks_catalog" "sales" {
+  name = "sales"
+}
+
+resource "databricks_grants" "sales" {
+  catalog = "sales"
+  grant {
+    principal  = "data-engineers"
+    privileges = ["USE_CATALOG"]
+  }
+}"""),
+                    clue='Terraform only learns an order when one resource refers to another.',
+                    why='Typed as text, it isn\'t a reference, so Terraform may make both at once. Write `catalog = databricks_catalog.sales.name` and the grants wait for the catalog.',
+                    wrong=[None, 'File order means nothing to Terraform: it orders by references.', 'There\'s no such rule: Terraform orders by references.']),
+            ],
+        ),
         starter="""def apply_order(deps):
     # your code here
     pass
@@ -925,7 +1065,7 @@ Return the references that don't work, in the order they appear in `refs`.""",
                     clue='One recipe, different ingredients.',
                     why='One module, different variable values. Copies drift apart: someone fixes one and forgets the other.',
                     wrong=[None, 'Copies drift apart: fix one, forget the other.', 'Outputs are what comes back, not what goes in.']),
-                ask('The root reads `module.network.host_subnet_id` and the plan stops with this. What is the fix?', ['Add an output named host_subnet_id to the network module', 'Rename the subnet resource', 'Delete the state file'], answer=0,
+                ask('The root reads `module.network.host_subnet_id` and the plan stops with this. What is the fix?', ['Add a host_subnet_id output to the network module', 'Rename the subnet resource to host_subnet_id', 'Delete the state file and plan again'], answer=0,
                     evidence=evidence('code', title='The plan', text="""Error: Unsupported attribute
 
 This object does not have an attribute
@@ -1055,7 +1195,7 @@ Return `[to_import, to_add]`.""",
             intro='Adopt resources made by hand without creating, changing or destroying anything by accident.',
             explain="Terraform only knows what is in its state, so something made by hand looks new. You recognised the \"already exists\" error, added an import block instead of recreating anything, and read the import plan for changes the code would make to the real resource.",
             asks=[
-                ask('The apply stops with this error. What do you add?', ['An import block for azurerm_storage_account.landing with that ID', 'A moved block', 'depends_on'], answer=0,
+                ask('The apply stops with this error. What do you add?', ['An import block with the account\'s ID', 'A moved block to the new address', 'A depends_on on the resource group'], answer=0,
                     evidence=evidence('code', title='The apply', text="""Error: A resource with the ID
 "/subscriptions/<sub>/.../storageAccounts/stsalesdev"
 already exists - to be managed via Terraform
@@ -1064,7 +1204,7 @@ the State."""),
                     clue='The error says what Terraform needs.',
                     why='The account exists but is not in state. An import block adopts it, and the next plan says "1 to import" instead of trying to create it.',
                     wrong=[None, 'moved renames something Terraform already manages; this account was never in state.', "Order isn't the problem: the account already exists."]),
-                ask('The import plan also says **1 to change**. What does that mean?', ['The code differs from the real account, so the apply would change it', 'Imports always count as a change', 'The import failed'], answer=0,
+                ask('The import plan also says **1 to change**. What does that mean?', ['The code differs from the real account', 'Imports always count as one change', 'The import failed and will retry'], answer=0,
                     evidence=evidence('plan', title='Stack team-sales-dev · proposed',
                         summary=[['1', 'to import', ''], ['0', 'to add', ''], ['1', 'to change', ''], ['0', 'to destroy', '']],
                         changes=[{'sym': '~', 'address': 'azurerm_storage_account.landing', 'note': 'imported; min_tls_version TLS1_0 → TLS1_2'}]),
@@ -1185,7 +1325,7 @@ Return a dict with one action for each address:
             intro='Rename and reorganise Terraform code so the plan shows moves, not destroys.',
             explain='Terraform matches state to code by address, so a rename looks like a destroy and a create. You spotted the destroy-and-create pair, linked the names with a moved block, and kept the block for the environments that had not applied it yet.',
             asks=[
-                ask('You only renamed the cluster in the code. What is missing?', ['A moved block from databricks_cluster.etl to databricks_cluster.sales_etl', 'An import block for the new name', 'Nothing: approve it'], answer=0,
+                ask('You only renamed the cluster in the code. What is missing?', ['A moved block from the old name to the new', 'An import block for databricks_cluster.sales_etl', 'Nothing: approve the rename as it is'], answer=0,
                     evidence=evidence('plan', title='Stack team-sales-dev · proposed',
                         summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['1', 'to destroy', 'd']],
                         changes=[{'sym': '-', 'address': 'databricks_cluster.etl', 'note': 'not in the code any more'},
@@ -1193,7 +1333,7 @@ Return a dict with one action for each address:
                     clue="Terraform sees two names and doesn't know they are the same cluster.",
                     why='A moved block links the two addresses, and the plan becomes a rename with nothing destroyed.',
                     wrong=[None, "Import adopts something made outside Terraform; this cluster is already managed.", 'Approving destroys the running cluster and makes a new one.']),
-                ask('The rename is applied in DEV. Can you delete the moved block now?', ["No: UAT and PROD haven't applied it yet, and they still need it", 'Yes: it did its job'], answer=0,
+                ask('The rename is applied in DEV. Can you delete the moved block now?', ['No: UAT and PROD still need it', 'Yes: DEV applied it, so it did its job'], answer=0,
                     clue='Which environments still have the old name in their state?',
                     why='Every environment that still has the old address needs the block. Terraform recommends keeping moved blocks for good.',
                     wrong=[None, 'Without it, UAT and PROD would destroy and recreate the cluster.']),
@@ -1339,7 +1479,7 @@ Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True
             intro='Keep provider upgrades deliberate: read constraints and the lock file the way Terraform does.',
             explain='A version constraint decides which provider versions Terraform may pick, and ~> lets only the last number written go up. The lock file keeps every run on one exact version, so a surprise plan with no code change is often an unlocked upgrade.',
             asks=[
-                ask('Version 1.52.5 comes out. What does the next Spacelift run use?', ['1.52.3, the version in the lock file', '1.52.5, the newest allowed', '1.53.0'], answer=0,
+                ask('Version 1.52.5 comes out. What does the next Spacelift run use?', ['1.52.3, from the lock file', '1.52.5, the newest allowed', '1.53.0, the newest release'], answer=0,
                     evidence=evidence('code', title='.terraform.lock.hcl', text="""provider "registry.terraform.io/databricks/databricks" {
   version     = "1.52.3"
   constraints = "~> 1.52.0"
@@ -1348,7 +1488,7 @@ Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True
                     clue='Which file wins until someone upgrades on purpose?',
                     why='The lock file pins 1.52.3. Only `terraform init -upgrade` moves to 1.52.5, and that change goes through review.',
                     wrong=[None, 'Only terraform init -upgrade picks a newer version.', '~> 1.52.0 never allows 1.53.']),
-                ask('Overnight the plan wants to change 40 clusters, and nobody changed the code. The repo has no .terraform.lock.hcl. What is a likely cause?', ['A new provider version was picked up', 'Someone edited state', 'Spacelift ran twice'], answer=0,
+                ask('Overnight the plan wants to change 40 clusters, and nobody changed the code. The repo has no .terraform.lock.hcl. What is a likely cause?', ['A new provider version was picked up', 'Someone edited the state by hand', 'Spacelift ran the plan twice'], answer=0,
                     clue='Without a lock file, init picks the newest version allowed, every time.',
                     why='With no lock file, each run can pick up a newer provider, and a new version can change defaults. Commit the lock file and upgrade on purpose.',
                     wrong=[None, 'Possible, but check the provider version first: with no lock file, it can change on every run.', "Running twice doesn't change what the plan wants."]),

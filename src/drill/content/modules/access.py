@@ -5,7 +5,7 @@ experiments, catalogs, compute, access connectors, service credentials and conne
 """
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack, source
 
 MODULE = module('access', 'Databricks access control', 'Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.', setting=PLATFORM_SETTING)
 
@@ -68,6 +68,50 @@ Return `[object, principal, needed_level]` for every missing need, in the same o
         pattern='Look up, then compare positions. `levels[kind].index(level)` turns a level name into a number you can compare.',
         target='one pass over the needs',
         realworld='Run this before a launch: list who needs what (the team on the experiment, the app on the serving endpoint, the job\'s service principal on the warehouse) and compare it with the live ACLs from the Permissions API.',
+        practice=practice(
+            intro='Review access before a launch the way a platform reviewer does: compare what each group or app needs with what it has on that one object.',
+            explain='Each object type has its levels in order, weakest first, so "is this level high enough?" comes down to where it sits in the list. You looked up what each group or app has on that one object: nothing at all, or a level earlier than the one it needs, meant someone would be refused.',
+            asks=[
+                ask('Is ml-team\'s access to `gpu-dev` enough?', ['Missing: they need exactly CAN_ATTACH_TO', 'Enough: CAN_RESTART is stronger than CAN_ATTACH_TO'], answer=1,
+                    evidence=evidence('code', title='cluster gpu-dev', text="""Levels, weakest first:
+  CAN_ATTACH_TO < CAN_RESTART < CAN_MANAGE
+
+ml-team has:    CAN_RESTART
+ml-team needs:  CAN_ATTACH_TO"""),
+                    clue='Which comes later in the list: the level they have, or the one they need?',
+                    why='CAN_RESTART comes after CAN_ATTACH_TO, so it covers attaching too. A stronger level includes the weaker ones.',
+                    wrong=["They don't need the exact level, just one at least as strong.", None]),
+                ask('The support app is refused when it calls the `support-bot` endpoint. Why?', ['The endpoint is down or still starting', 'It needs SELECT on a table in Unity Catalog', 'CAN_VIEW is too weak to call it'], answer=2,
+                    evidence=evidence('code', title='serving endpoint support-bot', text="""Levels, weakest first:
+  CAN_VIEW < CAN_QUERY < CAN_MANAGE
+
+support-app has:  CAN_VIEW"""),
+                    clue='Find its level in the list, then the level that calling the endpoint needs.',
+                    why='Calling an endpoint needs CAN_QUERY, and CAN_VIEW comes earlier in the list. Give support-app CAN_QUERY, not CAN_MANAGE, which is far more than it needs.',
+                    wrong=['Being refused is about permission, not health. Check its level.', "Serving endpoints have their own ACL. Table grants don't reach them.", None]),
+                ask('Which needs are missing?', ['Only need 2', 'Needs 2 and 3', 'All three'], answer=1,
+                    evidence=evidence('code', title='Before the launch', text="""Levels, weakest first
+  experiment:  CAN_READ < CAN_EDIT < CAN_MANAGE
+  policy:      CAN_USE
+
+Needs
+  1. ml-team       CAN_USE     on policy small-gpu
+  2. ml-reviewers  CAN_READ    on experiment /Shared/churn
+  3. ml-team       CAN_MANAGE  on experiment /Shared/churn
+
+ACLs now
+  policy small-gpu:          ml-team  CAN_USE
+  experiment /Shared/churn:  ml-team  CAN_EDIT"""),
+                    clue='For each need: does the group have no level at all, or one earlier in the list?',
+                    why="ml-reviewers has nothing on the experiment, and ml-team's CAN_EDIT comes before CAN_MANAGE. The policy need is met exactly.",
+                    wrong=['ml-team has CAN_EDIT but needs CAN_MANAGE, which comes later in the list.', None, 'ml-team already has CAN_USE on the policy, the level it needs.']),
+                ask('Is its access done?', ['Done: CAN_USE on the endpoint covers its indexes', 'Not yet: it needs SELECT on the index too'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"The agent\'s service principal has **CAN_USE** on the Vector Search endpoint, so it can query the `support.docs.faq_index` index."'),
+                    clue="Querying an index touches two lists: the endpoint's ACL, and Unity Catalog.",
+                    why='A Vector Search endpoint has its own ACL, and the index is a Unity Catalog object with its own grants. Querying needs both.',
+                    wrong=['CAN_USE covers the endpoint. The index itself lives in Unity Catalog, with its own grants.', None]),
+            ],
+        ),
         starter="""def missing_acls(needs, acls, levels):
     # your code here
     pass
@@ -280,6 +324,55 @@ Return `[name, credential]` of the location that covers the path, or `None` if n
         pattern='Go through the locations; return as soon as one covers the path. Return None after the loop.',
         target='one pass over the locations',
         realworld='This is how you answer "which credential will this read use, and who can grant me access?". In SQL, `SHOW EXTERNAL LOCATIONS` lists the urls and `DESCRIBE EXTERNAL LOCATION raw-sales` shows its credential.',
+        practice=practice(
+            intro='Trace storage paths the way a platform reviewer does: find the location that covers each path, and the credential that comes with it.',
+            explain="A path is covered by a location when it is the location's path or sits in a folder under it. You matched each path on whole folders, so sales never covered sales-archive, and the location you found told you which credential the read uses. Locations can't overlap, so there is never more than one answer.",
+            asks=[
+                ask('Which location covers this path?', ['raw-hr', 'raw-sales', 'Neither'], answer=1,
+                    evidence=evidence('code', title='External locations', text="""raw-sales
+  url:        abfss://raw@lakefict.dfs.core.windows.net/sales
+  credential: lake-cred
+raw-hr
+  url:        abfss://raw@lakefict.dfs.core.windows.net/hr
+  credential: hr-cred
+
+Path to read:
+  abfss://raw@lakefict.dfs.core.windows.net/sales/2026/jan.csv"""),
+                    clue='Find the url the path starts with, followed by a "/".',
+                    why='The path starts with the raw-sales url and then "/", so raw-sales covers it, and the read uses lake-cred.',
+                    wrong=['raw-hr is the .../hr folder. This path is under .../sales.', None, 'Check the start of the path against each url.']),
+                ask('Which credential does this read use?', ['ml-cred', 'lake-cred', "Ana's own sign-in"], answer=0,
+                    evidence=evidence('code', title='External locations', text="""raw-sales
+  url:        abfss://raw@lakefict.dfs.core.windows.net/sales
+  credential: lake-cred
+curated
+  url:        abfss://curated@lakefict.dfs.core.windows.net
+  credential: lake-cred
+ml-scratch
+  url:        abfss://scratch@mlfict.dfs.core.windows.net/team
+  credential: ml-cred
+
+Path to read:
+  abfss://scratch@mlfict.dfs.core.windows.net/team/ana/features.parquet"""),
+                    clue='Find the location first. Its credential comes with it.',
+                    why='The path is under the ml-scratch url, and ml-scratch uses ml-cred. People never get the credential itself: they get READ FILES on the location.',
+                    wrong=[None, 'lake-cred belongs to locations on the lakefict storage account. This path is on mlfict.', "Reads go through the location's credential, not the person's own access to storage."]),
+                ask('Does raw-sales cover this path?', ['Yes: it starts with .../sales', 'No location covers it'], answer=1,
+                    evidence=evidence('code', title='raw-sales, and the path to read', text="""raw-sales
+  url:        abfss://raw@lakefict.dfs.core.windows.net/sales
+
+Path to read:
+  abfss://raw@lakefict.dfs.core.windows.net/sales-archive/2019.csv"""),
+                    clue='Is sales-archive a folder inside sales, or a folder next to it?',
+                    why='sales-archive sits next to sales, not inside it. A location covers whole folders, so this path needs a location of its own before anyone can read it through Unity Catalog.',
+                    wrong=['It starts with the same letters, but sales-archive is a different folder. Matching is on whole folders.', None]),
+                ask('What does Unity Catalog do if you try?', ['Accepts it: the deeper path wins for those files', 'Refuses it: that folder sits inside raw-sales'], answer=1,
+                    evidence=evidence('claim', who='A teammate asked', text='"Finance only needs `abfss://raw@lakefict.dfs.core.windows.net/sales/2026`. Can we add an external location for just that folder, with its own credential?"'),
+                    clue='Can one location sit inside another?',
+                    why="External locations can't overlap, so Unity Catalog refuses one inside raw-sales. To give finance just that folder, make a table or volume there and grant that instead.",
+                    wrong=['There is no "deeper wins": one location can\'t sit inside another at all.', None]),
+            ],
+        ),
         starter="""def location_for_path(locations, path):
     # your code here
     pass
@@ -426,6 +519,32 @@ Return a list of `[target, answer]`, in the same order as `targets`.""",
         pattern='One small function with if / elif in rule order, called for each target.',
         target='one pass over the targets',
         realworld='This is the triage a platform team does on every new access request: "what are you trying to reach?" decides which object to create and which privilege to grant.',
+        practice=practice(
+            intro='Sort access requests the way a platform team does: look at where the target lives, then pick the object.',
+            explain='You choose the object by looking at where the target lives. Storage paths went to external locations, Azure service hosts to service credentials before the general web rule could catch them, other web addresses to HTTP connections and databases to federation connections, and anything unknown went to a person instead of a guess.',
+            asks=[
+                ask('An analyst wants to query the orders database from Databricks. What do you set up?', ['An external location on its storage', 'A connection and a foreign catalog', "A service credential, since it's on Azure"], answer=1,
+                    evidence=evidence('code', title='The target', text='postgresql://orders-fict.postgres.database.azure.com:5432/orders'),
+                    clue='Look at how it starts: what kind of address is postgresql://?',
+                    why='A database address goes to Lakehouse Federation: a connection holds the host and the login, and a foreign catalog lets people query it like any other catalog.',
+                    wrong=['External locations are for files in cloud storage: abfss:// paths. A database is queried, not read as files.', None, 'It is hosted on Azure, but service credentials are for calling services like Key Vault, not for querying a database.']),
+                ask('A job must send messages to this Event Hubs address. Which object?', ['An HTTP connection', 'An external location', 'A service credential'], answer=2,
+                    evidence=evidence('code', title='The target', text='https://events-fict.servicebus.windows.net'),
+                    clue='It starts with https://, but look at the host: whose service is it?',
+                    why='.servicebus.windows.net is Event Hubs, an Azure service, so it gets a service credential, built on an access connector. The Azure hosts are checked before the general https:// rule.',
+                    wrong=['It does start with https://, but the Azure service hosts are checked first.', 'External locations are for storage paths, not for calling a service.', None]),
+                ask('Someone asks for access to this. What do you do?', ['Ask the platform team: no rule fits', 'An HTTP connection: it\'s a web address', 'An external location: it holds files'], answer=0,
+                    evidence=evidence('code', title='The target', text='ftp://old-fict.example/files'),
+                    clue='Check how it starts against every rule. Does any of them fit?',
+                    why="It isn't abfss://, https:// or a database address, so no rule fits. Anything unknown goes to a person, not a guess.",
+                    wrong=[None, 'HTTP connections are for https:// web APIs. This starts with ftp://.', 'External locations are for abfss:// paths in Azure storage.']),
+                ask('Is this right?', ['Right: a service credential gets a token for Azure storage', 'Wrong: storage needs an external location'], answer=1,
+                    evidence=evidence('claim', text='"To read `abfss://raw@lakefict.dfs.core.windows.net/sales` from a notebook, create a **service credential** and call the storage with its token."'),
+                    clue='Look at how the target starts, and at what service credentials are not for.',
+                    why="Service credentials aren't for storage. A storage path needs a storage credential and an external location, so Unity Catalog can govern the files and tables.",
+                    wrong=["It might get a token, but Unity Catalog couldn't govern the files. Storage has its own objects.", None]),
+            ],
+        ),
         starter="""def pick_securable(targets):
     # your code here
     pass
@@ -613,6 +732,49 @@ Return the names of the columns masked for this user, in column order. List each
         pattern='Nested loops: for each column, try each policy. One policy that applies is enough to mask it.',
         target='one pass over the columns, trying each policy',
         realworld='This is what Unity Catalog works out on every query against a table under an ABAC policy. Writing it out shows why `EXCEPT` is how you let a small group, like `pii-readers`, see the real values.',
+        practice=practice(
+            intro='Work out what each person sees the way Unity Catalog does: match each column\'s tag, then check the policy\'s TO and EXCEPT groups.',
+            explain="A column is masked for you when some policy matches its tag and applies to you. You checked each column's tag and its exact value, then whether the policy's TO list took in one of your groups and its EXCEPT list left all of them out. One policy saying yes was enough, and a column with no tag was never masked.",
+            asks=[
+                ask('Someone in `analysts` queries this table. Which columns come back masked?', ['email', 'email and phone', 'All three'], answer=0,
+                    evidence=evidence('code', title='The policy, and the table\'s columns', text="""CREATE POLICY mask_emails
+ON SCHEMA sales.crm
+COLUMN MASK sales.gov.mask_email
+TO `account users` EXCEPT `pii-readers`
+FOR TABLES
+MATCH COLUMNS has_tag_value('pii', 'email') AS c
+ON COLUMN c;
+
+sales.crm.customers
+  customer_id   (no tags)
+  email         pii = email
+  phone         pii = phone"""),
+                    clue='The policy matches one tag with one exact value.',
+                    why='Only email has pii = email, the exact tag and value the policy matches. phone has the pii tag too, but with the value phone, so this policy leaves it alone.',
+                    wrong=[None, 'phone has pii = phone. The policy wants the value email exactly.', 'customer_id has no tags at all, so no policy can match it.']),
+                ask('Bo is in `analysts` and `pii-readers`. Does he see the real emails?', ['No: he is in account users, so they are masked', 'Yes: pii-readers is in EXCEPT, and EXCEPT wins'], answer=1,
+                    evidence=evidence('code', title='The policy', text="""TO `account users` EXCEPT `pii-readers`"""),
+                    clue="Being in a TO group isn't the end of it. Check the other part.",
+                    why="Being in any EXCEPT group exempts you, even if you're in a TO group too. That's how a small group like pii-readers sees the real values.",
+                    wrong=['He is in account users, but EXCEPT wins over TO.', None]),
+                ask('For someone in `analysts`, which columns are masked?', ['email', 'phone', 'email and phone'], answer=1,
+                    evidence=evidence('code', title='Two policies, and the columns', text="""Policy A:  pii = email   TO contractors            EXCEPT (none)
+Policy B:  pii = phone   TO contractors, analysts  EXCEPT (none)
+
+email   pii = email
+phone   pii = phone"""),
+                    clue='A policy only applies to the groups in its TO list.',
+                    why='Policy A only targets contractors, so analysts see the real emails. Policy B lists analysts in TO, so phone is masked.',
+                    wrong=['Policy A is TO contractors only. Analysts are not in it.', None, 'Which policy names analysts in its TO list?']),
+                ask('A teammate says the new `personal_email` column is covered, because the policy masks emails. Is it masked for an analyst?', ['Masked: the policy covers new columns by itself', 'Not masked: it has no tag, so no policy matches it'], answer=1,
+                    evidence=evidence('code', title='sales.crm.customers, after last week\'s change', text="""email            pii = email
+phone            pii = phone
+personal_email   (no tags)"""),
+                    clue='ABAC follows tags, not column names. What tags does the new column carry?',
+                    why="An untagged column isn't masked, whatever its name. Pair the policy with a check that new personal-data columns get tagged.",
+                    wrong=['It covers new columns only when they carry the tag. This one has none.', None]),
+            ],
+        ),
         starter="""def masked_columns(columns, policies, groups):
     # your code here
     pass
@@ -821,6 +983,44 @@ Find the grants to people: the ones whose principal contains `"@"`. Return `[pri
         pattern='Filter, then reshape: keep the matching dicts and turn each into a short list.',
         target='one pass over the grants',
         realworld='Run this over `SHOW GRANTS` output, or over the Permissions API for experiments, clusters and jobs, to find grants that will break when someone leaves. Then move each one to a group.',
+        practice=practice(
+            intro='Review grant lists the way a reviewer does: find the grants that will break when someone moves team or leaves.',
+            explain='People show up in grant lists by their email address, so an "@" is a cheap, reliable sign of a grant to a person. You flagged those, let groups and service principals pass, and remembered that an owner holds every privilege without appearing in the grant list.',
+            asks=[
+                ask('Which grant would you flag?', ['data-engineers', 'ana@example.com', '6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10'], answer=1,
+                    evidence=evidence('code', title='Grants on sales.crm', text="""principal                              privilege  on
+ana@example.com                        SELECT     sales.crm.accounts
+data-engineers                         MODIFY     sales.crm
+6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10   SELECT     sales.crm"""),
+                    clue='People show up by their email address.',
+                    why='ana@example.com is a person, so that grant goes stale when she moves team or leaves. Move it to a group instead.',
+                    wrong=["data-engineers is a group: its membership is managed in one place. That's what you want.", None, 'That long id is a service principal, an identity for software. Good for jobs.']),
+                ask('Which change would you stop on?', [], answer=1, pick=True,
+                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
+                        summary=[['3', 'to add', 'a'], ['0', 'to change', ''], ['0', 'to destroy', '']],
+                        changes=[
+                            {'sym': '+', 'address': 'databricks_grant.churn_readers', 'note': 'ml-team · EXECUTE on ml.models.churn'},
+                            {'sym': '+', 'address': 'databricks_grant.models_admin', 'note': 'bo@example.com · MANAGE on ml.models'},
+                            {'sym': '+', 'address': 'databricks_grant.churn_scoring', 'note': '0b9d7e21-5c3a-4f6b-8e2d-1a4c6f8b0d39 · EXECUTE on ml.models.churn'},
+                        ]),
+                    clue='Read each note: which principal is a person?',
+                    why='bo@example.com is a person, and MANAGE on a whole schema is a lot to hang on one person. Ask for a group, so it keeps working when Bo moves.',
+                    wrong=['ml-team is a group: the right shape for a grant.', None, 'That id is a service principal, an identity for software. Fine for a scoring job.']),
+                ask('Ana still needs to read `sales.crm.accounts`. What do you do with her grant?', ['Revoke it now: grants to people are not allowed', "Grant a group she's in, then revoke hers", 'Leave it: she still works on this team'], answer=1,
+                    clue='Grants go to groups. How do you swap without cutting her off?',
+                    why='Move the grant to a group she is in, like analysts, then revoke the one to her. She keeps access today, and it follows the group when people move.',
+                    wrong=['Grants to people are allowed, just fragile. Revoking first cuts her off before the group grant exists.', None, 'It works today, and breaks the day she moves team.']),
+                ask('No grant here goes to a person. Is the catalog safe from someone leaving?', ['Yes: every grant here is to a group', 'Not yet: the owner is a person'], answer=1,
+                    evidence=evidence('code', title='catalog sales', text="""owner:  kai@example.com
+
+grants:
+  analysts        USE CATALOG
+  data-engineers  ALL PRIVILEGES"""),
+                    clue="Ownership isn't in the grant list. Look above it.",
+                    why='The owner has every privilege, and kai@example.com is a person. Set the owner to a group or a service principal too.',
+                    wrong=['The grants are fine, but look at who owns it.', None]),
+            ],
+        ),
         starter="""def grants_to_people(grants):
     # your code here
     pass

@@ -411,6 +411,14 @@ def test_ask_without_a_model_is_a_clear_503(store, bank):
 # ---------------------------------------------------------------------------
 
 
+def test_a_lesson_with_practice_questions_still_has_its_python_card(bank):
+    """A module lesson that opens on practice questions isn't a content-pack lesson: its card
+    keeps the Python exercise and adds the questions, without their answers."""
+    card = bank.card("find_replacements")
+    assert card["exercise"]["function"] and card["practice"]["questions"]
+    assert all(q["question"] and "answer" not in q for q in card["practice"]["questions"])
+
+
 def test_mcp_tools_share_the_store_and_bank(store, bank):
     mcp_door.configure(store=store, router=ModelRouter(Route("local", "fake", fake("Look at .get")), None, store), bank=bank)
     first = bank.order()[0]

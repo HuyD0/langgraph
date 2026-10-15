@@ -175,6 +175,18 @@ stuck. **Interview** is how to talk about the idea, and which classic problem fr
 A uses the same pattern. Most lessons also show the same idea in your stack: Databricks,
 LangGraph, LangChain or MLflow.
 
+The third step fits what the lesson teaches:
+
+| The real skill | Third step | Examples |
+|---|---|---|
+| Writing the code | **Build**: the Python function | chunking text, backoff, a token bucket, parsing a model's reply |
+| Working out a number | **Build**: the Python is the calculator | precision and recall, cost per finished task, nDCG |
+| Deciding, or reading evidence | **Practice**: a few questions about a real plan, run, policy or trace, one per screen, a clue first and then the answer. The Python stays one tap away ("Rather write it in Python?") | which compute for this work, is the pilot fit for purpose, what this Terraform plan really does |
+
+The step's tab says Practice when the lesson opens on questions. A new lesson whose skill
+is a judgement gets `practice=` in its `exercise(...)`; see
+[PAGE.md](PAGE.md), "Practice on real evidence".
+
 The content is in `src/drill/content`, one file per module; [PAGE.md](PAGE.md) explains
 how to add a lesson. The classic problems on the page are the same bank track A drills.
 
