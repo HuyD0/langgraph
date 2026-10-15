@@ -23,7 +23,7 @@ lesson(MODULE, 'percentile',
     angle=angle(
         pattern='Sort, then pick by position',
         text='The big idea: averages hide slow requests, so teams look at p95, the time that 95 out of 100 requests finish within. Your code sorts the times, fastest first. Then it works out the position: length times percent, divided by 100, rounded up. Adding 99 before whole-number division with `//` is a trick that rounds up. Python counts list places from 0, so position 3 is `ordered[2]`, which is why the code subtracts 1. Mixing those two up is the most common bug.',
-        say='"Averages hide slow requests, so I look at [[p95|the average|the fastest::The time 95 out of 100 requests finish within.]]. I sort the times, find the position, and subtract one, because Python counts list places from [[zero|one|the end::The first item is at position 0.]]."',
+        say='"Averages hide the slow requests, so I look at [[p95|the average|the fastest::The time 95 out of 100 requests finish within.]]. If p95 is slow, about one user in [[twenty|two|a thousand::5 out of every 100.]] waits that long."',
         classic=None,
     ),
     stack=stack('MLflow: p95 of your real traces', """traces = mlflow.search_traces(max_results=1000)

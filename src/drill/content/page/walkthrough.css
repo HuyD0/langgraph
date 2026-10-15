@@ -111,6 +111,10 @@
 .sl-view .sl-tgt { border-radius: 6px; }
 @media (hover: hover) { .sl-view .sl-tgt:hover, .sl-view .sl-line[data-walk-n]:not(.sl-hit):hover, .sl-view .sl-row[data-walk-n]:not(.sl-hitbox):hover, .sl-view .sl-block[data-walk-n]:not(.sl-hitbox):hover, .sl-view .sl-ev[data-walk-n]:not(.sl-hitbox):hover { outline: 1.5px dashed var(--tool-anno); outline-offset: 1px; opacity: 1; } }
 .sl-view .sl-mark, .sl-view .sl-hitbox { box-shadow: var(--glow-anno); }
+/* one glow at a time: while the frame burns (motion on), the callouts don't glow too; with
+   reduced motion or Motion off the flame stops, so the callout glow comes back */
+:root:not([data-motion="off"]) .sl-view .sl-mark, :root:not([data-motion="off"]) .sl-view .sl-hitbox { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { :root:not([data-motion="off"]) .sl-view .sl-mark, :root:not([data-motion="off"]) .sl-view .sl-hitbox { box-shadow: var(--glow-anno); } }
 /* calmer screens: one thing outlined, everything else steps back */
 .sl-view .sl-line:not(.sl-hit), .sl-view .sl-row:not(.sl-hitbox), .sl-view .sl-block:not(.sl-hitbox) { opacity: .62; }
 .sl-view .sl-log { font-size: 12px; }
