@@ -370,7 +370,7 @@ written by multiple users at the same time."""),
     angle=angle(
         pattern='Start reading at the heading',
         text='The big idea: before you force-unlock state, read the lock error to see who holds the lock. Your code goes through the lines with a yes-or-no flag called `inside`, which starts at no. When it reaches `Lock Info:`, the flag turns to yes. Every line after that is cut at its first colon only, with `split(":", 1)`, so the `Created` time keeps its own colons. Both parts are trimmed with `strip` and stored in a dict, a lookup table from each key to its value.',
-        say='"Before I force-unlock, I read the lock error to see [[who holds|who wants|who made::The person or job that has it right now.]] the lock. I split each line at its [[first colon|last colon|every colon::The time has colons in it too, so cut only once.]], so the time stays whole."',
+        say='"Before I force-unlock, I read the lock error to see [[who holds|who wants|who made::The person or job that has it right now.]] the lock. If that run is still [[going|finished|queued::It may still be writing state.]], I wait for it."',
         classic=None,
     ),
     exercise=exercise(
