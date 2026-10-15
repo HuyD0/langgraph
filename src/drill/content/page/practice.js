@@ -20,7 +20,7 @@ function qfLoad(p) {
 function qfMode() {
   if (!QF.p) { $("flowBox").hidden = true; return; }
   const on = flowing();
-  $("paneBuild").classList.toggle("sorting", on);
+  $("paneBuild").classList.toggle("flowing", on);
   $("flowBox").hidden = !on;
   $("modeSwap").hidden = on;
   $("modeSwap").innerHTML = on ? "" : `<button class="linkbtn" data-qf-mode="flow">${ic("arrowl")}Back to the practice questions</button>`;

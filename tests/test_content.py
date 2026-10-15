@@ -9,6 +9,7 @@ learner reads, or if a lesson points at a classic problem that does not exist.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -265,7 +266,7 @@ def test_a_practice_lesson_explains_itself_to_someone_who_practised(loaded):
             pr = entry["exercise"]["practice"]
             if not pr or not pr["explain"]:
                 continue
-            assert "Python" not in pr["explain"] and "elif" not in pr["explain"], entry["id"]
+            assert not re.search(r"\b(Python|elif)\b", pr["explain"]), entry["id"]
 
 
 def test_every_look_is_readable():
@@ -528,3 +529,12 @@ def test_every_page_part_is_included_exactly_once():
     assert sorted(included) == on_disk, f"included {sorted(included)}, but page/ holds {on_disk}"
     assert len(included) == len(set(included)), "a part is included twice"
     assert "/*INCLUDE" not in page_source(), "every include is filled in"
+
+
+def test_practice_mode_hides_the_code_parts():
+    """With practice questions on, the Python task, editor and results step aside (one thing per screen)."""
+    from drill.content import build
+
+    page = build.page_source()
+    assert '$("paneBuild").classList.toggle("flowing", on)' in page
+    assert "#paneBuild.flowing .codeonly { display: none !important; }" in page
