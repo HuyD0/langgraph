@@ -24,21 +24,23 @@ function finishMarks(id) {
   if (f.explain !== undefined) delete f.gaps;
   if (f.day === undefined) { f.day = progress.days.length; f.streak = streak(); f.gate = MOD[modOf[id].id].lessons.every(isDoneL); }
 }
+// A row's marks: a list, null (skipped), or "earlier": done before results began, so unknown.
 function resultOf(id) {
   const f = (progress.lessons[id] || {}).first;
-  if (!f || f.check === undefined || f.build === undefined || f.explain === undefined || !f.day) return null;
+  if (!f || !f.day) return null;
   const names = packOf(id) ? ["Check", "Practice", "Explain"] : ["Check", "Build", "Explain"];
-  const rows = [f.check, f.build, f.explain].map((m, i) => [names[i], m]);
-  const spark = rows.every(([, m]) => m && m.length && m.every(x => x === "sign"));
+  const rows = [f.check, f.build, f.explain].map((m, i) => [names[i], m === undefined ? "earlier" : m]);
+  const spark = rows.every(([, m]) => Array.isArray(m) && m.length && m.every(x => x === "sign"));
   return { id, no: lessonNo(id), day: f.day, rows, spark, gate: !!f.gate, streak: f.streak || 0 };
 }
 function shareText(r) {
   return [`Daily Drill ${r.no} · Day ${r.day}${r.spark ? " " + SHARE_MARKS.spark : ""}${r.gate ? " " + SHARE_MARKS.gate : ""}`,
-    ...r.rows.map(([n, m]) => `${n} ${m ? m.map(x => SHARE_MARKS[x]).join("") : "skipped"}`),
+    ...r.rows.map(([n, m]) => `${n} ${m === "earlier" ? "done" : m ? m.map(x => SHARE_MARKS[x]).join("") : "skipped"}`),
     r.streak > 1 ? `${SHARE_MARKS.beads} ${r.streak}-day streak` : ""].filter(Boolean).join("\n");
 }
 function resultWords(r) {  // what a screen reader says instead of the pictures
   const row = ([n, m]) => {
+    if (m === "earlier") return `${n}: done earlier.`;
     if (!m) return `${n}: skipped.`;
     if (m.length === 1) return `${n}: ${MARK_WORDS[m[0]]}.`;
     return `${n}: ` + MARKS.map(k => [k, m.filter(x => x === k).length]).filter(([, c]) => c).map(([k, c]) => `${c} of ${m.length} ${MARK_WORDS[k]}`).join(", ") + ".";
@@ -51,7 +53,7 @@ const RES_CRACKS = `<svg class="rescracks" viewBox="0 0 100 100" preserveAspectR
   "88,10 78,16 72,27 60,30 54,42", "88,10 96,20 97,33 100,38", "88,10 85,2", "72,27 58,22 48,25", "97,33 90,45 89,60", "54,42 42,45 36,55 22,57"]
   .map(p => `<polyline pathLength="1" points="${p}"/>`).join("")}</svg>`;
 function resultHtml(r) {
-  const rows = r.rows.map(([n, m]) => `<div class="resrow"><span>${n}</span>${m ? `<span class="marks">${m.map(markTile).join("")}</span>` : `<span class="resskip">Skipped</span>`}</div>`).join("");
+  const rows = r.rows.map(([n, m]) => `<div class="resrow"><span>${n}</span>${Array.isArray(m) ? `<span class="marks">${m.map(markTile).join("")}</span>` : `<span class="resskip">${m === "earlier" ? "Done earlier" : "Skipped"}</span>`}</div>`).join("");
   return `<section class="card result" data-result>
     ${r.spark ? RES_CRACKS : ""}
     <div class="resbadges" aria-hidden="true">${r.gate ? `<span class="resgate" title="Module finished">${ic("gate")}</span>` : ""}${r.spark ? markTile("spark") : ""}</div>
@@ -90,7 +92,7 @@ async function resultPng(r) {
   for (const n of ["sign", "knot", "curtain", "spark", "gate"]) icons[n] = await iconImage(n, n === "gate" ? c.finish : c[n], css);
   const S = 2, W = 360, P = 16, X = P + 18, TX = X + 76, TW = 30, TH = 36, STEP = 26;
   const per = Math.max(1, Math.floor((W - P - 18 - TX - TW) / STEP) + 1);
-  const lines = r.rows.map(([, m]) => m ? Math.ceil(m.length / per) || 1 : 1);
+  const lines = r.rows.map(([, m]) => Array.isArray(m) ? Math.ceil(m.length / per) || 1 : 1);
   const H = P + 54 + lines.reduce((a, n) => a + n * (TH + 4) + 8, 0) + (r.streak > 1 ? 26 : 0) + 30 + P;
   const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
   const g = cv.getContext("2d"); g.scale(S, S);
@@ -134,7 +136,7 @@ async function resultPng(r) {
   y = P + 54;
   r.rows.forEach(([n, m], i) => {
     g.fillStyle = c.muted; g.font = font(400, 13, "--body"); g.fillText(n, X, y + TH / 2);
-    if (!m) g.fillText("Skipped", TX, y + TH / 2);
+    if (!Array.isArray(m)) g.fillText(m === "earlier" ? "Done earlier" : "Skipped", TX, y + TH / 2);
     else m.forEach((mk, k) => tile(TX + (k % per) * STEP, y + Math.floor(k / per) * (TH + 4), TW, TH, mk));
     y += lines[i] * (TH + 4) + 8;
   });
@@ -175,4 +177,22 @@ function shareTextNow(btn) {
     const ta = box && box.querySelector("textarea"); if (ta) { ta.focus(); ta.select(); }
   };
   try { navigator.clipboard.writeText(text).then(() => sharedOk("Copied. Paste it anywhere.", btn), fallback); } catch { fallback(); }
+}
+// Your results, in the Notebook: every lesson finished since results began, newest first.
+// Tapping one opens its done screen again, where Share result works as it did that day.
+function renderResults() {
+  const box = $("resultsBody"); if (!box) return;
+  const done = ALL_LESSONS.map(id => [id, resultOf(id)]).filter(([, r]) => r).sort((a, b) => b[1].day - a[1].day);
+  const tiny = m => Array.isArray(m) ? m.map(markTile).join("") : `<span class="resskip">${m === "earlier" ? "Done earlier" : "Skipped"}</span>`;
+  box.innerHTML = done.length ? done.map(([id, r]) => `<button class="resitem" data-result-open="${id}">
+      <span class="resitem-t"><b>${esc(r.no)} ${esc(LESSONS[id].title)}</b><span>Day ${r.day}${r.spark ? " · every step on your own" : ""}</span></span>
+      <span class="resitem-m" aria-hidden="true">${r.rows.every(([, m]) => m === "earlier") ? `<span class="resskip">Done before results began</span>`
+        : r.rows.map(([, m]) => `<span class="marks">${tiny(m)}</span>`).join("")}</span>
+      <span class="sr">${esc(resultWords(r))}</span></button>`).join("")
+    : `<p class="lede">Finish a lesson and its result shows here, ready to share again. Lessons finished before results began aren't listed.</p>`;
+}
+function openResult(id) {
+  closeNotebook();
+  const o = orderFor(id); showDone(id, o[o.indexOf(id) + 1] || null, false);
+  const card = document.querySelector("[data-result]"); if (card) card.scrollIntoView({ block: "start", behavior: "auto" });
 }

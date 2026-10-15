@@ -49,3 +49,10 @@ def test_every_mark_has_a_symbol_words_and_an_emoji_twin():
         assert marks["emoji"].get(m), f"{m} needs an emoji for the copied text"
     assert set(marks["words"]) == set(marks["marks"])
     assert re.search(r"/\*INCLUDE page/share\.js\*/", page) is None, "page_source fills the part in"
+
+
+def test_a_step_done_before_results_began_says_so_instead_of_hiding_the_card():
+    r = {"no": "1.1", "day": 3, "spark": False, "gate": False, "streak": 1,
+         "rows": [["Check", "earlier"], ["Build", "earlier"], ["Explain", ["sign", "knot"]]]}
+    assert run_share(f"return shareText({json.dumps(r)});").splitlines()[1:] == ["Check done", "Build done", "Explain ✌️🪢"]
+    assert "Check: done earlier. Build: done earlier." in run_share(f"return resultWords({json.dumps(r)});")

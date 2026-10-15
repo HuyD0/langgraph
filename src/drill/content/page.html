@@ -1055,11 +1055,16 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-nb="gloss" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
     <button class="tab" role="tab" data-nb="speed" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>How fast is it?</button>
+    <button class="tab" role="tab" data-nb="results" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg>Your results</button>
   </div>
   <div class="drawer-body">
     <div id="nb-gloss" class="pane">
       <input class="search" id="glossSearch" type="search" placeholder="Search terms" aria-label="Search the glossary">
       <div id="glossBody"></div>
+    </div>
+    <div id="nb-results" class="pane" hidden>
+      <p class="lede">Every lesson you've finished, newest first. Open one to see its result and share it again.</p>
+      <div id="resultsBody"></div>
     </div>
     <div id="nb-speed" class="pane" hidden>
       <p class="lede">Some code takes about the same time however much data you give it. Some slows down a little as data grows, and some slows down enormously. Drag the slider to give it more data. Times assume Python does about 10 million simple steps a second.</p>
@@ -2881,6 +2886,7 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-review]")) { startReview(null, t.closest("[data-review]")); return; }
   if (t.closest("[data-share-pic]")) { sharePicture(t.closest("[data-share-pic]")); return; }
   if (t.closest("[data-share-text]")) { shareTextNow(t.closest("[data-share-text]")); return; }
+  const ro = t.closest("[data-result-open]"); if (ro) { openResult(ro.dataset.resultOpen); return; }
   if (t.closest("[data-mine-review]")) { draftReview(); return; }
   if (t.closest("[data-mine-challenge]")) { challengeIdea(); return; }
   if (t.closest("[data-skill-run]")) { runSkill(); return; }

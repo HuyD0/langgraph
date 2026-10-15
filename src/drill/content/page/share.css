@@ -44,3 +44,11 @@
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion="off"]) .rescracks { animation: res-crack 700ms 250ms var(--ease-out) both; }
 }
+/* your results, in the Notebook: one row per finished lesson, its marks small */
+.resitem { display: grid; gap: 6px; width: 100%; text-align: left; padding: 10px 12px; min-height: 56px; border-radius: 12px; border: 1px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; cursor: pointer; }
+.resitem + .resitem { margin-top: 8px; }
+.resitem-t { display: grid; } .resitem-t span { font-size: 13px; color: var(--muted); }
+.resitem-m { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.resitem-m .rmark { width: 20px; height: 24px; margin-right: -3px; } .resitem-m .rmark .ic { width: 14px; height: 14px; } .resitem-m .rmark::after { height: 2px; }
+.resitem-m .resskip { font-size: 12px; }
+@media (hover: hover) { .resitem:hover { border-color: var(--accent); } }
