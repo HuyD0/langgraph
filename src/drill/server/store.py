@@ -315,6 +315,23 @@ class DocStore:
                 out.append((rest, json.loads(body)))
         return out
 
+    def prune(self, collection: str, older_than: float, keep: int | None = None) -> int:
+        """Delete documents in ``collection`` last saved before ``older_than``, then all but the newest ``keep``.
+
+        For the answer cache, so it ages out and stays a bounded size. Returns how many went.
+        """
+        prefix = collection.rstrip("/") + "/"
+        inside = (self._mine(), docs.c.path.startswith(prefix, autoescape=True))
+        with self.engine.begin() as conn:
+            gone = conn.execute(delete(docs).where(*inside, docs.c.updated_at < older_than)).rowcount or 0
+            if keep is not None:
+                extra = conn.execute(
+                    select(docs.c.path).where(*inside).order_by(docs.c.updated_at.desc()).offset(keep)
+                ).scalars().all()
+                for start in range(0, len(extra), 500):  # in batches, to keep each statement small
+                    gone += conn.execute(delete(docs).where(self._mine(), docs.c.path.in_(extra[start:start + 500]))).rowcount or 0
+        return gone
+
     # -- the activity log ----------------------------------------------------
 
     def log(self, kind: str, lesson_id: str = "", **detail: Any) -> None:

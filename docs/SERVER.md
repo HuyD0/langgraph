@@ -21,8 +21,15 @@ Ollama on this Mac first (`OLLAMA_MODEL`, or whichever pulled model answers with
 in [SETUP.md](SETUP.md), or any OpenAI-compatible endpoint named with `DRILL_HOSTED_BASE_URL`
 / `DRILL_HOSTED_MODEL` / `DRILL_HOSTED_API_KEY`, such as a Databricks serving endpoint. Only
 "complex" jobs (reviews) start with the hosted model, and it stops being used past
-`DRILL_HOSTED_DAILY_TOKENS` a day. Every answer is cached by its exact prompt, so asking the
-same hint twice is free.
+`DRILL_HOSTED_DAILY_TOKENS` a day; a request that would not fit in what is left of that budget
+goes to Ollama instead. Only the server's own features pick "complex": the page can ask for
+"quick" or "default", and anything else it sends counts as "default". A request bigger than
+`DRILL_MAX_PROMPT_CHARS` is refused with a 413 before any model sees it, and so is a request
+body over its route's limit (`BODY_LIMITS` in `api.py`: 2 MB for a document, 400 KB for a
+question). Every answer is cached by its exact prompt, so asking the same hint twice is free;
+cached answers are forgotten after `DRILL_CACHE_DAYS`, and at most `DRILL_CACHE_MAX` are kept.
+If Ollama starts or stops while the server runs, the server notices within 30 seconds; no
+restart needed.
 
 **At work, through Databricks Unity Gateway (formerly AI Gateway).** No key to create or
 keep: sign in once with `databricks auth login --host https://adb-<id>.azuredatabricks.net`
@@ -247,8 +254,8 @@ ask_lesson                 the learner's question, lesson and step in; the answe
 Token counts use MLflow's own format, so its token and cost charts work. Thinking costs
 time, not money, on your Mac (a hint takes 5 to 20 s with it, about 1 s without), so it is
 off for hints and on for reviews by default. When MLflow isn't running, tracing is off and
-is tried again every 30 seconds, so starting MLflow later turns it back on, and no answer
-ever waits for it.
+is tried again every 30 seconds, on a background thread, so starting MLflow later turns it
+back on, and no answer ever waits for it (the requests during a retry just go untraced).
 
 ### What Claude does around the tool calls
 
@@ -336,6 +343,8 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_HOSTED_BASE_URL`, `_MODEL`, `_API_KEY` | *(unset, so the Azure settings)* | An OpenAI-compatible hosted model, used as the fallback |
 | `DRILL_HOSTED_AUTH` | `key` (`databricks` for a Databricks address with no key) | `databricks` signs requests with the Databricks login instead of a key |
 | `DRILL_HOSTED_DAILY_TOKENS` | `200000` | Daily cap on hosted usage (about four characters per token) |
+| `DRILL_MAX_PROMPT_CHARS` | `60000` | The biggest request (all its messages together) the server takes; bigger gets a 413 |
+| `DRILL_CACHE_DAYS` / `DRILL_CACHE_MAX` | `7` / `2000` | How long a cached answer is reused, and how many are kept |
 | `DRILL_FIRST_WORD_SECONDS` | `45` | Give up on a model that has not started answering by then, and try the next one |
 | `DRILL_THINKING` | `complex` | When a thinking model (Qwen 3, DeepSeek R1...) may think: `off`, `complex` (reviews only) or `on` |
 | `DRILL_TRACING` | `1` | One MLflow trace per request; `0` turns it off |

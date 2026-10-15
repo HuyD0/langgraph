@@ -21,6 +21,9 @@ Configuration (all optional, all in .env):
     DRILL_HOSTED_API_KEY=...                      a Databricks token, or the provider's key
     DRILL_HOSTED_AUTH=databricks                  key | databricks: sign in with the Databricks login
     DRILL_HOSTED_DAILY_TOKENS=200000              stop using the hosted model past this
+    DRILL_MAX_PROMPT_CHARS=60000                  refuse a request bigger than this (about 15,000 tokens)
+    DRILL_CACHE_DAYS=7                            forget a cached answer after this many days
+    DRILL_CACHE_MAX=2000                          keep at most this many cached answers
     DRILL_TRACING=1                               0 switches MLflow tracing off (see observe.py)
 
 With no DRILL_HOSTED_* set, the Azure settings from drill.config are the hosted model.
@@ -72,6 +75,16 @@ THINKING_POLICIES = ("off", "complex", "on")
 
 class NoModelAvailable(RuntimeError):
     """Neither a local nor a hosted model could answer."""
+
+
+class PromptTooLong(ValueError):
+    """The request is bigger than the server allows (``DRILL_MAX_PROMPT_CHARS``)."""
+
+
+# Ollama can start or stop while the server runs: look again at most this often.
+LOCAL_RECHECK_SECONDS = 30.0
+# Clearing old cached answers is a database sweep, so do it at most this often.
+CACHE_PRUNE_SECONDS = 3600.0
 
 
 @dataclass
@@ -347,10 +360,24 @@ class ModelRouter:
         first_word_seconds: float = 45.0,
         thinking: str = "complex",
         observer: Any = None,
+        find_local: Any = None,
+        max_prompt_chars: int = 60_000,
+        cache_seconds: float = 7 * 86400,
+        cache_max: int = 2000,
     ):
         self.local = local
         self.hosted = hosted
         self.store = store
+        # How to look for Ollama again (``local_route``), so a server started before Ollama,
+        # or one whose Ollama stopped, notices without a restart. None: ``local`` never changes.
+        self.find_local = find_local
+        self._local_checked = time.monotonic()
+        # The hosted budget only means something if one request can't be enormous.
+        self.max_prompt_chars = max_prompt_chars
+        # Cached answers age out after ``cache_seconds``, and at most ``cache_max`` are kept.
+        self.cache_seconds = cache_seconds
+        self.cache_max = cache_max
+        self._pruned: float | None = None  # when old cached answers were last cleared
         self.hosted_daily_tokens = hosted_daily_tokens
         # A deadline for the first visible word. A model that is loading, stalled, or
         # thinking out loud for minutes gets cut off here and the next route is tried,
@@ -368,7 +395,12 @@ class ModelRouter:
         from drill.server.observe import default_observer
 
         observer = default_observer()  # None when DRILL_TRACING=0
-        router = cls(local_route(), hosted_route(), store, budget, first_word, thinking, observer)
+        router = cls(
+            local_route(), hosted_route(), store, budget, first_word, thinking, observer, find_local=local_route,
+            max_prompt_chars=int(os.getenv("DRILL_MAX_PROMPT_CHARS", "60000") or 60_000),
+            cache_seconds=float(os.getenv("DRILL_CACHE_DAYS", "7") or 7) * 86400,
+            cache_max=int(os.getenv("DRILL_CACHE_MAX", "2000") or 2000),
+        )
         log.info(
             "models: local=%s hosted=%s thinking=%s",
             router.local and router.local.model, router.hosted and router.hosted.model, router.thinking,
@@ -377,8 +409,30 @@ class ModelRouter:
 
     # -- what is available -------------------------------------------------
 
+    def refresh_local(self) -> None:
+        """Look for Ollama again if it has been a while: it may have started, stopped or changed model.
+
+        At most every ``LOCAL_RECHECK_SECONDS``, with the 1.5-second limit ``ollama_models`` uses,
+        so it is cheap. Callers in async code run it on a worker thread (``order`` is).
+        """
+        if self.find_local is None or time.monotonic() - self._local_checked < LOCAL_RECHECK_SECONDS:
+            return
+        self._local_checked = time.monotonic()
+        try:
+            found = self.find_local()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("could not look for Ollama: %s", exc)
+            found = None
+        before = self.local.model if self.local else None
+        after = found.model if found else None
+        if before == after:
+            return  # same as before: keep the chat model already built
+        log.info("local model: %s -> %s", before or "none", after or "none (Ollama is not running)")
+        self.local = found
+
     @property
     def available(self) -> bool:
+        self.refresh_local()
         return self.local is not None or self.hosted is not None
 
     def describe(self) -> dict:
@@ -401,12 +455,18 @@ class ModelRouter:
         doc = self.store.get(self._usage_path()) or {}
         return int(doc.get("hosted", {}).get("tokens", 0))
 
-    def hosted_under_budget(self) -> bool:
-        return self.hosted is not None and self.hosted_tokens_today() < self.hosted_daily_tokens
+    def hosted_under_budget(self, needed: int = 0) -> bool:
+        """Is there room in today's hosted budget, including ``needed`` tokens for this request?"""
+        return self.hosted is not None and self.hosted_tokens_today() + needed < self.hosted_daily_tokens
 
-    def order(self, tier: str = "default") -> list[Route]:
-        """Who to try first. Only a "complex" job starts with the hosted model."""
-        hosted = self.hosted if self.hosted_under_budget() else None
+    def order(self, tier: str = "default", needed: int = 0) -> list[Route]:
+        """Who to try first. Only a "complex" job starts with the hosted model.
+
+        ``needed`` is a rough token count for the request: one that would not fit in what is
+        left of today's hosted budget is not sent to the hosted model at all.
+        """
+        self.refresh_local()
+        hosted = self.hosted if self.hosted_under_budget(needed) else None
         if tier == "complex" and hosted is not None:
             routes = [hosted, self.local]
         else:
@@ -441,6 +501,28 @@ class ModelRouter:
         payload = json.dumps([[m.type, str(m.content)] for m in messages]) + f"|{tier}|{json_mode}"
         return "cache/" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:40]
 
+    def _fresh(self, cached: dict | None) -> bool:
+        """A cached answer still young enough to reuse (one with no time on it counts as old)."""
+        return bool(cached and cached.get("text")) and time.time() - float(cached.get("at") or 0) < self.cache_seconds
+
+    def _prune_cache(self) -> None:
+        """Forget answers past their time, and the oldest beyond ``cache_max``. At most hourly."""
+        if not self.store or (self._pruned is not None and time.monotonic() - self._pruned < CACHE_PRUNE_SECONDS):
+            return
+        self._pruned = time.monotonic()
+        try:
+            self.store.prune("cache", older_than=time.time() - self.cache_seconds, keep=self.cache_max)
+        except Exception as exc:  # noqa: BLE001 - a cache sweep must never fail an answer
+            log.warning("could not clear old cached answers: %s", exc)
+
+    def check_size(self, messages: list[BaseMessage]) -> None:
+        """Refuse a request bigger than ``max_prompt_chars``, before any model sees it."""
+        size = sum(len(str(m.content)) for m in messages)
+        if self.max_prompt_chars and size > self.max_prompt_chars:
+            raise PromptTooLong(
+                f"That request is {size:,} characters; the most this server takes is {self.max_prompt_chars:,}."
+            )
+
     def _record(self, route: Route, messages: list[BaseMessage], text: str, usage: dict | None) -> dict:
         """Count today's usage for the route, preferring the model's own token report."""
         tokens = estimate_tokens(messages, text)
@@ -466,19 +548,20 @@ class ModelRouter:
         ``context`` says what the request is for (feature, lesson, step...), for the trace.
         """
         messages = to_messages(prompt_or_messages)
+        self.check_size(messages)  # before tracing or the cache: a refused request costs nothing
         handle = self.observer.start(messages, tier, context)
 
         key = self._cache_key(messages, tier, json_mode)
         # The store may be Lakebase across the network: run its calls on a worker thread so
         # one slow save doesn't hold up every other request this server is answering.
         cached = await asyncio.to_thread(self.store.get, key) if self.store else None
-        if cached and cached.get("text"):
+        if self._fresh(cached):
             self.observer.first_word(handle)
             self.observer.finish(handle, text=cached["text"], route=cached.get("route", ""), model=cached.get("model", ""), cached=True)
             yield Chunk(cached["text"], done=True, route=cached.get("route", ""), model=cached.get("model", ""), cached=True)
             return
 
-        routes = await asyncio.to_thread(self.order, tier)
+        routes = await asyncio.to_thread(self.order, tier, estimate_tokens(messages, "")["input_tokens"])
         if not routes:
             self.observer.finish(handle, error="no model available")
             raise NoModelAvailable("No model is running. Start Ollama, or set a hosted model in .env.")
@@ -533,6 +616,7 @@ class ModelRouter:
                 await asyncio.to_thread(
                     self.store.set, key, {"text": text, "route": route.name, "model": route.model, "at": time.time()}
                 )
+                await asyncio.to_thread(self._prune_cache)
             settings = {"temperature": getattr(route.chat, "temperature", None), "json_mode": json_mode}
             self.observer.finish(
                 handle, text=text, route=route.name, model=route.model, thinking=thinking, tokens=tokens, attempts=errors,
