@@ -47,6 +47,35 @@ So a replacement counts once in `add` and once in `destroy`, and `no-op` counts 
         pattern='Walk the list once and keep three counters. Check each word with its own `if`, so a replacement counts as both an add and a destroy.',
         target='one pass over the changes',
         realworld='This is the summary line in every Spacelift run and `terraform plan` output. In the real JSON from `terraform show -json`, the list is `plan["resource_changes"]` and each entry keeps its actions at `["change"]["actions"]`. Spacelift policies and PR checks read exactly that.',
+        practice=practice(
+            intro='Read plan summaries the way checks and reviewers do: count by action, and notice what the counts hide.',
+            explain='Checks read the plan as data and count each change by its actions: create, update, delete. A replacement is both a delete and a create, so it shows up as one add and one destroy, and a no-op counts nowhere. You read the counts, then looked for what they hid.',
+            asks=[
+                ask('What will the summary line say?', ['Plan: 2 to add, 1 to change, 1 to destroy.', 'Plan: 1 to add, 1 to change, 0 to destroy.', 'Plan: 2 to add, 1 to change, 0 to destroy.'], answer=0,
+                    evidence=evidence('code', title='plan.json, resource_changes (shortened)', text="""databricks_cluster.sales_etl
+  actions: ["create"]
+databricks_cluster_policy.shared
+  actions: ["update"]
+databricks_external_location.raw
+  actions: ["delete", "create"]
+databricks_group.sales_dev_owners
+  actions: ["no-op"]"""),
+                    clue='Count each word separately. Which change has two words?',
+                    why='The new cluster is 1 add. The policy is 1 change. The external location is replaced: 1 more add and 1 destroy. The group has no change, so it counts nowhere: 2 to add, 1 to change, 1 to destroy.',
+                    wrong=[None, 'The replacement counts in add too, and its delete counts in destroy.', 'The replacement has a delete as well as a create.']),
+                ask('The summary says **0 to destroy**. Can you approve without reading further?', ['Yes: nothing is deleted', 'Not yet: read the changes, because an update can still matter'], answer=1,
+                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
+                        summary=[['0', 'to add', ''], ['1', 'to change', ''], ['0', 'to destroy', '']],
+                        changes=[{'sym': '~', 'address': 'databricks_permissions.team_folder', 'note': 'grp-sales-dev-analysts CAN_READ → CAN_MANAGE'}]),
+                    clue='What does that one change give to whom?',
+                    why='Nothing is destroyed, but the one update hands a group full control of the folder. Counts tell you how much changes, not whether it is safe.',
+                    wrong=['Counts say how many, not what. Read the one change first.', None]),
+                ask('Why do Spacelift policies and PR checks read `plan.json`, not the text you see in the log?', ['The JSON has every change as data, with its actions spelled out', 'The text is only for older Terraform versions', 'The JSON is shorter'], answer=0,
+                    clue='Which one can a program read without guessing?',
+                    why='The JSON lists every resource change with its address and actions, so a policy can count and check them reliably. The text is for people.',
+                    wrong=[None, 'Every version prints both. One is written for programs.', "It's usually longer: it holds everything."]),
+            ],
+        ),
         starter="""def summarize_plan(changes):
     # your code here
     pass
@@ -359,6 +388,33 @@ Return a dict of all the fields, like `{"Who": "ana@laptop"}`. If there is no `L
         pattern='Find where the section starts, then split each line on the first colon only.',
         target='one pass over the lines',
         realworld="A lock left by a crashed run blocks every later plan. Force-unlocking while a run is genuinely still applying can corrupt state, so you check `Who` and `Created` first. On Spacelift-managed state, Spacelift handles locking and you'd look at the stack's runs instead.",
+        practice=practice(
+            intro='A run is blocked by a state lock. Read the error, find who holds the lock, and choose the safe next step.',
+            explain='Before touching a lock, read who holds it and when it was taken, then check whether that run is still alive. Only a lock left by a run that has really stopped is safe to remove, and in Spacelift you let the stack handle it rather than unlocking by hand.',
+            asks=[
+                ask('Who holds the lock?', ['spacelift@worker-7', 'You', 'Terraform 1.5.7'], answer=0,
+                    evidence=evidence('code', title='The run log', text="""Error: Error acquiring the state lock
+
+Lock Info:
+  ID:        6a3c1f2e-8b7d-4c5a-9e10-2f4b6d8a0c13
+  Path:      tfstate/team-sales-dev.tfstate
+  Operation: OperationTypeApply
+  Who:       spacelift@worker-7
+  Version:   1.5.7
+  Created:   2026-10-09 23:25:51 UTC"""),
+                    clue='One line names the job holding it, under Lock Info.',
+                    why='"Who" names the holder: a Spacelift worker that started an apply at 23:25.',
+                    wrong=[None, 'You are the one waiting for it.', 'That is the Terraform version the holder used.']),
+                ask('What do you check before anything else?', ['Whether that apply on worker-7 is still running', 'Whether force-unlock is installed', 'Whether the state file is too big'], answer=0,
+                    clue='A lock is only stale if its owner has stopped.',
+                    why='If the apply is still going, the lock is doing its job: wait for it. Removing it would let two applies write state at once.',
+                    wrong=[None, 'Unlocking comes much later, if at all.', 'Size has nothing to do with a lock.']),
+                ask('The run on worker-7 is still in progress. What do you do?', ['Wait for it to finish, then retry your run', 'Run terraform force-unlock with the ID', 'Delete the state file and start again'], answer=0,
+                    clue='Is the lock protecting something right now?',
+                    why='A live run needs its lock. Wait, or ask the platform owner if it looks stuck. Never unlock under a running apply, and never delete state.',
+                    wrong=[None, 'That would let two applies write state at the same time.', 'Deleting state makes Terraform forget everything it manages.']),
+            ],
+        ),
         starter="""def lock_info(lines):
     # your code here
     pass

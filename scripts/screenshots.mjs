@@ -35,7 +35,6 @@ const SHOTS = [
   ["trust-mark-phone-dusk", PHONE, "dusk", `openLesson("redact_pii", 0); document.querySelector(".trustmark").click(); at(".trustpop");`],
   ["lesson-check-phone-dusk", PHONE, "dusk", `openLesson("can_read_table", 1); lp("can_read_table").checked = 1; setStep(1, true); at(".verdict");`],
   ["build-code-desktop-dusk", DESKTOP, "dusk", `openLesson("runs_after", 2);`],
-  ["sorting-board-phone-dusk", PHONE, "dusk", `openLesson("use_case_score", 2);`],
   ["explain-gaps-phone-dusk", PHONE, "dusk", `lp("runs_after").filled = 0; openLesson("runs_after", 3);
      [...document.querySelectorAll(".clzchip")].find(b => b.textContent === "it uses").click();
      document.querySelector("[data-clz-help]").click(); at(".cloze");`],
