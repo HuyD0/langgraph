@@ -22,7 +22,7 @@ function finishMarks(id) {
     else if (words(s.said) >= SAY_WORDS) f.explain = ["sign"];
   }
   if (f.explain !== undefined) delete f.gaps;
-  if (f.day === undefined) { f.day = progress.days.length; f.streak = streak(); f.gate = MOD[modOf[id].id].lessons.every(isDoneL); }
+  if (f.day === undefined) { f.day = progress.days.length; f.date = today(); f.streak = streak(); f.gate = MOD[modOf[id].id].lessons.every(isDoneL); }
 }
 // A row's marks: a list, null (skipped), or "earlier": done before results began, so unknown.
 function resultOf(id) {
@@ -31,7 +31,7 @@ function resultOf(id) {
   const names = packOf(id) ? ["Check", "Practice", "Explain"] : ["Check", "Build", "Explain"];
   const rows = [f.check, f.build, f.explain].map((m, i) => [names[i], m === undefined ? "earlier" : m]);
   const spark = rows.every(([, m]) => Array.isArray(m) && m.length && m.every(x => x === "sign"));
-  return { id, no: lessonNo(id), day: f.day, rows, spark, gate: !!f.gate, streak: f.streak || 0 };
+  return { id, no: lessonNo(id), day: f.day, date: f.date || null, rows, spark, gate: !!f.gate, streak: f.streak || 0 };
 }
 function shareText(r) {
   return [`Daily Drill ${r.no} · Day ${r.day}${r.spark ? " " + SHARE_MARKS.spark : ""}${r.gate ? " " + SHARE_MARKS.gate : ""}`,
@@ -153,9 +153,11 @@ const sharedOk = (msg, btn) => { toast(msg); fxOn(btn, "seal", FX.seal()); };
 // Share result: on a phone, the share sheet with the picture; elsewhere, the picture on the
 // clipboard. If neither is allowed (a plain-http address, a sandboxed frame), the picture shows
 // below, to save or copy by hand.
-function sharePicture(btn) {
-  const r = resultOf(cur.id); if (!r || RES.id !== r.id) return;
+function sharePicture(btn, id = cur.id) {
+  const r = resultOf(id); if (!r) return;
+  if (RES.id !== r.id) prepareResult(r);
   const name = `daily-drill-${r.no}.png`, fallback = () => RES.png.then(b => {
+    if (!document.querySelector("[data-res-more]")) openResult(r.id);  // shared from the list: show it where it can be saved
     RES.url = RES.url || URL.createObjectURL(b);
     // On claude.ai a page can't download by itself: the platform asks the viewer instead (savePicture).
     const save = window.claude ? `<button class="linkbtn" data-res-save>${ic("arrowr")}Save the picture</button>`
@@ -188,18 +190,41 @@ function shareTextNow(btn) {
   };
   try { navigator.clipboard.writeText(text).then(() => sharedOk("Copied. Paste it anywhere.", btn), fallback); } catch { fallback(); }
 }
-// Your results, in the Notebook: every lesson finished since results began, newest first.
-// Tapping one opens its done screen again, where Share result works as it did that day.
+// Your results, in the Notebook: every lesson finished since results began, newest first, with a
+// summary on top. Each row opens its done screen again; its Share button copies the picture there and then.
+function whenFinished(r) {
+  if (!r.date) return `Day ${r.day}`;
+  const d = new Date(r.date + "T12:00:00"), y = new Date(); y.setDate(y.getDate() - 1);
+  return r.date === today() ? "Today" : r.date === dayKey(y) ? "Yesterday" : d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+function resultScore(r) {  // "9 of 10 on your own", counting only the steps that have marks
+  const marks = r.rows.flatMap(([, m]) => Array.isArray(m) ? m : []);
+  return marks.length ? `${marks.filter(m => m === "sign").length} of ${marks.length} on your own` : "Done before results began";
+}
 function renderResults() {
   const box = $("resultsBody"); if (!box) return;
-  const done = ALL_LESSONS.map(id => [id, resultOf(id)]).filter(([, r]) => r).sort((a, b) => b[1].day - a[1].day);
-  const tiny = m => Array.isArray(m) ? m.map(markTile).join("") : `<span class="resskip">${m === "earlier" ? "Done earlier" : "Skipped"}</span>`;
-  box.innerHTML = done.length ? done.map(([id, r]) => `<button class="resitem" data-result-open="${id}">
-      <span class="resitem-t"><b>${esc(r.no)} ${esc(LESSONS[id].title)}</b><span>Day ${r.day}${r.spark ? " · every step on your own" : ""}</span></span>
-      <span class="resitem-m" aria-hidden="true">${r.rows.every(([, m]) => m === "earlier") ? `<span class="resskip">Done before results began</span>`
-        : r.rows.map(([, m]) => `<span class="marks">${tiny(m)}</span>`).join("")}</span>
-      <span class="sr">${esc(resultWords(r))}</span></button>`).join("")
-    : `<p class="lede">Finish a lesson and its result shows here, ready to share again. Lessons finished before results began aren't listed.</p>`;
+  const done = ALL_LESSONS.map(id => [id, resultOf(id)]).filter(([, r]) => r).sort((a, b) => b[1].day - a[1].day || (b[1].date || "").localeCompare(a[1].date || ""));
+  if (!done.length) {
+    box.innerHTML = `<p class="lede">Finish a lesson and its result shows here, ready to share again. Lessons finished before results began aren't listed.</p>`;
+    return;
+  }
+  const sparks = done.filter(([, r]) => r.spark).length, now = streak();
+  const tiles = m => Array.isArray(m) ? m.map(markTile).join("") : "";
+  box.innerHTML = `<div class="resstats">
+      <span><b>${done.length}</b>${done.length === 1 ? "lesson" : "lessons"}</span>
+      <span><b>${sparks}</b>${sparks === 1 ? "spark" : "sparks"}</span>
+      <span><b>${now}</b>day streak</span></div>
+    <p class="reskey" aria-hidden="true">${MARKS.map(m => `<span>${markTile(m)}${MARK_WORDS[m]}</span>`).join("")}</p>
+    ${done.map(([id, r]) => `<div class="resitem">
+      <button class="resitem-open" data-result-open="${id}">
+        <span class="resitem-pic">${stickerSvg(id, "done", 14)}</span>
+        <span class="resitem-t"><b>${esc(r.no)} ${esc(LESSONS[id].title)}</b>
+          <span>${whenFinished(r)} · ${resultScore(r)}${r.gate ? " · module done" : ""}</span>
+          <span class="resitem-m" aria-hidden="true">${r.rows.map(([, m]) => tiles(m)).filter(Boolean).map(t => `<span class="marks">${t}</span>`).join("")}${r.spark ? `<span class="marks">${markTile("spark")}</span>` : ""}</span>
+          <span class="sr">${esc(resultWords(r))}</span></span>
+      </button>
+      <button class="iconbtn resitem-share" data-result-share="${id}" aria-label="Share the result of lesson ${esc(r.no)}">${ic("share")}</button>
+    </div>`).join("")}`;
 }
 function openResult(id) {
   closeNotebook();

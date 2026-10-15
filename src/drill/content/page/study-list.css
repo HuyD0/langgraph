@@ -25,8 +25,6 @@ details.ssec > summary:focus-visible { outline: 2px solid var(--accent); outline
 #selbar button:focus-visible { outline: 2px solid var(--bg); }
 @media (pointer: coarse) { #selbar button { min-height: 44px; padding: 10px 14px; } }
 .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; }
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="off"]) .pane, :root:not([data-motion="off"]) .note, :root:not([data-motion="off"]) .result, :root:not([data-motion="off"]) .verdict { animation: rise .2s ease-out }
+:root:not([data-motion="off"]) .pane, :root:not([data-motion="off"]) .note, :root:not([data-motion="off"]) .result, :root:not([data-motion="off"]) .verdict { animation: rise .2s ease-out }
   @keyframes rise { from { opacity: .4; transform: translateY(4px) } }
   :root:not([data-motion="off"]) .drawer { animation: slide .22s ease-out } @keyframes slide { from { transform: translateX(24px); opacity: .6 } }
-}

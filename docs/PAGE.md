@@ -136,9 +136,11 @@ buttons to copy by hand. Each step saves its marks as it happens (`lp(id).first`
 finished before this existed shows "Done earlier" for any step answered before then, rather
 than a guess, and never a spark.
 
-**Your results** in the Notebook lists every lesson finished since results began, newest first,
-with its marks; opening one shows its done screen again, so a result can be shared later
-(`renderResults`, `openResult` in `page/share.js`).
+**Results** in the Notebook: lessons finished, sparks and the current streak on top, then every
+lesson finished since results began, newest first: its sticker, when ("Today", "Mon 12 Oct"), a
+score in words ("6 of 8 on your own") and its marks. Its Share button copies the picture there and
+then; opening a row shows its done screen again (`renderResults`, `openResult` in `page/share.js`).
+The Notebook's tabs are Glossary, Results, Speed and Settings (Look, What to practise).
 
 ## Practice on real evidence (judgement lessons)
 
@@ -324,8 +326,7 @@ quiz are small links; removing it is under "⋯".
 **Reviewing** happens in the focus field. **Start review** opens it, with the page's "space"
 effect: one card at a time. Try to recall it first, then **Show what I saved**, then say whether
 you remembered. Remembering stamps a seal (and a spark) and pushes the next review further out
-(3, 10, 30, 90 days); forgetting puts it back on Learning. It ends with how many you sealed. With
-Motion off the effects don't play; everything else is the same.
+(3, 10, 30, 90 days); forgetting puts it back on Learning. It ends with how many you sealed.
 
 The search button in the tray looks through the text, your notes, the explanations and the lesson names.
 
@@ -427,8 +428,7 @@ and `/* fx: end */` in `page.html`. Every effect is played by one of three funct
 - It removes itself when its root's `fx-end` animation ends, or after 4 seconds if that never
   comes (a hidden tab, say). Nothing is left behind: no elements, timers or listeners.
 - Nothing loops or blurs, and moving parts use transform and opacity, which phones draw cheaply.
-- Nothing plays when the phone asks for reduced motion, when **Motion** is Off in the Notebook
-  (which also stills the glow on the next step), or when the tab is hidden.
+- Nothing plays when the tab is hidden. Motion is for everyone: there's no Motion switch, and the device's reduced-motion setting isn't followed. That was the owner's choice (2026-10-15), knowing it fails WCAG 2.2.2 for the looping glows and embers; opening a trust mark still rests its embers.
 - An error inside an effect is caught, so it can't break the step it decorates.
 
 **Adding an effect:** put its markup in `FX`, its rules (`.fx-<name>`, keyframes named `fx-…`)
@@ -450,8 +450,7 @@ the testing whose record is evidence (experiments, eval runs, registries).
   cut through `**bold**` or backticks; `tests/test_content.py` checks this. One note per lesson,
   and only where the lesson really is about trust.
 - A mark you haven't opened gives off embers and pops in with a burst each time the Learn step
-  shows it; once opened it rests, remembered on this device (`drill-trust-seen`). With Motion
-  off or reduced motion it is a still glow.
+  shows it; once opened it rests, remembered on this device (`drill-trust-seen`).
 - Colours are `--mark` and `--mark-glow` in every look: a pale light, apart from the blue of
   "next" and the violet of the path. The styles sit with the lesson styles (`.trustmark`,
   `.trustpop`, keyframes `tm-…`), not in the fx block: the mark is part of the page, not a

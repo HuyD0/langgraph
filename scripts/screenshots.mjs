@@ -5,7 +5,7 @@
 //   node scripts/screenshots.mjs http://127.0.0.1:8791
 //
 // Each shot opens the page at one size and look, runs a few lines of the page's own functions to
-// reach a screen (openLesson, setStep, ...), and saves a .webp. Motion is off so shots are stable.
+// reach a screen (openLesson, setStep, ...), and saves a .webp, after effects have finished.
 // Add a shot here and a row in docs/screens/README.md together.
 
 import { spawn } from "node:child_process";
@@ -74,9 +74,8 @@ async function main() {
     await send("Page.enable");
     for (const [name, size, look, script] of SHOTS) {
       await send("Emulation.setDeviceMetricsOverride", { ...size, deviceScaleFactor: 2 });
-      await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
-      // The look and Motion off are read from storage before the page draws.
-      await send("Page.addScriptToEvaluateOnNewDocument", { source: `try { localStorage.setItem("drill-theme", "${look}"); localStorage.setItem("drill-motion", "off"); } catch {}` });
+      // The look is read from storage before the page draws. Motion always plays, so shots wait it out.
+      await send("Page.addScriptToEvaluateOnNewDocument", { source: `try { localStorage.setItem("drill-theme", "${look}"); } catch {}` });
       events.length = 0;
       await send("Page.navigate", { url: BASE });
       for (let i = 0; i < 100 && !events.some(e => e.method === "Page.loadEventFired"); i++) await sleep(100);
@@ -85,7 +84,7 @@ async function main() {
         ${script} })()`;
       const r = await send("Runtime.evaluate", { expression: page, awaitPromise: true });
       if (r.exceptionDetails) throw new Error(`${name}: ${r.exceptionDetails.exception?.description || r.exceptionDetails.text}`);
-      await sleep(500);
+      await sleep(1800);  // the longest effect (finishing a lesson) is 1.6 s
       const { data } = await send("Page.captureScreenshot", { format: "webp", quality: 82 });
       writeFileSync(join(OUT, `${name}.webp`), Buffer.from(data, "base64"));
       console.log(`saved docs/screens/${name}.webp`);

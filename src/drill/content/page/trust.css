@@ -28,8 +28,7 @@
 .trustpop .tr i.on { background: var(--mark); border-color: var(--mark); box-shadow: 0 0 6px var(--mark-glow); }
 .trustpop .tr span { margin-left: 4px; }
 @media (prefers-reduced-transparency: reduce) { :root[data-theme="dusk"] { --pop-bg: var(--surface); --pop-blur: none; } }
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="off"]) .trustmark:not(.seen) .turn { transform-origin: 9px 9px; animation: tm-turn 14s linear infinite; }
+:root:not([data-motion="off"]) .trustmark:not(.seen) .turn { transform-origin: 9px 9px; animation: tm-turn 14s linear infinite; }
   :root:not([data-motion="off"]) .trustmark:not(.seen) .em { animation: tm-rise 2.6s var(--d) ease-out infinite; }
   :root:not([data-motion="off"]) .trustmark.arrive svg { animation: tm-pop 600ms var(--ease-pop) backwards; }
   :root:not([data-motion="off"]) .trustmark.arrive .ring { animation: tm-wave 900ms 100ms ease-out; }
@@ -40,7 +39,6 @@
   :root:not([data-motion="off"]) .trustpop.opening > :nth-child(2) { animation-delay: 110ms; }
   :root:not([data-motion="off"]) .trustpop.opening > :nth-child(3) { animation-delay: 180ms; }
   :root:not([data-motion="off"]) .trustpop.opening > :nth-child(4) { animation-delay: 250ms; }
-}
 @keyframes tm-turn { to { transform: rotate(360deg); } }
 @keyframes tm-rise { 0% { opacity: 0; transform: translate(0, 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), -22px) scale(.3); } }
 @keyframes tm-pop { 0% { transform: scale(0) rotate(-120deg); opacity: 0; } 60% { transform: scale(1.6) rotate(10deg); opacity: 1; } 100% { transform: none; } }

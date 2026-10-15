@@ -335,7 +335,9 @@ def test_every_trust_mark_sits_on_real_words(loaded, data):
 
 
 def test_trust_marks_are_wired_into_the_learn_step():
-    """The page places each mark after its phrase, keeps its own colours, and stills it with Motion off."""
+    """The page places each mark after its phrase, keeps its own colours, and an opened mark rests.
+    Motion is for everyone (the owner's choice): no Motion switch, and the device's reduced-motion
+    setting isn't followed, so opening the mark is what stops its embers."""
     from pathlib import Path
 
     root = Path(__file__).parent.parent / "src" / "drill" / "content"
@@ -344,8 +346,7 @@ def test_trust_marks_are_wired_into_the_learn_step():
     assert "withTrust(cur.id, first" in learn and "withTrust(cur.id, p" in learn
     for name in ("--mark", "--mark-glow"):
         assert tokens.count(name + ":") == 4, name
-    moving = page.split(".trustmark:not(.seen) .em {")[0].rsplit("@media", 1)[1]
-    assert "prefers-reduced-motion: no-preference" in moving and ':root:not([data-motion="off"])' in page.split(".trustmark:not(.seen) .em {")[0][-80:]
+    assert ".trustmark:not(.seen) .em {" in page and "prefers-reduced-motion" not in page and "data-motion-pick" not in page
     assert 'store.set("drill-trust-seen"' in page and "aria-expanded" in page.split("function trustMarkHtml")[1].split("\n}")[0]
 
 

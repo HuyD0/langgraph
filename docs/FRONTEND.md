@@ -62,7 +62,7 @@ It's deliberately simple, and every feature follows the same three steps:
 
 Small helpers used everywhere: `$(id)` is `getElementById`; `ic(name)` draws an icon from the
 sprite (`<symbol id="i-name">`); `fxScreen` / `fxOn` / `fxMove` run effects through the motion
-engine, which respects Motion off and reduced motion.
+engine, which skips effects in a hidden tab (motion is for everyone: docs/DESIGN_SYSTEM.md rule 6).
 
 ## Map of the script
 
@@ -167,7 +167,7 @@ module's icon. [PAGE.md](PAGE.md), "Tracks".
 
 - `scripts/check.sh` passes (build + fast tests).
 - Restart the preview server (it caches the page), then check **375×812 and 1366×860**, in
-  **Dusk and Light**, Motion on and off. No sideways scroll; taps at least 44px; keyboard focus
+  **Dusk and Light**. No sideways scroll; taps at least 44px; keyboard focus
   visible; text readable.
 - New UI text is plain, short and kind. Judgement tasks ask one question per screen; help is a
   clue first, then the answer.

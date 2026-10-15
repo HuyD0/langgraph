@@ -56,7 +56,7 @@ The server **caches the page when it starts**: restart it after every `build-pag
 
 1. `scripts/check.sh` passes.
 2. You looked at the change in the preview at **375×812 (phone) and 1366×860 (desktop)**, in
-   **Dusk and Light**, with Motion on and off if anything moves. No sideways scroll. In Dusk, new
+   **Dusk and Light**. No sideways scroll. In Dusk, new
    boxes should look like the rest (glass, depth, a glow on what's current): if one looks flat, it
    isn't using the surface tokens.
    Mockups load `tokens.css` and the page's styles too, never hand-copied colours.
@@ -82,7 +82,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 **For the design** (details in [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md))
 - Every colour is a token in `tokens.css`; colour means one thing (blue = what's next,
   violet = the AI path, teal = the platform track, green/red/amber = pass/fail/hint).
-- One primary button per screen; tap targets at least 44px; works with Motion off.
+- One primary button per screen; tap targets at least 44px. Motion plays for everyone (no Motion
+  switch, no reduced-motion fallback): the owner's choice, see docs/DESIGN_SYSTEM.md rule 6.
 - Shape carries the phases (one sticker shape per phase; the octagon for the track).
 
 **For the repo**
