@@ -14,20 +14,26 @@ lesson(MODULE, 'field_status',
     checked='2026-10-13',
     sources=[source('Pydantic Validation', 'https://pydantic.dev/docs/validation/latest/get-started/'), source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan')],
     learn=[
-        "On a platform team, product teams don't write Terraform. They ask for things in **YAML** in the **config repo**: `env.yml` lists the teams in an environment, each team's `team.yml` names its owner group and points to resource files like `clusters.yml`. **Pydantic** checks each file against a contract: a field it doesn't know, or a value of the wrong type, is rejected.",
-        "The **runbook** is Terraform code that reads that YAML. It loads the files, fills in **defaults** for anything left out, **transforms** some values (a cluster's name gets the team's short code in front), and passes the result to **modules**, which call the Databricks and Azure **providers**. **Spacelift** runs all of it as a plan someone reviews before anything is applied.",
-        "So a field goes through five points: **the YAML, the check, the runbook, the module, the provider**. Valid YAML is not enough. If the runbook never passes a field on, it is **dropped**: it looks fine in the YAML and does nothing.",
-        "Reviewers describe what happened to a field with one word: **SUPPORTED** (it reaches the provider as written), **DEFAULTED** (it was left out and the runbook supplied a value), **TRANSFORMED** (changed on the way), **DROPPED** (accepted, never used), **INVALID** (the check rejects it) or **UNKNOWN** (you haven't traced it all the way yet).",
+        "On a platform team, product teams don't write Terraform. They ask for what they need in **YAML** files kept in a shared repo, the **config repo**. A team's `clusters.yml`, for example, lists the clusters it wants.",
+        "A field in that YAML goes past five stops before anything is built. **The YAML** says what the team wants. **The check** (written with Pydantic, a Python library) rejects fields it doesn't know and values of the wrong type. **The runbook** is Terraform code that reads the YAML and fills in anything left out. **A module** turns those settings into resources. **The provider** is the plugin that actually talks to Databricks or Azure.",
+        "Valid YAML is not enough. A field only matters if it reaches the provider. If the runbook never passes it on, it is **dropped**: it looks fine in the file and does nothing. Spacelift shows the end result as a plan that someone reviews before anything is applied.",
+        "Reviewers sum up a field in one word. SUPPORTED: it reaches the provider as written. DEFAULTED: it was left out, so the runbook filled in a value. TRANSFORMED: it was changed on the way (a cluster's name gets the team's short code in front). DROPPED: accepted, never used. INVALID: the check rejects it. UNKNOWN: you haven't followed it all the way yet.",
     ],
-    example=example('Tracing one field', """clusters.yml        policy_name: Shared Compute - Standard
-Pydantic check      policy_name is a known text field      -> valid
-runbook             policy_name = try(c.policy_name, "Personal Compute")
-workspace module    looks the policy up by name, passes its id
-provider            databricks_cluster.policy_id = <that id>
-                    -> SUPPORTED
+    example=example('Following one field, stop by stop', """clusters.yml
+  policy_name: Shared Compute - Standard
+check
+  a known text field -> valid
+runbook
+  try(c.policy_name, "Personal Compute")
+module
+  looks the policy up, passes its id
+provider
+  databricks_cluster.policy_id = <that id>
+=> SUPPORTED
 
-Leave policy_name out, and the runbook's try(...) uses "Personal Compute"
-                    -> DEFAULTED"""),
+Leave policy_name out, and the runbook's
+try(...) uses "Personal Compute"
+=> DEFAULTED"""),
     check=question(
         'A team adds `autoscale_note: "keep it small"` to `clusters.yml`. Pydantic accepts it as free text, but the runbook never reads it. What happened to the field?',
         [
