@@ -189,6 +189,9 @@ table.dt .pdot { display: inline-block; width: 9px; height: 9px; border-radius: 
 .verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
 .verdict.ok .ic { color: var(--pass); }
 .verdict.no .ic { color: var(--fail); }
+/* "Question 2 of 3" over a run of questions (Check, practice): the count, then the dots */
+.shead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.scount { font: 600 12px var(--mono); color: var(--muted); }
 .row2 { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
 .row2 > div { display: grid; gap: 4px; min-width: 0; }
 .row2 p { margin: 0; }
