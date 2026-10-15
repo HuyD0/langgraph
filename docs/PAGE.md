@@ -7,7 +7,9 @@ going Learn, Check, Build, Explain. The same page is what `drill-server` serves 
 
 The page is one self-contained HTML file. Python exercises run in the browser with
 [Skulpt](https://skulpt.org). On claude.ai, hints, reviews and the study list use the
-artifact's `sample` and `db` capabilities; served locally they talk to `/api/*` instead.
+artifact's `sample` and `db` capabilities, and saving the shared result's picture uses
+`downloads` (claude.ai asks the viewer first); served locally they talk to `/api/*` and use a
+plain download link instead.
 The switch is `claudeBackend()` / `localBackend()` at the bottom of `page.html`.
 
 ## Where things are
@@ -357,6 +359,8 @@ cd scripts/skulpt-check && npm install && node check_in_browser_python.js
 
 Then ask Claude Code to publish `dist/daily-drill.html` to the URL above. Publishing to the
 same URL keeps learners' progress, which lives in the artifact's database, not in the HTML.
+The artifact declares `{"db": {"rules": [{"path": "study", "read": "owner", "write": "owner"}]},
+"sample": {}, "user": {}, "downloads": true}`; a publish that leaves `capabilities` out keeps them.
 
 ## Ask about this lesson
 
