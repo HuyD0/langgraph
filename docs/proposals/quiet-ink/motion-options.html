@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" data-theme="dusk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dusk Motion Options</title>
+<link rel="stylesheet" href="../../../src/drill/content/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Yuji+Boku&family=Kaisei+Tokumin:wght@700;800&display=swap">
+<style>
+  /* Layout: five directions side by side (stacked on a phone), each a live mini lesson in a phone frame,
+     its glyph set under it. Colours are the app's tokens; the type is the proposal (Kaisei + a brush moment). */
+  :root { --head: "Kaisei Tokumin", Georgia, serif; --moment: "Yuji Boku", "Kaisei Tokumin", serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 20px; }
+  .top { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; justify-content: space-between; }
+  h1 { font: 800 28px/1.15 var(--head); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .lede { margin: 0; color: var(--muted); max-width: 70ch; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { min-height: 44px; padding: 0 14px; border: 0; background: none; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); }
+  .rm { font-size: 13px; color: var(--hint); margin: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; align-items: start; }
+
+  .opt { display: grid; gap: 12px; min-width: 0; }
+  .ohead { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: center; }
+  .letter { grid-row: span 2; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font: 800 20px var(--head); background: var(--accent-soft); color: var(--accent); }
+  .ohead h2 { margin: 0; font: 800 20px/1.2 var(--head); }
+  .ohead p { margin: 0; font-size: 14px; color: var(--muted); }
+
+  /* the phone frame and the mini lesson inside it */
+  .frame { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--card-line); border-radius: 20px; background: var(--bg); height: 430px; }
+  .lesson { position: absolute; inset: 0; padding: 14px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; }
+  .lb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .lb b { font: 600 13px var(--mono); color: var(--fg); }
+  .lb svg { width: 20px; height: 20px; } .lb .sh { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font: 600 12px var(--body); color: var(--muted); }
+  .steps i { display: block; height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 4px; }
+  .steps .d i { background: var(--pass); } .steps .n i { background: var(--accent); box-shadow: var(--glow-current); } .steps .n { color: var(--fg); }
+  .pane { position: relative; background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 14px; padding: 14px; display: grid; gap: 8px; align-content: start; overflow: hidden; }
+  .pane h3 { margin: 0; font: 800 19px/1.2 var(--head); }
+  .pane p { margin: 0; font-size: 14.5px; }
+  .pane code { font: 13px var(--mono); color: var(--syn-kw); }
+  .acts { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 14px var(--body); cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: var(--glow-current); flex: 1; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* the done screen, over the lesson */
+  .done { position: absolute; inset: 0; padding: 18px 14px; display: grid; align-content: start; gap: 12px; background: var(--bg); }
+  .done[hidden] { display: none !important; }
+  .dcheck { width: 44px; height: 44px; border-radius: 50%; background: var(--pass); color: var(--bg); display: grid; place-items: center; }
+  .dcheck svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .done > * { position: relative; } .done > [data-fx] { position: absolute; }
+  .dtitle { position: relative; z-index: 1; margin: 0; font: 400 40px/1.1 var(--moment); width: max-content; max-width: 100%; }
+  .dmeta { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .marks { display: flex; gap: 6px; }
+  .mk { width: 30px; height: 34px; border-radius: 6px; background: var(--sunk); border-bottom: 3px solid var(--pass); display: grid; place-items: center; }
+  .mk svg { width: 18px; height: 18px; fill: none; stroke: var(--pass); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .mk.k { border-bottom-color: var(--hint); } .mk.k svg { stroke: var(--hint); }
+  .fxlayer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+
+  /* glyph strip */
+  .glyphs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .g { display: grid; justify-items: center; gap: 2px; font-size: 11px; color: var(--muted); text-align: center; }
+  .gi { width: 44px; height: 44px; display: grid; place-items: center; }
+  .gi svg { width: 30px; height: 30px; overflow: visible; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .uses { font-size: 12.5px; color: var(--muted); margin: 0; border-top: 1px solid var(--line); padding-top: 8px; }
+  .uses b { color: var(--fg); font-weight: 600; }
+
+  /* A · Ink stroke: rough brush edges */
+  .ink .gi svg { stroke: var(--fg); stroke-width: 2.6; filter: url(#rough); }
+  .ink .g:nth-child(odd) .gi svg { transform: rotate(-4deg); } .ink .g:nth-child(even) .gi svg { transform: rotate(3deg); }
+  /* B · Seal: knocked out of a lavender seal */
+  .seal .gi { background: var(--finish, var(--pass)); border-radius: 9px; transform: rotate(-5deg); }
+  .seal .gi svg { width: 26px; height: 26px; stroke: var(--finish-ink, var(--bg)); stroke-width: 2.2; }
+  /* C · Ember: blue energy, a soft glow */
+  .ember .gi svg { stroke: var(--accent); stroke-width: 1.9; filter: drop-shadow(0 0 3px var(--fx-glow)) drop-shadow(0 0 8px color-mix(in srgb, var(--fx-glow) 50%, transparent)); }
+  /* D · Panel: heavy outline, a hard offset like a printed panel */
+  .panel .gi svg { stroke: var(--fg); stroke-width: 3; filter: drop-shadow(2.5px 2.5px 0 var(--path)); }
+  /* E · Quiet ink: hairline and one dot */
+  .quiet .gi { position: relative; } .quiet .gi svg { stroke: var(--muted); stroke-width: 1.3; }
+  .quiet .gi::after { content: ""; position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+  .foot { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; max-width: 80ch; }
+  .foot b { color: var(--fg); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.8"/></filter>
+</svg>
+<div class="wrap">
+  <div class="top">
+    <div style="display:grid;gap:6px">
+      <h1>Five motion directions</h1>
+      <p class="lede">Each one is a live mini lesson. Tap <b>Next step</b> for its step change and <b>Finish</b> for its done moment. Its glyph set is underneath: six phase shapes are the app's own, plus marks for a right answer, a clue, a gate and done.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Look"><button data-look="dusk" aria-pressed="true">Dusk</button><button data-look="light" aria-pressed="false">Light</button></div>
+  </div>
+  <p class="rm" id="rmNote" hidden>Your device asks for reduced motion, so the effects jump straight to their end. Turn that off to see them move.</p>
+  <div class="grid" id="grid"></div>
+  <div class="foot">
+    <p><b>All five follow the app's motion rules:</b> they mark real moments (a step, a finish), never loop, never wait for a tap, and switch off with Motion: Off and reduced motion. Every glyph is drawn from scratch.</p>
+    <p><b>Mixing is fine:</b> for example A's step change with B's finish, or C's glyphs with E's transitions.</p>
+  </div>
+</div>
+
+<script>
+const OPTS = [
+  { k: "A", id: "ink", name: "Ink stroke", feel: "A brush sweeps each new step in; the finish writes itself.", uses: "<b>Uses</b> clip-path for the sweep and the writing, plus an SVG filter for the brush edges. Light to run." },
+  { k: "B", id: "seal", name: "Seal stamp", feel: "Steps land with a small thud; the finish is a seal pressed down, then each mark stamped.", uses: "<b>Uses</b> transform and opacity only, the cheapest kind of motion. Feels physical and calm." },
+  { k: "C", id: "ember", name: "Ember", feel: "An energy line runs across, the step burns up from below; the finish throws sparks.", uses: "<b>Uses</b> transform, opacity and clip-path; builds on today's spark and aura. The most intense." },
+  { k: "D", id: "panel", name: "Panel cut", feel: "Steps cut in on a diagonal like a comic panel; the finish slams in over speed lines.", uses: "<b>Uses</b> clip-path and transform. The boldest look; the most comic-book." },
+  { k: "E", id: "quiet", name: "Quiet ink", feel: "Steps rise in softly; the finish blooms one ink drop under the line.", uses: "<b>Uses</b> transform and opacity only. Barely there: calm for daily use." },
+];
+const STEP_NAMES = ["Learn", "Check", "Build", "Explain"];
+const PANES = [
+  `<h3>Renaming without destroying</h3><p>Terraform knows each resource by its address. Rename it and the plan sees one gone and one new.</p>`,
+  `<h3>What should the plan show?</h3><p>You rename the cluster and add a <code>moved</code> block.</p><p><b>B.</b> It moved, nothing destroyed.</p>`,
+  `<h3>Plan a rename</h3><p>For each old address: keep, move or destroy. Then any new address left over is a create.</p>`,
+  `<h3>Say it back</h3><p>"Terraform knows things by their <b>address</b>. If I rename one without a <b>moved</b> block, it destroys it and makes it again."</p>`,
+];
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (reduce) document.getElementById("rmNote").hidden = false;
+
+// shapes on a 24 grid centred on 0
+const poly = (n, r, rot = -90) => Array.from({ length: n }, (_, i) => { const a = (rot + i * 360 / n) * Math.PI / 180; return (r * Math.cos(a)).toFixed(1) + "," + (r * Math.sin(a)).toFixed(1); }).join(" ");
+const SHAPES = [
+  ["Frame", `<circle r="8"/>`],
+  ["Design", `<rect x="-7" y="-7" width="14" height="14" rx="2.6"/>`],
+  ["Build", `<polygon points="${poly(6, 8.4)}"/>`],
+  ["Evaluate", `<rect x="-6.4" y="-6.4" width="12.8" height="12.8" rx="1.4" transform="rotate(45)"/>`],
+  ["Ship", `<path d="M-7.5 -7H7.5V0Q7.5 6 0 9Q-7.5 6 -7.5 0Z"/>`],
+  ["Monitor", `<polygon points="${poly(5, 8.6)}"/>`],
+  ["Right", `<path d="M-7 0.5l4.5 4.5 9.5-10"/>`],
+  ["Clue", `<path d="M-3 7h6M-2 10h4M0 -9a6 6 0 0 0-3.6 10.8c.7.6 1 1.3 1 2.2h5.2c0-.9.3-1.6 1-2.2A6 6 0 0 0 0 -9z"/>`],
+  ["Gate", `<path d="M-8 9V-2a8 8 0 0 1 16 0V9M-8 3h16M0 -10v3"/>`],
+  ["Done", `<polygon points="${Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 3.8 : 9, a = (-90 + i * 36) * Math.PI / 180; return (r * Math.cos(a)).toFixed(1) + "," + (r * Math.sin(a)).toFixed(1); }).join(" ")}"/>`],
+];
+const glyph = ([name, body]) => `<div class="g"><span class="gi"><svg viewBox="-12 -12 24 24" aria-hidden="true">${body}</svg></span>${name}</div>`;
+const CHECK = `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="M-7 0.5l4.5 4.5 9.5-10"/></svg>`;
+const CLUE = `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="M-3 7h6M0 -8a5.5 5.5 0 0 0-3.3 9.9c.6.6.9 1.2.9 2.1h4.8c0-.9.3-1.5.9-2.1A5.5 5.5 0 0 0 0 -8z"/></svg>`;
+
+document.getElementById("grid").innerHTML = OPTS.map(o => `
+  <section class="opt ${o.id}" data-opt="${o.id}" aria-label="${o.k}: ${o.name}">
+    <div class="ohead"><span class="letter">${o.k}</span><h2>${o.name}</h2><p>${o.feel}</p></div>
+    <div class="frame">
+      <div class="lesson">
+        <div class="lb"><span>←</span><svg viewBox="-12 -12 24 24"><polygon class="sh" points="${poly(6, 8.4)}"/></svg><b>3.8</b>Terraform foundations</div>
+        <div class="steps">${STEP_NAMES.map((s, i) => `<span class="${i === 0 ? "n" : ""}"><i></i>${s}</span>`).join("")}</div>
+        <div class="pane">${PANES[0]}</div>
+        <div class="acts"><button class="btn" data-act="finish">Finish</button><button class="btn primary" data-act="next">Next step</button></div>
+      </div>
+      <div class="done" hidden>
+        <span class="dcheck">${CHECK}</span>
+        <h2 class="dtitle">Lesson done.</h2>
+        <p class="dmeta">P3.8 · 6 of 9 in Terraform foundations</p>
+        <div class="marks"><span class="mk">${CHECK}</span><span class="mk">${CHECK}</span><span class="mk k">${CLUE}</span><span class="mk">${CHECK}</span></div>
+        <div class="acts"><button class="btn primary" data-act="back">Back to the lesson</button></div>
+      </div>
+      <div class="fxlayer"></div>
+    </div>
+    <div class="glyphs">${SHAPES.map(glyph).join("")}</div>
+    <p class="uses">${o.uses}</p>
+  </section>`).join("");
+
+const EASE = { out: "cubic-bezier(.2,.7,.3,1)", pop: "cubic-bezier(.2,1.5,.4,1)", in: "cubic-bezier(.6,0,.9,.4)" };
+const anim = (el, frames, opts) => reduce ? { finished: Promise.resolve() } : el.animate(frames, { fill: "both", ...opts });
+const fxEl = (sec, html, css, under) => { const d = document.createElement("div"); d.style.cssText = "position:absolute;pointer-events:none;" + css; d.innerHTML = html; if (under) { d.dataset.fx = ""; under.prepend(d); } else sec.querySelector(".fxlayer").appendChild(d); return d; };
+const tokenColor = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// ---------- step changes ----------
+const STEP = {
+  ink(pane, sec) {
+    anim(pane, [{ clipPath: "inset(0 100% 0 0 round 14px)" }, { clipPath: "inset(0 0 0 0 round 14px)" }], { duration: 560, easing: EASE.out });
+    const r = pane.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
+    const edge = fxEl(sec, `<svg width="26" height="${r.height}" viewBox="0 0 26 100" preserveAspectRatio="none"><path d="M10 0 C18 12 4 22 14 34 S6 58 15 70 S8 90 12 100 L26 100 L26 0Z" fill="${tokenColor("--path")}" filter="url(#rough)"/></svg>`,
+      `left:${r.left - f.left}px;top:${r.top - f.top}px;height:${r.height}px;width:26px`);
+    anim(edge, [{ transform: "translateX(-20px)", opacity: 1 }, { transform: `translateX(${r.width}px)`, opacity: .9 }, { transform: `translateX(${r.width + 10}px)`, opacity: 0 }], { duration: 600, easing: EASE.out }).finished.then(() => edge.remove());
+  },
+  seal(pane, sec) {
+    anim(pane, [{ opacity: 0, transform: "scale(1.05)" }, { opacity: 1, transform: "scale(1)" }], { duration: 340, easing: EASE.pop });
+    const r = pane.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
+    const s = fxEl(sec, `<span style="display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:${tokenColor("--finish") || tokenColor("--pass")};color:${tokenColor("--finish-ink") || tokenColor("--bg")}"><svg width="20" height="20" viewBox="-12 -12 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M-7 0.5l4.5 4.5 9.5-10"/></svg></span>`,
+      `left:${r.right - f.left - 46}px;top:${r.top - f.top + 10}px`);
+    anim(s, [{ transform: "scale(1.8) rotate(-12deg)", opacity: 0 }, { transform: "scale(1) rotate(-6deg)", opacity: 1, offset: .35 }, { transform: "scale(1) rotate(-6deg)", opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 900, easing: EASE.out }).finished.then(() => s.remove());
+  },
+  ember(pane, sec) {
+    const r = pane.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
+    const line = fxEl(sec, "", `left:${r.left - f.left}px;top:${r.top - f.top}px;width:${r.width}px;height:2px;border-radius:2px;background:${tokenColor("--fx-core")};box-shadow:0 0 8px ${tokenColor("--fx-glow")},0 0 18px ${tokenColor("--fx-mix")};transform-origin:left`);
+    anim(line, [{ transform: "scaleX(0)", opacity: 1 }, { transform: "scaleX(1)", opacity: 1, offset: .6 }, { transform: "scaleX(1)", opacity: 0 }], { duration: 520, easing: EASE.out }).finished.then(() => line.remove());
+    anim(pane, [{ clipPath: "inset(100% 0 0 0 round 14px)", opacity: .4 }, { clipPath: "inset(0 0 0 0 round 14px)", opacity: 1 }], { duration: 440, delay: 120, easing: EASE.out });
+  },
+  panel(pane, sec) {
+    anim(pane, [{ clipPath: "polygon(0 0, 0 0, -30% 100%, -30% 100%)", transform: "translateX(-10px)" }, { clipPath: "polygon(0 0, 130% 0, 100% 100%, -30% 100%)", transform: "translateX(0)" }], { duration: 380, easing: EASE.out });
+    const lines = fxEl(sec, "", `inset:0;background:repeating-linear-gradient(115deg, transparent 0 14px, color-mix(in srgb, ${tokenColor("--fg")} 18%, transparent) 14px 16px)`);
+    anim(lines, [{ opacity: 0, transform: "translateX(-20px)" }, { opacity: 1, offset: .3 }, { opacity: 0, transform: "translateX(20px)" }], { duration: 420, easing: "linear" }).finished.then(() => lines.remove());
+  },
+  quiet(pane) {
+    anim(pane, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 280, easing: EASE.out });
+  },
+};
+
+// ---------- finishes ----------
+const FINISH = {
+  ink(done, sec) {
+    const t = done.querySelector(".dtitle");
+    anim(t, [{ clipPath: "inset(-10% 100% -10% 0)" }, { clipPath: "inset(-10% 0 -10% 0)" }], { duration: 1100, easing: "cubic-bezier(.45,.1,.4,1)" });
+    done.querySelectorAll(".mk").forEach((m, i) => anim(m, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 300, delay: 900 + i * 110, easing: EASE.out }));
+  },
+  seal(done, sec) {
+    const c = done.querySelector(".dcheck");
+    anim(c, [{ transform: "scale(2.4) rotate(-14deg)", opacity: 0 }, { transform: "scale(1) rotate(-6deg)", opacity: 1 }], { duration: 420, easing: EASE.pop });
+    anim(done.querySelector(".dtitle"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 260 });
+    done.querySelectorAll(".mk").forEach((m, i) => anim(m, [{ transform: "scale(1.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, delay: 520 + i * 150, easing: EASE.pop }));
+  },
+  ember(done, sec) {
+    const t = done.querySelector(".dtitle"), r = t.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
+    anim(t, [{ opacity: 0, letterSpacing: ".25em", textShadow: `0 0 18px ${tokenColor("--fx-glow")}` }, { opacity: 1, letterSpacing: "0em", textShadow: "0 0 0 transparent" }], { duration: 700, easing: EASE.out });
+    if (!reduce) for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2, s = fxEl(sec, "", `left:${r.left - f.left + r.width / 2}px;top:${r.top - f.top + r.height / 2}px;width:5px;height:5px;border-radius:50%;background:${tokenColor("--fx-core")};box-shadow:0 0 8px ${tokenColor("--fx-glow")}`);
+      anim(s, [{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${Math.cos(a) * 80}px,${Math.sin(a) * 50}px) scale(.3)`, opacity: 0 }], { duration: 700, delay: 120, easing: EASE.out }).finished.then(() => s.remove());
+    }
+    done.querySelectorAll(".mk").forEach((m, i) => anim(m, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 600 + i * 90 }));
+  },
+  panel(done, sec) {
+    const t = done.querySelector(".dtitle"), r = t.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
+    const cx = r.left - f.left + r.width / 2, cy = r.top - f.top + r.height / 2;
+    const rays = Array.from({ length: 22 }, (_, i) => { const a = (i / 22) * Math.PI * 2; return `<line x1="${Math.cos(a) * 40}" y1="${Math.sin(a) * 28}" x2="${Math.cos(a) * 260}" y2="${Math.sin(a) * 200}"/>`; }).join("");
+    const burst = fxEl(sec, `<svg width="520" height="400" viewBox="-260 -200 520 400" stroke="${tokenColor("--path")}" stroke-width="2.4" stroke-linecap="round">${rays}</svg>`, `left:${cx - 260}px;top:${cy - 200}px`, done);
+    anim(burst, [{ transform: "scale(.3)", opacity: 0 }, { transform: "scale(1)", opacity: .8, offset: .4 }, { transform: "scale(1.15)", opacity: 0 }], { duration: 800, easing: EASE.out }).finished.then(() => burst.remove());
+    anim(t, [{ transform: "translateX(-40px) skewX(-14deg)", opacity: 0 }, { transform: "translateX(4px) skewX(0)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 380, easing: EASE.out });
+    done.querySelectorAll(".mk").forEach((m, i) => anim(m, [{ transform: "translateX(-14px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 220, delay: 380 + i * 70, easing: EASE.out }));
+  },
+  quiet(done, sec) {
+    const t = done.querySelector(".dtitle"), r = t.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
+    const drop = fxEl(sec, "", `left:${r.left - f.left - 10}px;top:${r.bottom - f.top - 18}px;width:120px;height:40px;border-radius:50%;background:radial-gradient(closest-side, color-mix(in srgb, ${tokenColor("--accent")} 45%, transparent), transparent)`, done);
+    anim(drop, [{ transform: "scale(0)", opacity: .9 }, { transform: "scale(1.6,1)", opacity: .5 }], { duration: 1200, easing: EASE.out });
+    anim(t, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 500, delay: 150, easing: EASE.out });
+    done.querySelectorAll(".mk").forEach((m, i) => anim(m, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 500 + i * 120 }));
+  },
+};
+
+const state = {};
+document.addEventListener("click", e => {
+  const look = e.target.closest("[data-look]");
+  if (look) { document.documentElement.dataset.theme = look.dataset.look; document.querySelectorAll("[data-look]").forEach(b => b.setAttribute("aria-pressed", b === look)); return; }
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const sec = btn.closest("[data-opt]"), id = sec.dataset.opt, done = sec.querySelector(".done");
+  sec.querySelector(".fxlayer").innerHTML = ""; done.querySelectorAll("[data-fx]").forEach(n => n.remove());
+  if (btn.dataset.act === "next") {
+    state[id] = ((state[id] || 0) + 1) % 4;
+    const n = state[id];
+    sec.querySelectorAll(".steps span").forEach((s, i) => s.className = i < n ? "d" : i === n ? "n" : "");
+    const pane = sec.querySelector(".pane"); pane.innerHTML = PANES[n];
+    pane.getAnimations().forEach(a => a.cancel());
+    STEP[id](pane, sec);
+  } else if (btn.dataset.act === "finish") {
+    done.hidden = false;
+    done.querySelectorAll("*").forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    requestAnimationFrame(() => FINISH[id](done, sec));
+  } else if (btn.dataset.act === "back") {
+    done.hidden = true;
+  }
+});
+</script>
+</body>
+</html>

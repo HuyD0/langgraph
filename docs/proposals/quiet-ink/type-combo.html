@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="dusk" data-type="after">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dusk combination</title>
+<!-- the app's own tokens, never hand-copied colours -->
+<link rel="stylesheet" href="../../../src/drill/content/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Yuji+Boku&family=Kaisei+Tokumin:wght@700;800&display=swap">
+<style>
+  /* The proposal as tokens: headings in Kaisei Tokumin, the big "moment" line in Yuji Boku,
+     and an ink wash under Dusk only. "Before" puts today's heading font back. */
+  :root[data-type="after"] { --head: "Kaisei Tokumin", Georgia, serif; --head-w: 800; --head-ls: -0.01em;
+                             --moment: "Yuji Boku", "Kaisei Tokumin", serif; --moment-w: 400; --moment-ls: 0; }
+  :root[data-type="before"] { --head: var(--display); --head-w: 800; --head-ls: -0.015em;
+                              --moment: var(--display); --moment-w: 800; --moment-ls: -0.015em; }
+  :root { --ink: none; --ink-op: 0; }
+  :root[data-theme="dusk"][data-type="after"] { --ink-op: .26; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 18px; }
+  .top { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; }
+  .top h1 { font: var(--head-w) 26px/1.15 var(--head); letter-spacing: var(--head-ls); margin: 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .controls b { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { min-height: 44px; padding: 0 14px; border: 0; background: none; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); }
+  .lede { margin: 0; color: var(--muted); max-width: 72ch; }
+  .phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+  .label { font: 600 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin: 0 0 8px; }
+
+  /* a phone screen; the ink wash is a layer under everything in it */
+  .phone { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--card-line); border-radius: 22px; background: var(--bg); min-height: 640px; display: grid; align-content: start; }
+  .phone::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: var(--ink-op); mix-blend-mode: screen; background-size: 640px; background-image: var(--ink-img); }
+  .bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .brand { font: 800 18px/1 var(--display); margin-right: auto; }
+  .week { display: flex; gap: 4px; } .week i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); } .week i.on { background: var(--pass); } .week i.now { background: none; box-shadow: inset 0 0 0 2px var(--accent); }
+  .ib { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 10px; }
+  .pad { padding: 16px; display: grid; gap: 14px; }
+
+  h2.hello { font: var(--head-w) 27px/1.12 var(--head); letter-spacing: var(--head-ls); margin: 0; }
+  .meta { font-size: 13.5px; color: var(--muted); margin: 0; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 14px; padding: 16px; display: grid; gap: 9px; }
+  .eyebrow { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .eyebrow.tr { color: var(--track); }
+  .card h3 { font: var(--head-w) 21px/1.2 var(--head); letter-spacing: var(--head-ls); margin: 0; }
+  .progress { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; } .progress i { height: 4px; border-radius: 2px; background: var(--line); } .progress i.d { background: var(--pass); } .progress i.n { background: var(--accent); }
+  .btn { justify-self: start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); font: 600 15px var(--body); box-shadow: var(--glow-current); }
+  .btn.q { background: none; border-color: transparent; color: var(--muted); box-shadow: none; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--card-line); background: var(--card-bg); }
+  .ring { width: 32px; height: 32px; border-radius: 50%; background: conic-gradient(var(--finish, var(--pass)) 30%, var(--line) 0); display: grid; place-items: center; font: 800 13px var(--display); position: relative; }
+  .ring::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--surface); } .ring span { position: relative; z-index: 1; }
+  .row b { font-size: 14.5px; display: block; } .row small { color: var(--muted); font-size: 12.5px; }
+  .h3sec { font: var(--head-w) 19px/1.2 var(--head); letter-spacing: var(--head-ls); margin: 6px 0 0; }
+
+  .lb { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); }
+  .lb b { font: 600 13.5px var(--mono); color: var(--track-ink); }
+  .lb svg { width: 20px; height: 20px; } .lb .sh { fill: var(--track-soft); stroke: var(--track); stroke-width: 1.6; }
+  .lhead { display: flex; gap: 12px; align-items: flex-start; }
+  .ltitle { flex: 1; font: var(--head-w) 27px/1.12 var(--head); letter-spacing: var(--head-ls); margin: 0; }
+  .earn { width: 44px; height: 44px; border-radius: 50%; border: 2px dashed var(--accent); flex: none; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font: 600 12.5px var(--body); color: var(--muted); }
+  .steps i { display: block; height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 5px; }
+  .steps .d i { background: var(--pass); } .steps .n i { background: var(--accent); box-shadow: var(--glow-current); } .steps .n { color: var(--fg); }
+  .prose { margin: 0; font-size: 15.5px; } .prose b { font-weight: 600; }
+  pre { margin: 0; font: 13px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow-x: auto; }
+  pre .k { color: var(--syn-kw); } pre .s { color: var(--syn-str); }
+
+  .q { font-weight: 600; font-size: 16.5px; margin: 0; }
+  .opt { display: flex; gap: 10px; align-items: center; min-height: 50px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 15px; }
+  .opt .k { font: 600 12.5px var(--mono); color: var(--muted); }
+  .opt.right { border-color: var(--pass); background: var(--pass-bg); }
+  .verdict { border-radius: 10px; padding: 12px 14px; background: var(--pass-bg); font-size: 14.5px; }
+  .verdict b { display: block; font: var(--head-w) 16px/1.3 var(--head); color: var(--pass); }
+
+  .check { width: 46px; height: 46px; border-radius: 50%; background: var(--pass); display: grid; place-items: center; color: var(--surface); font-size: 24px; font-weight: 700; }
+  h2.moment { font: var(--moment-w) 40px/1.05 var(--moment); letter-spacing: var(--moment-ls); margin: 0; }
+  .result { position: relative; gap: 12px; } .result::before { content: ""; position: absolute; left: 16px; right: 16px; top: 0; height: 2px; border-radius: 2px; background: var(--finish, var(--pass)); }
+  .result .eyebrow { color: var(--finish, var(--pass)); }
+  .rrow { display: grid; grid-template-columns: 64px 1fr; align-items: center; font-size: 13.5px; color: var(--muted); }
+  .marks { display: flex; } .marks i { width: 26px; height: 30px; margin-right: -4px; clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%); background: linear-gradient(165deg, color-mix(in srgb, var(--pass) 30%, transparent), transparent 70%), var(--sunk); border-bottom: 3px solid var(--pass); }
+  .marks i.k { background: linear-gradient(165deg, color-mix(in srgb, var(--hint) 30%, transparent), transparent 70%), var(--sunk); border-bottom-color: var(--hint); }
+  .next2 { display: grid; gap: 4px; } .next2 small { color: var(--muted); font-size: 13px; }
+
+  .notes { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; color: var(--muted); font-size: 14px; max-width: 80ch; }
+  .notes b { color: var(--fg); }
+  .notes code { font: 13px var(--mono); color: var(--fg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Kaisei headings, a brush moment, ink under Dusk</h1>
+    <div class="controls">
+      <b>Type</b>
+      <div class="seg" role="group" aria-label="Type"><button data-pick-type="before" aria-pressed="false">Before</button><button data-pick-type="after" aria-pressed="true">After</button></div>
+      <b>Look</b>
+      <div class="seg" role="group" aria-label="Look"><button data-look="dusk" aria-pressed="true">Dusk</button><button data-look="light" aria-pressed="false">Light</button></div>
+    </div>
+  </div>
+  <p class="lede">Headings are Kaisei Tokumin. The one big line that marks a moment, "Lesson done.", is in Yuji Boku brush. Dusk gets a soft ink wash under the glass; Light stays plain. Body text, code, buttons and labels don't change.</p>
+
+  <div class="phones">
+    <div>
+      <p class="label">Home</p>
+      <div class="phone">
+        <div class="bar"><span class="brand">Daily Drill</span><span class="week"><i class="on"></i><i class="on"></i><i class="now"></i><i></i><i></i><i></i><i></i></span><span class="ib"></span></div>
+        <div class="pad">
+          <div><h2 class="hello">Wednesday. One lesson.</h2><p class="meta">Azure Databricks as code, a little every day.</p></div>
+          <div class="card">
+            <span class="eyebrow tr">Today · Platform · step 3 of 4</span>
+            <h3>Where did that access come from?</h3>
+            <p class="meta">Platform track, How the platform repos fit together. You stopped at the Build step.</p>
+            <div class="progress"><i class="d"></i><i class="d"></i><i class="n"></i><i></i></div>
+            <button class="btn">Finish today's lesson</button>
+          </div>
+          <div class="row"><span class="ring"><span>3</span></span><span style="flex:1"><b>Study list</b><small>2 learning · 1 to review</small></span><span style="color:var(--muted)">›</span></div>
+          <p class="h3sec">Your track</p>
+          <p class="meta">P3 · Terraform foundations · 5 of 9</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p class="label">A lesson: Learn</p>
+      <div class="phone">
+        <div class="bar"><span class="brand">Daily Drill</span><span class="ib"></span></div>
+        <div class="pad">
+          <div class="lb"><span>←</span><svg viewBox="-12 -12 24 24"><polygon class="sh" points="8.7,3.6 3.6,8.7 -3.6,8.7 -8.7,3.6 -8.7,-3.6 -3.6,-8.7 3.6,-8.7 8.7,-3.6"/></svg><b>P3.8</b>Terraform foundations</div>
+          <div class="lhead"><h2 class="ltitle">Renaming without destroying</h2><span class="earn"></span></div>
+          <div class="steps"><span class="n"><i></i>Learn</span><span><i></i>Check</span><span><i></i>Build</span><span><i></i>Explain</span></div>
+          <p class="prose">Terraform knows each resource by its <b>address</b>, like <code>databricks_cluster.etl</code>. Rename it, and the plan sees one address gone and a new one: destroy, then create.</p>
+          <p class="prose">A <b>moved</b> block says it's the same thing with a new name.</p>
+          <pre><span class="k">moved</span> {
+  from = databricks_cluster.etl
+  to   = databricks_cluster.sales_etl
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p class="label">A lesson: Check</p>
+      <div class="phone">
+        <div class="bar"><span class="brand">Daily Drill</span><span class="ib"></span></div>
+        <div class="pad">
+          <div class="lb"><span>←</span><svg viewBox="-12 -12 24 24"><polygon class="sh" points="8.7,3.6 3.6,8.7 -3.6,8.7 -8.7,3.6 -8.7,-3.6 -3.6,-8.7 3.6,-8.7 8.7,-3.6"/></svg><b>P3.8</b>Terraform foundations</div>
+          <div class="steps"><span class="d"><i></i>Learn</span><span class="n"><i></i>Check</span><span><i></i>Build</span><span><i></i>Explain</span></div>
+          <div class="card">
+            <p class="q">You rename the cluster and add a moved block. What should the plan show?</p>
+            <div class="opt"><span class="k">A</span>1 to add, 1 to destroy</div>
+            <div class="opt right"><span class="k">B</span>The cluster moved, nothing added or destroyed</div>
+            <div class="opt"><span class="k">C</span>An error: addresses can't change</div>
+            <div class="verdict"><b>Right.</b>The moved block tells Terraform it's the same cluster, so it renames it in state.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p class="label">Finishing a lesson</p>
+      <div class="phone">
+        <div class="bar"><span class="brand">Daily Drill</span><span class="ib"></span></div>
+        <div class="pad">
+          <span class="check">✓</span>
+          <h2 class="moment">Lesson done.</h2>
+          <p class="meta">P3.8 of the Platform track. 6 of 9 in Terraform foundations.</p>
+          <div class="card result">
+            <span class="eyebrow">Your result</span>
+            <div class="rrow"><span>Check</span><span class="marks"><i></i></span></div>
+            <div class="rrow"><span>Build</span><span class="marks"><i></i><i></i><i class="k"></i></span></div>
+            <div class="rrow"><span>Explain</span><span class="marks"><i></i><i></i></span></div>
+          </div>
+          <div class="next2"><small>Next time</small><b style="font: var(--head-w) 18px/1.25 var(--head); letter-spacing: var(--head-ls)">P3.9 Pinning provider versions</b></div>
+          <button class="btn">Done for today</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><b>What would change in the app:</b> three tokens in <code>tokens.css</code>: <code>--head</code> for every heading that uses <code>--display</code> today, <code>--moment</code> for the done screen's line (and the phase-done screen), and an ink-wash layer that only Dusk turns on. The brand name "Daily Drill" keeps Bricolage, so the logo stays the same.</p>
+    <p><b>Cost:</b> two font files, Latin letters only, about 60 to 90 KB together. The ink wash is drawn by the page (no image) and doesn't move, so Motion: Off has nothing to stop.</p>
+  </div>
+</div>
+
+<script>
+// The ink wash: soft violet-blue clouds drawn as SVG noise (no download).
+const ink = `url("data:image/svg+xml;utf8,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='640' height='640'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='.008 .014' numOctaves='4' seed='7'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .4  0 0 0 0 1  0 0 0 3.2 -1.35'/><feGaussianBlur stdDeviation='3'/></filter><rect width='100%' height='100%' filter='url(#f)'/></svg>")}")`;
+document.documentElement.style.setProperty("--ink-img", ink);
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-pick-type]"), l = e.target.closest("[data-look]");
+  if (t) { document.documentElement.dataset.type = t.dataset.pickType; document.querySelectorAll("[data-pick-type]").forEach(b => b.setAttribute("aria-pressed", b === t)); }
+  if (l) { document.documentElement.dataset.theme = l.dataset.look; document.querySelectorAll("[data-look]").forEach(b => b.setAttribute("aria-pressed", b === l)); }
+});
+</script>
+</body>
+</html>
