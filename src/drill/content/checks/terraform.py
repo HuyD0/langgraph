@@ -81,4 +81,66 @@ CHECKS = {
             why="Because the container refers to the account, the dependency graph puts the account "
                 "first. Terraform creates the account, then the container."),
     ],
+    "variables_outputs": [
+        ask("You want one workspace module to build both dev and prod. What should change between "
+            "the two uses?",
+            ["Only the values you pass in", "A copy of the module for each", "The resources inside it"],
+            answer=0,
+            clue="A module is like a recipe. What changes when you cook it twice for different people?",
+            why="You hand a module values through variables, so the same code builds dev and prod. "
+                "Only the values change."),
+        ask("Your root code has `host = module.workspace.workspace_url`. Where does that value "
+            "come from?",
+            ["A variable you passed into the module", "An output the module hands back", "A resource you made in the root"],
+            answer=1,
+            clue="Read it as module, then its name, then what it gives back.",
+            why="`module.<name>.<output>` reads one of the module's outputs: the values it chooses to "
+                "hand back to the code that called it."),
+    ],
+    "import_existing": [
+        ask("You add an import block for a storage account made by hand, and plan. What should "
+            "the plan's summary say?",
+            ["1 to add", "1 to import", "1 to destroy"],
+            answer=1,
+            clue="Nothing new is being made. Terraform is taking over something that already exists.",
+            why="With an import block, Terraform adopts the existing account into its state. The plan "
+                "says \"1 to import\" and nothing new is created."),
+        ask("Your import plan also says it will change the account's settings. You only meant to "
+            "adopt it. What do you do?",
+            ["Apply it: changes are harmless", "Remove the import block", "Fix the code to match it first"],
+            answer=2,
+            clue="Where does the plan's idea of how the account should look come from?",
+            why="If the code doesn't match the real account, the plan changes it to match the code. "
+                "Adjust the code until the import changes nothing."),
+    ],
+    "moved_blocks": [
+        ask("You renamed a cluster in the code and the plan says: destroy the old one, create a "
+            "new one. What should you add?",
+            ["A moved block from old to new", "A second copy of the cluster", "An import block for the old one"],
+            answer=0,
+            clue="You want Terraform to know it's the same cluster, just with a new name.",
+            why="A moved block tells Terraform the old address and the new one are the same thing, "
+                "so it updates the name in its state and destroys nothing."),
+        ask("Dev has applied your rename, but prod hasn't yet. A teammate wants to delete the moved "
+            "block now. What's the risk?",
+            ["None: the rename is finished", "Prod destroys and recreates it", "Dev loses the cluster"],
+            answer=1,
+            clue="Which environment still needs to be told that the old name and the new name match?",
+            why="An environment that hasn't applied the rename still needs the moved block. Without "
+                "it, that plan destroys the old cluster and creates a new one."),
+    ],
+    "provider_versions": [
+        ask("Your code says `version = \"~> 1.52.0\"`. Which version could Terraform pick?",
+            ["1.53.0", "1.52.4", "2.0.0"],
+            answer=1,
+            clue="With three numbers written, only the last one may go up.",
+            why="`~> 1.52.0` allows 1.52 bug fixes only, so 1.52.4 is fine, but 1.53 and 2.0 are not."),
+        ask("A run in Spacelift picked a newer provider than your laptop did, and the plans differ. "
+            "What keeps them the same?",
+            ["Run init again every day", "Delete the .terraform folder", "Commit .terraform.lock.hcl"],
+            answer=2,
+            clue="init writes down the exact version it picked. Where, and who sees that file?",
+            why="The lock file records the exact provider version. Committed, every run uses the same "
+                "one until someone runs `terraform init -upgrade` and the change is reviewed."),
+    ],
 }
