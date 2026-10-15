@@ -66,7 +66,7 @@
 .sl-view { position: relative; isolation: isolate; overflow: visible; }
 .sl-chrome { overflow: hidden; }
 :root[data-theme="dusk"]:not([data-motion="off"]) .sl-view::before { content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; border: 2px solid rgba(52, 216, 196, .75); filter: url(#aura-track); pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { :root[data-theme="dusk"] .sl-view::before { display: none; } }
+
 .sl-chrome { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(--tool-sunk); border-bottom: 1px solid var(--tool-line); border-radius: 12px 12px 0 0; }
 .sl-chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--tool-line); }
 .sl-chrome span { margin-left: 8px; font: 600 11.5px var(--body); color: var(--tool-muted); background: var(--tool-bg); border: 1px solid var(--tool-line); border-radius: 6px; padding: 1px 10px; }
@@ -114,7 +114,7 @@
 /* one glow at a time: while the frame burns (motion on), the callouts don't glow too; with
    reduced motion or Motion off the flame stops, so the callout glow comes back */
 :root:not([data-motion="off"]) .sl-view .sl-mark, :root:not([data-motion="off"]) .sl-view .sl-hitbox { box-shadow: none; }
-@media (prefers-reduced-motion: reduce) { :root:not([data-motion="off"]) .sl-view .sl-mark, :root:not([data-motion="off"]) .sl-view .sl-hitbox { box-shadow: var(--glow-anno); } }
+
 /* calmer screens: one thing outlined, everything else steps back */
 .sl-view .sl-line:not(.sl-hit), .sl-view .sl-row:not(.sl-hitbox), .sl-view .sl-block:not(.sl-hitbox) { opacity: .62; }
 .sl-view .sl-log { font-size: 12px; }

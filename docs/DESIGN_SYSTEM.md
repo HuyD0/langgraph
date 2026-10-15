@@ -32,8 +32,7 @@ artifact gets updated.
 4. **Thumb first.** Controls are at least 44px tall on touch; check every change at phone width.
 5. **Readable in every look.** Text 4.5:1 against its background, icons and borders 3:1
    (`scripts/contrast.py` checks the main pairs).
-6. **Motion marks real moments** and never blocks a tap. Nothing moves with reduced motion or
-   Motion: Off.
+6. **Motion marks real moments** and never blocks a tap. Motion is for everyone: there's no Motion switch, and the device's reduced-motion setting isn't followed. That was the owner's choice (2026-10-15), knowing it fails WCAG 2.2.2 for the looping glows and embers; opening a trust mark still rests its embers.
 7. **Plain words.** No Big-O, no maths notation, a term explained the first time it appears.
 
 ## The tokens
@@ -126,7 +125,7 @@ anything draws, from `drill-theme` in the browser's storage: **Dusk** unless Lig
 (the Look switch in the Notebook). `tokens.css` defines the light values on `:root`, then
 overrides them for `data-theme="dark"` (and the system's dark mode) and `data-theme="dusk"`.
 Dusk adds glass, grain and the burning glow on what's current; those rules sit in `page.html`
-under `:root[data-theme="dusk"]`, with fallbacks for reduced motion and reduced transparency.
+under `:root[data-theme="dusk"]`, with a fallback for reduced transparency.
 
 ## How to make common changes
 
@@ -166,7 +165,7 @@ DRILL_PORT=8790 DRILL_DATABASE_URL=sqlite:///.drill/preview.db uv run drill-serv
 ```
 
 Open http://127.0.0.1:8790 at phone width (the raw `dist/daily-drill.html` has no viewport tag,
-so use the server). Check both looks (Notebook → Look), Motion On and Off, and a lesson's four
+so use the server). Check both looks (Notebook → Settings → Look) and a lesson's four
 steps. The preview database keeps your real progress out of it. Restart the server after editing
 `page.html`: it caches the page when it starts.
 

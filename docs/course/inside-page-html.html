@@ -316,11 +316,6 @@ body.ask-on .askbtn { display: inline-flex; }
  },
  {
   "file": "src/drill/content/page.html",
-  "find": "@media (prefers-reduced-motion: reduce)",
-  "lesson": "access"
- },
- {
-  "file": "src/drill/content/page.html",
   "find": ".btn:focus-visible",
   "lesson": "access"
  },
@@ -527,9 +522,6 @@ async function saveProgress() { saveLocal(); if (progressDoc) { try { await prog
 <script type="text/plain" id="r-access">
 /* Keyboard users see where they are */
 .btn:focus-visible, .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* People who asked their phone for less motion get none */
-@media (prefers-reduced-motion: reduce) { .mtok, .editor .codebar { transition: none; } }
 
 /* An icon-only button still says what it does, for screen readers */
 <button class="iconbtn" aria-label="Replay from the start">...</button>
@@ -1318,10 +1310,10 @@ const L = [
   idea: [
     "A good page works for everyone, not only people with a mouse and good eyesight. Three habits in Daily Drill:",
     "**Visible focus.** People who use the keyboard move with Tab. `:focus-visible` styles the element they're on, so they can see it. Never remove the focus ring without a replacement.",
-    "**Motion only when wanted.** Some people get dizzy from animation and ask their phone for less. `@media (prefers-reduced-motion: reduce)` turns it off for them, and Daily Drill also has its own Motion: Off switch. **Words for icons:** an icon-only button gets an `aria-label`, so a screen reader can say what it does. And colour never works alone: a pass also says \"passed\".",
+    "**Motion only when wanted** is the usual rule. Some people get dizzy from animation and ask their phone for less; `@media (prefers-reduced-motion: reduce)` turns it off for them. Daily Drill chose otherwise: its animations play for everyone, with no switch. That's a trade-off its owner made knowingly (looping effects that can't be stopped fail WCAG 2.2.2), so most apps should keep the rule. **Words for icons:** an icon-only button gets an `aria-label`, so a screen reader can say what it does. And colour never works alone: a pass also says \"passed\".",
   ],
-  key: "Focus you can see, motion you can turn off, words for every icon.",
-  real: { id: "r-access", file: "src/drill/content/page.html", sub: "focus, reduced motion, labels", note: "Every change gets checked with the keyboard and with Motion off. docs/FRONTEND.md, \"Before you call it done\"." },
+  key: "Focus you can see, motion people can stop (or a choice made on purpose), words for every icon.",
+  real: { id: "r-access", file: "src/drill/content/page.html", sub: "focus, reduced motion, labels", note: "Every change gets checked with the keyboard. docs/FRONTEND.md, \"Before you call it done\"." },
   play: { html: "p12-html", css: "p12-css", tab: "css" },
   task: "Add a **2px outline** for buttons with keyboard focus (`.btn:focus-visible`), and turn the hover movement **off** for people who prefer reduced motion.",
   check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); if (!/\.btn:focus-visible\s*\{[^}]*outline\s*:[^;}]*2px/.test(css)) return [false, "Add a rule .btn:focus-visible { outline: 2px solid ...; }."]; const m = css.match(/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{([\s\S]*)\}/); if (!m) return [false, "Add @media (prefers-reduced-motion: reduce) { ... }."]; if (!/\.btn[^{]*\{[^}]*transition\s*:\s*none/.test(m[1])) return [false, "Inside the reduced-motion block, set .btn { transition: none; }."]; return [true, "Keyboard users can see where they are, and nobody gets motion they asked not to have."]; },
@@ -1408,7 +1400,7 @@ const L = [
   cases: [
     { who: "Which request", sit: "You want the Home screen's main button easier to see in Dusk.", opts: ["\"Make the home page better.\"", "\"On Home, the Today card's button is hard to see in Dusk. Explain which token or rule controls it before changing anything.\"", "\"Redesign everything in Dusk.\""], a: 1, clue: "Which one names the place, the problem and a first step?", why: "It's specific, names the look, and asks for the plan first, so you can catch a wrong layer before any code changes." },
     { who: "The AI said", sit: "\"Done! It should work now.\"", opts: ["\"Thanks!\"", "\"Which files changed, did scripts/check.sh pass, and what should I look at to see it?\"", "\"Can you make it nicer?\""], a: 1, clue: "\"Should\" isn't proof. What would be?", why: "You want the list of changes, the checks it ran, and what to look at yourself." },
-    { who: "You check", sit: "A change to how something looks. What do you look at?", opts: ["The desktop view only", "Phone width (375px) in Dusk and Light, Tab through it with the keyboard, and Motion off", "Nothing: the tests passed"], a: 1, clue: "Who uses Daily Drill, and on what?", why: "Most use phones, in Dusk. Tests don't see colours or layout; your eyes do." },
+    { who: "You check", sit: "A change to how something looks. What do you look at?", opts: ["The desktop view only", "Phone width (375px) in Dusk and Light, and Tab through it with the keyboard", "Nothing: the tests passed"], a: 1, clue: "Who uses Daily Drill, and on what?", why: "Most use phones, in Dusk. Tests don't see colours or layout; your eyes do." },
     { who: "The change", sit: "It edits function show(view), which switches screens.", opts: ["Ask: \"What else calls show()? What could break?\"", "Accept it: it's a small function", "Ask it to rename show()"], a: 0, clue: "A function many places use is a function many places can break.", why: "show() runs on every screen change. Asking about callers and risks makes the AI check them." },
     { who: "The AI said", sit: "\"I used event delegation so redrawn rows keep working.\" You don't know that word.", opts: ["Pretend it's fine", "Ask: \"Explain event delegation in plain words, with an example from this project\"", "Ask it to avoid that word"], a: 1, clue: "Lesson 10 might help, but it's always fine to ask.", why: "Unknown words are where mistakes hide. A plain explanation with a local example turns them into knowledge." },
   ],

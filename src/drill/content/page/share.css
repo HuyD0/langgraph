@@ -41,14 +41,22 @@
 .resmore .linkbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 /* a flawless finish: the cracks spread out from the spark as the card arrives */
 @keyframes res-crack { from { clip-path: circle(0 at 88% 10%); } to { clip-path: circle(150% at 88% 10%); } }
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="off"]) .rescracks { animation: res-crack 700ms 250ms var(--ease-out) both; }
-}
-/* your results, in the Notebook: one row per finished lesson, its marks small */
-.resitem { display: grid; gap: 6px; width: 100%; text-align: left; padding: 10px 12px; min-height: 56px; border-radius: 12px; border: 1px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; cursor: pointer; }
-.resitem + .resitem { margin-top: 8px; }
-.resitem-t { display: grid; } .resitem-t span { font-size: 13px; color: var(--muted); }
-.resitem-m { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+:root:not([data-motion="off"]) .rescracks { animation: res-crack 700ms 250ms var(--ease-out) both; }
+/* your results, in the Notebook: a summary, the key, then one row per finished lesson */
+#resultsBody { display: grid; gap: 10px; }
+#resultsBody .reskey { margin: 2px 0 6px; }
+.resstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.resstats span { display: grid; justify-items: center; padding: 10px 6px; border-radius: 12px; background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); font-size: 13px; color: var(--muted); }
+.resstats b { font: 800 22px/1.1 var(--display); color: var(--fg); }
+.resitem { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; border-radius: 14px; border: 1px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); }
+.resitem-open { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; width: 100%; text-align: left; padding: 12px 4px 12px 12px; min-height: 56px; border: 0; background: none; color: var(--fg); font: inherit; cursor: pointer; border-radius: 14px 0 0 14px; }
+.resitem-open:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.resitem-pic svg { width: 38px; height: 38px; overflow: visible; }
+.resitem-pic .sh { fill: var(--surface); stroke: var(--fg); stroke-width: 1.6; }
+.resitem-pic .ico { fill: none; stroke: var(--fg); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.resitem-t { display: grid; gap: 4px; min-width: 0; }
+.resitem-t > span { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.resitem-m { gap: 4px 10px !important; }
 .resitem-m .rmark { width: 20px; height: 24px; margin-right: -3px; } .resitem-m .rmark .ic { width: 14px; height: 14px; } .resitem-m .rmark::after { height: 2px; }
-.resitem-m .resskip { font-size: 12px; }
+.resitem-share { margin-right: 10px; }
 @media (hover: hover) { .resitem:hover { border-color: var(--accent); } }

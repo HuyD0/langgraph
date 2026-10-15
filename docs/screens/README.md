@@ -95,7 +95,7 @@ bottom bar has one primary button, "Next".
 **What the learner sees.** A small ember right after the words where the lesson touches
 responsible AI, privacy or governance. Tapping it opens a tooltip: the trustworthy-AI trait, the
 NIST AI RMF reference, a perspective, one tip, and seven dots for the traits practised so far.
-Unopened marks give off embers; with Motion off (as here) they are a still glow.
+Unopened marks give off embers until they're opened.
 
 **What draws it.** `learnPane()` calls `withTrust()` for each paragraph, which places
 `trustMarkHtml()` after the note's phrase and adds `trustPopHtml()`; `openTrust()` and
