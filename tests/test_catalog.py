@@ -66,3 +66,33 @@ def test_list_problems_filters():
 def test_topics_are_covered():
     """Several distinct patterns, so weakest-topic selection has somewhere to go."""
     assert len(TOPICS) >= 5
+
+
+def test_the_cli_answers_a_typo_with_one_plain_line_not_a_traceback(monkeypatch, tmp_path):
+    from typer.testing import CliRunner
+
+    import drill.cli as cli
+
+    monkeypatch.setattr(cli, "_load_dotenv", lambda: None)  # never read the developer's .env here
+    runner = CliRunner()
+    for args in (["solution", "xyz"], ["start", "--problem", "xyz"], ["check", __file__, "--problem", "xyz"]):
+        result = runner.invoke(cli.app, args)
+        assert result.exit_code == 1 and isinstance(result.exception, SystemExit), args  # a clean exit, not a crash
+        assert "No problem called 'xyz'" in result.output and "drill list" in result.output, args
+        assert "Traceback" not in result.output
+    result = runner.invoke(cli.app, ["start", "--topic", "nope"])
+    assert result.exit_code == 1 and "No topic called 'nope'" in result.output
+
+
+def test_a_missing_editor_falls_back_to_pasting(monkeypatch):
+    import io
+
+    import drill.cli as cli
+
+    class Tty(io.StringIO):
+        def isatty(self):
+            return True
+
+    monkeypatch.setenv("EDITOR", "no-such-editor-anywhere")
+    monkeypatch.setattr(cli.sys, "stdin", Tty("def f(): pass\n"))
+    assert cli.edit_submission(ALL_PROBLEMS[0], {"attempt": 1}) == "def f(): pass\n"
