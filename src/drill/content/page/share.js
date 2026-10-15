@@ -155,7 +155,10 @@ function sharePicture(btn) {
   const r = resultOf(cur.id); if (!r || RES.id !== r.id) return;
   const name = `daily-drill-${r.no}.png`, fallback = () => RES.png.then(b => {
     RES.url = RES.url || URL.createObjectURL(b);
-    resultMore(`<img src="${RES.url}" alt="${esc(resultWords(r))}"><p class="meta">Press and hold the picture (or right-click it) to copy or save it.</p><a class="linkbtn" href="${RES.url}" download="${name}">${ic("arrowr")}Save the picture</a>`);
+    // On claude.ai a page can't download by itself: the platform asks the viewer instead (savePicture).
+    const save = window.claude ? `<button class="linkbtn" data-res-save>${ic("arrowr")}Save the picture</button>`
+      : `<a class="linkbtn" href="${RES.url}" download="${name}">${ic("arrowr")}Save the picture</a>`;
+    resultMore(`<img src="${RES.url}" alt="${esc(resultWords(r))}"><p class="meta">Press and hold the picture (or right-click it) to copy or save it.</p>${save}`);
   }).catch(() => toast("The picture didn't work here. Try Copy as text."));
   if (coarse.matches && RES.blob && navigator.canShare) {
     const file = new File([RES.blob], name, { type: "image/png" });
@@ -167,6 +170,13 @@ function sharePicture(btn) {
   try {
     navigator.clipboard.write([new ClipboardItem({ "image/png": RES.png })]).then(() => sharedOk("Picture copied. Paste it anywhere.", btn), fallback);
   } catch { fallback(); }
+}
+async function savePicture(btn) {
+  const r = resultOf(cur.id); if (!r || !RES.blob) return;
+  const downloads = window.claude ? await claude.use("downloads") : null;
+  if (!downloads) { btn.hidden = true; toast("Saving isn't available here. Press and hold the picture instead."); return; }
+  try { await downloads.save({ filename: `daily-drill-${r.no}.png`, data: RES.blob }); toast("Picture saved."); }
+  catch (e) { if (!e || e.code !== "declined") { if (e && e.code === "rate_limited") toast("One moment, then try again."); else { btn.hidden = true; toast("Saving isn't available here. Press and hold the picture instead."); } } }
 }
 function shareTextNow(btn) {
   const r = resultOf(cur.id); if (!r) return;
