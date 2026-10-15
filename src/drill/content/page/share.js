@@ -14,6 +14,7 @@ function firstGap(id, mark) { const f = firstOf(id); if (f.explain === undefined
 function finishMarks(id) {
   const s = lp(id), f = firstOf(id), n = gapsOf(id).length;
   if (f.check === undefined && s.checked === null) f.check = null;
+  else if (f.check === undefined && s.checks) { const m = (s.checks.marks || []).filter(Boolean); f.check = m.length ? m : null; }  // stopped part way: the ones answered
   if (f.build === undefined && !progress.solved[id]) f.build = null;
   if (f.explain === undefined) {
     const gaps = f.gaps || [];

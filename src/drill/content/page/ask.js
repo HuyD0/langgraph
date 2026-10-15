@@ -33,8 +33,8 @@ function askChips() {
     add("How would I spot it going wrong?",
       "Describe the warning signs that this lesson's idea was skipped or done wrong: what they would see in their numbers, logs, traces or results (for example a score that looks too good and then drops in real use). Then the quickest check to confirm it. No code.");
     chips.push(QUIZ);
-  } else if (cur.step === 1 && s.checked !== null) {
-    const [q, opts, ans] = L.check;
+  } else if (cur.step === 1 && (() => { const st = checkState(cur.id); return st.solved[st.at]; })()) {
+    const [q, opts, ans] = checkQs(cur.id)[checkState(cur.id).at];
     opts.forEach((o, k) => { if (k !== ans) add(`Why not ${quoted(o)}?`,
       `In the lesson's Check question ("${q}"), explain in plain words why "${o}" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes "${opts[ans]}" better.`); });
     add("Give me a harder one like this",

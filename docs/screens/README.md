@@ -108,14 +108,16 @@ appear once in the Learn text (a test checks). Colours are `--mark` and `--mark-
 
 ![The Check step after answering](lesson-check-phone-dusk.webp)
 
-**What the learner sees.** One multiple-choice question. After an answer, the verdict scrolls into
-view with the reason, and the tutor offers "Why not ...?" and "Give me a harder one like this".
+**What the learner sees.** Up to three multiple-choice questions, one at a time ("Question 1 of
+3"). A wrong pick is crossed out and they try again; help is a clue, then the answer. Once a
+question is right, the reason shows and the tutor offers "Why not ...?" and "Give me a harder one
+like this" (not before: it would give the answer away).
 
-**What draws it.** `checkPane()`; answers are handled by `data-opt` in the `events` section; the
+**What draws it.** `checkPane()` with `checkQs()`; answers are `checkPick`, `checkHelp`, `checkNext` (`data-opt`, `data-chk-help`, `data-chk-next` in the `events` section); the
 tutor chips are `askPanel()`, and the tutor gets `askContext()`, which includes the module's
 `setting`.
 
-**Change it safely.** Questions are `question(...)` in the lesson. Keep exactly one right answer
+**Change it safely.** Question 1 is `question(...)` in the lesson; questions 2 and 3 are `ask(...)` in `content/checks/<module>.py`, with the writing rules at the top of `content/checks/__init__.py`. Keep exactly one right answer
 and a plain `why`.
 
 ## A lesson: Build (code)
