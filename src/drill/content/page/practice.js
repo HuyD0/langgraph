@@ -11,7 +11,7 @@ function qfNote(change) {
 }
 const flowing = () => !!(QF.p && cur && cur.p === QF.p && !QF.code);
 const qfFinished = () => !!(QF.p && progress.solved[QF.p.id] && !QF.again);
-const qfKey = id => "drill-flow-" + id;
+const qfKey = id => "drill-flow-" + id, codeKey = id => "drill-code-" + id;
 function qfLoad(p) {
   Object.assign(QF, { p: p.practice ? p : null, i: 0, tried: [], help: 0, first: {}, code: false, again: false, log: [] });
   if (QF.p) try { QF.code = localStorage.getItem(codeKey(p.id)) === "1"; } catch {}
@@ -20,7 +20,7 @@ function qfLoad(p) {
 function qfMode() {
   if (!QF.p) { $("flowBox").hidden = true; return; }
   const on = flowing();
-  $("paneBuild").classList.toggle("sorting", on);
+  $("paneBuild").classList.toggle("flowing", on);
   $("flowBox").hidden = !on;
   $("modeSwap").hidden = on;
   $("modeSwap").innerHTML = on ? "" : `<button class="linkbtn" data-qf-mode="flow">${ic("arrowl")}Back to the practice questions</button>`;
@@ -205,6 +205,7 @@ function qfSolved() {
   progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - right, mode: "practice" };
   // what a manager needs to help: every question that wasn't right first time, and how
   if (cur.kind === "lesson") lp(p.id).practice = { day: today(), right, total: n, missed: (QF.log || []).filter(x => x && !x.first).map(({ first, ...x }) => x) };
+  if (cur.kind === "lesson") firstMarks(p.id, "build", p.practice.asks.map((_, i) => QF.first[i] ? "sign" : (QF.log || [])[i] && QF.log[i].answer ? "curtain" : "knot"));
   lastRun = { summary: `Answered all ${n} practice questions, ${right} right first time.` };
   QF.again = false; markDay();
   if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");

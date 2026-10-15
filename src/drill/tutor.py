@@ -135,7 +135,7 @@ def curriculum_map(data: dict | None = None) -> str:
             number += 1
             lesson = data["lessons"][lesson_id]
             problem = bank[lesson_id]
-            question, options, right, why = lesson["check"]
+            question, options, right, why = lesson["check"][:4]
             pattern, pattern_text, say, _classic = lesson["angle"][:4]
             lines += [
                 f"### {number}. {_plain(lesson['title'])} (`{lesson_id}`)",
@@ -143,6 +143,8 @@ def curriculum_map(data: dict | None = None) -> str:
                 *[f"{_plain(p)}" for p in lesson["learn"]],
                 "",
                 f"- **Check:** {_plain(question)} Right answer: {_plain(options[right])}. Why: {_plain(why)}",
+                *[f"- **Check, question {k}:** {_plain(q)} Right answer: {_plain(opts[r])}. Why: {_plain(w)}"
+                  for k, (q, opts, r, w, _clue) in enumerate(lesson.get("more") or [], 2)],
                 f"- **Exercise:** {_plain(problem['title'])}, writing `{problem['fn']}`. Approach: {_plain(problem['pattern'])}",
                 f"- **Explain:** the pattern is {_plain(pattern)}. Why this pattern: {_plain(pattern_text)} "
                 f"What to say: {_plain(say)}",
@@ -213,6 +215,9 @@ def merge_progress(a: dict, b: dict) -> dict:
         said = theirs.get("said") or mine.get("said")  # the Explain step's sentence, when there is one
         if said:
             lessons[lesson_id]["said"] = said
+        first = mine.get("first") or theirs.get("first")  # the shared result: the first time through stays
+        if first:
+            lessons[lesson_id]["first"] = first
     return {
         "solved": {**(a.get("solved") or {}), **(b.get("solved") or {})},
         "days": sorted(set(a.get("days") or []) | set(b.get("days") or [])),
@@ -301,7 +306,7 @@ def snapshot(progress: dict, study_items: list[dict], data: dict | None = None, 
         lines.extend(rows or [f"- {empty}"])
 
     def wrong_row(lid: str) -> str:
-        question, options, right, why = data["lessons"][lid]["check"]
+        question, options, right, why = data["lessons"][lid]["check"][:4]
         picked_option = options[entry[lid]["checked"]] if 0 <= entry[lid]["checked"] < len(options) else "?"
         return (
             f"- {title[lid]}: \"{_plain(question)}\" They chose \"{_plain(picked_option)}\". "

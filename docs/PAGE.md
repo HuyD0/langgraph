@@ -67,10 +67,25 @@ Shape and position carry the phases, not colour: colour stays for passed, failed
 step and the path (violet, only on the phase tabs). The shapes and rail icons are `phShape` and `PH_ICON` in `page.html`; there are six, so
 `tests/test_content.py` keeps the path at six phases.
 
-## Check: the options are shuffled
+## Check: up to three questions, one at a time
 
-Each lesson's three Check options show in a fixed shuffled order (`checkOrder` in the page,
-seeded by the lesson id), so the right answer isn't always in the same place; across the lessons
+Each lesson's Check asks its own question first (`check=question(...)` in the lesson), then up to
+two more from `content/checks/<module>.py`, one per screen with "Question 2 of 3" and dots. They
+work like Practice: a wrong pick is crossed out and you try again; help is the clue first, then
+the answer (a question with no clue goes straight to the answer). Each question's mark (on your
+own, a clue or another go, the answer shown) goes into the shared result. `lp(id).checked` still
+keeps question 1's first pick, which the dashboard and the tutor read; `lp(id).checks` holds the
+rest, and the server logs every question's mark as a `check_marks` event.
+
+The extra questions follow the writing rules at the top of `content/checks/__init__.py`: a small
+situation to use the idea in, plain words, three believable options of about the same length, a
+clue that doesn't say the answer, and a why of one or two sentences. `tests/test_checks.py` checks
+what a test can.
+
+### The options are shuffled
+
+Each question's three options show in a fixed shuffled order (`checkOrder` in the page,
+seeded by the lesson id, and the question's number after the first), so the right answer isn't always in the same place; across the lessons
 it lands on A, B and C about equally. Answers are still saved by their original position, and the
 server stores the words of the picked and right answers with each Check event, so the managers'
 dashboard shows words, not letters.
@@ -92,6 +107,31 @@ own words" box (every lesson has gaps today; a test keeps it that way).
 The sentence is what you'd say to a colleague, so it must sound like a person talking: one or two
 short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
 before keeping it.
+
+## Your result: share it like a daily puzzle
+
+The done screen shows **Your result**: a row of marks for each step (Check, Build or Practice,
+Explain), from the **first time** through the lesson, never later goes. A hand sign is on your own,
+a knot is with a clue or another go, curtains mean the answer was shown, and "Skipped" is a step
+you skipped. Every step on your own earns a spark and the card cracks; the lesson that finishes a
+module gets a gate stamp, and a streak of 2 days or more is named. The marks and symbols are in
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md), "The result marks".
+
+**Share result** copies a picture of the card (on a phone, the share sheet opens). **Copy as text**
+copies the same in emoji, for places that don't take pictures:
+
+```
+Daily Drill 2.4 · Day 12
+Check ✌️✌️🪢
+Build ✌️
+Explain ✌️🌫️
+📿 5-day streak
+```
+
+No lesson title, answers or link go out: the number and day are enough. If the browser won't
+allow copying (a plain-http address, a sandboxed frame), the picture or the text shows under the
+buttons to copy by hand. Each step saves its marks as it happens (`lp(id).first`); a lesson
+finished before this existed has no card, rather than a guess.
 
 ## Practice on real evidence (judgement lessons)
 
@@ -434,14 +474,12 @@ where it should appear. Copy a neighbour; every field is named. In short:
   function into named bins (four bins make a 2 by 2 map), with a replay slider, a table per bin and, with `leak_arg`, a
   check that no value of that field lands in two bins. `split_by_key` and `validate_rows`
   use it; `tests/test_content.py` checks each machine fits its example.
-- `sort`: optional, for a lesson whose real skill is judgement, not code.
-  `sort_task(intro=..., bins=[(id, label, who), ...], items=[{"name", "say", "bin", "why"}, ...])`
-  makes the Build step a sorting board: one idea at a time, placed by tapping or dragging
-  onto a 2 by 2 map (the first four bins, in map order) or a tray above it (a fifth bin).
-  Every move shows the item's `why`; a wrong move keeps the card, and the score is how many
-  were right first time. "Tell me the answer" (on the board, beside "Not sure? Come back to it later") gives the answer and why; it then counts as not right first time. An idea that stops at a gate is shelved, so the Shelve box is right for it too. The Python exercise stays, behind
-  "Rather write it in Python?", and the page remembers which one the learner chose.
-  Lesson 1.1 uses it; `tests/test_content.py` checks its answers match the Python solution's.
+- Judgement lessons use `practice` too (below). Lesson 1.1 asks "Where does this idea land?" once
+  per idea, with the idea in a quote box (`evidence('claim', who=..., text=...)`), five places to
+  choose from, a clue first, then the answer. Its wrong-pick lines are worked out from each idea's
+  facts (`_wrong` in `modules/use_case.py`), and `tests/test_content.py` checks every answer matches
+  the Python solution's. (The older drag-and-drop sorting board was retired for this, so every
+  judgement task works one plain question at a time.)
 
 Every exercise whose example takes a list of rows also shows those rows as a table, and,
 after a run, your result for the example beside the expected rows when it returns rows.

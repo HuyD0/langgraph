@@ -33,8 +33,8 @@ function askChips() {
     add("How would I spot it going wrong?",
       "Describe the warning signs that this lesson's idea was skipped or done wrong: what they would see in their numbers, logs, traces or results (for example a score that looks too good and then drops in real use). Then the quickest check to confirm it. No code.");
     chips.push(QUIZ);
-  } else if (cur.step === 1 && s.checked !== null) {
-    const [q, opts, ans] = L.check;
+  } else if (cur.step === 1 && (() => { const st = checkState(cur.id); return st.solved[st.at]; })()) {
+    const [q, opts, ans] = checkQs(cur.id)[checkState(cur.id).at];
     opts.forEach((o, k) => { if (k !== ans) add(`Why not ${quoted(o)}?`,
       `In the lesson's Check question ("${q}"), explain in plain words why "${o}" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes "${opts[ans]}" better.`); });
     add("Give me a harder one like this",
@@ -102,7 +102,7 @@ async function askLesson(question, instruction) {
   const chip = !!instruction, guarded = !chip && ((!!fn && question.includes(fn)) || SOLUTION_ASK.test(question));
   if (guarded)
     instruction = "They are asking about the coding exercise. Do not write any code at all. In two or three plain sentences, describe only the first step to take, then ask one question that helps them work out the next step. Mention that the Build step has step-by-step hints.";
-  if (guarded && (cur.p.practice || cur.p.sort)) instruction = instruction.replace("the Build step has step-by-step hints", "the Practice step gives a clue first, then the answer");
+  if (guarded && cur.p.practice) instruction = instruction.replace("the Build step has step-by-step hints", "the Practice step gives a clue first, then the answer");
   const history = thread.filter(t => !t.failed).slice(-4).map(t => "Q: " + t.q + "\nA: " + t.a).join("\n\n");
   const turn = { q: question.trim().slice(0, 500), a: "", streaming: true };
   thread.push(turn);
@@ -118,7 +118,7 @@ Their message: ${turn.q}
 ${instruction ? "How to answer: " + instruction + "\n" : ""}
 Rules:
 - Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.
-- Never write code for the lesson's coding exercise (\`${cur.p.fn}\`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a \`\`\`python block.${cur.p.practice || cur.p.sort ? "\n- The Practice step asks questions with one right option each. Never say which option is right: give a clue that points at the evidence, and let them choose." : ""}
+- Never write code for the lesson's coding exercise (\`${cur.p.fn}\`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a \`\`\`python block.${cur.p.practice ? "\n- The Practice step asks questions with one right option each. Never say which option is right: give a clue that points at the evidence, and let them choose." : ""}
 - If your last message asked them a question, their message is their answer: say what is right, fix what is not, then ask one more question.
 - If they describe their own situation, answer for that situation, and say which part of the lesson applies and which part changes.
 - Only add a code example if it makes the answer clearer, and make sure it matches what you said.

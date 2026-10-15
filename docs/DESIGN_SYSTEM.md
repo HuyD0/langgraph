@@ -83,8 +83,33 @@ them before making a new one; a new one gets a row here.
 | Practice step | `.px`, `.px-seq`, `.px-match`, `.px-edit`, `.px-rules`, `.px-q`, `.px-next` | Content-pack lessons | Replaces the editor: choose, order, match, repair or reason; the next safe check in `accent-soft` |
 | Investigation views | `.iv`, `.iv-link`, `.iv-trace`, `.iv-row`, `.iv-tag` | Content-pack Learn and Practice | Relationships, trace, walkthrough, plan review; tags use the verdict colours |
 | Guided tour | `.tour-shot`, `.tour-box`, `.tour-zoom`, `.tour-nav`, `.tour-dot` | Content-pack Learn | A screenshot with one numbered box, a close-up and Back / Next; the dim is `scrim` |
+| Result card | `.result`, `.resrow`, `.rmark` (`.knot`, `.curtain`, `.spark`), `.resgate`, `.resweek`, `.reskey`, `.resshare`, `.resmore` | Done screen | The lesson's first time through, with no answers in it. **Share result** copies a picture of the card; **Copy as text** the emoji version. Tiles are `aria-hidden`; the card's `.sr` sentence says the same in words. See "The result marks" |
 | Hover card | `#stkTip` | Stickers | Long press on phones |
 | Toast | `#toast` | After saving | Short, plain, disappears by itself |
+
+## The result marks
+
+After a lesson the done screen shows how each step went the first time through, as marks in
+angled tiles, and the learner can share it like a daily puzzle's result. **Colour carries the
+meaning, shape carries the theme**, so a mark never changes colour to fit a look.
+
+| Mark | Symbol | Means | Colour | In copied text |
+|---|---|---|---|---|
+| Hand sign | `i-sign`: two fingers raised | On your own (first try; for code, no hints and no solution) | `pass` | ✌️ |
+| Knot | `i-knot`: a tied bow | With a clue or another go | `hint` | 🪢 |
+| Curtain | `i-curtain`: curtains pulled open | The answer was shown | `muted` | 🌫️ |
+| Spark | `i-spark`: black lightning edged in red | Every step on your own | `fx-red` on `fx-veil` | ⚡ |
+| Gate stamp | `i-gate` | This lesson finished its module | `finish` | ⛩️ |
+
+The streak is plain words ("6-day streak"), shown from 2 days; the copied text adds 📿.
+
+- The symbols are **original line art** in the app's icon style (24px grid, round strokes).
+  No faces, characters' signature marks, crests or pictures taken from any series, film or game.
+- The spark is the one place `--fx-red` and `--fx-veil` appear outside an effect: it stands for
+  the same moment the spark effect marks. On a spark the card cracks (`.rescracks`, behind the
+  content); with Motion on the cracks spread out from it.
+- The shared picture is drawn on a canvas from the same tokens (`resultPng`), so it matches the
+  look it was shared from. It carries a short key, since the person it goes to hasn't seen the app.
 
 ## The track colour
 

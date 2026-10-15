@@ -25,6 +25,7 @@ import sys
 from pathlib import Path
 
 from drill.content import classics, extras, modules, real, review, trust
+from drill.content.checks import more_checks
 from drill.content.model import TRAITS, Module
 
 HERE = Path(__file__).resolve().parent
@@ -55,7 +56,7 @@ def page_source() -> str:
     return _INCLUDE.sub(part, template)
 
 _EXERCISE_FIELDS = ("title", "topic", "difficulty", "fn", "prompt", "pattern", "target",
-                    "realworld", "starter", "solution", "cases", "unordered", "machine", "sort", "practice")
+                    "realworld", "starter", "solution", "cases", "unordered", "machine", "practice")
 _LEARN_FIELDS = ("concepts", "byhand", "why", "gotchas", "guided")
 _SCAFFOLD_HEADER = "# Replace every ___ with real code, then run the tests."
 
@@ -71,9 +72,12 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
         "title": entry["title"],
         "learn": list(entry["learn"]),
         "example": [ex["caption"], ex["code"]],
-        "check": [q["question"], list(q["options"]), q["answer"], q["why"]],
+        "check": [q["question"], list(q["options"]), q["answer"], q["why"]] + ([q["clue"]] if q.get("clue") else []),
         "angle": [a["pattern"], a["text"], a["say"], a["classic"], a.get("cloze") or []],
     }
+    more = more_checks().get(entry["id"])
+    if more:  # the Check step's questions 2 and 3, each with a clue (content/checks/)
+        out["more"] = [[m["question"], list(m["options"]), m["answer"], m["why"], m["clue"]] for m in more]
     if entry["stack"]:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
     if entry.get("walkthrough"):

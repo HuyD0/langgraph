@@ -82,7 +82,6 @@ def exercise(
     fills: list[str] | None = None,
     unordered: bool = False,
     machine: dict | None = None,
-    sort: dict | None = None,
     practice: dict | None = None,
 ) -> dict:
     """The Build step of a lesson.
@@ -99,7 +98,7 @@ def exercise(
         "title": title, "topic": topic, "difficulty": difficulty, "fn": fn,
         "prompt": prompt, "pattern": pattern, "target": target, "realworld": realworld,
         "starter": starter, "solution": solution, "cases": cases, "unordered": unordered,
-        "guided": guided, "fills": fills, "machine": machine, "sort": sort, "practice": practice,
+        "guided": guided, "fills": fills, "machine": machine, "practice": practice,
         "concepts": concepts, "byhand": byhand, "why": why, "gotchas": gotchas,
     }
 
@@ -120,27 +119,6 @@ def machine(*, bins: list[str], who: list[str], label_field: str | None = None,
     return {"bins": bins, "who": who, "label_field": label_field, "label_arg": label_arg, "leak_arg": leak_arg}
 
 
-def sort_task(*, intro: str, bins: list[tuple[str, str, str]], items: list[dict], explain: str | None = None) -> dict:
-    """The Build step as a judgement task, for lessons where the skill is deciding, not coding.
-
-    The learner places each item in a bin, by tapping or dragging, and sees its ``why`` after
-    every move. The first four ``bins`` make a 2 by 2 map in map order (top left, top right,
-    bottom left, bottom right); a fifth is a tray under it. Each bin is ``(id, label, who)``.
-    Each item is ``{"name", "say", "bin", "why"}``, plus any facts a test wants to check the
-    item against the exercise's own solution. The Python exercise stays, one click away.
-    ``explain`` is the big idea as the Explain step tells it to someone who sorted rather than
-    coded: the lesson's own angle text, without its sentence about the Python version.
-    """
-    assert len(bins) in (4, 5), "a sort task is a 2 by 2 map, with an optional tray under it"
-    ids = [b[0] for b in bins]
-    assert len(set(ids)) == len(ids), "bin ids must differ"
-    for item in items:
-        missing = {"name", "say", "bin", "why"} - set(item)
-        assert not missing, f"{item.get('name')}: missing {sorted(missing)}"
-        assert item["bin"] in ids, f"{item['name']}: unknown bin {item['bin']!r}"
-    return {"intro": intro, "bins": [{"id": i, "label": l, "who": w} for i, l, w in bins], "items": items, "explain": explain}
-
-
 EVIDENCE_KINDS = ("code", "chain", "plan", "claim", "prompt")
 
 
@@ -149,7 +127,7 @@ def evidence(kind: str, **data: Any) -> dict:
     ``text`` and optional ``title``), ``chain`` (a field's stops from YAML to provider, each
     ``{"label", "sub", "state"}`` with state ok, now or later, plus an optional ``snippet``),
     ``plan`` (``summary`` counts and ``changes`` rows ``{"sym", "address", "note"}``), ``claim``
-    (something an AI assistant said) or ``prompt`` (a prompt to an AI assistant, ``___`` for the gap)."""
+    (a quote: something an AI assistant said, or an idea someone brought; ``who`` names it) or ``prompt`` (a prompt to an AI assistant, ``___`` for the gap)."""
     assert kind in EVIDENCE_KINDS, f"unknown evidence kind {kind!r}"
     return {"kind": kind, **data}
 
@@ -186,7 +164,7 @@ def practice(*, intro: str, asks: list[dict], explain: str | None = None) -> dic
     """The Build step as a few questions about real evidence, for lessons whose skill is a decision
     or reading a plan, run, policy or trace rather than writing Python; the tab says Practice. Three to five asks, easy to
     tricky; the Python exercise stays one tap away. ``explain`` is the Explain step's big idea
-    for someone who practised this way (like ``sort_task``)."""
+    for someone who practised this way rather than coding."""
     assert 2 <= len(asks) <= 6, "a practice set has two to six questions"
     return {"intro": intro, "asks": asks, "explain": explain}
 
@@ -196,10 +174,12 @@ def example(caption: str, code: str) -> dict:
     return {"caption": caption, "code": code}
 
 
-def question(text: str, options: list[str], *, answer: int, why: str) -> dict:
-    """The Check step: a multiple-choice question. ``answer`` is the index of the right option."""
+def question(text: str, options: list[str], *, answer: int, why: str, clue: str | None = None) -> dict:
+    """The Check step's first question: multiple choice. ``answer`` is the index of the right
+    option. With a ``clue``, help shows it before the answer. More questions: ``content/checks/``."""
     assert 0 <= answer < len(options), f"answer {answer} is not one of {len(options)} options"
-    return {"question": text, "options": options, "answer": answer, "why": why}
+    assert not clue or options[answer].lower() not in clue.lower(), f"{text[:40]}: the clue gives the answer away"
+    return {"question": text, "options": options, "answer": answer, "why": why, **({"clue": clue} if clue else {})}
 
 
 _GAP = re.compile(r"\[\[(.+?)\]\]")

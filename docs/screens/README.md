@@ -108,14 +108,16 @@ appear once in the Learn text (a test checks). Colours are `--mark` and `--mark-
 
 ![The Check step after answering](lesson-check-phone-dusk.webp)
 
-**What the learner sees.** One multiple-choice question. After an answer, the verdict scrolls into
-view with the reason, and the tutor offers "Why not ...?" and "Give me a harder one like this".
+**What the learner sees.** Up to three multiple-choice questions, one at a time ("Question 1 of
+3"). A wrong pick is crossed out and they try again; help is a clue, then the answer. Once a
+question is right, the reason shows and the tutor offers "Why not ...?" and "Give me a harder one
+like this" (not before: it would give the answer away).
 
-**What draws it.** `checkPane()`; answers are handled by `data-opt` in the `events` section; the
+**What draws it.** `checkPane()` with `checkQs()`; answers are `checkPick`, `checkHelp`, `checkNext` (`data-opt`, `data-chk-help`, `data-chk-next` in the `events` section); the
 tutor chips are `askPanel()`, and the tutor gets `askContext()`, which includes the module's
 `setting`.
 
-**Change it safely.** Questions are `question(...)` in the lesson. Keep exactly one right answer
+**Change it safely.** Question 1 is `question(...)` in the lesson; questions 2 and 3 are `ask(...)` in `content/checks/<module>.py`, with the writing rules at the top of `content/checks/__init__.py`. Keep exactly one right answer
 and a plain `why`.
 
 ## A lesson: Build (code)
@@ -131,18 +133,6 @@ sections; the code runs in the browser with Skulpt (`Python literals and test ha
 **Change it safely.** Everything about an exercise is `exercise(...)` in the lesson.
 `drill build-page` fills each scaffold's blanks with `fills` and runs the tests, so they can't
 drift apart.
-
-## A lesson: Build (sorting board)
-
-![The sorting board on a phone](sorting-board-phone-dusk.webp)
-
-**What the learner sees.** For judgement lessons, ideas to place on a 2 by 2 map instead of code,
-one at a time, with a reason after each placement. The Python version is one tap away.
-
-**What draws it.** `sortRender()`, `sortPlace()` and `SO` in `the sorting board`; the data is
-`sort_task(...)` in the lesson.
-
-**Change it safely.** One question per screen; help is a clue first, then the answer.
 
 ## A lesson: Explain
 
@@ -180,16 +170,19 @@ numbers and steps don't match. A new kind of screen needs a renderer in `SL_VIEW
 
 ![The done screen](done-screen-phone-dusk.webp)
 
-**What the learner sees.** A check, how far they are in the phase or track, the new sticker, what
-they did in the lesson, and what's next. "Done for today" is the primary button.
+**What the learner sees.** A check, how far they are in the phase or track, their result to
+share (a mark for each step, the first time through), the new sticker, what they did in the
+lesson, and what's next. "Done for today" is the primary button; Share result is quiet.
 
-**What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step.
+**What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step; the result
+card is `resultHtml()` in `page/share.js`.
 
-## A lesson: Practice (platform lessons)
+## A lesson: Practice questions
 
 ![A practice question on a phone](practice-phone-dusk.webp)
 
-**What the learner sees.** In platform lessons, Build is a short run of questions instead of code:
+**What the learner sees.** In platform lessons and judgement lessons like 1.1 ("Where does this
+idea land?"), Build is a short run of questions instead of code:
 a piece of evidence (a YAML file, a chain of stops, a plan, a claim, a prompt), then one plain
 question with three answers. "Give me a clue" comes first, then the answer; the dots show how far
 along they are. Some questions are "Fix the YAML": edit the file until it passes. Python stays
