@@ -133,7 +133,12 @@ Explain ✌️🌫️
 No lesson title, answers or link go out: the number and day are enough. If the browser won't
 allow copying (a plain-http address, a sandboxed frame), the picture or the text shows under the
 buttons to copy by hand. Each step saves its marks as it happens (`lp(id).first`); a lesson
-finished before this existed has no card, rather than a guess.
+finished before this existed shows "Done earlier" for any step answered before then, rather
+than a guess, and never a spark.
+
+**Your results** in the Notebook lists every lesson finished since results began, newest first,
+with its marks; opening one shows its done screen again, so a result can be shared later
+(`renderResults`, `openResult` in `page/share.js`).
 
 ## Practice on real evidence (judgement lessons)
 

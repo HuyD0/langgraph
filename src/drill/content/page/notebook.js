@@ -5,6 +5,7 @@ function openNotebook(tab) {
   if (!$("nb-" + nbTab)) nbTab = "gloss";  // the study list lives in the pocket now
   for (const t of document.querySelectorAll("[data-nb]")) t.setAttribute("aria-selected", String(t.dataset.nb === nbTab));
   for (const t of document.querySelectorAll("[data-nb]")) $("nb-" + t.dataset.nb).hidden = t.dataset.nb !== nbTab;
+  renderResults();
   $("drawer").hidden = false; $("scrim").hidden = false;
   document.body.style.overflow = "hidden";
   $("nbClose").focus();

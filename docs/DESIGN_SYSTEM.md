@@ -83,7 +83,7 @@ them before making a new one; a new one gets a row here.
 | Practice step | `.px`, `.px-seq`, `.px-match`, `.px-edit`, `.px-rules`, `.px-q`, `.px-next` | Content-pack lessons | Replaces the editor: choose, order, match, repair or reason; the next safe check in `accent-soft` |
 | Investigation views | `.iv`, `.iv-link`, `.iv-trace`, `.iv-row`, `.iv-tag` | Content-pack Learn and Practice | Relationships, trace, walkthrough, plan review; tags use the verdict colours |
 | Guided tour | `.tour-shot`, `.tour-box`, `.tour-zoom`, `.tour-nav`, `.tour-dot` | Content-pack Learn | A screenshot with one numbered box, a close-up and Back / Next; the dim is `scrim` |
-| Result card | `.result`, `.resrow`, `.rmark` (`.knot`, `.curtain`, `.spark`), `.resgate`, `.resweek`, `.reskey`, `.resshare`, `.resmore` | Done screen | The lesson's first time through, with no answers in it. **Share result** copies a picture of the card; **Copy as text** the emoji version. Tiles are `aria-hidden`; the card's `.sr` sentence says the same in words. See "The result marks" |
+| Result card | `.result`, `.resrow`, `.rmark` (`.knot`, `.curtain`, `.spark`), `.resgate`, `.resweek`, `.reskey`, `.resshare`, `.resmore` | Done screen | The lesson's first time through, with no answers in it. **Share result** copies a picture of the card; **Copy as text** the emoji version. Tiles are `aria-hidden`; the card's `.sr` sentence says the same in words. A step done before results began reads "Done earlier". The Notebook's **Your results** tab lists past results (`.resitem`). See "The result marks" |
 | Hover card | `#stkTip` | Stickers | Long press on phones |
 | Toast | `#toast` | After saving | Short, plain, disappears by itself |
 
