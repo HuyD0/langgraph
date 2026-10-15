@@ -4,23 +4,33 @@ Daily Drill can show lessons that live outside its public curriculum: a **conten
 folder of YAML files. The slots for **Infrastructure as Code: Applied Practice** are already in
 `content-packs/iac-applied/` (Journey A, Journey B and a capstone, all empty). This guide shows
 how to fill them in, check them, preview them, and turn them on in an internal deployment,
-without changing the application's code.
+without changing the application's code or any file the public repository owns.
 
 ## Where things go
 
+The work copy of the repository is a downstream of the public one ([PORTING.md](PORTING.md),
+"Keeping the work copy in step"), so real material goes in one **overlay** folder that the public
+repository never creates and an upstream merge never touches: `content-packs/internal/`, a copy
+of `content-packs/iac-applied/` (its `pack.yaml`, `lessons/` and `assets/`) with the **same lesson
+ids**, filled in. The shared slots stay slots in both copies.
+
 | Material | Where | In the public repository? |
 |---|---|---|
-| The pack's structure (journeys, lesson slots) | `content-packs/iac-applied/` | Yes, as empty slots only |
+| The pack's structure (journeys, lesson slots) | `content-packs/iac-applied/` | Yes, as empty slots only, in both copies |
 | Templates | `content-packs/templates/` | Yes |
 | A complete fictional example | `tests/fixtures/content-packs/example/` | Yes (made-up names only) |
-| Real lessons, answer keys, configuration examples | the pack's `lessons/` in the **private** copy | **Never** |
-| Screenshots and diagrams | the pack's `assets/` in the private copy | **Never** |
-| Links to internal docs, repositories, runs | each lesson's `evidence:` in the private copy | **Never** |
+| Real lessons, answer keys, configuration examples | `content-packs/internal/lessons/` in the **work copy** | **Never** |
+| Screenshots and diagrams | `content-packs/internal/assets/` in the work copy | **Never** |
+| Links to internal docs, repositories, runs | each lesson's `evidence:` in the work copy | **Never** |
+| "How this works at our company for lesson X" | a pack lesson in `content-packs/internal/` with `prerequisites: [<core lesson id>]`, so it follows its public twin on the path; **never** an edit to `src/drill/content/modules/` | **Never** |
+| Laptop-only previews | `content-packs/private/`, which git ignores. A git-ignored folder never reaches the Databricks App (the deploy honours `.gitignore`), so anything to deploy must be in the tracked `content-packs/internal/` | No |
 
-Two safeguards in the public repository: `content-packs/PUBLIC` makes the tests fail if any lesson
-under `content-packs/` stops being a slot or an asset appears; and git ignores
-`content-packs/private/`. In the approved private copy, delete `content-packs/PUBLIC` and write
-the lessons straight into `content-packs/iac-applied/`.
+Three safeguards. `content-packs/PUBLIC` stays in **both** copies and makes the tests fail if any
+lesson in the shared packs stops being a slot or an asset appears there; don't delete it at work.
+The scrub (`tests/test_scrub.py`, run by `scripts/check.sh` and the pre-push hook) fails on real
+names in any tracked file; in the work copy `content-packs/internal/` is exempt, since that is
+where they belong. And `app.yaml` already names `content-packs/internal` in `DRILL_CONTENT_PACKS`,
+so turning the pack on needs no edit to a file the public repository owns.
 
 ## How a pack works
 
@@ -42,8 +52,9 @@ A journey with nothing to show is left off the path, so learners never meet an e
 
 ## Fill in a lesson
 
-1. **Copy the template** over the slot, keeping the slot's `id`:
-   `cp content-packs/templates/lesson.example.yaml content-packs/iac-applied/lessons/a1-workflow.yaml`
+1. **Copy the template** over the slot, keeping the slot's `id` (the first time, create the
+   overlay by copying the whole of `content-packs/iac-applied/` to `content-packs/internal/`):
+   `cp content-packs/templates/lesson.example.yaml content-packs/internal/lessons/a1-workflow.yaml`
 2. **Write the explanation** (`learn.text`) and the **objective**: plain words, short sentences,
    explain each term the first time. Start with why it matters.
 3. **Add configuration or code examples** under `learn.examples`: approved snippets, cut down to
@@ -113,29 +124,26 @@ numbered callouts, practice questions and an answer table), it maps over like th
 ## Check, preview, build
 
 ```bash
-uv run drill content check content-packs/iac-applied          # every problem, by file and field
-uv run drill content preview content-packs/iac-applied        # http://127.0.0.1:8790, drafts shown
+uv run drill content check content-packs/internal          # every problem, by file and field
+uv run drill content preview content-packs/internal        # http://127.0.0.1:8790, drafts shown
 ```
 
 The preview uses a scratch progress file, not yours. To see the fictional example working:
 `uv run drill content preview tests/fixtures/content-packs/example`.
 
 A static page with a pack (for a private file share) is `uv run drill build-page --pack
-content-packs/iac-applied`. It writes `dist/private/`, which git ignores, with the screenshots
+content-packs/internal`. It writes `dist/private/`, which git ignores, with the screenshots
 inside the page. Never publish that file anywhere public: everything in a static page can be read
 by anyone who opens it.
 
 ## Turn it on in an internal deployment
 
-The server loads the folders named in `DRILL_CONTENT_PACKS` (separate several with `:`). In the
-Databricks App, add it to `app.yaml` in the private copy:
-
-```yaml
-  - name: DRILL_CONTENT_PACKS
-    value: content-packs/iac-applied
-```
-
-and deploy as usual (`uv run drill cloud deploy --target work`, or `./scripts/port-to-workspace.sh`).
+The server loads the folders named in `DRILL_CONTENT_PACKS` (separate several with `:`), and a
+folder that isn't there is skipped. `app.yaml` already names `content-packs/internal`, in both
+copies, so there is nothing to edit: in the public repository the folder doesn't exist and
+nothing loads; in the work copy the pack is tracked, travels with the deploy and loads. Commit
+the pack and deploy as usual (`uv run drill cloud deploy --target work`, or
+`./scripts/port-to-workspace.sh`).
 The pack's lessons are part of the page the server sends, so **everyone who can open the app can
 read them**: who can use the app is the access control (`uv run drill cloud share`). Screenshots are
 served at `pack-assets/<pack>/<file>` by the same app, and only files a lesson names.

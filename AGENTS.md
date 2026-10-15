@@ -6,7 +6,7 @@ change, and the house rules. Claude Code, Codex, Cursor, Copilot and Gemini all 
 
 ## What this is
 
-Daily Drill is a learning path for AI engineering on Databricks: 130+ short lessons, each going
+Daily Drill is a learning path for AI engineering on Databricks: about 170 short lessons, each going
 **Learn → Check → Build → Explain**. The learner is **new to coding**. Everything they see uses
 plain words and no maths notation (no Big-O).
 
@@ -94,6 +94,21 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - Keep franchise or character names out of code, commits and PRs (the Dusk look has a neutral name).
 - Don't merge PRs; the owner merges. Stack a PR on another only when it needs that work, and say so.
 - Databricks: never choose a CLI profile yourself; ask. Running cloud commands costs money.
+
+**Two copies** (the public repository and the work copy; how they relate is in
+[docs/PORTING.md](docs/PORTING.md), "Keeping the work copy in step")
+- Which copy you are in: `content-packs/PUBLIC` is in both. An `UPSTREAM` file at the root
+  means the work copy, a downstream of the public repository that is merged from it, never
+  retyped.
+- In the work copy edit only `content-packs/internal/`, `.databricks/` and `.github/`. Never
+  `src/`, `docs/` or `app.yaml` there: a fix lands in the public repository first and flows
+  down with the next merge. "How this works at our company for lesson X" is a pack lesson in
+  `content-packs/internal/` with `prerequisites: [<core lesson id>]`, never an edit to the
+  core module.
+- Never paste text from the work copy into the public one without the scrub:
+  `tests/test_scrub.py`, run by `scripts/check.sh` and the pre-push hook
+  (`git config core.hooksPath scripts/hooks`). Its denylist lives outside the repository, in
+  `~/.config/daily-drill/denylist.txt`.
 
 ## Gotchas
 

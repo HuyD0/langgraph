@@ -108,7 +108,7 @@ async function askLesson(question, instruction) {
   thread.push(turn);
   const i = thread.length - 1;
   setAskBusy(true); renderAskThread();
-  const prompt = `You are a patient tutor helping with one lesson of an AI engineering course. ${LEARNER}
+  const prompt = `You are a patient tutor helping with one lesson of an AI engineering course. ${LEARNER()}
 
 ${askContext()}
 
@@ -135,7 +135,7 @@ Rules:
     if (leaks(text)) { turn.a = LEAKED; turn.failed = true; }
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
-    turn.a = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : "The answer didn't come through. Try again in a moment.";
+    turn.a = e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.code === "asleep" && e.text) || "The answer didn't come through. Try again in a moment.";
     turn.failed = true;
   }
   turn.streaming = false;

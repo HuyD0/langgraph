@@ -62,10 +62,10 @@
    workbook's annotation style: a dark numbered circle and a crimson outline on the one part */
 .sl-view { background: var(--tool-bg); color: var(--tool-fg); border: 1px solid var(--tool-line); box-shadow: var(--tool-frame), var(--card-shadow); padding: 0; gap: 0; font: 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
 /* the frame burns in Dusk: the teal flame (the aura filter, tinted for the platform track) licks
-   around the window, behind its content; with Motion off or reduced motion it stays a still ring */
+   around the window, behind its content. Motion is for everyone (the owner's choice, 2026-10-15). */
 .sl-view { position: relative; isolation: isolate; overflow: visible; }
 .sl-chrome { overflow: hidden; }
-:root[data-theme="dusk"]:not([data-motion="off"]) .sl-view::before { content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; border: 2px solid rgba(52, 216, 196, .75); filter: url(#aura-track); pointer-events: none; }
+:root[data-theme="dusk"] .sl-view::before { content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; border: 2px solid rgba(52, 216, 196, .75); filter: url(#aura-track); pointer-events: none; }
 
 .sl-chrome { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(--tool-sunk); border-bottom: 1px solid var(--tool-line); border-radius: 12px 12px 0 0; }
 .sl-chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--tool-line); }
@@ -111,9 +111,9 @@
 .sl-view .sl-tgt { border-radius: 6px; }
 @media (hover: hover) { .sl-view .sl-tgt:hover, .sl-view .sl-line[data-walk-n]:not(.sl-hit):hover, .sl-view .sl-row[data-walk-n]:not(.sl-hitbox):hover, .sl-view .sl-block[data-walk-n]:not(.sl-hitbox):hover, .sl-view .sl-ev[data-walk-n]:not(.sl-hitbox):hover { outline: 1.5px dashed var(--tool-anno); outline-offset: 1px; opacity: 1; } }
 .sl-view .sl-mark, .sl-view .sl-hitbox { box-shadow: var(--glow-anno); }
-/* one glow at a time: while the frame burns (motion on), the callouts don't glow too; with
-   reduced motion or Motion off the flame stops, so the callout glow comes back */
-:root:not([data-motion="off"]) .sl-view .sl-mark, :root:not([data-motion="off"]) .sl-view .sl-hitbox { box-shadow: none; }
+/* one glow at a time: the frame burns, so the callouts don't glow too. Motion is for everyone
+   (the owner's choice, 2026-10-15), so this always applies; --glow-anno stays for a look without the flame */
+.sl-view .sl-mark, .sl-view .sl-hitbox { box-shadow: none; }
 
 /* calmer screens: one thing outlined, everything else steps back */
 .sl-view .sl-line:not(.sl-hit), .sl-view .sl-row:not(.sl-hitbox), .sl-view .sl-block:not(.sl-hitbox) { opacity: .62; }

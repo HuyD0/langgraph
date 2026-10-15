@@ -8,7 +8,8 @@ lesson(MODULE, 'exact_match',
     title='Evaluating model answers',
     learn=[
         "An **eval** is a test set of inputs with expected outputs, plus a way to score answers. It's how you know whether a prompt or model change helped.",
-        'Normalise (clean) both sides before comparing, or formatting differences ("Paris." vs "paris") count as wrong. In the exercise, cleaning means: make it lowercase, remove `.` `,` `!` and `?`, and trim spaces off both ends. For open-ended answers, teams use **LLM-as-a-judge**: a second model, the **judge**, grades each answer with a clear **rubric** (written grading rules), and check it against human labels.',
+        'Normalise (clean) both sides before comparing, or formatting differences ("Paris." vs "paris") count as wrong. In the exercise, cleaning means: make it lowercase, remove `.` `,` `!` and `?`, and trim spaces off both ends.',
+        'For open-ended answers there is no single right string, so teams use **LLM-as-a-judge**: a second model, the **judge**, grades each answer against a **rubric** (written grading rules). Later lessons check the judge itself.',
     ],
     example=example('Cleaning one answer', """'Paris.'.replace('.', '')   # 'Paris'
 'Paris'.lower()             # 'paris'
@@ -282,9 +283,9 @@ bucket("ticket-1001") = 72  -> still test"""),
     check=question(
         'Your eval set grows from 200 to 300 questions, and you re-deal all 300 by position. What can go wrong?',
         [
-            'Nothing, the proportions stay the same',
-            "Old questions can move between splits, so questions you tuned on can end up in the holdout",
-            'The new questions all land in dev',
+            'Nothing: each split keeps the same share of questions',
+            'Old questions can move, even into the holdout',
+            'The 100 new questions all land in the dev set',
         ],
         answer=1,
         why='The holdout is only honest if nothing in it was ever looked at while tuning. A split that depends only on the id never moves.',
@@ -421,11 +422,11 @@ plain average of the eval set:  70%
 weighted by real traffic:        78%
   (0.9 times 0.7, plus 0.5 times 0.3)"""),
     check=question(
-        'Refund questions are 5% of real traffic but 30% of your eval set, and they score badly. What is the honest overall number?',
+        'Refund questions are 1 in 20 of real traffic but 3 in 10 of your eval set, and they score badly. What is the honest overall number?',
         [
-            "Each group's score weighted by its share of real traffic, reported next to the per-group scores",
-            'The plain average over the eval set',
-            'The refund score, since it is the worst',
+            "The traffic-weighted score, shown next to each group's score",
+            'The plain eval-set average, since every example counts once',
+            'The refund score alone, since it is the worst',
         ],
         answer=0,
         why='The headline should reflect what users experience. The per-group scores still show that refunds need work.',
@@ -530,9 +531,9 @@ verdict:    do not ship B until fraud-03 passes again"""),
     check=question(
         'Version B scores 4 points higher overall but fails one of your 15 must-pass questions. What happens?',
         [
-            'Ship it: 4 points is a clear win',
+            'Ship it: 4 points overall outweighs one case',
             'Remove that question from the must-pass set',
-            "It doesn't ship until that case passes: the gate comes before the average",
+            "It doesn't ship until that case passes",
         ],
         answer=2,
         why='The must-pass set exists exactly for this. Moving a case out of it because it failed defeats the purpose.',
@@ -783,8 +784,8 @@ lesson(MODULE, 'judge_agreement',
 judge passed all 10
 → agrees on passes 100%, on failures 0%: useless for finding bugs"""),
     check=question(
-        'Your judge agrees with humans 92% of the time overall. Is it good enough?',
-        ['Yes', 'Not until you check its agreement on failures separately', 'No judge is ever good enough'],
+        'Your judge agrees with humans 92 times in 100 overall. Is it good enough?',
+        ['Yes: 92 in 100 is high enough to trust its scores', 'Not until you check passes and failures separately', 'No: a judge needs to agree 100 times in 100'],
         answer=1,
         why='Overall agreement hides a judge that never fails anything.',
     ),
@@ -810,8 +811,8 @@ fail_agreement = tn / (tn + fp)"""),
 
 Work out two numbers:
 
-- pass agreement: of the answers the human passed, the share the judge also passed.
-- fail agreement: of the answers the human failed, the share the judge also failed.
+- pass agreement (the true positive rate from Learn): of the answers the human passed, the share the judge also passed.
+- fail agreement (the true negative rate): of the answers the human failed, the share the judge also failed.
 
 Return `[pass_agreement, fail_agreement]`, each rounded to 2 decimal places. The human always passed at least one answer and failed at least one.""",
         pattern='Split by the human label, then measure agreement on each side separately.',
@@ -905,20 +906,20 @@ not j   # True""",
 lesson(MODULE, 'cohen_kappa',
     title='Agreement beyond chance',
     learn=[
-        'Agreement can be high by luck. If 90% of answers are good, and a judge that never reads anything says "pass" 90% of the time at random, the two still agree on about 82% of answers (0.9 times 0.9 for both saying pass, plus 0.1 times 0.1 for both saying fail).',
-        "**Cohen's kappa** takes away the agreement you would expect by chance. Kappa is (observed agreement minus chance agreement) divided by (1 minus chance agreement). 1 means perfect agreement, 0 means no better than luck, and below 0 means worse than luck.",
-        "Chance agreement comes from how often each side says pass: the judge's pass rate times the humans' pass rate, plus the judge's fail rate times the humans' fail rate. As a common rough guide, above 0.6 is good and above 0.8 is very good. Use kappa alongside the pass-and-fail check from the previous lesson, not instead of it.",
+        "**Cohen's kappa** answers one question: how much better than luck is this judge? 1 is perfect agreement, 0 is no better than guessing, and below 0 is worse than guessing.",
+        'Agreement can be high by luck. If 9 in 10 answers are good, and a judge that never reads anything says "pass" 9 times in 10 at random, the two still agree on about 82 answers in 100, because both say pass nearly all the time. Kappa takes that chance agreement away and keeps only what is left.',
+        'As a common rough guide, above 0.6 is good and above 0.8 is very good. Use kappa alongside the pass-and-fail check from the previous lesson, not instead of it. The exercise walks through the three steps that work it out.',
     ],
     example=example('Kappa on ten answers', """humans: pass 8, fail 2      judge: pass 9, fail 1
 they agree on 9 of 10      → observed 0.90
 chance = 0.8 * 0.9 + 0.2 * 0.1       # 0.74
 kappa = (0.90 - 0.74) / (1 - 0.74)   # about 0.62"""),
     check=question(
-        'Your judge agrees with humans 82% of the time, and kappa is 0.05. What does that tell you?',
+        'Your judge agrees with humans 82 times in 100, and kappa is 0.05. What does that tell you?',
         [
-            'The judge is good: 82% is high',
+            'The judge is good: 82 in 100 is high agreement',
             'Kappa must be wrong when agreement is high',
-            'The judge is barely better than guessing; the agreement mostly comes from most answers being good',
+            'The judge is barely better than guessing',
         ],
         answer=2,
         why='When almost everything passes, a judge that also says pass almost every time agrees a lot without catching anything.',
@@ -926,7 +927,7 @@ kappa = (0.90 - 0.74) / (1 - 0.74)   # about 0.62"""),
     angle=angle(
         pattern='Count, then use the formula',
         text="The big idea: a judge and a human can agree a lot just by luck, so Cohen's kappa takes away the agreement you would expect by chance. Your code goes through the pairs once and counts three things: how often they agree, how often the human says pass, and how often the judge says pass. It turns each count into a share, works out chance agreement from the two pass rates, and puts it all into the kappa formula. 1 means perfect, and 0 means no better than luck.",
-        say='"A judge and a human can agree a lot just by [[luck|habit|design::Like two people guessing coin flips the same way.]]. So I use Cohen\'s [[kappa|recall|average::The agreement score this lesson is about.]], which takes away the agreement that chance alone would give."',
+        say='"A judge and a human can agree a lot just by [[luck|habit|design::Like two people guessing coin flips the same way.]]. So I use Cohen\'s [[kappa|recall|average::Named after a statistician and written as a Greek letter, it starts with k.]], which takes away the agreement that chance alone would give."',
         classic=None,
     ),
     stack=stack('scikit-learn and MLflow', """from sklearn.metrics import cohen_kappa_score
@@ -943,11 +944,11 @@ mlflow.log_metric("judge_kappa", kappa)"""),
 - `human`: what a human said, like `[True, True, True, False]`.
 - `judge`: what the LLM judge said, like `[True, True, False, False]`.
 
-Work out three numbers:
+Work out kappa in three steps:
 
-- observed: the share of answers they agree on.
-- chance: how often they would agree by luck. A pass rate is the share of `True` in a list, and a fail rate is 1 minus it. Chance is the human's and the judge's pass rates multiplied together, plus their fail rates multiplied together.
-- kappa: (observed minus chance) divided by (1 minus chance).
+1. observed: the share of answers they agree on.
+2. chance: how often they would agree by luck. A pass rate is the share of `True` in a list, and a fail rate is 1 minus it. Chance is the human's pass rate times the judge's pass rate, plus the human's fail rate times the judge's fail rate.
+3. kappa: observed minus chance, divided by 1 minus chance.
 
 Return kappa rounded to 2 decimal places. You will never divide by zero.""",
         pattern='Count agreements and passes in one walk through the labels, then a few lines of arithmetic.',
@@ -1477,9 +1478,9 @@ shipping-08    no          yes       shipping      0
     check=question(
         'Experts changed only 2 of the last 150 drafted labels. What should you do?',
         [
-            'Review a smaller sample, keep must-pass and disagreeing drafts in the queue, and keep tracking the change rate',
-            'Stop reviewing drafts entirely',
-            'Have experts rewrite every label anyway',
+            'Review fewer drafts, but keep the riskiest in the queue',
+            'Stop reviewing drafts: the drafter has earned trust',
+            'Have experts rewrite every label from scratch anyway',
         ],
         answer=0,
         why='A low change rate earns a lighter review, not none. The must-pass and disputed drafts are still where a mistake costs most.',
@@ -1635,7 +1636,7 @@ lesson(MODULE, 'change_report',
     learn=[
         'When you compare two versions on the same questions, most questions get the same result from both. The informative ones are where they **disagree**: a **regression** is a question the new version gets wrong that the old one got right; an **improvement** is the reverse. Statisticians call these **discordant pairs**.',
         'Counting them decides the comparison (that is McNemar\'s test, from the Experiment design module). **Reading** them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words.',
-        'Count the causes in each direction. "6 improvements, mostly *moved the right document up*; 2 regressions, both *pushed a worse document above it*" tells you what the change did and what to fix next. This is called **error analysis**, and it happens in the **Evaluate** stage, where you score and compare the versions you ran.',
+        'Count the causes in each direction. "6 improvements, mostly *moved the right document up*; 2 regressions, both *pushed a worse document above it*" tells you what the change did and what to fix next. This is called **error analysis**, and it happens in the **Evaluate** stage, where you score and compare the versions you ran. If every improvement shares a cause that has nothing to do with the change you made, suspect the measurement: a scorer that likes short answers, say.',
     ],
     example=example('Regressions, improvements and their causes', """question         old  new  cause (from reading both traces)
 return-label     ✗    ✓    reranker moved the right doc to the top      improvement
@@ -1647,8 +1648,8 @@ improvements: {"moved right doc up": 2}     regressions: {"pushed worse doc up":
     check=question(
         'You swapped in a new reranker. The new version beats the old by 3 questions. Reading the improvements, every one has the same cause: "answer is shorter". What should you suspect?',
         [
-            'The new version is clearly better',
-            'The scorer may reward short answers, so check the scorer before trusting the win',
+            'The new version is clearly better, so ship it',
+            'The scorer may be rewarding short answers',
             'Nothing, causes do not matter once the count is in',
         ],
         answer=1,
@@ -1821,9 +1822,9 @@ refund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, differe
     check=question(
         'Most of your regressions are in the "same articles, different answer" bucket. Where should you look?',
         [
-            'Retrieval settings',
-            'The eval set size',
-            'The generation step: the prompt, the model or the scorer',
+            'Retrieval settings, like how many articles are found',
+            'The eval set, since it may be too small to trust',
+            'The generation step, where the answer is written',
         ],
         answer=2,
         why='If both versions got the same articles, retrieval did not cause the change. Something after it did.',
@@ -1962,9 +1963,9 @@ shift:      gaps 0.3 + 0 + 0.3 = 0.6, halved = 0.3"""),
     check=question(
         "Eval scores are steady but users complain more. What's a likely explanation?",
         [
-            'The users are wrong',
-            'Production questions have drifted away from what the eval set covers',
-            'The model got worse overnight',
+            'The users are wrong, since the scores say all is well',
+            'Real questions have drifted away from the eval set',
+            'The model got worse overnight and the eval missed it',
         ],
         answer=1,
         why='The eval set no longer represents what users ask.',

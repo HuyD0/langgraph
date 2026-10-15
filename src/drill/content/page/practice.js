@@ -11,14 +11,15 @@ function qfNote(change) {
 }
 const flowing = () => !!(QF.p && cur && cur.p === QF.p && !QF.code);
 const qfFinished = () => !!(QF.p && progress.solved[QF.p.id] && !QF.again);
-const qfKey = id => "drill-flow-" + id, codeKey = id => "drill-code-" + id;
+const codeKey = id => "drill-code-" + id;  // "1" on this device when the Python version was chosen over the questions
 function qfLoad(p) {
   Object.assign(QF, { p: p.practice ? p : null, i: 0, tried: [], help: 0, first: {}, code: false, again: false, log: [] });
-  if (QF.p) try { QF.code = localStorage.getItem(codeKey(p.id)) === "1"; } catch {}
+  if (QF.p) QF.code = store.get(codeKey(p.id)) === "1";
   qfMode();
 }
 function qfMode() {
-  if (!QF.p) { $("flowBox").hidden = true; return; }
+  // No practice questions here: take the "flowing" class the last lesson may have left on Build, or its code parts stay hidden.
+  if (!QF.p) { $("paneBuild").classList.remove("flowing"); $("flowBox").hidden = true; $("modeSwap").hidden = true; return; }
   const on = flowing();
   $("paneBuild").classList.toggle("flowing", on);
   $("flowBox").hidden = !on;
@@ -213,7 +214,7 @@ function qfSolved() {
 }
 function qfReset() { Object.assign(QF, { i: 0, tried: [], help: 0, first: {}, solved: null, again: true, text: null, probs: null, fails: 0, log: [] }); qfRender(); renderFoot(); }
 function qfSetCode(on) {
-  QF.code = on; try { localStorage.setItem(codeKey(QF.p.id), on ? "1" : "0"); } catch {}
+  QF.code = on; store.set(codeKey(QF.p.id), on ? "1" : "0");
   qfMode(); renderFoot();
   if (on) machineLoad(QF.p);
 }

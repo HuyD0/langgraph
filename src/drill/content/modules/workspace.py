@@ -7,11 +7,11 @@ MODULE = module('workspace', 'Databricks building blocks', 'Compute, runtimes, j
 
 lesson(MODULE, 'pick_compute',
     title='Which compute for which work',
-    checked='2026-10-12',
-    sources=[source('Compute', 'https://docs.databricks.com/aws/en/compute/'), source('Serverless compute', 'https://docs.databricks.com/aws/en/compute/serverless/')],
+    checked='2026-10-15',
+    sources=[source('Compute', 'https://docs.databricks.com/aws/en/compute/'), source('Classic compute overview', 'https://docs.databricks.com/aws/en/compute/use-compute'), source('Serverless compute', 'https://docs.databricks.com/aws/en/compute/serverless/')],
     learn=[
         '**Compute** is the machines that run your code. Databricks bills it in **DBUs** (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.',
-        '**All-purpose compute** (also called classic compute) is a cluster you start, share and work in from notebooks. **Jobs compute** is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose.',
+        '**All-purpose compute** is a cluster you start, share and work in from notebooks. **Jobs compute** is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose. Both are **classic compute**: machines in your own cloud account that you size and manage yourself.',
         '**Serverless compute** means Databricks runs the machines for you. It starts in seconds and there is nothing to size. It works for notebooks, jobs and pipelines.',
         'A **SQL warehouse** runs SQL, dashboards and Genie (ask questions of your data in plain words). A serverless SQL warehouse is the recommended kind.',
         "Serverless doesn't take **init scripts** (a script that sets up each machine as it starts) or other custom machine setup. Work that needs a GPU (a chip built for training models) usually means classic compute too.",
@@ -243,11 +243,11 @@ lesson(MODULE, 'unsupported_runtimes',
         'It is October 2026 and a cluster runs `13.3.x-scala2.12`. What should you do?',
         [
             'Nothing, LTS versions are supported forever',
-            'Move it to a supported LTS such as 15.4 or 16.4, because 13.3 LTS support ended in August 2026',
+            'Move it to a supported LTS, such as 15.4 or 16.4',
             'Switch the cluster off and on again to pick up fixes',
         ],
         answer=1,
-        why="Once support ends there are no more fixes, security ones included. Restarting doesn't change the version; you have to change `spark_version`.",
+        why="13.3 LTS support ended in August 2026. Once support ends there are no more fixes, security ones included. Restarting doesn't change the version; you have to change `spark_version`.",
     ),
     angle=angle(
         pattern='Cut out the key, then check membership',
@@ -421,9 +421,9 @@ lesson(MODULE, 'policy_violations',
     check=question(
         'A policy has `"autotermination_minutes": {"type": "range", "maxValue": 60}`. Someone sets it to 0. Does the policy stop them?',
         [
-            'Yes, 0 means never stop, which is longer than 60',
-            "No, 0 is a number between nothing and 60, so it passes. Add a minValue too",
-            'Yes, ranges never allow 0',
+            'Yes: 0 means never stop, which is more than 60',
+            'No: with no minValue, 0 is inside the range',
+            'Yes: a range never allows 0',
         ],
         answer=1,
         why='0 means "never auto-terminate", but the rule only compares numbers. With no `minValue`, 0 is inside the range. Set `"minValue": 10` as well.',
@@ -670,11 +670,11 @@ clean fails:
         '`clean` failed and `features` and `report` were skipped. You fix the bug. What does a repair run do?',
         [
             'Reruns every task from the start',
-            'Reruns clean, features and report, and keeps the earlier results of ingest and audit',
-            'Reruns only clean',
+            'Reruns clean, features and report',
+            'Reruns clean on its own',
         ],
         answer=1,
-        why='A repair run picks up the failed task and everything skipped after it. Tasks that succeeded keep their results, which saves time and compute.',
+        why='A repair run picks up the failed task and everything skipped after it. Tasks that succeeded, like ingest and audit, keep their results, which saves time and compute.',
     ),
     angle=angle(
         pattern='Spread through a list in order',
@@ -1275,12 +1275,12 @@ sku_name = "PREMIUM_JOBS_COMPUTE"    # price: 0.30 a DBU (made up)
     check=question(
         "Your query says the ml team spent $4,000 last month at list price. Finance says the invoice was lower. Who's right?",
         [
-            'The query, list prices are the real bill',
-            "Both can be right. List price ignores your discount, so it's a fair way to compare teams, not the exact invoice",
-            'Finance, the system tables are often wrong',
+            'The query: list prices are the real bill',
+            'Both: list price leaves out your discount',
+            'Finance: the system tables are often wrong',
         ],
         answer=1,
-        why='`list_prices` holds public prices. Use it to compare and trend; use the invoice or your agreed rates for exact money.',
+        why="`list_prices` holds public prices, so the query is a fair way to compare teams, not the exact invoice. Use it to compare and trend; use the invoice or your agreed rates for exact money.",
     ),
     angle=angle(
         pattern='Group and add up',

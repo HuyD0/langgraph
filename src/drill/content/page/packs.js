@@ -5,10 +5,10 @@ const packOf = id => (LESSONS[id] || {}).pack || null;
 const PX = {};  // lesson id -> this exercise's state while the page is open (also kept in the browser)
 const pxKey = id => "drill-px-" + id;
 function pxState(id) {
-  if (!PX[id]) { let s = null; try { s = JSON.parse(localStorage.getItem(pxKey(id)) || "null"); } catch {} PX[id] = s || {}; }
+  if (!PX[id]) { let s = null; try { s = JSON.parse(store.get(pxKey(id)) || "null"); } catch {} PX[id] = s || {}; }
   return PX[id];
 }
-function pxSave(id) { try { localStorage.setItem(pxKey(id), JSON.stringify(PX[id])); } catch {} }
+function pxSave(id) { store.set(pxKey(id), JSON.stringify(PX[id])); }
 // A fixed shuffle per lesson, so options don't move when the page redraws.
 function pxShuffle(items, seed) {
   let h = 0; for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;

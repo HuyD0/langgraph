@@ -23,6 +23,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 from drill.content import classics, extras, modules, real, review, trust
 from drill.content.checks import more_checks
@@ -211,7 +212,8 @@ def render_page(data: dict) -> str:
     tokens = TOKENS.read_text(encoding="utf-8")
     return (template
             .replace("/*TOKENS*/", tokens, 1)
-            .replace("/*DATA*/", json.dumps(data, ensure_ascii=False)))
+            # "<" is escaped so no lesson text can end the <script> block: </script> and <!-- are the two sequences a browser acts on.
+            .replace("/*DATA*/", json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")))
 
 
 def build_page(data: dict | None = None) -> str:
@@ -227,7 +229,7 @@ def big_o_leftovers(data: dict) -> list[tuple[str, str]]:
     """Big-O notation in anything the learner reads. Code fields and the glossary are allowed."""
     found: list[tuple[str, str]] = []
 
-    def walk(x, path: str) -> None:
+    def walk(x: Any, path: str) -> None:
         if isinstance(x, str):
             if _BIG_O.search(x) and not any(s in path for s in ("solution", "starter", "guided")):
                 if not path.startswith(".glossary"):

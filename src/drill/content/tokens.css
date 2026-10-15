@@ -1,8 +1,10 @@
 /* Daily Drill design tokens: the one place the app's colors, fonts and column width live.
    build.py inlines this file into page.html at its slash-star TOKENS marker, so the page
-   still ships as one HTML file. Light is the default; dark follows the system, or
-   data-theme="dark" on <html> forces it. Every name is explained on the design-system
-   canvas (Color, Typography, and Spacing boards). */
+   still ships as one HTML file. Dusk (data-theme="dusk" on <html>) is the default look; Light is
+   chosen in the Notebook's Settings and kept on the device. The prefers-color-scheme block and the
+   data-theme="dark" block are kept for the system-dark fallback: a page that loads these tokens
+   without the look script (a mockup, an old saved page) still goes dark with the device.
+   Every name is explained on the design-system canvas (Color, Typography, and Spacing boards). */
 
 :root {
   /* ground levels */
@@ -40,8 +42,8 @@
   /* code colours: keyword, string, number, comment, function name, built-in. No green or red, which mean pass and fail. */
   --syn-kw: #7a3fc7; --syn-str: #a04a00; --syn-num: #b4307a; --syn-com: #6b7280; --syn-fn: #1f5fbf; --syn-bi: #0f7a8a;
 
-  /* the machine's row pills: one colour per value of the labelled field, in this order */
-  --tok-a: #2a62d0; --tok-b: #b65a15; --tok-c: #7743c2; --tok-d: #0f7a8a;
+  /* the machine's row pills: one colour per value of the labelled field, in this order; --tok-on is the text on them */
+  --tok-a: #2a62d0; --tok-b: #b65a15; --tok-c: #7743c2; --tok-d: #0f7a8a; --tok-on: #ffffff;
 
   /* type: display for headings, body for reading, mono for anything the computer said */
   --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
@@ -92,7 +94,7 @@
   --accent: #7f9bff; --accent-ink: #0b1020; --accent-soft: #1c2440;
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
-  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
+  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b; --tok-on: #ffffff;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
@@ -109,7 +111,7 @@
   --accent: #7f9bff; --accent-ink: #0b1020; --accent-soft: #1c2440;
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
-  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
+  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b; --tok-on: #ffffff;
   --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
@@ -120,7 +122,7 @@
   --tool-frame: 0 0 0 1px rgba(63, 210, 191, .45), 0 0 22px rgba(63, 210, 191, .2);
   --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark }
 
-/* Dusk: an opt-in dark theme, data-theme="dusk" on <html>. Blue-black darks with a
+/* Dusk: the default look, data-theme="dusk" on <html>. Blue-black darks with a
    mauve-grey sheen; blue only for the next step; violet only for the path; lavender only for finishing.
    page.html adds its glass, grain and glow. */
 :root[data-theme="dusk"] {
@@ -129,8 +131,8 @@
   --accent: #5b8cff; --accent-ink: #0a1233; --accent-soft: #1c1a26;
   --pass: #7fd6b0; --pass-bg: #10261f; --fail: #ff8f9e; --fail-bg: #351723; --hint: #e8c47a; --hint-bg: #2a2517;
   --syn-kw: #9db7ff; --syn-str: #f0c6a0; --syn-num: #f2a7c3; --syn-com: #8f8a9f; --syn-fn: #c3b5ff; --syn-bi: #9fd2db;
-  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b;
-  --finish: #b49cff; --finish-ink: #0a1233;
+  --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b; --tok-on: #ffffff;
+  --finish: #b49cff;
   --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6;
   --path: #8b5cf6; --path-bg: #150f28; --path-line: #3a2a63; --path-ink: #a99ad6;
   --card-bg: rgba(19, 18, 28, .92); --card-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 28px rgba(0, 0, 0, .35);

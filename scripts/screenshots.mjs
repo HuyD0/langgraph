@@ -22,6 +22,9 @@ const DESKTOP = { width: 1366, height: 860, mobile: false };
 
 // A few saved items, so the study list has something to show on a fresh database.
 const STUDY = `for (const t of ["A gate is a question that can stop an idea outright.", "terraform plan shows what would change, before anything does.", "The runbook reads the team's YAML."]) await addItem(t, "screens");`;
+// Two finished lessons with their first-time marks, so the Notebook's Results tab has rows to show.
+const RESULTS = `lp("use_case_score").first = { check: ["sign"], build: ["sign", "sign"], explain: ["sign", "sign"], day: 1, date: dayKey(new Date(Date.now() - 86400000)), streak: 1, gate: false };
+  lp("split_requirements").first = { check: ["sign", "knot"], build: ["sign", "knot", "sign"], explain: ["sign", "curtain"], day: 2, date: today(), streak: 2, gate: false };`;
 
 // name, size, look, then the page script that reaches the screen (it may be async).
 const SHOTS = [
@@ -47,7 +50,10 @@ const SHOTS = [
   ["practice-phone-dusk", PHONE, "dusk", `openLesson("folder_access", 2); at(".shead");`],
   ["study-row-phone-dusk", PHONE, "dusk", `${STUDY} goHome(); at(".next");`],
   ["study-list-phone-dusk", PHONE, "dusk", `${STUDY} goHome(); openPocket();`],
-  ["search-phone-dusk", PHONE, "dusk", `goHome(); openSearch();`],
+  ["search-landing-phone-dusk", PHONE, "dusk", `goHome(); openSearch();`],
+  ["search-phone-dusk", PHONE, "dusk", `goHome(); openSearch(); $("searchIn").value = "leakage"; renderSearch();`],
+  ["notebook-results-phone-dusk", PHONE, "dusk", `${RESULTS} openNotebook("results");`],
+  ["notebook-settings-phone-light", PHONE, "light", `openNotebook("settings");`],
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

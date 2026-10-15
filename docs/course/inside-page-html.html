@@ -306,7 +306,7 @@ body.ask-on .askbtn { display: inline-flex; }
  },
  {
   "file": "src/drill/content/page.html",
-  "find": "const open = t.closest(\"[data-open]\"); if (open) { openLesson(open.dataset.open); return; }",
+  "find": "const open = t.closest(\"[data-open]\"); if (open) { openLesson(knownLesson(open.dataset.open)); return; }",
   "lesson": "events"
  },
  {
@@ -321,7 +321,7 @@ body.ask-on .askbtn { display: inline-flex; }
  },
  {
   "file": "src/drill/content/build.py",
-  "find": ".replace(\"/*DATA*/\", json.dumps(data, ensure_ascii=False))",
+  "find": ".replace(\"/*DATA*/\", json.dumps(data, ensure_ascii=False).replace(\"<\", \"\\\\u003c\")))",
   "lesson": "together"
  },
  {
@@ -502,7 +502,7 @@ function learnPane() {
 document.addEventListener("click", async e => {
   const t = e.target;
   ...
-  const open = t.closest("[data-open]"); if (open) { openLesson(open.dataset.open); return; }
+  const open = t.closest("[data-open]"); if (open) { openLesson(knownLesson(open.dataset.open)); return; }
   ...
   const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
   ...
@@ -534,7 +534,8 @@ def render_page(data: dict) -> str:
     tokens = TOKENS.read_text(encoding="utf-8")
     return (template
             .replace("/*TOKENS*/", tokens, 1)
-            .replace("/*DATA*/", json.dumps(data, ensure_ascii=False)))
+            # "<" is escaped so no lesson text can end the <script> block: </script> and <!-- are the two sequences a browser acts on.
+            .replace("/*DATA*/", json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")))
 
 // page.html: after the build, D holds every lesson
 const D = /*DATA*/;
@@ -1280,7 +1281,7 @@ const L = [
   idea: [
     "When you tap, the browser fires a **click event**. `element.addEventListener(\"click\", e => { ... })` runs your function each time. `e.target` is the exact thing that was tapped.",
     "You could add a listener to every button. Daily Drill doesn't: its buttons are redrawn all the time, and new ones would have no listener. Instead there's **one listener on the whole page**, which asks \"was it a button with `data-open`?\" using `e.target.closest(\"[data-open]\")`. This is called **event delegation**.",
-    "So adding a button is two steps: draw it with a new `data-` label, and add one line to that one listener.",
+    "So adding a button is two steps: draw it with a new `data-` label, and add one line to that one listener. One habit to copy: a value read back from the page, like the lesson id in `data-open`, is text that anything could have changed, so the listener looks it up in the app's own list first (`knownLesson()`) and uses the list's copy, or does nothing if the id isn't there.",
   ],
   key: "One listener; buttons say what they are with data- labels; closest() finds them.",
   real: { id: "r-events", file: "src/drill/content/page.html", sub: "the one click listener (cut down)", note: "Search for `// ---------- events ----------`. Each line handles one kind of button." },

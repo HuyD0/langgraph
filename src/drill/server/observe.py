@@ -34,7 +34,7 @@ import re
 import subprocess
 import threading
 import time
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 from drill.config import databricks_user, experiment_path, is_databricks_uri, uc_trace_location
 
@@ -542,6 +542,8 @@ class MlflowObserver:
         return True
 
     def _log_human(self, request: str, name: str, value: Any, rationale: str | None, user: str) -> None:
+        if not REQUEST_ID.fullmatch(request or ""):
+            return  # the id goes into a filter string: the sink checks it itself, however it is reached
         import mlflow
         from mlflow.entities import AssessmentSource
 
@@ -610,7 +612,7 @@ def tool_span(name: str, inputs: dict) -> Iterator[Any]:
                 tags["lesson_id"] = str(inputs["lesson_id"])
             mlflow.update_current_trace(tags=tags, session_id=MCP_SESSION, user="local")
         except Exception:
-            pass
+            pass  # tracing is optional: a tag that does not stick must not fail the tool call
         yield span
     except BaseException as exc:
         manager.__exit__(type(exc), exc, exc.__traceback__)  # records the error on the span
@@ -618,7 +620,7 @@ def tool_span(name: str, inputs: dict) -> Iterator[Any]:
     manager.__exit__(None, None, None)
 
 
-def traced_tool(fn):
+def traced_tool(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Wrap an MCP tool so each call is traced: which tool, with what, and what came back."""
     signature = inspect.signature(fn)
 

@@ -11,7 +11,9 @@ A pack's lessons become ordinary modules and lessons in :func:`drill.content.bui
 with a ``practice`` block (an interactive exercise, see :data:`PRACTICE_KINDS`) in place of the
 Python exercise. Nothing loads a pack unless asked: the server reads ``DRILL_CONTENT_PACKS``
 (folders, separated by ``:``), and ``drill build-page`` only with ``--pack``. So the public page
-never contains a pack, and a missing pack changes nothing.
+never contains a pack. A folder named in ``DRILL_CONTENT_PACKS`` that is not there is skipped
+with one log line, so a deployment can name a pack by default without every checkout carrying it;
+a folder that is there but broken stops the server with a :class:`PackError` naming each problem.
 
 Each lesson has a ``status``:
 
@@ -28,6 +30,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import mimetypes
 import os
 import re
@@ -37,7 +40,10 @@ from typing import Any
 
 import yaml
 
+from drill.config import PROJECT_ROOT
 from drill.content.model import Module
+
+log = logging.getLogger(__name__)
 
 STATUSES = ("slot", "draft", "ready")
 DIFFICULTIES = ("intro", "core", "advanced")
@@ -88,9 +94,24 @@ class Pack:
 
 
 def pack_dirs(env: str | None = None) -> list[Path]:
-    """The pack folders named in ``DRILL_CONTENT_PACKS`` (``:``-separated), if any."""
+    """The pack folders named in ``DRILL_CONTENT_PACKS`` (``:``-separated) that exist.
+
+    A relative path counts from the project root. A folder that is not there is skipped with
+    one log line, so an ``app.yaml`` can name a pack by default without every checkout carrying it.
+    """
     value = os.getenv("DRILL_CONTENT_PACKS", "") if env is None else env
-    return [Path(p).expanduser() for p in value.split(os.pathsep) if p.strip()]
+    dirs: list[Path] = []
+    for p in value.split(os.pathsep):
+        if not p.strip():
+            continue
+        path = Path(p.strip()).expanduser()
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        if not path.is_dir():
+            log.info("content pack folder %s is not there; skipping it", path)
+            continue
+        dirs.append(path)
+    return dirs
 
 
 def show_drafts() -> bool:
@@ -281,7 +302,12 @@ def check_lesson(data: dict, path: Path, root: Path, ids: set[str]) -> list[str]
         for i, v in enumerate(learn.get("views") or []):
             problems += check_view(v, f"{w}: learn.views[{i}]")
         for ref in _asset_refs(data):
-            if not (root / ref).is_file():
+            # Confined to the pack folder: the server serves and the static build inlines
+            # whatever a lesson names. resolve() also catches a symlink that leads outside.
+            full = (root / ref).resolve()
+            if not full.is_relative_to(root.resolve()):
+                problems.append(f"{w}: '{ref}' points outside the pack folder; keep files under assets/")
+            elif not full.is_file():
                 problems.append(f"{w}: learn refers to '{ref}', which is not in the pack")
         for ref in learn.get("sources") or []:
             if ref not in evidence:

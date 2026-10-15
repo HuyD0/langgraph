@@ -14,6 +14,13 @@ def test_the_committed_map_matches_the_content():
     assert tutor.MAP_PATH.read_text() == tutor.curriculum_map(), "run: uv run drill tutor map"
 
 
+def test_the_map_describes_the_check_step_as_the_page_has_it():
+    """The page asks up to three Check questions one at a time; the map the tutor trusts must say the same."""
+    text = tutor.curriculum_map()
+    assert "Check (up to three multiple-choice questions, one at a time)" in text
+    assert "Check (one multiple-choice question)" not in text
+
+
 def test_the_map_has_no_maths_symbols():
     """The tutor copies what its knowledge says, and the learner finds maths symbols hard."""
     text = tutor.curriculum_map()

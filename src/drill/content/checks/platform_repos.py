@@ -10,9 +10,9 @@ CHECKS = {
             clue="The team did write a value, and something reached the plan. Is it the same value?",
             why="The runbook put the team's code in front of the name, so the value changed on the "
                 "way to the provider. That's TRANSFORMED."),
-        ask("Pydantic accepts a new field in `clusters.yml`. You haven't opened the runbook or the "
+        ask("The check allows a new field in `clusters.yml`. You haven't opened the runbook or the "
             "module yet. What word do you give the field for now?",
-            ["SUPPORTED: the check accepted it", "DROPPED: nothing uses it yet", "UNKNOWN: not traced all the way yet"],
+            ["SUPPORTED: the check allowed it", "DROPPED: nothing uses it yet", "UNKNOWN: not traced all the way yet"],
             answer=2,
             clue="You've checked two of the five points. What about the other three?",
             why="Until you follow it through the runbook, the module and the provider, you can't say. "

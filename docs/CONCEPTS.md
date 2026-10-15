@@ -34,40 +34,47 @@ What you had to look back for is what you still need to learn.
 
 ---
 
-## Big-O: what `O(n)` means
+## How much more work your code does as the input grows
 
-Big-O describes **how much more work your code does as the input grows**. `n`
-is the size of the input, such as the number of items in a list.
+The one question to ask about speed is not "how many seconds?" (that depends on
+the computer) but **"when the input gets bigger, how much more work does the
+code do?"**. What happens when a list of 1,000 items becomes a list of
+1,000,000? There are a few shapes, and each has a plain name (the same names
+the Daily Drill page uses in its Notebook's Speed tab):
 
-| Big-O | In words | Typical code | n = 1,000 | n = 1,000,000 |
+| Shape | What the code does | Typical code | 1,000 items | 1,000,000 items |
 |---|---|---|---|---|
-| O(1) | Same work at any size | `key in my_dict` | 1 step | 1 step |
-| O(log n) | Halve the problem each step | binary search | ~10 | ~20 |
-| O(n) | One step per item | one `for` loop | 1,000 | 1,000,000 |
-| O(n log n) | A bit more than one pass | `sorted(nums)` | ~10,000 | ~20,000,000 |
-| O(n²) | Every item against every item | a loop inside a loop | 1,000,000 | 1,000,000,000,000 |
+| The same work at any size | one step, however big the input | `key in my_dict` | 1 step | 1 step |
+| Halving each step | throw away half of what's left each time | binary search | about 10 steps | about 20 steps |
+| One walk through the data | one step per item | one `for` loop | 1,000 | 1,000,000 |
+| Sorting | a bit more than one walk | `sorted(nums)` | about 10,000 | about 20,000,000 |
+| Checking every pair | every item against every other item | a loop inside a loop | 1,000,000 | 1,000,000,000,000 |
 
-Python does roughly 10 million simple steps a second. So at a million items
-O(n) takes a tenth of a second and O(n²) takes more than a day. That's why
-interview problems say "aim for O(n)".
+Python does roughly 10 million simple steps a second. So at a million items,
+one walk through the data takes a tenth of a second and checking every pair
+takes more than a day. That's why an interviewer asks "can you do it in one
+pass?": they want one walk through the data instead of every pair.
 
 **Working it out:** count how many times the innermost line can run.
 
-- One loop over the list → O(n)
-- A loop inside a loop over the same list → O(n²)
-- Cutting what's left in half each time → O(log n)
-- A fixed number of steps whatever the input → O(1)
+- One loop over the list: one walk through the data.
+- A loop inside a loop over the same list: checking every pair.
+- Cutting what's left in half each time: halving each step.
+- A fixed number of steps whatever the input: the same work at any size.
 
-**Hidden loops count.** `x in my_list` checks every item, so it's O(n), and
-putting it inside a loop makes O(n²). `x in my_set` and `x in my_dict` are O(1).
-That swap is the most common way to make slow code fast.
+**Hidden loops count.** `x in my_list` checks every item, so it is a walk
+through the data on its own, and putting it inside a loop makes checking every
+pair. `x in my_set` and `x in my_dict` are the same work at any size. That swap
+is the most common way to make slow code fast.
 
-**Time vs space.** *Time* complexity counts steps. *Space* complexity counts
-the extra memory you use, such as a dict that might hold every item. "O(n) time,
-O(1) space" means one pass and only a few variables.
+**Time and space.** *Time* counts steps. *Space* counts the extra memory you
+use, such as a dict that might hold every item. "One pass, a few variables" is
+the usual target: one walk through the data, and the same memory at any size.
 
-Big-O ignores constants: two passes over a list is still O(n). It answers "what
-happens when the input gets huge?", not "exactly how many seconds?".
+Two passes over a list still count as one walk through the data: the question
+is "what happens when the input gets huge?", not "exactly how many steps?". Other
+books and interviewers write these shapes in a maths notation called Big-O; this
+course never does, so the page and the tutor use the plain names above instead.
 
 ---
 

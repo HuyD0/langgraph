@@ -19,11 +19,11 @@ for row in rows:
     else:
         train.append(row)"""),
     check=question(
-        "A model scores 97% in testing and 70% in production. Rows from the same users were in both training and test. What's the likely cause?",
+        "A model scores 97 in 100 in testing and 70 in 100 in production. Rows from the same users were in both training and test. What's the likely cause?",
         [
-            'The model is too small',
-            'Leakage: it was tested on people it had already seen',
-            'The test set was too large',
+            'The model is too small for the task',
+            'Leakage: the test users were in training too',
+            'The test set was too large to score fairly',
         ],
         answer=1,
         why='Seeing the same users in training made the test easy. Splitting by user would have given a more honest, lower score.',
@@ -176,7 +176,7 @@ recall    = tp / (tp + fn)"""),
     angle=angle(
         pattern='Count three piles, then divide',
         text='The big idea: when the thing you look for is rare, accuracy can look great while the model misses it, so you measure precision and recall instead. Your code walks through each prediction next to its right answer, using `zip` to pair them up like matching socks. Each pair adds 1 to one of three counters: `tp`, `fp` or `fn`. Pairs where both are 0 are skipped. Then it divides to get precision and recall, and if the bottom number (the denominator) is 0 it uses 0 instead of crashing.',
-        say='"When what I\'m looking for is rare, [[accuracy|precision|recall::Always answering no can score 99% on this one.]] can fool me. So I check precision, how much of what it [[flagged|missed|skipped::Precision only looks at the cases the model said yes to.]] was right, and recall, how many real cases it [[caught|skipped|guessed::Recall asks how many of the real ones it found.]]."',
+        say='"When what I\'m looking for is rare, [[accuracy|the test score|the average::Always answering no can score 99 in 100 on this one.]] can fool me. So I check precision, how much of what it [[flagged|missed|skipped::Precision only looks at the cases the model said yes to.]] was right, and recall, how many real cases it [[caught|skipped|guessed::Recall asks how many of the real ones it found.]]."',
         classic=None,
     ),
     stack=stack('MLflow: log both numbers on every run', """mlflow.sklearn.autolog()   # params, metrics and the model on every fit
@@ -449,7 +449,7 @@ count += 1   # count is now 2""",
 lesson(MODULE, 'average_precision',
     title='Quality across every threshold: PR-AUC',
     learn=[
-        "Precision and recall depend on where you set the threshold. To judge the model itself, across every possible threshold, you draw how it does at each threshold as a curve and measure the **area under the curve** (AUC). Bigger is better. You don't need to draw it: below, each AUC is put in plain words, and PR-AUC comes with a simple walk down the list that gives the same number.",
+        "Precision and recall depend on where you set the threshold. To judge the model itself, across every possible threshold, you draw how it does at each threshold as a curve and measure the **area under the curve** (AUC). Bigger is better. You don't need to draw it: below, each AUC is put in plain words, and PR-AUC comes with a simple walk down the list that gives the number libraries report.",
         "**ROC-AUC** (ROC is just a name to remember; it comes from old radar work) is the chance that a random real positive (an example that is really 1) gets a higher score than a random negative (an example that is really 0): 0.5 is guessing, 1.0 is perfect. It's popular, but when positives are rare it flatters the model, because there are so many easy negatives to rank below them.",
         "**PR-AUC** is the area under the precision-recall curve, usually computed as **average precision**: walk down the list from the highest score, and each time you reach a real positive, note the precision so far. Average those. For rare events (fraud, failures, the one document that answers a question) it is the honest number. Its baseline (what random guessing scores) is the share of positives, not 0.5: a random model on 1% positives scores about 0.01.",
     ],
@@ -463,12 +463,12 @@ average precision = (1.00 + 0.67 + 0.60) / 3, about 0.76"""),
     check=question(
         'Fraud is 1 in 200 transactions. Your model has ROC-AUC 0.97 and PR-AUC 0.18. What is true?',
         [
-            'The model is excellent: 0.97 is near perfect',
-            "ROC-AUC flatters it. PR-AUC shows most of what it flags isn't fraud, though it's far better than random",
-            'PR-AUC must be a bug when ROC-AUC is that high',
+            'The model is excellent: 0.97 means near perfect',
+            'ROC-AUC flatters it; PR-AUC says most alerts are false alarms',
+            'PR-AUC must be a bug when ROC-AUC is this high',
         ],
         answer=1,
-        why='A random model would score about 0.005 PR-AUC here, so 0.18 is real skill. But it also means most alerts are false alarms, which ROC-AUC hides.',
+        why='A random model would score about 0.005 PR-AUC here, so 0.18 is far better than random: real skill. But it also means most alerts are false alarms, which ROC-AUC hides.',
     ),
     angle=angle(
         pattern='Sort by score, then walk down',
@@ -593,12 +593,12 @@ lesson(MODULE, 'calibration_table',
     check=question(
         'In the 80-100% bucket the average prediction is 0.92 but only 61% really happened. What does that mean for an "auto-approve above 90%" rule?',
         [
-            'Nothing, the threshold is still 90%',
-            'The model is overconfident, so many "90%+" cases are wrong. The rule approves far more mistakes than it seems to',
-            'The model is underconfident, so lower the threshold',
+            'Nothing: the threshold stays at 90, where it was set',
+            'Overconfident: the rule approves far more mistakes than it seems',
+            'Underconfident: the threshold could safely be lowered',
         ],
         answer=1,
-        why='The threshold assumes 90% means 90%. Here it means about 61%. Recalibrate the scores (adjust them so 0.9 really means about 90%), or set the threshold from the table.',
+        why='The threshold assumes 90% means 90%. Here it means about 61%, so many of the cases the rule approves are wrong. Recalibrate the scores (adjust them so 0.9 really means about 90%), or set the threshold from the table.',
     ),
     angle=angle(
         pattern='Five buckets with running totals',
@@ -621,7 +621,7 @@ mlflow.log_metric("brier", brier_score_loss(outcomes, predictions))"""),
 - `predictions`: how likely the model said each thing was, from 0 to just under 1, like `[0.1, 0.9]`.
 - `outcomes`: what really happened, `1` (it did) or `0` (it didn't), in the same order, like `[0, 1]`.
 
-Put each prediction `p` in a bucket numbered 0 to 4 with `int(p * 5)`. `int` cuts off the decimals, so `int(1.75)` is `1`. Bucket 0 holds 0 to 0.2, bucket 1 holds 0.2 to 0.4, and so on.
+Put each prediction `p` in a bucket numbered 0 to 4 with `int(p * 5)`. `int` cuts off the decimals, so `int(1.75)` is `1`. Bucket 0 holds 0 up to (but not including) 0.2, bucket 1 holds 0.2 up to 0.4, and so on.
 
 Go from bucket 0 up to bucket 4, skipping empty ones. For each, make a row `[bucket, average, share]`:
 

@@ -1,5 +1,5 @@
 /* ---------- the pocket: the study list as a tray, and review as a focus field ---------- */
-/* On the path it waits at the bottom, 60px tall; elsewhere a chip in the header opens it. */
+/* A sheet that opens only when asked for (the Home row or the header chip); three tabs: To review, Still learning, Got it. */
 .pocket { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 38;
   width: min(560px, calc(100% - 20px)); max-height: min(78vh, 640px); display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 -6px 26px rgba(0, 0, 0, .16); }
@@ -88,31 +88,29 @@ body.pk-on #home { padding-bottom: 96px; }
 @media (hover: hover) { .studyrow:hover { border-color: var(--accent); } }
 .reviewline { justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0; font-size: 14px; }
 .reviewline .ic { width: 16px; height: 16px; }
-/* the chip's dot stays still: due reviews are worth knowing about, not worth flashing */
-@keyframes pk-pulse { 50% { box-shadow: 0 0 2px var(--accent); opacity: .6; } }
 /* the aura on a tray with something due (dusk theme) */
 :root[data-theme="dusk"] .pocket.burn { border-color: rgba(91, 140, 255, .5); }
-:root[data-theme="dusk"]:not([data-motion="off"]) .pocket.burn:not(.open) { animation: pk-aura 2.8s ease-in-out infinite; }
+:root[data-theme="dusk"] .pocket.burn:not(.open) { animation: pk-aura 2.8s ease-in-out infinite; }
 @keyframes pk-aura {
   0%, 100% { box-shadow: 0 0 0 1px rgba(91, 140, 255, .4), 0 -4px 16px rgba(91, 140, 255, .42), 0 0 34px rgba(139, 92, 246, .2); }
   35% { box-shadow: 0 0 0 1px rgba(212, 248, 255, .5), 0 -7px 22px rgba(91, 140, 255, .56), 0 0 44px rgba(139, 92, 246, .3); }
   70% { box-shadow: 0 0 0 1px rgba(139, 92, 246, .5), 0 -3px 14px rgba(139, 92, 246, .46), 0 0 30px rgba(91, 140, 255, .24); } }
 /* the focus field: reviewing what's due, one card at a time */
-.focus { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 18px; background: rgba(3, 3, 8, .88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow-y: auto; }
+.focus { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 18px; background: color-mix(in srgb, var(--fx-veil) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow-y: auto; }
 .focus[hidden] { display: none; }
 .focus::before { content: ""; position: fixed; left: 50%; top: 46%; width: 760px; height: 760px; margin: -380px 0 0 -380px; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, rgba(91, 140, 255, .16), rgba(139, 92, 246, .08) 42%, transparent 64%); border: 1px solid rgba(91, 140, 255, .14); }
-:root:not([data-motion="off"]) .focus::before { animation: pk-field .7s cubic-bezier(.2, .8, .2, 1) both; }
+.focus::before { animation: pk-field .7s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes pk-field { from { transform: scale(.1); opacity: 0; } }
 .fc-wrap { position: relative; width: min(520px, 100%); display: grid; gap: 14px; }
-.fc-top { display: flex; align-items: center; gap: 10px; color: #c3b5ff; font: 600 12px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.fc-top { display: flex; align-items: center; gap: 10px; color: var(--finish, var(--path)); font: 600 12px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
 .fc-dots { display: flex; gap: 5px; margin-left: auto; }
 .fc-dots i { width: 22px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .14); }
 .fc-dots i.done { background: var(--finish, var(--pass)); }
 .fc-dots i.cur { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.fc-close { color: #c3b5ff; }
+.fc-close { color: var(--finish, var(--path)); }
 .fc-card { position: relative; display: grid; gap: 12px; padding: 20px; border-radius: 18px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0, 0, 0, .5); }
-:root:not([data-motion="off"]) .fc-card { animation: pk-rise .35s ease both; }
+.fc-card { animation: pk-rise .35s ease both; }
 @keyframes pk-rise { from { opacity: 0; transform: translateY(10px); } }
 .fc-from { font-size: 12.5px; color: var(--muted); }
 .fc-card h3 { margin: 0; font: 800 clamp(22px, 5vw, 28px)/1.15 var(--display); overflow-wrap: anywhere; }

@@ -149,12 +149,20 @@ def lakebase_endpoint() -> str:
     return os.getenv("DRILL_LAKEBASE_ENDPOINT", "").strip() or os.getenv("LAKEBASE_ENDPOINT", "").strip()
 
 
+def _valid_schema(name: str) -> str:
+    """``name`` when it is a safe Postgres identifier, else ``ValueError``.
+
+    The schema name is pasted into ``CREATE SCHEMA`` and ``GRANT`` statements, so it is checked
+    here, where it is used, whether it came from ``DRILL_DB_SCHEMA`` or a ``DocStore(schema=...)`` call.
+    """
+    if name and not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", name):
+        raise ValueError(f"the schema (DRILL_DB_SCHEMA) must be lowercase letters, digits and underscores, not {name!r}")
+    return name
+
+
 def db_schema() -> str:
     """The Postgres schema for the tables (``DRILL_DB_SCHEMA``); empty means the database's default."""
-    schema = os.getenv("DRILL_DB_SCHEMA", "").strip()
-    if schema and not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", schema):
-        raise ValueError(f"DRILL_DB_SCHEMA must be lowercase letters, digits and underscores, not {schema!r}")
-    return schema
+    return _valid_schema(os.getenv("DRILL_DB_SCHEMA", "").strip())
 
 
 class LakebaseLogin:
@@ -199,7 +207,7 @@ class DocStore:
     def __init__(self, url: str | None = None, owner: str | None = None, login: LakebaseLogin | None = None,
                  schema: str | None = None):
         self.url = url or database_url()
-        self.schema = "" if self.url.startswith("sqlite") else (db_schema() if schema is None else schema)
+        self.schema = "" if self.url.startswith("sqlite") else _valid_schema(db_schema() if schema is None else schema)
         self.login = login
         self.fallback = False  # set by open_store when Lakebase was wanted but could not be reached
         kwargs: dict[str, Any] = {}

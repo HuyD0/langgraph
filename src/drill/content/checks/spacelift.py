@@ -8,8 +8,8 @@ CHECKS = {
             ["Yes, GO means a reviewer signed off", "No, GO is an automatic check passing", "Yes, GO means it has been deployed"],
             answer=1,
             clue="Who, or what, gives a GO?",
-            why="A GO comes from the plan policies, which run on their own. It's a check passing, "
-                "not a person approving, and a proposed run deploys nothing."),
+            why="Every GO is an automatic step passing, and the one after the policies line is the "
+                "policies' result. None is a person approving, and a proposed run deploys nothing."),
         ask("You push to a feature branch, and a run starts on the stack. The stack tracks `main`. "
             "What kind of run is it?",
             ["Tracked: it plans, then it applies", "None: a feature branch starts nothing", "Proposed: it plans and reports back"],

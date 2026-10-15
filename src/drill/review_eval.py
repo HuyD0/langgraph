@@ -21,7 +21,7 @@ import re
 from typing import Any
 
 from drill.content import review
-from drill.review_checks import flags_gap, missing_pillars, review_checks
+from drill.review_checks import flags_gap, review_checks
 
 FULL = {key: example for key, _label, example in review.CARD_FIELDS}
 

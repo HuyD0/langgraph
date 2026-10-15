@@ -215,11 +215,57 @@ items come from the backend (`study` docs).
 **Change it safely.** Keep it out of the lesson screens: it appears when asked for. The row is
 hidden when nothing is saved.
 
+## The Notebook
+
+| Results (Dusk) | Settings (Light) |
+|---|---|
+| ![The Notebook's Results tab](notebook-results-phone-dusk.webp) | ![The Notebook's Settings tab](notebook-settings-phone-light.webp) |
+
+**What the learner sees.** The Notebook button in the top bar slides a drawer over the page with
+four tabs: Glossary, Results, Speed and Settings. Results starts with three numbers (lessons
+finished, sparks, the day streak) and the key to the marks, then one row per finished lesson,
+newest first: its sticker, the lesson number and title, when it was finished ("Today",
+"Yesterday", or the date), "7 of 8 on your own", and the marks themselves; the share button on a
+row copies that result's picture. Settings has two choices, each a segmented control: the Look
+(Dusk or Light) and What to practise (AI, Platform or Both). Lessons finished before results
+began are not listed, and the empty tab says so.
+
+**What draws it.** The drawer is `<aside class="drawer" id="drawer">` in `page.html`, opened by
+`openNotebook(tab)` and closed by `closeNotebook()` in `page/notebook.js` (it is a dialog: Tab stays
+inside it, and the tabs take the arrow keys). The Results tab is `renderResults()` in
+`page/share.js`, built from `resultOf()`, `resultScore()` and `whenFinished()`; its styles are
+`.resstats` and `.resitem` in `page/share.css`. Settings is the two `.setting` rows in the drawer
+markup: `data-theme-pick` runs `applyLook()`, `data-focus-pick` runs `setFocus()`. Drawer styles:
+`.drawer`, `.tabs`, `.setting` in `page/notebook.css`.
+
+**Change it safely.** A new tab needs both a `nbtab-<name>` button and an `nb-<name>` pane (a test
+checks the pair). Keep Results honest: a step done before marks existed says "Done earlier"
+rather than guessing a mark.
+
+## Search landing
+
+![Search before anything is typed, on a phone](search-landing-phone-dusk.webp)
+
+**What the learner sees.** Search opened with an empty box: "Jump to a phase or track" (one chip
+per phase, with the phase's shape, and a teal octagon for the Platform track), "Pick up where you
+are" (today's lesson and up to three lessons started but not finished), then a few words to try.
+The box already has the keyboard.
+
+**What draws it.** `openSearch()`, then the empty-box branch of `renderSearch()` in `search:
+lessons, glossary words and the study list`: `.sphases` with `.sphase` and `.strack` chips,
+`lessonHit()` rows, and `data-try` chips. The words to try follow `progress.focus`.
+
+**Change it safely.** Keep it a starting point, not a second Home: three short groups. The track's
+chip stays teal (`.strack .sh.pl`).
+
 ## Search
 
-![Search on a phone](search-phone-dusk.webp)
+![Search results on a phone](search-phone-dusk.webp)
 
-**What the learner sees.** One box that finds lessons, glossary words and study-list items.
+**What the learner sees.** One box that finds lessons, glossary words and study-list items, with
+the matching words marked. The picture shows the results for "leakage": the glossary word first,
+with "Where it's taught", then the lessons that use it.
 
-**What draws it.** `openSearch()`, `renderSearch()` in `search: lessons, glossary words and the
-study list`; the index is `SEARCH_INDEX`.
+**What draws it.** `renderSearch()` in `search: lessons, glossary words and the study list`; the
+index is `SEARCH_INDEX`, rows are `lessonHit()`, matches are marked by `hiTerms()`. Styles `.sgrp`,
+`.slist`, `.shit`, `.sword`.

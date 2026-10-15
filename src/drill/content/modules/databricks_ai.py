@@ -9,15 +9,15 @@ lesson(MODULE, 'choose_brick',
     checked='2026-10-12',
     sources=[source('Agent Bricks', 'https://docs.databricks.com/aws/en/generative-ai/agent-bricks/'), source('Supervisor Agent is GA', 'https://www.databricks.com/blog/agent-bricks-supervisor-agent-now-ga-orchestrate-enterprise-agents')],
     learn=[
-        "**Agent Bricks** is Databricks' platform for building agents. The quickest start is a **template**: a ready-made agent for a common job. You describe the task in plain words and point it at your data. It builds the agent, **evaluates** it (scores its answers with MLflow judges, the LLM graders from the Evaluate phase) and tunes it with feedback from your experts.",
+        "**Agent Bricks** is Databricks' platform for building agents. The quickest start is a **template**: a ready-made agent for a common job. You describe the task in plain words and point it at your data. It builds the agent, **evaluates** it (scores its answers with MLflow judges: LLM graders you will meet in the Evaluate phase) and tunes it with feedback from your experts.",
         'It runs on **serverless** compute (Databricks starts and stops the machines for you) and is governed by **Unity Catalog**, so the agent only reads data its users are allowed to read.',
-        'Four templates. **Knowledge Assistant** answers questions from your documents, with **citations** (links to the passage it used). **Information Extraction** turns documents such as PDFs and emails into fields: one row per document in a table. **Supervisor Agent** (first called Multi-Agent Supervisor) coordinates several agents, Genie Agents and tools such as MCP servers. **Custom LLM** does one text task, such as summarising or classifying, with your own instructions.',
+        'Four templates. **Knowledge Assistant** answers questions from your documents, with **citations** (links to the passage it used). **Information Extraction** turns documents such as PDFs and emails into fields: one row per document in a table. **Supervisor Agent** (first called Multi-Agent Supervisor) coordinates several agents, Genie Agents and tools such as MCP servers (a standard way for an agent to call tools; its own lesson is two steps on). **Custom LLM** does one text task, such as summarising or classifying, with your own instructions.',
         "Some are **Beta** (an early release that can still change) or **legacy** (kept for old work, not for new). Knowledge Assistant and Supervisor Agent are generally available (ready for production). Custom LLM is legacy and Beta; for new text tasks Databricks now points to AI Functions such as `ai_query`. Check your workspace's Previews page before you plan on one.",
     ],
     example=example('Four tasks, four templates', """task                            template
 answer HR policy questions      Knowledge Assistant
 pull totals out of invoices     Information Extraction
-sum up each support call        Custom LLM
+sum up each support call        Custom LLM (legacy: use ai_query instead)
 send questions to the sales     Supervisor Agent
   agent or the HR agent"""),
     check=question(
@@ -63,7 +63,7 @@ For each task, check these rules in order and use the first one that matches:
 - `several_agents` is True: `"Supervisor Agent"`.
 - `from_documents` and `output_fields` are both True: `"Information Extraction"`.
 - `from_documents` is True: `"Knowledge Assistant"`.
-- Otherwise: `"Custom LLM"`.
+- Otherwise: `"Custom LLM"` (the legacy template; in real work reach for an AI Function such as `ai_query`).
 
 Return a list with one `[name, choice]` pair per task, in the same order as `tasks`.""",
         pattern='Rules checked in order with if, elif and else, once for each item in a list.',
@@ -240,9 +240,9 @@ orders in March?       [[412]]         [[412]]         pass
 top 2 regions          [[North],       [[South],       pass:
                         [South]]        [North]]       order only
 refunds last week?     [[17]]          [[19]]          fail
-accuracy: 2 of 3 = 66.7%"""),
+accuracy: 2 of 3 passed (the code reports it as 66.7)"""),
     check=question(
-        'Your Genie Agent scores 70% on its benchmarks. What should you do to raise the score?',
+        'Your Genie Agent passes 7 in 10 of its benchmark questions. What should you do to raise the score?',
         [
             'Add the failing questions again as more benchmarks, so Genie learns them',
             'Add instructions, example SQL or trusted assets that cover what the failures got wrong, then rerun',
@@ -401,13 +401,13 @@ If `results` is empty, return `[0, []]`.""",
 
 lesson(MODULE, 'managed_mcp_urls',
     title='Managed MCP servers: tools agents can call',
-    checked='2026-10-12',
-    sources=[source('Managed MCP servers', 'https://docs.databricks.com/aws/en/generative-ai/mcp/managed-mcp'), source('Genie One MCP', 'https://docs.databricks.com/aws/en/agents/mcp-tools/genie-mcp'), source('Built-in MCP services', 'https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services')],
+    checked='2026-10-15',
+    sources=[source('Managed MCP servers', 'https://docs.databricks.com/aws/en/generative-ai/mcp/managed-mcp'), source('AI Search MCP server', 'https://docs.databricks.com/aws/en/agents/mcp-tools/ai-search'), source('Genie One MCP', 'https://docs.databricks.com/aws/en/agents/mcp-tools/genie-mcp'), source('Built-in MCP services', 'https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services')],
     learn=[
         '**MCP** (Model Context Protocol) is a standard way for an agent to find and call tools on a **server** (a program that waits for requests). The agent asks the server for its list of tools, then calls one by name with arguments. It works the same way whatever the server is.',
         "Databricks runs **managed MCP servers** for you, so you only need a URL. The current ones live in the `system.ai` schema behind **Unity Gateway** (Databricks' AI gateway), at `https://<workspace>/ai-gateway/mcp-services/<name>`. `system.ai.genie_one_mcp` answers questions across your data with Genie One, through its `genie_ask` tool.",
         'Others in `system.ai`: `system.ai.sandbox` runs Python, SQL or shell in an isolated box with no internet (the lesson "An agent that runs code" covers it), `system.ai.dbsql` runs SQL you already wrote, and `system.ai.web_search` searches the web. Each is a Unity Catalog **securable** (something you grant access to). These three are **Beta**: an account admin turns on the Unity Gateway beta on the Previews page.',
-        'Older **workspace endpoints** still work: one Genie Agent at `/api/2.0/mcp/genie/{space_id}`, Databricks Vector Search indexes (renamed Databricks AI Search in 2026; not the same as Azure AI Search from Microsoft) at `/api/2.0/mcp/ai-search/{catalog}/{schema}`, and a Unity Catalog function at `/api/2.0/mcp/functions/{catalog}/{schema}/{function}`. Every call runs with the caller\'s Unity Catalog permissions, so an agent can only reach what its identity can.',
+        'Older **workspace endpoints** still work: one Genie Agent at `/api/2.0/mcp/genie/{space_id}`, Databricks Vector Search indexes (renamed Databricks AI Search in 2026; not the same as Azure AI Search from Microsoft) at `/api/2.0/mcp/ai-search/{catalog}/{schema}/{index}`, and a Unity Catalog function at `/api/2.0/mcp/functions/{catalog}/{schema}/{function}`. Every call runs with the caller\'s Unity Catalog permissions, so an agent can only reach what its identity can.',
     ],
     example=example('Four tools, four URLs', """host: adb-1234.5.azuredatabricks.net
 
@@ -415,8 +415,8 @@ service  system.ai.genie_one_mcp
   /ai-gateway/mcp-services/system.ai.genie_one_mcp
 genie    space 01f0aa
   /api/2.0/mcp/genie/01f0aa
-ai-search  main / docs
-  /api/2.0/mcp/ai-search/main/docs
+ai-search  main / docs / docs_index
+  /api/2.0/mcp/ai-search/main/docs/docs_index
 functions  main / tools / lookup_order
   /api/2.0/mcp/functions/main/tools/lookup_order"""),
     check=question(
@@ -468,7 +468,7 @@ Build each server's path from its kind:
 
 - `"service"`, with `"name"`: `/ai-gateway/mcp-services/` then the name, like `/ai-gateway/mcp-services/system.ai.genie_one_mcp`.
 - `"genie"`, with `"space_id"`: `/api/2.0/mcp/genie/` then the space id.
-- `"ai-search"`, with `"catalog"` and `"schema"`: `/api/2.0/mcp/ai-search/` then catalog, `/`, schema.
+- `"ai-search"`, with `"catalog"`, `"schema"` and `"index"`: `/api/2.0/mcp/ai-search/` then catalog, `/`, schema, `/`, index.
 - `"functions"`, with `"catalog"`, `"schema"` and `"function"`: `/api/2.0/mcp/functions/` then catalog, `/`, schema, `/`, function.
 
 Each full URL is `"https://"` + host + path. Return the URLs in the same order as `tools`.""",
@@ -488,7 +488,7 @@ Each full URL is `"https://"` + host + path. Return the URLs in the same order a
         elif kind == "genie":
             path = "/api/2.0/mcp/genie/" + tool["space_id"]
         elif kind == "ai-search":
-            path = "/api/2.0/mcp/ai-search/" + tool["catalog"] + "/" + tool["schema"]
+            path = "/api/2.0/mcp/ai-search/" + tool["catalog"] + "/" + tool["schema"] + "/" + tool["index"]
         else:
             path = ("/api/2.0/mcp/functions/" + tool["catalog"] + "/"
                     + tool["schema"] + "/" + tool["function"])
@@ -499,12 +499,12 @@ Each full URL is `"https://"` + host + path. Return the URLs in the same order a
             case('adb-1234.5.azuredatabricks.net', [
                 {'kind': 'service', 'name': 'system.ai.genie_one_mcp'},
                 {'kind': 'genie', 'space_id': '01f0aa'},
-                {'kind': 'ai-search', 'catalog': 'main', 'schema': 'docs'},
+                {'kind': 'ai-search', 'catalog': 'main', 'schema': 'docs', 'index': 'docs_index'},
                 {'kind': 'functions', 'catalog': 'main', 'schema': 'tools', 'function': 'lookup_order'},
             ], expected=[
                 'https://adb-1234.5.azuredatabricks.net/ai-gateway/mcp-services/system.ai.genie_one_mcp',
                 'https://adb-1234.5.azuredatabricks.net/api/2.0/mcp/genie/01f0aa',
-                'https://adb-1234.5.azuredatabricks.net/api/2.0/mcp/ai-search/main/docs',
+                'https://adb-1234.5.azuredatabricks.net/api/2.0/mcp/ai-search/main/docs/docs_index',
                 'https://adb-1234.5.azuredatabricks.net/api/2.0/mcp/functions/main/tools/lookup_order',
             ], sample=True),
             case('adb-1234.5.azuredatabricks.net', [], expected=[]),
@@ -519,11 +519,11 @@ Each full URL is `"https://"` + host + path. Return the URLs in the same order a
                 {'kind': 'functions', 'catalog': 'system', 'schema': 'ai', 'function': 'python_exec'},
             ], expected=['https://adb-99.1.azuredatabricks.net/api/2.0/mcp/functions/system/ai/python_exec']),
             case('adb-99.1.azuredatabricks.net', [
-                {'kind': 'ai-search', 'catalog': 'hr', 'schema': 'policies'},
+                {'kind': 'ai-search', 'catalog': 'hr', 'schema': 'policies', 'index': 'policy_index'},
                 {'kind': 'genie', 'space_id': '01f1bc'},
                 {'kind': 'genie', 'space_id': '01f2de'},
             ], expected=[
-                'https://adb-99.1.azuredatabricks.net/api/2.0/mcp/ai-search/hr/policies',
+                'https://adb-99.1.azuredatabricks.net/api/2.0/mcp/ai-search/hr/policies/policy_index',
                 'https://adb-99.1.azuredatabricks.net/api/2.0/mcp/genie/01f1bc',
                 'https://adb-99.1.azuredatabricks.net/api/2.0/mcp/genie/01f2de',
             ]),
@@ -542,7 +542,7 @@ Each full URL is `"https://"` + host + path. Return the URLs in the same order a
         elif kind == "genie":
             path = "/api/2.0/mcp/genie/" + ___
 
-        # Step 2: catalog, a slash, then schema.
+        # Step 2: catalog, a slash, schema, a slash, then index.
         elif kind == "ai-search":
             path = "/api/2.0/mcp/ai-search/" + ___
 
@@ -556,7 +556,7 @@ Each full URL is `"https://"` + host + path. Return the URLs in the same order a
 
     return urls
 """,
-        fills=['tool["space_id"]', 'tool["catalog"] + "/" + tool["schema"]', '"https://" + host + path'],
+        fills=['tool["space_id"]', 'tool["catalog"] + "/" + tool["schema"] + "/" + tool["index"]', '"https://" + host + path'],
         concepts=[
             [
                 'Checking a string with ==',
@@ -578,12 +578,12 @@ tool['space_id']   # '01f0aa'
 # tool['catalog'] would be a KeyError""",
             ],
         ],
-        byhand='Tool 1 is a service named system.ai.genie_one_mcp, so the path is /ai-gateway/mcp-services/system.ai.genie_one_mcp. Tool 2 is genie with space 01f0aa: /api/2.0/mcp/genie/01f0aa. Tool 3 is ai-search, main and docs: /api/2.0/mcp/ai-search/main/docs. Tool 4 is functions, main, tools and lookup_order: /api/2.0/mcp/functions/main/tools/lookup_order. Put "https://adb-1234.5.azuredatabricks.net" in front of each, and return the four URLs in that order.',
+        byhand='Tool 1 is a service named system.ai.genie_one_mcp, so the path is /ai-gateway/mcp-services/system.ai.genie_one_mcp. Tool 2 is genie with space 01f0aa: /api/2.0/mcp/genie/01f0aa. Tool 3 is ai-search, main, docs and docs_index: /api/2.0/mcp/ai-search/main/docs/docs_index. Tool 4 is functions, main, tools and lookup_order: /api/2.0/mcp/functions/main/tools/lookup_order. Put "https://adb-1234.5.azuredatabricks.net" in front of each, and return the four URLs in that order.',
         why='One pass over the tools, joining a few short strings for each.',
         gotchas=[
             [
-                'The old Genie One URL is going away',
-                '`/api/2.0/mcp/genie`, with no space id, was the Beta Genie One endpoint. It is deprecated and stops working on 31 October 2026. Move to `system.ai.genie_one_mcp`.',
+                'The old Genie One URL has an end date',
+                'The Beta Genie One endpoint `/api/2.0/mcp/genie`, with no space id, is deprecated and is switched off from 31 October 2026. Anything still calling it needs `system.ai.genie_one_mcp`.',
             ],
             [
                 'Workspace endpoints skip the gateway',
@@ -603,9 +603,9 @@ lesson(MODULE, 'callable_tools',
     sources=[source('Unity Catalog functions', 'https://docs.databricks.com/aws/en/udf/unity-catalog'), source('Unity Catalog privileges', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges')],
     learn=[
         'The lesson "Tools from Unity Catalog" showed how a function becomes a tool the model can read. This lesson is about the other half: who is allowed to run it. A **Unity Catalog function** lives at `catalog.schema.function`, like `main.support.lookup_order`, the same three parts as a table.',
-        'There are two kinds. A **SQL function** says `LANGUAGE SQL` and then `RETURN` with one expression or one query. A **Python function** says `LANGUAGE PYTHON`, puts its code between two `$$` marks, and declares its **return type** (the kind of value it gives back, like `STRING`). If the Python code needs extra packages, an `ENVIRONMENT` clause lists them (from PyPI, volumes or URLs), and then `environment_version` must be set too.',
+        'There are two kinds. A **SQL function** says `LANGUAGE SQL` and then `RETURN` with one expression or one query. A **Python function** says `LANGUAGE PYTHON`, puts its code between two `$$` marks, and declares its **return type** (the kind of value it gives back, like `STRING`). If the Python code needs extra packages, an `ENVIRONMENT` clause lists them, from PyPI (the public Python package store), a Unity Catalog volume (a folder of files) or a URL, and then `environment_version` must be set too.',
         'Write a `COMMENT` on the function and on each parameter. Those comments become the tool description the model reads, so a vague comment leads to wrong tool picks.',
-        'To **create** a function you need `USE CATALOG`, `USE SCHEMA` and `CREATE FUNCTION` on the schema. To **call** one you need `EXECUTE` on the function, plus `USE CATALOG` and `USE SCHEMA`. `EXECUTE` granted on a schema or a catalog flows down to every function inside, the same idea as in "Who can read this table?".',
+        'To **create** a function you need `USE CATALOG`, `USE SCHEMA` and `CREATE FUNCTION` on the schema. To **call** one you need `EXECUTE` on the function, plus `USE CATALOG` and `USE SCHEMA`. `EXECUTE` granted on a schema or a catalog flows down to every function inside, the same idea as in "Who can read this table?" in the Platform track.',
         "Agents call functions through `UCFunctionToolkit` or the managed MCP functions server, `https://<host>/api/2.0/mcp/functions/{catalog}/{schema}/{function}`. Every call runs with the **caller's** permissions. A deployed agent often runs as a **service principal** (an identity for an app, not a person), so that service principal needs `EXECUTE`. The classic miss: the team grants it to people, tests in a notebook, it works, and then the deployed agent is refused.",
     ],
     example=example('A SQL function, described and granted', """CREATE FUNCTION main.support.lookup_order(
@@ -623,9 +623,9 @@ GRANT EXECUTE ON FUNCTION main.support.lookup_order TO `support-bots`;"""),
     check=question(
         "Mai is in `support-agents`, which has `EXECUTE` on `main.support.lookup_order`. The agent works when she tests it in a notebook, but once deployed it gets a permission error on that tool. What is the most likely cause?",
         [
-            "The function's COMMENT is too short",
-            "The agent's service principal has no EXECUTE on the function, its schema or its catalog",
-            'SQL functions cannot be called by deployed agents',
+            "The function's COMMENT is too short for the model to read",
+            "The agent's service principal has no EXECUTE on the function",
+            'SQL functions cannot be called once an agent is deployed',
         ],
         answer=1,
         why="Every call runs with the caller's permissions. In the notebook the caller was Mai; once deployed it is the agent's service principal. Grant EXECUTE, plus USE CATALOG and USE SCHEMA, to a group the service principal is in.",
@@ -871,7 +871,7 @@ age >= 18 and has_ticket   # False""",
             ],
             [
                 'Python functions and the network',
-                'Python functions on serverless or standard access mode compute may use network ports 80, 443 and 53. A **port** is a numbered door on a machine; 443 is the usual one for `https` links. To call an Azure service from a Python function, use a service credential (see "Service credentials and connections"); whoever creates the function needs `ACCESS` on it.',
+                'Python functions on serverless or standard access mode compute may use network ports 80, 443 and 53. A **port** is a numbered door on a machine; 443 is the usual one for `https` links. To call an Azure service from a Python function, use a service credential (Platform track, "Service credentials and connections"); whoever creates the function needs `ACCESS` on it.',
             ],
             [
                 'Where Python functions run',
@@ -889,7 +889,7 @@ lesson(MODULE, 'cited_sources',
         '`system.ai.web_search` is a built-in MCP service that searches the public web. It gives back a **synthesized** answer (one answer written from several pages) with **citations**: links to the pages it used. Its URL is `https://<host>/ai-gateway/mcp-services/system.ai.web_search`.',
         'It is a Unity Catalog securable reached through Unity Gateway: grants decide who can call it, and policies govern each call. It is **Beta**: an account admin turns on the Unity Gateway beta on the Previews page of the account console. It is not available in workspaces with HIPAA compliance enabled (HIPAA is a US rule for health data). It is available in supported US regions, or in workspaces that allow **cross-Geo processing**, which means your data may be processed outside your region. Check with your data team before you turn that on.',
         'Good practice: answer company questions from **internal retrieval** (searching your own data), such as Databricks Vector Search, Azure AI Search or Genie. Use web search only for public, fresh information, like a product release from last week. Never put private or personal data in a search query, because the query leaves your workspace.',
-        'Treat everything that comes back as untrusted text: a web page can carry prompt injection (see "Prompt injection"). Keep the citations, show them to the user, and check they come from sources you trust. Log which answers used the web, so you can find them in your **traces** (the step-by-step record of each agent run).',
+        'Treat everything that comes back as untrusted text: a web page can carry **prompt injection**: text written to give your model orders (the Security module has a whole lesson on it). Keep the citations, show them to the user, and check they come from sources you trust. Log which answers used the web, so you can find them in your **traces** (the step-by-step record of each agent run).',
         'To check a source, look at the link\'s **host**: the site name, which is the text after `://` up to the next `/`. In `https://learn.microsoft.com/azure/search`, the host is `learn.microsoft.com`.',
     ],
     example=example('Citations checked against an allow list', """allowed: microsoft.com, databricks.com
@@ -1122,6 +1122,10 @@ found   # True""",
             [
                 'Your query leaves the workspace',
                 'Whatever the agent searches for goes out to the public web. Keep customer names, order numbers and other private data out of search queries.',
+            ],
+            [
+                'Ports, `?` and `#`',
+                'This exercise cuts the host at the first `/`, but a real link can carry more before that slash: a port like `:443`, or a `?` or `#` part. So `https://learn.microsoft.com:443/x` is dropped though the site is trusted, and `https://evil.example#.microsoft.com` is kept, because the cut-out text ends with `.microsoft.com`. In real code take the host with `urllib.parse.urlsplit(url).hostname`, which handles all of these.',
             ],
         ],
     ),

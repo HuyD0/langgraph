@@ -17,9 +17,9 @@ cost = (input_cost + output_cost) / 1000000"""),
     check=question(
         "Your bill doubled but the number of requests didn't change. What should you check first?",
         [
-            "The model's accuracy",
-            'Tokens per request, especially output tokens and agent steps',
-            "The API's uptime",
+            "The model's accuracy on last month's eval set",
+            'Tokens per request, especially output tokens',
+            "The API's uptime, in case retries doubled the calls",
         ],
         answer=1,
         why='Same requests, more cost means more tokens per request: longer prompts, longer answers or more agent steps.',
@@ -154,7 +154,7 @@ lesson(MODULE, 'estimate_vs_actual',
     learn=[
         'Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.',
         'So each month, set the **estimate** (what the plan said a project would cost) next to the **actual** (what it really cost). **Percent over** is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.',
-        "When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a **request tag** does this, and the usage table records it next to each request's tokens.",
+        "When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a **request tag** does this, and the usage table records it next to each request's tokens. That table is in Beta (an early release that may still change), and only account admins can query it.",
         'Flag only projects over by a set margin, such as 20 percent, and look at the biggest first. Then replace the guess in the plan with the measured number.',
     ],
     example=example('Percent over for one project', """estimate = 400   # the plan, dollars
@@ -176,10 +176,13 @@ percent = int(round(over * 100))
     angle=angle(
         pattern='Keep the overruns, biggest first',
         text='The big idea: check every estimate against the real bill each month, and look at the biggest overruns first. For each project, your code works out how far over it is: the extra spend divided by the estimate. It keeps the project only if that share is at least the threshold, and turns it into a whole percent. Then it sorts the pairs so the biggest percent comes first, with equal percents in A to Z order by name.',
-        say='"Each month I compare every project\'s real bill with its [[estimate|contract|last bill::The number you guessed at the start.]]. I flag the ones that went over by more than my margin, and look at the [[biggest|newest|smallest::Deal with the worst overrun first.]] first."',
+        say='"Each month I compare every project\'s real bill with its [[estimate|contract|last bill::The number you guessed at the start.]]. I flag the ones that went over by my margin or more, and look at the [[biggest|newest|smallest::Deal with the worst overrun first.]] first."',
         classic=None,
     ),
-    stack=stack('Databricks: actual tokens per project from request tags', """-- each app sends its project name in
+    stack=stack('Databricks: actual tokens per project from request tags', """-- Unity Gateway's own usage table; the
+-- older endpoint table in 'Tokens and
+-- cost' has no request tags
+-- each app sends its project name in
 -- the Databricks-Ai-Gateway-Request-Tags
 -- header; it lands in request_tags
 SELECT
@@ -336,11 +339,12 @@ key = 'a'
 # on a hit: move it to the newest end
 cache.remove(key)
 cache.append(key)   # ['b', 'c', 'a']
-# full: remove the one used longest ago
-cache.pop(0)        # ['c', 'a']"""),
+# miss on 'd' with room for 3: full, so drop the front
+cache.pop(0)        # ['c', 'a']
+cache.append('d')   # ['c', 'a', 'd']"""),
     check=question(
         "A cache returns another user's answer to a question about their own account. What was missing from the cache key?",
-        ['The model name', 'Who is asking (the user or their permissions)', 'The time of day'],
+        ['The model name that produced the answer', 'Who is asking: the user or their permissions', 'The time of day the question was asked'],
         answer=1,
         why='If the answer depends on the user, the user must be part of the key.',
     ),

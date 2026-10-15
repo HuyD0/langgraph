@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Before anything leaves this machine, scrub every tracked text file for real names:
+# tests/test_scrub.py checks the always-on shapes (a real Azure Databricks workspace address, a
+# 32-character application id, an email at a company) and every word in your denylist, kept
+# outside the repository in ~/.config/daily-drill/denylist.txt (or DRILL_DENYLIST_FILE).
+#
+# Install once, per clone:   git config core.hooksPath scripts/hooks
+# Skip once, knowingly:      git push --no-verify
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+exec uv run pytest -q tests/test_scrub.py

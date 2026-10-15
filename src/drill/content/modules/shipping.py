@@ -9,7 +9,8 @@ lesson(MODULE, 'graduation_gate',
     learn=[
         'A common setup is a **shared experiment space**: one model deployment for everyone, with a spending limit and a rate limit for each person. That keeps trials cheap. But it is no place for an app people rely on: one busy experiment can use up the capacity, and nobody is named to fix things.',
         '**Graduation** moves an app out of that space onto production capacity, with limits sized for it. An app that graduates on enthusiasm alone can hit rate limits, a surprise bill or quiet failures in its first week.',
-        'So graduate on **evidence the proof of concept (POC, a small trial build) measured**. Keep it in a **graduation pack**: a named owner, the eval pass rate, whether every must-pass question passes (ones it must never get wrong), the cost per success (the cost of all runs, failed ones included, divided by the runs that passed, in dollars), the tokens a minute it needs at its busiest, and monitoring (alerts that tell the owner when it breaks).',
+        'So graduate on evidence. The **proof of concept** (POC, a small trial build) measures it, and the team keeps it in a **graduation pack**.',
+        'The pack holds six things: a named owner; the eval pass rate; whether every must-pass question passes (ones it must never get wrong); the cost per success, in dollars (the cost of all runs, failed ones included, divided by the runs that passed); the tokens a minute it needs at its busiest; and monitoring (alerts that tell the owner when it breaks).',
         "The **graduation gate** checks the pack against a bar (the limits it must meet), written down before the POC started. It lists every check that fails, not just the first, so the team can fix them all in one round. The platform team then sizes the app's capacity from the same numbers.",
     ],
     example=example('One pack, checked against the bar', """evidence = {
@@ -47,8 +48,9 @@ mlflow.set_experiment("/Shared/hr-bot")
 
 # The POC logs its pack on one run.
 # tpm means tokens a minute.
-# Count peak_tpm the way Foundry does:
-# prompt plus max_tokens per call.
+# Count peak_tpm the way Azure AI Foundry's
+# rate limit does: prompt tokens plus
+# max_tokens for every call.
 with mlflow.start_run(
         run_name="grad-pack",
         tags={"owner": "ana",
@@ -291,12 +293,12 @@ model = mlflow.pyfunc.load_model('models:/main.ml.churn@champion')"""),
     check=question(
         'Why require a minimum gain before promoting?',
         [
-            'To save storage',
-            'Tiny differences are often noise, and every swap carries risk',
-            'MLflow requires it',
+            'To save storage in the registry',
+            'A tiny gain is often just noise',
+            'MLflow refuses a smaller gain',
         ],
         answer=1,
-        why='A 0.001 improvement may vanish on new data. Swapping models has a cost, so make it worth it.',
+        why='A 1-point gain may vanish on new data. Swapping models has a cost, so make it worth it.',
     ),
     angle=angle(
         pattern='Keep the best so far',
@@ -455,9 +457,9 @@ lesson(MODULE, 'route_request',
     check=question(
         "The canary's error rate doubles in the first hour. What do you do?",
         [
-            'Wait a week for more data',
+            'Wait a week to collect more data first',
             'Move its traffic back to 0% and look at its traces',
-            'Switch everyone to it',
+            'Switch everyone to it to get more data',
         ],
         answer=1,
         why="That's what rollback criteria (limits you set in advance that mean roll back) are for. Roll back first, then investigate.",
@@ -607,7 +609,7 @@ v3 (candidate):  90 of 100 passed  → 90%
 rule: at least 100 traces and 10 points better → promote v3"""),
     check=question(
         'A candidate prompt passed 2 out of 2 traces. Should you promote it?',
-        ["Yes, it's perfect", 'Not yet: 2 traces is too few to tell', 'Roll it back'],
+        ['Yes: 2 out of 2 is a perfect score', 'Not yet: 2 traces is too few to tell', 'No: roll it back to the old prompt'],
         answer=1,
         why='With tiny samples, luck decides. Set a minimum number of traces before you compare.',
     ),
@@ -622,7 +624,7 @@ cand = mlflow.genai.load_prompt("prompts:/main.support.answer@candidate")
 
 @mlflow.trace
 def answer(question, user_id):
-    prompt = cand if bucket(user_id) < 10 else prod   # 10% to the candidate
+    prompt = cand if user_id % 100 < 10 else prod   # 10 in 100 users to the candidate
     mlflow.update_current_trace(tags={"prompt_version": str(prompt.version)})
     ...
 

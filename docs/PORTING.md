@@ -2,7 +2,8 @@
 
 How to run Daily Drill in an Azure Databricks workspace for a team: the app, everyone's
 progress in Lakebase, and a dashboard for managers. Nothing in the code changes; only settings,
-which stay in a git-ignored file because this repository is public.
+which stay in a git-ignored file because this repository is public, and the real lessons, which
+live in an overlay folder of the work copy ("Keeping the work copy in step", below).
 
 ## The quick way
 
@@ -87,6 +88,98 @@ uv run drill cloud start  --target work      # after it stopped itself
 uv run drill cloud deploy --target work      # after merging changes to the app
 uv run drill cloud share <email> --target work
 ```
+
+## Keeping the work copy in step
+
+The work copy is a **downstream** of this public repository, not a hand-made copy: it has the
+public repository as a git remote named `upstream`, and it takes changes by merging, never by
+retyping them. Everything work-specific lives in a few **overlay** paths that this repository
+never creates, so a merge is fast and conflict-free:
+
+| In the work copy | Holds |
+|---|---|
+| `content-packs/internal/` | The real lessons: a copy of `content-packs/iac-applied/` with the same lesson ids, filled in ([CONTENT_PACKS.md](CONTENT_PACKS.md)). "How this works at our company for lesson X" is a pack lesson there with `prerequisites: [<core lesson id>]`, never an edit to the core module |
+| `.databricks/bundle/work/variable-overrides.json` | Real workspace names and ids (git-ignored, as here) |
+| `.github/workflows/overlay.yml` | The guard below, copied from [`templates/enterprise/overlay.yml`](../templates/enterprise/overlay.yml) |
+| `UPSTREAM` | One line: the public commit the work copy was last merged with |
+| `README-internal.md` | Anything a colleague needs that cannot be said here |
+
+**Set it up once**, on the work laptop, from a release tag of this repository (releases are
+tagged `v0.x` here after a merge to `main`, so the work copy pins a known build):
+
+```bash
+git clone --branch v0.1 https://github.com/HuyD0/langgraph.git daily-drill && cd daily-drill
+git switch -c main
+git remote rename origin upstream                 # this repository is "upstream" from here on
+git remote add origin <the work repository's address>
+git rev-parse HEAD > UPSTREAM                     # the public commit this copy is built on
+cp templates/enterprise/overlay.yml .github/workflows/overlay.yml
+git add UPSTREAM .github/workflows/overlay.yml
+git commit -m "Daily Drill: downstream of the public repository at v0.1"
+git push -u origin main
+```
+
+Then fill `content-packs/internal/` ([CONTENT_PACKS.md](CONTENT_PACKS.md)) and run the quick
+way above. `app.yaml` already points `DRILL_CONTENT_PACKS` at that folder, so nothing the public
+repository owns is edited at work.
+
+**Bring in a new release** whenever one is tagged here. Do it on a branch and open a pull
+request with the label `upstream-sync`: the guard in `overlay.yml` fails any other pull request
+that touches a path outside the overlay.
+
+```bash
+git fetch upstream --tags
+git switch -c upstream-sync-v0.2
+git merge --no-ff --no-commit v0.2                # stops before committing, so UPSTREAM goes in too
+git rev-parse v0.2 > UPSTREAM
+git add UPSTREAM
+git commit -m "Merge daily-drill v0.2"
+git push -u origin upstream-sync-v0.2             # then a PR labelled upstream-sync
+```
+
+`UPSTREAM` is the record: `git diff $(cat UPSTREAM) -- . ':!content-packs/internal'
+':!.github' ':!UPSTREAM' ':!README-internal.md'` shows what changed at work against the public
+build, and should print nothing.
+
+## Found something while at work
+
+A bug, a wrong fact, better wording: the fix goes to the public repository **first** and flows
+down with the next merge. It is never retyped into the public copy from internal text, and never
+fixed only at work. Security findings are the same: CodeQL and dependency alerts in the work
+repository show up on code it did not write, so they are fixed here and flow down.
+
+1. Write it down as a note with no internal names: what, where, how to see it.
+2. On the Mac, in the public clone, make the change, run `scripts/check.sh` (which runs the
+   scrub), open a pull request; the owner merges and tags a release.
+3. In the work copy, bring in that release as above.
+
+If it must ship at work before that (a broken lesson learners are on today), make the change in
+the work copy on a branch named `to-upstream/<topic>` (the `upstream/` prefix is taken by the
+remote's branches), label its pull request `upstream-sync` so the guard lets it through, and port
+it here the same week. The next merge from upstream then brings the same change back and git
+merges it cleanly; if it conflicts, take upstream's version.
+
+## Copilot and two copies
+
+- The public clone lives on the Mac, the work copy on the work laptop, and **never both in one
+  editor window** or one Copilot workspace: Copilot takes open files as context and will carry
+  internal strings into public edits.
+- In the work repository, configure Copilot content exclusion (repository settings, Copilot) for
+  `.env`, `.databricks/**` and `content-packs/internal/assets/**`, so keys, workspace ids and
+  screenshots never become context.
+- `.env` is never committed (git ignores it) and never pasted into a chat, Copilot's or anyone's.
+- Copilot reads `AGENTS.md`; its "Two copies" rules say which paths it may edit in each copy.
+- **The scrub.** `tests/test_scrub.py` fails on real-looking names in any tracked text file: an
+  Azure Databricks workspace address with a real id, a 32-character application id, an email at
+  a company, and every word in your denylist, `~/.config/daily-drill/denylist.txt` (one word per
+  line: team codes, group and catalog names, repository names, people; `re:` starts a pattern). The
+  file lives outside the repository on both machines, so it is never committed; without it the
+  test skips and says so. `scripts/check.sh` runs it with the other tests, and the pre-push hook
+  (`git config core.hooksPath scripts/hooks`, once per clone) runs it alone before every push. In
+  the work copy, `content-packs/internal/` is exempt, since that is where the real names belong.
+  In the work repository's Actions, `overlay.yml` runs it with the denylist kept as the
+  repository secret `DRILL_DENYLIST`. Turn on GitHub secret scanning and push protection for this
+  public repository too (free for public repositories).
 
 ## Taking it down
 

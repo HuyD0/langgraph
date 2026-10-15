@@ -130,11 +130,11 @@ CHECKS = {
                 "it, that plan destroys the old cluster and creates a new one."),
     ],
     "provider_versions": [
-        ask("Your code says `version = \"~> 1.52.0\"`. Which version could Terraform pick?",
-            ["1.53.0", "1.52.4", "2.0.0"],
+        ask("Your code says `version = \"~> 1.90.0\"`. Which version could Terraform pick?",
+            ["1.91.0", "1.90.4", "2.0.0"],
             answer=1,
             clue="With three numbers written, only the last one may go up.",
-            why="`~> 1.52.0` allows 1.52 bug fixes only, so 1.52.4 is fine, but 1.53 and 2.0 are not."),
+            why="`~> 1.90.0` allows 1.90 bug fixes only, so 1.90.4 is fine, but 1.91 and 2.0 are not."),
         ask("A run in Spacelift picked a newer provider than your laptop did, and the plans differ. "
             "What keeps them the same?",
             ["Run init again every day", "Delete the .terraform folder", "Commit .terraform.lock.hcl"],

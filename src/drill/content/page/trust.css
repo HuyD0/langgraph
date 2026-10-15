@@ -1,7 +1,7 @@
 /* ---------- trust marks: an ember right after the words in a lesson where responsible AI, privacy or
    governance comes up. Tap it for a tooltip: why it matters for trust, and one tip. Marks you haven't
    opened give off slow embers; once opened, a mark rests. The notes are content/trust.py; colours are
-   --mark and --mark-glow. Motion off or reduced motion: a still glow. */
+   --mark and --mark-glow. Motion is for everyone (the owner's choice, 2026-10-15). */
 .trusthost { position: relative; overflow-x: clip; overflow-clip-margin: 16px; }  /* the burst may fly past the column, never past the page gutter */
 .trusthost > p { margin-bottom: 0; }
 .trustmark { position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; margin: -6px 0 -6px 1px; padding: 0; vertical-align: middle; border: 0; border-radius: 50%; background: none; color: var(--mark); cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -10,6 +10,8 @@
 .trustmark svg .core { fill: currentColor; stroke: none; }
 .trustmark.seen svg { filter: none; opacity: .75; }
 .trustmark:focus-visible { outline: 2px solid var(--mark); outline-offset: 1px; }
+/* the mark is 26px; on touch an invisible ring around it takes the tap, so the target is 44px */
+@media (pointer: coarse) { .trustmark::before { content: ""; position: absolute; inset: -9px; } }
 .trustmark i { position: absolute; display: block; pointer-events: none; border-radius: 50%; opacity: 0; }
 .trustmark .ring { inset: 4px; border: 1.5px solid var(--mark); }
 .trustmark .em, .trustmark .bu { left: 50%; top: 50%; background: var(--mark); }
@@ -28,17 +30,17 @@
 .trustpop .tr i.on { background: var(--mark); border-color: var(--mark); box-shadow: 0 0 6px var(--mark-glow); }
 .trustpop .tr span { margin-left: 4px; }
 @media (prefers-reduced-transparency: reduce) { :root[data-theme="dusk"] { --pop-bg: var(--surface); --pop-blur: none; } }
-:root:not([data-motion="off"]) .trustmark:not(.seen) .turn { transform-origin: 9px 9px; animation: tm-turn 14s linear infinite; }
-  :root:not([data-motion="off"]) .trustmark:not(.seen) .em { animation: tm-rise 2.6s var(--d) ease-out infinite; }
-  :root:not([data-motion="off"]) .trustmark.arrive svg { animation: tm-pop 600ms var(--ease-pop) backwards; }
-  :root:not([data-motion="off"]) .trustmark.arrive .ring { animation: tm-wave 900ms 100ms ease-out; }
-  :root:not([data-motion="off"]) .trustmark.arrive .bu, :root:not([data-motion="off"]) .trustmark.fire .bu { animation: tm-shoot 800ms ease-out; }
-  :root:not([data-motion="off"]) .trustmark.fire .ring { animation: tm-wave 800ms ease-out; }
-  :root:not([data-motion="off"]) .trustpop.opening { animation: tm-open 480ms var(--ease-out) backwards; }
-  :root:not([data-motion="off"]) .trustpop.opening > * { animation: tm-up 360ms var(--ease-out) backwards; }
-  :root:not([data-motion="off"]) .trustpop.opening > :nth-child(2) { animation-delay: 110ms; }
-  :root:not([data-motion="off"]) .trustpop.opening > :nth-child(3) { animation-delay: 180ms; }
-  :root:not([data-motion="off"]) .trustpop.opening > :nth-child(4) { animation-delay: 250ms; }
+.trustmark:not(.seen) .turn { transform-origin: 9px 9px; animation: tm-turn 14s linear infinite; }
+.trustmark:not(.seen) .em { animation: tm-rise 2.6s var(--d) ease-out infinite; }
+.trustmark.arrive svg { animation: tm-pop 600ms var(--ease-pop) backwards; }
+.trustmark.arrive .ring { animation: tm-wave 900ms 100ms ease-out; }
+.trustmark.arrive .bu, .trustmark.fire .bu { animation: tm-shoot 800ms ease-out; }
+.trustmark.fire .ring { animation: tm-wave 800ms ease-out; }
+.trustpop.opening { animation: tm-open 480ms var(--ease-out) backwards; }
+.trustpop.opening > * { animation: tm-up 360ms var(--ease-out) backwards; }
+.trustpop.opening > :nth-child(2) { animation-delay: 110ms; }
+.trustpop.opening > :nth-child(3) { animation-delay: 180ms; }
+.trustpop.opening > :nth-child(4) { animation-delay: 250ms; }
 @keyframes tm-turn { to { transform: rotate(360deg); } }
 @keyframes tm-rise { 0% { opacity: 0; transform: translate(0, 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), -22px) scale(.3); } }
 @keyframes tm-pop { 0% { transform: scale(0) rotate(-120deg); opacity: 0; } 60% { transform: scale(1.6) rotate(10deg); opacity: 1; } 100% { transform: none; } }

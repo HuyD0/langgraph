@@ -1,0 +1,52 @@
+name: codeql
+
+# Scans the Python and the page's JavaScript with GitHub's security-and-quality suite
+# (the queries that back docs/ audits: unused imports, unreachable code, URL and
+# path checks). Results show under the repository's Security tab.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "17 6 * * 1"   # weekly, so new queries still run when nothing is pushed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write   # required to upload results; this repo's default token is read-only
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+          # Inline, so there is no second file to keep in step: the built page, the
+          # notebooks and the screen gallery are outputs, not code to review.
+          config: |
+            paths-ignore:
+              - dist
+              - notebooks
+              - docs/screens
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

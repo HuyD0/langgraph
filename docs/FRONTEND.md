@@ -38,7 +38,7 @@ page.html (template) ────────────────┘    /*DA
 |---|---|---|
 | Tokens | `tokens.css` | Every colour, font and timing. Change values here, not in rules |
 | Components | `<style>` in `page.html` | Use `var(--token)` only; a test checks every name exists |
-| Markup skeleton | the `<main>` views: `home`, `lesson`, `done`, `search`, plus the drawer, tray and toasts | Mostly empty containers that JavaScript fills |
+| Markup skeleton | the `<main>` views: `home`, `lesson`, `done`, `search`, plus the Notebook drawer, the pocket sheet and toasts | Mostly empty containers that JavaScript fills |
 | Behaviour | the big `<script>` | Sections marked `// ---------- name ----------` (map below) |
 
 ## How the script works
@@ -58,7 +58,7 @@ It's deliberately simple, and every feature follows the same three steps:
 3. **Events are delegated.** One `document` click handler, in the `events` section, routes on
    `data-*` attributes: `data-open="<lesson id>"`, `data-step`, `data-opt`, `data-clz` and so on.
    To add a button, render it with a new `data-` attribute and add one line to that handler.
-   Feature-local handlers (`#sortBox`, `#pkTabs`, the editor) follow the same pattern.
+   Feature-local handlers (`#pkTabs`, `#items`, the editor) follow the same pattern.
 
 Small helpers used everywhere: `$(id)` is `getElementById`; `ic(name)` draws an icon from the
 sprite (`<symbol id="i-name">`); `fxScreen` / `fxOn` / `fxMove` run effects through the motion
@@ -80,17 +80,19 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `search: lessons, glossary words and the study list` | The search view |
 | `views` | `show(view)`, `openLesson`, `setStep`, the bottom bar `renderFoot`, `goNext` |
 | `walkthrough: a tool's screens, redrawn with numbered callouts` | `walkHtml`, `SL_VIEW`: Spacelift run screens drawn from lesson data (`screen(...)`) **In `page/walkthrough.js`** (styles: `page/walkthrough.css`) |
-| `your result` | The result card on the done screen: the marks each step leaves the first time through (`firstMarks`, `finishMarks`, `resultOf`), the picture Share result copies (`resultPng`, `sharePicture`) and Copy as text (`shareText`). The Notebook's Your results tab (`renderResults`). **In `page/share.js`** (styles: `page/share.css`) |
+| `your result` | The result card on the done screen: the marks each step leaves the first time through (`firstMarks`, `finishMarks`, `resultOf`), the picture Share result copies (`resultPng`, `sharePicture`) and Copy as text (`shareText`). The Notebook's Results tab (`renderResults`). **In `page/share.js`** (styles: `page/share.css`) |
 | `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`); notes in `content/trust.py` **In `page/trust.js`** (styles: `page/trust.css`) |
 | `step panes` | `learnPane`, `checkPane` (the Check questions one at a time: `checkQs`, `checkState`, `checkPick`, `checkHelp`), the Explain gaps (`clozeHtml`), `anglePane` |
 | `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
 | `ask about this lesson` | The tutor chips and answers **In `page/ask.js`** (styles: `page/ask.css`) |
 | `build step` | `loadProblem`, the editor area, running tests |
 | `practice questions` | Build as a decision or reading real evidence: YAML, plans, runs, traces (`QF`, `qfRender`). Options are shuffled in a fixed order per question with the Check step's `checkOrder`; a lesson with practice questions calls the step Practice (`stepNames`). **In `page/practice.js`** (styles: `page/practice.css`) |
+| `tables of rows` | `isRows`, `rowsTable`: an example's list of rows shown as a table, and after a run your result beside the expected rows |
 | `the machine` | Rows travelling through the learner's function. **In `page/machine.js`** (styles: `page/machine.css`; its Dusk glow stays with the motion rules in `page.html`) |
 | `hints, review, solution` | Hint levels, code review, showing the answer |
-| `notebook` | The drawer: glossary, look and motion switches. **In `page/notebook.js`** (styles: `page/notebook.css`) |
-| `study list` / `the pocket` | Saved items, the tray, spaced review. **In `page/study-list.js`** (styles: `page/pocket.css`, `page/study-list.css`) |
+| `typing shortcuts for touch screens` | `PY_WORDS`, `SNIPPETS`, `SYMBOLS`: the word and symbol keys that replace the bottom bar while typing code on a phone |
+| `notebook` | The drawer: Glossary, Results (`renderResults` in `page/share.js`), Speed, Settings (Look and What to practise). **In `page/notebook.js`** (styles: `page/notebook.css`) |
+| `study list` / `the pocket` | Saved items, the pocket sheet, spaced review. **In `page/study-list.js`** (styles: `page/pocket.css`, `page/study-list.css`) |
 | `selection toolbar` | Save or explain selected text. **In `page/selection.js`** (its styles sit in `page/study-list.css`: the toolbar saves to the study list) |
 | `editor` | Auto-indent, Tab, the symbol keys on phones |
 | `events` | The one delegated click handler |

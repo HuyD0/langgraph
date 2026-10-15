@@ -16,7 +16,7 @@ lesson(MODULE, 'field_status',
     learn=[
         "On a platform team, product teams don't write Terraform. They ask for what they need in **YAML** files kept in a shared repo, the **config repo**. A team's `clusters.yml`, for example, lists the clusters it wants.",
         "A field in that YAML goes past five stops before anything is built. **The YAML** says what the team wants. **The check** (written with Pydantic, a Python library) rejects fields it doesn't know and values of the wrong type. **The runbook** is Terraform code that reads the YAML and fills in anything left out. **A module** turns those settings into resources. **The provider** is the plugin that actually talks to Databricks or Azure.",
-        "Valid YAML is not enough. A field only matters if it reaches the provider. If the runbook never passes it on, it is **dropped**: it looks fine in the file and does nothing. Spacelift shows the end result as a plan that someone reviews before anything is applied.",
+        "Valid YAML is not enough. A field only matters if it reaches the provider. If the runbook never passes it on, it is **dropped**: it looks fine in the file and does nothing. Spacelift (the service that runs Terraform for the team) shows the end result as a plan that someone reviews before anything is applied.",
         "Reviewers sum up a field in one word. SUPPORTED: it reaches the provider as written. DEFAULTED: it was left out, so the runbook filled in a value. TRANSFORMED: it was changed on the way (a cluster's name gets the team's short code in front). DROPPED: accepted, never used. INVALID: the check rejects it. UNKNOWN: you haven't followed it all the way yet.",
     ],
     example=example('Following one field, stop by stop', """clusters.yml
@@ -35,7 +35,7 @@ Leave policy_name out, and the runbook's
 try(...) uses "Personal Compute"
 => DEFAULTED"""),
     check=question(
-        'A team adds `autoscale_note: "keep it small"` to `clusters.yml`. Pydantic accepts it as free text, but the runbook never reads it. What happened to the field?',
+        'A team adds `autotermination_minutes: 30` to `clusters.yml`. The check allows the field, but the runbook never reads it. What happened to the field?',
         [
             'SUPPORTED: the YAML is valid',
             'DROPPED: it is accepted but never passed on',
@@ -86,21 +86,21 @@ Return one word, asking in this order:
             intro='Follow fields down the chain and name what happened to each, the way a reviewer reads a config PR.',
             explain='A field only matters if it reaches the provider. You followed it stop by stop: the YAML, the check, the runbook, the module, the provider, and named what happened: supported, defaulted, transformed, dropped or invalid.',
             asks=[
-                ask('Does the runbook pass `autoscale_note` on?', ['Yes', 'No'], answer=1,
+                ask('Does the runbook pass `autotermination_minutes` on?', ['Yes', 'No'], answer=1,
                     evidence=evidence('chain', stops=[
-                        {'label': 'clusters.yml', 'sub': 'autoscale_note: "keep it small"', 'state': 'ok', 'tag': 'IN YAML'},
-                        {'label': 'Pydantic check', 'sub': 'free text: accepted', 'state': 'ok', 'tag': 'VALID'},
+                        {'label': 'clusters.yml', 'sub': 'autotermination_minutes: 30', 'state': 'ok', 'tag': 'IN YAML'},
+                        {'label': 'Pydantic check', 'sub': 'a known number field: allowed', 'state': 'ok', 'tag': 'VALID'},
                         {'label': 'The runbook', 'sub': 'Service/parsing_clusters.tf', 'state': 'now', 'tag': 'NOW'},
                         {'label': 'Workspace module', 'state': 'later'},
                         {'label': 'Provider', 'state': 'later'},
                     ], snippet='dbx_clusters = [for c in local.clusters : {\n  name        = lower("${c.code}_${c.name}")\n  policy_name = try(c.policy_name, "Personal Compute")\n  min_workers = try(c.min_workers, null)\n  max_workers = try(c.max_workers, null)\n}]'),
                     clue='Look for the field\'s name among the ones the snippet reads from `c`.',
-                    why='The runbook reads name, code, policy_name and the worker counts. `autoscale_note` isn\'t one of them, so it stops here.',
+                    why='The runbook reads name, code, policy_name and the worker counts. `autotermination_minutes` isn\'t one of them, so it stops here.',
                     wrong=['Check the snippet again: which fields does it read from `c`?', None]),
-                ask('So what happened to `autoscale_note`?', ['SUPPORTED', 'DROPPED', 'INVALID'], answer=1,
+                ask('So what happened to `autotermination_minutes`?', ['SUPPORTED', 'DROPPED', 'INVALID'], answer=1,
                     clue='It passed the check, then went no further.',
-                    why='Accepted by the check, never passed on: dropped. It looks fine in the YAML and does nothing, so nobody should rely on it.',
-                    wrong=['Supported means it reaches the provider as written. Did it?', None, 'Invalid means the check rejects it. Pydantic accepted it.']),
+                    why='Allowed by the check, never passed on: dropped. It looks fine in the YAML and does nothing, so nobody should rely on it.',
+                    wrong=['Supported means it reaches the provider as written. Did it?', None, 'Invalid means the check rejects it. The check allowed this field.']),
                 ask('A cluster leaves out `policy_name`. What happened to that field?', ['SUPPORTED', 'DEFAULTED', 'DROPPED'], answer=1,
                     evidence=evidence('code', title='The runbook line', text='policy_name = try(c.policy_name, "Personal Compute")'),
                     clue='`try()` uses its second value when the first one is missing.',
@@ -202,7 +202,7 @@ lesson(MODULE, 'folder_access',
     learn=[
         "A team's `team.yml` can name an `owner_group` and list `folder_grants`: other groups and the permission each should have on the team's workspace folder, like `CAN_EDIT`. A **group** is a named set of people or identities from Microsoft Entra ID.",
         "The runbook doesn't copy that list as it is. It **adds access you didn't type**: the owner group gets `CAN_MANAGE`, and every workspace user gets `CAN_READ` by default. Then it joins those with the explicit grants and hands the whole list to the module.",
-        "A folder has four permissions: `CAN_READ` (the screen calls it Can View), `CAN_RUN`, `CAN_EDIT` and `CAN_MANAGE`. Everything inside a folder takes on its permission, and for notebooks and files they go up in that order, so that is how the runbook ranks them. A group listed twice ends up with the **highest** of its permissions, not both. (The docs' folder table lists Edit before Run; their notebook, file and Git folder tables list Run first.)",
+        "A folder has four permission levels, lowest first: `CAN_READ` (the screen calls it Can View), `CAN_RUN`, `CAN_EDIT` and `CAN_MANAGE`. Everything inside the folder inherits them. A group listed twice ends up with the **highest** of its levels, not both.",
         "So when a plan shows `CAN_MANAGE` for a group that only asked for `CAN_EDIT`, Terraform isn't making it up. Look at what the runbook adds before you call it a mistake, and review **who ends up with what**, not the order of the list.",
     ],
     example=example('What team.yml asks for, and what the plan shows', """# config/DEV/team-sales/team.yml
@@ -440,14 +440,14 @@ policy       Personal Compute          <- default: none was named
 workers      1 to 4 (autoscaling)
 can_manage   grp-sales-dev-owners      <- the team's owner group"""),
     check=question(
-        'A cluster in `clusters.yml` has `num_workers: 2` and also `max_workers: 6`. What happens?',
+        'A cluster in `clusters.yml` has `min_workers: 1` and no `max_workers`. What happens?',
         [
-            'It autoscales from 2 to 6',
-            'It is rejected: use num_workers, or both min and max',
-            'Terraform ignores max_workers',
+            'It runs with 1 worker and never grows',
+            'The check rejects it: min and max go together',
+            'The runbook fills in a max_workers for it',
         ],
         answer=1,
-        why='Size is one or the other: a fixed num_workers, or min_workers and max_workers together. A mix is invalid, and it is better caught in review than in a failed plan.',
+        why='Size is one or the other: a fixed num_workers, or min_workers and max_workers together. Half an autoscaling range is invalid, and it is better caught in review than in a failed plan.',
     ),
     angle=angle(
         pattern='Check it, then build what the runbook would',

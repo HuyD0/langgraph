@@ -1202,10 +1202,9 @@ if math.isclose(score, 0.3):""",
     ],
     [
         'Never put API keys in code',
-        'Keys pasted into a notebook end up in git history. Load them from the environment or a .env file that git ignores.',
-        "client = OpenAI(api_key='sk-...')",
-        """import os
-client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])""",
+        'Keys pasted into a notebook end up in git history. Read them at run time from a secret store (a Databricks secret scope), or from the environment when you have no store.',
+        "token = 'dapi0123456789abcdef...'  # pasted in",
+        'token = dbutils.secrets.get(scope="ai", key="vendor_api_token")',
         'scrub_secrets',
     ],
     [
@@ -1553,7 +1552,7 @@ moved {
   from = azurerm_databricks_workspace.this
   to   = module.workspace.azurerm_databricks_workspace.this
 }""",
-        'find_replacements',
+        'moved_blocks',
     ],
     [
         'Adopt existing resources with an import block',
@@ -1574,7 +1573,7 @@ resource "azurerm_subnet" "private" {
   virtual_network_name = "vnet-hub-prod"
   ...
 }""",
-        'overlapping_subnets',
+        'import_existing',
     ],
     [
         'Point the Databricks provider at the workspace resource',
@@ -1617,7 +1616,7 @@ resource "azurerm_subnet" "private" {
   }
 }
 # and commit .terraform.lock.hcl""",
-        'lock_info',
+        'provider_versions',
     ],
     [
         'Upgrade providers on purpose',
@@ -1631,7 +1630,7 @@ terraform plan
 
 # upgrades get their own branch: read the plan, commit the new lock file
 terraform init -upgrade""",
-        'plan_policy',
+        'read_a_run',
     ],
     [
         'Use OIDC, not client secrets',
@@ -1645,7 +1644,7 @@ terraform init -upgrade""",
   use_oidc        = true
   subscription_id = var.subscription_id
 }""",
-        'grants_to_revoke',
+        'lookup_failed',
     ],
     [
         'Read every -/+ before approving',
@@ -1653,7 +1652,7 @@ terraform init -upgrade""",
         """Plan: 1 to add, 1 to change, 1 to destroy.
 # small numbers, approve""",
         """-/+ resource "azurerm_databricks_workspace" "this" {
-      ~ sku = "standard" -> "premium" # forces replacement
+      ~ managed_resource_group_name = "rg-dbw-a" -> "rg-dbw-b" # forces replacement
     }
 Plan: 1 to add, 1 to change, 1 to destroy.
 # the 1 to destroy is the workspace itself: stop and fix it""",

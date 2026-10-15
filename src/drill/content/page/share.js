@@ -28,7 +28,7 @@ function finishMarks(id) {
 function resultOf(id) {
   const f = (progress.lessons[id] || {}).first;
   if (!f || !f.day) return null;
-  const names = packOf(id) ? ["Check", "Practice", "Explain"] : ["Check", "Build", "Explain"];
+  const names = ["Check", stepNames(id)[2], "Explain"];
   const rows = [f.check, f.build, f.explain].map((m, i) => [names[i], m === undefined ? "earlier" : m]);
   const spark = rows.every(([, m]) => Array.isArray(m) && m.length && m.every(x => x === "sign"));
   return { id, no: lessonNo(id), day: f.day, date: f.date || null, rows, spark, gate: !!f.gate, streak: f.streak || 0 };
@@ -214,7 +214,7 @@ function renderResults() {
       <span><b>${done.length}</b>${done.length === 1 ? "lesson" : "lessons"}</span>
       <span><b>${sparks}</b>${sparks === 1 ? "spark" : "sparks"}</span>
       <span><b>${now}</b>day streak</span></div>
-    <p class="reskey" aria-hidden="true">${MARKS.map(m => `<span>${markTile(m)}${MARK_WORDS[m]}</span>`).join("")}</p>
+    <p class="reskey" aria-hidden="true">${MARKS.map(m => `<span>${markTile(m)}${MARK_WORDS[m]}</span>`).join("")}<span>${markTile("spark")}every step on your own</span></p>
     ${done.map(([id, r]) => `<div class="resitem">
       <button class="resitem-open" data-result-open="${id}">
         <span class="resitem-pic">${stickerSvg(id, "done", 14)}</span>
@@ -227,6 +227,7 @@ function renderResults() {
     </div>`).join("")}`;
 }
 function openResult(id) {
+  if (!id) return;
   closeNotebook();
   const o = orderFor(id); showDone(id, o[o.indexOf(id) + 1] || null, false);
   const card = document.querySelector("[data-result]"); if (card) card.scrollIntoView({ block: "start", behavior: "auto" });

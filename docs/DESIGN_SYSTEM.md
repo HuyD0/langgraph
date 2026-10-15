@@ -39,7 +39,7 @@ artifact gets updated.
 
 | Family | Names | Used for |
 |---|---|---|
-| Ground | `bg`, `surface`, `sunk`, `code-bg`, `line` | The page, cards, recessed fills, code, borders |
+| Ground | `bg`, `surface`, `sunk`, `code-bg`, `line`, `scrim` | The page, cards, recessed fills, code, borders, and the dim behind a drawer or sheet |
 | Text | `fg`, `muted` | Reading text, secondary text |
 | Accent | `accent`, `accent-ink`, `accent-soft` | The next action, focus rings, the current step |
 | Verdicts | `pass`/`pass-bg`, `fail`/`fail-bg`, `hint`/`hint-bg` | Strong colour for text and icons, `-bg` twin for the fill behind |
@@ -48,9 +48,9 @@ artifact gets updated.
 | Trust mark | `mark`, `mark-glow` | The trust mark only: the ember, its halo and its tooltip's trait name |
 | Finish | `finish` (Dusk only) | Reviews passed and finishing in Dusk; Light and Dark fall back to `pass` |
 | Code | `syn-kw`, `syn-str`, `syn-num`, `syn-com`, `syn-fn`, `syn-bi` | Code colours; never green or red |
-| Machine | `tok-a` to `tok-d` | The row pills |
+| Machine | `tok-a` to `tok-d`, `tok-on` | The row pills, and the text on them |
 | Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look`, `pop-bg`, `pop-line`, `pop-shadow`, `pop-blur` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), a pop floating over the page (the trust note), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
-| Tool screens | `tool-bg`, `tool-fg`, `tool-muted`, `tool-line`, `tool-sunk`, `tool-link`, `tool-ok`, `tool-change`, `tool-planned`, `tool-log`, `tool-anno`, `tool-anno-dot`, `glow-anno` | A third-party tool redrawn (Spacelift in the walkthrough): its own colours, light in Light and dark in Dark and Dusk, with the annotation style |
+| Tool screens | `tool-bg`, `tool-fg`, `tool-muted`, `tool-line`, `tool-sunk`, `tool-link`, `tool-ok`, `tool-change`, `tool-planned`, `tool-log`, `tool-on`, `tool-frame`, `tool-anno`, `tool-anno-dot`, `tool-anno-ink`, `glow-anno` | A third-party tool redrawn (Spacelift in the walkthrough): its own colours, light in Light and dark in Dark and Dusk, with the annotation style. `tool-on` is text on its pills, `tool-frame` the window's edge, `tool-anno-ink` the number in a callout's circle |
 | Type | `display`, `body`, `mono` | Headings, reading, anything the computer said |
 | Motion | `dur-tap`, `dur-step`, `dur-moment`, `dur-big`, `dur-slide`, `ease-out`, `ease-in`, `ease-pop` | How long things move, and how |
 | Effects | `fx-core`, `fx-glow`, `fx-veil`, `fx-red`, `fx-mix` | Only the motion effects |
@@ -63,16 +63,24 @@ them before making a new one; a new one gets a row here.
 
 | Component | Classes | Where it's used | Notes |
 |---|---|---|---|
-| Button | `.btn`, `.btn.primary`, `.btn.quiet`, `.btn.soft`, `.linkbtn` | Everywhere | One `primary` per screen. `soft` = looks waiting but still answers a tap with a nudge |
+| Button | `.btn`, `.btn.primary`, `.btn.quiet`, `.btn.soft`, `.linkbtn` | Everywhere | One `primary` per screen. `soft` = looks waiting but still answers a tap with a nudge. Share result is a default `.btn` |
+| Segmented control | `.seg` | Settings (Look, What to practise), the first-visit pick | A row of joined buttons, one pressed (`aria-pressed`); never the screen's primary |
 | Card | `.card`, `.callout`, `.keyidea` | Lesson panes, notes | `surface` background, `line` border, 12–14px corners |
-| Stepper | `.stepbtn` | Top of a lesson | Learn, Check, Build, Explain (a content-pack lesson says Practice for Build); the current one carries `accent` |
+| Lesson line | `.lessonbar`, `.lb-shape` (`.track`), `.lb-t` | Top of every lesson | A back button, the phase's shape (the teal octagon on the track), the lesson's number and its module; hovering names the phase |
+| Stepper | `.stepbtn` | Top of a lesson | Learn, Check, Build, Explain; a lesson whose Build step is practice questions says Practice (`stepNames`); the current one carries `accent` |
 | Bottom bar | `#foot` (rendered by `renderFoot`) | Lessons | One primary on the right, a quiet Back on the left |
 | Phase tabs and room | `.phasebox`, `.rail.phtabs`, `.book.room`, `.titlecard`, `.paper0`–`.paper5` | Home | Violet `--path*`; the room's paper matches its phase shape |
 | Track room | `.book.room.track`, `.paper6`, `.lb-shape.track` | Home, track lessons | Teal `--track*`; inside it teal stands in for `accent` |
 | Sticker | `.stk` (`.done`, `.now`, `.next`, `.ahead`, `.soon`), `.stickers`, `.ministk` | Home, done screen | Shape from `phShape`; `soon` is a faded, unopenable placeholder |
 | Phase badge | `.bdg` (`.now`, `.done`), `badgeSvg()` | Tabs, title cards | The glow (`#aura`, `#aura-track`) is only on what's current |
 | Check options | `.opts`, `.opt`, `.verdict` | Check step | The verdict scrolls into view after an answer |
-| Sorting board | `.smap`, `.sbin`, `.shelp` | Build, judgement lessons | One idea at a time |
+| Test results | `.result` (`.pass`, `.fail`, `.idle`) | Build step, after Run | `pass-bg` or `fail-bg` behind the count and the first failing case; `idle` before the first run |
+| Notes | `.note` (`.hint`, `.review`) | Build step | A hint in the `hint` colours (it unveils as it opens); a review from the tutor as an aside |
+| Tutor thread | `.asklesson` | End of Learn, Check and Explain | The suggested questions and the answers, one thread per step ([PAGE.md](PAGE.md), "Ask about this lesson") |
+| Notebook | `.drawer`, `.tabs`, `.tab`, `.setting` | The Notebook button in the header | A drawer from the right behind the `scrim`, with four even tabs: Glossary, Results, Speed, Settings; each setting is a label over its control |
+| Results | `.resstats`, `.resitem` | The Notebook's Results tab | Lessons finished, sparks and the streak on top; then one row per finished lesson, newest first, with its sticker, marks and a Share button |
+| Search | `.sfield`, `.shit`, `.sword`, `.sphase` | The search view (the magnifier, or `/`) | The field, one row per hit, a glossary word with where it's taught, and the phase and track buttons to jump to |
+| First-visit pick | `.fcard`, `.focusask` | First visit; the Today card until chosen | "What do you want to practise?": three big cards the first time, a one-line ask with a `.seg` after |
 | Fill the gaps | `.cloze`, `.clz`, `.gap` (`.now`, `.later`, `.filled`), `.clzchip` (`.no`, `.shown`), `.clzclue` | Explain | Help is a clue, then the answer; the clue uses `hint` colours |
 | Practice questions | `.qfbox`, `.qf-chain`, `.qf-rows`, `.qf-row` (`.right`, `.wrong`), `.qf-claim`, `.qf-sum` | Platform Build steps | One question per screen; evidence above; uses the surface tokens |
 | Walkthrough | `.walk`, `.sl`, `.sl-view`, `.sl-mark`, `.sl-n`, `.sl-steps`, `.sl-tips` | Tool lessons (Spacelift) | Numbered callouts in the hint colours match numbered steps |
@@ -82,7 +90,7 @@ them before making a new one; a new one gets a row here.
 | Practice step | `.px`, `.px-seq`, `.px-match`, `.px-edit`, `.px-rules`, `.px-q`, `.px-next` | Content-pack lessons | Replaces the editor: choose, order, match, repair or reason; the next safe check in `accent-soft` |
 | Investigation views | `.iv`, `.iv-link`, `.iv-trace`, `.iv-row`, `.iv-tag` | Content-pack Learn and Practice | Relationships, trace, walkthrough, plan review; tags use the verdict colours |
 | Guided tour | `.tour-shot`, `.tour-box`, `.tour-zoom`, `.tour-nav`, `.tour-dot` | Content-pack Learn | A screenshot with one numbered box, a close-up and Back / Next; the dim is `scrim` |
-| Result card | `.result`, `.resrow`, `.rmark` (`.knot`, `.curtain`, `.spark`), `.resgate`, `.resweek`, `.reskey`, `.resshare`, `.resmore` | Done screen | The lesson's first time through, with no answers in it. **Share result** copies a picture of the card; **Copy as text** the emoji version. Tiles are `aria-hidden`; the card's `.sr` sentence says the same in words. A step done before results began reads "Done earlier". The Notebook's **Your results** tab lists past results (`.resitem`). See "The result marks" |
+| Result card | `.result`, `.resrow`, `.rmark` (`.knot`, `.curtain`, `.spark`), `.resgate`, `.resweek`, `.reskey`, `.resshare`, `.resmore` | Done screen | The lesson's first time through, with no answers in it. **Share result** copies a picture of the card; **Copy as text** the emoji version. Tiles are `aria-hidden`; the card's `.sr` sentence says the same in words. A step done before results began reads "Done earlier". The Notebook's **Results** tab lists past results (the Results row). See "The result marks" |
 | Hover card | `#stkTip` | Stickers | Long press on phones |
 | Toast | `#toast` | After saving | Short, plain, disappears by itself |
 
@@ -106,7 +114,7 @@ The streak is plain words ("6-day streak"), shown from 2 days; the copied text a
   No faces, characters' signature marks, crests or pictures taken from any series, film or game.
 - The spark is the one place `--fx-red` and `--fx-veil` appear outside an effect: it stands for
   the same moment the spark effect marks. On a spark the card cracks (`.rescracks`, behind the
-  content); with Motion on the cracks spread out from it.
+  content); the cracks spread out from it as the card arrives.
 - The shared picture is drawn on a canvas from the same tokens (`resultPng`), so it matches the
   look it was shared from. It carries a short key, since the person it goes to hasn't seen the app.
 
@@ -151,7 +159,7 @@ it never loops or blurs and that its keyframes exist.
 
 **Add a look.** Add a `:root[data-theme="<name>"]` block to `tokens.css` overriding what
 differs (including the `--fx-*` colours), add it to the contrast checker's `looks()`, add a
-button to the Look switch in `page.html` (`LOOKS` and the `data-theme-pick` buttons), and update
+button to the Look switch in `page.html` (the `data-theme-pick` buttons, which `applyLook` reads), and update
 the motion tokens test, which counts one `--fx-*` set per look.
 
 **Try ideas before building them.** Ask Claude for mockups on the exploration canvas (or a new

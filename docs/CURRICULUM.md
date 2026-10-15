@@ -84,7 +84,7 @@ your code to work on something real.
 
 | # | Milestone | You learn | Hardest part |
 |---|---|---|---|
-| 0 | `m0_python_basics.ipynb` | Loops, dicts, edge cases, what O(n) means | Starting `best` at a real item, not 0 |
+| 0 | `m0_python_basics.ipynb` | Loops, dicts, edge cases, how much more work code does as the input grows | Starting `best` at a real item, not 0 |
 | 1 | `m1_state.ipynb` | Typed dicts, partial updates, not mutating shared state | Realising the update is *partial* |
 | 2 | `m2_problems.ipynb` | Dataclasses, lookup tables, error messages as design | The KeyError that lists valid ids |
 | 3 | `m3_routing.ipynb` | Pure functions, branching policy | Passing on the last attempt still counts |
@@ -122,8 +122,8 @@ teaching constructs that do not exist in `src/drill/` at all.
 ### A suggested order
 
 0. New to coding? Do milestone 0 first, and keep [CONCEPTS.md](CONCEPTS.md)
-   open: it explains every term the notebooks use, what Big-O means, and a
-   routine for starting when the cell is blank.
+   open: it explains every term the notebooks use, how to tell slow code from
+   fast in plain words, and a routine for starting when the cell is blank.
 1. Milestone 1 and 3 in one sitting. Both are short; they teach the shape.
 2. Drill for a few days. Let track A run.
 3. Milestone 2 and 4. Data modelling and aggregation.
@@ -147,8 +147,8 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: 131 lessons in
-17 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
+Or use the published page on claude.ai. Either way the path is the same: about 170 lessons in
+25 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
 The list itself runs roughly from foundations to shipping, and any module can be opened
@@ -169,11 +169,11 @@ experiment that decides between one agent and a team; [EXPERIMENT_PLAN.md](EXPER
 has that plan filled in.
 
 Each lesson is four steps. **Learn** is a short read with one worked example. **Check**
-is a single question, to find out whether the read landed. **Build** is a small Python
-function with tests, in the browser, with a fill-in-the-blanks scaffold when you are
-stuck. **Interview** is how to talk about the idea, and which classic problem from track
-A uses the same pattern. Most lessons also show the same idea in your stack: Databricks,
-LangGraph, LangChain or MLflow.
+is up to three questions, one at a time, to find out whether the read landed. **Build** is a
+small Python function with tests, in the browser, with a fill-in-the-blanks scaffold when you
+are stuck. **Explain** is how to say the idea in your own words (you finish the lesson's
+sentence), and which classic problem from track A uses the same pattern. Most lessons also show
+the same idea in your stack: Databricks, LangGraph, LangChain or MLflow.
 
 The third step fits what the lesson teaches:
 

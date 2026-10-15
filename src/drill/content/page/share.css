@@ -41,7 +41,7 @@
 .resmore .linkbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 /* a flawless finish: the cracks spread out from the spark as the card arrives */
 @keyframes res-crack { from { clip-path: circle(0 at 88% 10%); } to { clip-path: circle(150% at 88% 10%); } }
-:root:not([data-motion="off"]) .rescracks { animation: res-crack 700ms 250ms var(--ease-out) both; }
+.rescracks { animation: res-crack 700ms 250ms var(--ease-out) both; }
 /* your results, in the Notebook: a summary, the key, then one row per finished lesson */
 #resultsBody { display: grid; gap: 10px; }
 #resultsBody .reskey { margin: 2px 0 6px; }

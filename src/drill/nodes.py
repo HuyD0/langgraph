@@ -8,7 +8,6 @@ model, or a network. That is the point of the shape.
 from __future__ import annotations
 
 import time
-from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
@@ -36,7 +35,7 @@ def _describe(fn) -> None:
         if span is not None:
             span.set_attribute("description", (fn.__doc__ or "").strip())
     except Exception:
-        pass
+        pass  # tracing is optional: never fail a practice session over a span's label
 
 
 def _format_failure(problem: Problem, state: DrillState) -> str:

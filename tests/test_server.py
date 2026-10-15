@@ -18,7 +18,9 @@ from langchain_core.messages import AIMessage
 from drill.server import mcp as mcp_door
 from drill.server.api import create_app
 from drill.server.bank import Bank
-from drill.server.router import ModelRouter, NoModelAvailable, Route, parse_json, pick_local_model, strip_thinking, to_messages
+from drill.server.router import (
+    ModelRouter, NoModelAvailable, Route, is_databricks_url, parse_json, pick_local_model, strip_thinking, to_messages,
+)
 from drill.server.store import DocStore
 
 
@@ -31,8 +33,9 @@ class Broken:
     """A chat model whose server is down."""
 
     async def astream(self, *args, **kwargs):
+        for _ in ():  # never runs; makes this an async generator
+            yield
         raise ConnectionError("connection refused")
-        yield  # pragma: no cover - makes this an async generator
 
 
 class ThinkingForever:
@@ -405,9 +408,19 @@ def test_thinking_is_hidden():
 
 def test_json_is_found_in_prose_and_fences():
     assert parse_json('```json\n{"a": 1}\n```') == {"a": 1}
+    assert parse_json('```\n[1, 2]\n```') == [1, 2]
     assert parse_json('Sure! {"question": "q", "answer": "a"} Hope that helps.') == {"question": "q", "answer": "a"}
+    assert parse_json('{"a": 1}' + " " * 50_000 + "x") == {"a": 1}  # a chatty reply must not cost a regex its time
     with pytest.raises(ValueError):
         parse_json("no json here")
+
+
+def test_a_databricks_url_is_judged_on_its_host():
+    assert is_databricks_url("https://adb-123.4.azuredatabricks.net/serving-endpoints")
+    assert is_databricks_url("https://dbc-1.cloud.databricks.com")
+    assert not is_databricks_url("https://evil.example/.azuredatabricks.net/")  # the text in the path does not count
+    assert not is_databricks_url("https://azuredatabricks.net.example.com")
+    assert not is_databricks_url("")
 
 
 def test_local_model_choice_avoids_thinking_models_unless_asked():
@@ -432,9 +445,37 @@ def test_page_and_health(store, bank):
     client = client_with(store, bank, "unused")
     health = client.get("/api/health").json()
     assert health["ok"] and health["ai"] and health["user"] == "local" and health["models"]["local"] == "fake"
-    page = client.get("/")
+    assert health["team"] is False  # one person's SQLite file: no manager reads this
+    page = client.get("/", headers={"Accept-Encoding": "gzip"})
     assert page.status_code == 200
-    assert page.text.startswith("<!doctype html>") and "<title>Daily Drill</title>" in page.text
+    assert page.text.startswith('<!doctype html><html lang="en">') and "<title>Daily Drill</title>" in page.text
+    head, body = page.text.split("<body>", 1)
+    assert "<title>Daily Drill</title>" in head and "fonts.googleapis.com" in head  # moved out of the body
+    assert not body.lstrip().startswith(("<title>", "<link ")) and body.rstrip().endswith("</body></html>")
+    assert page.headers["content-encoding"] == "gzip"  # 2.4 MB of text, sent small
+    assert int(page.headers.get("content-length", 0)) < len(page.content) // 3  # at least three times smaller
+
+
+def test_a_reload_of_an_unchanged_page_is_a_304(store, bank):
+    client = client_with(store, bank, "unused")
+    first = client.get("/")
+    etag = first.headers["etag"]
+    assert etag.startswith('"') and first.headers["cache-control"] == "no-cache"
+    again = client.get("/", headers={"If-None-Match": etag})
+    assert again.status_code == 304 and again.content == b"" and again.headers["etag"] == etag
+    assert client.get("/", headers={"If-None-Match": 'W/"stale", ' + etag}).status_code == 304  # a weak or listed tag
+    assert client.get("/", headers={"If-None-Match": '"something-else"'}).status_code == 200
+
+
+def test_every_answer_carries_the_protective_headers(store, bank):
+    from drill.server.api import BODY_LIMITS
+
+    client = client_with(store, bank, "unused")
+    wanted = {"x-content-type-options": "nosniff", "referrer-policy": "no-referrer",
+              "content-security-policy": "frame-ancestors 'none'"}
+    for response in (client.get("/"), client.get("/api/health"), client.get("/no-such-page"),
+                     client.put("/api/docs/data/users/local/progress", json={"x": "y" * (BODY_LIMITS["/api/docs/"] + 10)})):
+        assert {k: response.headers.get(k) for k in wanted} == wanted, response.url
 
 
 def test_documents_follow_the_pages_protocol(store, bank):
@@ -474,11 +515,64 @@ def test_the_page_says_what_each_request_is_for(store, bank):
                                  "step": "Learn", "question": "why?", "chip": "no", "user": "local"}
 
 
-def test_ask_without_a_model_is_a_clear_503(store, bank):
+def test_ask_without_a_model_is_a_clear_503(store, bank, monkeypatch):
+    """No model set up at all: on your own machine the text says how to start one."""
+    monkeypatch.delenv("DATABRICKS_APP_NAME", raising=False)
+    monkeypatch.delenv("DRILL_TRUST_USER_HEADER", raising=False)
     client = client_with(store, bank, local=False)
     assert not client.get("/api/health").json()["ai"]
     response = client.post("/api/ask", json={"prompt": "hello"})
     assert response.status_code == 503 and response.json()["detail"]["code"] == "unavailable"
+    assert "Start Ollama" in response.json()["detail"]["text"]
+
+
+def test_in_an_app_a_missing_model_does_not_say_start_ollama(store, bank, monkeypatch):
+    """A learner in a Databricks App can't start anything or edit .env: they are told to ask whoever runs it."""
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    client = client_with(store, bank, local=False)
+    detail = client.post("/api/ask", json={"prompt": "hello"}).json()["detail"]
+    assert detail == {"code": "unavailable", "text": "No tutor model is set up for this app. Ask whoever runs it."}
+
+
+def test_a_spent_hosted_allowance_is_said_plainly(store, bank):
+    """The team's daily hosted budget is gone and there is no local model: the text says so, not 'start Ollama'."""
+    router = ModelRouter(None, Route("hosted", "h", fake("never reached")), store, hosted_daily_tokens=10)
+    store.add(router._usage_path(), "hosted", {"calls": 3, "tokens": 10})  # today's allowance, all used
+    assert router.order() == [] and router.unavailable_reason() == "budget"
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    for body in ({"prompt": "hello"}, {"prompt": "quiz", "json": True}):
+        response = client.post("/api/ask", json=body)
+        assert response.status_code == 503
+        assert response.json()["detail"] == {"code": "unavailable",
+                                             "text": "The tutor has used today's allowance for everyone. It comes back tomorrow."}
+
+
+def test_a_model_that_is_down_is_said_plainly(store, bank):
+    """A model exists but did not answer (down, refused, too slow): try again in a minute, and the router says why."""
+    router = ModelRouter(Route("local", "down", Broken()), None, store)
+    with pytest.raises(NoModelAvailable) as caught:
+        run(router.ask("hello"))
+    assert caught.value.reason == "upstream" and "connection refused" in str(caught.value)
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    for body in ({"prompt": "hello"}, {"prompt": "quiz", "json": True}):
+        response = client.post("/api/ask", json=body)
+        assert response.status_code == 503
+        assert response.json()["detail"] == {"code": "unavailable",
+                                             "text": "The tutor's model is not answering right now. Try again in a minute."}
+
+
+def test_no_model_reasons_are_told_apart(store):
+    empty = ModelRouter(None, None, store)
+    assert empty.unavailable_reason() == "none"
+    with pytest.raises(NoModelAvailable) as caught:
+        run(empty.ask("hello"))
+    assert caught.value.reason == "none"
+    spent = ModelRouter(None, Route("hosted", "h", fake("x")), store, hosted_daily_tokens=0)
+    assert spent.unavailable_reason() == "budget"
+    with pytest.raises(NoModelAvailable) as caught:
+        run(spent.ask("hello"))
+    assert caught.value.reason == "budget"
+    assert NoModelAvailable("odd", reason="not-a-reason").reason == "upstream"  # an unknown reason is the safe one
 
 
 def test_the_page_cannot_pick_the_paid_model(store, bank):
@@ -535,7 +629,15 @@ def test_mcp_tools_share_the_store_and_bank(store, bank):
 
     card = mcp_door.get_drill("resolve_prompt")
     assert card["exercise"]["function"] == "resolve_prompt" and "prompts:/" in card["exercise"]["prompt"]
-    assert card["check"]["answer_index"] == 1 and card["in_your_stack"]["title"].startswith("MLflow")
+    assert card["in_your_stack"]["title"].startswith("MLflow")
+    # The card asks the questions but never carries the answers: check_answer marks a pick instead.
+    assert card["check"] == {"question": bank.lessons["resolve_prompt"]["check"][0], "options": bank.lessons["resolve_prompt"]["check"][1]}
+    assert "answer_index" not in card["check"] and "why" not in card["check"]
+    assert all(set(q) == {"question", "options", "clue"} for q in card["more_checks"])
+    assert "say_it_like_this" not in card["interview"]
+    marked = mcp_door.check_answer("resolve_prompt", question=1, picked=1)
+    assert marked["right"] is True and marked["why"] == bank.lessons["resolve_prompt"]["check"][3]
+    assert mcp_door.check_answer("resolve_prompt", question=1, picked=0)["right"] is False
 
     good = mcp_door.run_tests("resolve_prompt", bank.problems["resolve_prompt"]["solution"])
     assert good["passed"] and good["passed_count"] == good["total"]
@@ -550,10 +652,29 @@ def test_mcp_tools_share_the_store_and_bank(store, bank):
 
     marked = mcp_door.mark_done(first)
     assert marked["next"] == bank.order()[1] and mcp_door.next_drill()["id"] == bank.order()[1]
+    assert marked["explain"]["say_it_like_this"] == bank.lessons[first]["angle"][2]  # the sentence, once the lesson is done
     modules = mcp_door.list_lessons()
     assert modules[0]["lessons"][0] == {"id": first, "title": bank.lessons[first]["title"], "done": True}
     with pytest.raises(KeyError):
         mcp_door.get_drill("no_such_lesson")
+
+
+def test_ask_tutor_over_mcp_cannot_pick_the_paid_tier(monkeypatch):
+    """The MCP door clamps the tier as the page does: only the server's own features choose hosted-first."""
+    from types import SimpleNamespace
+
+    seen = []
+
+    class Stub:
+        async def ask(self, prompt, tier, context=None):
+            seen.append(tier)
+            return SimpleNamespace(text="ok")
+
+    monkeypatch.setattr(mcp_door, "_router", lambda: Stub())
+    assert run(mcp_door.ask_tutor("what is a trace?", "complex")) == "ok"
+    assert run(mcp_door.ask_tutor("what is a trace?", "quick")) == "ok"
+    assert run(mcp_door.ask_tutor("what is a trace?")) == "ok"
+    assert seen == ["default", "quick", "default"]
 
 
 def test_a_slow_hint_run_does_not_freeze_the_server(store, bank, monkeypatch):
@@ -630,6 +751,24 @@ def test_in_an_app_each_signed_in_person_gets_their_own_progress(store, bank, mo
     assert client.get("/api/docs/data/users/me/progress", headers=kim).json()["data"] == {"lesson": "b"}
     assert client.get("/api/health", headers=sam).json()["owner"] == "sam@example.com"
     assert store.for_owner("sam@example.com").get("data/users/me/progress") == {"lesson": "a"}
+
+
+def test_the_mcp_door_is_not_mounted_behind_a_login(store, bank, monkeypatch):
+    """In an app every learner is a different person; the MCP tools act as one owner, so no /mcp there."""
+    from starlette.routing import Mount
+
+    def mounted(app) -> bool:
+        return any(isinstance(r, Mount) for r in app.routes)
+
+    monkeypatch.delenv("DATABRICKS_APP_NAME", raising=False)
+    monkeypatch.delenv("DRILL_TRUST_USER_HEADER", raising=False)
+    quiet = ModelRouter(None, None, store)
+    assert mounted(create_app(store=store, router=quiet, bank=bank, with_mcp=True)), "at home the door is open"
+    monkeypatch.setenv("DATABRICKS_APP_NAME", "daily-drill")
+    app = create_app(store=store, router=quiet, bank=bank, with_mcp=True)
+    assert not mounted(app)
+    with TestClient(app) as client:
+        assert client.get("/api/health").status_code == 200 and client.post("/mcp", json={}).status_code == 404
 
 
 def test_outside_an_app_the_identity_header_is_not_believed(store, bank, monkeypatch):

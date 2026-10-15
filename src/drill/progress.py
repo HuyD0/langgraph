@@ -82,7 +82,7 @@ class ProgressStore:
             self.path.rename(bad)
             print(f"Your practice history at {self.path} could not be read; it was kept as {bad.name}.", file=sys.stderr)
         except OSError:
-            pass
+            pass  # keeping the unreadable file is a courtesy; a fresh history is written either way
 
     # -- what the history tells us ------------------------------------------
 

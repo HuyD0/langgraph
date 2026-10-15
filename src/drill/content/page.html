@@ -1,5 +1,6 @@
 <title>Daily Drill</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: one reading column for everything (path, then a lesson in four steps); the Notebook slides in from the side. */
@@ -46,9 +47,6 @@ b { font-weight: 600; }
 .next h2 { font: 800 22px/1.2 var(--display); margin: 0; text-wrap: balance; }
 .next .btn { justify-self: start; }
 .module { display: grid; gap: 8px; scroll-margin-top: calc(var(--toph, 61px) + 12px); }
-.module-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.module-head h3 { font: 800 18px/1.2 var(--display); margin: 0; }
-.module-head span { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .module > p { margin: -4px 0 4px; color: var(--muted); font-size: 15px; }
 .rows { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); padding: 12px 14px; cursor: pointer; min-height: 56px; }
@@ -64,25 +62,13 @@ b { font-weight: 600; }
 .ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .tile { width: 40px; height: 40px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; }
 .tile .ic { width: 22px; height: 22px; }
-.tile.gold { background: var(--hint-bg); color: var(--hint); }
 .ring { width: 30px; height: 30px; transform: rotate(-90deg); flex: none; }
 .ring circle { fill: none; stroke: var(--line); stroke-width: 3; }
 .ring .on { stroke: var(--pass); stroke-linecap: round; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend .ic { color: var(--accent); width: 18px; height: 18px; }
 .next .top-row { display: flex; gap: 12px; align-items: center; }
 .next .meta { display: flex; align-items: center; gap: 6px; }
 .next .meta .ic { width: 16px; height: 16px; }
-.life { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-@media (max-width: 560px) { .life { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.stage { display: grid; justify-items: center; align-content: start; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 4px 10px; cursor: pointer; font: 600 13px/1.25 var(--body); text-align: center; min-height: 92px; }
-.stage .num { font: 600 11px var(--mono); color: var(--muted); }
-.stage[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-.stage:focus-visible, .modhead:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.stage-detail { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
-.stage-detail p { margin: 0; }
-.modlist { display: grid; gap: 10px; }
+.modhead:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .modhead { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; min-height: 66px; }
 .modhead[aria-expanded="true"] { border-radius: 12px 12px 0 0; }
 .modhead .mt { flex: 1 1 auto; min-width: 0; display: grid; }
@@ -150,7 +136,6 @@ table.dt tr:last-child td { border-bottom: 0; }
 table.dt tr.wrong td { background: var(--fail-bg); }
 table.dt tr.now td { background: var(--hint-bg); }
 table.dt tr.empty td { color: var(--muted); font: 13px var(--body); white-space: normal; }
-table.dt .pdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
 .dtpair { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 /*INCLUDE page/machine.css*/
 
@@ -169,7 +154,7 @@ table.dt .pdot { display: inline-block; width: 9px; height: 9px; border-radius: 
 .fcard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; text-align: left; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; cursor: pointer; min-height: 64px; }
 .fcard svg { grid-row: span 2; width: 36px; height: 36px; overflow: visible; }
 .fcard b { font: 800 17px var(--display); } .fcard span { color: var(--muted); font-size: 14px; }
-.fcard .sh { stroke-width: 2; fill: none; } .fcard .sh.ai { stroke: var(--path); } .fcard .sh.pl { stroke: var(--track); fill: var(--track-soft); }
+.fcard .sh { stroke-width: 2; fill: none; } .fcard .sh.ai { stroke: var(--path); } .fcard .sh.pl, .strack .sh.pl { stroke: var(--track); fill: var(--track-soft); stroke-width: 2; }
 @media (hover: hover) { .fcard:hover { border-color: var(--accent); } }
 .next.track { border-color: color-mix(in srgb, var(--track) 55%, var(--line)); }
 .next.track .eyebrow { color: var(--track); }
@@ -182,23 +167,12 @@ table.dt .pdot { display: inline-block; width: 9px; height: 9px; border-radius: 
 #taskPrompt code { background: none; border: 0; padding: 0; font-weight: 600; color: var(--fg); }
 .label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 500; }
 .label .ic { width: 18px; height: 18px; color: var(--accent); }
-.hintline { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
-.hintline .ic { width: 18px; height: 18px; }
-.qhead { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
-.qhead .ic { color: var(--accent); width: 24px; height: 24px; margin-top: 1px; }
 .verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
 .verdict.ok .ic { color: var(--pass); }
 .verdict.no .ic { color: var(--fail); }
 /* "Question 2 of 3" over a run of questions (Check, practice): the count, then the dots */
 .shead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .scount { font: 600 12px var(--mono); color: var(--muted); }
-.row2 { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
-.row2 > div { display: grid; gap: 4px; min-width: 0; }
-.row2 p { margin: 0; }
-.callout.row2 > .ic { color: var(--accent); width: 22px; height: 22px; margin-top: 2px; }
-.saybox { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; background: var(--sunk); border-radius: 10px; padding: 12px 14px; }
-.saybox .ic { color: var(--accent); width: 22px; height: 22px; }
-.saybox p { margin: 0; font-size: 17px; }
 .gotcha { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
 .gotcha > .ic { color: var(--hint); margin-top: 2px; }
 .gotcha > div { display: grid; gap: 4px; min-width: 0; }
@@ -209,8 +183,6 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .btn .ic { width: 18px; height: 18px; }
 .tab { display: inline-flex; align-items: center; gap: 6px; }
 .tab .ic { width: 17px; height: 17px; }
-.mlbox { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; }
-.mlbox b { font-weight: 600; }
 .sets h3 { font: 800 18px/1.2 var(--display); margin: 8px 0 0; }
 
 /* lesson */
@@ -287,11 +259,9 @@ details.task:not([open]) > summary::after { content: "+"; }
 details.task .taskbody { display: grid; gap: 14px; margin-top: 14px; }
 details.task .taskbody > * { min-width: 0; }
 @media (max-width: 400px) { .stepbtn .ic { display: none; } }
-.bb-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .keys { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .krow { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .krow::-webkit-scrollbar { display: none; }
-.keys button { min-width: 40px; height: 40px; }
 .keys .knext { color: var(--accent); font-family: var(--body); }
 .keys .krun { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-family: var(--body); }
 .keys .kname { color: var(--accent); font-size: 14px; }
@@ -340,13 +310,13 @@ details.task .taskbody > * { min-width: 0; }
 .foot .btn { min-height: 48px; white-space: nowrap; }
 .foot .grow { flex: 1 1 auto; }
 .foot .primary { min-width: 46%; }
+@media (max-width: 560px) { .foot .btn.quiet { padding-inline: 8px; } }  /* "Practise again" fits beside the other two on a phone */
 
 /*INCLUDE page/notebook.css*/
 body.no-ai [data-explain] { display: none; }
 .items { display: grid; gap: 12px; }
 .item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
 .item.got { opacity: .75; }
-.item-top { display: flex; flex-wrap: wrap; gap: 6px 10px; justify-content: space-between; font: 12px var(--mono); color: var(--muted); }
 .status { font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--hint); }
 .status.got { color: var(--pass); }
 .quote { margin: 0; padding-left: 12px; border-left: 2px solid var(--accent); font-weight: 500; overflow-wrap: anywhere; }
@@ -390,8 +360,6 @@ details.quiet > summary::-webkit-details-marker { display: none; }
 details.quiet > summary::after { content: "+"; margin-left: 8px; font-family: var(--mono); }
 details.quiet[open] > summary::after { content: "−"; }
 details.quiet > div { display: grid; gap: 14px; padding-top: 8px; }
-.stages { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 8px; }
-.stages li::marker { font: 600 13px var(--mono); color: var(--accent); }
 
 /* home, today first: one lesson, what is due, then the path as six phases */
 .next .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
@@ -400,23 +368,9 @@ details.quiet > div { display: grid; gap: 14px; padding-top: 8px; }
 .next .steps i.now { background: var(--accent); }
 .next .btn.primary { min-height: 48px; }
 @media (max-width: 560px) { .next .btn { justify-self: stretch; } }
-.rowcard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-height: 64px; cursor: pointer; }
-.rowcard .mt { display: grid; min-width: 0; }
-.rowcard .mt b { font-weight: 600; }
-.rowcard .mt span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rowcard .chev { color: var(--muted); }
-.rowcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (hover: hover) { .rowcard:hover { border-color: var(--muted); } }
 .pathhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 8px; }
 .pathhead h2 { font: 800 18px/1.2 var(--display); margin: 0; }
 .pathhead span { font: 13px var(--mono); color: var(--muted); white-space: nowrap; }
-.submod { scroll-margin-top: calc(var(--toph, 61px) + 12px); }
-.subhead { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px; border-top: 1px solid var(--line); background: var(--bg); font-size: 14px; color: var(--muted); }
-.subhead .ic { width: 16px; height: 16px; }
-.subhead b { flex: 1 1 auto; min-width: 0; font-weight: 600; color: var(--fg); }
-.subhead .n { font: 13px var(--mono); font-variant-numeric: tabular-nums; }
-.subhead .n.full { color: var(--pass); }
-.submod .rows { border-top: 0; }
 .intro { font-size: 19px; line-height: 1.5; margin: 0; max-width: 60ch; color: var(--fg); }
 figure.ex { margin: 0; display: grid; gap: 6px; }
 figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
@@ -514,12 +468,12 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 :root[data-theme="dusk"] .top { background: rgba(7,7,15,.55); backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%); }
 :root[data-theme="dusk"] .foot { background: rgba(19,18,28,.68); backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%); }
 :root[data-theme="dusk"] .keyidea { background: rgba(93,85,103,.22); border: 1px solid rgba(220,221,235,.10); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-:root[data-theme="dusk"] .btn.primary { background: linear-gradient(180deg, #7aa2ff, #5b8cff); border-color: #5b8cff; box-shadow: 0 0 22px rgba(91,140,255,.35), inset 0 1px 0 rgba(255,255,255,.35); }
+:root[data-theme="dusk"] .btn.primary { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 81%, white), var(--accent)); border-color: var(--accent); box-shadow: 0 0 22px rgba(91,140,255,.35), inset 0 1px 0 rgba(255,255,255,.35); }
 :root[data-theme="dusk"] .drawer { background: var(--surface); }
 :root[data-theme="dusk"] .btn.primary.soft { opacity: .55; box-shadow: none; }
 /* the platform pieces use the surface tokens, so every look (Dusk's glass and glow included)
    comes from tokens.css; only the ember's motion is Dusk's own */
-:root[data-theme="dusk"]:not([data-motion="off"]) .qf-chain li.now .qf-dot { animation: dd-ember 2.6s ease-in-out infinite; }
+:root[data-theme="dusk"] .qf-chain li.now .qf-dot { animation: dd-ember 2.6s ease-in-out infinite; }
 .saynote.nudge { color: var(--hint); font-weight: 600; }
 /* scrolling something into view leaves room for the sticky header and the bottom bar */
 #paneText .verdict, #sayIn { scroll-margin-bottom: 100px; }
@@ -615,13 +569,8 @@ p.checked .ic { width: 15px; height: 15px; }
 .checked ul { margin: 4px 0 0; padding-left: 22px; display: grid; gap: 4px; }
 .checked a { color: var(--accent); }
 .checked.old { background: var(--hint-bg); color: var(--hint); border-radius: 10px; padding: 4px 10px; }
-.bookhead { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
-.bookhead > svg { width: 34px; height: 34px; flex: none; }
-.bookhead .mt { flex: 1; min-width: 0; display: grid; }
-.bookhead .mt b { font-weight: 600; }
-.bookhead .mt span { font-size: 13px; color: var(--muted); }
-.bookhead .n, .scene .n { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.bookhead .n.full, .scene .n.full { color: var(--pass); }
+.scene .n { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.scene .n.full { color: var(--pass); }
 .scene { display: grid; gap: 8px; }
 .scenehead { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 4px 2px; cursor: pointer; text-align: left; color: var(--fg); min-height: 44px; }
 .scenehead b { flex: 1; font-weight: 600; font-size: 14px; }
@@ -700,7 +649,6 @@ p.checked .ic { width: 15px; height: 15px; }
 .mcheck input { width: 20px; height: 20px; accent-color: var(--accent); }
 .mpicks { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; font-weight: 600; font-size: 14px; }
 .mpicks .seg, .mine > .seg { justify-self: start; }
-.mstatement { font-size: 17px; }
 .mmap { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 0 18px 20px; }
 .mcell { min-height: 72px; border: 1.5px dashed var(--line); border-radius: 10px; padding: 8px 10px; display: grid; align-content: start; gap: 2px; color: var(--muted); }
 .mcell b { font: 600 13px var(--body); }
@@ -784,15 +732,23 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .newstk .stk { pointer-events: none; }
 .newstk h2 { font: 800 22px/1.2 var(--display); margin: 0; }
 .newstk p { margin: 0; color: var(--muted); max-width: 46ch; }
-:root:not([data-motion="off"]) .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } }
+.newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } }
 /*INCLUDE page/packs.css*/
+/* On touch, every control is at least 44px tall (DESIGN_SYSTEM.md rule 4), whatever its size with a mouse. Last, so it wins. */
+@media (pointer: coarse) {
+  .stepbtn, .seg button, .pk-tab, .duechip, .mini, .tour-dot, .chipbtn, details.task > summary, .checked summary { min-height: 44px; }
+  .stepbtn { align-content: start; }
+  .tour-dot { min-width: 44px; }
+  .keys button { min-width: 44px; height: 44px; }
+}
 /* ---------- motion: effects for real moments ----------
    The script plays these through fxScreen (a moment over the whole screen), fxOn (inside one
    element, clipped to it) and fxMove (the element itself, by the Web Animations API). The promises,
    which tests/test_content.py checks: an effect never takes a tap; nothing in here loops or blurs;
-   each effect's root ends with fx-end, when the script removes it; nothing plays with reduced motion,
-   with Motion off in the Notebook, or in a hidden tab. Colours and timings are tokens (tokens.css).
-   When each one plays: docs/PAGE.md, "Motion". */
+   each effect's root ends with fx-end, when the script removes it; nothing plays in a hidden tab.
+   Motion is for everyone (the owner's choice, 2026-10-15): there is no Motion switch and no
+   reduced-motion stilling. Colours and timings are tokens (tokens.css). When each one plays:
+   docs/PAGE.md, "Motion". */
 /* fx: start */
 .fx-layer { position: fixed; inset: 0; z-index: 55; pointer-events: none; overflow: hidden; contain: strict; }
 .fx { --x: 50vw; --y: 45vh; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit; overflow: hidden; contain: layout paint; animation: fx-end var(--dur-tap) var(--hold, var(--dur-moment)) ease-in forwards; }
@@ -907,11 +863,11 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 @keyframes fx-flip-out { to { transform: rotateY(-90deg); } }
 @keyframes fx-flip-in { from { transform: rotateY(90deg); } }
 @keyframes fx-ignite { 50% { transform: scale(1.9); background: var(--fx-core); box-shadow: 0 0 10px var(--fx-glow); } }
-:root:not([data-motion="off"]) .promo .was { visibility: visible; animation: fx-flip-out var(--dur-step) 300ms var(--ease-in) both; }
-  :root:not([data-motion="off"]) .promo .now { animation: fx-flip-in var(--dur-step) 700ms var(--ease-out) both; }
-  :root:not([data-motion="off"]) .week i.lit { animation: fx-ignite 500ms var(--ease-pop) both; }
-  :root:not([data-motion="off"]) .week i.burst { position: relative; }
-  :root:not([data-motion="off"]) .week i.burst::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--fx-core); animation: fx-wave var(--dur-moment) 300ms ease-out both; }
+.promo .was { visibility: visible; animation: fx-flip-out var(--dur-step) 300ms var(--ease-in) both; }
+.promo .now { animation: fx-flip-in var(--dur-step) 700ms var(--ease-out) both; }
+.week i.lit { animation: fx-ignite 500ms var(--ease-pop) both; }
+.week i.burst { position: relative; }
+.week i.burst::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--fx-core); animation: fx-wave var(--dur-moment) 300ms ease-out both; }
 /* fx: end */
 </style>
 <script>/* the look, applied before the page draws: Dusk unless Light was chosen on this device */
@@ -1028,27 +984,27 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
 <aside class="drawer" id="drawer" hidden aria-label="Notebook" role="dialog" aria-modal="true">
   <div class="drawer-head"><h2>Notebook</h2><button class="btn quiet" id="nbClose">Close</button></div>
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-nb="gloss" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
-    <button class="tab" role="tab" data-nb="results" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg>Results</button>
-    <button class="tab" role="tab" data-nb="speed" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>Speed</button>
-    <button class="tab" role="tab" data-nb="settings" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-wrench"/></svg>Settings</button>
+    <button class="tab" role="tab" id="nbtab-gloss" data-nb="gloss" aria-selected="true" aria-controls="nb-gloss" tabindex="0"><svg class="ic" aria-hidden="true"><use href="#i-dict"/></svg>Glossary</button>
+    <button class="tab" role="tab" id="nbtab-results" data-nb="results" aria-selected="false" aria-controls="nb-results" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg>Results</button>
+    <button class="tab" role="tab" id="nbtab-speed" data-nb="speed" aria-selected="false" aria-controls="nb-speed" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>Speed</button>
+    <button class="tab" role="tab" id="nbtab-settings" data-nb="settings" aria-selected="false" aria-controls="nb-settings" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="#i-wrench"/></svg>Settings</button>
   </div>
   <div class="drawer-body">
-    <div id="nb-gloss" class="pane">
+    <div id="nb-gloss" class="pane" role="tabpanel" aria-labelledby="nbtab-gloss">
       <input class="search" id="glossSearch" type="search" placeholder="Search terms" aria-label="Search the glossary">
       <div id="glossBody"></div>
     </div>
-    <div id="nb-results" class="pane" hidden>
+    <div id="nb-results" class="pane" role="tabpanel" aria-labelledby="nbtab-results" hidden>
       <div id="resultsBody"></div>
     </div>
-    <div id="nb-speed" class="pane" hidden>
+    <div id="nb-speed" class="pane" role="tabpanel" aria-labelledby="nbtab-speed" hidden>
       <h3>How fast is it?</h3>
       <p class="lede">Some code takes about the same time however much data you give it. Some slows down a little as data grows, and some slows down enormously. Drag the slider to give it more data. Times assume Python does about 10 million simple steps a second.</p>
       <div class="slider"><label for="nRange" class="meta">How many items</label><input type="range" id="nRange" min="1" max="9" step="0.1" value="3"><output id="nOut" for="nRange" class="meta"></output></div>
       <div class="growth" id="growth"></div>
       <p class="lede">The trick for working it out: count how many times the innermost line can run. One loop over the list grows with the list. A loop inside a loop checks every pair, which is what gets slow.</p>
     </div>
-    <div id="nb-settings" class="pane" hidden>
+    <div id="nb-settings" class="pane" role="tabpanel" aria-labelledby="nbtab-settings" hidden>
       <div class="setting"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
       <div class="setting"><span id="focusLabel">What to practise</span><div class="seg" role="group" aria-labelledby="focusLabel"><button data-focus-pick="ai" aria-pressed="true">AI</button><button data-focus-pick="platform" aria-pressed="false">Platform</button><button data-focus-pick="both" aria-pressed="false">Both</button></div></div>
     </div>
@@ -1067,6 +1023,10 @@ const byId = Object.fromEntries(BANK.map(p => [p.id, p]));
 const PATH_MODS = new Set(D.lifecycle.flatMap(st => st.modules));
 const ORDER = D.modules.filter(m => PATH_MODS.has(m.id)).flatMap(m => m.lessons);
 const ALL_LESSONS = D.modules.flatMap(m => m.lessons);
+// An id read back from the page (a data- attribute) is text anyone could change, so it is looked up
+// in the app's own list, and only the list's value is used: never the page's text in HTML or as a key.
+const knownLesson = raw => ALL_LESSONS.find(id => id === raw) || null;
+const knownProblem = raw => (BANK.find(p => p.id === raw) || {}).id || null;
 const modOf = {}; D.modules.forEach(m => m.lessons.forEach(id => { modOf[id] = m; }));
 const TRACKS = (D.tracks || []).map(tr => Object.assign({ key: "track-" + tr.id }, tr, {
   lessons: tr.modules.flatMap(mid => D.modules.find(m => m.id === mid).lessons) }));
@@ -1077,9 +1037,8 @@ const STEPS = ["Learn", "Check", "Build", "Explain"];
 // A lesson whose Build step opens on practice questions calls it Practice: nothing gets built.
 const stepNames = id => byId[id] && byId[id].practice ? ["Learn", "Check", "Practice", "Explain"] : STEPS;
 const STEP_ICON = ["book", "help", "code", "quote"];
-const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", mlops: "tag", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "databricks-ai": "sparkle", classics: "trophy" };
-const STAGE_ICON = ["target", "compass", "wrench", "clipcheck", "rocket", "activity"];
-const ic = (n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const MOD_ICON = { "use-case": "bulb", foundations: "chart", experiments: "flask", "llm-apps": "chat", rag: "search", agents: "bot", "agent-teams": "puzzle", pricing: "briefcase", evals: "listcheck", models: "scale", tracing: "waterfall", llmops: "gauge", shipping: "rocket", production: "wrench", security: "alert", reliability: "activity", "platform-repos": "listcheck", "azure-databricks": "cloud", terraform: "code", platform: "wrench", spacelift: "clipcheck", troubleshooting: "bug", workspace: "layers", access: "key", "databricks-ai": "sparkle", classics: "trophy" };
+const ic =(n, cls) => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const tile = (n, cls) => `<span class="tile${cls ? " " + cls : ""}">${ic(n)}</span>`;
 function ring(done, total) {
   const c = 2 * Math.PI * 9, f = total ? done / total : 0;
@@ -1089,11 +1048,15 @@ const setLabel = (b, text) => { const sp = b.querySelector("span"); if (sp) sp.t
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
-const md = s => inline(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
-const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const md = s => inline(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");  // shortest match, so bold may hold an *italic* word
+// A day as YYYY-MM-DD in the device's own time zone: the one date format progress, the streak and the results use.
+const dayKey = x => x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
+const today = () => dayKey(new Date());
+// Storage on this device, with the error swallowed (a private window or a locked-down browser may refuse it).
+// Reads and writes go through here, except: the pre-paint look in the head script; loadLocal/saveLocal,
+// which the beginner course (docs/course) shows as written; and page/study-list.js, which a test runs alone.
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} }, remove(k) { try { localStorage.removeItem(k); } catch {} } };
 // The look: Dusk by default, Light if chosen; the choice is kept on this device.
-const LOOKS = ["dusk", "light"];
 function applyLook(look) {
   document.documentElement.setAttribute("data-theme", look);
   document.querySelectorAll("[data-theme-pick]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themePick === look)));
@@ -1104,7 +1067,7 @@ document.querySelectorAll("[data-theme-pick]").forEach((b) => b.addEventListener
 // Every effect goes through fxScreen, fxOn or fxMove, so they all keep the same promises: an effect
 // never takes a tap (it ignores the pointer) and never changes the lesson; it removes itself when its
 // root's fx-end animation ends, or after FX_LIMIT if that never comes; only one full-screen moment
-// plays at a time; and nothing plays with reduced motion, Motion off, or the tab hidden. Any error in
+// plays at a time; and nothing plays in a hidden tab. Any error in
 // an effect is swallowed, so a broken effect can never break the step it decorates.
 // Looks: the "fx" rules in the style sheet. When each plays: docs/PAGE.md, "Motion".
 const FX_LIMIT = 4000;
@@ -1202,7 +1165,7 @@ function pretty(v, pad) {
 }
 function paramNames(p) {
   const m = (p.starter || p.solution || "").match(new RegExp("def\\s+" + p.fn + "\\s*\\(([^)]*)\\)"));
-  return m ? m[1].split(",").map(x => x.split(/[:=]/)[0].replace("*", "").trim()).filter(Boolean) : [];
+  return m ? m[1].split(",").map(x => x.split(/[:=]/)[0].trim().replace(/^\*+/, "")).filter(Boolean) : [];
 }
 function exampleText(p, c) {
   const names = paramNames(p);
@@ -1282,9 +1245,8 @@ let fxNewDay = false;  // the next renderTop lights today's dot
 function markDay() { const t = today(); if (!progress.days.includes(t)) { progress.days.push(t); progress.days = progress.days.slice(-400); fxNewDay = true; } }
 function streak() {
   const days = new Set(progress.days); let n = 0; const d = new Date();
-  const key = x => x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
-  if (!days.has(key(d))) d.setDate(d.getDate() - 1);
-  while (days.has(key(d))) { n++; d.setDate(d.getDate() - 1); }
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  while (days.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); }
   return n;
 }
 const lp = id => progress.lessons[id] || (progress.lessons[id] = { step: 0, checked: null, done: false });
@@ -1296,7 +1258,6 @@ function nextLesson() {
   if (progress.current && !trackOf[progress.current] && progress.lessons[progress.current] && !progress.lessons[progress.current].done) return progress.current;
   return ORDER.find(id => !(progress.lessons[id] && progress.lessons[id].done)) || null;
 }
-const dayKey = x => x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
 function weekDays() {  // Monday to Sunday of this week
   const d = new Date(); d.setDate(d.getDate() - (d.getDay() + 6) % 7);
   return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(d.getDate() + i); return dayKey(x); });
@@ -1320,7 +1281,7 @@ function markFor(id, isLesson) {
   }
   return progress.solved[id] ? '<span class="mark done" aria-label="Solved">✓</span>' : '<span class="mark" aria-label="Not solved"></span>';
 }
-let openMods = null, lifeSel = null, viewPh = null;
+let openMods = null, viewPh = null;
 // The six phases of the path, in order; every module belongs to exactly one (test_content checks it).
 const PHASES = D.lifecycle.map((st, i) => Object.assign({ key: "p" + i }, st));
 const phaseOf = Object.fromEntries([...PHASES, ...TRACKS].flatMap(ph => ph.modules.map(mid => [mid, ph])));
@@ -1420,7 +1381,7 @@ function trackFx() {
 }
 // Changing phase on Home: the tab slides over, the room's words follow it in, and the room opens
 // (rings from its title shape, a spark along its top edge). Once per visit the path fills up to
-// where you are first. All of it goes through the fx engine, so Motion off stills it.
+// where you are first. All of it goes through the fx engine. Motion is for everyone (the owner's choice, 2026-10-15).
 let pathOpened = false;
 function phaseFx(from) {
   const box = document.querySelector(".phasebox"); if (!box) return;
@@ -1549,7 +1510,6 @@ function aiOffNote() {
 }
 // What you practise: the AI path, the platform track, or both taking turns. Asked once on the first
 // visit, changeable in the Notebook; saved with progress so every device agrees. Today follows it.
-const FOCUS_NAMES = { ai: "AI engineering", platform: "The platform", both: "Both" };
 function todayLesson() {
   const ai = nextLesson(), pl = TRACKS.length ? trackNext(TRACKS[0]) : null, f = progress.focus;
   if (f === "platform") return pl || ai;
@@ -1579,7 +1539,7 @@ function renderHome() {
   } else if (tid && fresh) {  // first visit, choice made: say how it works, once; it goes away as soon as a lesson starts
     hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">${esc(about)}, one short lesson a day. Nothing to install: everything runs right in this page.</p>`;
     card = `<section class="next"><span class="eyebrow">How it works</span>
-      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with one question, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> Hints come before answers, and the Notebook keeps what you save and brings it back for review.</li></ol>
+      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with a few questions, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> A clue comes before the answer. Select any sentence to save it to your Study list, which brings it back for review.</li></ol>
       <button class="btn primary" data-open="${tid}">Start the first lesson</button></section>`;
   } else if (tid) {
     const m = modOf[tid], ph = phaseOf[m.id], i = m.lessons.indexOf(tid), s = lp(tid), go = started(tid);
@@ -1665,7 +1625,7 @@ function ideaCorner(idea) {
 }
 function challengePrompt(idea) {
   const line = `Help ${idea.who || "[who]"} ${idea.what || "[do what]"} so ${idea.measure || "[a number] improves"}.`;
-  return [`You are a sceptical reviewer helping someone vet an AI use case before any money is spent. ${LEARNER}`, "",
+  return [`You are a sceptical reviewer helping someone vet an AI use case before any money is spent. ${LEARNER()}`, "",
     `The problem: ${idea.problem || "not written"}`, `The use case: ${line}`,
     `They plan to ${idea.mode === "automate" ? "automate the task" : idea.mode === "augment" ? "augment people: AI drafts, a person decides" : "(not chosen yet) automate or augment"}.`,
     `They rate it ${idea.value || "?"} value and ${idea.doable || "?"} to do.`, "",
@@ -2002,7 +1962,7 @@ function miniShape(id) {
 function lessonHit(id, terms, note) {
   const st = isDoneL(id) ? "done" : started(id) ? "in progress" : id === nextFor(id) ? "next" : "";
   const fn = (byId[id] || {}).fn;
-  return `<button class="shit" data-open="${id}" data-tip="${id}">${miniShape(id)}<span class="mt"><b>${hiTerms(LESSONS[id].title, terms)}</b><span><span class="no">${lessonNo(id)}</span> ${esc(phaseOf[modOf[id].id].name)} · ${esc(modOf[id].title)}${fn ? ` · <code>${hiTerms(fn, terms)}()</code>` : ""}${st ? ` · <em class="${st === "done" ? "ok" : ""}">${st}</em>` : ""}${note ? ` · ${note}` : ""}</span></span></button>`;
+  return `<button class="shit" data-open="${id}" data-tip="${id}">${miniShape(id)}<span class="mt"><b>${hiTerms(LESSONS[id].title, terms)}</b><span><span class="no">${lessonNo(id)}</span> ${esc(phaseOf[modOf[id].id].name)} · ${esc(modOf[id].title)}${fn && terms.some(t => fn.toLowerCase().includes(t)) ? ` · <code>${hiTerms(fn, terms)}()</code>` : ""}${st ? ` · <em class="${st === "done" ? "ok" : ""}">${st}</em>` : ""}${note ? ` · ${note}` : ""}</span></span></button>`;
 }
 // Where a word is taught: lessons whose Learn text uses it, in path order.
 const taughtIn = term => { const t = term.toLowerCase(); return SEARCH_INDEX.filter(x => x.body.includes(t) || x.title.includes(t)).map(x => x.id); };
@@ -2012,7 +1972,7 @@ function renderSearch() {
     const recent = ALL_LESSONS.filter(id => started(id) && !isDoneL(id)).slice(0, 3);
     const nid = todayLesson();
     const phases = PHASES.map((ph, i) => `<button class="chipbtn sphase" data-phase-go="${i}">${badgeSvg(i, 7, phState(i))}${esc(ph.name)}</button>`).join("")
-      + TRACKS.map(tr => `<button class="chipbtn sphase strack" data-track-go="${tr.id}"><svg viewBox="-12 -12 24 24" width="18" height="18" aria-hidden="true">${phShape(TRACK_SHAPE, 8)}</svg>${esc(tr.name)}</button>`).join("");
+      + TRACKS.map(tr => `<button class="chipbtn sphase strack" data-track-go="${tr.id}"><svg viewBox="-12 -12 24 24" width="18" height="18" aria-hidden="true">${phShape(TRACK_SHAPE, 8).replace('class="sh"', 'class="sh pl"')}</svg>${esc(tr.name)}</button>`).join("");
     const tries = (progress.focus === "platform" ? ["runbook", "Spacelift", "Unity Catalog", "state lock", "service principal"]
       : progress.focus === "both" ? ["leakage", "Spacelift", "Unity Catalog", "canary", "runbook"]
       : ["leakage", "retries", "Unity Catalog", "canary", "split_by_key"]).map(t => `<button class="chipbtn" data-try="${esc(t)}">${esc(t)}</button>`).join("");
@@ -2033,7 +1993,7 @@ function renderSearch() {
     return `<div class="sword"><button class="swordhead" data-word="${esc(g.term)}" aria-expanded="${open}"><b>${hiTerms(g.term, terms)}</b><span>${hiTerms(g.def, terms)}</span><em>${open ? "Hide where it’s taught" : "Where it’s taught"}</em></button>
       ${open ? (where.length ? `<div class="slist">${where.slice(0, 6).map(id => lessonHit(id, [])).join("")}</div>` : `<p class="meta">No lesson uses this word by name yet.</p>`) : ""}</div>`;
   }).join("");
-  const noteHtml = notes.map(it => `<button class="shit snote" data-snote="${it.id}"><span class="mt"><b>${hiTerms(it.text.length > 140 ? it.text.slice(0, 138) + "…" : it.text, terms)}</b><span>${it.status === "got" ? "Got it" : "To learn"}${it.note ? " · " + hiTerms(it.note, terms) : ""}</span></span></button>`).join("");
+  const noteHtml = notes.map(it => `<button class="shit snote" data-snote="${esc(it.id)}"><span class="mt"><b>${hiTerms(it.text.length > 140 ? it.text.slice(0, 138) + "…" : it.text, terms)}</b><span>${it.status === "got" ? "Got it" : "To learn"}${it.note ? " · " + hiTerms(it.note, terms) : ""}</span></span></button>`).join("");
   const total = words.length + scored.length + notes.length;
   out.innerHTML = total ? `
     ${words.length ? `<section class="sgrp"><h3>Words · ${words.length}</h3>${wordHtml}</section>` : ""}
@@ -2067,6 +2027,7 @@ function show(view) {
 }
 function goHome() { cur = null; viewPh = null; show("home"); renderHome(); }
 function openLesson(id, step) {
+  if (!id) return;
   for (const k in WALK) delete WALK[k];
   const s = lp(id);
   cur = { kind: "lesson", id, p: byId[id], from: null };
@@ -2095,6 +2056,7 @@ function openLesson(id, step) {
   setStep(step != null ? step : (s.done ? 0 : s.step));
 }
 function openPractice(pid, from) {
+  if (!pid) return;
   cur = { kind: "practice", id: pid, p: byId[pid], from };
   $("lessonWhere").textContent = "Practice · Classic interview problems"; $("lessonWhere").title = "";
   $("lessonTitle").textContent = byId[pid].title;
@@ -2155,7 +2117,7 @@ function renderFoot() {
     mid.hidden = false; mid.textContent = "Run again"; mid.dataset.act = "run";
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
   } else if (i === 0) label = "Next: Check";
-  else if (i === 1) { if (!checkDone(cur.id)) { label = "Skip to Build"; quiet = true; } else label = "Next: Build"; }
+  else if (i === 1) { if (!checkDone(cur.id)) { label = "Skip to " + stepNames(cur.id)[2]; quiet = true; } else label = "Next: " + stepNames(cur.id)[2]; }
   else if (i === 2) label = "Next: Explain";
   else { const o = orderFor(cur.id); label = o.indexOf(cur.id) < o.length - 1 ? "Finish lesson" : trackOf[cur.id] ? "Finish the track" : "Finish the path"; icon = "check"; }
   next.innerHTML = icon === "play" || icon === "bulb" ? ic(icon) + `<span>${label}</span>` : `<span>${label}</span>` + ic(icon);
@@ -2171,8 +2133,7 @@ function goPrev() {
 }
 function goNext() {
   if (cur.kind === "done") { goHome(); return; }
-  if (building() && flowing() && !qfFinished()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
-  if (building() && flowing()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
+  if (building() && flowing()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }  // Next (or Skip) past the practice questions
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
   if (cur.step < 3) { setStep(cur.step + 1); return; }
@@ -2440,19 +2401,19 @@ function loadProblem(p) {
   $("taskByhand").hidden = !Ln.byhand;
   $("taskByhand").innerHTML = Ln.byhand ? "<b>The example, step by step.</b>" + byhandSteps(Ln.byhand) : "";
   $("help").open = false; $("morePanel").hidden = true; $("moreBtn").setAttribute("aria-expanded", "false");
-  let draft = null; try { draft = localStorage.getItem(draftKey(p.id)); } catch {}
+  const draft = store.get(draftKey(p.id));
   $("code").value = draft || startCode(p);
   renderMode(); renderKeys(p);
   $("feed").innerHTML = "";
   $("result").className = "result idle codeonly";
   $("result").textContent = "Write your code, then run the tests. Python runs right here in the page.";
   $("stdout").hidden = true; $("solConfirm").hidden = true; $("guideConfirm").hidden = true;
-  updateHintBtn(); markSaved();
+  updateHintBtn();
 }
 function setResult(kind, head, body) { $("result").className = "result codeonly " + kind; $("result").innerHTML = `<div class="score">${esc(head)}</div><div>${esc(body)}</div>`; }
 async function runTests() {
   if (busy) return;
-  if (typeof Sk === "undefined") { setResult("fail", "The Python engine didn't load", "Check your connection and reload the page."); return; }
+  if (typeof Sk === "undefined") { setResult("fail", "The Python engine could not be loaded on this network", "Reload to try again."); return; }
   if (taskFolds) { $("taskBox").open = false; taskFolds = false; }  // read once; it folds so the code and results sit together
   busy = true; for (const b of runBtns()) { b.disabled = true; b.dataset.was = b.textContent.trim(); setLabel(b, "Running…"); }
   const code = $("code").value, p = cur.p;
@@ -2564,7 +2525,10 @@ function tutorContext(p) {
   const where = p.realworld ? "\nWhere this shows up at work: " + p.realworld : "";
   return `Problem: ${p.title}\n${p.prompt}\nFunction: ${p.fn}\nGoal: ${p.target}${where}\n\nStudent's current code:\n\`\`\`python\n${$("code").value}\n\`\`\`\n\nLatest test run: ${lastRun ? lastRun.summary : "they have not run the tests yet."}`;
 }
-const LEARNER = "The student is new to programming and is learning AI engineering (ML, LLM apps, RAG, agents, evals, LLMOps, MLOps, AgentOps); at work they maintain Azure Databricks infrastructure in Terraform with Spacelift. They find math hard: use plain, everyday words, no math notation, no formulas and no Big-O (like O(n)). A small example with real values beats an abstract rule.";
+// Who the tutor is talking to: the sentence the server uses (src/drill/server/tutor.py), plus the
+// Platform track only when this learner practises it. Nothing about anyone's job.
+const LEARNER = () => "The learner is new to coding and is learning AI engineering: Databricks for agents, LangGraph, LangChain and MLflow, plus Terraform for Azure Databricks. Explain any jargon in plain words. Never use Big-O notation; say things like \"it walks through the list once\" instead. Short sentences. Encouraging but not gushing. Wrap identifiers in backticks."
+  + (progress.focus === "platform" || progress.focus === "both" ? " They are also practising the Platform track (Azure Databricks managed with Terraform)." : "");
 async function hint() {
   if (hintBusy) return;
   const p = cur.p;
@@ -2573,7 +2537,7 @@ async function hint() {
   const note = addNote("hint", `Hint ${level} of 3`, "Thinking…"); fxOn(note, "unveil", FX.unveil);
   const para = note.querySelector("p");
   hintBusy = true; $("hintBtn").disabled = true;
-  const prompt = `You are a patient tutor. ${LEARNER} Give hint ${level} of 3 for this exercise.
+  const prompt = `You are a patient tutor. ${LEARNER()} Give hint ${level} of 3 for this exercise.
 
 Rules:
 - Never write code, pseudocode, or a line that could be pasted in. Prose only.
@@ -2601,7 +2565,7 @@ async function review() {
   const note = addNote("review", "Review", "Thinking…");
   const para = note.querySelector("p");
   reviewBusy = true;
-  const prompt = `You are a friendly reviewer. ${LEARNER} Their solution passes all tests. Review it briefly.
+  const prompt = `You are a friendly reviewer. ${LEARNER()} Their solution passes all tests. Review it briefly.
 
 Cover, in under 140 words of prose:
 1. How fast it is, in plain words (for example "it walks through the list once" or "it checks every pair, which gets slow on long lists").
@@ -2635,7 +2599,7 @@ function renderMode() {
 }
 function applyStart() {
   ed.value = startCode(cur.p); $("guideConfirm").hidden = true;
-  try { localStorage.removeItem(draftKey(cur.p.id)); } catch {}
+  store.remove(draftKey(cur.p.id));
   if (startMode === "scaffold" && !coarse.matches) { ed.focus(); nextBlank(true); }
 }
 function setMode(mode) {
@@ -2709,7 +2673,7 @@ function editLines(fn) {
   ed.dispatchEvent(new Event("input"));
 }
 ed.addEventListener("input", () => {
-  try { localStorage.setItem(draftKey(cur.p.id), ed.value); } catch {}
+  store.set(draftKey(cur.p.id), ed.value);
   if (!curtainDone) { curtainDone = true; fxScreen("curtain", FX.curtain, $("editor"), true); }
 });
 // Keyword colour, the ___ blanks and line numbers sit in a <pre> under the textarea, whose text is
@@ -2734,15 +2698,15 @@ function hlPython(src) {
     if (com) out += `<span class="c">${esc(com)}</span>`;
     else if (str) out += `<span class="s">${esc(str)}</span>`;
     else if (blank) out += `<span class="b">___</span>`;
-    else if (num) out += `<span class="n">${num}</span>`;
+    else if (num) out += `<span class="n">${esc(num)}</span>`;
     else if (word) {
       const lineStart = src.lastIndexOf("\n", m.index - 1) + 1;
-      if (afterDef) { out += `<span class="f">${word}</span>`; afterDef = false; }
-      else if (PY_KW.has(word)) { out += `<span class="k">${word}</span>`; afterDef = word === "def"; }
-      else if (PY_BI.has(word) || SQL_FN.has(word)) out += `<span class="bi">${word}</span>`;
-      else if (SQL_KW.has(word)) out += `<span class="k">${word}</span>`;
-      else if (HCL_KW.has(word) && !src.slice(lineStart, m.index).trim() && /^\s*["{]/.test(src.slice(re.lastIndex))) out += `<span class="k">${word}</span>`;
-      else out += word;
+      if (afterDef) { out += `<span class="f">${esc(word)}</span>`; afterDef = false; }
+      else if (PY_KW.has(word)) { out += `<span class="k">${esc(word)}</span>`; afterDef = word === "def"; }
+      else if (PY_BI.has(word) || SQL_FN.has(word)) out += `<span class="bi">${esc(word)}</span>`;
+      else if (SQL_KW.has(word)) out += `<span class="k">${esc(word)}</span>`;
+      else if (HCL_KW.has(word) && !src.slice(lineStart, m.index).trim() && /^\s*["{]/.test(src.slice(re.lastIndex))) out += `<span class="k">${esc(word)}</span>`;
+      else out += esc(word);
     } else out += esc(t);
   }
   return out;
@@ -2759,17 +2723,17 @@ function hlInfra(src) {
   return src.split("\n").map(line => {
     const m = line.match(/^(\s*)(-\/\+|<=|[+~-])(?=\s)/);
     let lead = "", rest = line;
-    if (m) { const kind = m[2] === "+" ? "a" : m[2] === "-" ? "d" : m[2] === "~" ? "u" : "r"; lead = m[1] + `<span class="pm ${kind}">${esc(m[2])}</span>`; rest = line.slice(m[0].length); }
+    if (m) { const kind = m[2] === "+" ? "a" : m[2] === "-" ? "d" : m[2] === "~" ? "u" : "r"; lead = esc(m[1]) + `<span class="pm ${kind}">${esc(m[2])}</span>`; rest = line.slice(m[0].length); }
     const lock = !m && rest.match(/^(\s*)([A-Z][A-Za-z ]{1,20}):(\s.*|)$/);
-    if (lock) return `${lock[1]}<span class="key">${esc(lock[2])}</span>:${esc(lock[3])}`;
+    if (lock) return `${esc(lock[1])}<span class="key">${esc(lock[2])}</span>:${esc(lock[3])}`;
     let out = "", r = /(#[^\n]*)|("(?:[^"\\]|\\.)*")(\s*:)?|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][\w-]*)(?=\s*=(?!=))|([A-Za-z_][\w-]*)|([\s\S])/g, t;
     while ((t = r.exec(rest))) {
       const [all, com, str, colon, num, key, word] = t;
       if (com) out += `<span class="${/forces replacement/.test(com) ? "fr" : "c"}">${esc(com)}</span>`;
       else if (str) out += colon ? `<span class="key">${esc(str)}</span>${esc(colon)}` : `<span class="s">${esc(str)}</span>`;
-      else if (num) out += `<span class="n">${num}</span>`;
+      else if (num) out += `<span class="n">${esc(num)}</span>`;
       else if (key) out += `<span class="key">${esc(key)}</span>`;
-      else if (word) out += HCL_KW.has(word) && !out.replace(/<[^>]+>/g, "").trim() ? `<span class="k">${word}</span>` : /^(true|false|null)$/.test(word) ? `<span class="n">${word}</span>` : esc(word);
+      else if (word) out += HCL_KW.has(word) && !rest.slice(0, t.index).trim() ? `<span class="k">${esc(word)}</span>` : /^(true|false|null)$/.test(word) ? `<span class="n">${esc(word)}</span>` : esc(word);
       else out += esc(all);
     }
     return lead + out;
@@ -2784,8 +2748,8 @@ function colourCode() {
     if (pre.dataset.hl === String(t.length)) return;
     pre.innerHTML = looksInfra(t) ? hlInfra(t) : hlPython(t); pre.classList.add("syn"); pre.dataset.hl = String(t.length);
     // columns lined up with spaces, and YAML or Terraform (where indenting is meaning), lose it when
-    // wrapped: those boxes scroll sideways instead
-    pre.classList.toggle("aligned", t.split("\n").filter(l => /\S {2,}\S/.test(l)).length >= 2 || looksInfra(t) || looksYaml(t));
+    // wrapped: those boxes scroll sideways instead. Practice evidence (.qf-ev) always wraps: it is read, not copied.
+    pre.classList.toggle("aligned", !pre.closest(".qf-ev") && (t.split("\n").filter(l => /\S {2,}\S/.test(l)).length >= 2 || looksInfra(t) || looksYaml(t)));
   });
   document.querySelectorAll(".dtwrap, pre.code.aligned").forEach(w => w.classList.toggle("more", w.scrollWidth > w.clientWidth + 2 && w.scrollLeft + w.clientWidth < w.scrollWidth - 4));
 }
@@ -2856,15 +2820,13 @@ for (const t of document.querySelectorAll("[data-nb]")) t.onclick = () => openNo
 $("nRange").oninput = renderGrowth;
 $("glossSearch").oninput = renderGlossary;
 $("studySearch").oninput = e => { studyQuery = e.target.value; renderStudy(); };
-$("items").addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("gotsec")) gotOpen = e.target.open; }, true);
 document.addEventListener("click", async e => {
   const t = e.target;
-  if (t.closest("[data-review]")) { startReview(null, t.closest("[data-review]")); return; }
   if (t.closest("[data-share-pic]")) { sharePicture(t.closest("[data-share-pic]")); return; }
   if (t.closest("[data-share-text]")) { shareTextNow(t.closest("[data-share-text]")); return; }
   if (t.closest("[data-res-save]")) { savePicture(t.closest("[data-res-save]")); return; }
-  const ro = t.closest("[data-result-open]"); if (ro) { openResult(ro.dataset.resultOpen); return; }
-  const rsh = t.closest("[data-result-share]"); if (rsh) { sharePicture(rsh, rsh.dataset.resultShare); return; }
+  const ro = t.closest("[data-result-open]"); if (ro) { openResult(knownLesson(ro.dataset.resultOpen)); return; }
+  const rsh = t.closest("[data-result-share]"); if (rsh) { const id = knownLesson(rsh.dataset.resultShare); if (id) sharePicture(rsh, id); return; }
   if (t.closest("[data-mine-review]")) { draftReview(); return; }
   if (t.closest("[data-mine-challenge]")) { challengeIdea(); return; }
   if (t.closest("[data-skill-run]")) { runSkill(); return; }
@@ -2913,12 +2875,10 @@ document.addEventListener("click", async e => {
   }
   if (t.closest("[data-aihide]")) { try { sessionStorage.setItem("drill-aihide", "1"); } catch {} t.closest(".aioff").remove(); return; }
   const tg = t.closest("[data-toggle]"); if (tg) { const id = tg.dataset.toggle, open = !openMods.has(id); if (open) openMods.add(id); else openMods.delete(id); tg.setAttribute("aria-expanded", String(open)); tg.nextElementSibling.hidden = !open; return; }
-  const stg = t.closest("[data-stage]"); if (stg) { lifeSel = +stg.dataset.stage; const y = window.scrollY; renderHome(); window.scrollTo(0, y); return; }
-  const jump = t.closest("[data-jump]"); if (jump) { openMods.add(jump.dataset.jump); if (phaseOf[jump.dataset.jump]) openMods.add(phaseOf[jump.dataset.jump].key); renderHome(); const el = $("m-" + jump.dataset.jump); if (el) el.scrollIntoView({ behavior: motionOn() ? "smooth" : "auto", block: "start" }); return; }
-  const open = t.closest("[data-open]"); if (open) { openLesson(open.dataset.open); return; }
-  const bld = t.closest("[data-build]"); if (bld) { openLesson(bld.dataset.build, 2); return; }
-  const pr = t.closest("[data-practice]"); if (pr) { openPractice(pr.dataset.practice, null); return; }
-  const cl = t.closest("[data-classic]"); if (cl) { openPractice(cl.dataset.classic, cur.id); return; }
+  const open = t.closest("[data-open]"); if (open) { openLesson(knownLesson(open.dataset.open)); return; }
+  const bld = t.closest("[data-build]"); if (bld) { openLesson(knownLesson(bld.dataset.build), 2); return; }
+  const pr = t.closest("[data-practice]"); if (pr) { openPractice(knownProblem(pr.dataset.practice), null); return; }
+  const cl = t.closest("[data-classic]"); if (cl) { openPractice(knownProblem(cl.dataset.classic), cur.id); return; }
   const aq = t.closest("[data-askq]"); if (aq) { const c = askChipList[+aq.dataset.askq]; if (!aq.disabled && c) askLesson(c.q, c.how); return; }
   if (t.closest("[data-askfill]")) { const box = $("askInput"); if (box && !box.disabled) { box.value = ASK_FILL; box.focus(); box.setSelectionRange(ASK_FILL.length, ASK_FILL.length); } return; }
   const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
@@ -2939,8 +2899,7 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-chk-help]")) { checkHelp(); return; }
   if (t.closest("[data-chk-next]")) { checkNext(); return; }
   if (t.closest("[data-retry]")) { lp(cur.id).checks = { at: 0, solved: [], tried: [], help: [], marks: [] }; saveProgress(); setStep(1, true); const q = $("paneText").querySelector(".q"); if (q) q.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); return; }
-  const tag = t.closest("[data-tag], [data-explain]");
-  if (tag && tag.matches("[data-tag]")) { const ex = studyItems.find(i => i.text === tag.dataset.text); if (ex) removeItem(ex.id); else { addItem(tag.dataset.text, tag.dataset.src, "text"); toast("Saved to your study list"); } return; }
+  const tag = t.closest("[data-explain]");
   if (tag) { const it = await addItem(tag.dataset.text, tag.dataset.src, "text"); openPocket(it.id); if (!it.explanation) explainItem(it.id); }
 });
 $("items").addEventListener("click", e => {
@@ -3014,6 +2973,10 @@ goHome();
 (async () => {
   const backend = window.claude ? await claudeBackend() : await localBackend();
   if (!backend) return;
+  // Served by drill-server, the app may stop itself after a quiet spell, and reading or coding in
+  // the browser makes no request. While a lesson is open and the tab is showing, a tiny request
+  // every 10 minutes says someone is still here.
+  if (backend.local) setInterval(() => { if (cur && !document.hidden) fetch("/api/me", { cache: "no-store" }).catch(() => {}); }, 600000);
   const { s, db, user } = backend;
   sample = s; sampleOff = !sample; document.body.classList.toggle("no-ai", !sample); updateHintBtn(); renderStudy();
   aiOff = !!(backend.local && !s); if (aiOff && !cur) renderHome();

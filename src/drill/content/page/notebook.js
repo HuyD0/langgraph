@@ -1,16 +1,37 @@
 // ---------- notebook ----------
 let nbTab = "gloss";
 function openNotebook(tab) {
+  const opening = $("drawer").hidden;
   if (tab) nbTab = tab;
   if (!$("nb-" + nbTab)) nbTab = "gloss";  // the study list lives in the pocket now
-  for (const t of document.querySelectorAll("[data-nb]")) t.setAttribute("aria-selected", String(t.dataset.nb === nbTab));
-  for (const t of document.querySelectorAll("[data-nb]")) $("nb-" + t.dataset.nb).hidden = t.dataset.nb !== nbTab;
+  for (const t of document.querySelectorAll("[data-nb]")) {  // one tab in the Tab order; the arrows reach the others
+    const on = t.dataset.nb === nbTab;
+    t.setAttribute("aria-selected", String(on)); t.setAttribute("tabindex", on ? "0" : "-1"); $("nb-" + t.dataset.nb).hidden = !on;
+  }
   renderResults();
   $("drawer").hidden = false; $("scrim").hidden = false;
   document.body.style.overflow = "hidden";
-  $("nbClose").focus();
+  if (opening) $("nbClose").focus();
 }
 function closeNotebook() { $("drawer").hidden = true; $("scrim").hidden = true; document.body.style.overflow = ""; $("nbBtn").focus(); }
+// The drawer is a dialog: while it is open, Tab and Shift+Tab wrap inside it, so a keyboard user
+// never lands on the page behind the scrim. Its tabs take arrows, Home and End, like the phase tabs.
+document.addEventListener("keydown", e => {
+  if ($("drawer").hidden) return;
+  const tab = e.target.closest && e.target.closest("[data-nb]");
+  if (tab) {
+    const tabs = [...document.querySelectorAll("[data-nb]")], i = tabs.indexOf(tab);
+    const j = { ArrowLeft: i - 1, ArrowRight: i + 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (j != null && j >= 0 && j < tabs.length) { e.preventDefault(); tabs[j].click(); tabs[j].focus(); return; }
+  }
+  if (e.key !== "Tab") return;
+  const can = [...$("drawer").querySelectorAll("button, input, select, textarea, a[href], [tabindex]")].filter(el => !el.disabled && el.tabIndex >= 0 && !el.closest("[hidden]"));
+  if (!can.length) return;
+  const first = can[0], last = can[can.length - 1], at = document.activeElement, inside = $("drawer").contains(at);
+  if (!inside) { e.preventDefault(); first.focus(); }
+  else if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+});
 const GROWTH = [
   ["The same work at any size", n => 1, "Looking up a key in a dict"],
   ["Halving each step", n => Math.max(1, Math.log2(n)), "Finding the first failing version by checking the middle"],
@@ -45,8 +66,7 @@ function renderGlossary() {
   const html = D.glossary.map(([group, terms]) => {
     const hits = terms.filter(([t, d]) => !q || t.toLowerCase().includes(q) || d.toLowerCase().includes(q));
     if (!hits.length) return "";
-    return `<h3>${esc(group)}</h3><dl class="gloss">${hits.map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${md(d)}</dd>${tagButtons(t, "Glossary")}</div>`).join("")}</dl>`;
+    return `<h3>${esc(group)}</h3><dl class="gloss">${hits.map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${md(d)}</dd></div>`).join("")}</dl>`;
   }).join("");
   $("glossBody").innerHTML = html || `<p class="empty">No term matches "${esc(q)}". Try a shorter word.</p>`;
-  markSaved();
 }

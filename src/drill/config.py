@@ -14,6 +14,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping
+from urllib.parse import urlsplit
 
 # Repository root, i.e. the directory holding pyproject.toml.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -173,8 +174,16 @@ class LLMSettings:
         )
 
         # Infer the surface from the URL shape, then let an explicit override win.
+        # Checked on the parsed host, not with `in`: a hostname that only appears in
+        # the path or query must not pick the client (CodeQL
+        # py/incomplete-url-substring-sanitization).
         inferred = "azure_openai"
-        if endpoint and ("services.ai.azure.com" in endpoint or endpoint.rstrip("/").endswith("/models")):
+        host = (urlsplit(endpoint).hostname or "") if endpoint else ""
+        if endpoint and (
+            host == "services.ai.azure.com"
+            or host.endswith(".services.ai.azure.com")
+            or endpoint.rstrip("/").endswith("/models")
+        ):
             inferred = "azure_inference"
         flavour = getenv("AZURE_FOUNDRY_FLAVOUR", inferred).strip().lower()
         if flavour not in {"azure_openai", "azure_inference"}:

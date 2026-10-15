@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-from drill.content import modules, review
+from drill.content import review
 from drill.content.build import build_data
 from drill.review_checks import flags_gap, missing_pillars, review_checks
 from drill.review_eval import CASES, score
@@ -125,7 +125,6 @@ def test_the_pilot_outcome_and_ratings_reach_the_snapshot():
 
 
 def test_the_repo_skill_is_valid_and_its_cost_script_runs():
-    import json as _json
     import subprocess
     import sys
 

@@ -13,6 +13,7 @@ lesson(MODULE, 'missing_tags',
     learn=[
         'Azure tags drive **cost allocation** and **Azure Policy**. Missing tags mean spend nobody can attribute.',
         'The azurerm provider (Terraform\'s plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.',
+        'Only Azure resources carry Azure tags: anything from the azurerm provider, including `azurerm_databricks_workspace`. Resources from the databricks provider (`databricks_catalog`, `databricks_cluster` and so on) live inside Databricks and have no Azure tags field, so a tag check skips them.',
     ],
     example=example('A shared tag map', """locals {
   tags = { env = var.env, owner = "platform", cost-center = "1234" }
@@ -227,7 +228,7 @@ lesson(MODULE, 'grants_to_revoke',
 }"""),
     check=question(
         'Someone gave `analysts` SELECT in the UI. The code uses `databricks_grants` without analysts. What happens at the next apply?',
-        ['Nothing', "The analysts' grant is removed", 'The apply fails'],
+        ['Nothing: the UI grant stays', "The analysts' grant is removed", 'The apply fails on the clash'],
         answer=1,
         why='Authoritative means the code is the whole list.',
     ),
@@ -549,9 +550,9 @@ lesson(MODULE, 'allocate_capacity',
     sources=[source('Provisioned throughput billing and cost management', 'https://learn.microsoft.com/azure/foundry/openai/concepts/provisioned-throughput-billing'), source('Manage traffic with spillover for provisioned deployments', 'https://learn.microsoft.com/azure/foundry/openai/how-to/spillover-traffic-management')],
     learn=[
         'When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide **who comes first** before it happens, by putting each app in a **tier**: a group with its own rule, served most important first.',
-        'Once its traffic is steady, a **critical** app moves to **provisioned throughput**: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.',
+        'Azure AI Foundry (Microsoft\'s service that hosts the OpenAI models) is where these apps get their capacity. Once its traffic is steady, a **critical** app moves to **provisioned throughput**: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on **spillover**: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.',
         '**Graduated** apps proved themselves in the **sandbox**, the shared experiment space. They get standard pay-as-you-go deployments, sized from the busiest minute they measured. The sandbox gets a deployment of its own.',
-        "Critical apps come first and get what they ask for. Each graduated app gets what it asked for, capped at an even share of the rest, so one big app can't crowd out the others. This simple plan does not share out the spare a second time: it all drops to the sandbox, even if a graduated app is still short.",
+        'Critical apps come first. Graduated apps split what is left evenly, and none takes more than it asked for. Whatever is still spare goes to the sandbox.',
     ],
     example=example('Sharing 60,000 tokens a minute', """help-center (critical) wants 25,000
   gets 25,000, so 35,000 left
@@ -561,11 +562,11 @@ lesson(MODULE, 'allocate_capacity',
   so 12,500 left
 the sandbox apps split the 12,500"""),
     check=question(
-        'Two graduated apps share 60,000 tokens a minute. One wants 10,000 and the other wants 50,000. Each gets its even share or what it wants, whichever is less. In this plan, where do the spare 20,000 go?',
+        'Two graduated apps split 60,000 a minute: one wants 10,000, the other 50,000. In this plan, who gets the 20,000 the first app didn\'t need?',
         [
-            'Down to the sandbox tier',
-            'To the app that wanted 50,000',
-            'Nowhere, they stay unused',
+            'The sandbox tier',
+            'The app that wanted 50,000',
+            'Nobody: they stay unused',
         ],
         answer=0,
         why="The even share of 30,000 is a cap, and this plan does not share the spare a second time. So the 20,000 the smaller app didn't need drop to the next tier, the sandbox.",
@@ -576,7 +577,7 @@ the sandbox apps split the 12,500"""),
         say='"I serve the most important tier first. [[Critical|Sandbox|Graduated::The apps that must never go short.]] apps take what they need, graduated apps split the rest [[evenly|by size|randomly::So no big app crowds out the others.]], and the [[sandbox|top tier|first tier::Where people try things out.]] gets whatever\'s left."',
         classic=None,
     ),
-    stack=stack('Terraform: a PTU deployment with spillover (azapi provider)', """# The critical app's reserved capacity,
+    stack=stack('Terraform: a PTU deployment with spillover (the azapi provider, for Azure settings azurerm doesn\'t cover yet)', """# The critical app's reserved capacity,
 # added once its traffic is steady.
 # Requests it can't take spill over to
 # a pay-as-you-go (Global Standard)
@@ -614,7 +615,7 @@ resource "azapi_resource" "help_center" {
 Hand it out in three rounds. Skip a round with no apps.
 
 - Critical apps, in list order: each gets what it wants, or all that is left if less.
-- Graduated apps: divide what is left by how many there are, with `//`. Each gets that share, or what it wants if less.
+- Graduated apps: divide what is left by how many there are, with `//`. Each gets that share, or what it wants if less. The spare is not shared out a second time: it goes on to the sandbox.
 - Sandbox apps: divide what is still left the same way. Each gets the full share, even if it wanted less.
 
 Return a dict of every app's name and its tokens per minute, even when it is 0 (`{}` if no apps).""",
@@ -810,12 +811,12 @@ team-b:  120,000, more than the space"""),
     check=question(
         'The space limit is 100,000 tokens a minute, and the per-user limit is also 100,000. What goes wrong?',
         [
-            'Nothing, because users can never go past the space limit anyway',
-            'Every request fails, because the two limits are the same number',
-            'One busy user can use the whole space, so everyone else gets 429s',
+            'Nothing: the space limit still caps everyone',
+            'Every request fails: the limits are equal',
+            'One busy user can take the whole space',
         ],
         answer=2,
-        why='A per-user limit only helps when it is a slice of the whole. Set it well below the space limit, so one script can never block everyone.',
+        why='A per-user limit only helps when it is a slice of the whole. At 100,000 one looping script can use everything and everyone else gets 429s. Set it well below the space limit.',
     ),
     angle=angle(
         pattern='Three rules, three fixed messages',

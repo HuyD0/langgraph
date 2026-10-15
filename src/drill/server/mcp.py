@@ -8,7 +8,14 @@ local model.
     uv run drill-mcp                      # stdio, for an app's MCP config
     claude mcp add drill -- /opt/homebrew/bin/uv run --directory /path/to/repo drill-mcp
 
-The web server also serves these tools over HTTP at http://localhost:8787/mcp.
+The web server also serves these tools over HTTP at http://localhost:8787/mcp, but only on
+your own machine: in a Databricks App every learner is a different person and this door
+cannot yet tell them apart (every tool reads and writes one progress document), so the web
+server does not mount it there (see ``api.create_app``).
+
+The lesson cards never carry the Check answers or the Explain sentence: the agent marks a pick
+with ``check_answer`` and gets the sentence from ``mark_done``, so a learner asking "which one
+is right?" is helped, not told.
 
 Every tool call is traced in MLflow (see ``observe``): a TOOL span with the arguments and
 the result, and for hints, reviews and questions the model call inside it.
@@ -23,6 +30,7 @@ import time
 
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
+from starlette.applications import Starlette
 
 from drill.server import activity, study, tutor
 from drill.server.observe import traced_tool
@@ -80,7 +88,8 @@ def _progress() -> dict:
 @server.tool(annotations=READ_ONLY)
 @traced_tool
 def next_drill() -> dict:
-    """The next lesson the learner has not finished: what to read, the check question, the exercise and the interview angle."""
+    """The next lesson the learner has not finished: what to read, the Check questions (without their
+    answers: mark a pick with check_answer), the exercise and the Explain angle."""
     bank = _bank()
     lesson_id = bank.next_lesson(_progress())
     if lesson_id is None:
@@ -93,6 +102,15 @@ def next_drill() -> dict:
 def get_drill(lesson_id: str) -> dict:
     """One lesson by id (see list_lessons), with its exercise, scaffold and sample test case."""
     return _bank().card(lesson_id)
+
+
+@server.tool(annotations=READ_ONLY)
+@traced_tool
+def check_answer(lesson_id: str, question: int = 1, picked: int = 0) -> dict:
+    """Mark the learner's pick on one Check question: question counts from 1 (the card's check, then its
+    more_checks in order); picked is the option's position counting from 0. Returns right or wrong and why.
+    Let the learner choose first: the card leaves the answers out on purpose."""
+    return _bank().check_answer(lesson_id, question, picked)
 
 
 @server.tool(annotations=READ_ONLY)
@@ -123,10 +141,11 @@ def run_tests(lesson_id: str, code: str) -> dict:
     return result
 
 
-@server.tool(annotations=READ_ONLY)
+@server.tool()  # not READ_ONLY: passing code runs it, like run_tests
 @traced_tool
 async def hint(lesson_id: str, code: str = "", level: int = 1) -> str:
-    """A hint from the local model, levels 1 (where to look) to 3 (the approach in words). Never the solution."""
+    """A hint from the local model, levels 1 (where to look) to 3 (the approach in words). Never the solution.
+    Passing code runs it against the exercise's tests first, so the hint can point at the failing case."""
     card = _bank().card(lesson_id)
     failure = None
     if code.strip():
@@ -155,7 +174,10 @@ async def review(lesson_id: str, code: str) -> str:
 @server.tool(annotations=READ_ONLY)
 @traced_tool
 async def ask_tutor(prompt: str, tier: str = "default") -> str:
-    """Ask the local tutor model anything, in the learner's plain-language style. tier: quick, default or complex."""
+    """Ask the local tutor model anything, in the learner's plain-language style. tier: quick or default."""
+    from drill.server.api import PAGE_TIERS  # here, not at the top: api imports this module when it mounts /mcp
+
+    tier = tier if tier in PAGE_TIERS else "default"  # a client can't pick the paid tier, same as the page
     context = {"feature": "ask_tutor", "door": "mcp", "question": prompt}
     answer = await _router().ask(f"{tutor.LEARNER}\n\n{prompt}", tier=tier, context=context)
     return answer.text
@@ -193,7 +215,8 @@ def save_to_study(text: str, note: str = "", source: str = "Claude") -> dict:
 @server.tool()
 @traced_tool
 def mark_done(lesson_id: str) -> dict:
-    """Mark a lesson finished so next_drill moves on. Also counts today towards the streak."""
+    """Mark a lesson finished so next_drill moves on. Also counts today towards the streak, and hands
+    back the Explain sentence (explain.say_it_like_this) now that the lesson is done."""
     bank = _bank()
     if lesson_id not in bank.lessons:
         raise KeyError(f"No lesson called {lesson_id!r}. Try list_lessons().")
@@ -207,7 +230,8 @@ def mark_done(lesson_id: str) -> dict:
     _store().set(PROGRESS_PATH, progress)
     for kind, changed, detail in activity.progress_events(before, progress):
         _store().log(kind, changed, door="mcp", **detail)
-    return {"lesson_id": lesson_id, "done": True, "next": bank.next_lesson(progress)}
+    return {"lesson_id": lesson_id, "done": True, "next": bank.next_lesson(progress),
+            "explain": {"say_it_like_this": bank.explain_sentence(lesson_id)}}
 
 
 # ---------------------------------------------------------------------------
@@ -215,7 +239,7 @@ def mark_done(lesson_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def http_app(port: int):
+def http_app(port: int) -> Starlette:
     """The MCP server as an ASGI app answering at /mcp, for mounting into the web server."""
     from mcp.server.transport_security import TransportSecuritySettings
 

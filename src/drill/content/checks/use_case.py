@@ -7,7 +7,7 @@ CHECKS = {
             "refunds over 50 dollars need a manager. What should they do?",
             ["Write the rule as code", "Train a model on past refunds", "Let an AI agent decide each one"],
             answer=0,
-            clue="Remember the first gate: is there already a rule that always gives the right answer?",
+            clue="Remember the first gate: could plain if-this-then-that logic always give the right answer here?",
             why="If a fixed rule can do the job, write the rule. It costs less than AI and never gets it wrong."),
         ask("An AI tool would sort support emails into five teams. It's easy to build and the data is "
             "ready, but only 20 emails arrive each month. Where does it go on the map?",
@@ -17,7 +17,7 @@ CHECKS = {
             why="Doable but low value lands in incubate: a safe way to learn, not where the big wins are."),
     ],
     "use_case_card": [
-        ask("A card says: \"The AI drafts replies to customer emails.\" Which question does it leave open?",
+        ask("A card says: \"The AI reads each customer email and drafts a reply.\" Which question does it leave open?",
             ["Who checks each reply before it goes out", "What kind of thing the AI writes", "What the AI reads to write it"],
             answer=0,
             clue="The card says what the AI does. Look for the person who acts on its work.",

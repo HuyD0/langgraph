@@ -1,3 +1,8 @@
-This file marks the public copy of the repository. While it is here, tests/test_packs.py checks
-that every lesson under content-packs/ is still a slot and that no pack holds screenshots or
-other files. Delete this file in the approved private copy, where real lessons are written.
+This file marks the shared part of content-packs/ as slots only. It stays in both copies of the
+repository, the public one and the work copy. While it is here, tests/test_packs.py checks that
+every lesson in the shared packs (content-packs/iac-applied/) is still a slot and that no shared
+pack holds screenshots or other files.
+
+Real lessons never go in the shared packs. In the work copy they live in content-packs/internal/,
+a copy of iac-applied/ with the same lesson ids, which the public repository never creates and
+an upstream merge never touches. Do not delete this file there.

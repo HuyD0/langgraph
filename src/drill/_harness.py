@@ -63,8 +63,8 @@ def main() -> None:
     namespace = {"__name__": "__submission__"}
     try:
         exec(compile(source, "<submission>", "exec"), namespace)
-    except BaseException:
-        report["fatal_error"] = traceback.format_exc(limit=6)
+    except (Exception, SystemExit) as exc:  # SystemExit: a learner's sys.exit() is a wrong answer, not a crash
+        report["fatal_error"] = format_error(exc, limit=6)
         emit(report)
         return
 
@@ -98,11 +98,21 @@ def main() -> None:
                 passed = False
                 entry["error"] = f"expected a bool, got {type(actual).__name__}"
             entry["passed"] = passed
-        except BaseException:
-            entry["error"] = traceback.format_exc(limit=4)
+        except (Exception, SystemExit) as exc:
+            entry["error"] = format_error(exc, limit=4)
         report["cases"].append(entry)
 
     emit(report)
+
+
+def format_error(exc: BaseException, limit: int) -> str:
+    """The traceback from the submission's own frames on.
+
+    The outermost frame is this harness, so dropping it (``tb_next``) keeps the server's
+    path to this file out of what the learner reads.
+    """
+    tb = exc.__traceback__
+    return "".join(traceback.format_exception(type(exc), exc, tb.tb_next if tb else None, limit=limit))
 
 
 def limit_output(max_bytes) -> None:
