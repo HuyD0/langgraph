@@ -790,7 +790,6 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .newstk p { margin: 0; color: var(--muted); max-width: 46ch; }
 @media (prefers-reduced-motion: no-preference) { :root:not([data-motion="off"]) .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } } }
 /*INCLUDE page/packs.css*/
-/*INCLUDE page/sorting.css*/
 .themepick { display: flex; align-items: center; gap: 10px; padding: 2px 16px 10px; }
 .prefs { display: flex; flex-wrap: wrap; column-gap: 4px; }
 .themepick > span { min-width: 4.5em; font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -960,7 +959,6 @@ document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on")
   <section class="pane" id="paneText" aria-live="polite"></section>
   <section class="pane" id="paneBuild" hidden>
     <div class="buildbar codeonly"><div class="keys" id="keys" role="toolbar" aria-label="Typing shortcuts"></div></div>
-    <section class="card sortbox" id="sortBox" hidden aria-label="Sort the ideas"></section>
     <section class="card qfbox" id="flowBox" hidden aria-label="Practice questions"></section>
     <div class="modeswap" id="modeSwap" hidden></div>
     <details class="card task codeonly" id="taskBox" open>
@@ -2160,13 +2158,10 @@ function renderFoot() {
   prev.innerHTML = ic("arrowl") + (cur.kind === "practice" && cur.from ? "Back to lesson" : "Back");
   mid.hidden = true; next.hidden = false; delete next.dataset.run;
   let label, icon = "arrowr", quiet = false;
-  if (building() && (sorting() && !sortFinished() || flowing() && !qfFinished())) {
+  if (building() && flowing() && !qfFinished()) {
     label = cur.kind === "lesson" ? "Skip to Explain" : (cur.from ? "Back to lesson" : "Done"); quiet = true;
   } else if (building() && flowing()) {
     mid.hidden = false; mid.textContent = "Practise again"; mid.dataset.act = "repractice";
-    label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
-  } else if (building() && sorting()) {
-    mid.hidden = false; mid.textContent = "Sort again"; mid.dataset.act = "resort";
     label = cur.kind === "lesson" ? "Next: Explain" : (cur.from ? "Back to lesson" : "Done");
   } else if (building() && !solvedNow()) {
     label = "Run tests"; icon = "play"; next.dataset.run = "";
@@ -2191,7 +2186,7 @@ function goPrev() {
 }
 function goNext() {
   if (cur.kind === "done") { goHome(); return; }
-  if (building() && (sorting() && !sortFinished() || flowing() && !qfFinished())) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
+  if (building() && flowing() && !qfFinished()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
   if (building() && flowing()) { if (cur.kind !== "lesson") { goPrev(); return; } setStep(3); return; }
   if (building() && !solvedNow()) { runTests(); return; }
   if (cur.kind !== "lesson") { goPrev(); return; }
@@ -2227,7 +2222,6 @@ function showDone(id, after, fresh) {
   const recap = [
     s.checked === null ? item(false, "You skipped the check.") : item(true, s.checked === ans ? "Got the check right first time." : "Worked through the check."),
     sol && sol.mode === "practice" && p.practice ? item(true, `Answered the practice questions: ${Math.max(0, p.practice.asks.length - (sol.hints || 0))} of ${p.practice.asks.length} right first time.`)
-    : sol && sol.mode === "sort" && p.sort ? item(true, `Sorted the ideas: ${Math.max(0, p.sort.items.length - (sol.hints || 0))} of ${p.sort.items.length} right first time.`)
     : sol ? item(true, `Solved <b>${esc(p.title)}</b>${sol.hints ? ` with ${sol.hints} ${sol.hints === 1 ? "hint" : "hints"}` : " with no hints"}.`)
         : item(false, `Skipped <b>${esc(p.title)}</b>.<button class="linkbtn" data-build="${id}">Try it now</button>`),
     item(true, `Learned the pattern: <b>${esc(L.angle[0])}</b>.`),
@@ -2365,9 +2359,8 @@ function anglePane() {
   const packMore = !x ? "" : `${(x.mistakes || []).length ? `<section class="sec"><h3>Common mistakes</h3><ul class="gl">${x.mistakes.map(m => `<li>${md(m)}</li>`).join("")}</ul></section>` : ""}
     ${(x.steps || []).length ? `<section class="sec"><h3>How to investigate</h3><ol class="gl">${x.steps.map(m => `<li>${md(m)}</li>`).join("")}</ol></section>` : ""}
     ${(x.explain_evidence || []).length ? `<section class="sec"><h3>Evidence</h3>${evidenceHtml(x.explain_evidence, x.evidence)}</section>` : ""}`;
-  const sorted = !!(p.sort && p.sort.explain && sorting());  // the Build step was the sorting board, not code
-  const practised = !!(p.practice && p.practice.explain && flowing());  // ...or practice questions
-  return `<section class="sec"><h3>${sorted ? "How you sorted them" : practised ? "How you worked it out" : x ? "Why it works" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(sorted ? p.sort.explain : practised ? p.practice.explain : text)}</p></section>
+  const practised = !!(p.practice && p.practice.explain && flowing());  // the Build step was practice questions, not code
+  return `<section class="sec"><h3>${practised ? "How you worked it out" : x ? "Why it works" : "How your code did it"}</h3><h2 class="pattern-name">${esc(pattern)}</h2><p>${md(practised ? p.practice.explain : text)}</p></section>
     ${gapsOf(cur.id).length ? clozeHtml(cur.id) + `<details class="card sayback sayown"${said ? " open" : ""}><summary><b>Want to say it your way?</b><span class="meta">Optional. Writing it in your own words helps it stick.</span></summary>
       <textarea id="sayIn" rows="3" maxlength="600" aria-label="Your own sentence" placeholder="${sorted ? "I check … first, then …" : "I used … because …"}">${esc(said)}</textarea><div class="saynote" id="sayNote"></div><div id="sayOurs" hidden></div></details>` : `
     <section class="card sayback"><label for="sayIn"><b>Now say it in your own words</b><span class="meta">One sentence: what you did and why it works. Saying it is what makes it stick.</span></label>
@@ -2404,7 +2397,7 @@ function loadProblem(p) {
   const names = paramNames(p), first = ex.args[0];
   $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
   machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
-  sortLoad(p); qfLoad(p);
+  qfLoad(p);
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
   $("blocksBody").innerHTML = (Ln.concepts || []).map(([n, t, s]) => `<div class="concept"><b>${esc(n)}</b><p>${md(t)}</p>${s ? `<pre class="code">${esc(s)}</pre>` : ""}</div>`).join("");
@@ -2482,7 +2475,6 @@ async function runTests() {
   else $("result").scrollIntoView({ block: "nearest", behavior: smooth });
 }
 
-/*INCLUDE page/sorting.js*/
 
 /*INCLUDE page/practice.js*/
 
@@ -2813,7 +2805,7 @@ $("homeBtn").onclick = goHome;
 $("backPath").onclick = () => { if (cur && cur.kind === "practice" && cur.from) openLesson(cur.from, 3); else goHome(); };
 $("prevBtn").onclick = goPrev;
 $("nextBtn").onclick = goNext;
-$("midBtn").onclick = () => { const a = $("midBtn").dataset.act; if (a === "run") runTests(); else if (a === "resort") sortReset(); else if (a === "repractice") qfReset(); else setStep(3); };
+$("midBtn").onclick = () => { const a = $("midBtn").dataset.act; if (a === "run") runTests(); else if (a === "repractice") qfReset(); else setStep(3); };
 $("hintBtn").onclick = hint;
 for (const b of document.querySelectorAll("[data-mode]")) b.onclick = () => setMode(b.dataset.mode);
 $("guideYes").onclick = applyStart; $("guideNo").onclick = () => { $("guideConfirm").hidden = true; startMode = startMode === "scaffold" ? "blank" : "scaffold"; store.set("drill-start", startMode); renderMode(); };

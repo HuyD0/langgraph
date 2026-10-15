@@ -186,19 +186,23 @@ def test_every_build_it_for_real_card_points_at_a_real_notebook_section():
         assert section in headings, f"{lesson_id}: {notebook} has no section {section!r}"
 
 
-def test_the_use_case_sort_agrees_with_the_python_answer(loaded):
-    """Lesson 1.1's sorting board and its Python exercise must place every idea the same way."""
+def test_the_use_case_questions_agree_with_the_python_answer(loaded):
+    """Lesson 1.1's practice questions and its Python exercise must place every idea the same way."""
+    from drill.content.modules import use_case
+
     ex = next(e["exercise"] for m in loaded for e in m.lessons if e["id"] == "use_case_score")
     namespace: dict = {}
     exec(ex["solution"], namespace)  # noqa: S102 - our own reference solution
-    rows = [{"id": i["name"], "name": i["name"], "value": i["value"], "doable": i["doable"], "gate": i["gate"]}
-            for i in ex["sort"]["items"]]
+    rows = [{"id": i["name"], "name": i["name"], "value": i["value"], "doable": i["doable"], "gate": i["gate"]} for i in use_case.IDEAS]
     lists = namespace[ex["fn"]](rows)
     code_bin = {r["id"]: name for name, got in zip(ex["machine"]["bins"], lists) for r in got}
-    for item in ex["sort"]["items"]:
-        assert code_bin[item["name"]] == ("shelve" if item["bin"] == "gate" else item["bin"]), item["name"]
-        assert (item["bin"] == "gate") == bool(item["gate"]), item["name"]
-    assert {i["bin"] for i in ex["sort"]["items"]} == {b["id"] for b in ex["sort"]["bins"]}, "every bin gets at least one idea"
+    ids = [w for w, _ in use_case.WHERE]
+    for idea, a in zip(use_case.IDEAS, ex["practice"]["asks"]):
+        assert code_bin[idea["name"]] == ("shelve" if idea["bin"] == "gate" else idea["bin"]), idea["name"]
+        assert (idea["bin"] == "gate") == bool(idea["gate"]), idea["name"]
+        assert ids[a["answer"]] == idea["bin"] and idea["name"] in a["evidence"]["who"], idea["name"]
+        assert a["wrong"][a["answer"]] is None and all(a["wrong"][k] for k in range(len(ids)) if k != a["answer"]), idea["name"]
+    assert {i["bin"] for i in use_case.IDEAS} == set(ids), "every place gets at least one idea"
 
 
 def test_motion_effects_keep_their_promises():
@@ -254,19 +258,14 @@ def test_phase_tabs_are_one_piece_with_their_room():
     assert 'class="phasebox' in page and "data-showing=" in page, "the box must not carry data-phase, or any tap inside it would switch phase"
 
 
-def test_a_sorting_lesson_explains_itself_to_someone_who_sorted(loaded):
-    """Explain must not tell a learner who sorted cards about the Python lists they never wrote."""
+def test_a_practice_lesson_explains_itself_to_someone_who_practised(loaded):
+    """Explain must not tell a learner who answered questions about the Python they never wrote."""
     for mod in loaded:
         for entry in mod.lessons:
-            sort = entry["exercise"]["sort"]
-            if not sort:
+            pr = entry["exercise"]["practice"]
+            if not pr or not pr["explain"]:
                 continue
-            assert sort["explain"], f"{entry['id']}: a sort_task needs explain text"
-            assert "Python" not in sort["explain"] and "elif" not in sort["explain"], entry["id"]
-            assert sort["explain"] in entry["angle"]["text"], f"{entry['id']}: explain should be the lesson's own words"
-            labels = {b["id"]: f'{b["label"]} {b["who"]}'.lower() for b in sort["bins"]}
-            if "gate" in labels and "shelve" in labels:  # the lesson says a failed gate is shelved; the board must agree
-                assert "gate" in labels["shelve"] and "shelved" in labels["gate"], entry["id"]
+            assert "Python" not in pr["explain"] and "elif" not in pr["explain"], entry["id"]
 
 
 def test_every_look_is_readable():

@@ -1,8 +1,68 @@
 """Use case and fit: pick an AI use case worth doing, write it down, and decide whether it is fit for purpose."""
 
-from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, sort_task
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, machine, module, practice, question
 
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
+
+
+# Lesson 1.1's six ideas, one practice question each. ``bin`` is where it lands; ``value``,
+# ``doable`` and ``gate`` are the facts the Python exercise sorts by (a test checks they agree).
+WHERE = [
+    ('gate', 'Stopped at a gate, so shelved'),
+    ('accelerate', 'Accelerate: worth a lot and doable now, so pilot it'),
+    ('research', 'Research: worth a lot, but not doable yet'),
+    ('incubate', 'Incubate: doable, but small, so learn on it'),
+    ('shelve', 'Shelve: small and hard to do'),
+]
+MAP = {'accelerate': ('high', 'high'), 'research': ('high', 'low'), 'incubate': ('low', 'high'), 'shelve': ('low', 'low')}
+IDEAS = [
+    {'name': 'Rejecting job applicants', 'say': 'Reads CVs and sends rejections on its own. Nobody looks before they go out.',
+     'bin': 'gate', 'why': 'A wrong rejection harms a real person, and nobody checks. That fails the harm gate, however much time it saves.',
+     'clue': 'Who sees a rejection before it goes out, and what happens to a person if it is wrong?',
+     'value': 'high', 'doable': 'high', 'gate': 'harm, nobody checks'},
+    {'name': 'Customer email replies', 'say': 'Support answers 3,000 similar emails a month. Past replies are rated, and an agent checks every draft before it is sent.',
+     'bin': 'accelerate', 'why': 'Lots of repeated work, rated past replies to test on, and a person checks each draft. Valuable and doable: pilot it.',
+     'clue': 'No gate stops it: a person checks every draft. Now ask how much 3,000 emails a month is worth, and whether you could start.',
+     'value': 'high', 'doable': 'high', 'gate': ''},
+    {'name': 'Naming scanned files', 'say': "Suggests names for scanned files in one team's drive. Easy to try, and saves a few minutes a week.",
+     'bin': 'incubate', 'why': 'Doable, but small. A safe first project to learn on, not one to bet a budget on.',
+     'clue': 'It is easy to try. How much do a few minutes a week add up to?',
+     'value': 'low', 'doable': 'high', 'gate': ''},
+    {'name': 'Spotting fraud in expenses', 'say': 'Would save auditors weeks. Past claims were checked, but the records sit in three old systems, and audits would have to change how they work.',
+     'bin': 'research', 'why': 'Valuable, but not doable yet: the data has to be pulled together and the team has to agree to work differently. Fix that first, then look again.',
+     'clue': 'Weeks of auditors\' time is a lot. Could the team start tomorrow, with the records where they are?',
+     'value': 'high', 'doable': 'low', 'gate': ''},
+    {'name': 'Busy meeting rooms', 'say': 'Guesses which meeting rooms will be busy next year. Few people asked for it, and bookings live in three systems.',
+     'bin': 'shelve', 'why': 'Small value and hard to do. Shelve it and spend the effort elsewhere.',
+     'clue': 'How many people asked for it, and how easy is the data to get at?',
+     'value': 'low', 'doable': 'low', 'gate': ''},
+    {'name': 'Currency on invoices', 'say': "Converts invoice amounts into dollars using today's exchange rate.",
+     'bin': 'gate', 'why': 'Amount times rate is a fixed rule. Write the rule: it is cheaper than AI and never wrong.',
+     'clue': 'Could you write this as one simple sum?',
+     'value': 'low', 'doable': 'high', 'gate': 'a rule does it'},
+]
+
+
+def _wrong(idea: dict, pick: str) -> str | None:
+    """One plain sentence for a wrong place, worked out from the idea's facts."""
+    if pick == idea['bin']:
+        return None
+    if idea['gate']:
+        return 'Check the gates first: one of them stops this idea before value matters.'
+    if pick == 'gate':
+        return 'No gate stops this one: a rule can\'t do it, there is something to test on, and nobody is harmed unchecked.'
+    value, doable = MAP[idea['bin']]
+    if MAP[pick][0] != value:
+        return 'Look again at how much it is worth.'
+    return 'Look again at whether you could do it now.'
+
+
+def _place(k: int, idea: dict) -> dict:
+    ids = [w for w, _ in WHERE]
+    return ask('Where does this idea land?', [label for _, label in WHERE], answer=ids.index(idea['bin']),
+               clue=idea['clue'], why=idea['why'], wrong=[_wrong(idea, w) for w in ids],
+               evidence=evidence('claim', who=f"Idea {k + 1} of {len(IDEAS)} · {idea['name']}", text=idea['say']))
+
 
 lesson(MODULE, 'use_case_score',
     title='Is this a good AI use case?',
@@ -158,36 +218,10 @@ for n in [1, 2, 3]:
                 'Adding value, ease and risk into one total hides the trade-off. Keep value and doable as two axes, and treat harm as a gate.',
             ],
         ],
-        sort=sort_task(
+        practice=practice(
             explain='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. The order matters. The gates come first, because a valuable idea that does harm unchecked is still shelved. Then two separate questions, value and doable, pick one of four corners: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It is like sorting post into four trays by two questions, after binning the junk.',
-            intro="Six ideas came in. Check the gates first, then how valuable and how doable each one is. Tap where it goes, or drag it there.",
-            bins=[
-                ('research', 'Research', 'valuable, not doable yet'),
-                ('accelerate', 'Accelerate', 'valuable and doable: pilot it'),
-                ('shelve', 'Shelve', 'low value and not doable, or stopped at a gate'),
-                ('incubate', 'Incubate', 'doable but small: learn on it'),
-                ('gate', 'Stopped at a gate', 'shelved: a rule does it, nothing to test on, or harm nobody checks'),
-            ],
-            items=[
-                {'name': 'Rejecting job applicants', 'say': 'Reads CVs and sends rejections on its own. Nobody looks before they go out.',
-                 'bin': 'gate', 'why': 'A wrong rejection harms a real person, and nobody checks. That fails the harm gate, however much time it saves.',
-                 'value': 'high', 'doable': 'high', 'gate': 'harm, nobody checks'},
-                {'name': 'Customer email replies', 'say': 'Support answers 3,000 similar emails a month. Past replies are rated, and an agent checks every draft before it is sent.',
-                 'bin': 'accelerate', 'why': 'Lots of repeated work, rated past replies to test on, and a person checks each draft. Valuable and doable: pilot it.',
-                 'value': 'high', 'doable': 'high', 'gate': ''},
-                {'name': 'Naming scanned files', 'say': "Suggests names for scanned files in one team's drive. Easy to try, and saves a few minutes a week.",
-                 'bin': 'incubate', 'why': 'Doable, but small. A safe first project to learn on, not one to bet a budget on.',
-                 'value': 'low', 'doable': 'high', 'gate': ''},
-                {'name': 'Spotting fraud in expenses', 'say': 'Would save auditors weeks. Past claims were checked, but the records sit in three old systems, and audits would have to change how they work.',
-                 'bin': 'research', 'why': 'Valuable, but not doable yet: the data has to be pulled together and the team has to agree to work differently. Fix that first, then look again.',
-                 'value': 'high', 'doable': 'low', 'gate': ''},
-                {'name': 'Busy meeting rooms', 'say': 'Guesses which meeting rooms will be busy next year. Few people asked for it, and bookings live in three systems.',
-                 'bin': 'shelve', 'why': 'Small value and hard to do. Shelve it and spend the effort elsewhere.',
-                 'value': 'low', 'doable': 'low', 'gate': ''},
-                {'name': 'Currency on invoices', 'say': "Converts invoice amounts into dollars using today's exchange rate.",
-                 'bin': 'gate', 'why': 'Amount times rate is a fixed rule. Write the rule: it is cheaper than AI and never wrong.',
-                 'value': 'low', 'doable': 'high', 'gate': 'a rule does it'},
-            ],
+            intro='Six ideas came in. For each one, check the gates first, then how much it is worth and whether you could do it now.',
+            asks=[_place(k, idea) for k, idea in enumerate(IDEAS)],
         ),
         machine=machine(bins=['research', 'accelerate', 'shelve', 'incubate'], who=['high value, hard to do yet', 'high value, doable: pilot it', 'low value, or failed a gate', 'doable but small: learn on it'], label_field='id'),
     ),
