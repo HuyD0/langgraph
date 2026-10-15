@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 164 lessons in 25 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 164 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 168 lessons in 25 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 168 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -83,7 +83,7 @@ The split has to be honest. If the same customer, document or day appears in bot
 
 - **Check:** A model scores 97% in testing and 70% in production. Rows from the same users were in both training and test. What's the likely cause? Right answer: Leakage: it was tested on people it had already seen. Why: Seeing the same users in training made the test easy. Splitting by user would have given a more honest, lower score.
 - **Exercise:** Split Without Leaking, writing `split_by_key`. Approach: Turn the test values into a set, then one pass that sends each row to train or to test.
-- **Explain:** the pattern is Check each row against a set. Why this pattern: The big idea: every row from a test user goes to test, so no user ends up on both sides and the score stays honest. Your code does it by asking one question per row: is this row's user one of the test users? Keeping the test users in a set makes that question instant, like finding a word through a book's index. A plain list is read from the start every time, like checking a guest list name by name: fine for 2 names, slow for 10,000. What to say: "I split the data by user, so nobody shows up in both training and test. I keep the test users in a set, so checking each row is instant."
+- **Explain:** the pattern is Check each row against a set. Why this pattern: The big idea: every row from a test user goes to test, so no user ends up on both sides and the score stays honest. Your code does it by asking one question per row: is this row's user one of the test users? Keeping the test users in a set makes that question instant, like finding a word through a book's index. A plain list is read from the start every time, like checking a guest list name by name: fine for 2 names, slow for 10,000. What to say: "I split the data by user, so nobody shows up in both training and test. Otherwise the model is tested on people it has already seen."
 - **Spot the gotcha:** "Don't test on what you trained on". If the same example is in both your training data and your test data, scores look great and mean nothing. This is called leakage. Remove duplicates first, and split by user or document, not by row. The learner sees this risky code and picks the rule it breaks:
 
   ```
@@ -1534,7 +1534,7 @@ Keep them in a secret store (a locked place for secrets, like a Databricks secre
 
 - **Check:** You find an API token in an old notebook's output. What should you do first? Right answer: Rotate the token (swap it for a new one), then remove it. Why: Assume it's been copied. Rotating makes the leaked copy useless.
 - **Exercise:** Keep Secrets Out of Logs, writing `scrub_secrets`. Approach: Recursion: a function that cleans one dict and calls itself on any dict inside it.
-- **Explain:** the pattern is Hide secrets, even in nested settings. Why this pattern: The big idea: secrets often leak through logs, so you hide them before anything is logged. Your code builds a new dict, so the original settings are left alone. For each setting it checks whether the lowercase name contains any word from `WORDS`. If so, the value becomes "[HIDDEN]". If the value is itself a dict, the function calls itself on that inner dict. This is called recursion. It is like opening a box, finding smaller boxes inside, and cleaning each one the same way. What to say: "Before I log settings, I hide any value whose name looks secret, even in nested settings. I build a new dict, so the original stays untouched."
+- **Explain:** the pattern is Hide secrets, even in nested settings. Why this pattern: The big idea: secrets often leak through logs, so you hide them before anything is logged. Your code builds a new dict, so the original settings are left alone. For each setting it checks whether the lowercase name contains any word from `WORDS`. If so, the value becomes "[HIDDEN]". If the value is itself a dict, the function calls itself on that inner dict. This is called recursion. It is like opening a box, finding smaller boxes inside, and cleaning each one the same way. What to say: "Before I log settings, I hide any value whose name looks secret, even deep inside. The app keeps its original settings, untouched."
 - **Spot the gotcha:** "Never put API keys in code". Keys pasted into a notebook end up in git history. Load them from the environment or a .env file that git ignores. The learner sees this risky code and picks the rule it breaks:
 
   ```
@@ -1579,7 +1579,7 @@ Normalise (clean) both sides before comparing, or formatting differences ("Paris
 
 - **Check:** Your model answers "Paris." and the expected answer is "paris". Your eval marks it wrong. What's the problem? Right answer: The comparison isn't normalised. Why: Clean both strings the same way before comparing.
 - **Exercise:** Score Model Answers, writing `exact_match`. Approach: Clean both sides the same way before comparing. Guard against an empty list before dividing.
-- **Explain:** the pattern is Clean both sides, then compare. Why this pattern: The big idea: clean both the answer and the expected answer before comparing, so "Paris." and "paris" count as a match. Your code has one helper, `normalize`, that removes the marks, makes the text lowercase and trims spaces. `zip` pairs each prediction with its answer, like matching left and right shoes. The code counts the pairs that match after cleaning and divides by the number of answers. It checks for an empty list first, because dividing by zero would crash. What to say: "I clean both the answer and the expected answer the same way, then return the share that match. An empty list returns 0, so I never divide by zero."
+- **Explain:** the pattern is Clean both sides, then compare. Why this pattern: The big idea: clean both the answer and the expected answer before comparing, so "Paris." and "paris" count as a match. Your code has one helper, `normalize`, that removes the marks, makes the text lowercase and trims spaces. `zip` pairs each prediction with its answer, like matching left and right shoes. The code counts the pairs that match after cleaning and divides by the number of answers. It checks for an empty list first, because dividing by zero would crash. What to say: "I clean both answers the same way, so a capital letter never decides right or wrong. Then I report the share that match."
 - **Spot the gotcha:** "Clean up before comparing answers". "Paris." and "paris" are the same answer. Comparing raw strings undercounts a good model. The learner sees this risky code and picks the rule it breaks:
 
   ```
@@ -1771,7 +1771,7 @@ Measure end-to-end latency: the whole request (retrieval, tools, model calls), w
 
 - **Check:** A model's average latency is 900 ms and its p95 is 4 seconds. What do users experience? Right answer: About 1 in 20 requests is slow enough to notice. Why: p95 at 4 seconds means 5 out of 100 requests take 4 seconds or more.
 - **Exercise:** The Latency Users Feel, writing `percentile`. Approach: Sort, then pick by position.
-- **Explain:** the pattern is Sort, then pick by position. Why this pattern: The big idea: averages hide slow requests, so teams look at p95, the time that 95 out of 100 requests finish within. Your code sorts the times, fastest first. Then it works out the position: length times percent, divided by 100, rounded up. Adding 99 before whole-number division with `//` is a trick that rounds up. Python counts list places from 0, so position 3 is `ordered[2]`, which is why the code subtracts 1. Mixing those two up is the most common bug. What to say: "Averages hide slow requests, so I look at p95. I sort the times, find the position, and subtract one, because Python counts list places from zero."
+- **Explain:** the pattern is Sort, then pick by position. Why this pattern: The big idea: averages hide slow requests, so teams look at p95, the time that 95 out of 100 requests finish within. Your code sorts the times, fastest first. Then it works out the position: length times percent, divided by 100, rounded up. Adding 99 before whole-number division with `//` is a trick that rounds up. Python counts list places from 0, so position 3 is `ordered[2]`, which is why the code subtracts 1. Mixing those two up is the most common bug. What to say: "Averages hide the slow requests, so I look at p95. If p95 is slow, about one user in twenty waits that long."
 - **Spot the gotcha:** "Handle edge cases first". Before the main logic, ask: what if the input is empty? Has one item? Is all negative? Most failing tests are one of these. The learner sees this risky code and picks the rule it breaks:
 
   ```
@@ -2033,10 +2033,10 @@ Coming soon, not built yet (say so if asked; don't teach them as if they exist):
 
 ### 132. What happened to my YAML field? (`field_status`)
 
-On a platform team, product teams don't write Terraform. They ask for things in YAML in the config repo: `env.yml` lists the teams in an environment, each team's `team.yml` names its owner group and points to resource files like `clusters.yml`. Pydantic checks each file against a contract: a field it doesn't know, or a value of the wrong type, is rejected.
-The runbook is Terraform code that reads that YAML. It loads the files, fills in defaults for anything left out, transforms some values (a cluster's name gets the team's short code in front), and passes the result to modules, which call the Databricks and Azure providers. Spacelift runs all of it as a plan someone reviews before anything is applied.
-So a field goes through five points: the YAML, the check, the runbook, the module, the provider. Valid YAML is not enough. If the runbook never passes a field on, it is dropped: it looks fine in the YAML and does nothing.
-Reviewers describe what happened to a field with one word: SUPPORTED (it reaches the provider as written), DEFAULTED (it was left out and the runbook supplied a value), TRANSFORMED (changed on the way), DROPPED (accepted, never used), INVALID (the check rejects it) or UNKNOWN (you haven't traced it all the way yet).
+On a platform team, product teams don't write Terraform. They ask for what they need in YAML files kept in a shared repo, the config repo. A team's `clusters.yml`, for example, lists the clusters it wants.
+A field in that YAML goes past five stops before anything is built. The YAML says what the team wants. The check (written with Pydantic, a Python library) rejects fields it doesn't know and values of the wrong type. The runbook is Terraform code that reads the YAML and fills in anything left out. A module turns those settings into resources. The provider is the plugin that actually talks to Databricks or Azure.
+Valid YAML is not enough. A field only matters if it reaches the provider. If the runbook never passes it on, it is dropped: it looks fine in the file and does nothing. Spacelift shows the end result as a plan that someone reviews before anything is applied.
+Reviewers sum up a field in one word. SUPPORTED: it reaches the provider as written. DEFAULTED: it was left out, so the runbook filled in a value. TRANSFORMED: it was changed on the way (a cluster's name gets the team's short code in front). DROPPED: accepted, never used. INVALID: the check rejects it. UNKNOWN: you haven't followed it all the way yet.
 
 - **Check:** A team adds `autoscale_note: "keep it small"` to `clusters.yml`. Pydantic accepts it as free text, but the runbook never reads it. What happened to the field? Right answer: DROPPED: it is accepted but never passed on. Why: Passing the check only means the YAML is well formed. The field has to reach the provider to do anything, and this one stops at the runbook, so it is dropped. A dropped field is a blocker: nobody should rely on it.
 - **Exercise:** Name What Happened, writing `field_status`. Approach: Ask the questions in a fixed order and return at the first one that fits.
@@ -2084,8 +2084,6 @@ Keys are given to principals: a person, a group, or a service principal (an iden
 ## Terraform foundations (stage: Platform track)
 
 Read a plan, keep state safe, and change infrastructure in the right order.
-
-Coming soon, not built yet (say so if asked; don't teach them as if they exist): Variables, outputs and modules; Bringing existing resources under Terraform; Renaming without destroying; Pinning provider versions.
 
 ### 136. What a Terraform plan really says (`summarize_plan`)
 
@@ -2150,7 +2148,7 @@ A crashed run can leave the lock behind. Before `terraform force-unlock`, check 
 
 - **Check:** When is it safe to run `terraform force-unlock`? Right answer: Only after confirming the run holding the lock has stopped. Why: Unlocking while a run is still applying lets two applies write state at once.
 - **Exercise:** Read a State Lock Error, writing `lock_info`. Approach: Find where the section starts, then split each line on the first colon only.
-- **Explain:** the pattern is Start reading at the heading. Why this pattern: The big idea: before you force-unlock state, read the lock error to see who holds the lock. Your code goes through the lines with a yes-or-no flag called `inside`, which starts at no. When it reaches `Lock Info:`, the flag turns to yes. Every line after that is cut at its first colon only, with `split(":", 1)`, so the `Created` time keeps its own colons. Both parts are trimmed with `strip` and stored in a dict, a lookup table from each key to its value. What to say: "Before I force-unlock, I read the lock error to see who holds the lock. I split each line at its first colon, so the time stays whole."
+- **Explain:** the pattern is Start reading at the heading. Why this pattern: The big idea: before you force-unlock state, read the lock error to see who holds the lock. Your code goes through the lines with a yes-or-no flag called `inside`, which starts at no. When it reaches `Lock Info:`, the flag turns to yes. Every line after that is cut at its first colon only, with `split(":", 1)`, so the `Created` time keeps its own colons. Both parts are trimmed with `strip` and stored in a dict, a lookup table from each key to its value. What to say: "Before I force-unlock, I read the lock error to see who holds the lock. If that run is still going, I wait for it."
 - **Spot the gotcha:** "Pin providers and commit the lock file". Unpinned providers upgrade under you. A new major version (azurerm 3 to 4) changes resources, and azurerm 4 requires `subscription_id` in the provider block or ARM_SUBSCRIPTION_ID. The learner sees this risky code and picks the rule it breaks:
 
   ```
@@ -2226,13 +2224,53 @@ A Databricks provider configured from a workspace that doesn't exist yet can't p
   }
   ```
 
+### 141. Variables, outputs and modules (`variables_outputs`)
+
+A module is a folder of Terraform code you can use again, like a recipe. You hand it values through variables, so the same module builds a dev workspace and a prod one: only the values change.
+A module keeps its insides private. It hands values back through outputs, and the code that called it reads them as `module.<name>.<output>`. It can't reach past the outputs into the resources inside.
+So when other code needs a value from a module, the module has to output it first. A reference to an output that isn't there stops the plan with an error.
+
+- **Check:** The workspace module creates `azurerm_databricks_workspace.this` but has no outputs. Your root code needs its URL. What do you do? Right answer: Add an output for the URL inside the module, then read module.workspace.workspace_url. Why: Outside a module you can only read its outputs, so add `output "workspace_url"` inside it first. A URL pasted from the portal goes stale the day the workspace is rebuilt.
+- **Exercise:** Find the Broken References, writing `bad_refs`. Approach: Cut each reference at its dots, then check each part in turn: the shape, the module, the output.
+- **Explain:** the pattern is Only outputs cross the wall. Why this pattern: The big idea: a module is a closed box. Values go in as variables and come out only as outputs, so the code around it can read `module.<name>.<output>` and nothing deeper. Your code cuts each reference at its dots. It is bad if it doesn't have exactly three parts starting with `module`, if no module has that name, or if that module has no output with that name. It is like a vending machine: you only get what comes out of the slot. What to say: "A module is a closed box. Values go in as variables and come out only as outputs, so anything I need from it has to be output first."
+
+### 142. Bringing existing resources under Terraform (`import_existing`)
+
+Terraform only manages what is in its state. A storage account someone made by hand in the Azure portal isn't there, so as far as Terraform knows, it doesn't exist.
+Write a resource block for it and plan, and Terraform wants to create it: the apply fails because the name is taken. Instead, add an import block (Terraform 1.5 or later) with the resource's address and its Azure ID. The plan then says "1 to import", and nothing new is made.
+Read the rest of that plan too. If your code doesn't match the real resource, the same plan also changes it to match the code, or even replaces it. Adjust the code until the import changes nothing.
+
+- **Check:** A storage account was made by hand. You add a resource block for it, with no import block, and plan. What does the plan want to do? Right answer: Create a new one with the same name. Why: Terraform only knows what is in state, so it plans a create, and the apply fails because the name is taken. An import block tells it to adopt the existing account instead.
+- **Exercise:** Count the First Plan, writing `first_plan`. Approach: Ask the questions in order for each address, and keep two counters.
+- **Explain:** the pattern is In state, imported, or new. Why this pattern: The big idea: Terraform plans from its state, so anything made by hand looks new until you import it. Your code counts the first plan the way Terraform's summary does. For each address in the code: already in state needs nothing; not in state but with an import block is an import; anything else is an add. It is like moving into a furnished flat: list what is already there, or you will buy a second sofa. What to say: "Terraform only knows what's in its state. Something made by hand looks new, so I add an import block, and check the plan doesn't change it as well."
+
+### 143. Renaming without destroying (`moved_blocks`)
+
+Terraform knows each resource by its address, like `databricks_cluster.etl`. Rename it in the code to `databricks_cluster.sales_etl` and the plan sees one address gone and a new one: destroy the old cluster, create a new one.
+A moved block (Terraform 1.1 or later) says it's the same thing with a new name. Terraform updates the name in its state, and the plan shows nothing destroyed. It works for moving a resource into a module, and from `count` to `for_each`, too.
+Keep moved blocks in the code afterwards. An environment that hasn't applied the rename yet still needs them, or it would destroy and recreate.
+
+- **Check:** You rename `databricks_cluster.etl` to `databricks_cluster.sales_etl` and add a moved block. What should the plan show? Right answer: The cluster moved to its new address, with nothing added or destroyed. Why: The moved block tells Terraform the two addresses are the same cluster, so it renames it in state instead of replacing it.
+- **Exercise:** Plan a Rename, writing `plan_rename`. Approach: Go through the old addresses first, remembering where each move lands. Then any new address left over is a create.
+- **Explain:** the pattern is Keep, move, destroy, create. Why this pattern: The big idea: Terraform matches state to code by address, so a rename looks like a destroy plus a create unless a moved block links the two names. Your code goes through the old addresses. Still in the code: keep. Not there, but a move points it at an address that is: move. Otherwise: destroy. Then every new address that is neither old nor the target of a move is a create. It is like a change-of-address card: tell the post office, and your post follows you. What to say: "Terraform knows things by their address. If I rename one without a moved block, it looks like one thing gone and a new one, so Terraform destroys it and makes it again."
+
+### 144. Pinning provider versions (`provider_versions`)
+
+A provider is the plugin Terraform downloads to talk to Azure or Databricks. New versions come out often, and a new version can change defaults or how a resource is planned.
+In `required_providers` you write a version constraint. `~> 3.110` means 3.110 or newer, but not 4.0: only the last number you wrote may go up. `~> 1.52.0` is stricter: 1.52 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out.
+`terraform init` writes the exact version it picked into `.terraform.lock.hcl`. Commit that file: every run, on your laptop or in Spacelift, then uses the same version until someone runs `terraform init -upgrade` and the change is reviewed. The lock file covers providers only, not modules.
+
+- **Check:** The code says `version = "~> 3.110"`. Which version could Terraform pick? Right answer: 3.115.0. Why: Only the last number written, 110, may go up, so anything from 3.110 up to (but not including) 4.0. 3.100 is too old, and 4.0 is a new major version.
+- **Exercise:** Does the Constraint Allow It?, writing `allows`. Approach: Turn versions into lists of numbers, so 3.9 comes before 3.10, then compare whole lists.
+- **Explain:** the pattern is Compare part by part. Why this pattern: The big idea: a version constraint decides which provider versions Terraform may pick, and `~>` lets only the last number you wrote go up. Your code turns each version into a list of numbers, pads the constraint to three numbers, and compares the lists. `=` needs them equal, `>=` needs the version to be at least as big, and `~>` also needs every number before the last one you wrote to match. It is like agreeing to any reprint of a book's second edition, but not the third edition. What to say: "With ~>, only the last number I wrote may go up, so a new major version stays out. The lock file keeps every run on the same version until we upgrade on purpose."
+
 ## Spacelift (stage: Platform track)
 
 Stacks, runs and the policies that guard every change.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): Drift detection; Contexts and secrets; Testing a policy before it blocks.
 
-### 141. Reading a Spacelift run (`read_a_run`)
+### 145. Reading a Spacelift run (`read_a_run`)
 
 A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
 Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
@@ -2243,7 +2281,7 @@ A good review answer says what you saw, where it came from, what you still don't
 - **Exercise:** What Does This Run Prove?, writing `what_it_proves`. Approach: Check the cases that apply to any run first, then the ones that depend on the type.
 - **Explain:** the pattern is Header first, then changes, then the log. Why this pattern: The big idea: a run's type and state together say what it proves. A proposed run is only ever a preview; a tracked run deploys once someone confirms it. Your code reads those two fields and returns what the run proves, checking the cases that apply to any run first (not started yet), then proposed runs, then tracked ones. It is like reading a parcel's tracking page: "label printed" and "delivered" are both finished steps, but only one means it arrived. What to say: "I read a run from the top: the stack, the environment and the commit, then the Changes tab, then the log. A finished proposed run is only a preview, and GO means the policies passed, not that a person approved it."
 
-### 142. What runs after a change? (`runs_after`)
+### 146. What runs after a change? (`runs_after`)
 
 In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
 Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
@@ -2254,7 +2292,7 @@ Stacks that don't depend on the change, directly or through another stack, don't
 - **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
 - **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When one stack changes, every stack that uses it has to run again. I list those, then run them in an order where each one waits for the stacks it needs."
 
-### 143. Policies as guardrails (`guard_destroys`)
+### 147. Policies as guardrails (`guard_destroys`)
 
 A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
 Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
@@ -2281,7 +2319,7 @@ Start with the resources you can't rebuild: workspaces, storage accounts, metast
   }
   ```
 
-### 144. Policy as code (`plan_policy`)
+### 148. Policy as code (`plan_policy`)
 
 Review rules that live in people's heads get skipped on busy days. Policy as code runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.
 Start with the rules that prevent real incidents: never destroy resources that hold data you can't recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.
@@ -2314,7 +2352,7 @@ When a run fails: find the first error, trace it back, and ask for help well.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): What to send the platform owner.
 
-### 145. Why can't the plan find the service principal? (`lookup_failed`)
+### 149. Why can't the plan find the service principal? (`lookup_failed`)
 
 A service principal (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word data in the error path means Terraform tried to look up something that should already exist; it was never going to create it.
 An SP has to pass several stages, in order, before a lookup works. It must exist in Microsoft Entra ID. It must be declared in the team's `service_principals.yml`. The Foundation stack must have been applied, which registers it in the Databricks account. Then the Service stack assigns it to the workspace.
@@ -2325,7 +2363,7 @@ So you check the stages in order and stop at the first one that isn't true. Befo
 - **Exercise:** Find the First Missing Stage, writing `next_check`. Approach: Walk the stages in the order they must happen and return at the first gap.
 - **Explain:** the pattern is Check the stages in order, stop at the first gap. Why this pattern: The big idea: a lookup fails when an earlier stage is not done, so you check the stages in the order they must happen and stop at the first one that is not true. Your code goes through the facts in a fixed order: the same commit as the run, the SP in Entra ID, declared in service_principals.yml, Foundation applied, assigned by Service. It returns the name of the first missing step. If all are true, what is left is the name or scope. It is like a parcel that never arrived: check it was sent, then that it reached the depot, then the van, in that order. What to say: "A failed lookup means an earlier stage isn't done. I check them in order: Entra ID, declared in the YAML, Foundation applied, then assigned to the workspace. I stop at the first one that's missing."
 
-### 146. Getting unstuck with AI, safely (`ai_unstuck`)
+### 150. Getting unstuck with AI, safely (`ai_unstuck`)
 
 AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: explaining an unfamiliar term or error, tracing a name across files (YAML, then the runbook, then the module), and suggesting checks. They are not evidence. Anything they say is a lead until you've seen it yourself.
 A good prompt gives the AI what a person would need: the run (stack, environment, run link), the first error (a short excerpt, not the whole log), the repo and the commit the run used, and the rules: read-only, link every source, mark guesses as guesses, give one safe next check, and don't edit or deploy anything.
@@ -2340,7 +2378,7 @@ Never paste secrets, tokens, keys, state files or whole logs with credentials in
 
 Compute, runtimes, jobs, bundles, tags and what they cost.
 
-### 147. Which compute for which work (`pick_compute`)
+### 151. Which compute for which work (`pick_compute`)
 
 Compute is the machines that run your code. Databricks bills it in DBUs (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.
 All-purpose compute (also called classic compute) is a cluster you start, share and work in from notebooks. Jobs compute is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose.
@@ -2352,7 +2390,7 @@ Serverless doesn't take init scripts (a script that sets up each machine as it s
 - **Exercise:** Pick the Compute, writing `pick_compute`. Approach: Walk the list once. For each item, an if / elif / else chain where the first rule that fits decides.
 - **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: the kind of work and its special needs decide the compute. Your code goes through the workloads one by one and asks questions in a fixed order. Is it SQL? Then a SQL warehouse, whatever else it needs. If not, does it need a GPU or an init script? Then classic compute: all-purpose for a notebook, jobs compute for a job. Anything left goes to serverless. The order matters: the first rule that fits decides. What to say: "I check SQL first and send it to a SQL warehouse, then special machine needs, and default the rest to serverless. For anything scheduled, jobs compute beats all-purpose."
 
-### 148. Databricks Runtime versions (`unsupported_runtimes`)
+### 152. Databricks Runtime versions (`unsupported_runtimes`)
 
 The Databricks Runtime (DBR) is the software image on the compute: Spark, Python and a set of libraries, each at a fixed version. You pick it when you create classic compute.
 LTS means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.
@@ -2364,7 +2402,7 @@ Serverless picks and upgrades its runtime for you. Some features need a newer ru
 - **Exercise:** Find Old Runtimes, writing `unsupported_runtimes`. Approach: Filter: split each string to get the key, then keep the ones not in the list.
 - **Explain:** the pattern is Cut out the key, then check membership. Why this pattern: The big idea: every cluster names its runtime in one string, so you can check a whole workspace against the supported list. Your code goes through the clusters in order. For each one it cuts the version out of `spark_version` by splitting the text at `".x"` and keeping the first piece. Then it asks one question: is that version in the supported list? If not, the cluster's name goes into the result. What to say: "I take the version from each cluster's spark_version, the part before .x, and flag every cluster whose version isn't on the supported list, so it can move to a current LTS runtime."
 
-### 149. Cluster policies (`policy_violations`)
+### 153. Cluster policies (`policy_violations`)
 
 A compute policy (older docs say cluster policy) limits what people can set when they create compute. Each rule targets one setting.
 A rule can fix a value, allow only values from an allowlist, or keep a number in a range. Typical targets are `autotermination_minutes`, `node_type_id` (the machine size) and `custom_tags.team`.
@@ -2374,7 +2412,7 @@ This keeps cost and tags in line without anyone checking by hand. Users need the
 - **Exercise:** Check Against the Policy, writing `policy_violations`. Approach: Go through the rules. For each, look up the setting, then pick the test by the rule's type.
 - **Explain:** the pattern is Look up each rule, check by its type. Why this pattern: The big idea: a policy is a set of rules, one per setting, and each rule type has its own simple test. Your code goes through the policy's rules in order. For each one it first looks up the setting in the cluster. Missing breaks the rule. Otherwise it checks by type: fixed means equal, allowlist means in the list, range means not below `minValue` and not above `maxValue`, checking only the limits that are given. What to say: "I check every policy rule against the cluster: a fixed value must match, an allowlist must contain it, and a range must hold it. A missing setting breaks the rule too."
 
-### 150. Jobs: tasks that depend on each other (`skipped_tasks`)
+### 154. Jobs: tasks that depend on each other (`skipped_tasks`)
 
 Lakeflow Jobs (formerly Databricks Workflows) run your work on a schedule. A job has tasks, and `depends_on` says which tasks must finish before a task starts.
 Each task has a Run if condition. The default is "all succeeded": run only if every task it depends on succeeded.
@@ -2385,7 +2423,7 @@ A repair run reruns only the failed tasks and the ones that were skipped because
 - **Exercise:** Find the Skipped Tasks, writing `skipped_tasks`. Approach: Keep a list of stopped tasks. Walk the tasks in order; any task that depends on a stopped one is skipped and becomes stopped too.
 - **Explain:** the pattern is Spread through a list in order. Why this pattern: The big idea: a failure spreads downstream, so you track which tasks are stopped. Your code starts a list of stopped tasks with only the failed one. Because each task comes after the tasks it depends on, one pass in order is enough. For each task it asks: does it depend on any stopped task? If yes, it is skipped. Add it to the result and to the stopped list, so the tasks after it see it too. What to say: "I keep a list of stopped tasks, starting with the failed one. Going in order, any task that depends on a stopped task is skipped and joins the list."
 
-### 151. Bundles: one source, many targets (`resolve_variables`)
+### 155. Bundles: one source, many targets (`resolve_variables`)
 
 Declarative Automation Bundles (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files.
 `databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev target, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.
@@ -2396,7 +2434,7 @@ Variables have defaults and are used as `${var.catalog}`. A target can set its o
 - **Exercise:** Fill In the Variables, writing `resolve_variables`. Approach: Go through the declared names, check the more specific source first, and collect what falls through.
 - **Explain:** the pattern is Layered lookup: specific value, then default. Why this pattern: The big idea: one set of files deploys to many places, and each place fills in its own values. Your code goes through the declared variables. For each name it asks in order: does the target set it? Use that. Is there a default? Use that. Neither? Then it's missing. The missing names are sorted at the end, so the error message is the same every time. What to say: "For each variable, the target value wins, then the default. Anything with neither is missing, and bundle validate should fail on it."
 
-### 152. Why tagging matters (`tag_coverage`)
+### 156. Why tagging matters (`tag_coverage`)
 
 Tags are key-value labels, like `team = data`. On Databricks they do four jobs.
 Cost. Compute `custom_tags`, and serverless budget policies (newer docs: serverless usage policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.
@@ -2408,7 +2446,7 @@ Databricks adds its own default tags too: Vendor, Creator, ClusterName and Clust
 - **Exercise:** Measure Tag Coverage, writing `tag_coverage`. Approach: Two running totals in one pass, then one division, guarded against a total of 0.
 - **Explain:** the pattern is Two running totals, then a share. Why this pattern: The big idea: tags only help if most of the spend carries them, so you measure coverage. Your code keeps two running totals. For each usage row it asks one question: does `custom_tags` have the key? Its cost goes into tagged or untagged. At the end the percent is tagged divided by the total, times 100. If the total is 0, the percent is 0, so you never divide by zero. What to say: "I add up tagged and untagged cost, and report the tagged share. Untagged spend is what nobody owns, so that is the number to drive down."
 
-### 153. Who spent what (`cost_by_tag`)
+### 157. Who spent what (`cost_by_tag`)
 
 `system.billing.usage` has one row per piece of usage: `usage_quantity` (how many DBUs), `sku_name` (what kind of compute, which sets the price), `custom_tags` (a map of tags) and `usage_date`.
 `system.billing.list_prices` has the list price per DBU for each SKU. It is the public price, not any discount you have agreed, so treat the result as a guide, not the invoice.
@@ -2418,7 +2456,7 @@ Join the two on `sku_name`, multiply DBUs by the price, and group by a tag to se
 - **Exercise:** Spend by Team, writing `cost_by_tag`. Approach: Group by a key in a dict: add to the total if the group is there, start it if not. Round at the end.
 - **Explain:** the pattern is Group and add up. Why this pattern: The big idea: spend only means something when you can say whose it is. Your code keeps a dict from tag value to dollars. For each usage row it finds the group: the tag value, or "untagged" if the row has no such tag. Then it works out the dollars, DBUs times the price for that SKU, and adds them to the group, starting it at the first dollars if it is new. At the end it rounds each total. What to say: "I group usage by the tag, price each row from its SKU, and add it up. Untagged gets its own line so it can't hide."
 
-### 154. Idle compute is the quiet bill (`idle_cost`)
+### 158. Idle compute is the quiet bill (`idle_cost`)
 
 A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until auto-termination stops it.
 `autotermination_minutes` sets how long a cluster may sit idle before it stops. 0 means never: it runs until someone stops it.
@@ -2432,7 +2470,7 @@ SQL warehouses have auto stop (`auto_stop_mins`). Serverless compute stops quick
 
 Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.
 
-### 155. Workspace objects have their own permissions (`missing_acls`)
+### 159. Workspace objects have their own permissions (`missing_acls`)
 
 Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own access control list (ACL): a list of who may do what to that one object.
 Each object type has its own permission levels, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.
@@ -2444,7 +2482,7 @@ Experiments are the classic miss. You log runs and traces to an experiment in yo
 - **Exercise:** Find the Missing ACLs, writing `missing_acls`. Approach: Look up, then compare positions. `levels[kind].index(level)` turns a level name into a number you can compare.
 - **Explain:** the pattern is Compare positions in an ordered list. Why this pattern: The big idea: each object type has its levels in order, weakest first, so "is this level high enough?" becomes "does it sit at the same place or later in the list?". Your code goes through each need. It finds the object type from the name, looks up what the principal has on that object, and if they have nothing, the need is missing. Otherwise it compares positions with `list.index`: a smaller position means a weaker level, so the need is missing too. What to say: "For each need I look up the principal's current level on that object. No level, or a level earlier than the need, means the ACL is missing."
 
-### 156. Access connectors, storage credentials and external locations (`location_for_path`)
+### 160. Access connectors, storage credentials and external locations (`location_for_path`)
 
 On Azure, Unity Catalog reaches your storage through a chain of four links. Miss one and reads fail with a "permission denied" that is hard to trace.
 1. An access connector (`azurerm_databricks_access_connector`) is an Azure resource with a managed identity: an identity Azure looks after for you, so there is no password or secret to rotate. 2. In Azure, give that identity the Storage Blob Data Contributor role on the storage account.
@@ -2456,7 +2494,7 @@ External locations cannot overlap: Unity Catalog refuses one inside another. So 
 - **Exercise:** Which Location Covers This Path?, writing `location_for_path`. Approach: Go through the locations; return as soon as one covers the path. Return None after the loop.
 - **Explain:** the pattern is Prefix match on whole folders. Why this pattern: The big idea: a path is covered by a location when it is the location's path or sits in a folder under it. Your code goes through the locations and, for each, checks two things: is the path exactly the url, or does the path start with the url followed by "/"? Adding the "/" is what stops `sales` from matching `sales-archive`. Because locations cannot overlap, the first match is the answer. No match means no location covers it. What to say: "I look for the location whose url is the path or a parent folder of it, matching on a whole folder. Locations can't overlap, so at most one matches."
 
-### 157. Service credentials and connections (`pick_securable`)
+### 161. Service credentials and connections (`pick_securable`)
 
 Different targets need different Unity Catalog objects. Using the wrong one is a common reason "the permissions look right but nothing works".
 Files in cloud storage (`abfss://...`): a storage credential plus an external location (last lesson).
@@ -2468,7 +2506,7 @@ An outside web API: an HTTP connection, which agents can call as a tool; users n
 - **Exercise:** Pick the Right Object, writing `pick_securable`. Approach: One small function with if / elif in rule order, called for each target.
 - **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: you choose the object by looking at where the target lives. Your code checks each target against simple rules in order: storage paths first, then Azure service hosts, then any other web address, then database addresses. The first rule that fits gives the answer, and anything unknown goes to a person. Checking the Azure hosts before the general "https://" rule matters, because both start the same way. What to say: "I route by target: storage paths to external locations, Azure service calls to service credentials, other web APIs to HTTP connections, and databases to federation connections."
 
-### 158. ABAC: policies that follow tags (`masked_columns`)
+### 162. ABAC: policies that follow tags (`masked_columns`)
 
 ABAC (attribute-based access control) means rules follow labels on the data, not a list of tables. You write the rule once and it covers every table that carries the label.
 The labels are governed tags: tags defined for the whole account with a fixed set of allowed values, like `pii` with values `email`, `phone`, `ssn`. Data stewards put them on columns or tables.
@@ -2480,7 +2518,7 @@ It needs serverless compute or Databricks Runtime 16.4 or above. Creating or cha
 - **Exercise:** Which Columns Are Masked?, writing `masked_columns`. Approach: Nested loops: for each column, try each policy. One policy that applies is enough to mask it.
 - **Explain:** the pattern is For each item, does any rule match?. Why this pattern: The big idea: a column is masked for you when some policy matches its tag and applies to you. Your code goes through the columns in order. For each one it tries every policy: does the column have that tag with that value? Are you in one of the "to" groups, or does "to" say everyone? Are you in none of the "except" groups? If one policy says yes to all three, the column goes in the list and you move on. What to say: "For each column I look for a policy whose tag and value match, that targets one of my groups, and that doesn't exempt any of my groups. One such policy is enough to mask it."
 
-### 159. Grant to groups, run as service principals (`grants_to_people`)
+### 163. Grant to groups, run as service principals (`grants_to_people`)
 
 Grant to groups, not to people. People move teams and leave; a grant to a person goes stale, while a group's membership is managed in one place.
 Groups usually come from Entra ID (Azure's sign-in and user directory), synced by SCIM provisioning (a standard way to copy users and groups between systems) or by automatic identity management.
@@ -2498,7 +2536,7 @@ The workspace, catalogs and network of an ML platform, kept in Terraform.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace in Terraform; Cluster policies as code; The metastore and catalogs as code; Service principals and their permissions.
 
-### 160. Tagging for cost and policy (`missing_tags`)
+### 164. Tagging for cost and policy (`missing_tags`)
 
 Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
 The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
@@ -2507,7 +2545,7 @@ The azurerm provider (Terraform's plugin for Azure) has no provider-wide default
 - **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
 - **Explain:** the pattern is List the gaps per resource. Why this pattern: The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can't be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn't empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out. What to say: "Tags decide who pays for what. I skip resources that can't be tagged, then list the required tags each one is missing."
 
-### 161. Unity Catalog grants (`grants_to_revoke`)
+### 165. Unity Catalog grants (`grants_to_revoke`)
 
 Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
 Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
@@ -2534,7 +2572,7 @@ Grants added by hand in Catalog Explorer disappear at the next apply. Put them i
   }
   ```
 
-### 162. Networking for Databricks (`overlapping_subnets`)
+### 166. Networking for Databricks (`overlapping_subnets`)
 
 VNet injection puts a Databricks workspace's clusters in your own virtual network, using a host and a container subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.
 A subnet's addresses are written as a CIDR block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.
@@ -2569,7 +2607,7 @@ Each node (one machine in a cluster) uses an address in each subnet, and Azure r
   }
   ```
 
-### 163. Who gets capacity when it's scarce (`allocate_capacity`)
+### 167. Who gets capacity when it's scarce (`allocate_capacity`)
 
 When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide who comes first before it happens, by putting each app in a tier: a group with its own rule, served most important first.
 Once its traffic is steady, a critical app moves to provisioned throughput: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on spillover: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.
@@ -2599,7 +2637,7 @@ Critical apps come first and get what they ask for. Each graduated app gets what
   }
   ```
 
-### 164. A shared space with fair limits (`check_limits`)
+### 168. A shared space with fair limits (`check_limits`)
 
 In a shared experiment space (the sandbox), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A per-user rate limit stops that: each person gets a slice, well below the whole.
 The Databricks AI gateway (now called Unity Gateway) sets limits on a service (the whole space), a default for each user, and custom ones for a group. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.

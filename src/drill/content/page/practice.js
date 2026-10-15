@@ -11,7 +11,7 @@ function qfNote(change) {
 }
 const flowing = () => !!(QF.p && cur && cur.p === QF.p && !QF.code);
 const qfFinished = () => !!(QF.p && progress.solved[QF.p.id] && !QF.again);
-const qfKey = id => "drill-flow-" + id;
+const qfKey = id => "drill-flow-" + id, codeKey = id => "drill-code-" + id;
 function qfLoad(p) {
   Object.assign(QF, { p: p.practice ? p : null, i: 0, tried: [], help: 0, first: {}, code: false, again: false, log: [] });
   if (QF.p) try { QF.code = localStorage.getItem(codeKey(p.id)) === "1"; } catch {}
@@ -20,7 +20,7 @@ function qfLoad(p) {
 function qfMode() {
   if (!QF.p) { $("flowBox").hidden = true; return; }
   const on = flowing();
-  $("paneBuild").classList.toggle("sorting", on);
+  $("paneBuild").classList.toggle("flowing", on);
   $("flowBox").hidden = !on;
   $("modeSwap").hidden = on;
   $("modeSwap").innerHTML = on ? "" : `<button class="linkbtn" data-qf-mode="flow">${ic("arrowl")}Back to the practice questions</button>`;

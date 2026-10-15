@@ -47,6 +47,35 @@ So a replacement counts once in `add` and once in `destroy`, and `no-op` counts 
         pattern='Walk the list once and keep three counters. Check each word with its own `if`, so a replacement counts as both an add and a destroy.',
         target='one pass over the changes',
         realworld='This is the summary line in every Spacelift run and `terraform plan` output. In the real JSON from `terraform show -json`, the list is `plan["resource_changes"]` and each entry keeps its actions at `["change"]["actions"]`. Spacelift policies and PR checks read exactly that.',
+        practice=practice(
+            intro='Read plan summaries the way checks and reviewers do: count by action, and notice what the counts hide.',
+            explain='Checks read the plan as data and count each change by its actions: create, update, delete. A replacement is both a delete and a create, so it shows up as one add and one destroy, and a no-op counts nowhere. You read the counts, then looked for what they hid.',
+            asks=[
+                ask('What will the summary line say?', ['Plan: 2 to add, 1 to change, 1 to destroy.', 'Plan: 1 to add, 1 to change, 0 to destroy.', 'Plan: 2 to add, 1 to change, 0 to destroy.'], answer=0,
+                    evidence=evidence('code', title='plan.json, resource_changes (shortened)', text="""databricks_cluster.sales_etl
+  actions: ["create"]
+databricks_cluster_policy.shared
+  actions: ["update"]
+databricks_external_location.raw
+  actions: ["delete", "create"]
+databricks_group.sales_dev_owners
+  actions: ["no-op"]"""),
+                    clue='Count each word separately. Which change has two words?',
+                    why='The new cluster is 1 add. The policy is 1 change. The external location is replaced: 1 more add and 1 destroy. The group has no change, so it counts nowhere: 2 to add, 1 to change, 1 to destroy.',
+                    wrong=[None, 'The replacement counts in add too, and its delete counts in destroy.', 'The replacement has a delete as well as a create.']),
+                ask('The summary says **0 to destroy**. Can you approve without reading further?', ['Yes: nothing is deleted', 'Not yet: read the changes, because an update can still matter'], answer=1,
+                    evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
+                        summary=[['0', 'to add', ''], ['1', 'to change', ''], ['0', 'to destroy', '']],
+                        changes=[{'sym': '~', 'address': 'databricks_permissions.team_folder', 'note': 'grp-sales-dev-analysts CAN_READ → CAN_MANAGE'}]),
+                    clue='What does that one change give to whom?',
+                    why='Nothing is destroyed, but the one update hands a group full control of the folder. Counts tell you how much changes, not whether it is safe.',
+                    wrong=['Counts say how many, not what. Read the one change first.', None]),
+                ask('Why do Spacelift policies and PR checks read `plan.json`, not the text you see in the log?', ['The JSON has every change as data, with its actions spelled out', 'The text is only for older Terraform versions', 'The JSON is shorter'], answer=0,
+                    clue='Which one can a program read without guessing?',
+                    why='The JSON lists every resource change with its address and actions, so a policy can count and check them reliably. The text is for people.',
+                    wrong=[None, 'Every version prints both. One is written for programs.', "It's usually longer: it holds everything."]),
+            ],
+        ),
         starter="""def summarize_plan(changes):
     # your code here
     pass
@@ -341,7 +370,7 @@ written by multiple users at the same time."""),
     angle=angle(
         pattern='Start reading at the heading',
         text='The big idea: before you force-unlock state, read the lock error to see who holds the lock. Your code goes through the lines with a yes-or-no flag called `inside`, which starts at no. When it reaches `Lock Info:`, the flag turns to yes. Every line after that is cut at its first colon only, with `split(":", 1)`, so the `Created` time keeps its own colons. Both parts are trimmed with `strip` and stored in a dict, a lookup table from each key to its value.',
-        say='"Before I force-unlock, I read the lock error to see [[who holds|who wants|who made::The person or job that has it right now.]] the lock. I split each line at its [[first colon|last colon|every colon::The time has colons in it too, so cut only once.]], so the time stays whole."',
+        say='"Before I force-unlock, I read the lock error to see [[who holds|who wants|who made::The person or job that has it right now.]] the lock. If that run is still [[going|finished|queued::It may still be writing state.]], I wait for it."',
         classic=None,
     ),
     exercise=exercise(
@@ -359,6 +388,33 @@ Return a dict of all the fields, like `{"Who": "ana@laptop"}`. If there is no `L
         pattern='Find where the section starts, then split each line on the first colon only.',
         target='one pass over the lines',
         realworld="A lock left by a crashed run blocks every later plan. Force-unlocking while a run is genuinely still applying can corrupt state, so you check `Who` and `Created` first. On Spacelift-managed state, Spacelift handles locking and you'd look at the stack's runs instead.",
+        practice=practice(
+            intro='A run is blocked by a state lock. Read the error, find who holds the lock, and choose the safe next step.',
+            explain='Before touching a lock, read who holds it and when it was taken, then check whether that run is still alive. Only a lock left by a run that has really stopped is safe to remove, and in Spacelift you let the stack handle it rather than unlocking by hand.',
+            asks=[
+                ask('Who holds the lock?', ['spacelift@worker-7', 'You', 'Terraform 1.5.7'], answer=0,
+                    evidence=evidence('code', title='The run log', text="""Error: Error acquiring the state lock
+
+Lock Info:
+  ID:        6a3c1f2e-8b7d-4c5a-9e10-2f4b6d8a0c13
+  Path:      tfstate/team-sales-dev.tfstate
+  Operation: OperationTypeApply
+  Who:       spacelift@worker-7
+  Version:   1.5.7
+  Created:   2026-10-09 23:25:51 UTC"""),
+                    clue='One line names the job holding it, under Lock Info.',
+                    why='"Who" names the holder: a Spacelift worker that started an apply at 23:25.',
+                    wrong=[None, 'You are the one waiting for it.', 'That is the Terraform version the holder used.']),
+                ask('What do you check before anything else?', ['Whether that apply on worker-7 is still running', 'Whether force-unlock is installed', 'Whether the state file is too big'], answer=0,
+                    clue='A lock is only stale if its owner has stopped.',
+                    why='If the apply is still going, the lock is doing its job: wait for it. Removing it would let two applies write state at once.',
+                    wrong=[None, 'Unlocking comes much later, if at all.', 'Size has nothing to do with a lock.']),
+                ask('The run on worker-7 is still in progress. What do you do?', ['Wait for it to finish, then retry your run', 'Run terraform force-unlock with the ID', 'Delete the state file and start again'], answer=0,
+                    clue='Is the lock protecting something right now?',
+                    why='A live run needs its lock. Wait, or ask the platform owner if it looks stuck. Never unlock under a running apply, and never delete state.',
+                    wrong=[None, 'That would let two applies write state at the same time.', 'Deleting state makes Terraform forget everything it manages.']),
+            ],
+        ),
         starter="""def lock_info(lines):
     # your code here
     pass
@@ -805,7 +861,566 @@ found is None   # True""",
     ),
 )
 
-planned(MODULE, 'variables_outputs', 'Variables, outputs and modules', 'Passing values in and out of a module, so one module serves dev and prod.')
-planned(MODULE, 'import_existing', 'Bringing existing resources under Terraform', 'Importing something made by hand, so the next apply does not recreate it.')
-planned(MODULE, 'moved_blocks', 'Renaming without destroying', 'Using a moved block so a rename is a rename, not a destroy and a create.')
-planned(MODULE, 'provider_versions', 'Pinning provider versions', 'Why an unpinned provider can change your plan overnight, and how the lock file stops it.')
+lesson(MODULE, 'variables_outputs',
+    title='Variables, outputs and modules',
+    checked='2026-10-14',
+    sources=[source('Input variables', 'https://developer.hashicorp.com/terraform/language/values/variables'), source('Output values', 'https://developer.hashicorp.com/terraform/language/values/outputs'), source('Modules', 'https://developer.hashicorp.com/terraform/language/modules')],
+    learn=[
+        "A **module** is a folder of Terraform code you can use again, like a recipe. You hand it values through **variables**, so the same module builds a dev workspace and a prod one: only the values change.",
+        "A module keeps its insides private. It hands values back through **outputs**, and the code that called it reads them as `module.<name>.<output>`. It can't reach past the outputs into the resources inside.",
+        "So when other code needs a value from a module, the module has to output it first. A reference to an output that isn't there stops the plan with an error.",
+    ],
+    example=example('Passing values in and reading one back', """module "workspace" {
+  source = "./modules/workspace"
+  env    = "dev"
+}
+
+# reads the module's output,
+# not the resource inside it
+host = module.workspace.workspace_url"""),
+    check=question(
+        'The workspace module creates `azurerm_databricks_workspace.this` but has no outputs. Your root code needs its URL. What do you do?',
+        [
+            'Write module.workspace.azurerm_databricks_workspace.this.workspace_url',
+            'Add an output for the URL inside the module, then read module.workspace.workspace_url',
+            'Copy the URL from the Azure portal into the code',
+        ],
+        answer=1,
+        why="Outside a module you can only read its outputs, so add `output \"workspace_url\"` inside it first. A URL pasted from the portal goes stale the day the workspace is rebuilt.",
+    ),
+    angle=angle(
+        pattern='Only outputs cross the wall',
+        text="The big idea: a module is a closed box. Values go in as variables and come out only as outputs, so the code around it can read `module.<name>.<output>` and nothing deeper. Your code cuts each reference at its dots. It is bad if it doesn't have exactly three parts starting with `module`, if no module has that name, or if that module has no output with that name. It is like a vending machine: you only get what comes out of the slot.",
+        say='"A module is a closed box. Values go in as [[variables|outputs|resources::What you hand the module.]] and come out only as [[outputs|variables|state::What the module hands back.]], so anything I need from it has to be output first."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Broken References',
+        topic='modules',
+        difficulty='easy',
+        fn='bad_refs',
+        prompt="""Your function gets two things:
+
+- `outputs`: what each module outputs. It's a dict: each key is a module name and its value is the list of that module's output names, like `{"network": ["host_subnet_id"]}`.
+- `refs`: the references your root code makes, like `"module.network.host_subnet_id"`.
+
+A reference only works if it has exactly three parts separated by dots, the first part is `module`, the module exists, and it has an output with that name. Anything longer is reaching into the module's resources, which isn't allowed.
+
+Return the references that don't work, in the order they appear in `refs`.""",
+        pattern='Cut each reference at its dots, then check each part in turn: the shape, the module, the output.',
+        target='one pass over the references',
+        realworld="The classic `Error: Unsupported attribute` in a Databricks platform repo: the root stack reads `module.network.host_subnet_id`, but the network module never declared that output. The fix is an `output` block in the module, not a reference into its resources.",
+        practice=practice(
+            intro='Read modules the way their callers do: only what comes out of them counts.',
+            explain='A module is a closed box: values go in as variables and come out only as outputs. You read outputs by name, passed different values to the same module for dev and prod, and fixed a missing value by adding an output rather than reaching inside.',
+            asks=[
+                ask('Which reference works in the root code?', ['module.workspace.workspace_url', 'module.workspace.azurerm_databricks_workspace.this.workspace_url', 'azurerm_databricks_workspace.this.workspace_url'], answer=0,
+                    evidence=evidence('code', title='modules/workspace/outputs.tf', text="""output "workspace_url" {
+  value = azurerm_databricks_workspace.this.workspace_url
+}"""),
+                    clue='Outside the module, you can only see what it hands back.',
+                    why='The module declares one output, `workspace_url`, and the root reads it as `module.workspace.workspace_url`.',
+                    wrong=[None, 'That reaches past the output into the resource, which only code inside the module can do.', 'That resource lives inside the module, so the root code has no resource by that name.']),
+                ask('The same module builds the dev and prod workspaces. What changes between them?', ['The values passed in as variables, like env = "prod"', 'A copy of the module folder for each one', 'The outputs'], answer=0,
+                    clue='One recipe, different ingredients.',
+                    why='One module, different variable values. Copies drift apart: someone fixes one and forgets the other.',
+                    wrong=[None, 'Copies drift apart: fix one, forget the other.', 'Outputs are what comes back, not what goes in.']),
+                ask('The root reads `module.network.host_subnet_id` and the plan stops with this. What is the fix?', ['Add an output named host_subnet_id to the network module', 'Rename the subnet resource', 'Delete the state file'], answer=0,
+                    evidence=evidence('code', title='The plan', text="""Error: Unsupported attribute
+
+This object does not have an attribute
+named "host_subnet_id"."""),
+                    clue='The root can only read what the module declares.',
+                    why='The module never output that value. Add `output "host_subnet_id"` in the network module, and the reference works.',
+                    wrong=[None, "The resource's name isn't what's missing: the output is.", 'Never touch state to fix a code error.']),
+            ],
+        ),
+        starter="""def bad_refs(outputs, refs):
+    # your code here
+    pass
+""",
+        solution="""def bad_refs(outputs, refs):
+    bad = []
+    for ref in refs:
+        parts = ref.split(".")
+        if len(parts) != 3 or parts[0] != "module":
+            bad.append(ref)
+        elif parts[1] not in outputs:
+            bad.append(ref)
+        elif parts[2] not in outputs[parts[1]]:
+            bad.append(ref)
+    return bad
+""",
+        cases=[
+            case({'workspace': ['workspace_url', 'workspace_id'], 'network': ['host_subnet_id']},
+                 ['module.workspace.workspace_url', 'module.network.vnet_id', 'module.storage.account_name', 'module.workspace.azurerm_databricks_workspace.this'],
+                 expected=['module.network.vnet_id', 'module.storage.account_name', 'module.workspace.azurerm_databricks_workspace.this'], sample=True),
+            case({'network': []}, ['module.network.host_subnet_id'], expected=['module.network.host_subnet_id']),
+            case({'workspace': ['workspace_url']}, ['module.workspace.workspace_url', 'module.workspace.workspace_url'], expected=[]),
+            case({}, [], expected=[]),
+            case({'workspace': ['workspace_id']}, ['module.workspace.this.workspace_id'], expected=['module.workspace.this.workspace_id']),
+        ],
+        guided="""def bad_refs(outputs, refs):
+    # Replace every ___ with real code, then run the tests.
+
+    bad = []
+    for ref in refs:
+        # Step 1: cut the reference at its dots.
+        parts = ___
+        # A good one has three parts and starts with "module".
+        if len(parts) != 3 or parts[0] != "module":
+            bad.append(ref)
+        # Step 2: no module has that name.
+        elif ___:
+            bad.append(ref)
+        # Step 3: the module has no output with that name.
+        elif ___:
+            bad.append(ref)
+
+    return bad
+""",
+        fills=['ref.split(".")', 'parts[1] not in outputs', 'parts[2] not in outputs[parts[1]]'],
+        concepts=[
+            ['Cutting text at a character', '`split` cuts text wherever a character appears and gives a list of the pieces.', """"module.network.vnet_id".split(".")
+# ['module', 'network', 'vnet_id']"""],
+            ['Is this key in the dict?', '`in` on a dict checks its keys.', """outputs = {'network': ['host_subnet_id']}
+'network' in outputs     # True
+'storage' in outputs     # False"""],
+            ['A list inside a dict', "Looking up a key gives its value, here a list, and `in` checks that list.", """outputs['network']                       # ['host_subnet_id']
+'vnet_id' in outputs['network']          # False"""],
+            ['or', '`a or b` is True when at least one of them is True.', """len(parts) != 3 or parts[0] != 'module'"""],
+        ],
+        byhand="The workspace module outputs workspace_url and workspace_id; the network module outputs host_subnet_id. module.workspace.workspace_url: three parts, the module exists, the output exists: fine. module.network.vnet_id: network has no vnet_id: bad. module.storage.account_name: there's no storage module: bad. module.workspace.azurerm_databricks_workspace.this: four parts, reaching inside: bad.",
+        why='One pass over the references.',
+        gotchas=[
+            ['Sensitive outputs still sit in state', '`sensitive = true` hides a value in plans and in `terraform output`, but state keeps it in plain text. Keep secrets in Key Vault, and limit who can read state.'],
+            ['Outputs are a promise', 'Other code reads them by name. Renaming or removing an output breaks every caller, so treat outputs like a public interface.'],
+        ],
+    ),
+)
+
+lesson(MODULE, 'import_existing',
+    title='Bringing existing resources under Terraform',
+    checked='2026-10-14',
+    sources=[source('Import existing resources', 'https://developer.hashicorp.com/terraform/language/import'), source('import block reference', 'https://developer.hashicorp.com/terraform/language/block/import'), source('Import tutorial', 'https://developer.hashicorp.com/terraform/tutorials/state/state-import')],
+    learn=[
+        "Terraform only manages what is in its **state**. A storage account someone made by hand in the Azure portal isn't there, so as far as Terraform knows, it doesn't exist.",
+        "Write a resource block for it and plan, and Terraform wants to **create** it: the apply fails because the name is taken. Instead, add an **import** block (Terraform 1.5 or later) with the resource's address and its Azure ID. The plan then says \"1 to import\", and nothing new is made.",
+        "Read the rest of that plan too. If your code doesn't match the real resource, the same plan also **changes** it to match the code, or even replaces it. Adjust the code until the import changes nothing.",
+    ],
+    example=example('Adopting a storage account made by hand', """import {
+  to = azurerm_storage_account.landing
+  id = "/subscriptions/<sub>/resourceGroups/rg-sales-dev/providers/Microsoft.Storage/storageAccounts/stsalesdev"
+}
+
+resource "azurerm_storage_account" "landing" {
+  name                = "stsalesdev"
+  resource_group_name = "rg-sales-dev"
+  # ...the rest, matching what exists
+}"""),
+    check=question(
+        'A storage account was made by hand. You add a resource block for it, with no import block, and plan. What does the plan want to do?',
+        ['Adopt it automatically', 'Create a new one with the same name', 'Nothing'],
+        answer=1,
+        why="Terraform only knows what is in state, so it plans a create, and the apply fails because the name is taken. An import block tells it to adopt the existing account instead.",
+    ),
+    angle=angle(
+        pattern='In state, imported, or new',
+        text="The big idea: Terraform plans from its state, so anything made by hand looks new until you import it. Your code counts the first plan the way Terraform's summary does. For each address in the code: already in state needs nothing; not in state but with an import block is an import; anything else is an add. It is like moving into a furnished flat: list what is already there, or you will buy a second sofa.",
+        say="\"Terraform only knows what's in its [[state|code|portal::Its own record of what it manages.]]. Something made by hand looks new, so I add an [[import|moved|output::A block that adopts it instead of creating it.]] block, and check the plan doesn't [[change|import|read::If the code doesn't match, the plan alters it too.]] it as well.\"",
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Count the First Plan',
+        topic='import',
+        difficulty='easy',
+        fn='first_plan',
+        prompt="""Your function gets three lists of resource addresses, like `"azurerm_storage_account.landing"`:
+
+- `in_code`: every resource your code declares.
+- `in_state`: the ones Terraform already manages.
+- `imports`: the ones with an `import` block.
+
+Count the plan for the resources in `in_code`:
+
+- Already in state: nothing to do, even if it also has an import block.
+- Not in state, but it has an import block: one to import.
+- Anything else: one to add.
+
+Return `[to_import, to_add]`.""",
+        pattern='Ask the questions in order for each address, and keep two counters.',
+        target='one pass over the code',
+        realworld="Platform teams adopt resources that were clicked together before Terraform: a storage account, a resource group, a Databricks workspace. A \"1 to add\" for something that already exists is the warning sign: it will fail with \"already exists\", or make a duplicate.",
+        practice=practice(
+            intro='Adopt resources made by hand without creating, changing or destroying anything by accident.',
+            explain="Terraform only knows what is in its state, so something made by hand looks new. You recognised the \"already exists\" error, added an import block instead of recreating anything, and read the import plan for changes the code would make to the real resource.",
+            asks=[
+                ask('The apply stops with this error. What do you add?', ['An import block for azurerm_storage_account.landing with that ID', 'A moved block', 'depends_on'], answer=0,
+                    evidence=evidence('code', title='The apply', text="""Error: A resource with the ID
+"/subscriptions/<sub>/.../storageAccounts/stsalesdev"
+already exists - to be managed via Terraform
+this resource needs to be imported into
+the State."""),
+                    clue='The error says what Terraform needs.',
+                    why='The account exists but is not in state. An import block adopts it, and the next plan says "1 to import" instead of trying to create it.',
+                    wrong=[None, 'moved renames something Terraform already manages; this account was never in state.', "Order isn't the problem: the account already exists."]),
+                ask('The import plan also says **1 to change**. What does that mean?', ['The code differs from the real account, so the apply would change it', 'Imports always count as a change', 'The import failed'], answer=0,
+                    evidence=evidence('plan', title='Stack team-sales-dev · proposed',
+                        summary=[['1', 'to import', ''], ['0', 'to add', ''], ['1', 'to change', ''], ['0', 'to destroy', '']],
+                        changes=[{'sym': '~', 'address': 'azurerm_storage_account.landing', 'note': 'imported; min_tls_version TLS1_0 → TLS1_2'}]),
+                    clue='Compare what the code says with what exists.',
+                    why='The code asks for TLS 1.2 and the real account allows 1.0, so applying would change the live account. Decide on purpose: match the code to reality first, or agree the change with the owner.',
+                    wrong=[None, 'An import that matches the code changes nothing.', 'A failed import is an error, not a plan.']),
+                ask('A teammate says: delete the hand-made account and let Terraform create a fresh one. When is that a bad idea?', ['When it holds data or other things use it', 'Never: a fresh one is always cleaner'], answer=0,
+                    clue='What is inside it, and who uses it?',
+                    why='Deleting a storage account deletes its data and breaks anything pointing at it. Importing adopts it as it is.',
+                    wrong=[None, 'Deleting it deletes its data and breaks whatever uses it.']),
+            ],
+        ),
+        starter="""def first_plan(in_code, in_state, imports):
+    # your code here
+    pass
+""",
+        solution="""def first_plan(in_code, in_state, imports):
+    to_import = 0
+    to_add = 0
+    for address in in_code:
+        if address in in_state:
+            continue
+        if address in imports:
+            to_import += 1
+        else:
+            to_add += 1
+    return [to_import, to_add]
+""",
+        cases=[
+            case(['azurerm_resource_group.sales', 'azurerm_storage_account.landing', 'databricks_cluster.etl'], ['azurerm_resource_group.sales'], ['azurerm_storage_account.landing'], expected=[1, 1], sample=True),
+            case(['azurerm_resource_group.sales'], ['azurerm_resource_group.sales'], [], expected=[0, 0]),
+            case(['azurerm_resource_group.sales'], ['azurerm_resource_group.sales'], ['azurerm_resource_group.sales'], expected=[0, 0]),
+            case([], [], [], expected=[0, 0]),
+            case(['azurerm_resource_group.sales', 'azurerm_storage_account.landing', 'databricks_cluster.etl'], [], ['azurerm_resource_group.sales', 'azurerm_storage_account.landing'], expected=[2, 1]),
+        ],
+        guided="""def first_plan(in_code, in_state, imports):
+    # Replace every ___ with real code, then run the tests.
+
+    to_import = 0
+    to_add = 0
+    for address in in_code:
+        # Step 1: Terraform already manages it, so skip it.
+        if ___:
+            continue
+        # Step 2: it has an import block.
+        if ___:
+            to_import += 1
+        else:
+            # Step 3: anything else is new.
+            ___
+
+    return [to_import, to_add]
+""",
+        fills=['address in in_state', 'address in imports', 'to_add += 1'],
+        concepts=[
+            ['Is it in the list?', '`in` checks whether a list holds a value.', """'a' in ['a', 'b']   # True"""],
+            ['continue', '`continue` skips the rest of this turn of the loop and moves on to the next item.', """for n in [1, 2, 3]:
+    if n == 2:
+        continue
+    print(n)   # 1, then 3"""],
+            ['Counters', 'Start a number at 0 and add 1 each time something happens. `+= 1` means "add 1 to it".', """count = 0
+count += 1   # now 1"""],
+            ['Returning two numbers', 'Put them in a list, in the order the task asks for.', 'return [to_import, to_add]'],
+        ],
+        byhand="In the code: the resource group, the landing storage account and the etl cluster. The resource group is already in state: nothing. The storage account isn't in state but has an import block: one to import. The cluster is neither: one to add. Return [1, 1].",
+        why='One pass over the code.',
+        gotchas=[
+            ['Generate the code, then tidy it', '`terraform plan -generate-config-out=generated.tf` writes a starting resource block from the real resource. Read it and trim it before you commit it.'],
+            ['One owner per resource', 'If two stacks import the same resource, they will fight over it on every run. Make sure exactly one stack manages each thing.'],
+        ],
+    ),
+)
+
+lesson(MODULE, 'moved_blocks',
+    title='Renaming without destroying',
+    checked='2026-10-14',
+    sources=[source('Refactoring with moved blocks', 'https://developer.hashicorp.com/terraform/language/modules/develop/refactoring')],
+    learn=[
+        "Terraform knows each resource by its **address**, like `databricks_cluster.etl`. Rename it in the code to `databricks_cluster.sales_etl` and the plan sees one address gone and a new one: destroy the old cluster, create a new one.",
+        "A **moved** block (Terraform 1.1 or later) says it's the same thing with a new name. Terraform updates the name in its state, and the plan shows nothing destroyed. It works for moving a resource into a module, and from `count` to `for_each`, too.",
+        "Keep moved blocks in the code afterwards. An environment that hasn't applied the rename yet still needs them, or it would destroy and recreate.",
+    ],
+    example=example('A rename that stays a rename', """moved {
+  from = databricks_cluster.etl
+  to   = databricks_cluster.sales_etl
+}"""),
+    check=question(
+        'You rename `databricks_cluster.etl` to `databricks_cluster.sales_etl` and add a moved block. What should the plan show?',
+        ['1 to add, 1 to destroy', 'The cluster moved to its new address, with nothing added or destroyed', "An error: addresses can't change"],
+        answer=1,
+        why='The moved block tells Terraform the two addresses are the same cluster, so it renames it in state instead of replacing it.',
+    ),
+    angle=angle(
+        pattern='Keep, move, destroy, create',
+        text="The big idea: Terraform matches state to code by address, so a rename looks like a destroy plus a create unless a moved block links the two names. Your code goes through the old addresses. Still in the code: keep. Not there, but a move points it at an address that is: move. Otherwise: destroy. Then every new address that is neither old nor the target of a move is a create. It is like a change-of-address card: tell the post office, and your post follows you.",
+        say='"Terraform knows things by their [[address|size|owner::The name in the code, like databricks_cluster.etl.]]. If I rename one without a [[moved|import|output::A block linking the old name to the new one.]] block, it looks like one thing gone and a new one, so Terraform destroys it and makes it again."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Plan a Rename',
+        topic='refactoring',
+        difficulty='medium',
+        fn='plan_rename',
+        prompt="""Your function gets three things:
+
+- `old`: the addresses in state now, like `["databricks_cluster.etl"]`.
+- `new`: the addresses in the code after your edit.
+- `moves`: your moved blocks, as a dict from the old address to the new one.
+
+Return a dict with one action for each address:
+
+- For each old address: `"keep"` if it's still in `new`; `"move"` if `moves` points it at an address that is in `new`; otherwise `"destroy"`.
+- For each new address that is not in `old` and that nothing moved into: `"create"`.""",
+        pattern='Go through the old addresses first, remembering where each move lands. Then any new address left over is a create.',
+        target='one pass over each list',
+        realworld="Renaming a cluster, moving a storage account into a shared module, or switching `count` to `for_each`: without moved blocks each one plans a destroy and a create, and for a storage container that destroy deletes its data.",
+        practice=practice(
+            intro='Rename and reorganise Terraform code so the plan shows moves, not destroys.',
+            explain='Terraform matches state to code by address, so a rename looks like a destroy and a create. You spotted the destroy-and-create pair, linked the names with a moved block, and kept the block for the environments that had not applied it yet.',
+            asks=[
+                ask('You only renamed the cluster in the code. What is missing?', ['A moved block from databricks_cluster.etl to databricks_cluster.sales_etl', 'An import block for the new name', 'Nothing: approve it'], answer=0,
+                    evidence=evidence('plan', title='Stack team-sales-dev · proposed',
+                        summary=[['1', 'to add', 'a'], ['0', 'to change', ''], ['1', 'to destroy', 'd']],
+                        changes=[{'sym': '-', 'address': 'databricks_cluster.etl', 'note': 'not in the code any more'},
+                                 {'sym': '+', 'address': 'databricks_cluster.sales_etl', 'note': 'new in the code'}]),
+                    clue="Terraform sees two names and doesn't know they are the same cluster.",
+                    why='A moved block links the two addresses, and the plan becomes a rename with nothing destroyed.',
+                    wrong=[None, "Import adopts something made outside Terraform; this cluster is already managed.", 'Approving destroys the running cluster and makes a new one.']),
+                ask('The rename is applied in DEV. Can you delete the moved block now?', ["No: UAT and PROD haven't applied it yet, and they still need it", 'Yes: it did its job'], answer=0,
+                    clue='Which environments still have the old name in their state?',
+                    why='Every environment that still has the old address needs the block. Terraform recommends keeping moved blocks for good.',
+                    wrong=[None, 'Without it, UAT and PROD would destroy and recreate the cluster.']),
+                ask('Why does a team switching from count to for_each add blocks like this one?', ['So each container keeps its data under its new key', 'To make the plan run faster', 'Because for_each needs one block per resource'], answer=0,
+                    evidence=evidence('code', title='main.tf', text="""moved {
+  from = azurerm_storage_container.lake[0]
+  to   = azurerm_storage_container.lake["bronze"]
+}"""),
+                    clue='Without it, [0] and ["bronze"] look like two different containers.',
+                    why='Each block tells Terraform that position 0 and the key "bronze" are the same container, so nothing is destroyed and no data is lost.',
+                    wrong=[None, "Speed isn't the point: without it, the containers would be replaced.", 'for_each makes many copies from one resource block.']),
+            ],
+        ),
+        starter="""def plan_rename(old, new, moves):
+    # your code here
+    pass
+""",
+        solution="""def plan_rename(old, new, moves):
+    plan = {}
+    targets = []
+    for address in old:
+        if address in new:
+            plan[address] = "keep"
+        elif address in moves and moves[address] in new:
+            plan[address] = "move"
+            targets.append(moves[address])
+        else:
+            plan[address] = "destroy"
+    for address in new:
+        if address not in old and address not in targets:
+            plan[address] = "create"
+    return plan
+""",
+        cases=[
+            case(['databricks_cluster.etl', 'databricks_job.nightly'], ['databricks_cluster.sales_etl', 'databricks_job.nightly'], {'databricks_cluster.etl': 'databricks_cluster.sales_etl'},
+                 expected={'databricks_cluster.etl': 'move', 'databricks_job.nightly': 'keep'}, sample=True),
+            case(['databricks_cluster.etl', 'databricks_job.nightly'], ['databricks_cluster.sales_etl', 'databricks_job.nightly'], {},
+                 expected={'databricks_cluster.etl': 'destroy', 'databricks_job.nightly': 'keep', 'databricks_cluster.sales_etl': 'create'}),
+            case(['azurerm_storage_account.lake'], ['module.lake.azurerm_storage_account.this'], {'azurerm_storage_account.lake': 'module.lake.azurerm_storage_account.this'},
+                 expected={'azurerm_storage_account.lake': 'move'}),
+            case(['databricks_cluster.etl'], ['databricks_cluster.etl2'], {'databricks_cluster.etl': 'databricks_cluster.etl_v2'},
+                 expected={'databricks_cluster.etl': 'destroy', 'databricks_cluster.etl2': 'create'}),
+            case([], [], {}, expected={}),
+            case(['databricks_job.nightly'], ['databricks_job.nightly', 'databricks_job.weekly'], {},
+                 expected={'databricks_job.nightly': 'keep', 'databricks_job.weekly': 'create'}),
+        ],
+        guided="""def plan_rename(old, new, moves):
+    # Replace every ___ with real code, then run the tests.
+
+    plan = {}
+    targets = []
+    for address in old:
+        # Step 1: still in the code under the same name.
+        if ___:
+            plan[address] = "keep"
+        # Step 2: a moved block points it at an address in the code.
+        elif address in moves and ___:
+            plan[address] = "move"
+            targets.append(moves[address])
+        else:
+            plan[address] = "destroy"
+    for address in new:
+        # Step 3: new, and nothing moved into it.
+        if address not in old and ___:
+            plan[address] = "create"
+
+    return plan
+""",
+        fills=['address in new', 'moves[address] in new', 'address not in targets'],
+        concepts=[
+            ['Building a dict', 'Start with `{}` and set a key with `plan[key] = value`.', """plan = {}
+plan['databricks_job.nightly'] = 'keep'
+# {'databricks_job.nightly': 'keep'}"""],
+            ['Looking something up', '`moves[address]` gives the new address a move points to. Check `address in moves` first, or a missing key is an error.', """moves = {'a.old': 'a.new'}
+'a.old' in moves    # True
+moves['a.old']      # 'a.new'"""],
+            ['and', '`a and b` is True only when both are. Python stops at the first False, so the lookup after `and` only runs when the key exists.', """'a.old' in moves and moves['a.old'] in new"""],
+            ['not in', '`not in` is True when the value is missing.', """'x' not in ['a', 'b']   # True"""],
+        ],
+        byhand="Old: databricks_cluster.etl and databricks_job.nightly. New: databricks_cluster.sales_etl and databricks_job.nightly. The cluster isn't in new, but moves points it at sales_etl, which is: move, and sales_etl is now a move target. The job is still there: keep. In new, sales_etl was moved into and the job is old, so nothing is created.",
+        why='One pass over each list.',
+        gotchas=[
+            ['A moved block changes only the name', "It renames the resource in state; the real thing is untouched. If the plan still shows a destroy, the from or to address has a typo."],
+            ['terraform state mv is the old way', 'Before Terraform 1.1 people ran `terraform state mv` by hand. It works, but it leaves no record in the code, and every other environment has to repeat it. Prefer moved blocks.'],
+        ],
+    ),
+)
+
+lesson(MODULE, 'provider_versions',
+    title='Pinning provider versions',
+    checked='2026-10-14',
+    sources=[source('Version constraints', 'https://developer.hashicorp.com/terraform/language/expressions/version-constraints'), source('Dependency lock file', 'https://developer.hashicorp.com/terraform/language/files/dependency-lock'), source('Provider requirements', 'https://developer.hashicorp.com/terraform/language/providers/requirements')],
+    learn=[
+        "A **provider** is the plugin Terraform downloads to talk to Azure or Databricks. New versions come out often, and a new version can change defaults or how a resource is planned.",
+        "In `required_providers` you write a **version constraint**. `~> 3.110` means 3.110 or newer, but not 4.0: only the last number you wrote may go up. `~> 1.52.0` is stricter: 1.52 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out.",
+        "`terraform init` writes the exact version it picked into `.terraform.lock.hcl`. Commit that file: every run, on your laptop or in Spacelift, then uses the same version until someone runs `terraform init -upgrade` and the change is reviewed. The lock file covers providers only, not modules.",
+    ],
+    example=example('Pinning both providers', """terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.110"
+    }
+    databricks = {
+      source  = "databricks/databricks"
+      version = "~> 1.52.0"
+    }
+  }
+}"""),
+    check=question(
+        'The code says `version = "~> 3.110"`. Which version could Terraform pick?',
+        ['4.0.0', '3.115.0', '3.100.0'],
+        answer=1,
+        why='Only the last number written, 110, may go up, so anything from 3.110 up to (but not including) 4.0. 3.100 is too old, and 4.0 is a new major version.',
+    ),
+    angle=angle(
+        pattern='Compare part by part',
+        text="The big idea: a version constraint decides which provider versions Terraform may pick, and `~>` lets only the last number you wrote go up. Your code turns each version into a list of numbers, pads the constraint to three numbers, and compares the lists. `=` needs them equal, `>=` needs the version to be at least as big, and `~>` also needs every number before the last one you wrote to match. It is like agreeing to any reprint of a book's second edition, but not the third edition.",
+        say='"With [[~>|>=|=::It lets small steps up in, but not big ones.]], only the last number I wrote may go up, so a new major version stays out. The [[lock file|README|state::.terraform.lock.hcl, committed to the repo.]] keeps every run on the same version until we upgrade on purpose."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Does the Constraint Allow It?',
+        topic='versions',
+        difficulty='medium',
+        fn='allows',
+        prompt="""Your function gets two strings:
+
+- `constraint`: an operator, a space, then a version with two or three numbers, like `"~> 3.110"`, `">= 1.52.0"` or `"= 1.52.3"`.
+- `version`: a provider version with three numbers, like `"3.115.0"`.
+
+Turn both versions into lists of numbers, and add 0s to the constraint's list until it has three. Then:
+
+- `"="`: the lists must be equal.
+- `">="`: the version must be at least the constraint.
+- `"~>"`: at least the constraint, and every number before the last one written in the constraint must match. So `~> 3.110` keeps the 3, and `~> 1.52.0` keeps the 1 and the 52.
+
+Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True`. Return `True` or `False`.""",
+        pattern='Turn versions into lists of numbers, so 3.9 comes before 3.10, then compare whole lists.',
+        target='a few steps, no loops over the versions',
+        realworld="Why a plan can change overnight with no code change: without a committed lock file, `terraform init` picks the newest provider the constraint allows on every run. With `~>` and a lock file, upgrades happen in their own reviewed PR.",
+        practice=practice(
+            intro='Keep provider upgrades deliberate: read constraints and the lock file the way Terraform does.',
+            explain='A version constraint decides which provider versions Terraform may pick, and ~> lets only the last number written go up. The lock file keeps every run on one exact version, so a surprise plan with no code change is often an unlocked upgrade.',
+            asks=[
+                ask('Version 1.52.5 comes out. What does the next Spacelift run use?', ['1.52.3, the version in the lock file', '1.52.5, the newest allowed', '1.53.0'], answer=0,
+                    evidence=evidence('code', title='.terraform.lock.hcl', text="""provider "registry.terraform.io/databricks/databricks" {
+  version     = "1.52.3"
+  constraints = "~> 1.52.0"
+  hashes = [ ... ]
+}"""),
+                    clue='Which file wins until someone upgrades on purpose?',
+                    why='The lock file pins 1.52.3. Only `terraform init -upgrade` moves to 1.52.5, and that change goes through review.',
+                    wrong=[None, 'Only terraform init -upgrade picks a newer version.', '~> 1.52.0 never allows 1.53.']),
+                ask('Overnight the plan wants to change 40 clusters, and nobody changed the code. The repo has no .terraform.lock.hcl. What is a likely cause?', ['A new provider version was picked up', 'Someone edited state', 'Spacelift ran twice'], answer=0,
+                    clue='Without a lock file, init picks the newest version allowed, every time.',
+                    why='With no lock file, each run can pick up a newer provider, and a new version can change defaults. Commit the lock file and upgrade on purpose.',
+                    wrong=[None, 'Possible, but check the provider version first: with no lock file, it can change on every run.', "Running twice doesn't change what the plan wants."]),
+                ask('Which constraint lets in bug fixes for azurerm but keeps out 4.0?', ['~> 3.110', '>= 3.110', '= 3.110.0'], answer=0,
+                    clue='You want a floor and a ceiling.',
+                    why='`~> 3.110` allows 3.110 and later 3.x versions, but not 4.0.',
+                    wrong=[None, '>= has no ceiling: 4.0 would get in.', '= allows exactly one version: no bug fixes at all.']),
+            ],
+        ),
+        starter="""def allows(constraint, version):
+    # your code here
+    pass
+""",
+        solution="""def allows(constraint, version):
+    op, wanted = constraint.split(" ")
+    want = [int(n) for n in wanted.split(".")]
+    have = [int(n) for n in version.split(".")]
+    fixed = len(want) - 1
+    while len(want) < 3:
+        want.append(0)
+    if op == "=":
+        return have == want
+    if op == ">=":
+        return have >= want
+    return have >= want and have[:fixed] == want[:fixed]
+""",
+        cases=[
+            case('~> 3.110', '3.115.0', expected=True, sample=True),
+            case('~> 3.110', '4.0.0', expected=False),
+            case('~> 3.110', '3.100.0', expected=False),
+            case('~> 3.110', '3.110.0', expected=True),
+            case('~> 3.9', '3.10.0', expected=True),
+            case('~> 1.52.0', '1.52.4', expected=True),
+            case('~> 1.52.0', '1.53.0', expected=False),
+            case('>= 1.52.0', '2.0.0', expected=True),
+            case('= 1.52.3', '1.52.3', expected=True),
+            case('= 1.52.3', '1.52.4', expected=False),
+        ],
+        guided="""def allows(constraint, version):
+    # Replace every ___ with real code, then run the tests.
+
+    op, wanted = constraint.split(" ")
+    want = [int(n) for n in wanted.split(".")]
+    # Step 1: the version's numbers, the same way.
+    have = ___
+    # For ~>, the numbers before the last one written must stay the same.
+    fixed = len(want) - 1
+    while len(want) < 3:
+        want.append(0)
+    if op == "=":
+        return have == want
+    # Step 2: at least the constraint.
+    if op == ">=":
+        return ___
+    # Step 3: at least the constraint, and the fixed numbers match.
+    return have >= want and ___
+""",
+        fills=['[int(n) for n in version.split(".")]', 'have >= want', 'have[:fixed] == want[:fixed]'],
+        concepts=[
+            ['Two names from one split', 'When you know a split gives two pieces, you can name both at once.', """op, wanted = "~> 3.110".split(" ")
+# op is '~>', wanted is '3.110'"""],
+            ['Text to numbers', "`int` turns text into a number. `[int(n) for n in pieces]` does it for every piece and makes a new list.", """[int(n) for n in "3.110".split(".")]
+# [3, 110]"""],
+            ['Comparing lists', 'Python compares lists number by number, from the left, and stops at the first difference. Numbers, unlike text, put 9 before 10.', """[3, 10, 0] > [3, 9, 0]   # True
+"3.10" > "3.9"           # False: text compares letter by letter"""],
+            ['The first few items', '`have[:2]` is the first two items. `have[:0]` is an empty list.', """[1, 52, 4][:2]   # [1, 52]"""],
+        ],
+        byhand='"~> 3.110" and "3.115.0". The constraint\'s numbers are [3, 110]: two written, so the first one, 3, is fixed. Padded to three: [3, 110, 0]. The version is [3, 115, 0]. It is at least [3, 110, 0], and its first number, 3, matches. True.',
+        why='A few steps, whatever the version.',
+        gotchas=[
+            ['Upgrade on purpose, in its own PR', 'Run `terraform init -upgrade` on a branch, commit the new lock file, and read the plan. A provider bump on its own should change little; if it changes a lot, read the changelog first.'],
+            ["Modules aren't in the lock file", 'The lock file pins providers only. Pin a module with an exact version, like `version = "2.3.1"`, or it can move too.'],
+        ],
+    ),
+)

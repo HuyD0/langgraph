@@ -22,7 +22,7 @@ lesson(MODULE, 'exact_match',
     angle=angle(
         pattern='Clean both sides, then compare',
         text='The big idea: clean both the answer and the expected answer before comparing, so "Paris." and "paris" count as a match. Your code has one helper, `normalize`, that removes the marks, makes the text lowercase and trims spaces. `zip` pairs each prediction with its answer, like matching left and right shoes. The code counts the pairs that match after cleaning and divides by the number of answers. It checks for an empty list first, because dividing by zero would crash.',
-        say='"I [[clean|shorten|translate::Lowercase it and strip the marks and extra spaces.]] both the answer and the expected answer the same way, then return the share that [[match|differ|repeat::Pairs that come out identical.]]. An empty list returns 0, so I never divide by zero."',
+        say='"I [[clean|shorten|translate::Lowercase it and strip the marks and extra spaces.]] both answers the same way, so a capital letter never decides right or wrong. Then I report the [[share|number|list::Out of all the questions, how many.]] that match."',
         classic=None,
     ),
     stack=stack('MLflow: Correctness with expected answers', """from mlflow.genai.scorers import Correctness

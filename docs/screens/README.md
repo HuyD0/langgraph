@@ -132,18 +132,6 @@ sections; the code runs in the browser with Skulpt (`Python literals and test ha
 `drill build-page` fills each scaffold's blanks with `fills` and runs the tests, so they can't
 drift apart.
 
-## A lesson: Build (sorting board)
-
-![The sorting board on a phone](sorting-board-phone-dusk.webp)
-
-**What the learner sees.** For judgement lessons, ideas to place on a 2 by 2 map instead of code,
-one at a time, with a reason after each placement. The Python version is one tap away.
-
-**What draws it.** `sortRender()`, `sortPlace()` and `SO` in `the sorting board`; the data is
-`sort_task(...)` in the lesson.
-
-**Change it safely.** One question per screen; help is a clue first, then the answer.
-
 ## A lesson: Explain
 
 | Gaps, with a clue (Dusk) | Finished (Light) |
@@ -187,11 +175,12 @@ lesson, and what's next. "Done for today" is the primary button; Share result is
 **What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step; the result
 card is `resultHtml()` in `page/share.js`.
 
-## A lesson: Practice (platform lessons)
+## A lesson: Practice questions
 
 ![A practice question on a phone](practice-phone-dusk.webp)
 
-**What the learner sees.** In platform lessons, Build is a short run of questions instead of code:
+**What the learner sees.** In platform lessons and judgement lessons like 1.1 ("Where does this
+idea land?"), Build is a short run of questions instead of code:
 a piece of evidence (a YAML file, a chain of stops, a plan, a claim, a prompt), then one plain
 question with three answers. "Give me a clue" comes first, then the answer; the dots show how far
 along they are. Some questions are "Fix the YAML": edit the file until it passes. Python stays
