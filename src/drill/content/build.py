@@ -56,7 +56,7 @@ def page_source() -> str:
     return _INCLUDE.sub(part, template)
 
 _EXERCISE_FIELDS = ("title", "topic", "difficulty", "fn", "prompt", "pattern", "target",
-                    "realworld", "starter", "solution", "cases", "unordered", "machine", "sort", "practice")
+                    "realworld", "starter", "solution", "cases", "unordered", "machine", "practice")
 _LEARN_FIELDS = ("concepts", "byhand", "why", "gotchas", "guided")
 _SCAFFOLD_HEADER = "# Replace every ___ with real code, then run the tests."
 

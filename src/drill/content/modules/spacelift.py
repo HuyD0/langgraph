@@ -1,7 +1,7 @@
 """Spacelift: stacks, runs and the policies that guard every change."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, screen, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, screen, stack, source
 
 MODULE = module('spacelift', 'Spacelift', 'Stacks, runs and the policies that guard every change.', setting=PLATFORM_SETTING)
 
@@ -207,6 +207,28 @@ Return what the run proves, checking in this order:
         pattern='Check the cases that apply to any run first, then the ones that depend on the type.',
         target='a few checks, no loops',
         realworld="Spacelift shows a run's type and state at the top of every run. Reviewers who mix up \"finished\" with \"deployed\" approve things that were never applied, or think a fix is live when it isn't. The run list's filters use these same states.",
+        practice=practice(
+            intro='Read what a Spacelift run proves before you act on it: its type and its state together.',
+            explain='A run proves only what its type and state say. A finished proposed run is a preview: nothing was applied. A tracked run that is unconfirmed is waiting for someone to approve it, and only a finished tracked run changed anything. A failed run starts with reading the first error.',
+            asks=[
+                ask('What does this run prove?', ['It was a preview: nothing was applied', 'The change is live in DEV', 'It is waiting for approval'], answer=0,
+                    evidence=evidence('code', title='Run header', text="""Add the team-sales cluster
+✓ FINISHED
+Stack: .../Databricks/team-sales/DEV
+ⓘ Proposed"""),
+                    clue='Look at the word under the stack path.',
+                    why='Proposed runs only plan. FINISHED means planning worked; nothing reached the workspace.',
+                    wrong=[None, 'A proposed run never applies, however green it is.', 'Proposed runs have no approval step.']),
+                ask('A tracked run shows **UNCONFIRMED**. What does that mean?', ['The plan is ready and waits for someone to confirm the apply', 'It failed and needs a retry', 'It was applied but not checked'], answer=0,
+                    clue='Tracked runs can stop between plan and apply.',
+                    why='The plan finished and Spacelift is waiting for a person to confirm. Nothing has been applied yet.',
+                    wrong=[None, 'A failure says FAILED.', 'Applying comes after confirming.']),
+                ask('A run says **FAILED**. Where do you start?', ['At the first error in the log', 'At the last line of the log', 'By re-running it straight away'], answer=0,
+                    clue='Later errors are often caused by an earlier one.',
+                    why='The first error is usually the cause; the rest follow from it. Read it before retrying, or you just fail again.',
+                    wrong=[None, 'The last line is often just "run failed".', 'Without knowing why, a retry usually fails the same way.']),
+            ],
+        ),
         starter="""def what_it_proves(run):
     # your code here
     pass

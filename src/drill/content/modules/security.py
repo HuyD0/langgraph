@@ -1156,7 +1156,7 @@ token = dbutils.secrets.get(scope="ai", key="vendor_api_token")"""),
     angle=angle(
         pattern='Hide secrets, even in nested settings',
         text='The big idea: secrets often leak through logs, so you hide them before anything is logged. Your code builds a new dict, so the original settings are left alone. For each setting it checks whether the lowercase name contains any word from `WORDS`. If so, the value becomes "[HIDDEN]". If the value is itself a dict, the function calls itself on that inner dict. This is called recursion. It is like opening a box, finding smaller boxes inside, and cleaning each one the same way.',
-        say='"Before I log settings, I hide any value whose [[name|value|type::Words like password or token in it give it away.]] looks secret, even in [[nested|empty|long::Boxes inside boxes: the function calls itself.]] settings. I build a [[new|shared|global::Don\'t change what you were handed.]] dict, so the original stays untouched."',
+        say='"Before I log settings, I hide any value whose [[name|value|type::Words like password or token in it give it away.]] looks secret, even deep inside. The app keeps its [[original|copy|log::The settings it still needs to run.]] settings, untouched."',
         classic=None,
     ),
     stack=stack('Databricks secrets and Terraform', """token = dbutils.secrets.get(scope="ai", key="vendor_api_token")

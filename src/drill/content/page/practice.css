@@ -1,3 +1,5 @@
+/* while the practice questions are on, the code parts of Build (task, editor, results) step aside */
+#paneBuild.flowing .codeonly { display: none !important; }
 /* practice questions (platform Build step): evidence, one question, options; reuses .opts, .snote, .clzclue */
 .qfbox { display: grid; gap: 12px; }
 .qfbox .shead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }

@@ -68,7 +68,7 @@ class Bank:
         module = self.module_of(lesson_id) or {}
         question, options, answer, why = lesson["check"][:4]
         pattern, text, say, classic = lesson["angle"][:4]
-        if problem.get("practice"):  # a content-pack lesson: a practice exercise, not code
+        if problem.get("practice") and lesson.get("pack"):  # a content-pack lesson: a practice exercise, not code
             extra = lesson["pack"]
             return {
                 "id": lesson_id, "title": lesson["title"], "module": module.get("title"), "learn": lesson["learn"],
