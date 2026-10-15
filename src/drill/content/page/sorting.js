@@ -5,10 +5,10 @@ const SO = { p: null, placed: {}, first: {}, skip: [], note: null, code: false, 
 const sortKey = id => "drill-sort-" + id, codeKey = id => "drill-code-" + id;
 const sorting = () => !!(SO.p && cur && cur.p === SO.p && !SO.code);
 function sortLoad(p) {
-  Object.assign(SO, { p: p.sort ? p : null, placed: {}, first: {}, skip: [], note: null, code: false, again: false });
+  Object.assign(SO, { p: p.sort ? p : null, placed: {}, first: {}, shown: {}, skip: [], note: null, code: false, again: false });
   if (SO.p) try {
     const s = JSON.parse(localStorage.getItem(sortKey(p.id)) || "null");
-    if (s) { SO.placed = s.placed || {}; SO.first = s.first || {}; }
+    if (s) { SO.placed = s.placed || {}; SO.first = s.first || {}; SO.shown = s.shown || {}; }
     SO.code = localStorage.getItem(codeKey(p.id)) === "1";
   } catch {}
   sortMode();
@@ -21,7 +21,7 @@ function sortMode() {
   $("modeSwap").innerHTML = SO.p && !on ? `<button class="linkbtn" data-sort-mode="sort">${ic("arrowl")}Back to sorting the ideas</button>` : "";
   if (on) sortRender();
 }
-function sortSave() { try { localStorage.setItem(sortKey(SO.p.id), JSON.stringify({ placed: SO.placed, first: SO.first })); } catch {} }
+function sortSave() { try { localStorage.setItem(sortKey(SO.p.id), JSON.stringify({ placed: SO.placed, first: SO.first, shown: SO.shown })); } catch {} }
 function sortLeft() {
   const left = SO.p.sort.items.map((_, i) => i).filter(i => !(i in SO.placed));
   return [...left.filter(i => !SO.skip.includes(i)), ...SO.skip.filter(i => left.includes(i))];
@@ -60,6 +60,7 @@ function sortPlace(i, binId, byHint) {
   const viaShelf = it.bin === "gate" && binId === "shelve";
   if (binId === it.bin || viaShelf || byHint) {
     if (!(i in SO.first)) SO.first[i] = !byHint;
+    if (byHint) SO.shown[i] = true;
     SO.placed[i] = it.bin; SO.skip = SO.skip.filter(x => x !== i);
     SO.note = { kind: "ok", html: byHint ? `<b>The answer: ${esc(right.label)}.</b> ${esc(it.why)}`
       : viaShelf ? `<b>${ic("check")} Right: shelved, because it stops at a gate.</b> ${esc(it.why)}`
@@ -77,13 +78,14 @@ function sortSolved() {
   const p = SO.p, n = p.sort.items.length, prev = progress.solved[p.id];
   progress.solved[p.id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: n - sortRight(), mode: "sort" };
   lastRun = { summary: `Sorted all ${n} ideas, ${sortRight()} right first time.` };
+  if (cur.kind === "lesson") firstMarks(p.id, "build", p.sort.items.map((_, i) => SO.first[i] ? "sign" : SO.shown[i] ? "curtain" : "knot"));
   markDay();
   if (cur.kind === "lesson") $("stepper").querySelector('[data-step="2"]').classList.add("done");
   saveProgress(); renderTop();
 }
 function sortHint() { const now = sortLeft()[0]; if (now != null) sortPlace(now, null, true); }
 function sortReset() {  // a fresh try; the lesson stays solved, and finishing again counts again
-  Object.assign(SO, { placed: {}, first: {}, skip: [], note: null, again: true }); sortSave(); sortRender(); renderFoot();
+  Object.assign(SO, { placed: {}, first: {}, shown: {}, skip: [], note: null, again: true }); sortSave(); sortRender(); renderFoot();
   $("sortBox").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 function sortSetCode(on) {

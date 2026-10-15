@@ -20,6 +20,7 @@ function pxShuffle(items, seed) {
 function pxSolved(id, tries) {
   const prev = progress.solved[id];
   progress.solved[id] = { count: (prev ? prev.count : 0) + 1, last: today(), hints: Math.max(0, tries - 1), mode: "pack" };
+  if (cur && cur.kind === "lesson") firstMarks(id, "build", [tries <= 1 ? "sign" : "knot"]);
   markDay(); saveProgress(); renderTop();
   if (cur && cur.kind === "lesson") { const b = $("stepper").querySelector('[data-step="2"]'); if (b) b.classList.add("done"); }
   renderFoot();

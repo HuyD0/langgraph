@@ -213,6 +213,9 @@ def merge_progress(a: dict, b: dict) -> dict:
         said = theirs.get("said") or mine.get("said")  # the Explain step's sentence, when there is one
         if said:
             lessons[lesson_id]["said"] = said
+        first = mine.get("first") or theirs.get("first")  # the shared result: the first time through stays
+        if first:
+            lessons[lesson_id]["first"] = first
     return {
         "solved": {**(a.get("solved") or {}), **(b.get("solved") or {})},
         "days": sorted(set(a.get("days") or []) | set(b.get("days") or [])),

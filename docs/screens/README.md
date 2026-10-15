@@ -180,10 +180,12 @@ numbers and steps don't match. A new kind of screen needs a renderer in `SL_VIEW
 
 ![The done screen](done-screen-phone-dusk.webp)
 
-**What the learner sees.** A check, how far they are in the phase or track, the new sticker, what
-they did in the lesson, and what's next. "Done for today" is the primary button.
+**What the learner sees.** A check, how far they are in the phase or track, their result to
+share (a mark for each step, the first time through), the new sticker, what they did in the
+lesson, and what's next. "Done for today" is the primary button; Share result is quiet.
 
-**What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step.
+**What draws it.** `showDone()` in `views`, reached from `goNext()` on the last step; the result
+card is `resultHtml()` in `page/share.js`.
 
 ## A lesson: Practice (platform lessons)
 
