@@ -2,7 +2,10 @@
 // Both return the same three things: `s` (ask the tutor model), `db` (documents) and `user` (an id),
 // so the rest of the page never knows where it is running.
 async function claudeBackend() {
-  const [s, db, user] = await Promise.all([claude.use("sample"), claude.use("db"), claude.use("user")]);
+  // Each one on its own: if one fails (not granted, or a hiccup), the others still work, so a
+  // tutor problem can't also switch off saving, and the other way round.
+  const got = await Promise.allSettled(["sample", "db", "user"].map(name => Promise.resolve().then(() => claude.use(name))));
+  const [s, db, user] = got.map(r => r.status === "fulfilled" ? r.value : null);
   return { s, db, user };
 }
 // One MLflow session per visit, so every request from this visit groups together; an Ask thread

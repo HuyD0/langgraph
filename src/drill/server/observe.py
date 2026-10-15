@@ -209,16 +209,31 @@ class MlflowObserver:
         self._feedback: queue.Queue = queue.Queue(maxsize=500)
         self._worker: threading.Thread | None = None
         self._prompts: dict = {}  # feature -> the registered prompt version its traces are linked to
-        self.ready()
+        self._reconnect: threading.Thread | None = None
+        self.ready(wait=True)  # at start-up, connect before the first request
 
     # -- connecting --------------------------------------------------------
 
-    def ready(self) -> bool:
-        """Is tracing on? When it is off, try again at most every 30 seconds."""
+    def ready(self, wait: bool = False) -> bool:
+        """Is tracing on? When it is off, try again at most every 30 seconds.
+
+        A retry runs on a background thread and this request goes untraced, so a slow or
+        failing MLflow never holds up an answer (connecting can mean several network calls).
+        ``wait=True`` connects right here instead: for start-up, before any request.
+        """
         if self.enabled:
             return True
         if time.monotonic() < self._next_try:
             return False
+        if not wait:
+            if self._reconnect is None or not self._reconnect.is_alive():
+                self._next_try = time.monotonic() + RETRY_SECONDS  # one try at a time
+                self._reconnect = threading.Thread(target=self._try_connect, name="drill-mlflow-reconnect", daemon=True)
+                self._reconnect.start()
+            return False
+        return self._try_connect()
+
+    def _try_connect(self) -> bool:
         try:
             self._connect()
         except Exception as exc:

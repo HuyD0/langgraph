@@ -197,12 +197,12 @@ False is False   # True""",
 
 lesson(MODULE, 'folder_access',
     title='Where did that access come from?',
-    checked='2026-10-13',
+    checked='2026-10-14',
     sources=[source('Access control lists (folder permissions)', 'https://learn.microsoft.com/azure/databricks/security/auth/access-control/'), source('databricks_permissions resource', 'https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/permissions')],
     learn=[
         "A team's `team.yml` can name an `owner_group` and list `folder_grants`: other groups and the permission each should have on the team's workspace folder, like `CAN_EDIT`. A **group** is a named set of people or identities from Microsoft Entra ID.",
         "The runbook doesn't copy that list as it is. It **adds access you didn't type**: the owner group gets `CAN_MANAGE`, and every workspace user gets `CAN_READ` by default. Then it joins those with the explicit grants and hands the whole list to the module.",
-        "Databricks folder permissions go up in steps: `CAN_READ`, then `CAN_RUN`, then `CAN_EDIT`, then `CAN_MANAGE`. A group listed twice ends up with the **highest** of its permissions, not both.",
+        "A folder has four permissions: `CAN_READ` (the screen calls it Can View), `CAN_RUN`, `CAN_EDIT` and `CAN_MANAGE`. Everything inside a folder takes on its permission, and for notebooks and files they go up in that order, so that is how the runbook ranks them. A group listed twice ends up with the **highest** of its permissions, not both. (The docs' folder table lists Edit before Run; their notebook, file and Git folder tables list Run first.)",
         "So when a plan shows `CAN_MANAGE` for a group that only asked for `CAN_EDIT`, Terraform isn't making it up. Look at what the runbook adds before you call it a mistake, and review **who ends up with what**, not the order of the list.",
     ],
     example=example('What team.yml asks for, and what the plan shows', """# config/DEV/team-sales/team.yml

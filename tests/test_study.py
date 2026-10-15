@@ -73,3 +73,21 @@ def test_claude_can_ask_for_the_items_due_for_review(tmp_path):
     assert sorted(i["text"] for i in mcp_door.study_list("got")) == ["nDCG", "pass^k"]
     saved = mcp_door.save_to_study("MLflow assessments")
     assert store.get(f"study/{saved['id']}")["updatedAt"] > 0  # so merging can tell which copy is newer
+
+
+def test_the_page_never_drops_study_list_changes_made_while_it_connects():
+    """Runs the page's own study-list code in node against a slow, partly failing fake account."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    import pytest
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    root = Path(__file__).resolve().parent
+    script = root.parent / "src" / "drill" / "content" / "page" / "study-list.js"
+    result = subprocess.run([node, str(root / "fixtures" / "study_sync.js"), str(script)],
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr[-800:]

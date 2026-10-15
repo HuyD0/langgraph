@@ -68,7 +68,11 @@ def load_prompt(registry_name: str, default: str) -> str:
 
         schema = mlflow_names.prompt_schema()
         name = f"{schema}.{registry_name}" if schema else registry_name  # Unity Catalog needs catalog.schema.name
-        return str(mlflow.genai.load_prompt(f"prompts:/{name}/1"))
+        prompt = mlflow.genai.load_prompt(f"prompts:/{name}/1")
+        # A registry prompt is an object, not text: str() of it is a summary like
+        # "PromptVersion(name=..., version=1, template=...)". Its ``.template`` is the text.
+        template = getattr(prompt, "template", None)
+        return template if isinstance(template, str) and template.strip() else default
     except Exception:
         return default
 

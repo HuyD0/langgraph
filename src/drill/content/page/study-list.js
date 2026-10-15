@@ -7,6 +7,18 @@ const REVIEW_DAYS = [3, 10, 30, 90], DAY_MS = 86400000;
 const isDue = it => it.status === "got" && (it.reviewAt || 0) <= Date.now();
 function loadStudyLocal() { try { studyItems = JSON.parse(localStorage.getItem("drill-study") || "[]"); } catch { studyItems = []; } }
 function saveStudyLocal() { if (studyCol) return; try { localStorage.setItem("drill-study", JSON.stringify(studyItems)); } catch {} }
+// Once connected, the account holds the list and this device keeps only what couldn't reach it
+// yet ("drill-study"), which is sent again at the next connect. A change is never just dropped.
+const studyUnsent = new Set(), studyGone = new Set();  // ids not yet in the account; ids removed while connecting
+function keepUnsent(it) {
+  studyUnsent.add(it.id);
+  try { const list = JSON.parse(localStorage.getItem("drill-study") || "[]").filter(x => x.id !== it.id); list.unshift(it); localStorage.setItem("drill-study", JSON.stringify(list)); } catch {}
+}
+function dropUnsent(id) {
+  if (!studyUnsent.delete(id)) return;
+  try { const list = JSON.parse(localStorage.getItem("drill-study") || "[]").filter(x => x.id !== id); if (list.length) localStorage.setItem("drill-study", JSON.stringify(list)); else localStorage.removeItem("drill-study"); } catch {}
+}
+const studyVersion = it => it.updatedAt || it.createdAt || 0;
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // Saving works by selecting text (see the selection toolbar); no per-item buttons, to keep pages quiet.
 function tagButtons() { return ""; }
@@ -22,18 +34,25 @@ async function addItem(text, source, kind) {
   if (existing) return existing;
   const item = { id: newId(), text: text.slice(0, 2000), kind: kind || "text", source, problemId: cur ? cur.p.id : "", note: "", status: "open", createdAt: Date.now(), updatedAt: Date.now(), explanation: "", quiz: null, thread: [] };
   studyItems.unshift(item); saveStudyLocal(); renderStudy();
-  if (studyCol) { try { await studyCol.doc(item.id).set(item); } catch { flashStudy("Couldn't save to your account. It's kept for this visit only."); } }
+  if (studyCol) { try { await studyCol.doc(item.id).set(item); } catch { keepUnsent(item); flashStudy("Couldn't save to your account yet. It's kept on this device and sent next time."); } }
   return item;
 }
 async function updateItem(id, patch) {
   const it = studyItems.find(i => i.id === id); if (!it) return;
   patch = Object.assign({}, patch, { updatedAt: Date.now() });  // the newer copy wins when two lists are merged
   Object.assign(it, patch); saveStudyLocal(); renderStudy();
-  if (studyCol) { try { await studyCol.doc(id).update(patch); } catch {} }
+  if (!studyCol) return;
+  try {
+    // An item the account doesn't have yet is sent whole: a patch alone would save a half item.
+    if (studyUnsent.has(id)) { await studyCol.doc(id).set(it); dropUnsent(id); }
+    else await studyCol.doc(id).update(patch);
+  } catch { keepUnsent(it); flashStudy("Couldn't save that change to your account yet. It's kept on this device and sent next time."); }
 }
 async function removeItem(id) {
   studyItems = studyItems.filter(i => i.id !== id); saveStudyLocal(); renderStudy();
-  if (studyCol) { try { await studyCol.doc(id).delete(); } catch {} }
+  if (!studyCol) { studyGone.add(id); return; }  // still connecting: removed from the account once connected
+  dropUnsent(id);
+  try { await studyCol.doc(id).delete(); } catch { flashStudy("Couldn't remove it from your account. It may come back; try again later."); }
 }
 function flashStudy(msg) { toast(msg); }
 // Model replies: code blocks, paragraphs, bullet and numbered lists, headings, **bold**, *italics*, `code`.
@@ -351,18 +370,33 @@ Answer it plainly for a beginner, under 150 words. Small code examples are fine 
 }
 async function connectStudy(db) {
   try {
-    const col = db.collection("study");
+    const col = db.collection("study"), since = Date.now();
     // Send up what was saved on this device. Only items that made it leave the local copy:
     // any that failed stay saved here, stay on screen, and are sent again next visit.
-    const unsent = [];
-    for (const it of studyItems) { try { await col.doc(it.id).set(it); } catch { unsent.push(it); } }
-    studyCol = col;
+    // Sending waits on the network, so saves, edits and removals can happen meanwhile: each pass
+    // sends whatever changed since the last one, so nothing done while connecting is dropped.
+    const sent = new Map(), failed = new Set();
+    for (let pass = 0; pass < 3; pass++) {
+      const todo = studyItems.filter(it => !failed.has(it.id) && sent.get(it.id) !== studyVersion(it));
+      const gone = [...studyGone].filter(id => sent.has(id));
+      if (!todo.length && !gone.length) break;
+      for (const it of todo) { const v = studyVersion(it); try { await col.doc(it.id).set(it); sent.set(it.id, v); } catch { failed.add(it.id); } }
+      for (const id of gone) { studyGone.delete(id); sent.delete(id); try { await col.doc(id).delete(); } catch {} }
+    }
+    studyCol = col;  // from here on, every change goes straight to the account
+    studyGone.clear();
+    const unsent = studyItems.filter(it => failed.has(it.id) || sent.get(it.id) !== studyVersion(it));
+    for (const it of unsent) studyUnsent.add(it.id);
     try { if (unsent.length) localStorage.setItem("drill-study", JSON.stringify(unsent)); else localStorage.removeItem("drill-study"); } catch {}
     if (unsent.length) flashStudy("Some saved items couldn't reach your account yet. They're kept on this device and will be sent next time.");
     col.orderBy("createdAt", "desc").onSnapshot(snap => {
       const items = snap.docs.map(d => Object.assign({}, d.data(), { id: d.id }));
-      const have = new Set(items.map(it => it.id));
-      studyItems = items.concat(unsent.filter(it => !have.has(it.id)));
+      // Merge, don't replace: a copy changed here after the read began is newer and wins, and an
+      // item saved here this visit that the read hasn't caught up with yet stays on screen.
+      const mine = new Map(studyItems.map(it => [it.id, it])), have = new Set(items.map(it => it.id));
+      const merged = items.map(it => { const m = mine.get(it.id); return m && studyVersion(m) > studyVersion(it) ? m : it; });
+      const extra = studyItems.filter(it => !have.has(it.id) && (studyUnsent.has(it.id) || (it.createdAt || 0) >= since));
+      studyItems = merged.concat(extra).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       renderStudy();
     }, () => flashStudy("Your study list couldn't load from your account. Reload to try again."));
   } catch {}

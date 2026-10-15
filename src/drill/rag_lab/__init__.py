@@ -262,18 +262,33 @@ class Lab:
 
     def run(self, questions: list[dict], variants: list[str], runs: int = 1, tags: dict | None = None,
             quiet: bool = False) -> list[dict]:
-        """Every question through every variant, `runs` times. Prints progress when live."""
+        """Every question through every variant, `runs` times. Prints progress when live.
+
+        Live, one request that fails (Ollama stopped, a timeout) doesn't throw away the rest:
+        it is kept as a failed result with its ``error``, and the run carries on. Recorded runs
+        still stop on a missing recording, because that means the recording needs refreshing.
+        """
         import mlflow
 
-        results = []
+        results, failed = [], 0
         total = len(questions) * len(variants) * runs
         for variant in variants:
             mlflow.set_active_model(name=f"support-{variant}")
             for run in range(runs):
                 for q in questions:
-                    results.append(self.ask(q, variant, run, tags))
+                    try:
+                        results.append(self.ask(q, variant, run, tags))
+                    except Exception as exc:  # noqa: BLE001 - keep the other answers
+                        if not self.live:
+                            raise
+                        failed += 1
+                        results.append({"qid": q["id"], "group": q["group"], "variant": variant, "run": run,
+                                        "answer": "", "docs": [], "candidates": [], "passed": False,
+                                        "trace_id": None, "error": f"{type(exc).__name__}: {exc}"})
                     if self.live and not quiet and len(results) % 25 == 0:
                         print(f"  {len(results)} of {total} requests done")
+        if failed:
+            print(f"  {failed} of {total} requests failed and count as not passed (see each result's 'error').")
         mlflow.flush_trace_async_logging()
         return results
 

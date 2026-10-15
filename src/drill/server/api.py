@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from drill.config import PROJECT_ROOT
 from drill.server.bank import Bank
-from drill.server.router import ModelRouter, NoModelAvailable
+from drill.server.router import ModelRouter, NoModelAvailable, PromptTooLong, to_messages
 from drill.server import activity, team
 from drill.server.store import DocStore, lakebase_endpoint, open_store
 
@@ -48,6 +48,68 @@ PAGE_HEAD = (
     "</head><body>"
 )
 PAGE_TAIL = "</body></html>"
+
+# The biggest request body each route takes, in bytes. A progress document for every lesson
+# is well under 1 MB; a tutor request is a lesson's text plus the learner's code.
+BODY_LIMITS = {"/api/docs/": 2_000_000, "/api/ask": 400_000, "/api/feedback": 20_000}
+# The tiers the page may ask for. "complex" starts with the hosted (paid) model, so only the
+# server's own features choose it; the page never sends it, and a request that does gets "default".
+PAGE_TIERS = ("quick", "default")
+
+
+class BodyLimit:
+    """Refuses a request body bigger than its route's limit with 413, before it is read into memory.
+
+    Plain ASGI middleware: a stated ``Content-Length`` that is too big is refused at once, and a
+    body sent without one is counted as it arrives.
+    """
+
+    def __init__(self, app: Any, limits: dict[str, int]):
+        self.app, self.limits = app, limits
+
+    def limit_for(self, path: str) -> int | None:
+        return next((n for prefix, n in self.limits.items() if path.startswith(prefix)), None)
+
+    async def __call__(self, scope, receive, send):
+        limit = self.limit_for(scope.get("path", "")) if scope["type"] == "http" else None
+        if limit is None:
+            return await self.app(scope, receive, send)
+        stated = dict(scope.get("headers") or []).get(b"content-length")
+        if stated is not None and stated.isdigit() and int(stated) > limit:
+            return await self._too_big(send, limit)
+        # No length given (or a short one): read the body here, counting, then hand it on.
+        chunks, size = [], 0
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                return  # the client went away: nothing to answer
+            size += len(message.get("body", b""))
+            if size > limit:
+                return await self._too_big(send, limit)
+            chunks.append(message.get("body", b""))
+            if not message.get("more_body"):
+                break
+        body, sent = b"".join(chunks), False
+
+        async def replay():
+            nonlocal sent
+            if sent:
+                return await receive()  # after the body: wait for a disconnect, as usual
+            sent = True
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        return await self.app(scope, replay, send)
+
+    @staticmethod
+    async def _too_big(send, limit: int) -> None:
+        import json
+
+        detail = {"detail": {"code": "too_large", "text": f"That is too big to save or send: the most is {limit // 1000:,} KB."}}
+        payload = json.dumps(detail).encode("utf-8")
+        await send({"type": "http.response.start", "status": 413,
+                    "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(payload)).encode())]})
+        await send({"type": "http.response.body", "body": payload})
+
 
 NO_MODEL = {
     "code": "unavailable",
@@ -200,6 +262,7 @@ def create_app(
 
     app = FastAPI(title="Daily Drill", lifespan=lifespan)
     app.state.store, app.state.router, app.state.bank = store, router, bank
+    app.add_middleware(BodyLimit, limits=BODY_LIMITS)
 
     if idle:
         @app.middleware("http")
@@ -251,9 +314,14 @@ def create_app(
         if body.messages is None and not (body.prompt or "").strip():
             raise HTTPException(400, {"code": "bad_request", "text": "Send a prompt or messages."})
         messages: Any = body.messages if body.messages is not None else body.prompt
+        tier = body.tier if body.tier in PAGE_TIERS else "default"  # the page can't pick the paid model
+        try:
+            router.check_size(to_messages(messages))
+        except PromptTooLong as exc:
+            raise HTTPException(413, {"code": "too_large", "text": str(exc)})
         # Store calls go to a worker thread: on Lakebase each is a network round trip, and
         # waiting here would hold up every other request the server is answering.
-        if not await asyncio.to_thread(router.order, body.tier):
+        if not await asyncio.to_thread(router.order, tier):
             raise HTTPException(503, NO_MODEL)
         # MLflow's user field: the signed-in email in an app (the same owner Lakebase uses), "local" elsewhere.
         context = {**(body.trace or {}), "door": "page", "user": owner_for(request, "local")}
@@ -265,7 +333,7 @@ def create_app(
 
         if body.json_mode:
             try:
-                return {"value": await router.ask_json(messages, body.tier, context=context)}
+                return {"value": await router.ask_json(messages, tier, context=context)}
             except NoModelAvailable:
                 raise HTTPException(503, NO_MODEL)
             except ValueError as exc:
@@ -273,7 +341,7 @@ def create_app(
 
         # Pull the first chunk before answering, so a model that is down turns into a
         # proper error instead of an empty stream.
-        chunks = router.stream(messages, body.tier, context=context)
+        chunks = router.stream(messages, tier, context=context)
         try:
             first = await chunks.__anext__()
         except StopAsyncIteration:

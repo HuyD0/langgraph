@@ -111,3 +111,26 @@ def test_cites_failure_scorer():
     assert scorer(inputs={"failing_input": "zzzz"}, outputs="Generic advice.") is False
     # Nothing to cite: do not punish.
     assert scorer(inputs={}, outputs="Generic advice.") is True
+
+
+def test_a_registered_prompt_gives_its_template_text(monkeypatch):
+    """str() of a registry prompt is a summary of the object; the tutor needs the template itself."""
+    import types
+
+    import mlflow
+
+    from drill import prompts
+
+    registered = types.SimpleNamespace(template="Registered hint prompt.", name="drill_hint", version=1)
+    monkeypatch.setattr(mlflow.genai, "load_prompt", lambda uri, **kw: registered)
+    assert prompts.hint_prompt() == "Registered hint prompt."
+
+    chat_style = types.SimpleNamespace(template=[{"role": "user", "content": "hi"}])
+    monkeypatch.setattr(mlflow.genai, "load_prompt", lambda uri, **kw: chat_style)
+    assert prompts.hint_prompt() == prompts.HINT_DEFAULT  # not plain text: keep the default
+
+    def missing(uri, **kw):
+        raise RuntimeError("not registered")
+
+    monkeypatch.setattr(mlflow.genai, "load_prompt", missing)
+    assert prompts.hint_prompt() == prompts.HINT_DEFAULT

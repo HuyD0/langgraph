@@ -128,8 +128,23 @@ def edit_submission(problem: Problem, request: dict) -> str:
     with tempfile.TemporaryDirectory(prefix="drill-edit-") as tmp:
         path = Path(tmp) / f"{problem.id}.py"
         path.write_text(problem.starter_code, encoding="utf-8")
-        subprocess.run([*editor.split(), str(path)], check=False)
+        try:
+            done = subprocess.run([*editor.split(), str(path)], check=False)
+        except OSError:  # $EDITOR names a program that isn't installed
+            console.print(f"[yellow]Couldn't open your editor ({editor}). Paste your solution instead, then Ctrl-D.[/yellow]")
+            return sys.stdin.read()
+        if done.returncode != 0:
+            console.print(f"[yellow]Your editor ({editor}) stopped with an error; using what was saved in the file.[/yellow]")
         return path.read_text(encoding="utf-8")
+
+
+def _problem_or_exit(problem_id: str) -> Problem:
+    """The problem with this id, or a plain one-line message (not a traceback) for a typo."""
+    try:
+        return get_problem(problem_id)
+    except KeyError:
+        console.print(f"[red]No problem called '{problem_id}'.[/red] Try: drill list")
+        raise typer.Exit(1) from None
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +202,7 @@ def stats_cmd() -> None:
 
 @app.command("check")
 def check_cmd(
-    solution: Path = typer.Argument(..., help="Python file containing your solution."),
+    solution: Path = typer.Argument(..., exists=True, dir_okay=False, help="Python file containing your solution."),
     problem: str = typer.Option(..., "--problem", "-p", help="Which problem it answers."),
 ) -> None:
     """Run the tests against a file, with no tutor and no LLM call.
@@ -195,7 +210,7 @@ def check_cmd(
     Useful when you want the grader but not the conversation - and it works with
     no Azure credentials configured at all.
     """
-    prob = get_problem(problem)
+    prob = _problem_or_exit(problem)
     settings = DrillSettings.from_env()
     result = run_submission(prob, solution.read_text(encoding="utf-8"),
                             timeout=settings.sandbox_timeout)
@@ -208,7 +223,7 @@ def solution_cmd(
     problem: str = typer.Argument(..., help="Problem id."),
 ) -> None:
     """Print the reference solution. Use it after you have genuinely tried."""
-    prob = get_problem(problem)
+    prob = _problem_or_exit(problem)
     console.print(Panel(f"[bold]{prob.pattern}[/bold]\n[dim]{prob.target_complexity}[/dim]",
                         border_style="dim"))
     console.print(Syntax(prob.reference_solution, "python", theme="ansi_dark"))
@@ -226,6 +241,11 @@ def start_cmd(
     from drill.session import run_session
     from drill.tracking import setup_tracing
 
+    if problem:
+        _problem_or_exit(problem)  # a typo gets one plain line, before any model is set up
+    if topic and topic not in TOPICS:
+        console.print(f"[red]No topic called '{topic}'.[/red] Topics: {', '.join(TOPICS)}")
+        raise typer.Exit(1)
     settings = DrillSettings.from_env()
     try:
         deps = Deps.from_env()

@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage
 from drill.server import mcp as mcp_door
 from drill.server.api import create_app
 from drill.server.bank import Bank
-from drill.server.router import ModelRouter, NoModelAvailable, Route, parse_json, pick_local_model, strip_thinking
+from drill.server.router import ModelRouter, NoModelAvailable, Route, parse_json, pick_local_model, strip_thinking, to_messages
 from drill.server.store import DocStore
 
 
@@ -130,10 +130,60 @@ def test_same_prompt_is_served_from_the_cache(store):
 
 
 def test_hosted_budget_is_respected(store):
-    router = ModelRouter(Route("local", "l", fake("local", "local")), Route("hosted", "h", fake("hosted")), store, hosted_daily_tokens=5)
+    router = ModelRouter(Route("local", "l", fake("local", "local")), Route("hosted", "h", fake("hosted")), store, hosted_daily_tokens=20)
     assert run(router.ask("a long question that costs more than five tokens", tier="complex")).route == "hosted"
-    assert router.hosted_tokens_today() > 5
+    assert router.hosted_tokens_today() == 15  # about 4 characters a token, question and answer
+    # 15 used + this question would pass 20: it goes to the local model instead.
     assert run(router.ask("another complex question", tier="complex")).route == "local"
+
+
+def test_one_big_request_cannot_blow_the_hosted_budget(store):
+    router = ModelRouter(Route("local", "l", fake("local")), Route("hosted", "h", fake("hosted")), store, hosted_daily_tokens=20)
+    assert run(router.ask("x" * 200, tier="complex")).route == "local"  # ~50 tokens never fit in 20
+    assert router.hosted_tokens_today() == 0
+
+
+def test_a_request_over_the_size_limit_is_refused_before_any_model(store):
+    from drill.server.router import PromptTooLong
+
+    router = ModelRouter(Route("local", "l", fake("never used")), None, store, max_prompt_chars=100)
+    with pytest.raises(PromptTooLong):
+        run(router.ask("x" * 101))
+    with pytest.raises(PromptTooLong):  # messages count together
+        run(router.ask([{"role": "system", "content": "s" * 60}, {"role": "user", "content": "u" * 60}]))
+    assert run(router.ask("x" * 100)).text == "never used"
+
+
+def test_ollama_starting_later_is_noticed_without_a_restart(store, monkeypatch):
+    from drill.server import router as router_module
+
+    found: list = [None]  # what a look for Ollama finds right now
+    router = ModelRouter(None, None, store, find_local=lambda: found[0])
+    assert not router.available
+    found[0] = Route("local", "gemma", fake("hi from ollama"))
+    assert not router.available  # looked a moment ago: no new look yet (it's cheap, not constant)
+    monkeypatch.setattr(router_module, "LOCAL_RECHECK_SECONDS", 0.0)
+    assert router.available and router.local.model == "gemma"
+    assert run(router.ask("hello")).text == "hi from ollama"
+    found[0] = None  # Ollama stopped
+    assert router.order() == [] and not router.available
+
+
+def test_cached_answers_age_out_and_the_cache_stays_bounded(store, monkeypatch):
+    router = ModelRouter(Route("local", "l", fake("first", "second")), None, store, cache_seconds=60, cache_max=2)
+    assert run(router.ask("same")).text == "first"
+    key = router._cache_key(to_messages("same"), "default", False)
+    store.set(key, {**store.get(key), "at": time.time() - 120})  # two minutes old: past its time
+    again = run(router.ask("same"))
+    assert (again.text, again.cached) == ("second", False)
+
+    # The sweep: old entries go, then all but the newest `cache_max`.
+    for n in range(4):
+        store.set(f"cache/k{n}", {"text": str(n), "at": time.time()}, updated_at=time.time() + n)
+    store.set("cache/old", {"text": "old", "at": 0}, updated_at=1.0)
+    router._pruned = None
+    router._prune_cache()
+    assert sorted(doc_id for doc_id, _ in store.list("cache")) == ["k2", "k3"]
 
 
 def test_streaming_grows_and_reports_who_answered(store):
@@ -291,10 +341,35 @@ def test_tracing_waits_for_mlflow_without_holding_up_answers(store, tmp_path, mo
         mlflow.set_tracking_uri(uri)
         assert not observer.ready()  # still inside the 30-second wait
         observer._next_try = 0
+        assert not observer.ready()  # the retry runs in the background: this request isn't held up
+        observer._reconnect.join(10)
         assert observer.ready()
     finally:
         mlflow.clear_active_model()
         mlflow.set_tracking_uri(None)
+
+
+def test_a_slow_mlflow_reconnect_never_holds_up_a_request(store, monkeypatch):
+    from drill.server.observe import MlflowObserver
+
+    monkeypatch.setenv("DRILL_TRACING", "1")
+    observer = MlflowObserver.__new__(MlflowObserver)  # skip the start-up connect
+    observer.__dict__.update(enabled=False, _next_try=0.0, _warned=True, _reconnect=None, _prompts={})
+    calls = []
+
+    def slow_connect():
+        calls.append(1)
+        time.sleep(1.0)  # MLflow answering slowly
+        raise ConnectionError("still down")
+
+    monkeypatch.setattr(observer, "_connect", slow_connect)
+    started = time.monotonic()
+    handles = [observer.start([], "default"), observer.start([], "default")]
+    assert time.monotonic() - started < 0.5  # both requests went on without waiting
+    assert all(h["span"] is None for h in handles)  # untraced while MLflow is away
+    observer._reconnect.join(5)
+    assert calls == [1]  # one background try, not one per request
+    assert not observer.enabled and observer._next_try > time.monotonic()  # and it waits before the next
 
 
 def test_tracing_to_databricks_uses_a_workspace_path_and_fails_fast(monkeypatch):
@@ -404,6 +479,40 @@ def test_ask_without_a_model_is_a_clear_503(store, bank):
     assert not client.get("/api/health").json()["ai"]
     response = client.post("/api/ask", json={"prompt": "hello"})
     assert response.status_code == 503 and response.json()["detail"]["code"] == "unavailable"
+
+
+def test_the_page_cannot_pick_the_paid_model(store, bank):
+    router = ModelRouter(Route("local", "l", fake("local answer")), Route("hosted", "h", fake("hosted answer")), store)
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    response = client.post("/api/ask", json={"prompt": "review this", "tier": "complex"})
+    assert response.text == "local answer"  # treated as "default": local first
+    assert router.hosted_tokens_today() == 0
+
+
+def test_oversized_bodies_get_a_clear_413(store, bank):
+    from drill.server.api import BODY_LIMITS
+
+    client = client_with(store, bank, "unused")
+    big = {"notes": "x" * (BODY_LIMITS["/api/docs/"] + 10)}
+    for method in (client.put, client.patch):
+        response = method("/api/docs/data/users/local/progress", json=big)
+        assert response.status_code == 413 and response.json()["detail"]["code"] == "too_large"
+    assert client.get("/api/docs/data/users/local/progress").json()["exists"] is False  # nothing was saved
+
+    # Sent in pieces with no stated length: counted as it arrives, and still refused.
+    def pieces():
+        yield b'{"notes": "'
+        for _ in range(30):
+            yield b"x" * 100_000
+        yield b'"}'
+
+    response = client.put("/api/docs/data/users/local/progress", content=pieces(), headers={"content-type": "application/json"})
+    assert response.status_code == 413
+
+    # A prompt under the body limit but over the server's prompt limit: 413 too, and no model call.
+    response = client.post("/api/ask", json={"prompt": "x" * 70_000})
+    assert response.status_code == 413 and "characters" in response.json()["detail"]["text"]
+    assert client.put("/api/docs/study/a", json={"text": "small"}).status_code == 200  # normal saves still work
 
 
 # ---------------------------------------------------------------------------
