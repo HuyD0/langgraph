@@ -102,6 +102,7 @@ async function askLesson(question, instruction) {
   const chip = !!instruction, guarded = !chip && ((!!fn && question.includes(fn)) || SOLUTION_ASK.test(question));
   if (guarded)
     instruction = "They are asking about the coding exercise. Do not write any code at all. In two or three plain sentences, describe only the first step to take, then ask one question that helps them work out the next step. Mention that the Build step has step-by-step hints.";
+  if (guarded && (cur.p.practice || cur.p.sort)) instruction = instruction.replace("the Build step has step-by-step hints", "the Practice step gives a clue first, then the answer");
   const history = thread.filter(t => !t.failed).slice(-4).map(t => "Q: " + t.q + "\nA: " + t.a).join("\n\n");
   const turn = { q: question.trim().slice(0, 500), a: "", streaming: true };
   thread.push(turn);
@@ -117,7 +118,7 @@ Their message: ${turn.q}
 ${instruction ? "How to answer: " + instruction + "\n" : ""}
 Rules:
 - Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.
-- Never write code for the lesson's coding exercise (\`${cur.p.fn}\`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a \`\`\`python block.
+- Never write code for the lesson's coding exercise (\`${cur.p.fn}\`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a \`\`\`python block.${cur.p.practice || cur.p.sort ? "\n- The Practice step asks questions with one right option each. Never say which option is right: give a clue that points at the evidence, and let them choose." : ""}
 - If your last message asked them a question, their message is their answer: say what is right, fix what is not, then ask one more question.
 - If they describe their own situation, answer for that situation, and say which part of the lesson applies and which part changes.
 - Only add a code example if it makes the answer clearer, and make sure it matches what you said.

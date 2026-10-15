@@ -1,6 +1,6 @@
 // ---------- practice questions: Build as reading real evidence (content/model.py practice, ask) ----------
-// For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
-// questions instead of code: one per screen, the evidence above it. A wrong pick is crossed out
+// When a lesson's skill is a decision or reading evidence (YAML, a plan, a run, a trace), the Build
+// step is a few questions instead of code, and its tab says Practice: one per screen, the evidence above it. A wrong pick is crossed out
 // with a plain reason; help is a clue first, then the answer. The Python version is one tap away.
 const QF = { p: null, i: 0, tried: [], help: 0, first: {}, code: false, again: false, log: [] };
 // One line per question for the backend: the question, wrong picks, clue or answer used, YAML checks.
@@ -158,7 +158,8 @@ function qfRender() {
       <div class="sfoot"><button class="linkbtn" data-qf-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
     return;
   }
-  const opts = a.pick ? "" : `<div class="opts">${a.options.map((o, k) => `<button class="opt${solved && k === a.answer ? " right" : QF.tried.includes(k) ? " wrong" : ""}" data-qf="${k}"${solved || QF.tried.includes(k) ? " disabled" : ""}><span class="k">${"ABCDEF"[k]}</span><span>${md(o)}</span></button>`).join("")}</div>`;
+  const order = checkOrder(QF.p.id + ":" + QF.i, a.options.length);  // shuffled like the Check step, so the right one isn't always in the same place
+  const opts = a.pick ? "" : `<div class="opts">${order.map((k, at) => { const o = a.options[k]; return `<button class="opt${solved && k === a.answer ? " right" : QF.tried.includes(k) ? " wrong" : ""}" data-qf="${k}"${solved || QF.tried.includes(k) ? " disabled" : ""}><span class="k">${"ABCDEF"[at]}</span><span>${md(o)}</span></button>`; }).join("")}</div>`;
   const note = solved ? `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "The answer." : "Right."}</b> ${md(a.why)}</div>`
     : lastWrong != null ? `<div class="snote no"><b>Not quite.</b> ${md((a.wrong && a.wrong[lastWrong]) || "Look at the evidence again.")}</div>` : "";
   const help = solved ? `<button class="btn primary qf-next" data-qf-next>${QF.i + 1 < n ? "Next question" : "See how you did"}${ic("arrowr")}</button>`

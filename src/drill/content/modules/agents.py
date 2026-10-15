@@ -1,6 +1,6 @@
 """Agents with LangGraph: The agent loop, memory, tools from Unity Catalog, and scoring the result."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('agents', 'Agents with LangGraph', 'The agent loop, memory, tools from Unity Catalog, and scoring the result.')
 
@@ -1705,6 +1705,46 @@ For example: `{"react": {"success_rate": 0.67, "cost_per_success": 0.06}}`.
         pattern='Group the runs by design, keeping running totals, then summarise each group.',
         target='one pass over the runs, then one over the designs',
         realworld='Agent teams compare designs exactly like this before committing to a graph shape, because the most successful design is often not the cheapest per useful answer.',
+        practice=practice(
+            intro='Compare agent designs the way a reviewer does: same tasks for everyone, then success rate and cost per success.',
+            explain='Measuring agent designs on the same tasks beats guessing. You compared success rate and cost per success, with the cost of failed runs counted in, made sure every design ran the same course, and then read the traces where one design failed and another passed.',
+            asks=[
+                ask('Which runs count toward react\'s cost per success?', ['Only the two that succeeded', 'All three, the failed one included'], answer=1,
+                    evidence=evidence('code', title='Four runs, cost in dollars', text="""runs = [
+  {"design": "react", "success": True,  "cost": 0.04},
+  {"design": "react", "success": False, "cost": 0.05},
+  {"design": "react", "success": True,  "cost": 0.03},
+  {"design": "plan",  "success": True,  "cost": 0.02},
+]"""),
+                    clue='You pay for every try, even the ones that didn\'t work.',
+                    why='Cost per success spreads the cost of all runs over the runs that worked: 0.12 dollars over 2 successes is 0.06 each. Leaving the failure out makes react look cheaper than it is.',
+                    wrong=['The failed run still cost 0.05 dollars. Who pays for it?', None]),
+                ask('A supervisor design ran once and failed. What is its cost per success?', ['$0.10, the cost of its one run', '$0.00, since it gave no answer', 'None: it never succeeded'], answer=2,
+                    evidence=evidence('code', title='One more run', text="""{"design": "supervisor", "success": False, "cost": 0.10}"""),
+                    clue='Cost per success shares the cost out over the runs that worked. How many worked?',
+                    why='With no successes there is nothing to share the cost over, so there is no cost per success. It spent 10 cents and gave no useful answer.',
+                    wrong=['That is what it cost, but it bought no useful answer.', 'It wasn\'t free: it spent 10 cents.', None]),
+                ask('Which design is cheapest per useful answer?', ['`react`', '`plan_execute`', '`supervisor`'], answer=1,
+                    evidence=evidence('code', title='Three designs, same 20 tasks, 3 tries each', text="""design        success  reliable tasks  cost per success
+react           80%        65%            $0.040
+plan_execute    78%        75%            $0.028
+supervisor      83%        70%            $0.090"""),
+                    clue='Read the last column, not the success column.',
+                    why='plan_execute costs $0.028 per success, the lowest, and it is also the most reliable: 75 percent of tasks pass on every try.',
+                    wrong=['It costs $0.040 per success. Is anything lower?', None, 'It succeeds most often, but at $0.090 per success it costs the most.']),
+                ask('Can you say supervisor is better than react?', ['Yes: 92 percent beats 80 percent', 'No: it ran only the easy tasks', 'Yes, after a few more tries each'], answer=1,
+                    evidence=evidence('code', title='A teammate\'s comparison', text="""design      tasks            tries  success
+react       20 (full set)      3     80%
+supervisor  12 (easy ones)     3     92%"""),
+                    clue='Look at the tasks column before the success column.',
+                    why='A fair race uses one course for everyone. Run every design on the same task list with the same number of tries, then compare.',
+                    wrong=['It ran 12 easy tasks; react ran all 20. Is that a fair race?', None, 'More tries on easier tasks is still a different course.']),
+                ask('plan_execute fails 4 tasks that react passes. What do you do next?', ['Read those 4 traces side by side', 'Drop plan_execute: it fails too often', 'Add a supervisor to catch its failures'], answer=0,
+                    clue='The numbers say where it fails, not why.',
+                    why='Read the tasks one design fails and another passes, trace by trace. Planning first often breaks when the first plan is wrong, and the traces show whether that is what happened.',
+                    wrong=[None, 'It is still the cheapest and most reliable. Find out why it fails first.', 'A supervisor adds cost, and only pays off on tasks with genuinely separate parts.']),
+            ],
+        ),
         starter="""def compare_designs(runs):
     # your code here
     pass
@@ -1895,6 +1935,57 @@ Return a dict with two keys:
         pattern='Walk the steps in order, and pause at the first risky step nobody has approved.',
         target='one walk through the steps',
         realworld='This is human-in-the-loop in LangGraph: `interrupt()` pauses the graph, a checkpointer saves its state under a `thread_id`, and `Command(resume=...)` continues it later, even after a restart. Your function runs every step again from the start. LangGraph is smarter: the checkpointer saved the finished steps, so it picks up at the paused step with the approval filled in.',
+        practice=practice(
+            intro='Follow an agent run step by step the way LangGraph does: run the safe steps, and pause at the first risky one nobody approved.',
+            explain='Some agent actions need a person to say yes, so the agent pauses there and resumes later. You walked the steps in order, ran the safe ones, and stopped at the first risky step nobody approved; on resume, the checkpointer picks up at that step. You also saw why the reviewer needs the details, and why anything that changes the world belongs after the interrupt.',
+            asks=[
+                ask('Where does this run pause?', ['`look_up_order`', '`issue_refund`', '`email_customer`', 'It runs to the end'], answer=1,
+                    evidence=evidence('code', title='The refund agent\'s steps', text="""steps = [
+  ["look_up_order",  False],
+  ["issue_refund",   True],    # risky
+  ["email_customer", False],
+]
+approved = []"""),
+                    clue='Find the first step marked True whose name is not in approved.',
+                    why='issue_refund is risky and nobody has approved it, so the agent pauses there. look_up_order has already run; email_customer waits.',
+                    wrong=['It isn\'t risky, so it just runs.', None, 'The run never gets this far.', 'One step is risky, and approved is empty.']),
+                ask('A person approves the refund, and the graph is invoked with `Command(resume="approve")`. What runs now?', ['Everything again, from `look_up_order`', '`issue_refund`, then `email_customer`', 'Only `email_customer`'], answer=1,
+                    evidence=evidence('code', title='Resuming the paused run', text="""config = {"configurable": {"thread_id": "ticket-1042"}}
+graph.invoke(inputs, config)                     # paused at issue_refund
+graph.invoke(Command(resume="approve"), config)  # now?"""),
+                    clue='The checkpointer saved the finished steps under that thread id.',
+                    why='The state was saved under the thread id, so the run picks up at the paused step with the approval filled in, then carries on to the email.',
+                    wrong=['That is what a run without saved state would do. What did the checkpointer keep?', None, 'The refund itself still has to run: the approval only lets it.']),
+                ask('A person approved only the refund. Where does this run pause?', ['`refund`', '`email`', '`close_account`', 'It runs to the end'], answer=2,
+                    evidence=evidence('code', title='Another run', text="""steps = [
+  ["refund",        True],
+  ["email",         False],
+  ["close_account", True],
+]
+approved = ["refund"]"""),
+                    clue='Approving one risky step doesn\'t approve the others.',
+                    why='refund is approved, so it runs; email isn\'t risky, so it runs; close_account is risky and nobody approved it, so the run pauses there.',
+                    wrong=['It was approved, so it runs.', 'It isn\'t risky.', None, 'There is a second risky step, and nobody approved it.']),
+                ask('Which pause helps the person approving most?', ['The first: short and simple to approve', 'The second: what, how much, and for whom'], answer=1,
+                    evidence=evidence('code', title='Two ways to pause', text="""# 1
+interrupt("approve?")
+
+# 2
+interrupt({"action": "refund", "amount": 250, "order": "A-1042"})"""),
+                    clue='A person can only judge what they can see.',
+                    why='Pass the action and its arguments to the interrupt, so the reviewer sees "refund $250 on A-1042", not just "approve?".',
+                    wrong=['Simple, but approve what, for whom, and how much? The reviewer can\'t tell.', None]),
+                ask('When this run resumes, the node runs again from its first line. What goes wrong?', ['The customer gets the email twice', 'The refund is issued twice', 'Nothing'], answer=0,
+                    evidence=evidence('code', title='The refund node', text="""def refund_node(state):
+    send_email(state["customer"], "Your refund is on its way")
+    decision = interrupt({"action": "refund", "amount": state["amount"]})
+    if decision == "approve":
+        issue_refund(state["order_id"])"""),
+                    clue='Which line comes before the interrupt?',
+                    why='On resume, the node with interrupt() runs again from its start, so the email goes out a second time. Put actions that change things after the interrupt, or make them idempotent: safe to run twice.',
+                    wrong=[None, 'The refund is after the interrupt, so it runs once, after the approval.', 'Something before the interrupt runs twice.']),
+            ],
+        ),
         starter="""def approval_run(steps, approved):
     # your code here
     pass
@@ -2055,6 +2146,51 @@ Check these rules in order, and return at the first one that matches:
         pattern='Rules checked in order: return at the first one that matches.',
         target='a few checks, one after another, with no loop',
         realworld='This is the routing step after each run in a coding agent, like a LangGraph conditional edge after a `run_code` node, with a sandbox running the code. "done" should lead to a real check (run the tests, read the table), not straight to "finished", because agents often report success that never happened.',
+        practice=practice(
+            intro='Read each run the way a coding agent\'s router does: the exit code, the round and the last line, then the next step.',
+            explain='A coding agent retries after errors, but only within its retry limit, and environment errors go to a person. You read the rules in order: a pass means done (then check the real result), no rounds left means stop, a permission error or a missing package means ask a person, and only a real code bug gets another try.',
+            asks=[
+                ask('What does the agent do next?', ['Done', 'Fix and retry', 'Ask a person', 'Stop'], answer=1,
+                    evidence=evidence('code', title='Round 1 of 3', text="""$ python report.py
+Traceback (most recent call last):
+  File "report.py", line 4, in <module>
+    print(totl)
+NameError: name 'totl' is not defined
+exit code: 1"""),
+                    clue='A misspelt name is a bug in the code itself, and there are rounds left.',
+                    why='NameError means the code used a name that doesn\'t exist, here a typo for total. That is a real code bug, and only round 1 of 3 has run, so the agent tries a fix.',
+                    wrong=['Exit code 1 means it failed.', None, 'A typo is something the agent can fix by itself.', 'Only round 1 of 3 has run.']),
+                ask('What does the agent do next?', ['Done', 'Fix and retry', 'Ask a person', 'Stop'], answer=2,
+                    evidence=evidence('code', title='Round 1 of 3', text="""$ python report.py
+Traceback (most recent call last):
+  File "report.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+exit code: 1"""),
+                    clue='Would rewriting the code install a missing package?',
+                    why='A missing package is an environment error: it fails the same way every round, however the code is written. Send it to a person who can fix the setup.',
+                    wrong=['Exit code 1 means it failed.', 'No rewrite installs pandas, so the agent would burn all three rounds.', None, 'Rounds are left, but retrying won\'t help. Who can fix the setup?']),
+                ask('Same error, but this was the last round. What next?', ['Done', 'Fix and retry', 'Ask a person', 'Stop'], answer=3,
+                    evidence=evidence('code', title='Round 3 of 3', text="""ModuleNotFoundError: No module named 'pandas'
+exit code: 1"""),
+                    clue='Check the rules in order. Which one comes before the error type?',
+                    why='The retry limit is checked first: with no rounds left, the agent stops, whatever the error says. The first rule that matches wins.',
+                    wrong=['Exit code 1 means it failed.', 'There are no rounds left to try a fix in.', 'The limit is checked before the error type. Are any rounds left?', None]),
+                ask('It passed on its last round. What next?', ['Done', 'Fix and retry', 'Ask a person', 'Stop'], answer=0,
+                    evidence=evidence('code', title='Round 3 of 3', text="""$ pytest
+...
+3 passed in 0.12s
+exit code: 0"""),
+                    clue='Which rule is checked first of all?',
+                    why='Exit code 0 is checked before the retry limit, so a pass on the last round still counts.',
+                    wrong=[None, 'Nothing failed, so there is nothing to fix.', 'Nothing failed, so there is nothing to ask about.', 'The limit only matters when the run failed.']),
+                ask('The agent says it\'s finished. What do you do before you believe it?', ['Nothing: exit code 0 means it worked', 'Count yesterday\'s rows in the table', 'Ask the agent to double-check its work'], answer=1,
+                    evidence=evidence('claim', who='The agent said', text='"All done! I loaded yesterday\'s orders into `main.sales.daily`. Exit code 0."'),
+                    clue='Exit code 0 only means nothing crashed.',
+                    why='Agents often report success that never happened. "Done" should lead to a real check: run the tests, or read the table and count the new rows.',
+                    wrong=['Exit code 0 says nothing crashed, not that the rows are there.', None, 'Asking again gets another claim, not evidence.']),
+            ],
+        ),
         starter="""def next_action(exit_code, last_line,
                 round_number, max_rounds):
     # your code here

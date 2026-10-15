@@ -1,6 +1,6 @@
 """Pricing and sizing: What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('pricing', 'Pricing and sizing', 'What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build.')
 
@@ -982,6 +982,37 @@ Otherwise return `{"ok": True, "text": ...}`, where the text is these lines join
         pattern='Collect every problem first; build the file only when there are none.',
         target='one pass over the name, one over the steps',
         realworld='Claude Code and the Skills API refuse a skill whose name or description breaks these rules. Teams that share skills check them in code before publishing, the same way they lint code.',
+        practice=practice(
+            intro='Review these SKILL.md drafts the way a reviewer does before they\'re shared: will it load, and will Claude ever use it?',
+            explain='The big idea: a skill is a SKILL.md file whose name and description Claude reads first, so the file must follow the rules exactly or it will not load. You caught a name with capitals, listed every broken rule at once instead of stopping at the first, picked the description that says when to use the skill, and kept the body short with the details in reference files.',
+            asks=[
+                ask('Will this skill load?', ['Yes: both lines are filled in', 'No: the name breaks the rules', 'No: the description is too long'], answer=1,
+                    evidence=evidence('code', title='SKILL.md, first draft', text="""---
+name: Vet_AI
+description: Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.
+---"""),
+                    clue='Names may use only lowercase letters, numbers and hyphens.',
+                    why='Capitals and the underscore aren\'t allowed in a name. `vet-ai` would load.',
+                    wrong=['Filled in isn\'t enough: each line has rules.', None, 'It is well under 1,024 characters.']),
+                ask('What do you send back?', ['Only the name: "claude" is a reserved word', 'Only the description: it is empty', 'Both: the reserved word and the empty description'], answer=2,
+                    evidence=evidence('code', title='SKILL.md, a teammate\'s draft', text="""---
+name: claude-helper
+description:
+---"""),
+                    clue='Check every rule, not just the first one that fails.',
+                    why='"claude" may not appear in a name, and a description needs 1 to 1,024 characters. Listing both lets the author fix them in one go.',
+                    wrong=['The description is empty too.', 'The name uses a reserved word too.', None]),
+                ask('All three of these load. Which description gets the skill used when someone asks about an AI idea?', ['A helpful assistant for all kinds of AI work: ideas, questions, projects and plans.', 'Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.', 'I can help you work out whether your AI ideas are any good.'], answer=1,
+                    clue='Claude reads only the name and description up front. Which one says when to use it?',
+                    why='Claude chooses a skill from its description alone, so it must say what the skill does and when to use it, in the third person.',
+                    wrong=['Long, but vague: it never says what the skill does or when to use it, so Claude never will.', None, 'It is in the first person and never says when to use it. Write descriptions in the third person.']),
+                ask('What do you suggest?', ['Keep it: Claude does better with every detail in front of it', 'Keep SKILL.md short; put the details in reference files', 'Move the tables into the description, which Claude reads first'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"I put all the pricing tables and every worked example straight into SKILL.md. It\'s 900 lines now, so Claude sees everything."'),
+                    clue='Anthropic suggests keeping the body under 500 lines.',
+                    why='The body holds the steps and the output format. Details go in reference files Claude opens only when it needs them, and prices change, so the skill asks for them instead of storing them.',
+                    wrong=['The whole body is read every time the skill is used. Keep it short.', None, 'The description says when to use the skill, and it stops at 1,024 characters.']),
+            ],
+        ),
         starter="""def make_skill(name, description, steps):
     # your code here
     pass

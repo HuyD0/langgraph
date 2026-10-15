@@ -9,7 +9,7 @@ function sourceFor(node) {
   if (el.closest(".task")) return "Task · " + t;
   if (el.closest("#feed, #result")) return "Tutor feedback · " + t;
   if (el.closest("#paneBuild")) return "Python · " + t;
-  if (el.closest("#paneText")) return STEPS[cur ? cur.step : 0] + " · " + t;
+  if (el.closest("#paneText")) return (cur && cur.kind === "lesson" ? stepNames(cur.id) : STEPS)[cur ? cur.step : 0] + " · " + t;
   if (el.closest("#drawer")) return "Notebook";
   return t || "Daily Drill";
 }

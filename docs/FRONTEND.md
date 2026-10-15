@@ -86,7 +86,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `ask about this lesson` | The tutor chips and answers **In `page/ask.js`** (styles: `page/ask.css`) |
 | `build step` | `loadProblem`, the editor area, running tests |
 | `the sorting board` | Build as a judgement task (`SO`, `sortRender`, `sortPlace`). **In `page/sorting.js`** (styles: `page/sorting.css`) |
-| `practice questions` | Build as reading real evidence: YAML, plans, logs (`QF`, `qfRender`). **In `page/practice.js`** (styles: `page/practice.css`) |
+| `practice questions` | Build as a decision or reading real evidence: YAML, plans, runs, traces (`QF`, `qfRender`). Options are shuffled in a fixed order per question with the Check step's `checkOrder`; a lesson with practice or a sorting board calls the step Practice (`stepNames`). **In `page/practice.js`** (styles: `page/practice.css`) |
 | `the machine` | Rows travelling through the learner's function. **In `page/machine.js`** (styles: `page/machine.css`; its Dusk glow stays with the motion rules in `page.html`) |
 | `hints, review, solution` | Hint levels, code review, showing the answer |
 | `notebook` | The drawer: glossary, look and motion switches. **In `page/notebook.js`** (styles: `page/notebook.css`) |

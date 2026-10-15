@@ -1,7 +1,7 @@
 """Azure Databricks: the workspace, Unity Catalog and who can see what, before any of it goes into Terraform."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, planned, question, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, planned, practice, question, stack, source
 
 MODULE = module('azure-databricks', 'Azure Databricks', 'The workspace, Unity Catalog and who can see what, before any of it goes into code.', setting=PLATFORM_SETTING)
 
@@ -65,6 +65,40 @@ A grant counts when its `"to"` is one of `principals`. `ALL PRIVILEGES` counts a
         pattern='Collect the keys they hold, then check each level: catalog, schema, table, each on its own place or above.',
         target='one pass over the grants',
         realworld="Unity Catalog runs exactly this check on every query in Azure Databricks. When someone says \"I have SELECT but it still fails\", the missing key is almost always USE SCHEMA or USE CATALOG higher up. In Terraform the same keys are `databricks_grants` resources, written with underscores (`USE_SCHEMA`).",
+        practice=practice(
+            intro='Review the grants the way a platform reviewer does when someone asks "why can\'t I read this?": who holds each key, and where.',
+            explain='Unity Catalog checks three keys before anyone reads a table: USE CATALOG, USE SCHEMA and SELECT, each on its own level or higher up. You checked who each key was given to and where it was given, so a key on the catalog covered everything below it, and a key on the wrong schema or for the wrong group counted for nothing.',
+            asks=[
+                ask('Ana is in `analysts`. Can she read `main.sales.orders`?', ['Yes: she holds all three keys through `analysts`', 'No: the keys went to the group, not to her'], answer=0,
+                    evidence=evidence('code', title='The grants', text="""GRANT USE CATALOG ON CATALOG main TO analysts;
+GRANT USE SCHEMA ON SCHEMA main.sales TO analysts;
+GRANT SELECT ON TABLE main.sales.orders TO analysts;"""),
+                    clue='You hold every key given to any group you are in.',
+                    why='All three keys went to analysts, and Ana is in analysts, so she holds them all: the catalog, the schema and the table.',
+                    wrong=[None, 'Keys given to a group count for everyone in it. That\'s why teams grant to groups.']),
+                ask('Bo is in `finance`. Can he read `main.sales.orders`?', ['Yes: keys given higher up count for everything below', 'No: nothing is granted on the table itself', 'No: USE SCHEMA has to be on the schema'], answer=0,
+                    evidence=evidence('code', title='The grants', text="""GRANT USE CATALOG ON CATALOG main TO finance;
+GRANT USE SCHEMA ON CATALOG main TO finance;
+GRANT SELECT ON SCHEMA main.sales TO finance;"""),
+                    clue='A key given on a catalog or a schema covers what\'s inside it.',
+                    why='USE SCHEMA on the catalog main opens every schema in it, and SELECT on the schema main.sales covers every table in it, so Bo holds all three keys.',
+                    wrong=[None, 'SELECT on the schema covers every table in it, orders included.', 'USE SCHEMA on the catalog covers every schema in it.']),
+                ask('Ana asks for `main.hr.salaries`. Can she read it?', ['Yes: she has USE CATALOG, USE SCHEMA and SELECT', 'No: those keys are on `main.sales`, not `main.hr`'], answer=1,
+                    evidence=evidence('code', title='The grants', text="""GRANT USE CATALOG ON CATALOG main TO analysts;
+GRANT USE SCHEMA ON SCHEMA main.sales TO analysts;
+GRANT SELECT ON SCHEMA main.sales TO analysts;"""),
+                    clue='Check where each key was given, not just which keys she has.',
+                    why='A key on main.sales only covers what\'s inside main.sales. Nothing covers main.hr, so her query stops at the schema.',
+                    wrong=['She does, but USE SCHEMA and SELECT are on a different schema.', None]),
+                ask('A teammate says Ana must be able to read `main.sales.orders`: all three keys are granted on the way down. Ana is only in `analysts`. Is the teammate right?', ['Yes: all three keys are granted on the way down', 'No: the keys went to `engineers`, not `analysts`'], answer=1,
+                    evidence=evidence('code', title='The grants', text="""GRANT USE CATALOG ON CATALOG main TO engineers;
+GRANT USE SCHEMA ON SCHEMA main.sales TO engineers;
+GRANT SELECT ON TABLE main.sales.orders TO engineers;"""),
+                    clue='Read who each key was given to.',
+                    why='The keys are all there, but for engineers. Ana only holds keys given to her or to a group she\'s in, so she has none of them.',
+                    wrong=['The keys are there, but who holds them?', None]),
+            ],
+        ),
         starter="""def can_read(table, principals, grants):
     # your code here
     pass

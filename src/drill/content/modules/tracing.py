@@ -1,6 +1,6 @@
 """Tracing and AgentOps: Traces that answer your questions, slow steps and runaway agents."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('tracing', 'Tracing and AgentOps', 'Traces that answer your questions, slow steps and runaway agents.')
 
@@ -212,6 +212,49 @@ Start at the root. Step into its slowest child, the one with the biggest `ms`. K
         pattern="List each span's children in one pass, then walk down from the root, always into the slowest child.",
         target='one pass to list the children, then one walk down the tree',
         realworld="This is how you read a slow trace in MLflow Tracing or LangSmith: follow the slowest child at each level until you reach the step that's actually slow, usually one model call or one tool.",
+        practice=practice(
+            intro='Read slow traces the way an on-call engineer does: start at the root and keep stepping into the slowest child.',
+            explain='To find what\'s slow, start at the root and keep following the slowest child down, until you reach the step that is actually slow. You read the trace before trusting a guess about the model, found which helper held an agent team up, and saw that steps running at the same time overlap instead of adding up.',
+            asks=[
+                ask('Follow the slowest child down from `agent`. Where do you end up?', ['`generate`', '`sql`', '`prompt`'], answer=0,
+                    evidence=evidence('code', title='One agent run', text="""agent          1000 ms
+├─ llm_call     700 ms
+│  ├─ prompt     50 ms
+│  └─ generate  640 ms
+└─ tool:db      200 ms
+   └─ sql       190 ms"""),
+                    clue='At each level, step into the child with the biggest time, until there are no children left.',
+                    why='From agent, llm_call (700) beats tool:db (200). Inside llm_call, generate (640) beats prompt (50). generate has no children, so that is the slow step: the model writing its answer.',
+                    wrong=[None, 'sql is inside tool:db, but tool:db is the faster child of agent.', 'prompt is the faster of llm_call\'s two children.']),
+                ask('An AI assistant says: "The model is slow, switch to a faster one." What does this trace say?', ['It agrees: model calls are usually the slow part', 'It disagrees: the time went to `http_get`', 'It can\'t tell without timing the model'], answer=1,
+                    evidence=evidence('code', title='One agent run', text="""agent_run      4200 ms
+├─ plan           600 ms
+├─ tool:search   3100 ms
+│  └─ http_get   2900 ms
+└─ answer         400 ms"""),
+                    clue='Follow the slowest child from agent_run. Is that path a model call?',
+                    why='agent_run, then tool:search (3100), then http_get (2900). The model steps, plan and answer, took 1000 ms between them, so a faster model wouldn\'t fix this.',
+                    wrong=['Often, but not here. Read the trace before switching models.', None, 'The trace has every step\'s time. Follow the slowest child down.']),
+                ask('Which helper agent held the team up?', ['researcher', 'writer', 'reviewer'], answer=0,
+                    evidence=evidence('code', title='One agent team run', text="""team_run         9200 ms
+├─ researcher    6100 ms
+│  ├─ tool:web   5200 ms
+│  └─ llm         800 ms
+├─ writer        2400 ms
+└─ reviewer       600 ms"""),
+                    clue='Each helper has its own span under team_run. Which one is slowest, and what inside it?',
+                    why='researcher is the slowest child of team_run, and inside it tool:web took 5200 ms. Speed up that web search before touching the writer or the reviewer.',
+                    wrong=[None, 'writer took 2400 ms. Another helper took far longer.', 'reviewer is the quickest helper.']),
+                ask('The two tools ran at the same time. How much of the run do they account for?', ['About 3100 ms: the slower one sets the pace', '5900 ms: the two times added together'], answer=0,
+                    evidence=evidence('code', title='Two tools at once', text="""agent_run        3300 ms
+├─ tool:search   3100 ms  ┐ ran at the
+├─ tool:docs     2800 ms  ┘ same time
+└─ answer         150 ms"""),
+                    clue='When two steps overlap, the run waits only as long as the slower of them.',
+                    why='They overlap, so the run waits for the slower one, tool:search. Adding them would come to more than the whole run took.',
+                    wrong=[None, 'That is more than the whole run took. Times that overlap don\'t add up.']),
+            ],
+        ),
         starter="""def slowest_chain(spans):
     # your code here
     pass
@@ -1068,6 +1111,44 @@ Return these lists sorted with the biggest count first. If two labels have the s
         pattern='Group the ids by label in a dict of lists, make one row per label, then sort by count with the label as the tie-break.',
         target='one pass to group, then one sort of the labels',
         realworld='This is error analysis for agents: label a sample of failed traces, count, and fix the biggest group first. Then rerun the evals and count again to check that the fix worked.',
+        practice=practice(
+            intro='Work through failed runs the way an engineer doing error analysis does: count the labels, fix the biggest group, then count again.',
+            explain='Label each failed trace, count the labels, and fix the biggest group first. You saw that labels only count properly when they come from a fixed list, that a tool pointing at the broken step needs a person to check it, and that a fix is proved by rerunning and counting again.',
+            asks=[
+                ask('Which failure mode do you fix first?', ['repeated step', 'ignored task', 'never stopped'], answer=0,
+                    evidence=evidence('code', title='Five failed traces, labelled', text="""id   label
+t1   repeated step
+t2   ignored task
+t3   repeated step
+t4   never stopped
+t5   repeated step"""),
+                    clue='Count how many traces carry each label.',
+                    why='repeated step has 3 of the 5 failures, so fixing it helps the most runs.',
+                    wrong=[None, 'Only one trace has it.', 'Only one trace has it.']),
+                ask('The count puts never stopped first. What\'s wrong with this list?', ['Nothing: never stopped is the biggest group', 'Three of the labels name one problem', 'The counts are too small to be useful'], answer=1,
+                    evidence=evidence('code', title='A teammate\'s counts', text="""label           count
+never stopped       3
+loop                2
+looping             2
+repeated step       1"""),
+                    clue='Read the labels, not just the counts. Do any of them mean the same thing?',
+                    why='loop, looping and repeated step are one failure split three ways. Together they have 5 traces, more than never stopped, so under one fixed label repeated step is the biggest group. Pick labels from a fixed list, like MAST\'s.',
+                    wrong=['Add up the labels that mean the same thing first.', None, 'They are small, but enough to see that one problem has three names.']),
+                ask('What do you do?', ['Fix step 7 now: the tool found the broken step', 'Open t-193 and check step 7 yourself before acting', 'Use this tool to relabel every failed trace'], answer=1,
+                    evidence=evidence('claim', who='An AI tool said', text='"Trace t-193 went wrong at step 7: the search tool returned nothing. Fix step 7."'),
+                    clue='How reliable are tools that claim to find the exact step where a run went wrong?',
+                    why='An LLM judge names the failure mode fairly well, but tools that find the exact broken step are still unreliable. Read the trace, then act.',
+                    wrong=['It may be wrong about the step. A person checks first.', None, 'A tool\'s labels must match yours before you trust it, and this is a claim about one step, not a label.']),
+                ask('You fixed repeated step. What next?', ['Rerun the evals and count the labels again', 'Start on never stopped straight away', 'Delete the old labels'], answer=0,
+                    evidence=evidence('code', title='Before the fix', text="""label           count  read first
+repeated step      41  t-193, t-207
+never stopped      22  t-150, t-311
+ignored task        9  t-402, t-417"""),
+                    clue='How will you know the fix worked?',
+                    why='Rerun and count again: the repeated step group should shrink, and whatever is biggest now is your next fix.',
+                    wrong=[None, 'First check that the fix worked: rerun and count again.', 'The old counts are what you compare the new ones against.']),
+            ],
+        ),
         starter="""def failure_counts(failures, n):
     # your code here
     pass

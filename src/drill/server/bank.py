@@ -9,6 +9,13 @@ from __future__ import annotations
 from drill.content import build_data, render_page
 
 
+def _options(ask: dict) -> list[str]:
+    """What a practice question offers: its options, the plan's rows to tap, or nothing for Fix the YAML."""
+    if ask.get("pick"):
+        return [c["address"] for c in ask["evidence"]["changes"]]
+    return ask.get("options", [])
+
+
 class Bank:
     """Modules in path order, lessons by id, exercises by id."""
 
@@ -68,7 +75,7 @@ class Bank:
         module = self.module_of(lesson_id) or {}
         question, options, answer, why = lesson["check"]
         pattern, text, say, classic = lesson["angle"][:4]
-        if problem.get("practice"):  # a content-pack lesson: a practice exercise, not code
+        if lesson.get("pack"):  # a content-pack lesson: a practice exercise, not code
             extra = lesson["pack"]
             return {
                 "id": lesson_id, "title": lesson["title"], "module": module.get("title"), "learn": lesson["learn"],
@@ -97,6 +104,10 @@ class Bank:
             },
             "interview": {"pattern": pattern, "angle": text, "say_it_like_this": say, "classic": classic},
         }
+        if problem.get("practice"):  # the Build step opens on questions; the Python exercise stays as the other way
+            practice = problem["practice"]
+            card["practice"] = {"intro": practice["intro"],
+                                "questions": [{"question": a["question"], "options": _options(a)} for a in practice["asks"]]}
         if lesson.get("stack"):
             card["in_your_stack"] = {"title": lesson["stack"][0], "code": lesson["stack"][1]}
         return card

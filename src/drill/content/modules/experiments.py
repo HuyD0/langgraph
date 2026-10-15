@@ -1,6 +1,6 @@
 """Experiment design with MLflow: Runs, grids, fair comparisons and decisions you can defend."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('experiments', 'Experiment design with MLflow', 'Runs, grids, fair comparisons and decisions you can defend.')
 
@@ -50,6 +50,39 @@ Skip every run whose `cost` is more than `max_cost`. A run that costs exactly `m
         pattern='Skip runs over the budget, and keep the best run seen so far.',
         target='one pass over the runs',
         realworld='This is what `mlflow.search_runs` with a filter and an order does. Deciding the constraint (budget, latency) before looking at results stops you picking whatever looks best afterwards.',
+        practice=practice(
+            intro='Read these MLflow runs the way a reviewer does: apply the rule you wrote before running them.',
+            explain='The big idea: write the decision rule down first, like highest quality within a cost limit, so the experiment ends in a decision. You named the one setting that changed, crossed out the runs over budget and took the best of the rest, counted a run at exactly $2 as fitting, and kept the budget where it was written instead of moving it to suit a favourite.',
+            asks=[
+                ask('Which setting is the **independent variable**, the one thing changed on purpose?', ['chunk_size', 'k', 'quality', 'cost_per_1k'], answer=0,
+                    evidence=evidence('code', title='Three runs in /Shared/support-bot-rag', text="""run_name   chunk_size  k  quality  cost_per_1k
+cs256-k5   256         5  0.74     $1.10
+cs512-k5   512         5  0.81     $1.80
+cs1024-k5  1024        5  0.84     $3.20"""),
+                    clue='Which setting differs from run to run? Quality is something you measured, not something you set.',
+                    why='Chunk size is the only setting that differs. k stays at 5 in every run, a control, and quality is a metric: what you measured.',
+                    wrong=[None, 'k is 5 in every run: it is held fixed, a control.', 'Quality is a metric, what you measured. You set parameters; you measure metrics.', 'Cost is a metric too: what you measured, not what you set.']),
+                ask('Your rule: highest quality at $2 or less per 1,000 requests. Which run wins?', ['cs256-k5', 'cs512-k5', 'cs1024-k5'], answer=1,
+                    evidence=evidence('code', title='The same three runs', text="""run_name   chunk_size  k  quality  cost_per_1k
+cs256-k5   256         5  0.74     $1.10
+cs512-k5   512         5  0.81     $1.80
+cs1024-k5  1024        5  0.84     $3.20"""),
+                    clue='First cross out every run over $2, then take the best quality of the rest.',
+                    why='cs1024-k5 scores highest but costs $3.20, over the budget. Of the two left, cs512-k5 scores higher.',
+                    wrong=['It fits the budget, but another run that fits scores higher.', None, 'Best quality, but $3.20 is over the $2 budget.']),
+                ask('With the same rule, which run wins now?', ['cs512-k5', 'cs768-k5', 'cs1024-k5'], answer=1,
+                    evidence=evidence('code', title='A fourth run is logged', text="""run_name   chunk_size  k  quality  cost_per_1k
+cs768-k5   768         5  0.83     $2.00"""),
+                    clue='The rule says $2 or less. Does exactly $2.00 count?',
+                    why='"$2 or less" includes exactly $2.00, so cs768-k5 fits, and its 0.83 beats 0.81.',
+                    wrong=['The new run costs exactly $2.00, which still fits, and it scores higher.', None, 'Still $3.20: over the budget.']),
+                ask('What is wrong with that?', ['Nothing: the best quality should win', 'The rule is being changed after seeing the results', 'There aren\'t enough runs to choose from'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"cs1024-k5 is clearly the best run. Let\'s raise the budget to $3.50 and use it."'),
+                    clue='When was the $2 budget written down, and why?',
+                    why='Change the budget once you have seen which run looks best and you can justify any pick. If the budget really must change, that is a new rule, written down before the next experiment.',
+                    wrong=['The best quality you can\'t afford isn\'t a decision. The rule said $2.', None, 'More runs won\'t help if the rule moves every time.']),
+            ],
+        ),
         starter="""def best_run(runs, max_cost):
     # your code here
     pass
@@ -176,6 +209,46 @@ A field is a gap if it is missing from `plan`, if its value is `None`, or if its
         pattern='Walk the fixed list of required fields once, looking each one up in the dict.',
         target='one pass over the required fields',
         realworld='A team that logs the plan with every MLflow run can show, months later, that the rule came before the result. Blocking a run until the plan is complete turns that from a good intention into a habit.',
+        practice=practice(
+            intro='Check these experiment plans the way a reviewer does, before a single run: every part filled in, and a rule that picks a winner.',
+            explain='The big idea: decide how you will judge an experiment before you see any results, so you can\'t talk yourself into an answer. You ticked off the seven parts like a packing list, sent back the missing and the empty ones, and made sure the rule also says what a result too close to call means.',
+            asks=[
+                ask('Which of the seven parts is missing altogether?', ['eval_set, the test questions', 'test, how A and B are compared', 'decision_rule, what picks a winner'], answer=2,
+                    evidence=evidence('code', title='The plan, before the first run', text="""plan = {
+    "question": "Does model B give better hints than model A?",
+    "change": "the model (prompt, temperature, judge fixed)",
+    "eval_set": "hints-v3, 27 cases",
+    "metric": "hint quality; also check speed",
+    "runs": 3,
+    "test": "",
+}"""),
+                    clue='A plan needs seven parts. Count the lines here, then find the one that never appears.',
+                    why='There is no decision_rule, so nothing says what result would make you switch to B. That is the part that stops you choosing after you look.',
+                    wrong=['eval_set is there: hints-v3, 27 cases.', 'test is there, just empty. Which part has no line at all?', None]),
+                ask('`test` is there, but empty. Does it count as a gap?', ['No: the field is in the plan', 'Yes: empty text says nothing'], answer=1,
+                    clue='What does that line tell a reviewer about how A and B will be compared?',
+                    why='An empty value is as good as a missing one: nobody has decided how to compare A and B, like paired, on the same examples for both.',
+                    wrong=['Being there isn\'t enough. Does it say how you will compare?', None]),
+                ask('The rule is filled in now. What does it still leave open?', ['Nothing: it already says when to switch to B', 'What happens if the result is too close to call', 'How many runs each model gets before you decide'], answer=1,
+                    evidence=evidence('claim', who='The author added', text='`"decision_rule": "switch to model B if it wins"`'),
+                    clue='What if B neither wins clearly nor loses?',
+                    why='Write the "no result" case down too, like "too close to call: keep model A and add more examples". Then nobody argues about it after the runs.',
+                    wrong=['It says when to switch, not what a near tie means.', None, 'runs is already in the plan: 3.']),
+                ask('A second plan, for a prompt change. Which parts go back to the author?', ['question and eval_set', 'eval_set only', 'question, eval_set and decision_rule'], answer=0,
+                    evidence=evidence('code', title='Another plan', text="""plan = {
+    "question": "",
+    "change": "the prompt",
+    "eval_set": None,
+    "metric": "groundedness",
+    "runs": 5,
+    "test": "paired",
+    "decision_rule": "switch if the new prompt wins clearly",
+}"""),
+                    clue='Look for empty text, and for None, which means no value at all.',
+                    why='`question` is empty text and `eval_set` is None, no value: both are gaps. The rule is written, so it stays.',
+                    wrong=[None, 'Look at the first line again: empty text is a gap.', 'The rule is written. Only the empty ones go back.']),
+            ],
+        ),
         starter="""def plan_gaps(plan):
     # your code here
     pass
@@ -431,6 +504,34 @@ Return the names of the confounds as a list in alphabetical order, like `["index
         pattern='Look at every key in either dict, skip the planned one, and keep the keys whose values differ.',
         target='one pass over each run',
         realworld='Experiment tracking tools compare runs this way: MLflow\'s run comparison can hide the settings that are the same, so only the differences show. Teams often add a check like this before any comparison is reported.',
+        practice=practice(
+            intro='Compare these runs\' settings the way a reviewer does before trusting a result: everything except the planned change should match.',
+            explain='The big idea: a result only counts as evidence when the one thing you planned is the only thing that changed. You lined up two runs setting by setting, froze the index so the documents can\'t move under the experiment, counted a setting only one run logged as a difference, and caught a new model hiding behind the same name.',
+            asks=[
+                ask('You planned to change only the prompt. Which other settings changed?', ['judge only', 'judge and index', 'judge, index and k'], answer=1,
+                    evidence=evidence('code', title='Planned change: prompt', text="""run A: prompt=v3  judge=j1  index=v7  k=5
+run B: prompt=v4  judge=j2  index=v8  k=5"""),
+                    clue='Go along the two lines setting by setting, and skip the prompt.',
+                    why='The judge moved from j1 to j2 and the index from v7 to v8. Either could explain the difference, so the result says nothing about the prompt yet.',
+                    wrong=['Look at the index too: v7 against v8.', None, 'k is 5 in both runs: it matches.']),
+                ask('Run B\'s index was rebuilt from the live document folder. How do you stop the index moving next time?', ['Rebuild the index before every run, so it is fresh', 'Build it once from a fixed copy, and log its version', 'Stop logging the index version, so runs look the same'], answer=1,
+                    clue='The documents must not change under the experiment.',
+                    why='Freezing the documents means every run reads the same index, and the logged version proves it. Otherwise you end up measuring the documents, not your change.',
+                    wrong=['A fresh index every run is a new control every run.', None, 'Then the index would still change; you just couldn\'t see it.']),
+                ask('Run A never logged a temperature. Is temperature a confound?', ['No: run A has no temperature, so there is nothing to compare', 'Yes: only one run has it, so you can\'t show they match'], answer=1,
+                    evidence=evidence('code', title='Planned change: model', text="""run A: model=small  k=5
+run B: model=large  k=5  temperature=0.7"""),
+                    clue='Can you prove both runs used the same temperature?',
+                    why='A setting only one run has counts as different, because you can\'t show it matched. Log it on every run, then rerun.',
+                    wrong=['Nothing to compare is the problem: you can\'t show they match.', None]),
+                ask('Both runs use fast-model. Which setting is the confound?', ['None: the model is the same', 'model_version', 'k'], answer=1,
+                    evidence=evidence('code', title='Planned change: chunk_size', text="""run A: chunk_size=512  model=fast-model  model_version=2026-06  k=5
+run B: chunk_size=256  model=fast-model  model_version=2026-09  k=5"""),
+                    clue='The same friendly name can hide a new model. Read every setting, not just the names.',
+                    why='The provider updated the model behind the same name. Because the version was logged, you can see it moved: rerun before trusting the result.',
+                    wrong=['Same name, but look at the version: 2026-06 against 2026-09.', None, 'k is 5 in both.']),
+            ],
+        ),
         starter="""def find_confounds(run_a, run_b, planned):
     # your code here
     pass
@@ -562,6 +663,44 @@ Return a list with one result per call, in order, like `["shipped", "missing"]`.
         pattern='Build a lookup key from each call and read it from a dict, with a default for keys that are not there.',
         target='one pass over the calls',
         realworld='Agent test suites do this to make runs repeatable: the first run records every tool response, and later runs replay them. Recorded responses are often called fixtures or cassettes.',
+        practice=practice(
+            intro='Read these agent runs the way a reviewer does: is every design facing the same frozen world, and did the task really succeed?',
+            explain='The big idea: freeze what the tools return, so every design faces the same world. You looked each call up in the recording, treated a call that was never recorded as missing rather than live, counted a task only when it passed every try, and checked success from what actually happened instead of the agent\'s own report.',
+            asks=[
+                ask('What does the replay give back for `get_order 77`?', ['"shipped"', '"missing"', 'The live order status'], answer=1,
+                    evidence=evidence('code', title='The recording, and what the agent asks', text="""recorded:   get_order:42  -> "shipped"
+            get_refund:42 -> "none"
+
+agent asks: get_order 42
+agent asks: get_refund 42
+agent asks: get_order 77"""),
+                    clue='Look for get_order:77 in the recording.',
+                    why='It was never recorded, so it comes back as missing instead of reaching the real system. Now you can see the run left the frozen world.',
+                    wrong=['That is order 42\'s result. Look up 77.', None, 'In an experiment the live tool is never called: the world would differ between designs.']),
+                ask('Design A never searched, so that call was never recorded. What next?', ['Call the live search tool for B, just this once', 'Record that call, then rerun every design', 'Ignore it: one missing call does not change the result'], answer=1,
+                    evidence=evidence('code', title='Design B, task 12', text="""get_order 42            -> "shipped"
+search "refund policy"  -> "missing"
+get_refund 42           -> "none\""""),
+                    clue='Every design must face the same world, design A included.',
+                    why='Missing is a finding: B asked something A never did. Record it, then rerun all the designs so they face the same, bigger frozen world.',
+                    wrong=['A live call means B saw a world A never did.', None, 'B got "missing" where it could have had a real answer. That isn\'t the same world.']),
+                ask('Does task 7 count as passed?', ['Yes: it passed most tries', 'No: it has to pass every try'], answer=1,
+                    evidence=evidence('code', title='Task 7, three tries', text="""try 1: pass
+try 2: pass
+try 3: fail"""),
+                    clue='An agent can take a different path on each try. How many of them must pass?',
+                    why='A task counts only if it passed every time. Two out of three means it works sometimes, and the third try shows it can fail.',
+                    wrong=['Most isn\'t enough: an agent that fails one try in three will fail real users too.', None]),
+                ask('The agent says it issued the refund. Did task 9 succeed?', ['Yes: the agent reported success', 'No: it never made the refund call', 'Can\'t tell without calling the live refund tool'], answer=1,
+                    evidence=evidence('code', title='Design A, task 9', text="""agent asks: get_order 42  -> "shipped"
+agent says: "Refund issued for order 42. Done."
+
+write calls made: none"""),
+                    clue='Success is checked from what actually happened, not from what the agent says.',
+                    why='Task success comes from the end state. The agent never made the refund call, so its report is wrong. In an experiment a write tool like a refund is recorded and checked, never sent for real.',
+                    wrong=['The agent\'s own report isn\'t the end state.', None, 'Never send a refund for real in an experiment: check the recorded calls.']),
+            ],
+        ),
         starter="""def replay_tools(recording, calls):
     # your code here
     pass
@@ -1410,6 +1549,41 @@ Step 2, quality. Let `gap` be `wins - losses` and `n` be `wins + losses`. The ga
         pattern='Check every gate and collect the failures, then make one paired comparison.',
         target='a fixed number of checks',
         realworld='Release gates in tools like MLflow deployment jobs work this way: hard checks first, then a quality comparison against the version in production, with the reasons kept next to the decision.',
+        practice=practice(
+            intro='Make the release call the way a reviewer does: the gates first, with every failure listed, then one quality check.',
+            explain='The big idea: one rule, written down first, turns many numbers into one decision. You checked every gate and listed each one that failed before looking at quality, then let the paired check decide: ship on a clear win, too close to call on a small one, and keep the baseline when it was clearly worse, even with every gate passed.',
+            asks=[
+                ask('Which reasons go with the decision?', ['only the must-pass case: it fails first', 'all three: must-pass, cost and speed', 'none: 30 wins to 2 outweighs the gates'], answer=1,
+                    evidence=evidence('code', title='Candidate 1 against its budget', text="""must-pass failures: 2
+cost per task: $1.40       budget $1.00
+p95: 3.0 s                 budget 1.5 s
+wins 30, losses 2"""),
+                    clue='Check every gate and list each one that fails, not just the first.',
+                    why='All three gates fail, so the answer is keep the baseline, with all three reasons, and the team can fix them in one round. The 30 to 2 win is never looked at.',
+                    wrong=['That is the first gate. Keep checking: cost and speed too.', None, 'Gates come before quality. Look at cost and speed.']),
+                ask('Every gate passes. What is the decision?', ['Ship it', 'Keep the baseline', 'Too close to call'], answer=0,
+                    evidence=evidence('code', title='Candidate 2 against its budget', text="""must-pass failures: 0      ok
+cost per task: $0.80       ok (budget $1.00)
+p95: 1.2 s                 ok (budget 1.5 s)
+wins 15, losses 5          the gap must be at least 9"""),
+                    clue='Wins minus losses: is it at least 9, and which way does it point?',
+                    why='15 minus 5 is 10, past the 9 it needs for 20 disagreements, and in the new version\'s favour: ship.',
+                    wrong=[None, 'Nothing failed and it wins clearly. Why keep the old one?', 'A gap of 10 is past the 9 it needs.']),
+                ask('What is the decision for candidate 3?', ['Ship it', 'Keep the baseline', 'Too close to call'], answer=2,
+                    evidence=evidence('claim', who='A teammate said', text='"Candidate 3 passes every gate and wins 12 questions to 8. More wins than losses: ship it."'),
+                    clue='Still 20 disagreements, so the gap must be at least 9. How big is it?',
+                    why='A gap of 4 could be luck. Too close to call keeps the baseline for now and means more examples, or choosing on cost.',
+                    wrong=['More wins isn\'t a clear win: the gap is only 4.', 'It isn\'t clearly worse either: it won more than it lost.', None]),
+                ask('Every gate passes again. What is the decision?', ['Ship it: every gate passes, so it can go', 'Too close to call: add more examples', 'Keep the baseline: worse on quality'], answer=2,
+                    evidence=evidence('code', title='Candidate 4 against its budget', text="""must-pass failures: 0      ok
+cost per task: $0.80       ok (budget $1.00)
+p95: 1.2 s                 ok (budget 1.5 s)
+wins 3, losses 14          the gap must be at least 9"""),
+                    clue='Passing the gates only earns a look at quality. Which way does the gap point, and how big is it?',
+                    why='It won 3 and lost 14: a gap of 11 in the baseline\'s favour, past the 9 it needs. Clearly worse, so keep the baseline and save the reason.',
+                    wrong=['Passing the gates only earns a look at quality. Look at the wins and losses.', 'A gap of 11 is past the 9 it needs: that is clear.', None]),
+            ],
+        ),
         starter="""def decide_release(result, budget):
     # your code here
     pass

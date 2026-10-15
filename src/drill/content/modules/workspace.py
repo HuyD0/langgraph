@@ -1,7 +1,7 @@
 """Databricks building blocks: Compute, runtimes, jobs, bundles, tags and what they cost."""
 
 from drill.content.modules.platform_world import PLATFORM_SETTING
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack, source
 
 MODULE = module('workspace', 'Databricks building blocks', 'Compute, runtimes, jobs, bundles, tags and what they cost.', setting=PLATFORM_SETTING)
 
@@ -81,6 +81,41 @@ Return a list of `[name, choice]` pairs, in the same order as `workloads`.""",
         pattern='Walk the list once. For each item, an if / elif / else chain where the first rule that fits decides.',
         target='one pass over the workloads',
         realworld='Platform teams write this down as a short guide for new users, and back it up with compute policies. The costly mistake it prevents is running scheduled jobs on an all-purpose cluster, which pays the higher all-purpose price per DBU for work that jobs compute or serverless would do for less.',
+        practice=practice(
+            intro='Place each piece of work on compute the way a platform reviewer does: SQL first, then special machine needs, then serverless for the rest.',
+            explain='The kind of work and its special needs decide the compute, and the order of the questions matters. You sent SQL to a SQL warehouse whatever else it asked for, sent work needing a GPU or an init script to classic compute (all-purpose for a notebook, jobs compute for a job), and let everything else run on serverless.',
+            asks=[
+                ask('Where should `explore_returns` run?', ['Serverless compute', 'All-purpose compute', 'A SQL warehouse'], answer=0,
+                    evidence=evidence('code', title='The request', text="""name:        explore_returns
+kind:        notebook
+needs_gpu:   false
+init_script: false"""),
+                    clue="It isn't SQL, and it needs no special machines.",
+                    why='A notebook with no GPU and no init script has nothing that rules serverless out, and serverless starts in seconds with nothing to size.',
+                    wrong=[None, 'All-purpose is for notebooks that need a GPU or an init script. This one needs neither.', 'A SQL warehouse runs SQL and dashboards. This is a notebook.']),
+                ask('`geo_notebook` is a notebook that needs an init script to install a mapping library. Where should it run?', ['Serverless compute', 'Jobs compute', 'All-purpose compute'], answer=2,
+                    evidence=evidence('code', title='The request', text="""name:        geo_notebook
+kind:        notebook
+needs_gpu:   false
+init_script: true"""),
+                    clue='An init script rules one choice out. Which classic compute do you work in from a notebook?',
+                    why="Serverless doesn't take init scripts, so it needs classic compute. For a notebook that means all-purpose: a cluster you start and work in.",
+                    wrong=["Serverless doesn't run init scripts.", 'Jobs compute is made for one job run. A notebook you work in needs a cluster you can start and share.', None]),
+                ask('`genie_sales` is SQL for a Genie space, but its request also ticks GPU and init script. Where does it go?', ['Jobs compute', 'A SQL warehouse', 'All-purpose compute'], answer=1,
+                    evidence=evidence('code', title='The request', text="""name:        genie_sales
+kind:        sql
+needs_gpu:   true
+init_script: true"""),
+                    clue='Which question comes first in the order?',
+                    why='SQL is checked first, so it goes to a SQL warehouse whatever else the request says. The first rule that fits decides.',
+                    wrong=['Jobs compute is for scheduled jobs. This is SQL, and SQL is checked first.', None, 'The machine needs come second. SQL is checked before them.']),
+                ask('Should you agree?', ['Agree: the cluster is running anyway, so the jobs add no cost', 'Push back: give the jobs jobs compute or serverless'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Point the nightly jobs at our shared **all-purpose** cluster. It\'s already running, so it costs nothing extra."'),
+                    clue='What price per DBU does work on an all-purpose cluster pay, and who else is using it?',
+                    why='Jobs on an all-purpose cluster pay the all-purpose price per DBU and keep the cluster busy for everyone else. Jobs compute or serverless does the same work for less.',
+                    wrong=['The work is billed at the higher all-purpose price, and it slows the cluster down for the people using it.', None]),
+            ],
+        ),
         starter="""def pick_compute(workloads):
     # your code here
     pass
@@ -252,6 +287,44 @@ Return the `name` of every cluster whose version is not in `supported`, in the s
         pattern='Filter: split each string to get the key, then keep the ones not in the list.',
         target='one pass over the clusters',
         realworld='Before a runtime reaches end of support, a platform team lists every cluster and job still on it and asks the owners to move. The real list comes from the Clusters API or `databricks clusters list`, and the `system.compute.clusters` table keeps each cluster\'s `dbr_version` too.',
+        practice=practice(
+            intro='Review runtimes the way a platform team does before a support date: read each version, then check it against the ones still supported.',
+            explain='Every cluster names its runtime in one string, so you can check a whole workspace against the supported list. You read the version before ".x", flagged the ones no longer getting fixes, and remembered that jobs set their own runtime and that some features need a newer one.',
+            asks=[
+                ask('Which runtime is `ml-train` on?', ['2.13', '16.4 ML', '16.4 ML for GPU'], answer=1,
+                    evidence=evidence('code', title='ml-train', text='spark_version = "16.4.x-cpu-ml-scala2.13"'),
+                    clue='The part before ".x" is the version. Then read the words after it.',
+                    why='The text before ".x" is the version, 16.4, and cpu-ml means the ML runtime for ordinary (CPU) machines.',
+                    wrong=['2.13 is the version of Scala (the language Spark is written in), not the runtime.', None, 'Look again: it says cpu, not gpu.']),
+                ask('Which clusters need to move?', ['Only legacy-gpu', 'old-reports and legacy-gpu', 'All of them except ml-train'], answer=1,
+                    evidence=evidence('code', title='Clusters, October 2026', text="""etl-shared    15.4.x-scala2.12
+old-reports   13.3.x-scala2.12
+ml-train      16.4.x-cpu-ml-scala2.13
+legacy-gpu    12.2.x-gpu-ml-scala2.12
+
+Supported: 14.3, 15.4, 16.4, 17.3"""),
+                    clue='Cut each version at ".x", then look for it in the supported list.',
+                    why="13.3 and 12.2 aren't on the supported list, so old-reports and legacy-gpu move. 15.4 and 16.4 are still getting fixes.",
+                    wrong=["12.2 is the oldest, but 13.3 isn't on the list either: its support ended in August 2026.", None, 'etl-shared is on 15.4, which is still supported.']),
+                ask('The owners moved old-reports and legacy-gpu, so the cluster list is clear. Then you find this job in the bundle. Is the workspace done?', ['Done: the owners moved every old cluster on the list', 'Not yet: this job is still on 13.3'], answer=1,
+                    evidence=evidence('code', title='databricks.yml', text="""resources:
+  jobs:
+    nightly_sales:
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: Standard_D4ds_v5"""),
+                    clue="A job's `new_cluster` names a runtime of its own.",
+                    why='Each run creates a cluster from `new_cluster`, with its own `spark_version`. Checking only all-purpose clusters misses every scheduled job still on an old runtime.',
+                    wrong=['That list only had all-purpose clusters. Where else is a spark_version set?', None]),
+                ask('`etl-shared` must now read a table protected by ABAC (access rules driven by tags). Is its runtime good enough?', ['Yes: 15.4 is on the supported list', 'Move it to 16.4 or later, or to serverless'], answer=1,
+                    evidence=evidence('code', title='etl-shared', text='spark_version = "15.4.x-scala2.12"'),
+                    clue='Supported means it still gets fixes. Does it mean every feature works?',
+                    why='Tables under ABAC need 16.4 or later on classic compute. 15.4 still gets fixes, but it is too old for this table.',
+                    wrong=['Supported means it still gets fixes, not that every feature works on it.', None]),
+            ],
+        ),
         starter="""def unsupported_runtimes(clusters, supported):
     # your code here
     pass
@@ -405,6 +478,45 @@ Return the names of the settings that break the policy, in policy order.""",
         pattern='Go through the rules. For each, look up the setting, then pick the test by the rule\'s type.',
         target='one pass over the policy rules',
         realworld='Databricks runs these checks itself when someone creates compute with a policy. Writing them yourself is useful for reviewing cluster specs in Terraform or bundle code before they are applied, so a PR check fails early with a clear message.',
+        practice=practice(
+            intro='Review cluster specs against a policy the way a reviewer does: look up each setting, then test it by its rule\'s type.',
+            explain='A policy is a set of rules, one per setting, and each rule type has its own simple test. You looked up each setting and tested it by type: a fixed value must match, an allowlist must contain it, a range must hold it, and a missing setting broke its rule too.',
+            asks=[
+                ask('Which settings break the policy?', ['`autotermination_minutes` and `custom_tags.team`', '`autotermination_minutes` and `node_type_id`', '`node_type_id` and `custom_tags.team`'], answer=0,
+                    evidence=evidence('code', title='The policy, and the cluster someone wants', text="""Policy
+  "autotermination_minutes": {"type": "range", "maxValue": 60}
+  "node_type_id": {"type": "allowlist",
+                   "values": ["Standard_D4ds_v5", "Standard_D8ds_v5"]}
+  "custom_tags.team": {"type": "fixed", "value": "data"}
+
+Cluster
+  "autotermination_minutes": 120
+  "node_type_id": "Standard_D4ds_v5"
+  "custom_tags.team": "marketing\""""),
+                    clue='Test each rule by its type: the range, the allowlist, the fixed value.',
+                    why="120 is above the range's maxValue of 60, and marketing isn't the fixed value data. Standard_D4ds_v5 is on the allowlist, so it passes.",
+                    wrong=[None, "Standard_D4ds_v5 is on the allowlist, so node_type_id passes. Look at the team tag instead: a fixed rule must match exactly.", "Standard_D4ds_v5 is on the allowlist, so node_type_id passes. Check 120 against the range's maxValue."]),
+                ask('A pull request asks for this cluster under the same policy, with only a machine size set. Which rules does it break?', ['Only `node_type_id`', '`node_type_id` and `autotermination_minutes`', 'All three'], answer=2,
+                    evidence=evidence('code', title='The cluster spec', text='"node_type_id": "Standard_E16ds_v5"'),
+                    clue="What does a rule say about a setting that isn't there?",
+                    why="Standard_E16ds_v5 isn't on the allowlist, and the other two settings are missing. Reviewing a spec as written, a missing setting breaks its rule.",
+                    wrong=['The size is wrong, but a missing setting breaks its rule too.', 'The team tag is missing as well, and that breaks its rule too.', None]),
+                ask('Does `num_workers: 8` pass?', ['Passes: 8 is the maxValue itself', 'Breaks: it has to be below 8'], answer=0,
+                    evidence=evidence('code', title='One rule, one value', text="""Policy
+  "num_workers": {"type": "range", "minValue": 1, "maxValue": 8}
+
+Cluster
+  "num_workers": 8"""),
+                    clue='A range breaks only below minValue or above maxValue.',
+                    why='8 is neither below 1 nor above 8, so it passes. The limits themselves are allowed.',
+                    wrong=[None, 'Above maxValue breaks it. Is 8 above 8?']),
+                ask('Do you agree?', ['Agree: Databricks refuses a bad cluster at apply time anyway', 'Keep the check: it catches the mistake in review'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Databricks checks the policy when the cluster is created, so a policy check on the Terraform pull request is wasted effort."'),
+                    clue='When is a mistake cheapest to fix: in review, or when the apply fails?',
+                    why='Databricks does refuse compute that breaks its policy, but only when the change is applied. A check on the pull request catches it in review, with a message that names the setting.',
+                    wrong=['It does refuse, but only when the change is applied, after the review is over.', None]),
+            ],
+        ),
         starter="""def policy_violations(cluster, policy):
     # your code here
     pass
@@ -604,6 +716,56 @@ Return the `task_key` of every skipped task, in the same order as `tasks`. The f
         pattern='Keep a list of stopped tasks. Walk the tasks in order; any task that depends on a stopped one is skipped and becomes stopped too.',
         target='one pass over the tasks',
         realworld='This is the "upstream failed" view on a job run page, and the set of tasks a repair run will rerun. Knowing it before you click tells you how much compute and time the repair will take.',
+        practice=practice(
+            intro='Read a failed job run the way the person on call does: follow the failure downstream, task by task.',
+            explain='A failure spreads downstream, so you track which tasks are stopped. You started from the failed task and went in order: any task that depended on a stopped one was skipped and stopped the tasks after it, while tasks on another branch ran as normal.',
+            asks=[
+                ask('`clean` failed in this run. Does `audit` run?', ['Yes: it only needs ingest, which succeeded', 'No: every task after a failed one stops'], answer=0,
+                    evidence=evidence('code', title='nightly_sales · this run: clean failed', text="""tasks:
+  - task_key: ingest
+  - task_key: clean
+    depends_on: [{task_key: ingest}]
+  - task_key: audit
+    depends_on: [{task_key: ingest}]
+  - task_key: features
+    depends_on: [{task_key: clean}]
+  - task_key: report
+    depends_on: [{task_key: features}, {task_key: audit}]"""),
+                    clue="Read audit's depends_on.",
+                    why='audit depends only on ingest, and ingest succeeded. A failure only stops the tasks downstream of it.',
+                    wrong=[None, 'A failure stops only what depends on it, directly or through others.']),
+                ask('And `report`? One of the tasks it depends on, `audit`, succeeded.', ['It runs: audit, one of its inputs, succeeded', "It's skipped: features didn't run"], answer=1,
+                    evidence=evidence('code', title='nightly_sales · this run: clean failed', text="""  - task_key: features
+    depends_on: [{task_key: clean}]
+  - task_key: report
+    depends_on: [{task_key: features}, {task_key: audit}]
+    # Run if: all succeeded (the default)"""),
+                    clue='Did all of report\'s inputs succeed? Check features.',
+                    why='report needs features too, and features was skipped because clean failed. With "all succeeded", one stopped input is enough to skip it.',
+                    wrong=['"All succeeded" needs every input. What happened to features?', None]),
+                ask('In another job, `load_orders` fails. Which tasks show "upstream failed"?', ['Only join', 'join, store_report and publish', 'join and publish'], answer=2,
+                    evidence=evidence('code', title='store_sales · this run: load_orders failed', text="""tasks:
+  - task_key: load_orders
+  - task_key: load_stores
+  - task_key: join
+    depends_on: [{task_key: load_orders}]
+  - task_key: store_report
+    depends_on: [{task_key: load_stores}]
+  - task_key: publish
+    depends_on: [{task_key: join}]"""),
+                    clue='Follow load_orders downstream, one depends_on at a time.',
+                    why='join needs load_orders, and publish needs join, so both are skipped. store_report only needs load_stores, so it runs.',
+                    wrong=['publish depends on join, and join was skipped: the stop spreads.', 'store_report only depends on load_stores, which succeeded.', None]),
+                ask('This time `clean` fails once, then works on its retry. Are `features` and `report` skipped?', ['Skipped: clean failed on its first try', 'They run: clean succeeded in the end'], answer=1,
+                    evidence=evidence('code', title='nightly_sales · this run', text="""clean   max_retries: 2
+
+clean   try 1   failed
+clean   try 2   succeeded"""),
+                    clue='Downstream tasks wait for the last try, not the first.',
+                    why='Downstream tasks only skip after the last retry fails. The second try worked, so clean counts as succeeded and the chain carries on.',
+                    wrong=['A failed try that is retried and then works does not stop the chain.', None]),
+            ],
+        ),
         starter="""def skipped_tasks(tasks, failed):
     # your code here
     pass
@@ -781,6 +943,67 @@ Return `[resolved, missing]`. `resolved` is a dict of name to value, leaving the
         pattern='Go through the declared names, check the more specific source first, and collect what falls through.',
         target='one pass over the variables',
         realworld='This is what `databricks bundle validate` works out for each target. A variable with no value fails validation, which is exactly where you want a missing warehouse ID or catalog name to show up: before anything is deployed.',
+        practice=practice(
+            intro='Review a bundle the way a reviewer does: work out what each variable becomes in each target, before anything deploys.',
+            explain="One set of files deploys to many places, and each place fills in its own values. You worked out each variable in order: the target's value wins over the default, a value set for one command beats them both, and a variable with neither is missing, so bundle validate stops before anything deploys.",
+            asks=[
+                ask('What does `${var.catalog}` become in `deploy -t dev`?', ['prod_sales', 'dev_sales', "Nothing: dev doesn't set it"], answer=1,
+                    evidence=evidence('code', title='databricks.yml', text="""variables:
+  catalog:
+    default: dev_sales
+  warehouse_id:
+    description: SQL warehouse for reports
+
+targets:
+  dev:
+    mode: development
+    variables:
+      warehouse_id: 4f2a9c1e7b3d5a60
+  prod:
+    mode: production
+    variables:
+      catalog: prod_sales
+      warehouse_id: 9b1d3e5f7a2c4e68"""),
+                    clue="The dev target doesn't set catalog. What is used when nothing else sets it?",
+                    why='dev sets only warehouse_id, so catalog falls back to its default: dev_sales.',
+                    wrong=["prod_sales is the prod target's value. It doesn't reach dev.", None, 'A variable with a default always has a value.']),
+                ask('`bundle validate -t prod` fails. Which variable has no value?', ['warehouse_id', 'schema', 'alert_email'], answer=2,
+                    evidence=evidence('code', title='databricks.yml', text="""variables:
+  catalog:
+    default: dev_sales
+  schema:
+    default: forecast
+  warehouse_id:
+    description: SQL warehouse for reports
+  alert_email:
+    description: Who gets failure emails
+
+targets:
+  prod:
+    variables:
+      catalog: prod_sales
+      warehouse_id: 9b1d3e5f7a2c4e68"""),
+                    clue="Look for a variable with no default that prod doesn't set.",
+                    why="alert_email has no default and prod doesn't set it, so it's missing. warehouse_id has no default either, but prod sets it.",
+                    wrong=['It has no default, but the prod target sets it.', 'schema has a default: forecast.', None]),
+                ask('A CI job (the automated pipeline that deploys for you) ran these steps. Which catalog does this prod deploy use?', ['prod_sales', 'sandbox_ana', 'dev_sales'], answer=1,
+                    evidence=evidence('code', title='CI job log', text="""step 2: export BUNDLE_VAR_catalog=sandbox_ana   # left over from a test
+step 5: databricks bundle deploy -t prod"""),
+                    clue="Which wins: a value set for one command, or the target's value?",
+                    why="Values from `--var` or `BUNDLE_VAR_...` win over the target's value. A stray environment variable just pointed a prod deploy at a sandbox catalog.",
+                    wrong=["prod_sales is the target's value, but a value set for the command wins over it.", None, 'The default is the last choice, after the command line and the target.']),
+                ask("You're reviewing this prod target. What do you ask for?", ['Nothing: `mode: production` is already set', 'A `run_as` service principal', '`mode: development`, so mistakes stay small'], answer=1,
+                    evidence=evidence('code', title='databricks.yml, the prod target', text="""targets:
+  prod:
+    mode: production
+    variables:
+      catalog: prod_sales
+      warehouse_id: 9b1d3e5f7a2c4e68"""),
+                    clue='Who would the prod jobs run as, and what happens when that person leaves?',
+                    why='Without run_as, the jobs run as whoever deployed them. Set run_as to a service principal so they keep working when people move.',
+                    wrong=['Production mode is set, but the jobs would still run as whoever deployed them.', None, 'Development mode is for dev only: it pauses schedules and lets anyone deploy their own copy.']),
+            ],
+        ),
         starter="""def resolve_variables(variables, target):
     # your code here
     pass

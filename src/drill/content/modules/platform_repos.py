@@ -503,7 +503,7 @@ Otherwise return the cluster the runbook would build:
                     clue='No policy is named, so the runbook falls back to its default.',
                     why='`try(c.policy_name, "Personal Compute")`: with no policy_name, Personal Compute.',
                     wrong=[None, 'Nobody named that policy here.', 'Leaving it out is allowed; the runbook fills it in.']),
-                ask('This cluster has `num_workers: 2` and `max_workers: 6`. What happens?', ['It autoscales from 2 to 6', 'It\'s rejected: use num_workers, or both min and max', 'Terraform ignores max_workers'], answer=1,
+                ask('This cluster has `num_workers: 2` and `max_workers: 6`. What happens?', ['It autoscales from 2 to 6: max_workers sets the top', 'It\'s rejected: use num_workers, or both min and max', 'Terraform keeps num_workers and ignores max_workers'], answer=1,
                     evidence=evidence('code', title='clusters.yml', text="""clusters:
   - name: etl
     code: HR
@@ -512,7 +512,7 @@ Otherwise return the cluster the runbook would build:
                     clue='Size is one style or the other, never a mix.',
                     why='A fixed size is num_workers alone; autoscaling is min_workers and max_workers together. A mix is rejected.',
                     wrong=['Autoscaling needs min_workers and max_workers together.', None, 'It isn\'t ignored: the mix is caught before the plan.']),
-                ask('What\'s wrong with this one?', ['Nothing', 'policy_id isn\'t allowed: name the policy', 'policy_id must be lower case'], answer=1,
+                ask('What\'s wrong with this one?', ['Nothing: an id is more exact than a name', 'policy_id isn\'t allowed: name the policy', 'policy_id must be in lower case'], answer=1,
                     evidence=evidence('code', title='clusters.yml', text="""clusters:
   - name: etl
     code: HR

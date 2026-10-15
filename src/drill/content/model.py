@@ -183,8 +183,8 @@ def fix(question: str, *, start: str, answer: str, rules: dict, goal: list[dict]
 
 
 def practice(*, intro: str, asks: list[dict], explain: str | None = None) -> dict:
-    """The Build step as a few questions about real evidence, for platform lessons where the job
-    is reading YAML, plans and logs rather than writing Python. Three to five asks, easy to
+    """The Build step as a few questions about real evidence, for lessons whose skill is a decision
+    or reading a plan, run, policy or trace rather than writing Python; the tab says Practice. Three to five asks, easy to
     tricky; the Python exercise stays one tap away. ``explain`` is the Explain step's big idea
     for someone who practised this way (like ``sort_task``)."""
     assert 2 <= len(asks) <= 6, "a practice set has two to six questions"

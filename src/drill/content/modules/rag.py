@@ -1,6 +1,6 @@
 """RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack, source
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack, source
 
 MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
 
@@ -1070,6 +1070,42 @@ Return a dict like `{"action": "revise", "kept": [...]}`, where `kept` is a list
         pattern='One walk collecting supported claims and spotting contradictions, then three outcomes.',
         target='one pass over the claims',
         realworld='Clinical, legal and finance RAG systems put a gate like this after generation, so an unsupported statement never reaches the user.',
+        practice=practice(
+            intro='Read the verifier\'s verdicts the way a groundedness check does: release, revise or abstain, before the user sees the answer.',
+            explain='A claim gate checks each statement at request time, before the user sees the answer. You kept the supported claims, abstained on any contradiction or when nothing was supported, and released only when every claim was backed. You also saw its limits: dropping a claim can change what the answer means, and a rising share of revise and abstain is a warning worth watching.',
+            asks=[
+                ask('What does the gate do with this answer?', ['Release: every claim has a citation', 'Revise: drop the store-credit claim', 'Abstain: one claim has no backing'], answer=1,
+                    evidence=evidence('code', title='The verifier\'s verdicts', text="""claim                                        cites  verdict
+Refunds go to your original payment method.  [2]    supported
+They arrive within 5 to 7 business days.     [2]    supported
+You can also get store credit instead.       [3]    unsupported"""),
+                    clue='Two of the three claims are backed by their passage, and nothing is contradicted.',
+                    why='Not every claim is supported, so it can\'t go out whole. Something is supported and nothing is contradicted, so drop the unsupported claim and send the other two with their citations.',
+                    wrong=['A citation isn\'t backing: one claim isn\'t supported by its passage. Should the user see it?', None, 'Abstain is for when nothing is supported or something is contradicted. Two claims are fine here.']),
+                ask('This time the verifier marks the second claim **contradicted**: passage [2] says 10 business days. What does the gate do?', ['Revise: keep only the first claim', 'Abstain'], answer=1,
+                    evidence=evidence('code', title='The verifier\'s verdicts', text="""claim                                        cites  verdict
+Refunds go to your original payment method.  [2]    supported
+They arrive within 5 to 7 business days.     [2]    contradicted"""),
+                    clue='A safe policy treats a contradiction differently from a claim that simply has no backing.',
+                    why='A contradiction means the answer says the opposite of its source, so something went wrong in writing it. A safe gate says "I couldn\'t verify an answer" rather than sending half of it.',
+                    wrong=['Dropping it hides a sign the answer went wrong. What does a safe policy do on any contradiction?', None]),
+                ask('The gate revises this answer and sends only the first claim. What should worry you?', ['Nothing: every claim it sent is backed by its passage', 'Without the warning, the answer now says something else', 'The first claim should be dropped too, to stay safe'], answer=1,
+                    evidence=evidence('code', title='The verifier\'s verdicts', text="""claim                                        cites  verdict
+You can return the laptop within 30 days.    [1]    supported
+Do not return it if the seal is broken.      [3]    unsupported"""),
+                    clue='Read the answer the user gets once the second line is gone.',
+                    why='The rules say revise, but the user now hears "you can return it" with no "do not". The second claim may also be true with the wrong citation. Check dropped claims that carry a warning before you trust a revise.',
+                    wrong=['Each claim it sent is supported, but what does the whole answer now say?', None, 'Its passage backs it, so the gate keeps it.']),
+                ask('On Wednesday, far more answers are revised or abstained. What do you look at first?', ['Retrieval and the documents: did something change?', 'Turn the gate off: it has become too strict', 'Nothing: users still get an answer of some kind'], answer=0,
+                    evidence=evidence('code', title='gate_action on each trace, out of 100 answers a day', text="""action    Mon  Tue  Wed
+release    82   80   51
+revise     15   16   31
+abstain     3    4   18"""),
+                    clue='The gate only checks claims against the passages it was handed.',
+                    why='A jump in revise and abstain is an early warning that retrieval or the documents changed, so the passages no longer back the answers. Logging the action on every trace is what lets you see it.',
+                    wrong=[None, 'The gate is doing its job: stopping answers with no backing. Why did backing get rarer?', 'Eighteen people a day now hear "I couldn\'t verify an answer". Something changed.']),
+            ],
+        ),
         starter="""def claim_gate(verdicts):
     # your code here
     pass
@@ -1208,6 +1244,44 @@ Return `[chunk_size, k]` from that row, or `None` if no row is fast enough.""",
         pattern='Skip what breaks the budget, pick the best of the rest, and break ties on cost.',
         target='one walk through the results',
         realworld="Teams often pick the highest-quality config and discover it's too slow for the product. Deciding the latency budget up front, then maximising quality inside it, is how you get a config you can actually ship.",
+        practice=practice(
+            intro='Read the experiment results the way a reviewer does: drop what breaks the latency budget, then pick the best of the rest.',
+            explain='You picked a config with the rule written down first: best answer quality within the latency budget. You dropped every row slower than the budget, kept the best quality of the rest, and broke a tie on cost. And you only trusted a comparison where one or two settings changed and everything else stayed fixed.',
+            asks=[
+                ask('Which configs are too slow for the 1500 ms budget?', ['Only 1024, 5', 'Both 1024 rows', 'None of them'], answer=1,
+                    evidence=evidence('code', title='Every combination of two settings', text="""budget: p95 under 1500 ms
+
+chunk  k  quality  p95 ms  cost
+ 512   3   0.78    1200    1.4
+ 512   5   0.82    1400    2.1
+1024   3   0.83    1700    2.0
+1024   5   0.85    2600    3.9"""),
+                    clue='Compare each p95 with 1500. Anything over it is out.',
+                    why='1700 and 2600 are both over 1500 ms, so both 1024 rows are out, however good their quality.',
+                    wrong=['1024, 3 takes 1700 ms. Is that within 1500?', None, 'Two rows go over 1500 ms.']),
+                ask('Of the configs left, which do you ship?', ['512, 3', '512, 5'], answer=1,
+                    evidence=evidence('code', title='Fast enough for the budget', text="""chunk  k  quality  p95 ms  cost
+ 512   3   0.78    1200    1.4
+ 512   5   0.82    1400    2.1"""),
+                    clue='Both fit the budget. Which one gives better answers?',
+                    why='Quality 0.82 beats 0.78, and 1400 ms is inside the budget. Fast enough is all the budget asks for; after that, quality decides.',
+                    wrong=['It is faster, but both are fast enough. Which has better answers?', None]),
+                ask('Both are fast enough and have the same quality. Which do you pick?', ['256, 5', '512, 3', 'Run both in production'], answer=1,
+                    evidence=evidence('code', title='Another experiment', text="""budget: p95 under 1000 ms
+
+chunk  k  quality  p95 ms  cost
+ 256   5   0.80     800    1.5
+ 512   3   0.80     700    1.1"""),
+                    clue='When quality ties, look at the last column.',
+                    why='Same quality, both inside the budget, so the cheaper one wins: 1.1 is less than 1.5.',
+                    wrong=['Its quality is the same. What else differs?', None, 'A config is one combination of settings: you ship one.']),
+                ask('A teammate changed chunk size, k and the embedding model in one run, and quality dropped. What do you tell them?', ['The embedding model: a new model changes every vector', 'No way to tell: three settings changed at once', 'k: ten chunks crowd the prompt with noise'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"I tried 1024 chunks, k of 10 and a new embedding model together. Quality went from 0.82 to 0.74. Which one broke it?"'),
+                    clue='Count how many settings changed between the two runs.',
+                    why='With three changes in one run, nobody can say which one did it. Hold the eval set, the judge and the answering model fixed, vary one or two settings, and try every combination of them.',
+                    wrong=['That is a guess, not evidence. How many things changed?', None, 'Maybe, but k was only one of three changes.']),
+            ],
+        ),
         starter="""def pick_config(results, max_ms):
     # your code here
     pass
@@ -1515,6 +1589,51 @@ Return a list of four choices, in this order:
         pattern='A few if / else checks in a fixed order, where an earlier answer can decide a later one.',
         target='a few checks, the same however big the data is',
         realworld='The four choices you make before creating a Databricks Vector Search index. Getting sync wrong is the usual cost surprise: Continuous runs a streaming job all day.',
+        practice=practice(
+            intro='Plan a Databricks Vector Search index the way a reviewer does: read the facts about the data, then make the four choices in order.',
+            explain='Setting up Databricks Vector Search is four choices, and each one followed from a plain fact about the data: a Delta table means Delta Sync, no embeddings yet means managed, ten million vectors or more means storage-optimized. You chose sync last, because an earlier answer can rule an option out: storage-optimized only does Triggered, and Continuous is only worth its cost when minutes matter.',
+            asks=[
+                ask('The chunks sit in a Delta table. Which index type?', ['Delta Sync', 'Direct Vector Access'], answer=0,
+                    evidence=evidence('code', title='main.support.doc_chunks', text="""needs = {
+  "source_is_delta": True,
+  "vectors": 200000,
+  "has_embeddings": False,
+  "fresh_within_minutes": 60,
+}"""),
+                    clue='One type follows a table and keeps itself up to date from its change log.',
+                    why='The source is a Delta table, so the index can follow it and update itself (with Change Data Feed turned on). Direct Vector Access is for when there is no table and you write the vectors yourself.',
+                    wrong=[None, 'That one has no source table: you would write every vector yourself through the SDK.']),
+                ask('The table has text but no embeddings yet. Who makes them?', ['Databricks: managed embeddings, from a model endpoint', 'You: self-managed embeddings, in a column you add first'], answer=0,
+                    evidence=evidence('code', title='main.support.doc_chunks', text="""needs = {
+  "source_is_delta": True,
+  "vectors": 200000,
+  "has_embeddings": False,
+  "fresh_within_minutes": 60,
+}"""),
+                    clue='Look at `has_embeddings`. If there is nothing to bring, who can do the work?',
+                    why='With no embeddings to bring, name an embedding model endpoint such as `databricks-gte-large-en` and Databricks makes them for you. Self-managed is for when you already have a column of your own.',
+                    wrong=[None, 'You could, but you would be building something Databricks does for you. Self-managed fits when you already have them.']),
+                ask('200,000 vectors fit a Standard endpoint, and answers an hour old are fine. Which sync mode?', ['Continuous: always up to date', 'Triggered: sync on a schedule'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Let\'s use Continuous sync so the index is always up to date."'),
+                    clue='An hour of slack is a lot. Think about what Continuous keeps running all day.',
+                    why='Continuous keeps a streaming job running all day. With 60 minutes of slack, Triggered sync on a schedule is enough and much cheaper.',
+                    wrong=['Fresher sounds better, but a streaming job runs all day. Do answers need to be fresh within minutes?', None]),
+                ask('A year later the docs have grown to 25 million chunks. Which endpoint type?', ['Standard: tens of milliseconds', 'Storage-optimized: a few hundred ms'], answer=1,
+                    evidence=evidence('code', title='main.support.doc_chunks, next year', text="""needs = {
+  "source_is_delta": True,
+  "vectors": 25000000,
+  "has_embeddings": False,
+  "fresh_within_minutes": 1,
+}"""),
+                    clue='Around ten million vectors, the cost of each vector matters more than speed.',
+                    why='At ten million vectors or more, storage-optimized pays off: a search takes a few hundred milliseconds instead of tens, but each vector costs much less.',
+                    wrong=['Standard is faster, but at this size it costs much more per vector.', None]),
+                ask('On that endpoint, the product owner wants answers fresh within 1 minute. Which sync mode?', ['Continuous: fresh within moments', 'Triggered: sync on a schedule', 'None: no sync needed'], answer=1,
+                    clue='Check which sync modes the endpoint you just picked offers.',
+                    why='Storage-optimized endpoints only do Triggered, so the earlier choice rules out Continuous. Run sync often, and tell the product owner what is possible.',
+                    wrong=['Continuous isn\'t offered on storage-optimized endpoints, however fresh the answers need to be.', None, 'None is only for Direct Vector Access, where there is no table to sync from.']),
+            ],
+        ),
         starter="""def vector_index_setup(needs):
     # your code here
     pass
@@ -1708,6 +1827,44 @@ Return a list of three things: `[choice, databricks_points, azure_points]`. The 
         pattern='Count matches into two totals in one pass, then compare them.',
         target='one pass over the facts, then one comparison',
         realworld='A quick, honest way to frame the choice in a design review: list the facts, see which side they point to, and treat a tie as a reason to measure.',
+        practice=practice(
+            intro='Weigh up Databricks Vector Search and Azure AI Search the way a design review does: see which side each fact points to, then decide.',
+            explain='The choice followed where the data lives and where the app runs, not which tool is "better". You gave each fact to the side it points to, ignored the ones that point nowhere, and let the bigger side win. A tie, or a single shiny feature, was a reason to test both on one eval set.',
+            asks=[
+                ask('Which service does "docs in sharepoint" point to?', ['Databricks Vector Search', 'Azure AI Search'], answer=1,
+                    evidence=evidence('code', title='The project facts', text="""facts = [
+  "data in delta",
+  "agent on databricks",
+  "docs in sharepoint",
+]"""),
+                    clue='Which service has indexers that pull files in from Microsoft sources on a schedule?',
+                    why='An Azure AI Search indexer can pull SharePoint files in, cut them into chunks and make the embeddings. Databricks Vector Search would need them copied into a Delta table first.',
+                    wrong=['It would need the files copied into a Delta table first. Which one reads SharePoint directly?', None]),
+                ask('Taking all three facts together, which service do they point to?', ['Databricks Vector Search', 'Azure AI Search', 'Either: test both on one eval set'], answer=0,
+                    evidence=evidence('code', title='The project facts', text="""facts = [
+  "data in delta",
+  "agent on databricks",
+  "docs in sharepoint",
+]"""),
+                    clue='Two facts are about where data and agents already live; one is about SharePoint.',
+                    why='Delta tables and an agent on Databricks give Databricks Vector Search two points; SharePoint gives Azure AI Search one. Two beats one.',
+                    wrong=['SharePoint is one point for Azure, but the other two facts point the other way.', None, 'It is only a tie when both sides have the same number of points.']),
+                ask('A new project has these facts. What is the honest answer?', ['Databricks Vector Search, for the grants', 'Azure AI Search, for Entra ID access', 'Either: test both on one eval set'], answer=2,
+                    evidence=evidence('code', title='Another project', text="""facts = [
+  "need uc grants",
+  "need entra rbac",
+  "team likes python",
+]"""),
+                    clue='"team likes python" is on neither list. Count what is left on each side.',
+                    why='Unity Catalog grants is one point for Databricks, Entra ID access is one for Azure, and a liking for a language is neither. A tie means measure: run the same eval questions through both.',
+                    wrong=['That is one point each. Does either side win?', 'That is one point each. Does either side win?', None]),
+                ask('Back on the first project, what do you say?', ['Agree: the semantic ranker gives better results', 'Keep them in Databricks, where the agent runs too', 'Copy the tables into both services, to be safe'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Azure AI Search has the semantic ranker, so it\'s the better product. Let\'s move our curated Delta tables into it."'),
+                    clue='The choice follows where the data lives and where the app runs, not which tool has the nicest feature.',
+                    why='A feature is one point, not the whole answer. Curated tables in Unity Catalog with an agent on Databricks point to Databricks Vector Search; if the ranker might matter, the eval set will show it.',
+                    wrong=['One feature is one point. Where do the tables live, and where does the agent run?', None, 'Two copies drift apart. Pick one home per source unless you are deliberately comparing.']),
+            ],
+        ),
         starter="""def pick_search_service(facts):
     # your code here
     pass

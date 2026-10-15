@@ -93,10 +93,12 @@ The sentence is what you'd say to a colleague, so it must sound like a person ta
 short sentences, about 30 words, first person, everyday words, one idea at a time. Read it aloud
 before keeping it.
 
-## Practice on real evidence (platform Build steps)
+## Practice on real evidence (judgement lessons)
 
-For platform lessons the job is reading YAML, plans and logs, so the Build step can be a few
-questions instead of code: `exercise(..., practice=practice(intro=..., asks=[ask(...)]))`. Each
+When a lesson's real skill is a decision or reading evidence (a plan, a run, a policy, a trace),
+not writing code, the Build step is a few questions instead, and its tab says **Practice**
+(`stepNames` in the page). Lessons where the code is the skill, or where it works out a number,
+keep the Python Build. [CURRICULUM.md](CURRICULUM.md) has the rule as a table. The questions: `exercise(..., practice=practice(intro=..., asks=[ask(...)]))`. Each
 `ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
 one plain question, three or so options, a plain line for each wrong one, a clue first and then
 the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
