@@ -1,6 +1,6 @@
 """Use case and fit: pick an AI use case worth doing, write it down, and decide whether it is fit for purpose."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, machine, module, practice, question
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, machine, module, practice, question, source
 
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
@@ -68,8 +68,8 @@ lesson(MODULE, 'use_case_score',
     title='Is this a good AI use case?',
     learn=[
         "Most AI projects that fail went wrong before any code: they started from the technology (\"we need an agent\") instead of a problem. Microsoft's Cloud Adoption Framework starts with **business problems**: where results miss expectations, or people repeat the same work. Then write the use case in one line, **\"Help [who] [do what] so [a number] improves\"**, and check the task happens often enough to matter.",
-        "Next, three **gates**. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it. Also choose **automate or augment**: Google's People + AI Guidebook automates tasks that are tedious, need scale and have an agreed right answer, and keeps people in charge where they value the work or disagree on the answer. Most good first projects augment: AI drafts, a person decides.",
-        "Ideas that pass the gates go on a **map** with two axes, usually called a value-versus-feasibility matrix, as in Microsoft's business, experience and technology framework. **Value**: what the problem costs and how much the business cares. **Doable** (feasibility): the data is ready, AI suits the task, and the team can change how it works. High value and doable: **accelerate** to a pilot. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Neither, or failed a gate: **shelve**.",
+        "Next, three **gates**. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it. Also choose **automate or augment**: automate tasks that are tedious, need scale and have an agreed right answer, and keep people in charge where they value the work or disagree on the answer. Most good first projects augment: AI drafts, a person decides.",
+        "Ideas that pass the gates go on a **map** with two axes, usually called a value-versus-feasibility map. **Value**: what the problem costs and how much the business cares. **Doable** (feasibility): the data is ready, AI suits the task, and the team can change how it works. High value and doable: **accelerate** to a pilot. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Neither, or failed a gate: **shelve**.",
         "Keep the two axes apart rather than adding scores together: a risky, valuable idea and a safe, trivial one can add up to the same total. Where an idea lands tells you what to do next.",
     ],
     example=example('Six ideas on the map', """             not doable yet   doable
@@ -82,14 +82,14 @@ failed a gate, so shelved:
   loan approvals (harm, nobody checks)
   date formats (a rule does it)"""),
     check=question(
-        'Reviewing contracts for risk would save a lot of lawyer time, but past contracts are not labelled and the legal team has not agreed what "risky" means. Where does it go?',
+        'Predicting which machines will break down would save a lot of downtime. Past failures are on record, but the sensor data sits in three systems and nobody has joined it up. Where does it go?',
         [
-            'Accelerate: the value is high',
-            'Research: valuable, but the data and the definition are not ready',
-            'Shelve: AI cannot read contracts',
+            'Accelerate: the value is high enough to start',
+            'Research: valuable, but not doable yet',
+            'Shelve: the data is in too many systems',
         ],
         answer=1,
-        why='The value is real, but it is not doable yet: there is nothing labelled to test on and no agreed right answer. Research means fixing that first, then looking again.',
+        why='The value is real, but it is not doable yet: the data has to be pulled together before anything can be tested. Research means fixing that first, then looking again. Shelve is for ideas worth little.',
     ),
     angle=angle(
         pattern='Gates first, then the map',
@@ -217,6 +217,10 @@ for n in [1, 2, 3]:
                 'One score for everything',
                 'Adding value, ease and risk into one total hides the trade-off. Keep value and doable as two axes, and treat harm as a gate.',
             ],
+            [
+                'Automating work people want to keep',
+                "Google's People + AI Guidebook automates tasks that are tedious, need scale and have an agreed right answer, and keeps people in charge where they value the work or disagree on the answer. When in doubt, augment: AI drafts, a person decides.",
+            ],
         ],
         practice=practice(
             explain='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. The order matters. The gates come first, because a valuable idea that does harm unchecked is still shelved. Then two separate questions, value and doable, pick one of four corners: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It is like sorting post into four trays by two questions, after binning the junk.',
@@ -231,7 +235,7 @@ lesson(MODULE, 'use_case_card',
     title='Write the use case down',
     learn=[
         'Before building, write the use case on one page, a **use case card**. It makes everyone agree on the same job, and it lists what the trial must measure.',
-        "A card answers ten questions, shaped like the **AI Canvas** from the economists behind *Prediction Machines*, which treats AI as cheap prediction inside a decision. **Who** uses it and the **task**. The **decision**: what the AI predicts or drafts, from what input. The **action**: what happens next, and who does it. How it is done **today**, and its cost. **Success**, as a number. What a **wrong answer** costs, and who catches it. The **data** to test on. The **feedback**: how real outcomes flow back to improve it. And the **owner** who decides.",
+        "A card answers ten questions, shaped like the **AI Canvas** from the economists behind **Prediction Machines**, which treats AI as cheap prediction inside a decision. **Who** uses it and the **task**. The **decision**: what the AI predicts or drafts, from what input. The **action**: what happens next, and who does it. How it is done **today**, and its cost. **Success**, as a number. What a **wrong answer** costs, and who catches it. The **data** to test on. The **feedback**: how real outcomes flow back to improve it. And the **owner** who decides.",
         'Vague cards fail. "Use AI for HR" cannot be tested. "Draft answers to employee policy questions in Teams; an HR person approves each one before it is sent; success is 80 in 100 drafts approved without edits on last month\'s 200 questions" can.',
         'A blank line on the card is an open question. Answer it before you build, because a missing owner or a missing test set will stop the project later anyway.',
     ],
@@ -250,9 +254,9 @@ lesson(MODULE, 'use_case_card',
     check=question(
         'Which line makes a use case card testable?',
         [
-            'Use AI to improve the HR experience',
-            'Employees will find it much faster',
-            '80 in 100 draft answers approved without edits, on 200 past questions',
+            'Use AI to improve the HR experience for everyone',
+            'Employees will find what they need much faster',
+            '80 in 100 drafts approved unedited on 200 past questions',
         ],
         answer=2,
         why='Only the last one names a number and the questions you will check it on, so a trial can say yes or no. The others are hopes, not measures.',
@@ -318,15 +322,15 @@ Return a list of the gap field names, in the order above. A complete card gives 
   "decision": "which team gets the ticket",
   "action": "the ticket is routed; the team can bounce it back",
   "today": "2 minutes each",
-  "success": "90% routed right",
+  "success": "90 in 100 routed right",
   "wrong_answer": "rerouted by hand",
   "data": "",
   "feedback": "bounced tickets are relabelled",
   "owner": "IT lead",
 }"""),
                     clue='A box holding only spaces is as empty as a blank one. And does the success line have a number?',
-                    why='`user` is only spaces and `data` is blank: both are gaps. Success says 90% routed right, a number a pilot can check, so it stays.',
-                    wrong=['Look at user again: spaces aren\'t an answer.', None, 'Success has a number, 90%, so a pilot can check it.']),
+                    why='`user` is only spaces and `data` is blank: both are gaps. Success says 90 in 100 routed right, a number a pilot can check, so it stays.',
+                    wrong=['Look at user again: spaces aren\'t an answer.', None, 'Success has a number, 90 in 100, so a pilot can check it.']),
             ],
         ),
         starter="""def card_gaps(card):
@@ -354,7 +358,7 @@ Return a list of the gap field names, in the order above. A complete card gives 
             case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it before sending', 'today': '15 minutes, $8', 'success': 'faster answers', 'wrong_answer': '', 'data': '200 past questions', 'feedback': 'edits are logged and added to the eval set'}, expected=['success', 'wrong_answer', 'owner'], sample=True),
             case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it', 'today': '15 minutes, $8', 'success': '80 in 100 approved', 'wrong_answer': 'HR checks first', 'data': '200 past questions', 'feedback': 'edits go into the eval set', 'owner': 'Head of HR'}, expected=[]),
             case({}, expected=['user', 'task', 'decision', 'action', 'today', 'success', 'wrong_answer', 'data', 'feedback', 'owner']),
-            case({'user': '  ', 'task': 'triage tickets', 'decision': 'which team gets the ticket', 'action': 'the ticket is routed; the team can bounce it back', 'today': '2 minutes each', 'success': '90% routed right', 'wrong_answer': 'rerouted by hand', 'data': '', 'feedback': 'bounced tickets are relabelled', 'owner': 'IT lead'}, expected=['user', 'data']),
+            case({'user': '  ', 'task': 'triage tickets', 'decision': 'which team gets the ticket', 'action': 'the ticket is routed; the team can bounce it back', 'today': '2 minutes each', 'success': '90 in 100 routed right', 'wrong_answer': 'rerouted by hand', 'data': '', 'feedback': 'bounced tickets are relabelled', 'owner': 'IT lead'}, expected=['user', 'data']),
         ],
         guided="""def card_gaps(card):
     # Replace every ___ with real code, then run the tests.
@@ -478,7 +482,7 @@ R7  Cost under $1 per finished answer"""),
                     wrong=['It adds nothing users can ask for. It limits how the job is done.', None]),
                 ask('What is missing from that list?', ['Nothing: those three lines cover the whole job', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
                     evidence=evidence('claim', who='The product owner said', text='"The requirements are done: it answers policy questions from the HR pages, shows the source page, and hands hard questions to a person."'),
-                    clue='Those three are R1, R3 and R5. Which pile are they all in?',
+                    clue='All three lines say what it does. Which pile is that?',
                     why='All three are functional. A demo can do every one and still not go live, because it is too slow, too costly or sends personal data where it may not go.',
                     wrong=['That is the whole job, but not how well it must do it.', None, 'It has enough to do. What is missing is how well.']),
                 ask('How would you rewrite R8 so the pilot can test it?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
@@ -595,9 +599,11 @@ R7  Cost under $1 per finished answer"""),
 
 lesson(MODULE, 'well_architected',
     title='A well-architected review',
+    checked='2026-10-15',
+    sources=[source('Azure Well-Architected Framework workloads', 'https://learn.microsoft.com/azure/well-architected/workloads')],
     learn=[
         "Before you build, check the design against a **well-architected framework**: a checklist of what good systems need, from the cloud providers. Microsoft's has five **pillars**. **Reliability**: it keeps working when a model or a service fails. **Security**: data and actions are protected. **Cost Optimization**: you know what drives the cost and pay only for what you use. **Operational Excellence**: you can see what it does, test it and release safely. **Performance Efficiency**: it stays fast as use grows.",
-        "Microsoft's guidance for AI workloads applies every pillar to both the functional and the non-functional requirements. For AI that means questions like: what happens when the model endpoint is down or out of quota? Can a prompt injection make it leak data? Do you trace every answer? Can it handle the busiest minute? Databricks adds two pillars of its own, **data and AI governance** (who may use which data and models) and **interoperability and usability**.",
+        "Microsoft's guidance for AI workloads applies every pillar to both the functional and the non-functional requirements. For AI that means questions like: what happens when the model endpoint is down or out of quota? Can a **prompt injection** (text in a user's message that tricks the model into ignoring its rules) make it leak data? Do you trace every answer? Can it handle the busiest minute? Databricks adds two pillars of its own, **data and AI governance** (who may use which data and models) and **interoperability and usability**.",
         'A quick way to start a review is to ask a model to draft it from your use case card. A good **review prompt** gives the whole card, asks each pillar\'s questions in turn, and sets rules: back every finding with a line from the card, write "Unknown" and a question when the card does not say, give each pillar a risk, and leave the decision to a person.',
         "Then read the draft like a reviewer, not a fan. Check every claim against the card, because a model will fill gaps with confident guesses. The Unknowns are your next questions for the owner. The framework itself says a system only needs to be \"just as reliable\" and \"just as secure\" as it needs to be, so a person decides which risks are fine for a pilot.",
     ],
@@ -815,7 +821,7 @@ lesson(MODULE, 'fit_for_purpose',
     learn=[
         '**Fit for purpose** means good enough for this job, measured on real examples, against bars (acceptance criteria) agreed before the trial. Not perfect, and not "it looked good in the demo".',
         'These bars are your non-functional requirements, and the review shows which pillars they protect. Set four when you write the card. **Quality**: like 80 in 100 answers right. **Must-pass**: the dangerous cases it must never get wrong. **Speed**: how many seconds a person will wait. **Cost**: the cost per finished task must beat today\'s cost.',
-        'After the pilot, the call, often called a go/no-go decision, is one of three. **Go**: every bar met. **Fix**: one bar just missed, so improve that and test again. **Stop**: a must-pass case failed, or it is far off. Writing the bars down first stops anyone from moving them to fit the result.',
+        'After the pilot, the call, often called a go/no-go decision, is one of three. **Go**: every bar met. **Fix**: one bar just missed, so improve that and test again. **Stop**: a must-pass case failed, more than one bar was missed, or a miss is far off. Writing the bars down first stops anyone from moving them to fit the result.',
         'The next lessons give you the tools behind each bar. Foundations show how to measure quality honestly, Pricing works out the cost, and Evaluate later repeats this check on every new version.',
     ],
     example=example('Pilot results against the bars', """bars = {"quality": 0.80, "seconds": 5,
@@ -826,19 +832,19 @@ pilot = {"quality": 0.78, "seconds": 4,
 # and within 5 points of the bar: fix it,
 # then test again"""),
     check=question(
-        'The pilot scores 78 in 100 against a bar of 80, passes every must-pass case, and meets the speed and cost bars. What is the honest call?',
+        'The pilot scores 86 in 100 against a bar of 80, passes every must-pass case and costs less than its bar, but takes 5.5 seconds against a 5-second bar. What is the honest call?',
         [
-            'Go: it is close enough',
-            'Fix: improve quality, then test again',
-            'Stop: it missed a bar',
+            'Go: half a second is close enough',
+            'Fix: speed it up, then test again',
+            'Stop: it missed the speed bar',
         ],
         answer=1,
-        why='Only one bar is missed, and only just, so it is worth improving and testing again. Calling it a go would quietly move the bar after seeing the result.',
+        why='Only one bar is missed, and only just: half a second over. That is worth improving and testing again. Calling it a go would quietly move the bar after seeing the result.',
     ),
     angle=angle(
         pattern='Must-pass first, then count the misses',
         text='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their bars, noting each one missed and whether the miss is close: quality within 0.05 of the bar, speed or cost no more than 1.2 times the bar. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
-        say='"I agree the bars [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|go|fix::Must-pass means exactly that.]], all bars met means go, and one near miss means fix it and [[test again|ship it|give up::A near miss gets another try, not a pass.]]."',
+        say='"I agree the bars [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all bars met means go, and one near miss means fix it and [[test again|ship it|give up::A near miss gets another try, not a pass.]]."',
         classic=None,
     ),
     exercise=exercise(

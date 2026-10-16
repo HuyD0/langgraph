@@ -115,9 +115,9 @@ CHECKS = {
                 "back. Counting only one side gives too small a number."),
     ],
     "team_experiment": [
-        ask("Your rule said the team must do at least 10 percent better than one agent. It did 8 "
-            "percent better, so someone wants to change the rule to 8. What's wrong?",
-            ["It moves the goalposts after the result", "8 percent is too small to measure", "The rule should only be about cost"],
+        ask("Your rule said the team must pass at least 1 more question in every 10 than one agent. "
+            "It managed fewer, so someone wants to lower the rule to match. What's wrong?",
+            ["It moves the goalposts after the result", "A gain that small is too hard to measure", "The rule should only be about cost"],
             answer=0,
             clue="When was the rule supposed to be written down?",
             why="The decision rule is written before any run, so a lucky result can't move the "

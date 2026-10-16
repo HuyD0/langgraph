@@ -43,3 +43,10 @@ env:
   # The app's disk is wiped on every restart: only caches go here, never progress.
   - name: DRILL_HOME
     value: /tmp/daily-drill
+
+  # Content packs. The work copy keeps its real lessons in content-packs/internal/ (one pack,
+  # with the same lesson ids as the public slots in content-packs/iac-applied/). The public
+  # repository has no such folder, and a folder that isn't there is skipped, so the public
+  # build loads nothing. The line is the same in both copies and is never edited at work.
+  - name: DRILL_CONTENT_PACKS
+    value: content-packs/internal

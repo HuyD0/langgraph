@@ -1,6 +1,6 @@
 """Building with LLMs: Prompts, parsing replies, batching and retries, with LangChain and Databricks model endpoints."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, question, source, stack
 
 MODULE = module('llm-apps', 'Building with LLMs', 'Prompts, parsing replies, batching and retries, with LangChain and Databricks model endpoints.')
 
@@ -8,7 +8,7 @@ lesson(MODULE, 'fill_template',
     title='Prompts are templates',
     learn=[
         "Real prompts are built from templates with placeholders: instructions, the user's question, retrieved documents, examples.",
-        'Prompts often contain JSON (a common text format for data, written with curly braces, like `{"ok": true}`) or code with curly braces of their own, so filling them with str.format (the built-in Python way to fill placeholders) breaks. Replace only the placeholders you mean to replace.',
+        'Prompts often contain JSON, a common text format for data written with curly braces, like `{"ok": true}`. Python\'s built-in filler, `str.format`, treats every pair of braces as a placeholder, so it breaks on them. Replace only the placeholders you mean to replace.',
     ],
     example=example('Why str.format breaks', """template = 'Reply as JSON like {"ok": true}. Question: {q}'
 template.format(q='hi')   # KeyError: '"ok"'"""),
@@ -132,6 +132,8 @@ _REGISTRY = {
 
 lesson(MODULE, 'resolve_prompt',
     title='The prompt registry',
+    checked='2026-10-15',
+    sources=[source('MLflow Prompt Registry', 'https://mlflow.org/docs/latest/genai/prompt-registry/'), source('Prompt Registry in Unity Catalog', 'https://docs.databricks.com/aws/en/mlflow3/genai/prompt-version-mgmt/prompt-registry/')],
     learn=[
         'Changing one word in a prompt can change every answer, so treat prompts like code. The **MLflow Prompt Registry** is a shared store for prompts, like the one MLflow keeps for models: each save makes a new numbered **version**, and versions never change.',
         'Your app loads an **alias** (a nickname like `production` that points at one version), not a number. Shipping or rolling back a prompt means moving the alias: no code change, no redeploy. On Databricks, prompts live in Unity Catalog, the catalog that holds your tables and models, with the same three-part names (like `main.support.answer`) and permissions.',
@@ -308,8 +310,8 @@ lesson(MODULE, 'extract_code_block',
         'The model sometimes returns JSON inside a ```json fence and sometimes plain. What should your code do?',
         [
             "Fail when there's no fence, so you notice",
-            'Extract from the fence if present, otherwise use the whole reply',
-            'Ask the model again every time',
+            'Use the fence if there is one, else the whole reply',
+            'Ask the model again until it uses a fence',
         ],
         answer=1,
         why='Handle both shapes and validate after. Failing on the common plain case would break a working feature.',
@@ -500,6 +502,8 @@ letters[2:10]  # ['c'], no error""",
 
 lesson(MODULE, 'backoff_delays',
     title='Retries and backoff',
+    checked='2026-10-15',
+    sources=[source('AI Gateway rate limits', 'https://docs.databricks.com/aws/en/ai-gateway/rate-limits'), source('Foundation Model APIs limits', 'https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/limits')],
     learn=[
         "APIs fail for temporary reasons: rate limits (a cap on how many requests you may send per minute), timeouts, overload. Good clients **retry**, waiting longer each time (**exponential backoff**: each wait is double the one before), with a **cap** so waits don't grow forever.",
         'Only retry errors that can fix themselves. A bad request or wrong key fails the same way every time.',
@@ -527,9 +531,9 @@ for attempt in range(5):
 )
 # This retries EVERY error by default, even a wrong key.
 # Pass retry_if_exception_type=(...) to retry only some.
-# A 429 from a Databricks endpoint usually means an AI Gateway
-# rate limit (AI Gateway: the Databricks layer that sets limits
-# on model endpoints)."""),
+# A 429 from a Databricks endpoint is a rate limit: the endpoint's
+# own built-in limit, or one an admin set in AI Gateway (the
+# Databricks layer that puts limits on model endpoints)."""),
     exercise=exercise(
         title='Retry Wait Times',
         topic='api-calls',
@@ -624,9 +628,9 @@ lesson(MODULE, 'parse_labels',
 expected:     ["billing",  "refund",   "unknown"]"""),
     check=question(
         "Your unit tests call the real model and fail randomly. What's the fix?",
-        ['Retry failing tests', 'Use a fake model with scripted replies in unit tests', 'Delete the tests'],
+        ['Retry each failing test a few times', 'Use a fake model with scripted replies', 'Delete the tests and rely on evals'],
         answer=1,
-        why='Unit tests should be fast and the same every run.',
+        why='Unit tests should be fast and the same every run, and a fake model gives the same reply every time.',
     ),
     angle=angle(
         pattern='Clean each reply, then check it',

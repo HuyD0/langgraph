@@ -16,8 +16,12 @@ async function localBackend() {
   let health;
   try { const r = await fetch("/api/health", { cache: "no-store" }); if (!r.ok) return null; health = await r.json(); } catch { return null; }
   if (!health || !health.ok) return null;
+  // A stopped app (after its idle stop) or the proxy in front of it answers with a web page, not
+  // JSON: say so, instead of blaming the hint or the save.
+  const ASLEEP = "The app has gone to sleep. Reload in a minute, or ask whoever runs it to start it.";
+  const jsonOf = async res => { try { return await res.json(); } catch { throw Object.assign(new Error("asleep"), { code: "asleep", text: ASLEEP }); } };
   const fail = async (res) => {
-    let body = {}; try { body = await res.json(); } catch {}
+    const body = await jsonOf(res);
     const d = (body && body.detail) || body || {};
     throw Object.assign(new Error(d.text || res.statusText), { code: d.code || (res.status === 429 ? "rate_limited" : "error"), text: d.text });
   };
@@ -34,7 +38,7 @@ async function localBackend() {
     try {
       const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctl.signal });
       if (!res.ok) await fail(res);
-      if (body.json) return (await res.json()).value;
+      if (body.json) return (await jsonOf(res)).value;
       const reader = res.body.getReader(), dec = new TextDecoder();
       let text = "";
       for (;;) {
@@ -55,7 +59,7 @@ async function localBackend() {
   const call = async (method, path, body) => {
     const res = await fetch("/api/docs/" + path, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     if (!res.ok) await fail(res);
-    return res.json();
+    return jsonOf(res);
   };
   const doc = path => ({
     get: async () => { const r = await call("GET", path); return { exists: r.exists, data: () => r.data }; },

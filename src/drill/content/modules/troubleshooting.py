@@ -28,14 +28,14 @@ exists in Entra ID?              yes
 declared in service_principals?  no: only in dbx_access_connector.yml
                                  -> stop here: declare it, Foundation never saw it"""),
     check=question(
-        'The SP is declared in `service_principals.yml` and the Foundation stack shows a **proposed** run that finished. The Service plan still cannot find it. What do you check next?',
+        'The Foundation stack was applied yesterday, but today\'s Service plan still can\'t find the SP. The SP was declared this morning. What does that tell you?',
         [
-            'Whether Foundation was actually applied',
-            'Rerun the Service plan until it passes',
-            'Delete and recreate the SP in Entra ID',
+            'Foundation applied before the declaration: apply again',
+            'The Service stack is reading an old copy of the YAML',
+            'The SP was never created in Microsoft Entra ID',
         ],
         answer=0,
-        why='A finished proposed run is only a preview: it does not register anything. Ask for evidence that Foundation was applied. Rerunning or recreating identities changes things without knowing the cause.',
+        why='Yesterday\'s apply ran on YAML that didn\'t declare the SP yet, so Foundation never registered it. Each stage is separate: declared this morning means Foundation has to apply again before Service can find it.',
     ),
     angle=angle(
         pattern='Check the stages in order, stop at the first gap',
@@ -96,17 +96,17 @@ Check them in that order and return the first one that is `False`, as one of: `"
                     wrong=[None, 'Re-running changes nothing if the earlier stage isn\'t done, and hides the cause.', 'Never change identities to make an error go away.']),
                 fix('Declare the service principal so Foundation picks it up.',
                     file='config/UAT/team-sales/service_principals.yml',
-                    start="""servicePrincipals:
+                    start="""service_principals:
   - name: sp-sales-reporting-uat
     workspace_access: true
 """,
-                    answer="""servicePrincipals:
+                    answer="""service_principals:
   - name: sp-sales-reporting-uat
     workspace_access: true
   - name: sp-sales-etl-uat
     workspace_access: true
 """,
-                    rules={'path': 'servicePrincipals', 'required': ['name'], 'allowed': ['name', 'workspace_access'], 'types': {'name': 'str'}},
+                    rules={'path': 'service_principals', 'required': ['name'], 'allowed': ['name', 'workspace_access'], 'types': {'name': 'str'}},
                     goal=[{'field': 'name', 'contains': 'sp-sales-etl-uat', 'message': 'sp-sales-etl-uat still isn\'t declared.'}],
                     clue='Add a second item to the list, shaped like the first one.',
                     why='Declared here, Foundation registers it in the Databricks account on its next apply; then Service can assign it to the workspace.'),
@@ -206,12 +206,12 @@ Give one safe next check. Do not edit or deploy."""),
     check=question(
         'An AI assistant says the service principal "must be registered, because it is declared in service_principals.yml on main". What is wrong with relying on that?',
         [
-            'Nothing: it names the file',
-            'It read main, not the run\'s commit, and a declaration doesn\'t prove Foundation registered it',
-            'It should have suggested deleting and recreating the SP',
+            'Nothing: it names the file and the branch',
+            'It read main, not the run\'s commit',
+            'It should have told you to recreate the SP',
         ],
         answer=1,
-        why='Two of the three rules fail: the version (main, not the run\'s commit) and the evidence (a name in YAML isn\'t proof that an earlier stage ran). Recreating identities would break the safety rule.',
+        why='Two of the three rules fail: the version (main, not the run\'s commit) and the evidence (a declaration in YAML isn\'t proof that Foundation registered the SP). Recreating identities would break the safety rule.',
     ),
     angle=angle(
         pattern='Give it the facts, check its claims',

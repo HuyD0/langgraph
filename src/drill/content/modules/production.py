@@ -1,6 +1,6 @@
 """Production patterns: Rate limits, retries, concurrency, race conditions, idempotency and data at scale: the habits that keep AI systems up."""
 
-from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, source, stack
 
 MODULE = module('production', 'Production patterns', 'Rate limits, retries, concurrency, race conditions, idempotency and data at scale: the habits that keep AI systems up.')
 
@@ -15,9 +15,9 @@ lesson(MODULE, 'token_bucket',
     check=question(
         "Your batch job sends 200 requests at once and gets 150 rate-limit errors. What's the better fix?",
         [
-            'Retry them all immediately',
-            'Limit the send rate on your side so you stay under the limit',
-            'Use a bigger endpoint',
+            'Retry the 150 straight away, before the limit resets',
+            'Pace the requests on your side to stay under the limit',
+            'Run the job on a bigger cluster so it sends faster',
         ],
         answer=1,
         why='Retrying in a burst hits the same wall. Pacing the requests avoids the errors.',
@@ -146,7 +146,7 @@ lesson(MODULE, 'retry_wait',
 # full jitter: each waits a random time up to 2 s, then up to 4 s, then up to 8 s → spread out"""),
     check=question(
         'Fifty workers hit a rate limit at the same time and all retry after exactly 2 seconds. What happens?',
-        ['They all succeed', 'They all hit the limit again together', 'Only one retries'],
+        ['They all succeed, since the limit has reset', 'They all hit the limit again together', 'Only the first one to retry gets through'],
         answer=1,
         why='Identical waits make the retries collide. Jitter spreads them out.',
     ),
@@ -387,9 +387,9 @@ lesson(MODULE, 'optimistic_writes',
     check=question(
         'Two agents update the same ticket at nearly the same time. Which approach avoids losing one update?',
         [
-            'Read, change in Python, then write',
-            'Write only if the version is still the one you read, otherwise retry',
-            'Add a sleep before writing',
+            'Read the ticket, change it in Python, then write it back',
+            'Write only if the version is still the one you read',
+            'Add a short sleep before each write so they take turns',
         ],
         answer=1,
         why='The check has to happen as part of the write. A sleep only makes the race rarer.',
@@ -626,7 +626,7 @@ names[1] = 'cy'  # ['ann', 'cy']""",
 lesson(MODULE, 'chunk_rows',
     title='Transforming data at scale with Spark',
     learn=[
-        "Spark splits a table into **partitions** and runs your code on each partition in parallel across the cluster. That only works if your function handles **one row at a time** and doesn't depend on other rows or on shared state.",
+        "Spark splits a table into **partitions** and works on them in parallel across the cluster. A function you write for Spark to run on the rows (a **UDF**) must get each row's answer from that row alone: not from other rows, and not from **shared state** (a value kept outside the function), because Spark may run it on any machine and more than once. Grouping and joining rows is Spark's own job: ask for a groupBy or a join and Spark brings the matching rows together for you.",
         'Give every output a **deterministic id** (a stable id built only from its inputs), so re-running the job produces the same ids and a MERGE overwrites instead of duplicating.',
     ],
     example=example('One document becomes many chunk rows', """id  text                  →  id    text
@@ -636,20 +636,21 @@ d1  "abcdefg" (size 3)       d1-0  abc
     check=question(
         'Your chunking job uses `uuid4()` (which makes a new random id each call) for chunk ids and is re-run after a failure. What happens?',
         [
-            'Nothing changes',
-            'Every chunk gets a new id, so the index fills with duplicates',
-            'Spark reuses the old ids',
+            'Nothing changes: the re-run overwrites the old rows',
+            'Every chunk gets a new id and is added again',
+            'Spark looks up and reuses the ids from the first run',
         ],
         answer=1,
-        why='Random ids differ every run. Ids built from the data are the same every time.',
+        why='Random ids differ every run, so nothing matches the old rows and the index fills with duplicates. Ids built from the data are the same every time.',
     ),
     angle=angle(
         pattern='Cut each document on its own',
-        text='The big idea: Spark can only spread the work over many machines if each piece uses its own row and nothing else. Your code takes one document at a time and cuts its text into slices of `size` characters. `range(0, len(text), size)` counts 0, 3, 6 and so on when size is 3, and the last slice can be shorter. Each chunk gets an id made from the document\'s id and a count that restarts at 0, like `"d1-0"`. So a re-run gives the same ids, and a MERGE overwrites instead of duplicating.',
+        text='The big idea: a function you give Spark to run on the rows must get each row\'s answer from that row alone, so Spark can run it on any machine. Your code takes one document at a time and cuts its text into slices of `size` characters. `range(0, len(text), size)` counts 0, 3, 6 and so on when size is 3, and the last slice can be shorter. Each chunk gets an id made from the document\'s id and a count that restarts at 0, like `"d1-0"`. So a re-run gives the same ids, and a MERGE overwrites instead of duplicating.',
         say='"My function only looks at [[one document|every document|the whole table::Spark can only split the work if each piece stands alone.]] at a time, so Spark can spread the work across machines. Each chunk id comes from the [[document\'s id|current time|a random number::Like d1-0: built from data that never changes.]], so a re-run gives the [[same ids|new ids|more rows::Then a MERGE overwrites instead of duplicating.]]."',
         classic=None,
     ),
-    stack=stack('PySpark: a pandas UDF plus posexplode', """from pyspark.sql import functions as F, types as T
+    stack=stack('PySpark: a pandas UDF plus posexplode', """import pandas as pd   # pandas holds each batch of rows the UDF gets
+from pyspark.sql import functions as F, types as T
 
 # a UDF is a function you write that Spark runs on the rows
 @F.pandas_udf(T.ArrayType(T.StringType()))
@@ -660,6 +661,8 @@ def split_text(texts: pd.Series) -> pd.Series:
 chunks = (spark.table("main.support.docs")
     .select("doc_id", F.posexplode(split_text("text")).alias("i", "text"))
     .withColumn("chunk_id", F.concat_ws("-", "doc_id", "i")))"""),
+    checked='2026-10-15',
+    sources=[source('Databricks: pandas user-defined functions', 'https://docs.databricks.com/aws/en/udf/pandas')],
     exercise=exercise(
         title='Chunking at Scale',
         topic='production',
@@ -770,12 +773,12 @@ watermark: time 100 → event 3 (time 90) is too late"""),
     check=question(
         "Your nightly embedding job re-embeds all 10 million documents every run. What's the fix?",
         [
-            'A bigger cluster',
-            'Process only new or changed documents, tracked with a checkpoint',
-            'Run it weekly',
+            'A bigger cluster, so the full run finishes sooner',
+            'Checkpoint where it got to and process only what is new',
+            'Run it weekly instead of nightly to cut the cost',
         ],
         answer=1,
-        why='Incremental processing makes cost follow what changed, not what exists.',
+        why='Incremental processing makes cost follow what changed, not what exists. A bigger cluster or a rarer run still re-embeds every document.',
     ),
     angle=angle(
         pattern='Skip what you have already read',
@@ -785,8 +788,8 @@ watermark: time 100 → event 3 (time 90) is too late"""),
     ),
     stack=stack('Structured Streaming: checkpoint, watermark, run as a batch', """(spark.readStream.table("main.support.events")
     .withWatermark("event_time", "1 hour")
-    # a watermark only drops late rows in aggregations (counts, sums),
-    # joins and duplicate removal; this plain copy keeps them all
+    # the watermark lets Spark forget ids older than an hour, so late copies are dropped
+    .dropDuplicates(["event_id", "event_time"])
     .writeStream
     .option("checkpointLocation", "/Volumes/main/support/checkpoints/events")
     .trigger(availableNow=True)
@@ -886,7 +889,7 @@ lesson(MODULE, 'validate_rows',
     example=example('Good, quarantined, new columns', 'A1 {minutes: 12}       → good\nA2 {minutes: "twelve"} → quarantine\nA3 {..., channel}      → good; "channel" is a new column'),
     check=question(
         "One malformed row in a million breaks your nightly load. What's the better design?",
-        ['Fail the whole load', 'Quarantine bad rows, load the rest, and alert', 'Ignore bad rows silently'],
+        ['Fail the whole load until someone fixes the row', 'Quarantine bad rows, load the rest, and alert', 'Drop the bad row quietly and load the rest'],
         answer=1,
         why='Keep data flowing, but make bad rows visible.',
     ),
@@ -1063,7 +1066,7 @@ lesson(MODULE, 'skew_report',
     title='Data skew in Spark',
     learn=[
         'Spark puts rows with the same key in the same partition. If one key has most of the rows (a **hot key**), one task (a task is one worker\'s share of the job) does most of the work while the others wait.',
-        'Watch for it in the Spark UI (one task far slower than the rest). Fixes: turn on Adaptive Query Execution (AQE: Spark re-plans the job while it runs and can split a skewed join), handle the hot key separately, or salt it (add a random ending to the hot key so its rows spread over several partitions).',
+        'Watch for it in the Spark UI (one task far slower than the rest). Fixes: check Adaptive Query Execution is on (AQE: Spark re-plans the job while it runs and can split a skewed join; it is on by default on Databricks and in Spark 3.2 and later, so only check nobody turned it off), handle the hot key separately, or salt it (add a random ending to the hot key so its rows spread over several partitions).',
     ],
     example=example('One hot key', """acme 9,000 rows · bolt 300 · cora 350 · dyna 350
 → the partition holding acme does about 3.6 times the average work"""),
@@ -1076,11 +1079,16 @@ lesson(MODULE, 'skew_report',
     angle=angle(
         pattern='Compare each key with the average',
         text='The big idea: if one key has far more rows than the rest, one worker does most of the job while the others wait. Your code goes through the keys twice. The first time it adds up all the rows, then divides by the number of keys to get the average. The second time it keeps every key whose count is more than `factor` times that average. You need the full total before you can judge any key, like needing every test mark before you know the class average.',
-        say='"I compare each key\'s row count with the [[average|biggest|smallest::Add up all the rows and divide by the number of keys.]]. When one key has far more, I turn on AQE, handle that key [[separately|first|later::Pull it out from the others.]], or [[salt|drop|sort::Add a random bit to the key so its rows spread out.]] it."',
+        say='"I compare each key\'s row count with the [[average|biggest|smallest::Add up all the rows and divide by the number of keys.]]. When one key has far more, I check AQE is on, handle that key [[separately|first|later::Pull it out from the others.]], or [[salt|drop|sort::Add a random bit to the key so its rows spread out.]] it."',
         classic=None,
     ),
     stack=stack('Spark: adaptive skew-join handling', """spark.conf.set("spark.sql.adaptive.enabled", "true")
 spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")   # on by default on Databricks"""),
+    checked='2026-10-15',
+    sources=[
+        source('Databricks: adaptive query execution', 'https://docs.databricks.com/aws/en/optimizations/aqe'),
+        source('Apache Spark: performance tuning', 'https://spark.apache.org/docs/latest/sql-performance-tuning.html'),
+    ],
     exercise=exercise(
         title='Spot a Skewed Key',
         topic='production',

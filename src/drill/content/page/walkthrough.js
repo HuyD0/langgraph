@@ -64,7 +64,7 @@ function walkTo(fig, n) {
   const k = +fig.dataset.walk, w = LESSONS[cur.id].walk[k];
   WALK[k] = Math.min(w.steps.length, Math.max(1, n));
   fig.outerHTML = walkFig(w, k);
-  // the new part's outline draws in and its number pops; the step's words follow (Motion off: they just appear)
+  // the new part's outline draws in and its number pops; the step's words follow. Motion is for everyone (the owner's choice, 2026-10-15).
   const now = document.querySelector(`[data-walk="${k}"]`);
   now.querySelectorAll(".sl-view .sl-mark, .sl-view .sl-hitbox, .sl-view .sl-hit").forEach(el => fxMove(el, [{ transform: "scale(1.04)", opacity: .3 }, { transform: "none", opacity: 1 }], "--dur-step"));
   now.querySelectorAll(".sl-view .sl-n").forEach(el => fxMove(el, [{ transform: "scale(0)" }, { transform: "scale(1.2)" }, { transform: "none" }], "--dur-step"));

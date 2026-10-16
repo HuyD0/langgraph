@@ -38,3 +38,18 @@ def test_the_page_gets_every_question_with_its_clue():
     for lid, asks in more_checks().items():
         page = data["lessons"][lid]["more"]
         assert [p[0] for p in page] == [a["question"] for a in asks] and all(p[4] for p in page)
+
+
+def test_question_one_is_not_answered_by_option_length():
+    """Every lesson's own Check question (question 1): the right option is no longer than 1.3 times
+    the longest wrong one plus 10 characters, so the longest answer is never a giveaway."""
+    too_long = []
+    for m in modules.load():
+        for lesson in m.lessons:
+            check = lesson["check"]
+            right = check["options"][check["answer"]]
+            wrong = [o for i, o in enumerate(check["options"]) if i != check["answer"]]
+            limit = 1.3 * max(map(len, wrong)) + 10
+            if len(right) > limit:
+                too_long.append(f"{lesson['id']}: right {len(right)} chars, longest wrong {max(map(len, wrong))}: {check['options']}")
+    assert not too_long, "the right option gives itself away by length:\n" + "\n".join(too_long)

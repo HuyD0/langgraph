@@ -8,13 +8,13 @@ MODULE = module('spacelift', 'Spacelift', 'Stacks, runs and the policies that gu
 
 lesson(MODULE, 'read_a_run',
     title='Reading a Spacelift run',
-    checked='2026-10-13',
-    sources=[source('Run', 'https://docs.spacelift.io/concepts/run'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('Tracked run (deployment)', 'https://docs.spacelift.io/concepts/run/tracked')],
+    checked='2026-10-15',
+    sources=[source('Run', 'https://docs.spacelift.io/concepts/run'), source('Proposed run (preview)', 'https://docs.spacelift.io/concepts/run/proposed'), source('Tracked run (deployment)', 'https://docs.spacelift.io/concepts/run/tracked'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy')],
     learn=[
         "A **run** is one go of Terraform on a **stack**. A **proposed** run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A **tracked** run deploys: it plans, then applies. Most runs a reviewer sees are proposed.",
         "Read a run from the top. The header says **which stack, which environment, which commit, and what state**. *Finished* on a proposed run means planning worked. It never means anything was deployed.",
-        "Then the **Changes** tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the **planning log**: the plan summary line, the first error if it failed, and whether the **plan policies** said GO. A GO is an automatic check passing, not a person approving.",
-        "A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a real proposed run for a team's folder permissions.",
+        "Then the **Changes** tab: how many resources would be added, changed or destroyed (a replacement counts as one add and one destroy), and which. Then the **planning log**: the plan summary line, the first error if it failed, and the GO lines. Every GO marks one automatic step that passed: the plan ran, its JSON was made, the resource list was uploaded. Only the GO after **Evaluated N plan policies** is the plan policies' result. None of them is a person approving.",
+        "A good review answer says what you saw, where it came from, what you still don't know, and the safest next step. The walkthrough below goes screen by screen through a proposed run for a team's folder permissions.",
     ],
     walkthrough=[
         screen('flow', caption='Where a run fits: from YAML to a decision',
@@ -35,9 +35,9 @@ lesson(MODULE, 'read_a_run',
         screen('header', caption='Step 1 · The run header: what you are looking at',
             title={'text': 'Databricks IaC plan review', 'n': 2},
             state={'text': 'FINISHED', 'n': 1},
-            path={'text': '.../Platf.../Databricks/DBX_AIML/DEV', 'n': 4},
+            path={'text': '.../Platf.../Databricks/DBX_SALES/DEV', 'n': 4},
             meta=['Terraform 1.5.7', 'DEV', 'feature/iac-review'],
-            commit={'text': '300d269', 'n': 3},
+            commit={'text': '5b8e1d4', 'n': 3},
             started='Started on Oct 9th, 11:25:43 PM by a Git commit',
             line2=['Committed on Oct 9th, 11:19:40 PM', 'State managed by Spacelift'],
             run_type={'text': 'Proposed', 'n': 4},
@@ -45,7 +45,7 @@ lesson(MODULE, 'read_a_run',
             steps=[
                 'FINISHED: planning completed without errors. On a proposed run that is all it means.',
                 'The run is named after the commit or pull request: the change you are reviewing.',
-                'The commit (300d269) is the exact Git version this plan used. Check it matches the newest commit in the PR.',
+                'The commit (5b8e1d4) is the exact Git version this plan used. Check it matches the newest commit in the PR.',
                 'The stack path ends in DEV: the environment. "Proposed" (under it) says this run only previews.',
                 'Changes ~ 14: fourteen resources would change in place. Open this tab next.',
             ],
@@ -61,11 +61,11 @@ lesson(MODULE, 'read_a_run',
             filters={'items': ['Address', 'Change type', 'Name', 'Resource type', 'Terraform provider'], 'n': 2},
             expand={'text': 'Expand all', 'n': 4},
             rows=[
-                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.folder_permissions["team_pit_folder"]', 'status': 'PLANNED', 'n': 3},
-                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["txat-shared-compute"]', 'status': 'PLANNED'},
-                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["sdlc-shared-compute"]', 'status': 'PLANNED'},
-                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["pit-shared-compute"]', 'status': 'PLANNED'},
-                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["enterprise-arch-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.folder_permissions["team_sales_folder"]', 'status': 'PLANNED', 'n': 3},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["sales-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["hr-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["aiml-shared-compute"]', 'status': 'PLANNED'},
+                {'sym': '~', 'address': 'module.dbx_workspace[0].databricks_permissions.cluster_permissions["platform-shared-compute"]', 'status': 'PLANNED'},
             ],
             more='+ 9 more',
             steps=[
@@ -83,7 +83,7 @@ lesson(MODULE, 'read_a_run',
             phase='Planning', duration='00:46', at='Oct 9th, 11:26:10 PM',
             tail=['    + group_name       = "users"', '    + permission_level = "CAN_READ"', '  }', '', '  # (1 unchanged block hidden)', '}'],
             summary={'text': 'Plan: 0 to add, 14 to change, 0 to destroy.', 'n': 1},
-            run_id='01M464E9KFVWE0PJJWH8MFV9PW',
+            run_id='01K8R3SV2Q7M4N6P9T5WXD0FHA',
             lines=[
                 {'text': 'Changes are GO'},
                 {'text': 'Generating JSON representation of the plan...'},
@@ -99,7 +99,7 @@ lesson(MODULE, 'read_a_run',
             tools={'items': ['Search', 'Full screen', 'Copy', 'Download'], 'n': 3},
             steps=[
                 'The plan summary: the same counts as the Changes tab. If they disagree, you are reading two different runs.',
-                'Two plan policies were checked and both passed. GO is an automatic check, written in Rego by the platform team, not a reviewer\'s approval.',
+                'Two plan policies were checked, and the GO right after that line is their result. The earlier GOs (Changes, JSON, resource list) are Spacelift\'s own steps passing. Every GO is an automatic check, the policies written in Rego by the platform team, not a reviewer\'s approval.',
                 'Search jumps to the first error or the summary in a long log; Copy and Download keep it for your notes.',
             ],
             tips=[
@@ -109,14 +109,14 @@ lesson(MODULE, 'read_a_run',
         ),
         screen('diff', caption='Step 4 · Who gets access: read by group, not by position',
             blocks=[
-                {'group': 'AP-PIT-BA', 'level': 'CAN_EDIT', 'n': 1},
-                {'group': 'AP-PIT-DEV', 'level': 'CAN_EDIT', 'n': 2},
-                {'group': 'AP-PIT-DEV', 'level': 'CAN_MANAGE', 'hidden': '# (2 unchanged attributes hidden)', 'n': 3},
+                {'group': 'grp-sales-dev-analysts', 'level': 'CAN_EDIT', 'n': 1},
+                {'group': 'grp-sales-dev-owners', 'level': 'CAN_EDIT', 'n': 2},
+                {'group': 'grp-sales-dev-owners', 'level': 'CAN_MANAGE', 'hidden': '# (2 unchanged attributes hidden)', 'n': 3},
                 {'group': 'users', 'level': 'CAN_READ', 'n': 4},
             ],
             hidden={'text': '# (1 unchanged block hidden)', 'n': 5},
             steps=[
-                'An explicit grant from team.yml: the BA group can edit.',
+                'An explicit grant from team.yml: the analysts group can edit.',
                 'The owner group\'s own CAN_EDIT grant, also typed in team.yml.',
                 'CAN_MANAGE for the same owner group: the runbook adds it for every owner. Listed twice, the group ends up with the higher one.',
                 'users CAN_READ: a default the runbook adds to every team folder.',
@@ -130,16 +130,16 @@ lesson(MODULE, 'read_a_run',
         screen('history', caption='Step 5 · Run history: finished and proposed is still a preview',
             title={'text': 'Remove ac', 'n': 1},
             state='FINISHED',
-            path={'text': '.../Platf.../Databricks/DBX_RISK/UAT', 'n': 1},
+            path={'text': '.../Platf.../Databricks/DBX_HR/UAT', 'n': 1},
             context={'text': 'UAT review context', 'n': 2},
             run_type='Proposed',
             changes='~ 3',
             events=[{'state': 'Finished', 'at': 'Oct 5th, 3:06:37 PM', 'buttons': ['Promote', 'Retry'], 'n': 5}],
             phase='Planning', duration='00:48', at='Oct 5th, 3:05:49 PM',
             lines=[
-                {'text': '        + service_principal = "SP-RSAI-RiskAIClient-UAT"', 'code': True, 'n': 3},
+                {'text': '        + service_principal = "sp-hr-etl-uat"', 'code': True, 'n': 3},
                 {'text': '      ]', 'code': True},
-                {'text': '      name              = "ac-dbx-rsai-default-uat-service-credential"', 'code': True},
+                {'text': '      name              = "ac-hr-uat-service-credential"', 'code': True},
                 {'text': 'Changes are GO'},
                 {'text': 'Evaluated 2 plan policies', 'n': 4},
                 {'text': 'Plan checks are GO', 'n': 4},
@@ -171,12 +171,12 @@ any       QUEUED/READY  not started: waiting for a lock or a worker"""),
             'Only the resources the policies approved',
         ],
         answer=1,
-        why='Proposed runs plan and report; they never apply. Finished means planning worked, and GO means the automatic policy checks passed. Deploying needs a tracked run, after review.',
+        why='Proposed runs plan and report; they never apply. Finished means planning worked, and "Plan checks are GO" means the automatic policy checks passed. Deploying needs a tracked run, after review.',
     ),
     angle=angle(
         pattern='Header first, then changes, then the log',
         text='The big idea: a run\'s type and state together say what it proves. A proposed run is only ever a preview; a tracked run deploys once someone confirms it. Your code reads those two fields and returns what the run proves, checking the cases that apply to any run first (not started yet), then proposed runs, then tracked ones. It is like reading a parcel\'s tracking page: "label printed" and "delivered" are both finished steps, but only one means it arrived.',
-        say="\"I read a run from the top: the stack, the [[environment|author|cost::DEV, UAT or PROD.]] and the commit, then the Changes tab, then the log. A finished proposed run is only a [[preview|deployment|backup::It plans and reports, and stops.]], and GO means the [[policies|reviewers|tests::Automatic checks written in Rego.]] passed, not that a person approved it.\"",
+        say="\"I read a run from the top: the stack, the [[environment|author|cost::DEV, UAT or PROD.]] and the commit, then the Changes tab, then the log. A finished proposed run is only a [[preview|deployment|backup::It plans and reports, and stops.]], and the last GO means the [[policies|reviewers|tests::Automatic checks written in Rego.]] passed, not that a person approved it.\"",
         classic=None,
     ),
     stack=stack('Spacelift: the same states in its Terraform provider', """resource "spacelift_stack" "dbx_service_dev" {
@@ -213,7 +213,7 @@ Return what the run proves, checking in this order:
             asks=[
                 ask('What does this run prove?', ['It was applied: tracked runs on main deploy', 'It planned, and waits for a person to confirm it', 'It failed: it never got past the plan'], answer=1,
                     evidence=evidence('code', title='The run header', text="""Run:    Add sales_daily-report cluster
-Stack:  .../Databricks/DBX_AIML/DEV
+Stack:  .../Databricks/DBX_SALES/DEV
 Type:   Tracked
 State:  UNCONFIRMED
 Commit: 7c41e0a on main"""),
@@ -222,7 +222,7 @@ Commit: 7c41e0a on main"""),
                     wrong=['Applied would be a tracked run that is FINISHED.', None, 'A failed run says FAILED.']),
                 ask('A teammate says their fix went out yesterday. This is the run. Is the fix live?', ['Yes: the run is over and nothing failed', 'No: someone rejected the plan'], answer=1,
                     evidence=evidence('code', title='The run header', text="""Run:    Fix cluster policy limits
-Stack:  .../Databricks/DBX_AIML/DEV
+Stack:  .../Databricks/DBX_SALES/DEV
 Type:   Tracked
 State:  DISCARDED
 Commit: 4e9a2b1 on main"""),
@@ -232,7 +232,7 @@ Commit: 4e9a2b1 on main"""),
                 ask('This proposed run FAILED. Which line do you read first?', ['The last line: the exit code says how it ended', 'The first error: the group that wasn\'t found', 'The "Planning failed" line: it sums up the run'], answer=1,
                     evidence=evidence('code', title='The planning log, near the end', text="""module.dbx_workspace[0].data.databricks_group.owner: Reading...
 
-Error: cannot read group: group AP-PIT-DEV not found
+Error: cannot read group: group grp-sales-dev-owners not found
 
   with module.dbx_workspace[0].data.databricks_group.owner
 
@@ -247,11 +247,11 @@ Unexpected exit code when planning changes: 1"""),
                     evidence=evidence('code', title='The pull request and its run', text="""Pull request #214 · feature/iac-review
   newest commit: 9b2f7d1   pushed 11:41 PM
 
-Run on .../DBX_AIML/DEV · Proposed · FINISHED
-  commit: 300d269          started 11:25 PM
+Run on .../DBX_SALES/DEV · Proposed · FINISHED
+  commit: 5b8e1d4          started 11:25 PM
   Plan checks are GO"""),
                     clue='Compare the run\'s commit with the newest one in the pull request.',
-                    why='A run is a snapshot of one commit. 300d269 is older than the newest commit, so this plan reviews old code. Wait for the run on 9b2f7d1.',
+                    why='A run is a snapshot of one commit. 5b8e1d4 is older than the newest commit, so this plan reviews old code. Wait for the run on 9b2f7d1.',
                     wrong=['It finished, but on an older commit: this plan reviews old code.', None, 'The YAML diff doesn\'t show what the runbook adds, and this plan is for old code anyway.']),
             ],
         ),
@@ -547,12 +547,12 @@ lesson(MODULE, 'guard_destroys',
     check=question(
         'A plan policy blocks destroying storage accounts. Can someone still lose one?',
         [
-            "No, it's fully protected",
-            'Yes, by deleting it in the Azure portal, with the Azure CLI, or with a local apply outside Spacelift, none of which go through the policy',
-            'Only if the policy has a bug',
+            'No: the policy sees every change to the account',
+            'Yes: a delete outside Spacelift never meets the policy',
+            'Only if the Rego rule has a bug',
         ],
         answer=1,
-        why='Policies only see plans. Pair them with RBAC (role-based access control: rules for who may do what) and resource locks.',
+        why='Policies only see plans. A delete in the Azure portal, with the Azure CLI, or from a local apply outside Spacelift never makes one, so pair the policy with RBAC (role-based access control: rules for who may do what) and resource locks.',
     ),
     angle=angle(
         pattern='Check each change against a set',
@@ -717,15 +717,15 @@ lesson(MODULE, 'plan_policy',
     checked='2026-10-13',
     sources=[source('Policy', 'https://docs.spacelift.io/concepts/policy'), source('Plan policy', 'https://docs.spacelift.io/concepts/policy/terraform-plan-policy'), source('Policy language (Rego)', 'https://www.openpolicyagent.org/docs/policy-language')],
     learn=[
-        "Review rules that live in people's heads get skipped on busy days. **Policy as code** runs them on every plan: Spacelift plan policies, written in Rego (the policy language from Open Policy Agent, or OPA, which Spacelift uses), and `terraform test`.",
-        'Start with the rules that prevent real incidents: never destroy resources that hold data you can\'t recreate, like storage accounts and metastores, and never open workspaces or storage to the public internet.',
+        "Last lesson you wrote one rule. **Policy as code** is a list of such rules that runs on every plan, as a Spacelift plan policy or a `terraform test`, so a review rule that lives in people's heads can't get skipped on a busy day. Add a second rule: never open workspaces or storage to the public internet. Each rule checks every change on its own, so one change can break two rules.",
+        'A Spacelift plan policy can **deny** (block the run, in red) or **warn** (print in yellow and let it through). Roll a new rule out as a warning first, so you see what it would have blocked before it blocks anyone.',
     ],
     example=example('Two rules', 'rule 1: protected type + delete  → "... would be destroyed"\nrule 2: public access on         → "... allows public network access"'),
     check=question(
         'Why roll out a new policy as a warning first?',
-        ["It's faster", 'To see what it would block before it blocks anyone', 'Warnings are free'],
+        ['So the run still applies while the rule is tested', 'To see what it would block before it blocks anyone', 'Because a deny rule needs an admin to approve it'],
         answer=1,
-        why='You find false positives without stopping deploys.',
+        why='A warning shows you every plan the rule would have stopped, mistakes in the rule included, without stopping anyone. Once it flags only real problems, switch it to deny.',
     ),
     angle=angle(
         pattern='Two separate rules per change',

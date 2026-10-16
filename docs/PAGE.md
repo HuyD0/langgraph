@@ -1,7 +1,7 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-131 lessons in 17 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
+about 170 lessons in 25 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
 going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
@@ -19,12 +19,20 @@ Everything is in the package, under `src/drill/content/`:
 | File | What it holds |
 |---|---|
 | `modules/<module>.py` | One file per chapter, lessons in the order they appear: `foundations.py`, `rag.py`, `agents.py`... |
-| `modules/__init__.py` | `ORDER`, the order of the chapters, and `LIFECYCLE`, the strip at the top of the page |
+| `modules/__init__.py` | `PATH` (the AI path's modules, phase by phase), `LIFECYCLE` (the six phases) and `TRACKS` (the Platform track); `ORDER`, every module in page order, is derived from them |
+| `checks/<module>.py` | Up to two more Check questions per lesson, after the lesson's own (see "Check", below) |
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
 | `trust.py` | The trust marks: where a lesson touches responsible AI, privacy or governance, one note (trait, NIST AI RMF reference, a perspective and a tip, and whether it is TEVV evidence) |
 | `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Explain step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
-| `page.html` | The page: layout, styles and all the JavaScript. `/*DATA*/` is replaced with the content at build time |
+| `freshness.py` | When each lesson's facts were last checked against its sources, and which are due another look (`drill content stale`; see "Keeping content current") |
+| `review.py` | The use case review and challenge prompts, versioned: one source for the page, the server's checks and the eval |
+| `yaml_rules.py` | The "Fix the YAML" checks in Python, the same rules the page runs, so tests can prove every question starts broken and its model answer passes |
+| `real.py` | "Build it for real": which notebook section builds each lesson's idea with the real libraries |
+| `packs.py` | Content packs: optional YAML lessons, loaded only when asked ([CONTENT_PACKS.md](CONTENT_PACKS.md)) |
+| `page.html` | The spine of the page: layout, styles and the script, with sections kept in `page/`. `/*DATA*/` is replaced with the content at build time |
+| `page/*.js`, `page/*.css` | Sections of the page in their own files, pasted back in at their `/*INCLUDE page/<file>*/` line ([FRONTEND.md](FRONTEND.md), "Parts") |
+| `tokens.css` | Every colour, font and timing as a token, inlined at `/*TOKENS*/` ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)) |
 | `build.py` | Puts it together: `build_data()` is the content as one dict, `render_page()` embeds it |
 
 ## The path: a sticker book
@@ -190,6 +198,12 @@ agrees) and can be changed any time in the Notebook ("Practise: AI Â· Platform Â
   Both, taking turns (after an AI lesson, a platform one; `progress.lastKind`).
 - **Home follows it:** with The platform, the Platform track sits at the top ("Your track") and the
   Today card is teal; the welcome text and "How it works" describe the platform work.
+
+**At work, one more line.** When the server runs in team mode (a shared database, so managers
+have a view: [SERVER.md](SERVER.md), "The manager's view"), the first-visit "How it works" card
+and the Notebook's Settings show one line: "At work, your manager can see your progress, your
+study list and the questions you ask the tutor." At home, with one person's SQLite file, it
+isn't shown.
 
 ## Tracks
 
@@ -494,7 +508,7 @@ after a run, your result for the example beside the expected rows when it return
 
 Then `uv run drill build-page`. It runs the solution and the filled-in scaffold against the
 cases, so a lesson that cannot be solved never reaches the page. A new chapter is a new
-file with its own `MODULE = module(...)`, plus its id in `ORDER` and in one `LIFECYCLE` stage.
+file with its own `MODULE = module(...)`, plus its id in `PATH` (or a track in `TRACKS`) and in one `LIFECYCLE` stage.
 A hyphen in the id becomes an underscore in the file name: `agent-teams` lives in
 `agent_teams.py`.
 

@@ -15,9 +15,9 @@ lesson(MODULE, 'chunk_text',
     check=question(
         'Why do chunks overlap?',
         [
-            'To make the index bigger',
+            'So each chunk stays under the size limit for the prompt',
             'So text cut at a boundary still appears whole in one chunk',
-            'Because embeddings need it',
+            'So the model sees every sentence twice and weighs it more',
         ],
         answer=1,
         why='Without overlap, an answer split across two chunks may never be retrieved in one piece.',
@@ -266,16 +266,16 @@ lesson(MODULE, 'retrieve',
     title='Retrieval: finding the right chunks',
     learn=[
         'Retrieval scores every chunk against the question and keeps the top **k** to put in the prompt.',
-        'Real systems score with **embeddings** (lists of numbers where similar meanings land close together), often combined with keyword search. The shape is the same: score, sort, keep the top k, break ties consistently.',
+        'Real systems score with **embeddings** (lists of numbers where similar meanings land close together), often combined with keyword search. The shape is the same: score, sort, keep the top k, and break ties the same way every time, so the results do not change from one run to the next and your tests stay stable.',
     ],
     example=example('Score, sort, slice', """scored = sorted(docs, key=score, reverse=True)
 top = scored[:k]"""),
     check=question(
         'Why decide how ties are broken?',
         [
-            'It makes the code faster',
+            'So the highest-scoring document is always returned',
             "So results don't change between runs and tests stay stable",
-            'Embeddings require it',
+            'So documents with a score of 0 are dropped',
         ],
         answer=1,
         why='Without a rule, equal scores can come back in any order, which makes results and tests flaky.',
@@ -290,7 +290,7 @@ top = scored[:k]"""),
 index = VectorSearchClient().get_index(endpoint_name="vs-endpoint", index_name="main.support.docs_index")
 results = index.similarity_search(
     query_text=question, columns=["chunk_id", "text"],
-    query_type="HYBRID", num_results=5,
+    query_type="hybrid", num_results=5,
 )"""),
     exercise=exercise(
         title='Find the Best Documents',
@@ -428,9 +428,9 @@ found:     d2  (d4 is not in the top 3)
 recall@3 = 1 found of 2 relevant = 0.5"""),
     check=question(
         'Recall@5 is 0.3 and answers are poor. What should you work on first?',
-        ['The prompt', 'Retrieval: chunking, the embedding model or k', 'A bigger LLM'],
+        ['The prompt', 'Retrieval', 'A bigger LLM'],
         answer=1,
-        why="The model can't answer from documents it never saw. Fix retrieval first.",
+        why="The model can't answer from documents it never saw. Fix retrieval first: chunking, the embedding model or k.",
     ),
     angle=angle(
         pattern='Count what the top k found',
@@ -712,7 +712,7 @@ lesson(MODULE, 'rerank_check',
     title='Did the reranker help?',
     learn=[
         "A **reranker** takes the retriever's candidates, say the top 20, and puts them in a better order, so the top few that reach the model are the most useful. It costs time on every request, so measure what it actually does.",
-        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back: that question is **out of reach** (a **retrieval miss**: the right document is not in the candidate set), and the fix belongs in retrieval (chunking, embeddings, hybrid search). Only then compare the top k before and after reranking, on the same candidate lists.",
+        "First check whether the right document was among the candidates at all. If retrieval missed it, no reranker can bring it back. That question is **out of reach**: the right document never came back from retrieval (engineers call this a retrieval miss), so the fix belongs in retrieval: chunking, embeddings, hybrid search. Only then compare the top k before and after reranking, on the same candidate lists.",
         "Count four outcomes per question: **helped** (the right document entered the top k), **hurt** (it was pushed out), **no change**, and **out of reach**. If most misses are out of reach, a better reranker won't help, and you have learned where to spend effort next.",
     ],
     example=example('Before and after, on the same candidates', """question        right doc   top 3 before        top 3 after        outcome
@@ -723,9 +723,9 @@ gift-card       d40         (not in top 20)                        out of reach"
     check=question(
         "Half of your RAG app's misses are questions where the right document isn't in the retriever's top 20. Will a better reranker fix them?",
         [
-            'Yes, a better reranker finds better documents',
-            "No: a reranker only reorders the candidates it's given, so fix retrieval first",
-            'Only if you rerank the top 3 instead',
+            'Yes: a better reranker brings in documents retrieval missed',
+            "No: a reranker only reorders the candidates it's given",
+            'Only if you rerank the top 3 instead of the top 20',
         ],
         answer=1,
         why='Out-of-reach misses need better retrieval: chunking, embeddings, hybrid search, or more candidates.',
@@ -1026,7 +1026,8 @@ if not task['done']:
 lesson(MODULE, 'claim_gate',
     title='Checking each claim before release',
     learn=[
-        'Evals check quality **before** release, on a fixed set. A **groundedness check** is a **guardrail** that checks every answer **at request time**, before the user sees it; this lesson calls it a claim gate. The model writes one short statement (a **claim**) per line, each citing the passage it came from. A verifier (a small specialised model such as an NLI, natural language inference, model, or an LLM judge) labels each statement **supported**, **unsupported** or **contradicted** by its cited passage.',
+        'Evals check quality before release, on a fixed set. A **groundedness check** runs on every answer at request time, before the user sees it; this lesson calls it a claim gate.',
+        'The model writes one short statement (a **claim**) per line, each citing the passage it came from. A **verifier** labels each claim **supported**, **unsupported** or **contradicted** by its passage. The verifier is an LLM judge, or a small model trained to say whether one sentence follows from another (an NLI model, short for natural language inference).',
         'A gate then decides: **release** if every claim is supported, **revise** by dropping the unsupported claims, or **abstain** ("I couldn\'t verify an answer") if nothing is supported. A safe policy also abstains if any claim is **contradicted**, because a contradiction means the answer says the opposite of its source.',
         'Know its limits. **Supported is not relevant**: a claim can match its passage and still not answer the question. A claim with the **wrong citation** gets dropped even when it is true. **Dropping** a claim can change the meaning, for example by removing a "do not". And the verifier is a judge, so check it against human labels like any judge. The share of answers revised or abstained also makes a good monitoring signal.',
     ],
@@ -1038,12 +1039,12 @@ You can also get store credit instead.              [3]    unsupported
     check=question(
         'A customer asks how long refunds take. Every claim in the answer is "supported", but they are all about shipping times. What does that tell you?',
         [
-            'The gate is broken',
-            "Supported means faithful to the cited passage, not relevant to the question: you need a separate relevance check",
-            'The answer is fine',
+            'The gate is broken: it should have failed every claim',
+            'Supported is not the same as relevant to the question',
+            'The answer is fine: every claim passed the gate',
         ],
         answer=1,
-        why='The verifier only compares each claim with its own passage. Whether that passage answers the question is a retrieval and relevance question.',
+        why='The verifier only compares each claim with its own passage. Whether that passage answers the question is a separate relevance check, and this answer would fail it.',
     ),
     angle=angle(
         pattern='Keep supported claims, then decide',
@@ -1397,20 +1398,20 @@ vector:  d1, d9, d3
 fused:   d1, d3, d9, d7"""),
     check=question(
         'Users search for error code "E-4021" and vector search misses it. What helps?',
-        ['A bigger embedding model', 'Hybrid search that includes keyword matching', 'Returning more results'],
+        ['A bigger embedding model for the same index', 'Hybrid search: add keyword matching', 'Returning more results from vector search'],
         answer=1,
         why='Exact codes are what keyword search is for.',
     ),
     angle=angle(
         pattern='Add up points by place, then sort',
-        text="The big idea: keyword and vector scores can't be compared, so hybrid search merges results by their place in each list instead. Your code goes through every list and gives each document `1 / (k + rank)` points, where rank counts from 1. It adds those points into a dict, a lookup table from each document id to its running total. A document found by both searches collects points twice and rises. Then it sorts the totals from highest to lowest, and ties fall into alphabetical order.",
+        text="The big idea: keyword and vector scores can't be compared, so hybrid search merges results by their place in each list instead. Your code goes through every list and gives each document points for its place in each list, more for a higher place, with a fixed number added to every place so first does not count far more than second. It adds those points into a dict, a lookup table from each document id to its running total. A document found by both searches collects points twice and rises. Then it sorts the totals from highest to lowest, and ties fall into alphabetical order.",
         say='"Keyword and vector scores can\'t be compared, so I merge the results by [[rank|score|length::Where a document sits in each list.]] instead. A document gets points from [[every list|the first list|the best score::Both searches count.]], so ones found by both rise to the top."',
         classic=None,
     ),
     stack=stack('Databricks Vector Search: hybrid query', """results = index.similarity_search(
     query_text="error E-4021 on checkout",
     columns=["chunk_id", "text"],
-    query_type="HYBRID",
+    query_type="hybrid",
     num_results=10,
 )"""),
     exercise=exercise(
@@ -1421,23 +1422,23 @@ fused:   d1, d3, d9, d7"""),
         prompt="""Your function gets two things:
 
 - `rankings`: a list of ranked lists, any number of them (even none). Each holds document ids, best first, like `[["d3", "d1"], ["d1", "d9"]]`.
-- `k`: a fixed number added to every rank, usually `60`. It is not "how many results". It stops 1st place from counting far more than 2nd.
+- `smoothing`: a fixed number added to every rank, usually `60`. It stops 1st place from counting far more than 2nd.
 
-In each list, a document gets `1 / (k + rank)` points, where rank is its place in that list, counting from 1. Add up each document's points from all the lists. This is called **reciprocal rank fusion**.
+In each list, a document gets `1 / (smoothing + rank)` points, where rank is its place in that list, counting from 1. Add up each document's points from all the lists. This is called **reciprocal rank fusion**.
 
 Return every document id, highest total first. If two totals are equal, put those ids in alphabetical order.""",
         pattern='Score by position, add across lists, sort by score with a tie-break.',
         target='one step per ranked item, then a sort',
-        realworld='Keyword search finds exact terms (error codes, product names); vector search finds meaning. Fusing them by rank avoids comparing scores on different scales. Databricks Vector Search does hybrid search with `query_type="HYBRID"`.',
-        starter="""def rrf(rankings, k):
+        realworld='Keyword search finds exact terms (error codes, product names); vector search finds meaning. Fusing them by rank avoids comparing scores on different scales. Databricks Vector Search does hybrid search with `query_type="hybrid"`.',
+        starter="""def rrf(rankings, smoothing):
     # your code here
     pass
 """,
-        solution="""def rrf(rankings, k):
+        solution="""def rrf(rankings, smoothing):
     score = {}
     for ranking in rankings:
         for rank, doc in enumerate(ranking, start=1):
-            score[doc] = score.get(doc, 0) + 1 / (k + rank)
+            score[doc] = score.get(doc, 0) + 1 / (smoothing + rank)
     pairs = []
     for doc in score:
         pairs.append((-score[doc], doc))
@@ -1451,7 +1452,7 @@ Return every document id, highest total first. If two totals are equal, put thos
             case([['a', 'b'], ['b', 'a']], 60, expected=['a', 'b']),
             case([['b'], ['a']], 60, expected=['a', 'b']),
         ],
-        guided="""def rrf(rankings, k):
+        guided="""def rrf(rankings, smoothing):
     # Replace every ___ with real code, then run the tests.
 
     score = {}   # total points for each document id
@@ -1469,7 +1470,7 @@ Return every document id, highest total first. If two totals are equal, put thos
     pairs.sort()
     return [pair[1] for pair in pairs]
 """,
-        fills=['1 / (k + rank)', '(-score[doc], doc)'],
+        fills=['1 / (smoothing + rank)', '(-score[doc], doc)'],
         concepts=[
             [
                 'enumerate with start',
@@ -1508,7 +1509,7 @@ pairs.sort()
                 """[p[1] for p in [(5, 'a'), (7, 'b')]]   # ['a', 'b']""",
             ],
         ],
-        byhand='k is 60. d1 is 2nd in list 1, so it gets `1 / (60 + 2)`, which is `1 / 62`. It is 1st in list 2, so it also gets `1 / 61`. Its total is about 0.0325. d3 is 1st in list 1 and 3rd in list 2: `1 / 61 + 1 / 63`, about 0.0323. d9 is only in list 2, 2nd: `1 / 62`, about 0.0161. d7 is only in list 1, 3rd: `1 / 63`, about 0.0159. Highest first, return ["d1", "d3", "d9", "d7"].',
+        byhand='smoothing is 60. d1 is 2nd in list 1, so it gets `1 / (60 + 2)`, which is `1 / 62`. It is 1st in list 2, so it also gets `1 / 61`. Its total is about 0.0325. d3 is 1st in list 1 and 3rd in list 2: `1 / 61 + 1 / 63`, about 0.0323. d9 is only in list 2, 2nd: `1 / 62`, about 0.0161. d7 is only in list 1, 3rd: `1 / 63`, about 0.0159. Highest first, return ["d1", "d3", "d9", "d7"].',
         why='One step per ranked item, then one sort.',
         gotchas=[
             [
@@ -1525,30 +1526,30 @@ pairs.sort()
 
 lesson(MODULE, 'vector_index_setup',
     title='Databricks Vector Search: endpoints, indexes and sync',
-    checked='2026-10-12',
-    sources=[source('Create Vector Search endpoints and indexes', 'https://docs.databricks.com/aws/en/vector-search/create-vector-search'), source('Databricks AI Search cost guide', 'https://docs.databricks.com/aws/en/ai-search/cost-management')],
+    checked='2026-10-15',
+    sources=[source('Create AI Search endpoints and indexes', 'https://docs.databricks.com/aws/en/ai-search/create-ai-search'), source('Databricks AI Search cost guide', 'https://docs.databricks.com/aws/en/ai-search/cost-management')],
     learn=[
-        'Databricks Vector Search (now called Databricks AI Search; the code still says vector search) has two parts. An **endpoint** is the serving compute: machines kept running to answer searches. An **index** is the searchable copy of your chunks. It lives in Unity Catalog, Databricks\' catalog of data and who may use it, under a three-part name like `main.support.docs_index`, and it sits on an endpoint.',
+        'Databricks Vector Search (now called Databricks AI Search) has two parts. An **endpoint** is the serving compute: machines kept running to answer searches. An **index** is the searchable copy of your chunks. It lives in Unity Catalog, Databricks\' catalog of data and who may use it, under a three-part name like `main.support.docs_index`, and it sits on an endpoint. The Python library (the package you install) is now `databricks-ai-search`, used as `from databricks.ai_search.client import AISearchClient`. The older `databricks-vectorsearch` library and its `VectorSearchClient`, which the code on this page still uses, keep working but are deprecated: kept only so old code does not break.',
         'There are two endpoint types. **Standard** answers in tens of milliseconds (thousandths of a second). **Storage-optimized** takes a few hundred milliseconds but costs much less per vector when you have a lot of them. It is a good fit from around 10 million vectors.',
-        'There are two index types. A **Delta Sync** index follows a Delta table (a Databricks table) and keeps itself up to date. The table needs **Change Data Feed** turned on: a setting that keeps a log of which rows changed, so the index only updates those. Without it, creating the index fails. Databricks can make the embeddings (the lists of numbers that capture meaning) for you, called **managed embeddings**: you name an embedding model endpoint such as `databricks-gte-large-en`. Or you bring a column of your own, called **self-managed embeddings**. A **Direct Vector Access** index has no source table: you write the vectors yourself through the SDK (the Python library) or the API.',
+        'There are two index types. A **Delta Sync** index follows a Delta table (a Databricks table) and keeps itself up to date. On a Standard endpoint the table must have **Change Data Feed** turned on: a setting that keeps a log of which rows changed, so the index only updates those. Tables with **row tracking** (a stable id for every row) already have it. Storage-optimized endpoints work differently: every sync rebuilds part of the index, and the docs list no Change Data Feed requirement for them. Databricks can make the embeddings (the lists of numbers that capture meaning) for you, called **managed embeddings**: you name an embedding model endpoint such as `databricks-gte-large-en`. Or you bring a column of your own, called **self-managed embeddings**. A **Direct Vector Access** index has no source table: you write the vectors yourself through the SDK (the Python library) or the API.',
         'A Delta Sync index has a **sync mode**. **Triggered** updates only when you call sync, so it is the cheapest. **Continuous** updates within moments, but costs more because a streaming job runs all the time. Storage-optimized endpoints only do Triggered.',
         'Access has two locks. In Unity Catalog you need USE CATALOG, USE SCHEMA and SELECT on the index. On the endpoint you need its own permission, CAN_USE or CAN_MANAGE, and admins can limit who may create endpoints at all. An endpoint bills for every hour it is up, even with no searches, so delete ones you no longer use. Queries can also filter on columns and run hybrid search (keywords plus meaning) with `query_type="hybrid"`, as in "Hybrid search and rank fusion".',
     ],
-    example=example('Turn on Change Data Feed first', """-- Without this, creating a Delta Sync index fails
+    example=example('Turn on Change Data Feed first', """-- On a Standard endpoint, a Delta Sync index needs this
 ALTER TABLE main.support.doc_chunks
 SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 -- 200,000 chunks, no embeddings yet, an hour old is fine:
 -- delta sync, managed embeddings, standard endpoint, triggered"""),
     check=question(
-        'You try to create a Delta Sync index on a table and it fails straight away. What is the most likely cause?',
+        'You try to create a Delta Sync index on a Standard endpoint and it fails straight away. What is the most likely cause?',
         [
             'Change Data Feed is not turned on for the source table',
-            'The endpoint is Standard instead of Storage-optimized',
-            'The table has too few rows',
+            'The table has no embeddings column yet',
+            'The table has too few rows to index',
         ],
         answer=0,
-        why='A Delta Sync index reads the table\'s change log to know what to update. No Change Data Feed, no change log, so creation fails.',
+        why='On a Standard endpoint a Delta Sync index reads the table\'s change log to know what to update. No Change Data Feed, no change log, so creation fails. A table with no embeddings column is fine (managed embeddings make them), and so is a small one.',
     ),
     angle=angle(
         pattern='Rules checked in a fixed order',
@@ -1764,9 +1765,9 @@ lesson(MODULE, 'pick_search_service',
     checked='2026-10-12',
     sources=[source('Azure AI Search agentic retrieval', 'https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-overview'), source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'), source('Create Vector Search endpoints and indexes', 'https://docs.databricks.com/aws/en/vector-search/create-vector-search')],
     learn=[
-        'Many companies have both Databricks Vector Search and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now also sold as part of Foundry IQ). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
+        'Many companies have both Databricks Vector Search and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now the engine under Foundry IQ, Microsoft\'s knowledge layer for agents). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
         'Databricks Vector Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: Agent Bricks, Model Serving, or the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
-        'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as an Azure AI Foundry or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and private endpoints (a private network address, so traffic never crosses the public internet).',
+        'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as an Azure AI Foundry or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and its role-based access control (RBAC: roles that say who may do what), or through private endpoints (a private network address, so traffic never crosses the public internet).',
         'Azure AI Search adds two extras. The **semantic ranker** is a reranker that re-scores the top results by meaning. **Agentic retrieval** splits a hard question into smaller searches and merges the results, using **knowledge bases**: these are generally available in REST API version 2026-04-01, while query planning is still in preview. Pricing is by tier, paid in **search units** (blocks of capacity), with a newer serverless option in preview. The semantic ranker and agentic retrieval are billed on top.',
         'Running both is common: curated tables in Databricks Vector Search, SharePoint documents in Azure AI Search. Keep **one evaluation set** (see "Measuring retrieval") so you compare them on the same questions.',
     ],

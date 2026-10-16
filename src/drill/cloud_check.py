@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from typing import Any, Callable
+from urllib.parse import quote
 
 from drill import cloud
 
@@ -52,7 +53,8 @@ class Finding:
 
 def effective(cli: Cli, securable: str, name: str, principal: str, profile: str | None) -> set[str]:
     """The privileges ``principal`` holds on a Unity Catalog object, however they were granted."""
-    got = cli("api", "get", f"/api/2.1/unity-catalog/effective-permissions/{securable}/{name}?principal={principal}",
+    # URL-encoded: a `+` or a space in a user or group name would otherwise be read as something else.
+    got = cli("api", "get", f"/api/2.1/unity-catalog/effective-permissions/{securable}/{name}?principal={quote(principal, safe='')}",
               profile=profile, check=False)
     if not isinstance(got, dict):
         return set()

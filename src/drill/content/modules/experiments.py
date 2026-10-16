@@ -7,7 +7,8 @@ MODULE = module('experiments', 'Experiment design with MLflow', 'Runs, grids, fa
 lesson(MODULE, 'best_run',
     title='Experiments, runs and the lifecycle',
     learn=[
-        'An **experiment** is a fair test that turns a question into evidence. You change one thing on purpose, like the chunk size (how big a piece each document is cut into); scientists call it the **independent variable**. You hold everything else fixed, like the eval set, the model and the prompt: these are the **controls**. Then you measure the result against a **baseline**, the version you have now, run the same way. Because only that one thing changed, a difference in the result can be put down to it. (A grid, later in this module, changes a few things in a planned way; everything you did not plan to change still stays fixed.)',
+        'An **experiment** is a fair test that turns a question into evidence. You change one thing on purpose, like the chunk size (how big a piece each document is cut into); scientists call it the **independent variable**. You hold everything else fixed, like the eval set, the model and the prompt: these are the **controls**. Because only that one thing changed, a difference in the result can be put down to it.',
+        'Then you measure the result against a **baseline**: the version you have now, run the same way. Without it, a score has nothing to be better than.',
         'MLflow is the **ledger** that keeps that evidence. An **MLflow experiment** is a folder that groups related runs, often one per app, so you can compare them side by side. Each **run** is a permanent record of one attempt: its **parameters** (what you set), **metrics** (what you measured) and **artifacts** (files, like the eval results). For an LLM app, scoring one version on your eval set with `mlflow.genai.evaluate` makes an **evaluation run**.',
         'The metrics usually come from an **eval set**: a fixed list of test questions with known good answers. Each answer is often marked by an **LLM judge**, a model that grades answers.',
         'Write the decision rule down before you run anything, for example "highest quality at $2 or less per 1,000 requests". That\'s what turns an experiment into a decision, and a decision into return on the time spent.',
@@ -20,7 +21,7 @@ with mlflow.start_run(run_name="cs512-k5"):
     mlflow.log_metrics({"quality": 0.81, "cost_per_1k": 1.8})"""),
     check=question(
         'You tried 12 setups (configurations) and the best quality costs three times your budget. What should the experiment have had from the start?',
-        ['More setups', 'A decision rule that includes the budget', 'A bigger model'],
+        ['More setups, to find a cheaper one', 'A decision rule that includes the budget', 'A bigger model, to lift quality'],
         answer=1,
         why="With the budget in the rule, the answer is the best run you can afford, not a winner you can't use.",
     ),
@@ -164,7 +165,7 @@ if best is None:
 lesson(MODULE, 'plan_gaps',
     title='Write the plan before the runs',
     learn=[
-        'Decide how you will judge an experiment **before** you see a single result: the question, the one thing you change, what stays fixed (the **controls**, like the eval set and its version), the **baseline** you compare against, the metric, how many runs, how you will compare, and the rule that picks a winner.',
+        'Decide how you will judge an experiment **before** you see a single result. A plan has seven parts, in this order: the question, the one thing you change, the eval set (and its version: the main thing held fixed, a **control**), the metric, how many runs, how you will compare the two (the test), and the rule that picks a winner. The baseline is the version you have now, run the same way.',
         "If you choose the metric or the rule after looking, you can talk yourself into almost any answer. Writing it down first is called **pre-registration** in research. It's the cheapest protection against fooling yourself, and it makes a result easy to defend to someone else.",
         'Also write down what "no result" means. "Too close to call, keep the current version and add more examples" is a decision you can make in advance.',
     ],
@@ -180,8 +181,8 @@ lesson(MODULE, 'plan_gaps',
     check=question(
         'You compared two prompts. B lost on quality but was faster, so you decided speed was the main metric after all. What went wrong?',
         [
-            'Nothing: speed matters',
-            'The rule was chosen after seeing the results, so the comparison proves nothing',
+            'Nothing: speed matters, so B wins',
+            'The rule was chosen after the results',
             'You should have run more prompts',
         ],
         answer=1,
@@ -318,7 +319,7 @@ lesson(MODULE, 'param_grid',
     title='Planning what to vary',
     learn=[
         "A good experiment varies a few things on purpose and holds everything else fixed: the same eval set, the same judge, the same prompt unless the prompt is what you're testing.",
-        'Trying every combination of values is called a **grid search**. Every value you add multiplies the number of runs. 3 chunk sizes times 4 values of k (how many pieces to fetch for each question) times 2 models is 24 runs, each paying for eval and judge calls. Count the runs, and their cost, before you start.',
+        'Trying every combination of values is called a **grid search**. A grid changes a few things in a planned way; everything you did not plan to change still stays fixed. Every value you add multiplies the number of runs. 3 chunk sizes times 4 values of k (how many pieces to fetch for each question) times 2 models is 24 runs, each paying for eval and judge calls. Count the runs, and their cost, before you start.',
     ],
     example=example('2 chunk sizes times 2 values of k: 4 runs', """chunk_size   k
 256          3    run 1
@@ -462,9 +463,9 @@ lesson(MODULE, 'find_confounds',
     title='Spot the confound',
     learn=[
         'A **confound** (or confounding variable) is a second thing that changed between two runs without you planning it. Once two things changed, you can no longer tell which one caused the difference, so the result is not evidence about either.',
-        'In AI apps confounds hide in the setup, not the code: the document index was rebuilt between runs, the eval set gained new questions, the judge model was upgraded, the provider updated the model behind the same name, or someone changed the temperature (how random the answers are). Each one is a control that quietly moved.',
+        'In AI apps confounds hide in the setup, not the code: the document index (the searchable copy of the documents) was rebuilt between runs, the eval set gained new questions, the judge model was upgraded, the provider updated the model behind the same name, or someone changed the temperature (how random the answers are). Each one is a control that quietly moved.',
         'So before you compare two runs, compare their settings. Everything except the one thing you planned should match exactly. MLflow logs each run\'s parameters, so this is a quick check, as long as you log every setting that could matter, including versions: the eval set, the index, the judge, the model and the prompt.',
-        'For RAG, freeze the documents: build the index once from a fixed copy, give it a version, and log that version with every run. Otherwise the documents change under your experiment and you end up measuring the documents, not your change. "Designing a RAG experiment", in the RAG module, puts this to work.',
+        'For RAG (an app that looks up documents before it answers), freeze the documents: build the index once from a fixed copy, give it a version, and log that version with every run. Otherwise the documents change under your experiment and you end up measuring the documents, not your change. "Designing a RAG experiment", in the RAG module, puts this to work.',
     ],
     example=example('Two runs that differ in more than you planned', """planned change: chunk_size
 run A: chunk_size=512  k=5  index=v7  judge=j2
@@ -472,9 +473,9 @@ run B: chunk_size=256  k=5  index=v8  judge=j2
 → confound: index (v7 vs v8)"""),
     check=question(
         "Run B scores 6 points higher than run A. You changed the chunk size, but B also used index v8 instead of v7. What can you conclude?",
-        ['The smaller chunk size helped', 'Nothing about chunk size yet: rerun B on index v7 so only the chunk size differs', 'Index v8 helped'],
+        ['The smaller chunk size helped', 'Nothing yet: rerun B on index v7', 'Index v8 helped, so switch to it'],
         answer=1,
-        why='Two things changed, so the 6 points could come from either, or both. Rerun with only the planned change.',
+        why='Two things changed, so the 6 points could come from either, or both. Rerun B on index v7, so only the chunk size differs.',
     ),
     angle=angle(
         pattern='Compare two dicts key by key',
@@ -630,9 +631,9 @@ agent asks: get_order 42   → "shipped"
 agent asks: get_order 77   → "missing"  (never recorded)"""),
     check=question(
         "Your agent's tools read live order data. Design A ran on Monday, design B on Tuesday, and B scored higher. What is the problem?",
-        ['Nothing, B is better', 'The orders changed between the runs, so replay the same recorded tool results for both designs', 'They should have run on the same day of the week'],
+        ['Nothing: B scored higher, so B wins', 'The live orders changed between the runs', 'One run each is too few to compare'],
         answer=1,
-        why='The world the tools read is a control. If it changes between runs, it is a confound. Recording and replaying the tool results freezes it.',
+        why='The world the tools read is a control. If it changes between runs, it is a confound. Record the tool results once and replay them for both designs, so they face the same orders.',
     ),
     angle=angle(
         pattern='Look up each call in a recording',
@@ -782,9 +783,9 @@ round 5: test on fold 4, train on folds 0, 1, 2, 3
 → 5 scores: report the average and how much they vary"""),
     check=question(
         'Model A scores 0.80 on every fold. Model B scores 0.95, 0.60, 0.90, 0.70, 0.85 (also 0.80 on average). Which is the safer choice?',
-        ['A: same average, much more predictable', 'B: it reaches 0.95', "They're the same"],
+        ['A: it is steady on every fold', 'B: it reaches 0.95 on one fold', 'Neither: the averages are the same'],
         answer=0,
-        why='Same average, but B swings widely depending on the data it sees. Production data will swing too.',
+        why='Same average, but B swings widely depending on the data it sees, and A is far more predictable. Production data will swing too.',
     ),
     angle=angle(
         pattern='Round-robin: deal examples out like cards',
@@ -887,7 +888,7 @@ lesson(MODULE, 'examples_needed',
     title='How many examples do you need?',
     learn=[
         'A pass rate measured on an eval set is an estimate, not the truth. Score 70% on 25 questions and the real rate could easily be anywhere from 50% to 90%. The fewer the examples (the smaller the **sample size**), the wider that **margin of error**.',
-        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of n**, in percentage points, where n is the number of examples. That is a 95% **confidence interval**: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
+        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of the number of examples**, in percentage points. That is a 95% **confidence interval**: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
         "Use it backwards before you run anything: if the improvement you hope to see is smaller than the margin, your eval set can't show it. Add examples first, or compare on the same examples (later in this module), which is more sensitive.",
         'For scores near 0% or 100% (like 49 out of 50) this simple rule breaks down; statisticians use a **Wilson interval** there (two lessons from now). For metrics with no simple formula, use the **bootstrap**: rebuild the eval set 1,000 times by drawing examples at random with repeats allowed, score each, and keep the middle 95% of the scores.',
     ],
@@ -899,16 +900,16 @@ lesson(MODULE, 'examples_needed',
     check=question(
         'Your eval set has 100 questions. Prompt B scores 4 points higher than prompt A. Is that evidence B is better?',
         [
-            'Yes, 4 points is a real gain',
-            'Not on its own: with 100 examples each score is only good to about plus or minus 10 points',
-            "No, evals can't compare prompts",
+            'Yes: 4 points is a clear gain',
+            'Not on its own: the gap is inside the margin',
+            "No: an eval can't compare two prompts",
         ],
         answer=1,
-        why='A 4-point gap is well inside the noise of a 100-example eval. Compare on the same examples, or use more of them.',
+        why='With 100 examples each score is only good to about plus or minus 10 points, so a 4-point gap is well inside the noise. Compare on the same examples, or use more of them.',
     ),
     angle=angle(
         pattern='Run the margin rule backwards',
-        text="The big idea: a small eval set has a wide margin of error, so check you have enough examples before you run anything. The rule says the margin is 100 divided by the square root of n. Your code flips it around: it divides 100 by the margin you want, then multiplies that number by itself to get n. If the answer has a decimal part, it rounds up, because you can't use part of an example. So a margin of 5 points needs 400 examples.",
+        text="The big idea: a small eval set has a wide margin of error, so check you have enough examples before you run anything. The rule says the margin is 100 divided by the square root of the number of examples. Your code flips it around: it divides 100 by the margin you want, then multiplies that number by itself to get the number of examples. If the answer has a decimal part, it rounds up, because you can't use part of an example. So a margin of 5 points needs 400 examples.",
         say='"Before I run anything, I check my eval set is big enough to show the change I care about. To [[halve|double|remove::Cut the margin down to 50% of what it is.]] the margin of error, I need [[four times|twice|ten times::It\'s more than you\'d guess: 100 examples become 400.]] as many examples."',
         classic=None,
     ),
@@ -991,7 +992,8 @@ lesson(MODULE, 'smoke_set',
     title='A smoke set for fast iteration',
     learn=[
         'Running every variant on hundreds of questions, several times, is slow and costs money. Most ideas are bad, and you can tell they are bad from far fewer questions.',
-        'So keep a small **smoke set** for iterating. Make it **stratified**, meaning a few questions from every group, and add the whole **must-pass** set (the questions the app must never get wrong). Try ideas on it in minutes. Only the **finalists** go to the full **dev set** (the bigger set you compare finalists on), and only the final winner goes to the **holdout** (a set kept aside and used only once, at the end).',
+        'So keep a small **smoke set** for iterating. Make it **stratified**, meaning a few questions from every group, and add the whole **must-pass** set (the questions the app must never get wrong). Try ideas on it in minutes.',
+        'Only the **finalists** go to the full **dev set** (the bigger set you compare finalists on), and only the final winner goes to the **holdout** (a set kept aside and used only once, at the end).',
         "Don't decide on the smoke set: it's too small for the margins to mean much. It's a filter for obviously bad ideas, not evidence for good ones.",
     ],
     example=example('Three stages, three sizes', """smoke set    40 questions    every idea           minutes, rough
@@ -1000,9 +1002,9 @@ holdout     100 questions    the one winner       once, the confirmation"""),
     check=question(
         'A new prompt beats the current one 21 to 19 on your 40-question smoke set. What next?',
         [
-            'Ship it',
-            'Treat it as a finalist and compare properly on the full dev set',
-            'Drop it',
+            'Ship it: it won on the smoke set',
+            'Send it to the dev set as a finalist',
+            'Drop it: a 2-question win is nothing',
         ],
         answer=1,
         why='The smoke set only screens out clear losers. A 2-question gap on 40 is noise, so the real comparison happens on the dev set.',
@@ -1013,9 +1015,12 @@ holdout     100 questions    the one winner       once, the confirmation"""),
         say='"I try new ideas on a small [[smoke set|holdout set|dev set::Quick and cheap, for weeding out bad ideas.]]: a few questions from every group plus all the [[must-pass|easiest|newest::The questions the app can never get wrong.]] ones. Only the [[finalists|first idea|cheapest::The few that survive the quick test.]] go on to the full set."',
         classic=None,
     ),
-    stack=stack('MLflow: the smoke set as its own dataset', """df = full.to_df()
+    stack=stack('MLflow: the smoke set as its own dataset', """# On Databricks an evaluation dataset is a Unity Catalog table,
+# so its name has three parts: catalog.schema.table
+full = mlflow.genai.datasets.get_dataset(name="main.support.eval_full")   # the whole eval set
+df = full.to_df()
 df["group"] = df["tags"].map(lambda tags: tags["group"])
-smoke = mlflow.genai.datasets.create_dataset(name="support-eval-smoke")
+smoke = mlflow.genai.datasets.create_dataset(name="main.support.eval_smoke")
 smoke.merge_records(df.groupby("group").head(8)[["inputs", "expectations", "tags"]])   # 8 per group"""),
     exercise=exercise(
         title='Pick the Smoke Set',
@@ -1108,7 +1113,7 @@ for p in prices.values():
 lesson(MODULE, 'wilson_interval',
     title='Margins near 0% and 100%',
     learn=[
-        'The quick margin rule from "How many examples do you need?" (100 divided by the square root of n) breaks down when a pass rate is close to 0% or 100%. For 49 out of 50 it gives 98 plus or minus 14 (the square root of 50 is about 7): 84% to 112%, past 100%, which is impossible. For 0 out of 30 it gives 0 plus or minus 18: below 0%, also impossible.',
+        'The quick margin rule from "How many examples do you need?" (100 divided by the square root of the number of examples) breaks down when a pass rate is close to 0% or 100%. For 49 out of 50 it gives 98 plus or minus 14 (the square root of 50 is about 7): 84% to 112%, past 100%, which is impossible. For 0 out of 30 it gives 0 plus or minus 18: below 0%, also impossible.',
         'The **Wilson interval** is the standard fix for a pass rate. It always stays between 0% and 100%, and it stays honest with small samples and extreme rates.',
         'The formula is a few lines of arithmetic. The exercise gives it to you as Python, piece by piece. You do not need to remember it; you need to know to use it near the edges.',
         'This matters most for safety checks. "0 failures in 30 tries" does not mean the failure rate is 0%: the Wilson range goes up to about 11%.',
@@ -1121,7 +1126,7 @@ Wilson:      89.5% to 99.6%
 simple rule:  -18% to 18%     ← below 0%: impossible
 Wilson:         0% to 11.4%"""),
     check=question(
-        '0 of 30 risky prompts got past your guardrail. What can you honestly say?',
+        '0 of 30 risky prompts got past your guardrail (the safety check that is meant to block them). What can you honestly say?',
         [
             'The leak rate is 0%',
             'The leak rate is probably low, but could be as high as about 11%',
@@ -1249,7 +1254,7 @@ D    0.84    0.81    0.85     0.81 to 0.85
 the ranges overlap                          → no clear winner"""),
     check=question(
         'Prompt A scored 0.80, 0.83, 0.81. Prompt B scored 0.82, 0.84, 0.80. What can you say?',
-        ['B is better', 'No clear winner: the results overlap', 'A is better'],
+        ['B is better: its top run is 0.84', 'No clear winner: the ranges overlap', 'A is better: its runs are steadier'],
         answer=1,
         why="B's worst (0.80) doesn't beat A's best (0.83). Pick on cost, or gather more data.",
     ),
@@ -1338,8 +1343,9 @@ lesson(MODULE, 'paired_verdict',
     learn=[
         'The best way to compare two setups is to run both on **the same examples** and look example by example. This is a **paired comparison**. It is much more sensitive than comparing two overall scores, because the hard examples are hard for both setups and that difficulty cancels out.',
         'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: how often A passed where B failed, and the other way round. If the disagreements split about evenly, the difference is noise.',
-        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call. With very few disagreements (under about 10) the shortcut is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.",
-        'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples. For scores that are not pass/fail, the paired versions are a **paired bootstrap** or a **permutation test** (on each example, randomly swap the A and B scores, do that many times, and see how often luck alone makes a gap that big).',
+        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**, meaning too big to be luck) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
+        'With fewer than about 25 disagreements the shortcut is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.',
+        'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples.',
     ],
     example=example('Only disagreements count', """example   A   B
 q1        ✓   ✓    agree: ignore
@@ -1354,12 +1360,12 @@ A only 12, B only 8:  gap 4, below 8.9   → too close"""),
     check=question(
         'Out of 200 questions, A and B disagree on 20. A wins 12 of those and B wins 8. What do you conclude?',
         [
-            'A is better: it won more',
-            'Too close to call: the gap of 4 is below twice the square root of 20, about 8.9',
-            'B is better',
+            'A is better: it won 12 of the 20',
+            'Too close to call on 20 disagreements',
+            'B is better: 8 wins is a fair share',
         ],
         answer=1,
-        why='The 180 agreements say nothing about which is better. Of the 20 that do, a 12 to 8 split is easily luck.',
+        why='The 180 agreements say nothing about which is better. Of the 20 that do, the gap of 4 is below twice the square root of 20, about 8.9, so a 12 to 8 split is easily luck.',
     ),
     angle=angle(
         pattern='Count only the disagreements',
@@ -1490,6 +1496,10 @@ if adult and age < 65:
                 'Why 2?',
                 "It is a rounded version of 1.96, the number behind a 95% confidence interval. That rounding makes the rule slightly stricter than the quick version of McNemar's test. With fewer than about 25 disagreements, use the exact version, which is stricter: this rule calls 5 to 0 a win, but the exact test calls it too close.",
             ],
+            [
+                'Scores that are not pass/fail',
+                'For scores like 0.7 or 0.9, the paired versions are a **paired bootstrap** or a **permutation test**: on each example, randomly swap the A and B scores, do that many times, and see how often luck alone makes a gap that big.',
+            ],
         ],
     ),
 )
@@ -1508,7 +1518,7 @@ p95: 2.1 s                 too slow (budget 1.5 s)
 → keep baseline, because: too slow"""),
     check=question(
         "The new version wins 15 questions and loses 5 against the baseline, a clear quality win. But one must-pass case now fails. What is the decision?",
-        ['Ship: the quality win is clear', 'Keep the baseline: a failed must-pass case is a gate, and gates come before quality', 'Too close to call'],
+        ['Ship it: the quality win is clear', 'Keep the baseline: a gate failed', 'Too close to call: one case is not much'],
         answer=1,
         why='Gates are checked first because no quality gain makes up for breaking a case that must never break.',
     ),
@@ -1695,12 +1705,12 @@ oracle prompt (expert-written)         80%   → prompt headroom:     2 points
     check=question(
         'Your RAG app scores 70%. Given the right documents directly, it scores 72%. Where should you look next?',
         [
-            'Retrieval: it must be the problem',
-            'Generation: even with perfect documents the answers are poor, so the prompt or model is the bottleneck',
-            'Nowhere, 70% is fine',
+            'Retrieval: it is the first step',
+            'Generation: the prompt or the model',
+            'Nowhere: 70% is good enough',
         ],
         answer=1,
-        why='Perfect retrieval only adds 2 points, so most misses happen after the documents arrive.',
+        why='Perfect retrieval only adds 2 points, so most misses happen after the documents arrive: the prompt or the model is the bottleneck.',
     ),
     angle=angle(
         pattern='Find the step with most headroom',
@@ -1810,11 +1820,11 @@ paired check for the reranker:
         'Removing query rewriting changes the score from 86% to 85% on 100 questions. What do you conclude?',
         [
             'Rewriting adds 1 point, so keep it',
-            "Its effect is within the noise: it may not be worth its cost, so test it with more examples or drop it",
-            'Rewriting hurts quality',
+            'Its effect is within the noise',
+            'Rewriting hurts, so drop it now',
         ],
         answer=1,
-        why='86% to 85% on 100 questions is a 1-question gap, far too small to pass the paired check (even 1 to 0 fails it). It says nothing either way.',
+        why='86% to 85% on 100 questions is a 1-question gap, far too small to pass the paired check (even 1 to 0 fails it). It says nothing either way: test it with more examples, or drop it if it is not worth its cost.',
     ),
     angle=angle(
         pattern='Measure the drop, then sort',
@@ -1926,12 +1936,12 @@ lesson(MODULE, 'fluke_risk',
     check=question(
         'You tried 15 prompt variants on the dev set and one beat the current prompt clearly. What should you do before shipping it?',
         [
-            'Ship it: it won clearly',
-            'Confirm it once on the holdout set, because the best of 15 is partly luck',
+            'Ship it: it won clearly on the dev set',
+            'Confirm it once on the holdout set',
             'Try 15 more variants to be sure',
         ],
         answer=1,
-        why='Picking the best of many inflates its score. One clean test on unseen examples tells you whether the win was real.',
+        why='Picking the best of many inflates its score: the best of 15 is partly luck. One clean test on unseen examples tells you whether the win was real.',
     ),
     angle=angle(
         pattern='Chance of at least one fluke',

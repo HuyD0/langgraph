@@ -25,7 +25,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 
 from drill.config import PROJECT_ROOT, DrillSettings
-from drill.problems import ALL_PROBLEMS, TOPICS, Problem, get_problem, list_problems
+from drill.problems import TOPICS, Problem, get_problem, list_problems
 from drill.progress import ProgressStore
 from drill.sandbox import first_failure, run_submission
 
@@ -47,7 +47,7 @@ def _load_dotenv() -> None:
 
         load_dotenv(PROJECT_ROOT / ".env", override=False)
     except Exception:
-        pass
+        pass  # a .env is optional: the CLI must start without one, and without python-dotenv
 
 
 @app.callback()

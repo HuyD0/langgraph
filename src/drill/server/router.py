@@ -49,7 +49,8 @@ import os
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Iterable
+from typing import Any, AsyncIterator, Generator, Iterable
+from urllib.parse import urlsplit
 
 import httpx
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -73,8 +74,25 @@ _THINK_BLOCK = re.compile(r"<think>.*?</think>\s*", re.S)
 THINKING_POLICIES = ("off", "complex", "on")
 
 
+# The tiers a learner-facing door (the page, the MCP tools) may ask for; "complex" is the paid one
+# only the server's own features choose. Here, not in api.py, so mcp.py can use it without an import cycle.
+PAGE_TIERS = ("quick", "default")
+
+
 class NoModelAvailable(RuntimeError):
-    """Neither a local nor a hosted model could answer."""
+    """Neither a local nor a hosted model could answer.
+
+    ``reason`` says why, so the door can tell the learner something true instead of
+    "start Ollama" every time: ``budget`` (today's hosted allowance is spent and there is
+    no local model), ``upstream`` (a model exists but did not answer: down, refused, or
+    too slow to start) or ``none`` (no model is set up at all).
+    """
+
+    REASONS = ("budget", "upstream", "none")
+
+    def __init__(self, message: str = "no model answered", reason: str = "upstream"):
+        super().__init__(message)
+        self.reason = reason if reason in self.REASONS else "upstream"
 
 
 class PromptTooLong(ValueError):
@@ -196,13 +214,15 @@ class DatabricksAuth(httpx.Auth):
     def __init__(self, config: Any):
         self.config = config
 
-    def auth_flow(self, request):
+    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         request.headers.update(self.config.authenticate())
         yield request
 
 
 def is_databricks_url(url: str) -> bool:
-    return bool(re.search(r"\.(azuredatabricks\.net|cloud\.databricks\.com|gcp\.databricks\.com)(/|$)", url))
+    """Whether ``url`` is a Databricks workspace: judged on its host, not on the text anywhere in it."""
+    host = urlsplit(url).hostname or ""
+    return host.endswith((".azuredatabricks.net", ".cloud.databricks.com", ".gcp.databricks.com"))
 
 
 def databricks_config() -> Any:
@@ -321,11 +341,13 @@ def strip_thinking(raw: str, final: bool = False) -> str:
 
 def parse_json(text: str) -> Any:
     """The JSON value in a model's reply, tolerating code fences and a little prose around it."""
-    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip())
+    # Plain string trims, not a regex: `\s*```$` backtracks badly on a reply full of spaces.
+    text = text.strip()
+    text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        pass
+        pass  # not bare JSON: look for the first object or list inside the prose below
     for opener, closer in (("{", "}"), ("[", "]")):
         start, end = text.find(opener), text.rfind(closer)
         if start != -1 and end > start:
@@ -459,6 +481,11 @@ class ModelRouter:
         """Is there room in today's hosted budget, including ``needed`` tokens for this request?"""
         return self.hosted is not None and self.hosted_tokens_today() + needed < self.hosted_daily_tokens
 
+    def unavailable_reason(self, needed: int = 0) -> str:
+        """Why :meth:`order` came back empty: ``budget`` when a hosted model exists but today's
+        allowance has no room for this request, else ``none`` (nothing is set up at all)."""
+        return "budget" if self.hosted is not None and not self.hosted_under_budget(needed) else "none"
+
     def order(self, tier: str = "default", needed: int = 0) -> list[Route]:
         """Who to try first. Only a "complex" job starts with the hosted model.
 
@@ -561,10 +588,12 @@ class ModelRouter:
             yield Chunk(cached["text"], done=True, route=cached.get("route", ""), model=cached.get("model", ""), cached=True)
             return
 
-        routes = await asyncio.to_thread(self.order, tier, estimate_tokens(messages, "")["input_tokens"])
+        needed = estimate_tokens(messages, "")["input_tokens"]
+        routes = await asyncio.to_thread(self.order, tier, needed)
         if not routes:
-            self.observer.finish(handle, error="no model available")
-            raise NoModelAvailable("No model is running. Start Ollama, or set a hosted model in .env.")
+            reason = self.unavailable_reason(needed)
+            self.observer.finish(handle, error=f"no model available ({reason})")
+            raise NoModelAvailable("No model is running. Start Ollama, or set a hosted model in .env.", reason=reason)
 
         errors: list[str] = []
         for route in routes:
@@ -625,7 +654,7 @@ class ModelRouter:
             yield Chunk(text, done=True, route=route.name, model=route.model)
             return
         self.observer.finish(handle, error="; ".join(errors) or "no model answered")
-        raise NoModelAvailable("; ".join(errors) or "no model answered")
+        raise NoModelAvailable("; ".join(errors) or "no model answered", reason="upstream")
 
     async def ask(
         self,
@@ -638,7 +667,7 @@ class ModelRouter:
         async for chunk in self.stream(prompt_or_messages, tier, json_mode, context):
             last = chunk
         if last is None:
-            raise NoModelAvailable("no model answered")
+            raise NoModelAvailable("no model answered", reason="upstream")
         return Answer(last.text, last.route, last.model, last.cached)
 
     async def ask_json(self, prompt_or_messages: str | Iterable[Any], tier: str = "default", context: dict | None = None) -> Any:

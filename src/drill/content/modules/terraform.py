@@ -11,16 +11,16 @@ lesson(MODULE, 'summarize_plan',
     checked='2026-10-13',
     sources=[source('Create a Terraform plan', 'https://developer.hashicorp.com/terraform/tutorials/cli/plan'), source('JSON output format', 'https://developer.hashicorp.com/terraform/internals/json-format')],
     learn=[
-        '`terraform plan` compares your code with **state** (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy.',
+        '`terraform plan` compares your code with **state** (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy. A **replacement** (destroy the old one, then create it again) shows up in that summary as one add and one destroy, so the line never says "replace".',
         '`terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.',
     ],
     example=example('From plan to JSON', """terraform plan -out tfplan
 terraform show -json tfplan > plan.json"""),
     check=question(
         'The plan says "1 to add, 0 to change, 1 to destroy" for one resource. What is happening to it?',
-        ['Nothing', "It's being replaced: destroyed and created again", "It's being renamed"],
+        ["Nothing: it's unchanged", "It's being replaced", "It's being renamed"],
         answer=1,
-        why='A replacement counts once as an add and once as a destroy.',
+        why='A replacement destroys the old one and creates it again, so it counts once as an add and once as a destroy. The summary line never says "replace".',
     ),
     angle=angle(
         pattern='Three counters, one check each',
@@ -209,8 +209,8 @@ count += 1   # count is now 1""",
 
 lesson(MODULE, 'find_replacements',
     title='Spotting dangerous replacements',
-    checked='2026-10-13',
-    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace')],
+    checked='2026-10-15',
+    sources=[source('Create and manage resources overview', 'https://developer.hashicorp.com/terraform/language/resources/behavior'), source('azurerm_databricks_workspace', 'https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_workspace'), source('External locations API: update', 'https://docs.databricks.com/api/workspace/externallocations/update')],
     learn=[
         "Some attributes can't change in place. Changing them **forces replacement**: Terraform destroys the resource and creates a new one.",
         'On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan\'s mark for a replacement) before approving.',
@@ -219,7 +219,7 @@ lesson(MODULE, 'find_replacements',
   ~ managed_resource_group_name = "a" -> "b" # forces replacement"""),
     check=question(
         'Which change to `azurerm_databricks_workspace` forces a replacement?',
-        ['Adding a tag', 'Changing `managed_resource_group_name`', 'Nothing can'],
+        ['Adding or changing a tag', 'Changing `managed_resource_group_name`', 'No change: a workspace is never replaced'],
         answer=1,
         why="Tags update in place; the managed resource group name can't change, so the workspace is recreated.",
     ),
@@ -255,10 +255,10 @@ Return the `address` of every replacement, in the same order as `changes`.""",
                             {'sym': '+', 'address': 'databricks_cluster.sales_daily-report', 'note': 'new cluster from clusters.yml'},
                             {'sym': '+', 'address': 'databricks_permissions.team_folder', 'note': 'owner CAN_MANAGE, users CAN_READ'},
                             {'sym': '~', 'address': 'databricks_cluster_policy.shared_std', 'note': 'max_workers 8 → 10'},
-                            {'sym': '-/+', 'address': 'databricks_external_location.sales_raw', 'note': 'url changed: forces replacement'},
+                            {'sym': '-/+', 'address': 'databricks_external_location.sales_raw', 'note': 'name changed: forces replacement'},
                         ]),
                     clue='Look for the mark that means destroyed, then made again.',
-                    why='Replacing the external location removes it before the new one exists: its grants go, and anything reading it fails.',
+                    why='Replacing the external location removes it before the new one exists: its grants go, and anything reading it fails. Its url can change in place; its name can\'t.',
                     wrong=['A new cluster is expected from the YAML.', 'New access is worth reading, but nothing is lost here.', 'An in-place change to a limit: worth a look, but nothing is destroyed.', None]),
                 ask('The summary says **1 to destroy**, but nobody asked to delete anything. Where does it come from?', ['The replacement: the old one is destroyed first', 'A glitch: nobody removed anything from the code'], answer=0,
                     clue='Look for the change marked -/+.',
@@ -267,8 +267,8 @@ Return the `address` of every replacement, in the same order as `changes`.""",
                 ask('The author says nothing reads `sales_raw` on weekends, so it\'s fine. What do you do?', ['Approve: the author knows nothing reads it at weekends', 'Ask which grants and jobs use it, and agree a window', 'Reset the state, so the plan stops wanting a replacement'], answer=1,
                     evidence=evidence('code', title='From the planning log', text="""# databricks_external_location.sales_raw must be replaced
 -/+ resource "databricks_external_location" "sales_raw" {
-      name            = "sales_raw"
-    ~ url             = "abfss://raw@stsalesdev..." -> "abfss://landing@stsalesdev..." # forces replacement
+    ~ name            = "sales_raw" -> "sales_landing" # forces replacement
+      url             = "abfss://raw@stsalesdev..."
       credential_name = "sales-dev-cred"
   }"""),
                     clue='What was attached to the old one?',
@@ -377,7 +377,7 @@ lesson(MODULE, 'lock_info',
     sources=[source('State locking', 'https://developer.hashicorp.com/terraform/language/state/locking'), source('terraform force-unlock', 'https://developer.hashicorp.com/terraform/cli/commands/force-unlock')],
     learn=[
         "**State** is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a **lock** first.",
-        'A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead.',
+        "A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead. This stack keeps its state in an Azure storage account (the azurerm backend). A stack whose state Spacelift manages never shows this error: look at the stack's runs instead.",
     ],
     example=example("The error you'll see", """Error: Error acquiring the state lock
 
@@ -388,14 +388,10 @@ Lock Info:
   Operation: OperationTypeApply
   Who:       spacelift@worker-7
   Version:   1.5.7
-  Created:   2026-10-09 23:25:51 UTC
-  Info:
-
-Terraform acquires a state lock to protect the state from being
-written by multiple users at the same time."""),
+  Created:   2026-10-09 23:25:51 UTC"""),
     check=question(
         'When is it safe to run `terraform force-unlock`?',
-        ['Whenever a run is blocked', 'Only after confirming the run holding the lock has stopped', 'Never'],
+        ['Whenever a run is blocked by it', 'Once the run holding it has stopped', 'Never: a lock clears on its own'],
         answer=1,
         why='Unlocking while a run is still applying lets two applies write state at once.',
     ),
@@ -580,7 +576,7 @@ lesson(MODULE, 'count_shift',
 }"""),
     check=question(
         'Containers are `["bronze", "silver", "gold"]` with `count`. You remove "bronze". What does the plan do?',
-        ['Deletes bronze only', 'Replaces silver and gold, and deletes the last position', 'Nothing'],
+        ['Deletes bronze and leaves the other two alone', 'Replaces silver and gold, drops the last slot', 'Nothing: the other two keep their names'],
         answer=1,
         why='Position 0 becomes silver and position 1 becomes gold, so both are renamed and replaced, and position 2 goes away.',
     ),
@@ -1015,9 +1011,9 @@ lesson(MODULE, 'variables_outputs',
   env    = "dev"
 }
 
-# reads the module's output,
-# not the resource inside it
-host = module.workspace.workspace_url"""),
+provider "databricks" {
+  host = module.workspace.workspace_url  # the module's output, not the resource inside it
+}"""),
     check=question(
         'The workspace module creates `azurerm_databricks_workspace.this` but has no outputs. Your root code needs its URL. What do you do?',
         [
@@ -1293,7 +1289,7 @@ lesson(MODULE, 'moved_blocks',
 }"""),
     check=question(
         'You rename `databricks_cluster.etl` to `databricks_cluster.sales_etl` and add a moved block. What should the plan show?',
-        ['1 to add, 1 to destroy', 'The cluster moved to its new address, with nothing added or destroyed', "An error: addresses can't change"],
+        ['1 to add, 1 to destroy: a new cluster', 'The cluster moves to its new address', "An error: addresses can't change"],
         answer=1,
         why='The moved block tells Terraform the two addresses are the same cluster, so it renames it in state instead of replacing it.',
     ),
@@ -1428,26 +1424,26 @@ lesson(MODULE, 'provider_versions',
     sources=[source('Version constraints', 'https://developer.hashicorp.com/terraform/language/expressions/version-constraints'), source('Dependency lock file', 'https://developer.hashicorp.com/terraform/language/files/dependency-lock'), source('Provider requirements', 'https://developer.hashicorp.com/terraform/language/providers/requirements')],
     learn=[
         "A **provider** is the plugin Terraform downloads to talk to Azure or Databricks. New versions come out often, and a new version can change defaults or how a resource is planned.",
-        "In `required_providers` you write a **version constraint**. `~> 3.110` means 3.110 or newer, but not 4.0: only the last number you wrote may go up. `~> 1.52.0` is stricter: 1.52 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out.",
+        "In `required_providers` you write a **version constraint**. `~> 4.40` means 4.40 or newer, but not 5.0: only the last number you wrote may go up. `~> 1.90.0` is stricter: 1.90 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out.",
         "`terraform init` writes the exact version it picked into `.terraform.lock.hcl`. Commit that file: every run, on your laptop or in Spacelift, then uses the same version until someone runs `terraform init -upgrade` and the change is reviewed. The lock file covers providers only, not modules.",
     ],
     example=example('Pinning both providers', """terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.110"
+      version = "~> 4.40"
     }
     databricks = {
       source  = "databricks/databricks"
-      version = "~> 1.52.0"
+      version = "~> 1.90.0"
     }
   }
 }"""),
     check=question(
-        'The code says `version = "~> 3.110"`. Which version could Terraform pick?',
-        ['4.0.0', '3.115.0', '3.100.0'],
+        'The code says `version = "~> 4.40"`. Which version could Terraform pick?',
+        ['5.0.0', '4.45.0', '4.30.0'],
         answer=1,
-        why='Only the last number written, 110, may go up, so anything from 3.110 up to (but not including) 4.0. 3.100 is too old, and 4.0 is a new major version.',
+        why='Only the last number written, 40, may go up, so anything from 4.40 up to (but not including) 5.0. 4.30 is too old, and 5.0 is a new major version.',
     ),
     angle=angle(
         pattern='Compare part by part',
@@ -1462,16 +1458,16 @@ lesson(MODULE, 'provider_versions',
         fn='allows',
         prompt="""Your function gets two strings:
 
-- `constraint`: an operator, a space, then a version with two or three numbers, like `"~> 3.110"`, `">= 1.52.0"` or `"= 1.52.3"`.
-- `version`: a provider version with three numbers, like `"3.115.0"`.
+- `constraint`: an operator, a space, then a version with two or three numbers, like `"~> 4.40"`, `">= 1.90.0"` or `"= 1.90.3"`.
+- `version`: a provider version with three numbers, like `"4.45.0"`.
 
 Turn both versions into lists of numbers, and add 0s to the constraint's list until it has three. Then:
 
 - `"="`: the lists must be equal.
 - `">="`: the version must be at least the constraint.
-- `"~>"`: at least the constraint, and every number before the last one written in the constraint must match. So `~> 3.110` keeps the 3, and `~> 1.52.0` keeps the 1 and the 52.
+- `"~>"`: at least the constraint, and every number before the last one written in the constraint must match. So `~> 4.40` keeps the 4, and `~> 1.90.0` keeps the 1 and the 90.
 
-Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True`. Return `True` or `False`.""",
+Python compares lists number by number, so `[4, 45, 0] >= [4, 40, 0]` is `True`. Return `True` or `False`.""",
         pattern='Turn versions into lists of numbers, so 3.9 comes before 3.10, then compare whole lists.',
         target='a few steps, no loops over the versions',
         realworld="Why a plan can change overnight with no code change: without a committed lock file, `terraform init` picks the newest provider the constraint allows on every run. With `~>` and a lock file, upgrades happen in their own reviewed PR.",
@@ -1479,23 +1475,23 @@ Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True
             intro='Keep provider upgrades deliberate: read constraints and the lock file the way Terraform does.',
             explain='A version constraint decides which provider versions Terraform may pick, and ~> lets only the last number written go up. The lock file keeps every run on one exact version, so a surprise plan with no code change is often an unlocked upgrade.',
             asks=[
-                ask('Version 1.52.5 comes out. What does the next Spacelift run use?', ['1.52.3, from the lock file', '1.52.5, the newest allowed', '1.53.0, the newest release'], answer=0,
+                ask('Version 1.90.5 comes out. What does the next Spacelift run use?', ['1.90.3, from the lock file', '1.90.5, the newest allowed', '1.91.0, the newest release'], answer=0,
                     evidence=evidence('code', title='.terraform.lock.hcl', text="""provider "registry.terraform.io/databricks/databricks" {
-  version     = "1.52.3"
-  constraints = "~> 1.52.0"
+  version     = "1.90.3"
+  constraints = "~> 1.90.0"
   hashes = [ ... ]
 }"""),
                     clue='Which file wins until someone upgrades on purpose?',
-                    why='The lock file pins 1.52.3. Only `terraform init -upgrade` moves to 1.52.5, and that change goes through review.',
-                    wrong=[None, 'Only terraform init -upgrade picks a newer version.', '~> 1.52.0 never allows 1.53.']),
+                    why='The lock file pins 1.90.3. Only `terraform init -upgrade` moves to 1.90.5, and that change goes through review.',
+                    wrong=[None, 'Only terraform init -upgrade picks a newer version.', '~> 1.90.0 never allows 1.91.']),
                 ask('Overnight the plan wants to change 40 clusters, and nobody changed the code. The repo has no .terraform.lock.hcl. What is a likely cause?', ['A new provider version was picked up', 'Someone edited the state by hand', 'Spacelift ran the plan twice'], answer=0,
                     clue='Without a lock file, init picks the newest version allowed, every time.',
                     why='With no lock file, each run can pick up a newer provider, and a new version can change defaults. Commit the lock file and upgrade on purpose.',
                     wrong=[None, 'Possible, but check the provider version first: with no lock file, it can change on every run.', "Running twice doesn't change what the plan wants."]),
-                ask('Which constraint lets in bug fixes for azurerm but keeps out 4.0?', ['~> 3.110', '>= 3.110', '= 3.110.0'], answer=0,
+                ask('Which constraint lets in bug fixes for azurerm but keeps out 5.0?', ['~> 4.40', '>= 4.40', '= 4.40.0'], answer=0,
                     clue='You want a floor and a ceiling.',
-                    why='`~> 3.110` allows 3.110 and later 3.x versions, but not 4.0.',
-                    wrong=[None, '>= has no ceiling: 4.0 would get in.', '= allows exactly one version: no bug fixes at all.']),
+                    why='`~> 4.40` allows 4.40 and later 4.x versions, but not 5.0.',
+                    wrong=[None, '>= has no ceiling: 5.0 would get in.', '= allows exactly one version: no bug fixes at all.']),
             ],
         ),
         starter="""def allows(constraint, version):
@@ -1516,16 +1512,16 @@ Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True
     return have >= want and have[:fixed] == want[:fixed]
 """,
         cases=[
-            case('~> 3.110', '3.115.0', expected=True, sample=True),
-            case('~> 3.110', '4.0.0', expected=False),
-            case('~> 3.110', '3.100.0', expected=False),
-            case('~> 3.110', '3.110.0', expected=True),
+            case('~> 4.40', '4.45.0', expected=True, sample=True),
+            case('~> 4.40', '5.0.0', expected=False),
+            case('~> 4.40', '4.30.0', expected=False),
+            case('~> 4.40', '4.40.0', expected=True),
             case('~> 3.9', '3.10.0', expected=True),
-            case('~> 1.52.0', '1.52.4', expected=True),
-            case('~> 1.52.0', '1.53.0', expected=False),
-            case('>= 1.52.0', '2.0.0', expected=True),
-            case('= 1.52.3', '1.52.3', expected=True),
-            case('= 1.52.3', '1.52.4', expected=False),
+            case('~> 1.90.0', '1.90.4', expected=True),
+            case('~> 1.90.0', '1.91.0', expected=False),
+            case('>= 1.90.0', '2.0.0', expected=True),
+            case('= 1.90.3', '1.90.3', expected=True),
+            case('= 1.90.3', '1.90.4', expected=False),
         ],
         guided="""def allows(constraint, version):
     # Replace every ___ with real code, then run the tests.
@@ -1548,15 +1544,15 @@ Python compares lists number by number, so `[3, 115, 0] >= [3, 110, 0]` is `True
 """,
         fills=['[int(n) for n in version.split(".")]', 'have >= want', 'have[:fixed] == want[:fixed]'],
         concepts=[
-            ['Two names from one split', 'When you know a split gives two pieces, you can name both at once.', """op, wanted = "~> 3.110".split(" ")
-# op is '~>', wanted is '3.110'"""],
-            ['Text to numbers', "`int` turns text into a number. `[int(n) for n in pieces]` does it for every piece and makes a new list.", """[int(n) for n in "3.110".split(".")]
-# [3, 110]"""],
+            ['Two names from one split', 'When you know a split gives two pieces, you can name both at once.', """op, wanted = "~> 4.40".split(" ")
+# op is '~>', wanted is '4.40'"""],
+            ['Text to numbers', "`int` turns text into a number. `[int(n) for n in pieces]` does it for every piece and makes a new list.", """[int(n) for n in "4.40".split(".")]
+# [4, 40]"""],
             ['Comparing lists', 'Python compares lists number by number, from the left, and stops at the first difference. Numbers, unlike text, put 9 before 10.', """[3, 10, 0] > [3, 9, 0]   # True
 "3.10" > "3.9"           # False: text compares letter by letter"""],
-            ['The first few items', '`have[:2]` is the first two items. `have[:0]` is an empty list.', """[1, 52, 4][:2]   # [1, 52]"""],
+            ['The first few items', '`have[:2]` is the first two items. `have[:0]` is an empty list.', """[1, 90, 4][:2]   # [1, 90]"""],
         ],
-        byhand='"~> 3.110" and "3.115.0". The constraint\'s numbers are [3, 110]: two written, so the first one, 3, is fixed. Padded to three: [3, 110, 0]. The version is [3, 115, 0]. It is at least [3, 110, 0], and its first number, 3, matches. True.',
+        byhand='"~> 4.40" and "4.45.0". The constraint\'s numbers are [4, 40]: two written, so the first one, 4, is fixed. Padded to three: [4, 40, 0]. The version is [4, 45, 0]. It is at least [4, 40, 0], and its first number, 4, matches. True.',
         why='A few steps, whatever the version.',
         gotchas=[
             ['Upgrade on purpose, in its own PR', 'Run `terraform init -upgrade` on a branch, commit the new lock file, and read the plan. A provider bump on its own should change little; if it changes a lot, read the changelog first.'],

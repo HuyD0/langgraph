@@ -109,7 +109,7 @@ def curriculum_map(data: dict | None = None) -> str:
         "These are the lessons that exist; anything not listed here has not been built yet.",
         "",
         f"The learning path has {total} lessons in {len(data['modules'])} modules, in the order below. "
-        "Each lesson has four steps: Learn (a short reading), Check (one multiple-choice question), "
+        "Each lesson has four steps: Learn (a short reading), Check (up to three multiple-choice questions, one at a time), "
         "Build (a small Python exercise that runs in the browser, with a starting scaffold that has "
         f"blanks to fill) and Explain (the pattern used and what to say). {len(cards)} of the "
         f"{total} lessons also have a \"Spot the gotcha\" card in the Explain step: risky code, pick "

@@ -27,9 +27,9 @@ traces = mlflow.search_traces(filter_string="tags.config = 'cs512-k5'")"""),
     check=question(
         "You want to compare two configs on last week's production traffic. What must already be true?",
         [
-            'Nothing, MLflow figures it out',
-            'Each trace was tagged with its config when it was created',
-            'You need a new eval set',
+            'Nothing: MLflow can work out the config afterwards',
+            'Each trace was tagged with its config at the time',
+            "You built a new eval set from that week's traffic",
         ],
         answer=1,
         why="If nothing recorded which config served each request, you can't work it out later, so tag traces when they are created. Decide the tags before the experiment.",
@@ -175,7 +175,7 @@ for name in ages:
 lesson(MODULE, 'slowest_chain',
     title='Reading agent traces',
     learn=[
-        'A **trace** records one agent run as nested **spans**: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their **parent**; the spans directly inside it are its **children**.',
+        'A **trace** records one agent run as nested **spans**: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their **parent**; the spans directly inside it are its **children**. A parent\'s time includes its children\'s time, so a span\'s own time is what is left after you take its children away.',
         "To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. That chain of slowest steps is the **critical path**. The answer is usually one tool or one model call.",
         "An agent team makes the same kind of tree when each helper is traced under its own name: one span on top for the whole team run, one span for each helper agent, and each helper's tool calls inside its span. Following the slowest child then shows which helper held the run up.",
     ],

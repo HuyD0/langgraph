@@ -16,9 +16,9 @@ lesson(MODULE, 'percentile',
 )"""),
     check=question(
         "A model's average latency is 900 ms and its p95 is 4 seconds. What do users experience?",
-        ['Everything feels fast', 'About 1 in 20 requests is slow enough to notice', "It's always 900 ms"],
+        ['Everything feels fast: the average is 900 ms', 'About 1 in 20 requests feels slow', 'Every request takes about 900 ms'],
         answer=1,
-        why='p95 at 4 seconds means 5 out of 100 requests take 4 seconds or more.',
+        why='p95 at 4 seconds means 5 out of 100 requests take 4 seconds or more: slow enough to notice.',
     ),
     angle=angle(
         pattern='Sort, then pick by position',
@@ -356,14 +356,14 @@ lesson(MODULE, 'better_option',
     mlflow.log_metric("net_monthly_value", 35700)
     mlflow.set_tag("decision", "ship smart-model")"""),
     check=question(
-        'A model costs 10 times more per call but resolves 25 more tickets out of every 100, each worth $4. Calls cost $0.002 against $0.02. Is it worth it?',
+        'A model costs 10 times more per call but resolves 25 more tickets out of every 100, each worth $4. Its calls cost $0.02 instead of $0.002. Is it worth it?',
         [
-            "No, it's 10 times more expensive",
-            'Very likely: the extra resolutions are worth far more than the extra cents',
-            "Can't tell",
+            'No: it costs 10 times more per call',
+            'Yes: the extra tickets are worth more',
+            "Can't tell without the monthly volume",
         ],
         answer=1,
-        why='25 extra resolutions per 100 calls are worth $100 (25 times $4). Those 100 calls cost only $1.80 more (100 times the extra $0.018 per call).',
+        why='25 extra resolutions per 100 calls are worth $100 (25 times $4). Those 100 calls cost only $1.80 more (100 times the extra $0.018 per call), so the extra tickets are worth far more than the extra cents.',
     ),
     angle=angle(
         pattern='Work out the net, keep the best',

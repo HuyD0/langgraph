@@ -5,11 +5,13 @@ right for the page and awkward for a report ("who finished module 4?" means open
 every document). So when a progress document is saved, the server compares it with the
 copy it had and writes one event per change:
 
-    step         reached a lesson's next step (Learn 0, Check 1, Build 2, Interview 3)
-    checked      answered the lesson's check question (``answer``)
+    step         reached a lesson's next step (Learn 0, Check 1, Build 2, Explain 3)
+    checked      answered the lesson's first Check question (``answer``)
+    check_marks  every Check question's mark (``marks``: sign, knot or curtain per question, for
+                 answered on your own, with a clue or another go, or by being shown the answer)
     lesson_done  finished a lesson
     solved       passed an exercise (``hints`` used, ``count`` times solved, and ``mode``: code,
-                 sort, practice or pack, when the page says)
+                 practice or pack, when the page says)
     practised    finished a practice set (platform lessons): ``right`` of ``total`` first time,
                  and ``missed``: each question not right first time, the wrong answers picked,
                  whether the clue or the answer was needed, and for Fix the YAML the checks run

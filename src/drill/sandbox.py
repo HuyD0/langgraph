@@ -4,7 +4,8 @@
 machine in a subprocess with a timeout, which protects you from the infinite loop
 you will eventually write, and stops a crash from taking the tutor down with it.
 It does not defend against deliberately hostile code, and is not trying to - if
-you paste something untrusted in here, it runs with your privileges.
+you paste something untrusted in here, it runs with your privileges. It also gets
+none of the server's environment variables, so a pasted snippet cannot read your keys.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from drill.state import CaseResult, SubmissionResult
 
 _HARNESS = Path(__file__).with_name("_harness.py")
 MAX_OUTPUT_BYTES = 8 * 1024 * 1024  # how much a submission may print before its writes start failing
+CHILD_ENV = ("PATH", "SYSTEMROOT", "TEMP", "TMP")  # the only variables the submission's process is given
 
 
 def _empty_result(fatal: str, duration: float, timed_out: bool = False) -> SubmissionResult:
@@ -82,10 +84,13 @@ def run_cases(
         # Output goes to files, not into this process's memory: a print in an endless loop
         # would otherwise pile up hundreds of megabytes here. Its own session (process
         # group) lets us stop anything the submission started, not just the submission.
+        # A minimal environment: the server's keys and database settings stay out of
+        # reach (SYSTEMROOT/TEMP keep Python starting on Windows; -I already ignores PYTHON*).
         with out_path.open("wb") as out, err_path.open("wb") as err:
             proc = subprocess.Popen(
                 [sys.executable, "-I", str(_HARNESS), str(payload_path)],
                 stdout=out, stderr=err, cwd=tmp, start_new_session=True,
+                env={k: os.environ[k] for k in CHILD_ENV if k in os.environ},
             )
             try:
                 proc.wait(timeout=timeout)

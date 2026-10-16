@@ -1,10 +1,12 @@
 // ---------- study list: tag anything, then get it explained ----------
-let studyItems = [], studyCol = null, studyQuery = "", gotOpen = false, renderPending = false;
+let studyItems = [], studyCol = null, studyQuery = "", renderPending = false;
 const streaming = {}, revealed = new Set(), busyItems = new Set(), openItems = new Set();
 // Spaced review: a "Got it" item comes back after 3 days, then 10, 30 and 90 while you keep
 // remembering it. Keep these in step with drill/server/study.py.
 const REVIEW_DAYS = [3, 10, 30, 90], DAY_MS = 86400000;
 const isDue = it => it.status === "got" && (it.reviewAt || 0) <= Date.now();
+// This part calls localStorage itself (not the page's store wrapper): tests/fixtures/study_sync.js runs
+// it on its own in node, with a storage stub and nothing else from page.html.
 function loadStudyLocal() { try { studyItems = JSON.parse(localStorage.getItem("drill-study") || "[]"); } catch { studyItems = []; } }
 function saveStudyLocal() { if (studyCol) return; try { localStorage.setItem("drill-study", JSON.stringify(studyItems)); } catch {} }
 // Once connected, the account holds the list and this device keeps only what couldn't reach it
@@ -21,13 +23,6 @@ function dropUnsent(id) {
 const studyVersion = it => it.updatedAt || it.createdAt || 0;
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // Saving works by selecting text (see the selection toolbar); no per-item buttons, to keep pages quiet.
-function tagButtons() { return ""; }
-function markSaved() {
-  const saved = new Set(studyItems.map(i => i.text));
-  for (const b of document.querySelectorAll("[data-tag]")) { const on = saved.has(b.dataset.text); b.classList.toggle("on", on); b.textContent = on ? "Saved" : "Save"; }
-  const open = studyItems.filter(i => i.status !== "got" || isDue(i)).length;
-  void open;
-}
 async function addItem(text, source, kind) {
   text = text.trim();
   const existing = studyItems.find(i => i.text === text);
@@ -109,19 +104,9 @@ function studyGroup(it) {  // the lesson an item came from, in path order
 }
 const studyMatches = (it, q) => !q || [it.text, it.note, it.explanation, it.source, studyGroup(it).title].some(t => (t || "").toLowerCase().includes(q));
 function whenText(ms) { const d = Math.ceil(((ms || 0) - Date.now()) / DAY_MS); return d <= 0 ? "today" : d === 1 ? "tomorrow" : "in " + d + " days"; }
-function itemMarks(it) {
-  const marks = [];
-  if (isDue(it)) marks.push(`<b class="due">Review now</b>`);
-  else if (it.status === "got") marks.push("next review " + whenText(it.reviewAt));
-  if (it.explanation) marks.push("explained");
-  if (it.quiz) marks.push("quiz");
-  const n = (it.thread || []).length; if (n) marks.push(n + (n === 1 ? " follow-up" : " follow-ups"));
-  if (it.note) marks.push("your note");
-  return marks.join(" · ") || esc(it.source || "");
-}
 function quizBlock(it) {
   if (!it.quiz) return "";
-  return `<div class="ai"><h4>Quiz</h4><p>${md(it.quiz.question)}</p>${revealed.has(it.id) ? `<div>${fmt(it.quiz.answer)}</div>` : `<p><button class="mini" data-act="reveal" data-id="${it.id}">Think first, then show the answer</button></p>`}</div>`;
+  return `<div class="ai"><h4>Quiz</h4><p>${md(it.quiz.question)}</p>${revealed.has(it.id) ? `<div>${fmt(it.quiz.answer)}</div>` : `<p><button class="mini" data-act="reveal" data-id="${esc(it.id)}">Think first, then show the answer</button></p>`}</div>`;
 }
 function threadBlock(it) {
   const s = streaming[it.id] || {};
@@ -130,8 +115,8 @@ function threadBlock(it) {
   return thread + live;
 }
 // ---------- the pocket: the study list as a tray, and review as a focus field ----------
-// On the path the tray waits at the bottom; on other pages the header chip opens it as a sheet.
-// Three tabs: Due (reviews), Learning, Got it. One item at a time opens inside the tray.
+// A sheet that opens only when asked for (the Home row or the header chip); three tabs: To review,
+// Still learning, Got it. One item at a time opens inside the sheet.
 let pkOpen = false, pkTab = null, pkItem = null, pkSearch = false, pkNote = null, pkAsk = null;
 const dueList = () => studyItems.filter(isDue).sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
 const learnList = () => studyItems.filter(it => it.status !== "got");
@@ -149,15 +134,15 @@ function pkSeals(it) {  // passed reviews filled, the one it's waiting for ringe
 }
 function pkRow(it) {
   const code = it.kind === "code", line = code ? (it.text.split("\n").find(l => l.trim()) || it.text).trim() : it.text;
-  return `<button class="pk-row${isDue(it) ? " due" : it.status === "got" ? " got" : ""}" data-act="open" data-id="${it.id}">${pkShape(it)}<span class="tx${code ? " code" : ""}">${esc(line)}</span>${pkSeals(it)}</button>`;
+  return `<button class="pk-row${isDue(it) ? " due" : it.status === "got" ? " got" : ""}" data-act="open" data-id="${esc(it.id)}">${pkShape(it)}<span class="tx${code ? " code" : ""}">${esc(line)}</span>${pkSeals(it)}</button>`;
 }
 function pkNext(it) {  // one main step, depending on where the item is
   const dis = busyItems.has(it.id) ? " disabled" : "";
-  if (isDue(it)) return `<button class="btn primary" data-act="review1" data-id="${it.id}">Review it now</button>`;
+  if (isDue(it)) return `<button class="btn primary" data-act="review1" data-id="${esc(it.id)}">Review it now</button>`;
   if (it.status === "got") return `<span class="meta">Next review ${whenText(it.reviewAt)}</span>`;
-  if (sample && !it.explanation) return `<button class="btn primary" data-act="explain" data-id="${it.id}"${dis}>Explain it to me</button><button class="btn" data-act="got" data-id="${it.id}">Got it</button>`;
-  if (sample && !it.quiz) return `<button class="btn primary" data-act="quiz" data-id="${it.id}"${dis}>Quiz me</button><button class="btn" data-act="got" data-id="${it.id}">Got it</button>`;
-  return `<button class="btn primary" data-act="got" data-id="${it.id}">Got it</button>`;
+  if (sample && !it.explanation) return `<button class="btn primary" data-act="explain" data-id="${esc(it.id)}"${dis}>Explain it to me</button><button class="btn" data-act="got" data-id="${esc(it.id)}">Got it</button>`;
+  if (sample && !it.quiz) return `<button class="btn primary" data-act="quiz" data-id="${esc(it.id)}"${dis}>Quiz me</button><button class="btn" data-act="got" data-id="${esc(it.id)}">Got it</button>`;
+  return `<button class="btn primary" data-act="got" data-id="${esc(it.id)}">Got it</button>`;
 }
 function pkDetail(it) {
   const s = streaming[it.id] || {}, got = it.status === "got", stage = got ? (it.stage || 0) : -1;
@@ -166,12 +151,12 @@ function pkDetail(it) {
   const g = studyGroup(it);
   const status = isDue(it) ? "<b>Due for review</b>" : got ? "Next review " + whenText(it.reviewAt) : "Learning";
   const links = [
-    `<button class="linkbtn" data-act="note" data-id="${it.id}">${it.note ? "Edit your note" : "+ Add a note"}</button>`,
-    sample ? `<button class="linkbtn" data-act="askshow" data-id="${it.id}">Ask a question</button>` : "",
-    sample && it.explanation ? `<button class="linkbtn" data-act="explain" data-id="${it.id}"${dis}>Explain again, simpler</button>` : "",
-    sample && it.quiz ? `<button class="linkbtn" data-act="quiz" data-id="${it.id}"${dis}>A different quiz question</button>` : "",
+    `<button class="linkbtn" data-act="note" data-id="${esc(it.id)}">${it.note ? "Edit your note" : "+ Add a note"}</button>`,
+    sample ? `<button class="linkbtn" data-act="askshow" data-id="${esc(it.id)}">Ask a question</button>` : "",
+    sample && it.explanation ? `<button class="linkbtn" data-act="explain" data-id="${esc(it.id)}"${dis}>Explain again, simpler</button>` : "",
+    sample && it.quiz ? `<button class="linkbtn" data-act="quiz" data-id="${esc(it.id)}"${dis}>A different quiz question</button>` : "",
   ].join("");
-  const menu = `<details class="pk-menu"><summary class="btn" aria-label="More">⋯</summary><div>${got ? `<button data-act="unlearn" data-id="${it.id}">Back to learning</button>` : ""}<button class="danger" data-act="remove" data-id="${it.id}">Remove from the list</button></div></details>`;
+  const menu = `<details class="pk-menu"><summary class="btn" aria-label="More">⋯</summary><div>${got ? `<button data-act="unlearn" data-id="${esc(it.id)}">Back to learning</button>` : ""}<button class="danger" data-act="remove" data-id="${esc(it.id)}">Remove from the list</button></div></details>`;
   const showNote = it.note || pkNote === it.id;
   return `<div class="pk-item">
     <button class="linkbtn pk-back" data-act="back">${ic("arrowl")}${pkLabel[pkTab] || "Back"}</button>
@@ -179,10 +164,10 @@ function pkDetail(it) {
     <div class="pk-meta"><span>${it.problemId && modOf[it.problemId] ? lessonNo(it.problemId) + " " : ""}${esc(g.title)}</span>${it.source ? `<span>from ${esc(it.source.split(" · ")[0])}</span>` : ""}${got ? `<span>${status}</span>` : ""}</div>
     <div class="pk-ladder" role="img" aria-label="Reviews after 3, 10, 30 and 90 days">${REVIEW_DAYS.map((d, k) => `<span class="${k < stage ? "on" : k === stage ? "now" : ""}">${d} days</span>`).join("")}</div>
     <div class="pk-next">${pkNext(it)}${menu}</div>
-    ${showNote ? `<input class="field" data-note="${it.id}" id="note-${it.id}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">` : ""}
+    ${showNote ? `<input class="field" data-note="${esc(it.id)}" id="note-${esc(it.id)}" value="${esc(it.note || "")}" placeholder="Your note: what's confusing about it?" aria-label="Your note">` : ""}
     ${expl ? `<div class="ai"><h4>Explanation</h4>${fmt(expl)}</div>` : ""}
     ${quizBlock(it)}${threadBlock(it)}
-    ${sample && (pkAsk === it.id || s.field === "thread") ? `<form class="ask" data-ask="${it.id}"><input class="field" id="ask-${it.id}" placeholder="Ask a follow-up question" aria-label="Ask a follow-up question"${dis}><button class="btn" type="submit"${dis}>Ask</button></form>` : ""}
+    ${sample && (pkAsk === it.id || s.field === "thread") ? `<form class="ask" data-ask="${esc(it.id)}"><input class="field" id="ask-${esc(it.id)}" placeholder="Ask a follow-up question" aria-label="Ask a follow-up question"${dis}><button class="btn" type="submit"${dis}>Ask</button></form>` : ""}
     <div class="pk-links">${links}</div>
   </div>`;
 }
@@ -222,7 +207,6 @@ function studyRowHtml() {
   return `<button class="studyrow${due ? " due" : ""}" id="studyRow" data-study-open><span class="pk-ring" style="--p:${Math.round(100 * got / total)}"><span>${due || learn || got}</span></span><span class="sr-t"><b>Study list</b><span>${bits}</span></span>${ic("chevron", "chev")}</button>`;
 }
 function renderStudy() {
-  markSaved();
   const box = $("items");
   if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") { renderPending = true; return; }
   renderPending = false;
@@ -311,7 +295,7 @@ $("pkTabs").addEventListener("click", e => {
 });
 function tutorFrame(it) {
   const prob = byId[it.problemId];
-  return `${LEARNER}
+  return `${LEARNER()}
 They saved this to understand better (from: ${it.source || "the page"}):
 """
 ${it.text}
@@ -327,7 +311,7 @@ async function streamInto(it, field, prompt, extra, trace) {
     return text;
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
-    flashStudy(e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : "The answer didn't come through. Try again in a moment.");
+    flashStudy(e && e.code === "rate_limited" ? "Too many requests right now. Wait a minute, then try again." : (e && e.code === "asleep" && e.text) || "The answer didn't come through. Try again in a moment.");
     return null;
   } finally { busyItems.delete(it.id); delete streaming[it.id]; }
 }
@@ -354,7 +338,7 @@ Return JSON: {"question": string, "answer": string}. The answer is 1-3 sentences
     if (q && q.question) { revealed.delete(id); await updateItem(id, { quiz: { question: String(q.question), answer: String(q.answer || "") } }); }
   } catch (e) {
     if (e && e.code === "not_granted") { sample = null; sampleOff = true; document.body.classList.add("no-ai"); }
-    flashStudy("The quiz question didn't come through. Try again in a moment.");
+    flashStudy((e && e.code === "asleep" && e.text) || "The quiz question didn't come through. Try again in a moment.");
   } finally { busyItems.delete(id); renderStudy(); }
 }
 async function askItem(id, question) {

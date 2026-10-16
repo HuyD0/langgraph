@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from urllib.parse import unquote
 
 import pytest
 
@@ -34,6 +35,7 @@ class FakeWorkspace:
             return {"name": f"model-services/{MODEL}"}
         if a[:2] == ["api", "get"] and "/effective-permissions/" in a[2]:
             path, principal = a[2].split("/effective-permissions/")[1].split("?principal=")
+            principal = unquote(principal)  # the check URL-encodes it, as a real API call must
             privs = self.grants.get((path, principal), [])
             return {"privilege_assignments": [{"principal": principal, "privileges": [{"privilege": p} for p in privs]}]}
         if a[:2] == ["api", "patch"]:

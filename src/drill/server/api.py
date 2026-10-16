@@ -6,7 +6,9 @@
 The page is the same file that is published on claude.ai. There it talks to the
 artifact's ``sample`` and ``db`` capabilities; here it talks to these routes, which hand
 the work to the model router (Ollama first) and the document store (SQLite). The MCP door
-is mounted on the same server at ``/mcp``, so Claude Code can use the tools over HTTP.
+is mounted on the same server at ``/mcp``, so Claude Code can use the tools over HTTP;
+not in a Databricks App, where every learner is a different person and the MCP door
+cannot yet tell them apart.
 
 Settings: ``DRILL_HOST`` (default 0.0.0.0, so the phone can reach it; use 127.0.0.1 to keep
 it to this machine, which is the default when the store is Lakebase), ``DRILL_PORT`` (default 8787).
@@ -27,12 +29,13 @@ import os
 from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.middleware.gzip import GZipMiddleware
 
 from drill.config import PROJECT_ROOT
 from drill.server.bank import Bank
-from drill.server.router import ModelRouter, NoModelAvailable, PromptTooLong, to_messages
+from drill.server.router import PAGE_TIERS, ModelRouter, NoModelAvailable, PromptTooLong, to_messages
 from drill.server import activity, team
 from drill.server.store import DocStore, lakebase_endpoint, open_store
 
@@ -40,8 +43,9 @@ log = logging.getLogger("drill.server")
 
 # claude.ai wraps the page in a skeleton like this when it publishes it; serving the same
 # wrapper here keeps the page identical (phone viewport, safe areas, hidden elements).
+# ``lang`` tells screen readers how to pronounce the page (WCAG 3.1.1).
 PAGE_HEAD = (
-    "<!doctype html><html><head><meta charset=\"utf-8\">"
+    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">"
     "<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}"
     "body{margin:0;font:14px system-ui,sans-serif;background:#fafafa}img{max-width:100%}[hidden]{display:none!important}</style>"
@@ -49,12 +53,52 @@ PAGE_HEAD = (
 )
 PAGE_TAIL = "</body></html>"
 
+
+def whole_page(page: str) -> str:
+    """The page inside its wrapper, with the ``<title>`` and font ``<link>`` lines at the top of
+    ``page.html`` moved into the ``<head>`` half, where a browser and a validator expect them.
+
+    page.html keeps those lines itself because the built file in ``dist/`` is opened on its own
+    (and claude.ai reads the title from it), so only the served copy is rearranged.
+    """
+    head_lines, rest = [], page
+    while rest.startswith(("<title>", "<link ")):
+        line, _, rest = rest.partition("\n")
+        head_lines.append(line)
+    return PAGE_HEAD.replace("</head>", "".join(head_lines) + "</head>") + rest + PAGE_TAIL
+
+
+# Cheap protective headers for every answer: the browser must not guess a file's type from
+# its bytes, must not tell other sites where a link came from, and no site may frame the page.
+SECURITY_HEADERS = [
+    (b"x-content-type-options", b"nosniff"),
+    (b"referrer-policy", b"no-referrer"),
+    (b"content-security-policy", b"frame-ancestors 'none'"),
+]
+
+
+class SecurityHeaders:
+    """Plain ASGI middleware adding :data:`SECURITY_HEADERS` to every HTTP response."""
+
+    def __init__(self, app: Any):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                message = {**message, "headers": [*message.get("headers", []), *SECURITY_HEADERS]}
+            await send(message)
+
+        return await self.app(scope, receive, send_with_headers)
+
 # The biggest request body each route takes, in bytes. A progress document for every lesson
 # is well under 1 MB; a tutor request is a lesson's text plus the learner's code.
 BODY_LIMITS = {"/api/docs/": 2_000_000, "/api/ask": 400_000, "/api/feedback": 20_000}
 # The tiers the page may ask for. "complex" starts with the hosted (paid) model, so only the
 # server's own features choose it; the page never sends it, and a request that does gets "default".
-PAGE_TIERS = ("quick", "default")
 
 
 class BodyLimit:
@@ -111,10 +155,22 @@ class BodyLimit:
         await send({"type": "http.response.body", "body": payload})
 
 
-NO_MODEL = {
-    "code": "unavailable",
-    "text": "No model is running. Start Ollama (`ollama serve`) or set a hosted model in .env, then try again.",
+# What the learner reads when no model could answer, by the router's reason (``NoModelAvailable.reason``).
+# The Ollama text only helps someone running the server on their own machine: in an app the
+# learner can't start anything or edit .env, so they are told to ask whoever runs it.
+NO_MODEL_TEXT = {
+    "budget": "The tutor has used today's allowance for everyone. It comes back tomorrow.",
+    "upstream": "The tutor's model is not answering right now. Try again in a minute.",
+    "none": "No model is running. Start Ollama (`ollama serve`) or set a hosted model in .env, then try again.",
+    "none_app": "No tutor model is set up for this app. Ask whoever runs it.",
 }
+
+
+def no_model(reason: str) -> dict:
+    """The 503 body for a tutor request no model could answer, in words the learner can act on."""
+    if reason == "none" and behind_login():
+        reason = "none_app"
+    return {"code": "unavailable", "text": NO_MODEL_TEXT.get(reason, NO_MODEL_TEXT["upstream"])}
 
 
 class FeedbackBody(BaseModel):
@@ -222,7 +278,8 @@ def create_app(
     port = port or int(os.getenv("DRILL_PORT", "8787"))
 
     mcp_app = None
-    if with_mcp:
+    # In a Databricks App every learner is a different person and the MCP door cannot yet tell them apart: no /mcp there.
+    if with_mcp and not behind_login():
         from drill.server import mcp as mcp_door
 
         mcp_door.configure(store=store, router=router, bank=bank)
@@ -263,6 +320,9 @@ def create_app(
     app = FastAPI(title="Daily Drill", lifespan=lifespan)
     app.state.store, app.state.router, app.state.bank = store, router, bank
     app.add_middleware(BodyLimit, limits=BODY_LIMITS)
+    # The page is 2.4 MB of very compressible text: gzip makes it 6-8 times smaller on the wire.
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.add_middleware(SecurityHeaders)  # outermost, so even a 413 from BodyLimit carries the headers
 
     if idle:
         @app.middleware("http")
@@ -276,15 +336,22 @@ def create_app(
 
     # -- the page ------------------------------------------------------------
 
-    @app.get("/", response_class=HTMLResponse)
-    def page() -> str:
-        return PAGE_HEAD + bank.page + PAGE_TAIL
+    # Rendered once. The ETag names this exact text, so a reload only downloads the page again
+    # when the content or the wrapper changed; ``no-cache`` means "ask first", not "never keep".
+    served = whole_page(bank.page)
+    etag = '"' + hashlib.sha1(served.encode("utf-8")).hexdigest() + '"'
+
+    @app.get("/")
+    def page(request: Request) -> Response:
+        headers = {"ETag": etag, "Cache-Control": "no-cache"}
+        offered = [t.strip().removeprefix("W/") for t in request.headers.get("if-none-match", "").split(",")]
+        if etag in offered or "*" in offered:
+            return Response(status_code=304, headers=headers)
+        return HTMLResponse(served, headers=headers)
 
     @app.get("/pack-assets/{pack_id}/{path:path}")
-    def pack_asset(pack_id: str, path: str):
+    def pack_asset(pack_id: str, path: str) -> FileResponse:
         """A screenshot or diagram from a loaded content pack. Only files a lesson names are served."""
-        from fastapi.responses import FileResponse
-
         found = bank.pack_asset(pack_id, path)
         if not found:
             raise HTTPException(404, {"code": "not_found", "text": "No such pack file."})
@@ -301,6 +368,7 @@ def create_app(
             "store_fallback": store.fallback,
             "owner": owner_for(request, store.owner),
             "lessons": len(bank.lessons),
+            "team": team.enabled(store),  # true at work: managers see progress, study lists and questions
         }
 
     @app.get("/api/me")
@@ -309,8 +377,8 @@ def create_app(
 
     # -- the tutor -----------------------------------------------------------
 
-    @app.post("/api/ask")
-    async def ask(body: AskBody, request: Request):
+    @app.post("/api/ask", response_model=None)  # the return type names a Response, which is not a schema
+    async def ask(body: AskBody, request: Request) -> StreamingResponse | dict:
         if body.messages is None and not (body.prompt or "").strip():
             raise HTTPException(400, {"code": "bad_request", "text": "Send a prompt or messages."})
         messages: Any = body.messages if body.messages is not None else body.prompt
@@ -322,7 +390,7 @@ def create_app(
         # Store calls go to a worker thread: on Lakebase each is a network round trip, and
         # waiting here would hold up every other request the server is answering.
         if not await asyncio.to_thread(router.order, tier):
-            raise HTTPException(503, NO_MODEL)
+            raise HTTPException(503, no_model(router.unavailable_reason()))
         # MLflow's user field: the signed-in email in an app (the same owner Lakebase uses), "local" elsewhere.
         context = {**(body.trace or {}), "door": "page", "user": owner_for(request, "local")}
         trace = body.trace or {}
@@ -334,8 +402,8 @@ def create_app(
         if body.json_mode:
             try:
                 return {"value": await router.ask_json(messages, tier, context=context)}
-            except NoModelAvailable:
-                raise HTTPException(503, NO_MODEL)
+            except NoModelAvailable as exc:
+                raise HTTPException(503, no_model(exc.reason))
             except ValueError as exc:
                 raise HTTPException(502, {"code": "bad_reply", "text": str(exc)})
 
@@ -346,8 +414,8 @@ def create_app(
             first = await chunks.__anext__()
         except StopAsyncIteration:
             raise HTTPException(502, {"code": "bad_reply", "text": "The model returned nothing."})
-        except NoModelAvailable:
-            raise HTTPException(503, NO_MODEL)
+        except NoModelAvailable as exc:
+            raise HTTPException(503, no_model(exc.reason))
 
         async def deltas() -> AsyncIterator[str]:
             sent = ""
@@ -371,7 +439,7 @@ def create_app(
         )
 
     @app.post("/api/feedback")
-    async def feedback(body: FeedbackBody, request: Request):
+    async def feedback(body: FeedbackBody, request: Request) -> dict:
         from drill.server.observe import default_observer
 
         user = owner_for(request, "local")
@@ -450,7 +518,10 @@ def main() -> None:
     host = os.getenv("DRILL_HOST", "").strip() or ("0.0.0.0" if in_app or not lakebase_endpoint() else "127.0.0.1")
     port = int(os.getenv("DRILL_PORT", "").strip() or in_app or "8787")
     app = create_app(port=port)
-    log.info("Daily Drill at http://localhost:%s  (MCP at http://localhost:%s/mcp)", port, port)
+    if behind_login():
+        log.info("Daily Drill at http://localhost:%s  (behind a login: no MCP door)", port)
+    else:
+        log.info("Daily Drill at http://localhost:%s  (MCP at http://localhost:%s/mcp)", port, port)
     uvicorn.run(app, host=host, port=port, log_level="warning")
 
 

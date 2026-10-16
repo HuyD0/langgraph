@@ -1,21 +1,27 @@
-"""Pricing and sizing: What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build."""
+"""Pricing and sizing: What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build, then packaged as a skill you can rerun."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
-MODULE = module('pricing', 'Pricing and sizing', 'What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build.')
+MODULE = module('pricing', 'Pricing and sizing', 'What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build, then packaged as a skill you can rerun.')
 
 lesson(MODULE, 'cost_per_finished_task',
     title='Cost per finished task',
+    checked='2026-10-15',
+    sources=[
+        source('Gartner Predicts 30% of Generative AI Projects Will Be Abandoned After Proof of Concept By End of 2025', 'https://www.gartner.com/en/newsroom/press-releases/2024-07-29-gartner-predicts-30-percent-of-generative-ai-projects-will-be-abandoned-after-proof-of-concept-by-end-of-2025'),
+        source('Better Call GPT, Comparing Large Language Models Against Lawyers (arXiv 2401.16212)', 'https://arxiv.org/abs/2401.16212'),
+    ],
     learn=[
-        'Work out what an AI task costs, and what it saves, before you build it. One forecast said at least 30 percent of generative AI projects would be dropped after the trial stage, partly over rising costs and unclear value. Pricing first also tells your trial which numbers it must measure.',
+        'Work out what an AI task costs, and what it saves, before you build it. In July 2024 the research firm Gartner forecast that at least 30 in 100 generative AI projects would be dropped after the trial stage by the end of 2025, partly over rising costs and unclear value. Pricing first also tells your trial which numbers it must measure.',
         "Don't price only the tokens. The **cost per finished task** (its **fully loaded cost**) is the model's bill, plus a person checking some answers (**human review**), plus redoing the answers that fail (**rework**). In an HR ticket bot the model is under 4 percent of it.",
         'Mistakes nobody catches cost extra on top: in the HR ticket bot, 5 in 100 wrong answers slip through and cost $10 each to sort out later, so 50 cents a ticket. Some write-ups add this in, which makes about $2.37 a ticket. Here we keep it apart, and the payback lesson takes it off the saving.',
         "Each number has a source. The **price list** gives the token price, and the **POC** (proof of concept, a small trial build) measures the tokens and how often answers fail. The **business owner** gives the hourly rate, today's cost of a task, how many answers get checked and how long a check takes.",
     ],
     example=example('One HR ticket, $8 by hand today', """# 30 in 100 answers checked,
 # 2 minutes each, at $60 an hour
+rate = 60             # dollars an hour
 hours = 0.3 * 2 / 60  # 0.01 hours
-check = hours * 60    # at $60: 0.60
+check = hours * rate  # 0.60
 # 15 in 100 fail, and a person
 # redoes each one for $8
 redo = 0.15 * 8       # 1.20
@@ -144,7 +150,7 @@ total = trip + 5      # 15.0""",
         gotchas=[
             [
                 'Pricing tokens only',
-                "In one study, a model's bill was 474 times cheaper than paying an expert to do the task, but only 1.2 to 1.6 times cheaper once checking and redoing its answers were counted.",
+                "In one 2024 contract-review study, a junior lawyer cost about $74 a document and the models 2 cents to $1.24. The study itself says that leaves out the people who must keep checking the model's answers. Count their time, and the redoing of wrong answers, and the gap shrinks a lot: in the HR example the model is under 4 percent of the total.",
             ],
             [
                 'Leaving out the mistakes nobody caught',
@@ -290,6 +296,10 @@ steps += 300   # steps is now 800""",
             [
                 'Trusting the default step limit',
                 "LangGraph's default recursion_limit is 10007 steps, far too high to stop a runaway agent in time. Set your own on every run.",
+            ],
+            [
+                'Pricing every input token at full price',
+                'Most providers charge much less, often a tenth, for the part of the prompt they have already seen (prompt caching). OpenAI and Gemini do it by default; Claude, on Anthropic or on Databricks, needs a cache_control mark in the request. The bill still grows every step, just more slowly than the token count, so price from the usage your traces report, which splits cached from fresh tokens.',
             ],
         ],
     ),
@@ -610,8 +620,8 @@ lesson(MODULE, 'biggest_swing',
     learn=[
         "Every business case rests on guesses, called **assumptions**: how many tasks, how often the AI is right, how much each one saves. If you don't know which guess matters most, the trial measures the easy things and misses the one that sinks the plan.",
         'A **sensitivity analysis** changes one guess at a time, from a bad value to a good one, and keeps the others at their expected values. The **swing** is how far the answer moves. The guess with the biggest swing is the one to measure hardest.',
-        'In the HR example, doubling the token price lowers the monthly net by only about $390. If half the staff use the bot instead of 80 percent, the net falls from about $23,800 to about $11,100.',
-        'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess (the **worst case**, **base case** and **best case**). Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right, and run a small pilot to see how many staff really use it.',
+        'In the HR example, doubling the token price lowers the monthly value by only about $390. If the AI is right 50 in 100 times instead of 80, the value falls from about $23,600 to $11,000, as the example below works out.',
+        'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess (the **worst case**, **base case** and **best case**). Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right: that share is the `success` guess in the example and the exercise. Then run a small pilot to see how many staff really use it.',
     ],
     example=example('One guess, low and high', """# value = tasks * success * saving - fixed
 # tasks 6000, saving 7, fixed 10000
@@ -783,10 +793,15 @@ g["size"] = 5   # base["size"] is still 1""",
 
 lesson(MODULE, 'peak_capacity',
     title='Size for the busiest minute',
+    checked='2026-10-15',
+    sources=[
+        source('Manage Azure OpenAI in Microsoft Foundry Models quota', 'https://learn.microsoft.com/azure/foundry/openai/how-to/quota'),
+        source('Databricks AI Gateway usage tracking', 'https://docs.databricks.com/aws/en/ai-gateway/usage-tracking-beta'),
+    ],
     learn=[
         'Traffic is never spread evenly through the day. If you **size** capacity (decide how many tokens a minute to ask for, called **capacity planning**) from the daily average, the busiest minute hits your limit, and users get error 429, "too many requests". So size for the **busiest minute**.',
         'Take tasks a day times the share that arrive in the busiest hour, and divide by 60 to get tasks a minute. Multiply by a **burst factor**: how much busier the busiest minute is than an average minute of that hour (3 is a fair first guess).',
-        "Multiply by the tokens one task asks for, to get tokens in the busiest minute. Check that against every limit on the path: the Foundry deployment's **tokens per minute** (TPM) and the gateway's rate limits.",
+        "Multiply by the tokens one task asks for, to get tokens in the busiest minute. Check that against every limit on the path: the **Azure AI Foundry** deployment's limit (Foundry is Microsoft's service that hosts the model; each deployment has a **tokens per minute**, TPM, cap) and the gateway's rate limits.",
         'Where the numbers come from: the business owner gives tasks a day. The POC measures the busiest hour, the burst from 1-minute peaks, and the tokens per task. The platform team gives the deployment quota and the gateway limits.',
     ],
     example=example('Average against busiest minute', """tokens = 25000   # per HR ticket
@@ -796,8 +811,9 @@ avg = 270 / (8 * 60) * tokens
 # busiest hour has a fifth, burst 3:
 peak = 270 * 0.2 / 60 * 3 * tokens
 # 67500 a minute: almost 5 times
-# rounding 0.9 tickets a minute up
-# to 1 gives 75000: a little spare"""),
+# plan for 1 ticket a minute, not 0.9:
+# 1 * 3 * 25000 = 75000, so ask for
+# a limit above that"""),
     check=question(
         'Your bot\'s daily average is far below its tokens-per-minute limit, yet users get "too many requests" errors every morning. What went wrong?',
         [
@@ -806,7 +822,7 @@ peak = 270 * 0.2 / 60 * 3 * tokens
             'Tokens cost more in the morning, so the limit shrinks',
         ],
         answer=0,
-        why='Requests bunch up at busy times. The limit is checked over a few seconds at a time, so the busiest minute, not the daily average, decides whether you fit.',
+        why='Requests bunch up at busy times. Azure adds the tokens each request asks for to a running count that starts again every minute, so the busiest minute, not the daily average, decides whether you fit. It also counts requests over windows of 1 to 10 seconds, so a burst can be refused even when the minute\'s total would fit.',
     ),
     angle=angle(
         pattern='Daily count to busiest minute',
@@ -846,7 +862,7 @@ Peak tasks a minute: `daily_tasks` times `busy_hour_share`, divided by 60, times
 Return `[peak_tokens, fits]`. `fits` is `True` when the peak tokens are at most `tpm_limit`.""",
         pattern='Turn the daily count into the busiest minute, then compare with the limit.',
         target='a few sums, no loops',
-        realworld='Azure checks a deployment\'s limit every few seconds, so a burst hits it long before the hourly totals look busy. Capacity is always sized for the peak, never the average.',
+        realworld='Azure adds the tokens each request asks for to a count that resets every minute, and counts requests over windows of 1 to 10 seconds, so a burst hits a limit long before the hourly totals look busy. Capacity is always sized for the peak, never the average.',
         starter="""def peak_capacity(
         daily_tasks, busy_hour_share, burst,
         tokens_per_task, tpm_limit):
@@ -923,9 +939,14 @@ big = 7 <= 3   # False""",
 
 lesson(MODULE, 'make_a_skill',
     title='Turn your vetting into a skill',
+    checked='2026-10-15',
+    sources=[
+        source('Agent Skills specification', 'https://agentskills.io/specification'),
+        source('Claude Code: Skills', 'https://code.claude.com/docs/en/skills'),
+    ],
     learn=[
         "Everything in Frame so far, from the one-line use case and the gates to the review, the cost and the bars, is a routine you will repeat for every new idea. A **Claude skill** packages a routine so Claude follows it the same way every time: a folder holding a **SKILL.md** file of instructions, plus any reference files and scripts it needs.",
-        "SKILL.md starts with **YAML frontmatter**: two lines of settings between `---` markers. The **name** is lowercase letters, numbers and hyphens, at most 64 characters, and may not contain \"claude\" or \"anthropic\". The **description**, up to 1,024 characters, says what the skill does and when to use it, in the third person (\"Vets a proposed AI use case. Use when...\"). Claude reads only the name and description of every skill up front, and loads the rest when a request matches: so the description decides whether your skill is ever used.",
+        "SKILL.md starts with **YAML frontmatter**: a few settings between `---` markers, two of them required. The **name** is lowercase letters, numbers and hyphens, at most 64 characters, and may not contain \"claude\" or \"anthropic\". The **description**, up to 1,024 characters, says what the skill does and when to use it, in the third person (\"Vets a proposed AI use case. Use when...\"). Claude reads only the name and description of every skill up front, and loads the rest when a request matches: so the description decides whether your skill is ever used.",
         "The body holds the steps and an output format, kept short (Anthropic suggests under 500 lines), with details in reference files it opens only when needed. Anything that must be exact, like adding up the total cost of ownership, goes in a **script** the skill runs, because a model can get sums wrong and a script cannot. This repository ships one: `.claude/skills/vet-ai-use-case`, whose `scripts/tco.py` prints the cost table.",
         "To use it in Claude Code, put the folder in `~/.claude/skills/` (just for you) or a project's `.claude/skills/` (for everyone on the project), then ask Claude to assess an idea or type `/vet-ai-use-case`. On claude.ai, zip the folder and upload it in Settings, with code execution turned on. Then test it like any prompt: run it on a few use cases with known gaps, read what it misses, and change the instructions.",
     ],
@@ -940,6 +961,7 @@ description: Vets a proposed AI use case before
 
 1. Write the use case in one line.
 2. Check the three gates.
+...
 8. Run python scripts/tco.py inputs.json
    and report its table."""),
     check=question(
@@ -960,7 +982,7 @@ description: Vets a proposed AI use case before
     ),
     exercise=exercise(
         title='Write a Valid SKILL.md',
-        topic='pricing',
+        topic='use cases',
         difficulty='medium',
         fn='make_skill',
         prompt="""Your function gets three things: `name`, `description` (both text) and `steps`, a list of step texts.

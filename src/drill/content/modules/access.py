@@ -26,9 +26,9 @@ lesson(MODULE, 'missing_acls',
 #   ml-reviewers CAN_READ"""),
     check=question(
         'A teammate has `SELECT` on every table you used, but cannot see your MLflow runs. What is missing?',
-        ['More Unity Catalog grants', 'A permission on the experiment itself, like CAN_READ', 'A bigger cluster'],
+        ['More Unity Catalog grants on the tables', 'A permission on the experiment itself', 'A bigger cluster to run the notebook'],
         answer=1,
-        why='Experiments are workspace objects with their own ACL. Table grants do not reach them.',
+        why='Experiments are workspace objects with their own ACL, with levels like CAN_READ. Table grants do not reach them.',
     ),
     angle=angle(
         pattern='Compare positions in an ordered list',
@@ -265,9 +265,9 @@ lesson(MODULE, 'location_for_path',
   -> GRANT READ FILES ON EXTERNAL LOCATION `raw-sales` TO `data-engineers`"""),
     check=question(
         'An external location is set up and granted, but every read fails with a 403 from Azure storage. What is the likely gap?',
-        ['The table has no SELECT grant', "The access connector's identity has no role on the storage account", 'The cluster is too small'],
+        ['The table has no SELECT grant in Unity Catalog', "The connector's identity has no Azure role", 'The cluster is too small for the read'],
         answer=1,
-        why='Unity Catalog allowed the read, but Azure refused the identity behind the credential. The Azure role is link 2 of the chain.',
+        why='Unity Catalog allowed the read, but Azure refused the identity behind the credential. The Azure role on the storage account is link 2 of the chain.',
     ),
     angle=angle(
         pattern='Prefix match on whole folders',
@@ -480,9 +480,9 @@ client = SecretClient("https://kv-fict.vault.azure.net", cred)
 api_key = client.get_secret("ticket-api-key").value"""),
     check=question(
         'Your agent must call an outside ticketing API with a bearer token. Which object fits best?',
-        ['An external location', 'A service credential', 'An HTTP connection, with USE CONNECTION granted to the agent\'s principal'],
+        ['An external location', 'A service credential', 'An HTTP connection'],
         answer=2,
-        why='An HTTP connection stores the host and the token, and you control who can call it with USE CONNECTION.',
+        why='An HTTP connection stores the host and the token, and you control who can call it: grant USE CONNECTION to the agent\'s principal.',
     ),
     angle=angle(
         pattern='Rules in order, first match wins',
@@ -690,7 +690,7 @@ MATCH COLUMNS has_tag_value('pii', 'email') AS c
 ON COLUMN c;"""),
     check=question(
         'A policy masks columns tagged `pii=email` in schema `sales.crm`. Tomorrow someone adds a new table there with a tagged email column. What happens?',
-        ['Nothing until someone adds a mask to the new table', 'The column is masked straight away, because the policy follows the tag', 'The table cannot be created'],
+        ['Nothing, until someone adds a mask to it', 'The column is masked straight away', 'The table cannot be created with that tag'],
         answer=1,
         why='ABAC policies match by tag, so any new table with the tag is covered automatically.',
     ),

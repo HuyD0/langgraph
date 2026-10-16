@@ -176,7 +176,7 @@ names.append('Ana')   # ['Ana']""",
 lesson(MODULE, 'trim_history',
     title='Agent memory and context limits',
     learn=[
-        'Models can only read a limited **context window**. Long chats and agent runs must drop or summarise old messages.',
+        'Models can only read a limited **context window**: the most text a model can take in at once, prompt, chat history and its own answer together. Long chats and agent runs must drop or summarise old messages to fit.',
         'Always keep the **system prompt** (the instructions), then keep the newest messages that fit.',
     ],
     example=example('Keep instructions, then fill from the newest end', """system, rest = messages[0], messages[1:]
@@ -184,12 +184,12 @@ lesson(MODULE, 'trim_history',
     check=question(
         'You keep only `messages[-10:]`, the last 10 messages. What can go wrong?',
         [
-            'Nothing',
-            'The system prompt falls off and the assistant forgets its instructions',
-            'The reply gets slower',
+            'Nothing: the newest 10 messages are all the model needs',
+            'The system prompt falls off once the chat is long enough',
+            'The reply gets slower, since the model rereads all 10',
         ],
         answer=1,
-        why='The system prompt is the first message. Slicing from the end drops it once the chat is long enough.',
+        why='The system prompt is the first message. Slicing from the end drops it once the chat is long enough, and the assistant forgets its instructions.',
     ),
     angle=angle(
         pattern='Keep the newest that fit',
@@ -736,7 +736,7 @@ lesson(MODULE, 'tool_schema',
     "required": ["order_id"]}}}"""),
     check=question(
         "Your agent keeps calling `get_data` when it should call `lookup_order`. What's the cheapest fix to try first?",
-        ['A bigger model', 'Clearer function and parameter comments', 'More tools'],
+        ['A bigger model, so it reads the names more carefully', 'Clearer function and parameter comments', 'More tools, so the right one is easier to find'],
         answer=1,
         why='The model chooses from the descriptions. Vague comments cause wrong picks.',
     ),
@@ -954,12 +954,12 @@ lesson(MODULE, 'tool_pairs',
     check=question(
         'A tool crashed and you skipped sending its result. What happens on the next model call?',
         [
-            'The model ignores it',
-            'The API rejects the request because a tool call has no result',
+            'The model ignores the gap and carries on',
+            'The API rejects the whole request',
             'The tool is called again automatically',
         ],
         answer=1,
-        why='Every call needs an answer. Send the error message as the tool result.',
+        why='Every call needs a matching result, or the API rejects the chat. Send the error message as the tool result.',
     ),
     angle=angle(
         pattern='A waiting list of open calls',
@@ -1097,8 +1097,8 @@ success rate:     2 successes out of 3 runs   -> 0.67
 average steps:    (4 + 6) / 2 successes       -> 5
 cost per success: $0.90 total / 2 successes   -> $0.45"""),
     check=question(
-        'Agent A: 90% success, $0.40 per success. Agent B: 80% success, $0.05 per success. Which is better?',
-        ['Always A', 'Depends on what a success is worth and what a failure costs', 'Always B'],
+        'Agent A succeeds 9 times in 10 at $0.40 per success. Agent B succeeds 8 times in 10 at $0.05 per success. Which is better?',
+        ['Always A: it succeeds more often', 'It depends on what a success is worth to you', 'Always B: it costs far less per success'],
         answer=1,
         why="If a success saves $20 of human time, A may win; if it saves $0.50, B does. That's the return on investment (ROI) question: what you get back for what you spend.",
     ),
@@ -1222,7 +1222,7 @@ lesson(MODULE, 'pass_rates',
     learn=[
         'A success rate from one try per task hides how inconsistent an agent is. Run each task several times, say k times, and look at two numbers.',
         '**pass@k**: the task succeeded **at least once** in k tries. Useful when a person picks the best attempt. **pass^k** (read "pass hat k"): the task succeeded **every time** in k tries. That is closer to what users feel, because each user gets one try.',
-        'The gap grows fast. If each try succeeds 80% of the time on its own, three in a row succeed only about 51% of the time: multiply 0.8 by itself three times and you get 0.512. Agent benchmarks such as tau-bench report pass^k for exactly this reason.',
+        'The gap grows fast. If each try succeeds 8 times in 10 on its own, three tries in a row all succeed only about 5 times in 10: each extra try is another chance to fail. Agent benchmarks such as tau-bench report pass^k for exactly this reason.',
     ],
     example=example('Three tasks, three tries each', """task       try 1   try 2   try 3
 refund       ✓       ✓       ✓     → counts for pass@3 and pass^3
@@ -1230,10 +1230,10 @@ address      ✓       ✗       ✓     → counts for pass@3 only
 cancel       ✗       ✗       ✗     → counts for neither
 pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
     check=question(
-        'Each try of your agent succeeds 90% of the time. Roughly how often does it succeed five times in a row?',
-        ['90%', 'About 59%', 'About 45%'],
+        'Each try of your agent succeeds 9 times in 10. About how often does it succeed five times in a row?',
+        ['Still 9 in 10', 'About 6 in 10', 'About 1 in 10'],
         answer=1,
-        why='Multiply 0.9 by itself five times and you get about 0.59. A 90% agent fails at least once in five runs about 4 times in 10.',
+        why='Each extra try is another chance to fail: 9 in 10, five times over, is only about 6 in 10. So a 9-in-10 agent lets at least one of five users down about 4 times in 10.',
     ),
     angle=angle(
         pattern="Count 'at least once' and 'every time'",
@@ -1638,14 +1638,14 @@ plan_execute        78%          75%             $0.028
 supervisor          83%          70%             $0.090
 → plan_execute: almost as successful, the most reliable, the cheapest"""),
     check=question(
-        'Supervisor succeeds 3 points more often than ReAct but costs more than twice as much per success. What should you do next?',
+        'Supervisor succeeds on 3 more tasks in every 100 than ReAct, but costs more than twice as much per success. What should you do next?',
         [
             'Check the gap is real, then weigh it against cost',
             'Pick Supervisor, since it solves the most tasks',
             'Pick ReAct, since it costs less per success',
         ],
         answer=0,
-        why='First check the 3 points are more than the normal ups and downs between repeat runs. Then decide if they are worth paying more than twice as much per success.',
+        why='First check that 3 more in every 100 is more than the normal ups and downs between repeat runs. Then decide if those tasks are worth paying more than twice as much per success.',
     ),
     angle=angle(
         pattern='Group by design, then work out rates',
@@ -1893,7 +1893,7 @@ lesson(MODULE, 'approval_run',
 run 2 with "approve": issue_refund → email_customer → done"""),
     check=question(
         'Why does pausing for a person to approve (human-in-the-loop) need a checkpointer?',
-        ['To make it faster', "To save the agent's state so it can resume after the pause", 'For logging'],
+        ['So the run restarts from the beginning when the yes arrives', "To save the agent's state so it can resume after the pause", 'So every step is written to a log for auditors to read'],
         answer=1,
         why='Without saved state, the agent would have to start over.',
     ),
@@ -2297,7 +2297,7 @@ lesson(MODULE, 'assemble_stream',
 tool_args '{"order_id": ' · tool_args '"A-1042"}' · tool_end"""),
     check=question(
         "When can you safely parse a tool call's JSON arguments?",
-        ['On each piece', 'Once the tool call has finished streaming', 'Never'],
+        ['On each piece, as soon as it comes in', 'Once the tool call has finished streaming', 'As soon as the first `tool_args` piece arrives'],
         answer=1,
         why="Half a JSON object isn't valid JSON.",
     ),

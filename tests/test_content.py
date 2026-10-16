@@ -581,3 +581,18 @@ def test_the_explain_pane_only_uses_names_it_defines():
             names |= set(re.findall(r"\w+", group))
     for used in set(re.findall(r"\$\{(\w+) \?", body)):
         assert used in names, f"anglePane uses {used!r} without declaring it"
+
+
+def test_the_notebooks_and_the_glossary_keep_to_plain_words_for_speed():
+    """The milestone notebooks' prose and docs/CONCEPTS.md follow the course's first rule too: how
+    work grows is said in plain words (one walk through the data, checking every pair), never as
+    Big-O notation."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    texts = {"docs/CONCEPTS.md": (root / "docs" / "CONCEPTS.md").read_text(encoding="utf-8")}
+    for path in sorted((root / "notebooks").glob("*.ipynb")):
+        cells = json.loads(path.read_text(encoding="utf-8"))["cells"]
+        texts[f"notebooks/{path.name}"] = "\n".join("".join(c["source"]) for c in cells if c["cell_type"] == "markdown")
+    leftovers = sorted(name for name, text in texts.items() if "O(n" in text)
+    assert not leftovers, f"Big-O notation in what the learner reads: {leftovers}"

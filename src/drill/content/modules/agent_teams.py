@@ -33,7 +33,7 @@ and one agent passes 30 percent
     ),
     angle=angle(
         pattern='Climb the ladder',
-        text="The big idea: most tasks don't need a team, so pick the lowest step on the ladder that does the job. Your code checks four rules in order and returns the first that fits. Fixed steps mean a workflow. No tools needed means one model call. A team wins only if the work splits into at least 2 independent parts and one agent passes less than 0.45 of your eval. Everything else gets one agent. There is no loop here, just a few questions asked in order.",
+        text="The big idea: most tasks don't need a team, so pick the lowest step on the ladder that does the job. Your code checks four rules in order and returns the first that fits. Fixed steps mean a workflow. No tools needed means one model call. A team wins only if the work splits into at least 2 independent parts and one agent passes less than 45 percent of your eval (0.45 in the code). Everything else gets one agent. There is no loop here, just a few questions asked in order.",
         say='"I start with the [[simplest|newest|biggest::The lowest step on the ladder.]] design that works. I only move up, from one call to a workflow to one agent to a team, when I can name the problem and my [[eval|boss|gut::Test results, not opinion.]] confirms it."',
         classic=None,
     ),
@@ -134,7 +134,7 @@ Check these rules in order. Return the answer of the first one that fits:
   "independent_parts": 4,
   "one_agent_pass_rate": 0.45,   # 45 percent
 }"""),
-                    clue='The rule says below 45 percent. Is 45 below 45?',
+                    clue='Read the team rule again, word by word, and check both halves of it against this task.',
                     why='45 percent is not below 45, so one agent stays. And the 45 is a rough hint from one study: run the team and the single agent side by side on your own eval before you build.',
                     wrong=['It needs tools to read the contracts.', 'The steps aren\'t fixed.', None, 'Exactly 45 is not below 45, and past that point extra agents tended to help little.']),
             ],
@@ -244,14 +244,14 @@ lesson(MODULE, 'one_writer',
 # Fix: billing reports to triage,
 # and only triage writes "tags"."""),
     check=question(
-        'Two helper agents run at the same time, and both may update the same ticket\'s tags. What is the safest way to set this up?',
+        'Two helper agents must run side by side, and both may change the same ticket\'s tags. How do you stop one quietly wiping out the other\'s change?',
         [
             'Let both write, and keep whichever update lands last',
             'Run them one after the other, so they never overlap',
             'Have both report back, and let one agent write the tags',
         ],
         answer=2,
-        why='Two writers on one thing means one quietly overwrites the other. With one writer, the helpers can still run side by side, and every change has a single owner.',
+        why='Two writers on one thing means one quietly overwrites the other. Running them one after the other would stop that too, but it gives up the side-by-side work the task needs. With one writer, the helpers still run at the same time, and every change has a single owner.',
     ),
     angle=angle(
         pattern='Count the writers of each thing',
@@ -457,7 +457,7 @@ fruit.append('kiwi')
 lesson(MODULE, 'gather_results',
     title='Fan out, then gather',
     learn=[
-        'When a job splits into independent parts, like searching five sources, helpers can work at the same time. This is **fan-out**: send each part to its own worker, then **gather** the results in one place (**fan-in**). the LangGraph docs call the whole pattern **map-reduce**.',
+        'When a job splits into independent parts, like searching five sources, helpers can work at the same time. This is **fan-out**: send each part to its own worker, then **gather** the results in one place (**fan-in**). The LangGraph docs call the whole pattern **map-reduce**.',
         'In LangGraph, `Send` starts one worker per part. A **reducer** (a rule for combining updates; here `operator.add`, which joins lists) lets every worker add to the same list. Without one, two workers writing the same key make the run fail with an error.',
         'Keep the workers **read-only**: they change nothing outside the graph, and one step after the gather does any writing.',
         'The gather waits for the slowest worker, so one stuck search holds up the whole run. Give each worker a **timeout**, and carry on with whatever came back in time.',
@@ -892,7 +892,7 @@ round 3: 1 issue  → limit reached
         [
             'Give the checker a written checklist of pass or fail rules',
             'Let the agent that wrote the answer check it once more',
-            'Raise the round limit from 3 rounds up to 10 rounds',
+            'Raise the round cap from 3 to 10',
         ],
         answer=0,
         why='Without concrete rules a checker declares victory early. More rounds change nothing if every round passes, and an agent grading its own work skews positive.',
@@ -1026,7 +1026,7 @@ lesson(MODULE, 'dollars_per_success',
     title='Dollars per success',
     learn=[
         'A team can pass a few more tasks and still be the worse choice. In one company\'s research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.',
-        'You already know **dollars per success** from Evaluating agents: the whole bill, failed runs included, divided by the runs that passed. It says what one passed task costs. It does not say whether the team\'s extra passes are worth their price.',
+        'You already know **cost per success** from Evaluating agents (the dollars per success in this lesson\'s title): the whole bill, failed runs included, divided by the runs that passed. It says what one passed task costs. It does not say whether the team\'s extra passes are worth their price.',
         'For that, work out what each **extra pass** costs, its **marginal cost**: how many more dollars the team spends, divided by how many more tasks it passes. If one more passed task is worth less than that to you, keep one agent.',
         'Put this number next to the pass rate every time a team is compared with one agent. More spending often buys little extra accuracy, and sometimes less.',
     ],
@@ -1225,23 +1225,31 @@ def researcher(state):
 # 2. A model call's span holds its
 # tokens, like {"input_tokens": 3000,
 # "output_tokens": 400,
-# "total_tokens": 3400}. Add each to
-# the span it sits in.
+# "total_tokens": 3400}. The call is
+# often a few boxes deep (a chain
+# span like "RunnableSequence" sits
+# between), so climb to the box right
+# under the root: that is the helper.
 USAGE = SpanAttributeKey.CHAT_USAGE
 totals = {}
 for t in mlflow.search_traces(
         return_type="list"):
-    names = {}
-    for s in t.data.spans:
-        names[s.span_id] = s.name
+    spans = {s.span_id: s
+             for s in t.data.spans}
     for s in t.data.spans:
         u = s.get_attribute(USAGE)
-        if u:
-            who = names.get(s.parent_id)
-            used = (u["input_tokens"]
-                    + u["output_tokens"])
-            totals[who] = (
-                totals.get(who, 0) + used)
+        if not u:
+            continue
+        box = s
+        while (box.parent_id and
+               spans[box.parent_id]
+               .parent_id):
+            box = spans[box.parent_id]
+        who = box.name
+        used = (u["input_tokens"]
+                + u["output_tokens"])
+        totals[who] = (
+            totals.get(who, 0) + used)
 print(totals)"""),
     exercise=exercise(
         title='Tokens per Helper',
@@ -1374,7 +1382,7 @@ lesson(MODULE, 'team_experiment',
     learn=[
         'This lesson puts the module together. To find out whether a team beats one agent, run an **experiment**: both designs answer the same questions, and one agent is the **baseline**, the design you compare against.',
         'Agents give different answers on different tries, so run each question 3 to 5 times. As in Reliable every time (pass hat k), a question counts as **passed every time** only if every try passed.',
-        'Write the **decision rule** before any run, so a lucky result can\'t move the goalposts. For example: the team wins only if it passes every time on at least 10 percent more of the questions, and one success costs at most 50 cents.',
+        'Write the **decision rule** before any run, so a lucky result can\'t move the goalposts. For example: the team wins only if it passes every time on at least 1 more question in every 10 (a gain of 0.1 in the share), and one success costs at most 50 cents.',
         'Add a third design: the team without its checker. Comparing the two teams shows what the checker buys you. Taking one part out to see what changes is called an **ablation**.',
     ],
     example=example('20 questions, 3 tries each', """Rule, written first: the team must

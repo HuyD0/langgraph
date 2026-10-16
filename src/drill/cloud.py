@@ -246,6 +246,16 @@ def deploy(target: str, profile: str | None) -> dict:
     return {**info, "version": version, "registered": registered}
 
 
+def upstream_commit() -> str | None:
+    """The public commit a work copy was built on: the first line of the ``UPSTREAM`` file at the
+    project root (docs/PORTING.md, "Keeping the work copy current"), or ``None`` in the public repo."""
+    path = PROJECT_ROOT / "UPSTREAM"
+    if not path.is_file():
+        return None
+    lines = path.read_text(encoding="utf-8").strip().splitlines()
+    return lines[0].strip()[:80] if lines else None
+
+
 def register_version(target: str, profile: str | None, version: str) -> dict:
     """Record this version of the app in its experiment before it starts, so its traces link to it.
 
@@ -282,6 +292,9 @@ def register_version(target: str, profile: str | None, version: str) -> dict:
     tags = {**mlflow_names.context_tags(version), "environment": "app", "target": target,
             "mlflow.note.content": f"Daily Drill {version}: the page, the tutor and its reviews, deployed to "
                                    f"the {target} workspace. Answers come from {params['model']}."}
+    upstream = upstream_commit()
+    if upstream:  # a work copy: say which public commit this version is built on
+        params["upstream"] = tags["upstream"] = upstream
     found = mlflow.search_logged_models(experiment_ids=[experiment], filter_string=f"name = '{name}'", output_format="list")
     model = found[0] if found else mlflow.create_external_model(
         name=name, experiment_id=experiment, model_type="agent", params=params, tags=tags)

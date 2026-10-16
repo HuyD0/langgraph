@@ -7,6 +7,8 @@ in content-packs/iac-applied. No cloud credentials, no private repositories.
 from __future__ import annotations
 
 import json
+import logging
+import os
 import shutil
 from pathlib import Path
 
@@ -125,6 +127,33 @@ def test_mistakes_are_named_by_file_and_field(copy, core):
     assert "config-links.yaml: learn refers to 'assets/nope.svg'" in text
 
 
+def test_an_asset_outside_the_pack_folder_is_refused(copy, tmp_path):
+    """The server serves and the static build inlines whatever a lesson names: it must stay in the pack."""
+    secret = tmp_path / "secret.txt"
+    secret.write_text("not for the page")
+    (copy / "assets" / "link.svg").symlink_to(secret)
+    f = copy / "lessons" / "config-links.yaml"
+    original = f.read_text()
+    for ref in ("../secret.txt", str(secret), "assets/../../secret.txt", "assets/link.svg"):
+        f.write_text(original.replace("assets/request-flow.svg", ref))
+        with pytest.raises(packs.PackError) as err:
+            packs.load_pack(copy)
+        assert f"'{ref}' points outside the pack folder" in str(err.value), ref
+    f.write_text(original)
+    assert packs.load_pack(copy).assets["assets/request-flow.svg"].endswith("request-flow.svg"), "a file inside still works"
+
+
+def test_pack_dirs_skip_a_folder_that_is_not_there(tmp_path, caplog):
+    """app.yaml can name a pack by default; a checkout without that folder still starts, with one log line."""
+    here = tmp_path / "here"
+    here.mkdir()
+    env = os.pathsep.join([str(here), str(tmp_path / "gone"), "content-packs/iac-applied"])
+    with caplog.at_level(logging.INFO, logger="drill.content.packs"):
+        assert packs.pack_dirs(env) == [here, SLOTS], "a relative path counts from the project root"
+    assert "gone" in caplog.text and "skipping" in caplog.text
+    assert packs.pack_dirs("") == []
+
+
 def test_duplicate_and_clashing_ids_are_rejected(copy, core):
     f = copy / "lessons" / "trace-field.yaml"
     f.write_text(f.read_text().replace("id: ex_trace_field", "id: ex_config_links"))
@@ -190,6 +219,8 @@ def test_the_server_serves_a_pack_and_only_its_named_files(tmp_path, monkeypatch
     assert client.get("/pack-assets/example/assets/request-flow.svg").status_code == 200
     assert client.get("/pack-assets/example/pack.yaml").status_code == 404, "only files a lesson names"
     assert client.get("/pack-assets/example/../../../README.md").status_code == 404
+    assert bank.pack_asset("example", "assets/request-flow.svg")
+    assert bank.pack_asset("example", "assets/../assets/request-flow.svg") is None, "never a step up"
 
 
 def test_without_a_pack_the_server_is_unchanged(monkeypatch):

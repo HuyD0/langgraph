@@ -128,7 +128,7 @@ def _end_run_quietly(status: str) -> None:
         if mlflow.active_run() is not None:
             mlflow.end_run(status=status)
     except Exception:
-        pass
+        pass  # tracking is optional: never fail a practice session over closing a run
 
 
 def log_session_metrics(state: DrillState) -> None:
@@ -152,7 +152,7 @@ def log_session_metrics(state: DrillState) -> None:
             }
         )
     except Exception:
-        pass
+        pass  # tracking is optional: a metric that fails to save must not fail the session
 
 
 def tag_trace(thread_id: str, problem_id: str) -> None:
@@ -169,4 +169,4 @@ def tag_trace(thread_id: str, problem_id: str) -> None:
             metadata={"mlflow.trace.session": thread_id, "problem_id": problem_id}
         )
     except Exception:
-        pass
+        pass  # tracing is optional: an unstamped trace is better than a failed session

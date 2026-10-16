@@ -12,7 +12,9 @@ uv run drill-server
 
 The page is built from `src/drill/content` when the server starts (see [PAGE.md](PAGE.md)),
 and `.drill/drill.db` is created on first run. macOS will ask once whether to allow
-incoming connections; say yes if you want the phone to reach it.
+incoming connections; say yes if you want the phone to reach it. By default the server listens
+on every network interface with no sign-in, so anyone on the same Wi-Fi can open it and use your
+progress; `DRILL_HOST=127.0.0.1` keeps it to this Mac.
 
 ## Which model answers
 
@@ -90,7 +92,8 @@ Databricks), `DRILL_HOSTED_*` for a model behind Unity Gateway, and the same ser
 in a container on Azure Container Apps or Databricks Apps, which forwards the signed-in
 user's identity in a header (`DRILL_USER_HEADER`, default `x-forwarded-email`) so each
 person gets their own progress. The package carries its own content and page, so the
-container needs nothing but `pip install .`.
+container needs nothing but the repository installed editable from a checkout (`-e .`, the
+last line of `requirements.txt`: the code finds its page, `.env` and state next to the checkout).
 
 ## Moving progress to Lakebase
 
@@ -104,10 +107,14 @@ row per thing that happened, which is what a dashboard counts:
 
 | kind | when | detail |
 |---|---|---|
-| `step` | reached a lesson's next step (Learn 0, Check 1, Build 2, Interview 3) | `step` |
-| `checked` | answered the check question | `answer` |
+| `step` | reached a lesson's next step (Learn 0, Check 1, Build 2, Explain 3) | `step` |
+| `checked` | answered the lesson's own Check question (question 1), the first time | `answer` |
+| `check_marks` | every Check question's mark: on your own, a clue or another go, or the answer shown (the sign, knot and curtain) | `marks` |
 | `lesson_done` | finished a lesson | |
-| `solved` | passed an exercise's tests | `hints`, `count` |
+| `solved` | passed an exercise's tests | `hints`, `count`, and `mode`: code, practice or pack |
+| `practised` | finished a practice set (judgement lessons): how many were right first time, and each miss with the wrong answers picked, whether the clue or the answer was needed, and for Fix the YAML the checks run and the problems seen | `right`, `total`, `missed` |
+| `explained` | finished the Explain gaps | `wrong` picks, `clues` and `answers` used |
+| `focus_set` | chose what to practise (no lesson) | `focus`: ai, platform or both |
 | `asked` | asked something in the page | `feature`, `step`, `hint_level`, `chip` |
 | `tests_run`, `hint_used`, `saved_to_study` | the same, through Claude's tools | `door: mcp` |
 
@@ -353,17 +360,26 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DATABRICKS_CONFIG_PROFILE` | *(the CLI's default)* | Which Databricks CLI profile `databricks` means |
 | `DRILL_ALLOWED_HOSTS` | *(this machine)* | Extra `host:port` values the `/mcp` endpoint accepts |
 | `DRILL_USER_HEADER` | `x-forwarded-email` | Header a login proxy uses to say who is asking |
+| `DRILL_TRUST_USER_HEADER` | `0` | `1` makes the server believe that header outside a Databricks App (where it is always believed). **Only behind a login proxy that sets the header itself**: otherwise anyone who can reach the port can send the header and read or write any person's rows |
+| `DRILL_DB_SCHEMA` | *(the database's default)* | The Postgres schema the tables live in (`drill` in the app); lowercase letters, digits and underscores |
+| `DRILL_CONTENT_PACKS` | *(unset)* | Content pack folders to load, separated by `:` (`content-packs/internal` in `app.yaml`); a folder that doesn't exist is skipped ([CONTENT_PACKS.md](CONTENT_PACKS.md)) |
+| `DRILL_SHOW_DRAFTS` | `0` | `1` shows a pack's draft lessons, marked Draft (`drill content preview` sets it) |
+| `DRILL_TEAM_SUMMARIES` | *(on with a shared database, off with SQLite)* | `1` or `0` forces the managers' weekly notes on or off |
+| `DRILL_IDLE_STOP_MINUTES` | `0` | In a Databricks App only: stop the app after this many minutes with no requests (`30` in `app.yaml`); `0` keeps it running |
+| `DRILL_MLFLOW_EXPERIMENT_ID` | *(unset)* | The experiment by id instead of name: how a Databricks App names the experiment resource attached to it; wins over `DRILL_MLFLOW_EXPERIMENT` |
+| `DRILL_CHECKS_AS_FEEDBACK` | `1` | Write each answer's checks to its trace as feedback, one by one; `0` (the app) keeps them as tags and a span, and `drill traces score` adds them in a batch |
+
+Not the server's, but read from the same `.env`: the terminal tutor's `DRILL_TEMPERATURE`,
+`DRILL_MAX_ATTEMPTS`, `DRILL_SANDBOX_TIMEOUT` and `DRILL_PROGRESS_PATH` (`drill start`'s model
+temperature, tries, sandbox seconds and progress file), `DRILL_ENVIRONMENT` (`local` or `app` on
+every trace; the app sets it by being one) and `DRILL_NOTEBOOK_OFFLINE` (`1` makes the RAG
+notebooks use their recorded runs).
 
 ## What the platform lessons record
 
-Besides steps, Check answers, finished lessons and solved exercises, the server writes:
-
-- `practised`: a practice set finished, with `right` of `total` first time and `missed`: each
-  question not right first time, the wrong answers picked, whether the clue or the answer was
-  needed, and for Fix the YAML the checks run and the problems seen.
-- `explained`: the Explain gaps finished, with wrong picks, clues and answers used.
-- `focus_set`: what the learner chose to practise (ai, platform or both).
-- `solved` now says how (`mode`: code, sort, practice or pack).
+They are in the events table above: `practised` (a practice set, with each miss and the help it
+needed), `explained` (the Explain gaps) and `focus_set` (ai, platform or both), and `solved` says
+how (`mode`: code, practice or pack).
 
 The managers' weekly note gets the practice misses and Explain help, so it can name the actual
 sticking point ("picked CAN_EDIT for the owner group twice").

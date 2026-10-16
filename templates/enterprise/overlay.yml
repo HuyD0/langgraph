@@ -1,0 +1,66 @@
+# A template for the WORK copy of Daily Drill, not for this public repository.
+# Copy it to .github/workflows/overlay.yml in the work copy. Here it does nothing: the public
+# repository's workflows live in .github/workflows/, and this file is not one of them.
+#
+# What it guards. The work copy is a downstream of the public repository (docs/PORTING.md,
+# "Keeping the work copy in step"). Everything work-specific lives in a few overlay paths that an
+# upstream merge never touches: content-packs/internal/, .github/, UPSTREAM and
+# README-internal.md. A pull request that changes anything else (src/, docs/, app.yaml...) would
+# drift from upstream, so the first job fails it. The exception is a pull request with the label
+# `upstream-sync`, which is how a release of the public repository is merged in.
+#
+# The second job runs the scrub (tests/test_scrub.py) with the real denylist, kept as the
+# repository secret DRILL_DENYLIST (one word per line, `re:` for a pattern). Fork pull requests
+# never see secrets, so on those only the always-on patterns run.
+name: overlay only
+
+on:
+  pull_request:
+
+jobs:
+  overlay-only:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'upstream-sync') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Only overlay paths may change
+        run: |
+          git fetch --no-tags origin main
+          bad=0
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            case "$path" in
+              content-packs/internal/*|.github/*|UPSTREAM|README-internal.md) ;;
+              *)
+                echo "::error file=$path::$path is outside the overlay (content-packs/internal/, .github/, UPSTREAM, README-internal.md). Fix it in the public repository first and merge it down, or label this pull request upstream-sync if it is a merge from upstream."
+                bad=1 ;;
+            esac
+          done <<< "$(git diff --name-only origin/main...HEAD)"
+          exit $bad
+
+  scrub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Scrub for real names
+        env:
+          DRILL_DENYLIST: ${{ secrets.DRILL_DENYLIST }}
+        run: |
+          if [ -z "$DRILL_DENYLIST" ]; then
+            echo "no DRILL_DENYLIST secret (a fork, or not set yet): only the always-on patterns run"
+          fi
+          printf '%s\n' "$DRILL_DENYLIST" > "$RUNNER_TEMP/denylist.txt"
+          DRILL_DENYLIST_FILE="$RUNNER_TEMP/denylist.txt" uv run pytest -q tests/test_scrub.py

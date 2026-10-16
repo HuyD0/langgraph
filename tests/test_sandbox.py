@@ -66,6 +66,33 @@ def test_exception_in_one_case_is_recorded_per_case():
     assert result["total"] == len(TWO_SUM.test_cases)
 
 
+def test_a_submission_cannot_read_the_servers_environment(monkeypatch):
+    """The server holds keys and database settings; a pasted snippet must not see them."""
+    monkeypatch.setenv("DRILL_HOSTED_API_KEY", "not-for-the-learner")
+    source = (
+        "import os\n"
+        "def two_sum(nums, target):\n"
+        "    return sorted(k for k in os.environ if k.startswith(('DRILL_', 'AZURE_', 'PG', 'LAKEBASE_')))\n"
+    )
+    result = run_submission(TWO_SUM, source)
+    assert result["total"] > 0 and result["fatal_error"] is None
+    assert all(case["actual"] == [] for case in result["cases"])
+
+
+def test_a_crash_shows_the_submissions_frames_not_the_harness():
+    """The traceback starts in the learner's code, so the server's path to the harness stays private."""
+    result = run_submission(TWO_SUM, "def two_sum(nums, target):\n    return [nums[99], 0]\n")
+    error = first_failure(result)["error"] or ""
+    assert "IndexError" in error and "<submission>" in error
+    assert "_harness.py" not in error
+
+
+def test_sys_exit_in_a_submission_is_reported_not_swallowed():
+    result = run_submission(TWO_SUM, "import sys\nsys.exit(3)\n")
+    assert not result["passed"]
+    assert "SystemExit" in (result["fatal_error"] or "") and "_harness.py" not in result["fatal_error"]
+
+
 def test_printing_does_not_corrupt_the_report():
     """You will print things while debugging. That must not break grading."""
     noisy = 'print("debugging")\nimport sys\nsys.stderr.write("noise\\n")\n' + CORRECT
