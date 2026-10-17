@@ -33,7 +33,10 @@
 .pc-key i.solid { background: var(--fg); }
 .pc-key i.dashed { border: 1px dashed var(--muted); }
 
-/* the cross-out test: the line struck through, what happens, and what that makes it */
+/* a sort by one question (the question above, then each row's answer and pile), and the cross-out test (the line
+   struck through, what happens, and what that makes it) share the row */
+.pc-ask { font-weight: 600; }
+.pc-thing { font-weight: 600; }
 .pc-row { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); }
 .pc-row s, .pc-rewrite s { color: var(--muted); font-weight: 600; text-decoration-thickness: 2px; }
 .pc-then { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }

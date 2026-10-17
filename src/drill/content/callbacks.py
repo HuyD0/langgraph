@@ -59,11 +59,11 @@ CALLBACKS = {
     ],
     'percentile': [
         callback('split_requirements', phrase='Compare models and configs (their settings) on p95.', idea='Non-functional requirement',
-                 here='"Under 3 seconds for 95 in 100 requests" says how well, not what: cross it out and the app still answers, just slower. p95 is how you write its number.',
+                 here='"Under 3 seconds for 95 in 100 requests" says how well, not what: you check it by measuring, with a stopwatch on many requests. p95 is how you write its number.',
                  again=ask('"Answer in under 3 seconds for 95 in 100 requests." What kind of requirement is that?',
-                           ['Functional: a job it does', 'Non-functional: how well it works', 'Neither: a design choice'], answer=1,
-                           clue='Cross the line out. Does the app still answer questions?',
-                           why='Crossed out, every job still gets done, only slower. It is a how-well line, and p95 gives it a number the pilot can test.')),
+                           ['Functional: what the system does', 'Non-functional: how well it does it', 'Neither: a design choice'], answer=1,
+                           clue='How would you check it: watch it happen, or measure something?',
+                           why='You check it by timing many requests, which is measuring, so it is non-functional. p95 gives it a number you can pass or fail.')),
     ],
     # ---- Ship and run
     'graduation_gate': [

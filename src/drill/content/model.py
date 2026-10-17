@@ -167,7 +167,7 @@ def practice(*, intro: str, asks: list[dict], explain: str | None = None, patter
     tricky; the Python exercise stays one tap away.
 
     The Explain step then describes what the learner did, not the Python they didn't write:
-    ``pattern`` names the way of thinking they used (the heading, like "Cross it out: job or bar?"),
+    ``pattern`` names the way of thinking they used (the heading, like "Watch it, or measure it?"),
     ``explain`` is the big idea, and ``realworld`` is "Where you'll use this" in their job. ``gotchas``,
     when given, replace the exercise's gotchas in practice mode (for ones that only make sense in code)."""
     assert 2 <= len(asks) <= 6, "a practice set has two to six questions"
@@ -329,7 +329,7 @@ def screen(kind: str, *, caption: str, steps: list[str], tips: list[str] | None 
 # says the same thing in words, for the tutor map, the MCP tools, search and screen readers.
 # Two looks tell two kinds of thing apart by shape, never by a new colour: "solid" (a filled tile)
 # and "dashed" (a ruler-edged tile). Icons are names from page.html's sprite (a test checks).
-PICTURE_KINDS = ("piles", "crossout", "split", "rewrite", "pillars", "seesaw", "steps")
+PICTURE_KINDS = ("piles", "sortby", "crossout", "split", "rewrite", "pillars", "seesaw", "steps")
 LOOKS = ("solid", "dashed")
 
 
@@ -346,9 +346,22 @@ def pile(title: str, items: list, *, sub: str = "", look: str = "solid") -> dict
 
 
 def piles(*columns: dict, key: list[tuple[str, str]] | None = None) -> dict:
-    """Two piles side by side, like jobs and bars. ``key`` labels the looks: ``[("solid", "job: functional"), ...]``."""
+    """Two piles side by side, like functional and non-functional. ``key`` labels the looks when the pile
+    titles don't: ``[("solid", "functional"), ("dashed", "non-functional")]``."""
     assert len(columns) == 2, "piles are drawn as two columns"
     return {"kind": "piles", "piles": list(columns), "key": [list(k) for k in key or []]}
+
+
+def sortrow(text: str, answer: str, verdict: str, *, look: str = "solid", icon: str = "check") -> dict:
+    """One row of a sort: the thing being sorted, the answer to the question (with an icon), and the pile it goes in."""
+    assert look in LOOKS
+    return {"text": text, "then": answer, "verdict": verdict, "look": look, "icon": icon}
+
+
+def sortby(question: str, *rows: dict) -> dict:
+    """Sort a few things by asking each one the same plain question, like "How would you check it?"."""
+    assert question and rows, "a sort needs a question and a row"
+    return {"kind": "sortby", "question": question, "rows": list(rows)}
 
 
 def struck(text: str, then: str, verdict: str, *, look: str = "solid", icon: str = "x") -> dict:
@@ -423,6 +436,8 @@ def picture_text(p: dict | None) -> str:
     if k == "piles":
         return " ".join(f"{c['title']}{' (' + c['sub'] + ')' if c['sub'] else ''}: "
                         + "; ".join(t["text"] for t in c["items"]) + "." for c in p["piles"])
+    if k == "sortby":
+        return f"{p['question']} " + " ".join(f'"{r["text"]}": {r["then"]} ({r["verdict"]}).' for r in p["rows"])
     if k == "crossout":
         return " ".join(f'Cross out "{r["text"]}": {r["then"]} ({r["verdict"]}).' for r in p["rows"])
     if k == "split":

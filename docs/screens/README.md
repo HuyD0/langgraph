@@ -201,11 +201,11 @@ Tests check every gap.
 ## Learn as picture cards
 
 ![The well-architected review's pillars, with the HR assistant's requirements resting on them](learn-cards-phone-dusk.webp)
-![The cross-out test: two lines struck through, and what each loses](learn-cards-phone-light.webp)
+![The watch-or-measure test: three requirements, how you would check each, and which kind it is](learn-cards-phone-light.webp)
 
 **What the learner sees.** Lessons 1.3 (functional and non-functional requirements) and 1.4 (a
 well-architected review) teach Learn as short cards, one idea and one picture each: two piles of
-jobs and bars, the cross-out test, a sentence cut in two, vague words rewritten, five pillars with
+functional and non-functional requirements, the watch-or-measure test, a sentence cut in two, vague words rewritten, five pillars with
 the requirements resting on them (an empty one marked "?"), a see-saw for a trade-off, and the
 steps from a model's draft to a person's decision.
 
