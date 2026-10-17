@@ -93,7 +93,7 @@ function hzCurse(i, hp) {
 //   4 Ship      the hand thrust forward, the spiral released as a beam
 //   5 Monitor   standing easy, a quiet ring of protection round him
 // Everything he gives off grows with `power` (the share of lessons done); tapping the banner fires the flame.
-function hzSorcerer(x, g, tx, ty, power, pose = 2) {
+function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
   const S = .82, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1), Z = v => (v * S).toFixed(1);
   const P = pts => "M" + pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L") + "Z";
   const F = [15, 14, 15, 15, 19, 8][pose];
@@ -104,6 +104,9 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2) {
   const head = `<ellipse class="skin" cx="${X(0)}" cy="${Y(-49.5)}" rx="${Z(3.8)}" ry="${Z(4.4)}"/>`
     + `<path class="smile" d="M${X(-1.4)},${Y(-46.6)} q${Z(1.4)},${Z(1.1)} ${Z(2.8)},${Z(-.2)}"/>`;
   const band = `<path class="band" d="${P([[-4.3, -52.6], [4.3, -52.6], [4.1, -48.8], [-4.1, -48.8]])}"/>`;
+  // with the blindfold pushed up: two blue eyes (h-eye, never "eye", which is the spirit's)
+  const bandUp = `<path class="band up" d="${P([[-4.6, -57.4], [4.4, -56.2], [4.4, -53.8], [-4.6, -55]])}"/>`;
+  const eyesOpen = [-1.7, 1.8].map(a => `<g class="h-eyes"><path class="h-eye" d="M${X(a - 1.45)},${Y(-50.5)} q${Z(1.45)},${Z(-1.5)} ${Z(2.9)},0 q${Z(-1.45)},${Z(1.3)} ${Z(-2.9)},0Z"/><circle class="h-iris" cx="${X(a)}" cy="${Y(-50.6)}" r="${Z(.82)}"/><circle class="h-glint" cx="${X(a - .3)}" cy="${Y(-50.95)}" r="${Z(.24)}"/></g>`).join("");
   const hair = `<path class="hair" d="${P([[-4.2, -52.4], [-6.8, -54.4], [-4.4, -55], [-7, -58], [-3.4, -57.2], [-3.8, -60.6], [-1, -58.2], [.4, -61.6], [1.6, -58.2], [4.2, -60.4], [3.8, -57], [7.2, -57.8], [4.8, -54.8], [7, -54], [4.2, -52.4]])}"/>`;
   const arm = pts => `<path class="sleeve" d="M${pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L")}"/>`;
   const fist = (a, b, r = 1.8) => `<circle class="skin" cx="${X(a)}" cy="${Y(b)}" r="${Z(r)}"/>`;
@@ -141,7 +144,7 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2) {
   const sparks = SP.slice(0, 4 + Math.round(6 * power)).map(([a, b], k) =>
     `<path class="spark${k % 3 ? "" : " v"}" d="M${X(a)},${Y(b - 1.4)} l${Z(.5)},${Z(1.4)} l${Z(-.5)},${Z(1.4)} l${Z(-.5)},${Z(-1.4)}Z" style="--d:${(k * .29).toFixed(2)}s"/>`).join("");
   const beam = `<path class="h-beam" d="M${hx},${hy} L${tx},${ty}"/>`;
-  return `<g class="hero" data-pose="${pose}">${orb}<g class="h-aura" opacity="${(.4 + .6 * power).toFixed(2)}">${tech}</g>${legs}${coat}${POSE[0]}${collar}${head}${band}${hair}<g class="h-aura" opacity="${(.5 + .5 * power).toFixed(2)}">${sparks}</g>${beam}</g>`;
+  return `<g class="hero" data-pose="${pose}">${orb}<g class="h-aura" opacity="${(.4 + .6 * power).toFixed(2)}">${tech}</g>${legs}${coat}${POSE[0]}${collar}${head}${unveiled ? eyesOpen : band}${hair}${unveiled ? bandUp : ""}<g class="h-aura" opacity="${(.5 + .5 * power).toFixed(2)}">${sparks}</g>${beam}</g>`;
 }
 const HZ_HERO_X = 30;
 const hzGround = (i, x) => { const a = HZ[i].a, k = Math.min(7, Math.floor(x / 50)), f = (x - k * 50) / 50; return a[k] + (a[k + 1] - a[k]) * f; };
@@ -163,9 +166,28 @@ function hzTrackScene(svg, hp) {
 }
 const HZ_TRACK_ENERGY = `<path class="st" d="M190 66 H226 V88 H262"/><path class="st hi" d="M226 66 V50 H270"/>` + hzEmb([[170, 50], [226, 60], [268, 80]]);
 const HZ_TRACK_AT = [320, 96, .5];
+// The track's own spirit, the drift stack: three crooked boxes piled up, like workspaces that no longer match
+// their config, with loose cables for arms. Same contract as hzSpirit: nine eyes that close as `hp` falls,
+// cracks below 80% and 45%.
+function hzDriftStack(cx, base, sc, hp) {
+  const S = v => (v * sc).toFixed(1), X = v => (cx + v * sc).toFixed(1), Y = v => (base + v * sc).toFixed(1);
+  const box = (x, y, w, h) => `<path class="body" d="M${X(x + 5)},${Y(y)} H${X(x + w - 5)} Q${X(x + w)},${Y(y)} ${X(x + w)},${Y(y + 5)} V${Y(y + h)} H${X(x)} V${Y(y + 5)} Q${X(x)},${Y(y)} ${X(x + 5)},${Y(y)}Z"/>`;
+  const body = box(-34, -22, 62, 22) + box(-24, -44, 56, 23) + box(-30, -64, 46, 21);
+  const arms = `<path class="limb" d="M${X(-34)},${Y(-14)} C${X(-50)},${Y(-22)} ${X(-46)},${Y(2)} ${X(-60)},${Y(-2)} M${X(32)},${Y(-36)} C${X(48)},${Y(-44)} ${X(52)},${Y(-14)} ${X(64)},${Y(-8)}"/><rect class="limb" x="${X(-66)}" y="${Y(-5)}" width="${S(6)}" height="${S(5)}"/><rect class="limb" x="${X(63)}" y="${Y(-11)}" width="${S(6)}" height="${S(5)}"/>`;
+  const mouth = `<path class="mouth" d="M${X(-22)},${Y(-9)} H${X(20)} L${X(16)},${Y(-4)} H${X(-18)}Z"/><path class="teeth" d="M${X(-18)},${Y(-8)}${Array.from({ length: 7 }, () => ` l${S(3)},${S(3)} l${S(3)},${S(-3)}`).join("")}"/>`;
+  const hatch = Array.from({ length: 6 }, (_, k) => `<path class="hatch" d="M${X(-20 + k * 9)},${Y(-23)} l${S(-5)},${S(-9)}"/>`).join("");
+  const EYES = [[-14, -54, 5], [4, -56, 3], [-24, -57, 1.6], [14, -34, 4], [-10, -34, 2.6], [24, -30, 1.8], [-24, -16, 2.2], [20, -16, 2], [0, -16, 1.6]];
+  const open = Math.max(1, Math.round(EYES.length * hp));
+  const eyes = EYES.map(([x, y, r], k) => k < open
+    ? `<circle class="eyew" cx="${X(x)}" cy="${Y(y)}" r="${S(r)}"/><circle class="eye" cx="${X(x + r * .2)}" cy="${Y(y)}" r="${S(r * .45)}" style="--d:${(k * .41).toFixed(2)}s"/>`
+    : `<path class="limb" d="M${X(x - r)},${Y(y)} h${S(r * 2)}"/>`).join("");
+  const cracks = (hp < .8 ? `<path class="crack" d="M${X(-6)},${Y(-64)} l${S(4)},${S(8)} ${S(-5)},${S(7)} ${S(5)},${S(8)}"/>` : "")
+    + (hp < .45 ? `<path class="crack" d="M${X(20)},${Y(-44)} l${S(-6)},${S(8)} ${S(5)},${S(6)} ${S(-6)},${S(10)}"/><path class="crack" d="M${X(-28)},${Y(-20)} l${S(8)},${S(-4)} ${S(4)},${S(6)}"/>` : "");
+  return `<g class="wob">${arms}${body}${hatch}${mouth}${eyes}${cracks}</g><circle class="hit" cx="${cx}" cy="${Y(-32)}" r="${S(36)}" style="fill:var(--fx-core)"/>`;
+}
 function hzTrackCurse(hp) {
   const [x, y, sc] = HZ_TRACK_AT;
-  const foe = hp <= 0 ? hzShards(x, y - 30) + `<ellipse cx="${x}" cy="${y + 2}" rx="18" ry="2.5" class="stain"/>` : hzSpirit(x, y, sc * (.75 + .25 * hp), hp);
+  const foe = hp <= 0 ? hzShards(x, y - 30) + `<ellipse cx="${x}" cy="${y + 2}" rx="18" ry="2.5" class="stain"/>` : hzDriftStack(x, y, sc * (.75 + .25 * hp), hp);
   return foe + hzSorcerer(HZ_HERO_X, 96, x, y - 30 * sc, 1 - hp);
 }
 
@@ -193,3 +215,24 @@ function horizonDraw(from) {
   hzScene(base, from, i, 0); hzRaf = requestAnimationFrame(step);
 }
 function horizonStrike(band) { const cu = band.querySelector("svg.cu"); cu.classList.remove("struck"); void cu.getBoundingClientRect(); cu.classList.add("struck"); }
+
+// ---------- the hero beside the help (outside the banner)
+// His portrait sits beside the boxes that already exist: the clue (blindfolded), the verdict, and the answer
+// (blindfold up, his eyes showing). He says nothing of his own: the box beside him keeps the lesson's words.
+// The portrait is drawn on its own, close up: a tall dark collar over the chin with a round button, a narrow
+// face, angular white hair. A blindfold for a clue or a verdict; for the answer it's gone and his eyes glow.
+function hzFace(mood) {
+  const P = pts => "M" + pts.map(([x, y]) => `${x},${y}`).join(" L") + "Z";
+  const coat = `<path class="coat" d="M-2,60 L1,47 Q5,41 14,39 L38,39 Q47,41 51,47 L54,60Z"/>`;
+  const face = `<path class="skin" d="M17,33 V16 Q17,11 22,11 H30 Q35,11 35,16 V33Z"/>`;
+  const collar = `<path class="coat" d="M13,50 L15,31 L37,31 L39,50 Q26,54 13,50Z"/><path class="seam" d="M13,50 Q26,54 39,50 M26,44.6 V60"/><circle class="btn" cx="26" cy="42" r="2.6"/>`;
+  const hair = `<path class="hair" d="${P([[8, 15], [12, 9], [5, 5], [18, 6], [21, 0], [27, 5], [35, -1], [37, 6], [48, 2], [44, 9], [50, 13], [36, 15], [26, 13], [16, 15]])}"/>`;
+  const eyes = mood === "answer"
+    ? [21.9, 30.1].map(x => `<g class="h-eyes"><circle class="h-eye" cx="${x}" cy="22" r="3"/><circle class="h-glint" cx="${x}" cy="22" r="1.25"/></g>`).join("")
+    : `<path class="band" d="M15.5,19 H36.5 V25.4 H15.5Z"/>`;
+  const sparks = mood === "right" ? [[45, 22], [7, 30]].map(([x, y], k) => `<path class="spark" d="M${x},${y - 3} l1,3 l-1,3 l-1,-3Z" style="--d:${k * .4}s"/>`).join("") : "";
+  return `<span class="horizon hface ${mood}" aria-hidden="true"><svg class="cu" viewBox="0 0 52 60">${coat}${face}${eyes}${collar}${hair}${sparks}</svg></span>`;
+}
+const hzCoach = (mood, html) => `<div class="hcoach">${hzFace(mood)}${html}</div>`;
+// On the done screen: the whole figure, in the phase's stance (the Build sign on the track), as strong as the phase is done.
+const hzFigure = (pose, power) => `<span class="horizon hfig" aria-hidden="true"><svg class="cu" viewBox="4 40 54 64">${hzSorcerer(30, 100, 140, 70, power, pose)}</svg></span>`;

@@ -2188,6 +2188,7 @@ function showDone(id, after, fresh) {
     ${promo}
     ${res ? resultHtml(res) : ""}
     <section class="newstk"><span class="eyebrow">New sticker · ${doneN} of ${ids.length} in ${esc(inPh)}</span><span class="stk done">${stickerSvg(id, "done", 24)}</span><h2>${esc(L.title)}</h2><p>${esc(modOf[id].title)}, in the ${esc(ph.name)}${trackOf[id] ? "" : " phase"}. Every sticker in ${esc(ph.name)} has this shape.</p></section>
+    <section class="card hdone">${hzFigure(trackOf[id] ? 2 : Math.max(0, PHASES.indexOf(ph)), doneN / ids.length)}<div><span class="eyebrow">${esc(ph.name)}</span><p>${doneN === ids.length ? "The spirit is gone." : "The spirit on the hill is a little weaker."}</p></div></section>
     <section class="card"><span class="eyebrow">In this lesson</span><ul class="recap">${recap}</ul></section>
     <div class="keyidea">${ic("quote")}<div>${(s.said || "").trim() ? `<b>You said</b><p>${esc(s.said.trim())}</p><b class="ours">Ours</b>` : "<b>Say it like this</b>"}<p>${md(L.angle[2])}</p></div></div>
     ${next}`;
@@ -2271,11 +2272,11 @@ function checkPane() {
     const cls = "opt" + (solved && k === ans ? " right" : tried.includes(k) ? " wrong" : "");
     return `<button class="${cls}" data-opt="${k}"${off ? " disabled" : ""}><span class="k">${letter(k)}</span><span>${md(opts[k])}</span></button>`;
   }).join("");
-  const verdict = solved ? `<div class="verdict ok">${ic("check")}<div><b>${help === 2 ? `The answer is ${letter(ans)}.` : "Right."}</b> ${md(why)}</div></div>`
-    : tried.length ? `<div class="verdict no">${ic("x")}<div><b>Not quite.</b> Try another one${help || !clue ? "" : ", or ask for a clue"}.</div></div>` : "";
+  const verdict = solved ? hzCoach(help === 2 ? "answer" : "right", `<div class="verdict ok">${ic("check")}<div><b>${help === 2 ? `The answer is ${letter(ans)}.` : "Right."}</b> ${md(why)}</div></div>`)
+    : tried.length ? hzCoach("wrong", `<div class="verdict no">${ic("x")}<div><b>Not quite.</b> Try another one${help || !clue ? "" : ", or ask for a clue"}.</div></div>`) : "";
   const helpHtml = solved ? "" : help === 0 && clue ? `<button class="linkbtn" data-chk-help>Give me a clue</button>`
     : help === 0 ? `<button class="linkbtn" data-chk-help>Tell me the answer</button>`
-    : `<p class="clzclue">${ic("bulb")}<span>${md(clue)}</span></p><button class="linkbtn" data-chk-help>Tell me the answer</button>`;
+    : hzCoach("clue", `<p class="clzclue">${ic("bulb")}<span>${md(clue)}</span></p>`) + `<button class="linkbtn" data-chk-help>Tell me the answer</button>`;
   const head = n > 1 ? `<div class="shead chkhead"><span class="scount">Question ${i + 1} of ${n}</span><span class="qf-dots" aria-hidden="true">${qs.map((_, j) => `<i class="${st.solved[j] ? "d" : j === i ? "n" : ""}"></i>`).join("")}</span></div>` : "";
   const next = solved && i < n - 1 ? `<button class="btn primary chknext" data-chk-next>Next question${ic("arrowr")}</button>` : "";
   const again = checkDone(id) ? `<button class="linkbtn" data-retry>Try the check again</button>` : "";
@@ -2337,7 +2338,7 @@ function clozeHtml(id) {
     return `<button class="clzchip${off ? " no" : ""}${right ? " shown" : ""}" data-clz="${esc(w)}"${off ? ' aria-disabled="true"' : ""}>${esc(w)}</button>`;
   }).join("");
   const help = CLZ.help === 0 ? `<button class="linkbtn" data-clz-help>Give me a clue</button>`
-    : `<p class="clzclue">${ic("bulb")}<span>${esc(g.clue)}</span></p>${CLZ.help === 1 ? `<button class="linkbtn" data-clz-help>Tell me the answer</button>` : ""}`;
+    : hzCoach(CLZ.help === 2 ? "answer" : "clue", `<p class="clzclue">${ic("bulb")}<span>${esc(g.clue)}</span></p>`) + `${CLZ.help === 1 ? `<button class="linkbtn" data-clz-help>Tell me the answer</button>` : ""}`;
   return `<section class="card cloze"><b>Finish the sentence</b><span class="meta">Gap ${n + 1} of ${gaps.length}: tap the word that fits. This is how you'd explain it at work or in an interview.</span>
     <p class="clz">${line}</p>
     <div class="clzchips" role="group" aria-label="Words for gap ${n + 1}">${chips}</div>

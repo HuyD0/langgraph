@@ -150,22 +150,22 @@ function qfRender() {
   const a = asks[QF.i], solved = QF.solved === QF.i, lastWrong = QF.tried.length ? QF.tried[QF.tried.length - 1] : null;
   if (a.kind === "fix") {
     const fixHelp = solved ? `<button class="btn primary qf-next" data-qf-next>${QF.i + 1 < n ? "Next question" : "See how you did"}${ic("arrowr")}</button>`
-      : `<button class="btn primary qf-next" data-qf-check>Check YAML</button>${QF.help === 0 ? `<button class="linkbtn" data-qf-help>Give me a clue</button>` : `<p class="clzclue">${ic("bulb")}<span>${md(a.clue)}</span></p><button class="linkbtn" data-qf-help>Show a fixed version</button>`}`;
+      : `<button class="btn primary qf-next" data-qf-check>Check YAML</button>${QF.help === 0 ? `<button class="linkbtn" data-qf-help>Give me a clue</button>` : hzCoach("clue", `<p class="clzclue">${ic("bulb")}<span>${md(a.clue)}</span></p>`) + `<button class="linkbtn" data-qf-help>Show a fixed version</button>`}`;
     box.innerHTML = `<div class="shead"><h2>Practice</h2><span class="scount">Question ${QF.i + 1} of ${n}</span>${dots(QF.i)}</div>
       ${QF.i === 0 ? `<p class="meta">${md(pr.intro)}</p>` : ""}
       <p class="q">${md(a.question)}</p>${qfFixHtml(a, solved)}
-      <div aria-live="polite">${solved ? `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "A fixed version." : "The check passes."}</b> ${md(a.why)}</div>` : ""}</div>
+      <div aria-live="polite">${solved ? hzCoach(QF.help === 2 ? "answer" : "right", `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "A fixed version." : "The check passes."}</b> ${md(a.why)}</div>`) : ""}</div>
       <div class="clzhelp">${fixHelp}</div>
       <div class="sfoot"><button class="linkbtn" data-qf-mode="code">${ic("code")}Rather write it in Python?</button></div>`;
     return;
   }
   const order = checkOrder(QF.p.id + ":" + QF.i, a.options.length);  // shuffled like the Check step, so the right one isn't always in the same place
   const opts = a.pick ? "" : `<div class="opts">${order.map((k, at) => { const o = a.options[k]; return `<button class="opt${solved && k === a.answer ? " right" : QF.tried.includes(k) ? " wrong" : ""}" data-qf="${k}"${solved || QF.tried.includes(k) ? " disabled" : ""}><span class="k">${"ABCDEF"[at]}</span><span>${md(o)}</span></button>`; }).join("")}</div>`;
-  const note = solved ? `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "The answer." : "Right."}</b> ${md(a.why)}</div>`
-    : lastWrong != null ? `<div class="snote no"><b>Not quite.</b> ${md((a.wrong && a.wrong[lastWrong]) || "Look at the evidence again.")}</div>` : "";
+  const note = solved ? hzCoach(QF.help === 2 ? "answer" : "right", `<div class="snote ok"><b>${ic("check")} ${QF.help === 2 ? "The answer." : "Right."}</b> ${md(a.why)}</div>`)
+    : lastWrong != null ? hzCoach("wrong", `<div class="snote no"><b>Not quite.</b> ${md((a.wrong && a.wrong[lastWrong]) || "Look at the evidence again.")}</div>`) : "";
   const help = solved ? `<button class="btn primary qf-next" data-qf-next>${QF.i + 1 < n ? "Next question" : "See how you did"}${ic("arrowr")}</button>`
     : QF.help === 0 ? `<button class="linkbtn" data-qf-help>Give me a clue</button>`
-    : `<p class="clzclue">${ic("bulb")}<span>${md(a.clue)}</span></p><button class="linkbtn" data-qf-help>Tell me the answer</button>`;
+    : hzCoach("clue", `<p class="clzclue">${ic("bulb")}<span>${md(a.clue)}</span></p>`) + `<button class="linkbtn" data-qf-help>Tell me the answer</button>`;
   box.innerHTML = `<div class="shead"><h2>Practice</h2><span class="scount">Question ${QF.i + 1} of ${n}</span>${dots(QF.i)}</div>
     ${QF.i === 0 ? `<p class="meta">${md(pr.intro)}</p>` : ""}
     ${qfEvidence(a.evidence, a, solved)}
