@@ -3081,6 +3081,7 @@ Longer, hands-on milestones in `notebooks/`, each with an answer key in `noteboo
 - `m10_one_agent_or_a_team.ipynb`: Milestone 10 - One agent or a team?
 - `m11_vet_a_use_case.ipynb`: Milestone 11 - Vet a use case with MLflow
 - `m12_build_the_agent_for_real.ipynb`: Milestone 12 - Build the agent for real
+- `m13_evaluating_the_tutor.ipynb`: Milestone 13 - Evaluating the tutor
 
 ## Glossary
 

@@ -443,6 +443,8 @@ def compare(run_a: str, run_b: str) -> dict:
     """Two judge runs on the same answers: which one agrees with the reference more often, and is it luck?"""
     import mlflow
 
+    mlflow.set_experiment(mlflow_names.experiment())  # load_table reads from the active experiment
+
     def table(run_id: str) -> dict[tuple[str, str], tuple[bool, bool]]:
         df = mlflow.load_table("answers.json", run_ids=[run_id])
         return {(r.lesson_id, r.key): (bool(r.passes), bool(r.reference_pass)) for r in df.itertuples()}
