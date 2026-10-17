@@ -190,6 +190,18 @@ const LIVE = {
     rows: times.map((t, i) => [`${t} s`, Array.isArray(got) ? (got[i] ? "allowed" : "wait") : ""]), say: `Refill ${rate} a second, bucket of ${size}.` }),
   skew_report: ([rows, factor], got) => ({ kind: "tree", unit: "rows", max: Math.max(...rows.map(r => r[1])), ticks: [0, Math.max(...rows.map(r => r[1]))],
     rows: rows.map(([key, count]) => ({ name: key, start: 0, size: count, hot: Array.isArray(got) && got.includes(key) })), say: `Keys your function called hot (more than ${factor} times the average) are filled in.` }),
+  chunk_text: ([text, size, overlap], got) => {
+    const chunks = Array.isArray(got) ? got.map(String) : [], len = Math.max(text.length, 1);
+    return { kind: "tree", unit: "characters", max: len * 1.05, ticks: [0, len], rows: [{ name: text, depth: 0, start: 0, size: text.length },
+      ...chunks.slice(0, 7).map((c, i) => { const at = text.indexOf(c, i * (size - overlap)); return { name: c, depth: 1, start: at < 0 ? 0 : at, size: c.length, cut: at < 0 }; })],
+      say: `Your chunks: ${chunks.join(", ") || "none"}. Each bar sits under the characters it covers; a dashed bar is text that is not in the document.` };
+  },
+  plan_calls: ([deadline, steps], got) => {
+    const ran = Array.isArray(got) ? got : []; let t = 0;
+    const rows = steps.map(([name, ms]) => { const runs = ran.includes(name), row = { name, start: t, size: ms, cut: !runs, hot: runs }; if (runs) t += ms; return row; });
+    return { kind: "tree", unit: "ms", max: Math.max(deadline, ...rows.map(r => r.start + r.size)) * 1.1, ticks: [0, deadline], rows,
+      marker: { at: deadline, label: "deadline" }, say: `Your function ran ${ran.join(", ") || "nothing"}, ${t} ms of the ${deadline} ms deadline. Dashed bars are steps it skipped.` };
+  },
 };
 function livePic(p, got, passed) {
   const draw = LIVE[p.id]; if (!draw) return;
