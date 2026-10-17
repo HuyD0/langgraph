@@ -1007,6 +1007,8 @@ Otherwise return `{"ok": True, "text": ...}`, where the text is these lines join
         practice=practice(
             intro='Review these SKILL.md drafts the way a reviewer does before they\'re shared: will it load, and will Claude ever use it?',
             explain='The big idea: a skill is a SKILL.md file whose name and description Claude reads first, so the file must follow the rules exactly or it will not load. You caught a name with capitals, listed every broken rule at once instead of stopping at the first, picked the description that says when to use the skill, and kept the body short with the details in reference files.',
+            pattern='Will it load, and will it get used?',
+            realworld="When a teammate shares a skill with the team, you'll review its SKILL.md first. Check the name and description against the rules, send back every problem at once, and ask for a description that says when to use it.",
             asks=[
                 ask('Will this skill load?', ['Yes: both lines are filled in', 'No: the name breaks the rules', 'No: the description is too long'], answer=1,
                     evidence=evidence('code', title='SKILL.md, first draft', text="""---

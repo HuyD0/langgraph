@@ -54,6 +54,8 @@ For every other resource, list the `required` tag names that are missing from it
         practice=practice(
             intro='Check a plan for missing tags the way a platform reviewer does: which resources have gaps, and which tags they lack.',
             explain='Tags decide who pays for what, and azurerm has no default tags, so you checked the plan for gaps. You listed the required tags each resource was missing, caught a resource that forgot to merge the shared tags, and saw that cluster costs need tags of their own.',
+            pattern='Every required tag, on every Azure resource',
+            realworld="When you review a Spacelift plan for Azure resources, you'll check each one carries the required tags, like env, owner and cost-center. A resource that forgot to merge `local.tags` is the usual culprit, and catching it in the PR beats finding untagged spend at the end of the month.",
             asks=[
                 ask('Every resource needs `env` and `owner`. Which one is missing a tag?', ['`azurerm_storage_account.lake`', '`azurerm_databricks_workspace.this`', '`databricks_catalog.sales`'], answer=1,
                     evidence=evidence('code', title='Resources in the plan, with their tags', text="""[
@@ -257,6 +259,8 @@ Return a dict in the same shape, with the privileges each principal will lose, i
         practice=practice(
             intro='Predict what the next apply does to a catalog\'s grants, the way a reviewer does before approving.',
             explain='databricks_grants makes the live grants match the code exactly, so anything not in the code is removed at the next apply. You compared live with code for each principal, found a lost privilege hiding inside an in-place change, and kept a grant the safe way: by writing it into the code.',
+            pattern='Not written down means gone next apply',
+            realworld="When you approve a Spacelift run that touches `databricks_grants`, you'll read inside each change for grant lines marked with a minus, even when the plan says 0 to destroy. When a team needs a grant someone added by hand, you'll write it into the Terraform so the next apply keeps it.",
             asks=[
                 ask('What does `engineers` lose at the next apply?', ['`MODIFY`', '`SELECT`', 'Nothing'], answer=0,
                     evidence=evidence('code', title='Catalog sales: code and live', text="""# In the code (databricks_grants)
@@ -873,6 +877,8 @@ Return the messages in the order above, or `[]` if all pass.""",
         practice=practice(
             intro='Review a shared space\'s limits the way a platform team does before opening it: check each rule, and report every one that fails.',
             explain='In a shared space, user and group limits must sit below the whole space\'s limit, and the sandbox needs a deployment of its own. You checked each rule on its own and reported every one that failed, and saw that a group\'s limit is one pool its members share, not a limit for each person.',
+            pattern='Every limit a slice of the whole',
+            realworld="Before a shared experiment space opens, you'll check that the per-user and group limits sit well below the space limit, and that the sandbox has its own Foundry deployment. When a team asks for a group limit, you'll remember it is one pool all its members share.",
             asks=[
                 ask('What is wrong with the user limit?', ['It\'s missing, so one person can use it all', 'It\'s too low for a busy team to work', 'Nothing: `None` means no limit is needed'], answer=0,
                     evidence=evidence('code', title='The sandbox settings (tokens a minute)', text=_SPACE),

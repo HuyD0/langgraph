@@ -1708,6 +1708,8 @@ For example: `{"react": {"success_rate": 0.67, "cost_per_success": 0.06}}`.
         practice=practice(
             intro='Compare agent designs the way a reviewer does: same tasks for everyone, then success rate and cost per success.',
             explain='Measuring agent designs on the same tasks beats guessing. You compared success rate and cost per success, with the cost of failed runs counted in, made sure every design ran the same course, and then read the traces where one design failed and another passed.',
+            pattern='Same tasks for all, then cost per success',
+            realworld="Before your team settles on a graph shape for an agent, you'll run each design on the same tasks and compare cost per success, failed runs included. Then you'll read the traces where one design fails and another passes.",
             asks=[
                 ask('Which runs count toward react\'s cost per success?', ['Only the two that succeeded', 'All three, the failed one included'], answer=1,
                     evidence=evidence('code', title='Four runs, cost in dollars', text="""runs = [
@@ -1938,6 +1940,8 @@ Return a dict with two keys:
         practice=practice(
             intro='Follow an agent run step by step the way LangGraph does: run the safe steps, and pause at the first risky one nobody approved.',
             explain='Some agent actions need a person to say yes, so the agent pauses there and resumes later. You walked the steps in order, ran the safe ones, and stopped at the first risky step nobody approved; on resume, the checkpointer picks up at that step. You also saw why the reviewer needs the details, and why anything that changes the world belongs after the interrupt.',
+            pattern='Pause where a person must say yes',
+            realworld="Any agent that can refund, email or close an account needs a person to approve some steps. You'll decide which steps pause and what the reviewer sees, and keep anything that changes the world after the pause.",
             asks=[
                 ask('Where does this run pause?', ['`look_up_order`', '`issue_refund`', '`email_customer`', 'It runs to the end'], answer=1,
                     evidence=evidence('code', title='The refund agent\'s steps', text="""steps = [
@@ -2149,6 +2153,8 @@ Check these rules in order, and return at the first one that matches:
         practice=practice(
             intro='Read each run the way a coding agent\'s router does: the exit code, the round and the last line, then the next step.',
             explain='A coding agent retries after errors, but only within its retry limit, and environment errors go to a person. You read the rules in order: a pass means done (then check the real result), no rounds left means stop, a permission error or a missing package means ask a person, and only a real code bug gets another try.',
+            pattern='Read the exit code, the round, the error',
+            realworld="When a coding agent runs jobs for your team, you'll set when it retries, when it stops and when it calls a person. And when it says done, you'll check the tests or the table yourself.",
             asks=[
                 ask('What does the agent do next?', ['Done', 'Fix and retry', 'Ask a person', 'Stop'], answer=1,
                     evidence=evidence('code', title='Round 1 of 3', text="""$ python report.py

@@ -85,6 +85,7 @@ them before making a new one; a new one gets a row here.
 | Fill the gaps | `.cloze`, `.clz`, `.gap` (`.now`, `.later`, `.filled`), `.clzchip` (`.no`, `.shown`), `.clzclue` | Explain | Help is a clue, then the answer; the clue uses `hint` colours |
 | Practice questions | `.qfbox`, `.qf-chain`, `.qf-rows`, `.qf-row` (`.right`, `.wrong`), `.qf-claim`, `.qf-sum` | Platform Build steps | One question per screen; evidence above; uses the surface tokens |
 | Walkthrough | `.walk`, `.sl`, `.sl-view`, `.sl-mark`, `.sl-n`, `.sl-steps`, `.sl-tips` | Tool lessons (Spacelift) | Numbered callouts in the hint colours match numbered steps |
+| Picture cards | `.pcards`, `.pcard`, `.pc-fig[data-kind]`, `.pc-tile` (`.solid`, `.dashed`), `.pc-temple`, `.pc-col` (`.open`), `.pc-saw`, `.pc-steps` | Learn, for lessons written with `cards=` | One idea and one picture per card; two kinds are told apart by shape (solid or ruler-edged), never a new colour; an open pillar uses the `hint` colours |
 | Study list | `.studyrow` (Home), `.duechip` (header), `.pocket` (the sheet), `.pk-row`, `.seals` | Home row, header chip elsewhere | Never floats over the page or pulses; the sheet opens only when asked for |
 | Trust mark | `.trustmark`, `.trustpop` | Learn text | An ember after the words that matter; `mark` colours only |
 | Lesson diagram | `.dgfig`, `.dg` (`.dg-bx`, `.dg-bar`, `.dg-pill`, `.dg-line`, `.dg-co`) | Learn text | One picture per lesson in the ordinary shapes; `accent` for what the lesson is about, `hint` for callout numbers, nothing else coloured |

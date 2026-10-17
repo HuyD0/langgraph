@@ -564,6 +564,8 @@ Return a list of the must-pass ids that did not pass, in the order they appear i
         practice=practice(
             intro='Run the release gate the way a reviewer does: look up each must-pass case on its own, whatever the average says.',
             explain='A version can win on average and still break the one answer that matters most, so must-pass cases are checked on their own. You looked up each one, counted a case nobody ran as failed, kept a flaky case in the set, and added a fixed production failure so it can\'t quietly come back.',
+            pattern='Every must-pass case on its own',
+            realworld='Before each release, run the must-pass set first and stop if any case failed or wasn\'t run, whatever the average says. Each time you fix a serious failure in production, add it to the set.',
             asks=[
                 ask('`billing-07` failed. Does that block the release?', ['Yes: any failed question blocks the release', 'No: it isn\'t on the must-pass list'], answer=1,
                     evidence=evidence('code', title='The new version\'s results', text="""results = {"refund-01": True,
@@ -1686,6 +1688,8 @@ Return `{"improvements": ..., "regressions": ...}`. Each is a dict from a cause 
         practice=practice(
             intro='Read a comparison the way an analyst does: find the questions where the versions disagree, then read both traces to label why.',
             explain='The questions where two versions disagree are the ones that explain a change, so you found each regression and improvement, read both traces to label its cause, and left out the questions with the same result in both. A question that flips on the same version is noise, so it is set aside before counting.',
+            pattern='Read where the versions disagree',
+            realworld='After you compare two versions of a RAG app or an agent, open both traces wherever they disagree and label why. The most common cause among the regressions is usually your next fix.',
             asks=[
                 ask('Which question is a regression?', ['return-label', 'change-address', 'charged-twice'], answer=1,
                     evidence=evidence('code', title='Old and new reranker, same questions', text=CHANGE_TABLE),
@@ -1854,6 +1858,8 @@ Return `{"retrieval": retrieval, "answer": answer}`, with the qids in the order 
         practice=practice(
             intro='Sort changed questions the way an analyst does before reading them: did the two versions send different articles, or the same ones?',
             explain='Sorting changed questions by whether the articles found changed tells you which part of the pipeline to look at. You compared the articles as a set, ignoring their order, then read a few from the bucket to find the actual cause. When the same articles come back in a new order, that can matter too.',
+            pattern='Same articles or different ones?',
+            realworld='When a new release changes dozens of answers, sort them by whether the articles changed, then read a few from each bucket. You read thirty traces instead of three hundred, and you know whether to look at retrieval or the answer step.',
             asks=[
                 ask('Which bucket does refund-11 go in?', ['Retrieval differed: new articles', 'Same articles, different answer'], answer=1,
                     evidence=evidence('code', title='Articles each version sent', text="""refund-11

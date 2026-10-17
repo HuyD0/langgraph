@@ -84,6 +84,8 @@ Return a list of `[name, choice]` pairs, in the same order as `workloads`.""",
         practice=practice(
             intro='Place each piece of work on compute the way a platform reviewer does: SQL first, then special machine needs, then serverless for the rest.',
             explain='The kind of work and its special needs decide the compute, and the order of the questions matters. You sent SQL to a SQL warehouse whatever else it asked for, sent work needing a GPU or an init script to classic compute (all-purpose for a notebook, jobs compute for a job), and let everything else run on serverless.',
+            pattern='SQL first, then machine needs, then serverless',
+            realworld='When someone asks where a new job or notebook should run, you\'ll ask what kind of work it is and what its machines need. You\'ll also catch scheduled jobs pointed at a shared all-purpose cluster, which pay the higher price per DBU for work that jobs compute or serverless does for less.',
             asks=[
                 ask('Where should `explore_returns` run?', ['Serverless compute', 'All-purpose compute', 'A SQL warehouse'], answer=0,
                     evidence=evidence('code', title='The request', text="""name:        explore_returns
@@ -290,6 +292,8 @@ Return the `name` of every cluster whose version is not in `supported`, in the s
         practice=practice(
             intro='Review runtimes the way a platform team does before a support date: read each version, then check it against the ones still supported.',
             explain='Every cluster names its runtime in one string, so you can check a whole workspace against the supported list. You read the version before ".x", flagged the ones no longer getting fixes, and remembered that jobs set their own runtime and that some features need a newer one.',
+            pattern='Read the version, check it still gets fixes',
+            realworld="Before a runtime reaches end of support, you'll check the `spark_version` on every cluster and in every job's `new_cluster`, and ask the owners to move. You'll check it again when a team needs a newer feature, like reading a table under ABAC.",
             asks=[
                 ask('Which runtime is `ml-train` on?', ['2.13', '16.4 ML', '16.4 ML for GPU'], answer=1,
                     evidence=evidence('code', title='ml-train', text='spark_version = "16.4.x-cpu-ml-scala2.13"'),
@@ -481,6 +485,8 @@ Return the names of the settings that break the policy, in policy order.""",
         practice=practice(
             intro='Review cluster specs against a policy the way a reviewer does: look up each setting, then test it by its rule\'s type.',
             explain='A policy is a set of rules, one per setting, and each rule type has its own simple test. You looked up each setting and tested it by type: a fixed value must match, an allowlist must contain it, a range must hold it, and a missing setting broke its rule too.',
+            pattern='Fixed matches, allowlist contains, range holds',
+            realworld="When you review a pull request that adds a cluster in Terraform or a bundle, you'll hold its settings up against the team's compute policy. Catching a broken rule in review is cheaper than a failed apply.",
             asks=[
                 ask('Which settings break the policy?', ['`autotermination_minutes` and `custom_tags.team`', '`autotermination_minutes` and `node_type_id`', '`node_type_id` and `custom_tags.team`'], answer=0,
                     evidence=evidence('code', title='The policy, and the cluster someone wants', text="""Policy
@@ -719,6 +725,8 @@ Return the `task_key` of every skipped task, in the same order as `tasks`. The f
         practice=practice(
             intro='Read a failed job run the way the person on call does: follow the failure downstream, task by task.',
             explain='A failure spreads downstream, so you track which tasks are stopped. You started from the failed task and went in order: any task that depended on a stopped one was skipped and stopped the tasks after it, while tasks on another branch ran as normal.',
+            pattern='Follow the failure downstream, task by task',
+            realworld='When you\'re on call and a job run fails, you\'ll read which tasks show "upstream failed" and which still ran. That is also what a repair run will rerun, so you know how much time and compute it takes before you click.',
             asks=[
                 ask('`clean` failed in this run. Does `audit` run?', ['Yes: it only needs ingest, which succeeded', 'No: every task after a failed one stops'], answer=0,
                     evidence=evidence('code', title='nightly_sales · this run: clean failed', text="""tasks:
@@ -946,6 +954,8 @@ Return `[resolved, missing]`. `resolved` is a dict of name to value, leaving the
         practice=practice(
             intro='Review a bundle the way a reviewer does: work out what each variable becomes in each target, before anything deploys.',
             explain="One set of files deploys to many places, and each place fills in its own values. You worked out each variable in order: the target's value wins over the default, a value set for one command beats them both, and a variable with neither is missing, so bundle validate stops before anything deploys.",
+            pattern='Command line, then target, then default',
+            realworld="When you review a bundle change, you'll work out what each variable becomes in dev and in prod before anything deploys. In a CI job, you'll also look for a stray `BUNDLE_VAR_` setting that could point a prod deploy at the wrong catalog.",
             asks=[
                 ask('What does `${var.catalog}` become in `deploy -t dev`?', ['prod_sales', 'dev_sales', "Nothing: dev doesn't set it"], answer=1,
                     evidence=evidence('code', title='databricks.yml', text="""variables:

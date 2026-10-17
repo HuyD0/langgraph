@@ -168,6 +168,13 @@ Otherwise return `False`.""",
         practice=practice(
             intro='Review queries the model wrote the way a reviewer does: check each one against the allowlist, then ask what still protects you when the check misses.',
             explain='Anything the model writes is untrusted, so a query only gets through when it is a select on tables the allowlist names, and everything else is rejected. You also saw a query that fools a word check, which is why it runs as a robot account that can only read the tables it needs.',
+            pattern='Allowlist at the door, read-only behind it',
+            realworld='When you build a chat feature that writes SQL, a reviewer will ask what stops it reading or deleting the wrong table. Show them both walls: an allowlist check on each query, and a robot account that can only read the tables it needs.',
+            gotchas=[
+                ['Checks are not permissions', 'Checks on the text can be fooled. Run model-written SQL as a service principal (a robot account for your app) that can only read the allowed tables.'],
+                ['One query can hide another', 'A `;` ends one command and starts the next. `SELECT 1; DROP TABLE orders` starts with select, and a word check lets it through. That is why running it with read-only permissions matters most.'],
+                ['Limit the cost too', 'A valid SELECT can still scan a huge table. Add a row limit and a query timeout.'],
+            ],
             asks=[
                 ask('Should this query run?', ['Yes: it starts with SELECT, so it only reads data', 'No: `salaries` isn\'t on the allowed list'], answer=1,
                     evidence=evidence('code', title='Allowed tables: orders · the model wrote', text='SELECT * FROM orders JOIN salaries'),
@@ -340,6 +347,8 @@ Return:
         practice=practice(
             intro='Decide tool calls the way your policy check does: read the rule for the tool, then say allow, deny or wait for a person.',
             explain='A rule in code is enforced, while a line in the prompt is only a suggestion. You looked up each tool\'s rule, denied any tool the policy doesn\'t name and any role it doesn\'t list, sent amounts over the limit to a person, and took the role from the login rather than from the model.',
+            pattern='Allow, deny or wait for a person',
+            realworld='When an agent gets a tool that moves money or deletes data, write its rule before it ships: which roles may use it, and above what amount a person must approve. Take the role from the login, never from what the model wrote.',
             asks=[
                 ask('A `support_agent` asks the agent to run `refund` for $250. What does the policy say?', ['Allow it now', 'Wait for approval', 'Deny it outright'], answer=1,
                     evidence=evidence('code', title='The tool policy', text=TOOL_POLICY),
@@ -507,6 +516,8 @@ Each table name appears at most once in each list.""",
         practice=practice(
             intro='Work out what an agent can reach the way a security reviewer does: whose identity it uses, and which lists decide what it can read.',
             explain='An agent should never fetch more for a user than that user could fetch alone. Acting as the app, it reaches everything on the app\'s list, so a hidden line can turn it into a confused deputy. On behalf of the user, it reaches only the overlap of the two lists, and only through the scopes the app asked for.',
+            pattern='Whose identity, then what both lists allow',
+            realworld='When you build a Databricks App that reads one person\'s data, choose user authorization, so Unity Catalog applies that person\'s own permissions. Ask only for the scopes the agent needs, like `sql`, and keep the app identity for shared data.',
             asks=[
                 ask('The agent runs on behalf of Ana. Which tables can it read?', ['`faq` and `tickets_ana`', '`faq`, `tickets_all` and `tickets_ana`', 'Only `tickets_all`'], answer=0,
                     evidence=evidence('code', title='Two lists', text="""Ana may read:        tickets_ana, faq
@@ -697,6 +708,8 @@ The starter code gives you the three lists.""",
         practice=practice(
             intro='Sort the commands your agent wants to run the way your policy does: check the lists in order, then decide what the box around the shell still has to stop.',
             explain='An agent\'s shell commands are sorted before they run, and the first rule that fits wins: blocked texts anywhere in the command, then risky starts that wait for a person, then the short safe list, and anything unknown asks. You also saw why the policy isn\'t the real wall: a safe-looking command can run anything, so the shell lives in a box with no internet and no secrets.',
+            pattern='Block first, ask next, then the safe few',
+            realworld='When you give a coding agent a shell, you write its allow, ask and deny rules, and you run it in a sandbox with no internet and no secrets. On Databricks, the `system.ai.sandbox` tool gives you that box.',
             asks=[
                 ask('The agent wants to run `git push origin main`. What does the policy say?', ['Let it run', 'Ask a person', 'Block it'], answer=1,
                     evidence=evidence('code', title='Your policy, checked top to bottom', text=SHELL_LISTS),
@@ -933,6 +946,8 @@ The starter code gives you `RED_FLAGS`.""",
         practice=practice(
             intro='Check memory writes the way your gate does: read the words first, then who sent them, and decide keep, review or reject.',
             explain='Anything saved to memory is read again in every later chat, so each write is checked before it goes in. You rejected text that reads like an order whoever sent it, kept facts from the user or a tool, and sent web text to a person. Saving where each memory came from, and when, is what lets you find a bad one later.',
+            pattern='Keep, review or reject each memory',
+            realworld='When your agent saves facts between chats, decide which sources may write straight in, and pick the user\'s namespace from the login, never from the model. Save where each memory came from and when, so you can roll back a planted one.',
             asks=[
                 ask('Your agent wants to save this. What does the gate say?', ['Keep it in memory', 'Send it for review', 'Reject it outright'], answer=0,
                     evidence=evidence('code', title='One memory write', text="""{"text": "Order 1042 was refunded.",
@@ -1527,6 +1542,8 @@ A finding is the token's name, a colon and a space, then the problem, like `"nig
         practice=practice(
             intro='Audit credentials the way a security reviewer does: check every one against all three rules, then decide what to fix first.',
             explain='A credential is safest when it is short-lived, owned by the team and has only the access it needs. You checked every credential against all three rules (no PATs, nothing that lives longer than a day, an owner who is still here) and listed every rule it broke. When one has leaked, you revoke it first and fix what breaks afterwards.',
+            pattern='List every rule each credential breaks',
+            realworld='When you review a workspace, or set up a job or an agent, look for PATs, tokens that live longer than a day, and tokens whose owner has left. Move them to OAuth with a service principal, and revoke a leaked one before anything else.',
             asks=[
                 ask('Which credential passes all three rules?', ['nightly-job', 'agent-sp', 'sync', 'old-bot'], answer=1,
                     evidence=evidence('code', title='Credentials in the workspace', text="""name         kind   hours  owner

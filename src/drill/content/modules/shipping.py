@@ -102,6 +102,12 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
         practice=practice(
             intro='Check graduation packs the way the platform team does: every rule against the bar written before the trial, and every failure listed.',
             explain='An app should graduate on evidence the trial measured, so you checked every rule against the bar and listed every one that fails, so the team can fix them all in one round. Exactly at a limit passes, even one over doesn\'t, and the bar stays where it was written before the trial.',
+            pattern='Every check against the bar set first',
+            realworld='When an app is ready to leave the shared experiment space, you bring its graduation pack to the platform team. The gate turns "is it ready?" into a list the team can fix in one round, and the same numbers size its capacity.',
+            gotchas=[
+                ['Stopping at the first failure', 'Stop at the first reason and the team fixes one thing, comes back, and only then finds the next. List every reason at once.'],
+                ['Setting the bar after the results', 'Write the bar down before the POC runs. A bar picked after seeing the numbers tends to move to fit them.'],
+            ],
             asks=[
                 ask('What does the gate send back for this pack?', ['Just "no owner", the first problem it finds', 'All three: no owner, no monitoring, a must-pass fails', 'Nothing: the numbers all meet the bar'], answer=1,
                     evidence=evidence('code', title='A graduation pack', text="""evidence = {
@@ -327,6 +333,8 @@ A challenger counts only if its score is at least the champion's score plus `min
         practice=practice(
             intro='Decide promotions the way a reviewer does: a challenger must beat the champion by the minimum gain, on the same data.',
             explain='Only promote a challenger when it beats the champion by a meaningful margin on the same data. You worked out the bar from the champion\'s score and the minimum gain, kept the best challenger that cleared it, refused a score from a different test set, and rolled back by moving the alias.',
+            pattern='Clear the bar, then take the best',
+            realworld='When a retrained model is ready, compare it with `@champion` on the same data, and move the alias only if it wins by the gain you set. If complaints spike afterwards, move the alias back.',
             asks=[
                 ask('Which version should get the `@champion` alias?', ['Version 3: keep the champion', 'Version 4', 'Version 6'], answer=2,
                     evidence=evidence('code', title='The registry', text="""champion:     version 3, score 81
@@ -659,6 +667,8 @@ The tests use tiny numbers so you can check them by hand; a real rollout needs h
         practice=practice(
             intro='Decide a prompt canary the way a release owner does: read each version\'s pass rate against the rule you wrote down first.',
             explain='Tag every trace with its prompt version, then decide with a rule you wrote down first. You promoted only on the gain the rule asks for, rolled back a version that did worse, kept testing one that was better but not by enough, and refused a comparison where the two versions saw different questions.',
+            pattern='Read the canary against the written rule',
+            realworld='When you change a prompt in a live app, write the rule first: how many traces, and how many points better. Then give the new version a small share of traffic and let the rule decide: promote, keep testing or roll back.',
             asks=[
                 ask('What does the rule say?', ['Promote v3', 'Keep testing', 'Roll back to v2'], answer=0,
                     evidence=evidence('code', title='The canary so far', text=ROLLOUT_RULE + """

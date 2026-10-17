@@ -85,6 +85,8 @@ Return one word, asking in this order:
         practice=practice(
             intro='Follow fields down the chain and name what happened to each, the way a reviewer reads a config PR.',
             explain='A field only matters if it reaches the provider. You followed it stop by stop: the YAML, the check, the runbook, the module, the provider, and named what happened: supported, defaulted, transformed, dropped or invalid.',
+            pattern='Follow it stop by stop, then name it',
+            realworld='When a team says "I changed the YAML but the plan didn\'t change", you follow that field stop by stop to find where it stopped. You do the same for every changed field when you review a config pull request.',
             asks=[
                 ask('Does the runbook pass `autotermination_minutes` on?', ['Yes', 'No'], answer=1,
                     evidence=evidence('chain', stops=[
@@ -276,6 +278,8 @@ Return a dict from group name to permission.""",
         practice=practice(
             intro='Read the team\'s YAML and predict what the plan will give each group, including what the runbook adds.',
             explain='The plan\'s permissions are the YAML plus what the runbook adds: the owner group gets CAN_MANAGE, every user gets CAN_READ, and a group listed twice keeps the higher permission.',
+            pattern='Group by group: typed, added, then highest',
+            realworld='When a plan for a team folder shows more access than team.yml asks for, you work out each group\'s level before you call it a mistake. When the check rejects a team\'s YAML, you compare its field names with the contract.',
             asks=[
                 ask('What does `grp-sales-dev-analysts` get on the folder?', ['CAN_EDIT', 'CAN_MANAGE', 'CAN_READ'], answer=0,
                     evidence=evidence('code', title='team.yml', text='# config/DEV/team-sales/team.yml\nteam:\n  owner_group: grp-sales-dev-owners\n  folder_grants:\n    - group_name: grp-sales-dev-analysts\n      privilege: CAN_EDIT'),
@@ -495,6 +499,8 @@ Otherwise return the cluster the runbook would build:
         practice=practice(
             intro='Predict what the runbook will build from a team\'s clusters.yml, and catch what the check would reject.',
             explain='Before reading the plan, you predicted it from the YAML: the code in front of the name in lower case, Personal Compute if no policy is named, and the size as given. You also caught the two things a team can\'t write: a raw policy_id, or a size that mixes num_workers with min and max.',
+            pattern='Predict the plan from the YAML',
+            realworld='When a team opens a pull request to add a cluster, you predict its name, policy and size from the YAML before you open the Spacelift plan. Then a surprise in the plan, or a raw policy_id the check will reject, stands out in review.',
             asks=[
                 ask('What will the cluster be called?', ['daily-report', 'sales_daily-report', 'SALES_daily-report'], answer=1,
                     evidence=evidence('code', title='config/DEV/team-sales/clusters.yml', text="""clusters:

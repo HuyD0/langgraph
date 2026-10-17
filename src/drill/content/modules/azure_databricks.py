@@ -68,6 +68,8 @@ A grant counts when its `"to"` is one of `principals`. `ALL PRIVILEGES` counts a
         practice=practice(
             intro='Review the grants the way a platform reviewer does when someone asks "why can\'t I read this?": who holds each key, and where.',
             explain='Unity Catalog checks three keys before anyone reads a table: USE CATALOG, USE SCHEMA and SELECT, each on its own level or higher up. You checked who each key was given to and where it was given, so a key on the catalog covered everything below it, and a key on the wrong schema or for the wrong group counted for nothing.',
+            pattern='Who holds each key, and where',
+            realworld='When someone says "I have SELECT but my query still fails", you read the grants for who got each key and where. Usually USE SCHEMA or USE CATALOG is missing higher up, or the keys went to a group they aren\'t in.',
             asks=[
                 ask('Ana is in `analysts`. Can she read `main.sales.orders`?', ['Yes: she holds all three keys through `analysts`', 'No: the keys went to the group, not to her'], answer=0,
                     evidence=evidence('code', title='The grants', text="""GRANT USE CATALOG ON CATALOG main TO analysts;

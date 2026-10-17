@@ -284,6 +284,41 @@ def test_the_right_practice_option_is_not_the_one_that_stands_out(loaded):
                 assert right <= 1.3 * max(others), f"{entry['id']} question {i + 1}: the right option is much the longest"
 
 
+def test_picture_cards_use_icons_the_page_has(loaded):
+    """Every icon a picture card names is a symbol in page.html's sprite, and every card reads as text too."""
+    from drill.content.model import _icons, picture_text
+
+    page = page_source()
+    have = set(re.findall(r'<symbol id="i-([a-z0-9-]+)"', page))
+    for mod in loaded:
+        for entry in mod.lessons:
+            cards = entry.get("cards") or []
+            missing = sorted(set(_icons(cards)) - have)
+            assert not missing, f"{entry['id']}: no icon in page.html for {missing}"
+            for c in cards:
+                assert c["picture"] is None or picture_text(c["picture"]), f"{entry['id']}: {c['heading']} has no words"
+
+
+def test_practice_lessons_explain_what_the_learner_did(loaded):
+    """After practice questions, the Explain step names the way of thinking the learner used and where
+    they'll use it, instead of the Python exercise's method and its "at work" line, which they never saw."""
+    code_words = re.compile(r"\b(your code|the code|function|loop|list of|returns?|dict|lowercases?|Python)\b", re.I)
+    for mod in loaded:
+        for entry in mod.lessons:
+            practice = entry["exercise"]["practice"]
+            if not practice:
+                continue
+            lid = entry["id"]
+            assert practice.get("pattern"), f"{lid}: practice(pattern=...) names how the learner worked it out"
+            assert practice.get("realworld"), f"{lid}: practice(realworld=...) says where they'll use it"
+            assert practice["pattern"] != entry["angle"]["pattern"], f"{lid}: the practice pattern is still the code's"
+            for field in ("pattern", "realworld"):
+                hit = code_words.search(practice[field])
+                assert not hit, f"{lid}: practice {field} talks about code ({hit.group(0)!r})"
+            for h, t in practice.get("gotchas") or []:
+                assert h and t, f"{lid}: a practice gotcha needs a heading and a sentence"
+
+
 def test_every_look_is_readable():
     """Text, results, the primary button and code colours meet contrast minimums in light, dark and dusk."""
     import importlib.util

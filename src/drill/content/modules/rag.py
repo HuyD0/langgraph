@@ -1074,6 +1074,8 @@ Return a dict like `{"action": "revise", "kept": [...]}`, where `kept` is a list
         practice=practice(
             intro='Read the verifier\'s verdicts the way a groundedness check does: release, revise or abstain, before the user sees the answer.',
             explain='A claim gate checks each statement at request time, before the user sees the answer. You kept the supported claims, abstained on any contradiction or when nothing was supported, and released only when every claim was backed. You also saw its limits: dropping a claim can change what the answer means, and a rising share of revise and abstain is a warning worth watching.',
+            pattern='Release, revise or abstain, claim by claim',
+            realworld="In a RAG app for policy, legal or medical questions, you'll set when an answer goes out, gets trimmed or is held back. A jump in trimmed or held-back answers is your early warning that retrieval or the documents changed.",
             asks=[
                 ask('What does the gate do with this answer?', ['Release: every claim has a citation', 'Revise: drop the store-credit claim', 'Abstain: one claim has no backing'], answer=1,
                     evidence=evidence('code', title='The verifier\'s verdicts', text="""claim                                        cites  verdict
@@ -1248,6 +1250,8 @@ Return `[chunk_size, k]` from that row, or `None` if no row is fast enough.""",
         practice=practice(
             intro='Read the experiment results the way a reviewer does: drop what breaks the latency budget, then pick the best of the rest.',
             explain='You picked a config with the rule written down first: best answer quality within the latency budget. You dropped every row slower than the budget, kept the best quality of the rest, and broke a tie on cost. And you only trusted a comparison where one or two settings changed and everything else stayed fixed.',
+            pattern='Fast enough, best quality, then cheapest',
+            realworld='When you tune a RAG app, a grid search gives you a table of configs. Settle the latency budget with the product owner first, cross out the slow rows, and ship the best quality that is left.',
             asks=[
                 ask('Which configs are too slow for the 1500 ms budget?', ['Only 1024, 5', 'Both 1024 rows', 'None of them'], answer=1,
                     evidence=evidence('code', title='Every combination of two settings', text="""budget: p95 under 1500 ms
@@ -1593,6 +1597,8 @@ Return a list of four choices, in this order:
         practice=practice(
             intro='Plan a Databricks Vector Search index the way a reviewer does: read the facts about the data, then make the four choices in order.',
             explain='Setting up Databricks Vector Search is four choices, and each one followed from a plain fact about the data: a Delta table means Delta Sync, no embeddings yet means managed, ten million vectors or more means storage-optimized. You chose sync last, because an earlier answer can rule an option out: storage-optimized only does Triggered, and Continuous is only worth its cost when minutes matter.',
+            pattern='One fact decides each choice, in order',
+            realworld="Before you create a Databricks Vector Search index, you'll answer four questions: where the data lives, who makes the embeddings, how many vectors there are and how fresh answers must be. Getting the sync mode right keeps the bill from surprising you.",
             asks=[
                 ask('The chunks sit in a Delta table. Which index type?', ['Delta Sync', 'Direct Vector Access'], answer=0,
                     evidence=evidence('code', title='main.support.doc_chunks', text="""needs = {
@@ -1831,6 +1837,8 @@ Return a list of three things: `[choice, databricks_points, azure_points]`. The 
         practice=practice(
             intro='Weigh up Databricks Vector Search and Azure AI Search the way a design review does: see which side each fact points to, then decide.',
             explain='The choice followed where the data lives and where the app runs, not which tool is "better". You gave each fact to the side it points to, ignored the ones that point nowhere, and let the bigger side win. A tie, or a single shiny feature, was a reason to test both on one eval set.',
+            pattern='Put the index where the data lives',
+            realworld="In a design review, someone will ask why you chose Databricks Vector Search or Azure AI Search. Point to where the documents live and where the app runs. If it's a tie, offer to test both on one eval set.",
             asks=[
                 ask('Which service does "docs in sharepoint" point to?', ['Databricks Vector Search', 'Azure AI Search'], answer=1,
                     evidence=evidence('code', title='The project facts', text="""facts = [

@@ -54,6 +54,8 @@ Skip every run whose `cost` is more than `max_cost`. A run that costs exactly `m
         practice=practice(
             intro='Read these MLflow runs the way a reviewer does: apply the rule you wrote before running them.',
             explain='The big idea: write the decision rule down first, like highest quality within a cost limit, so the experiment ends in a decision. You named the one setting that changed, crossed out the runs over budget and took the best of the rest, counted a run at exactly $2 as fitting, and kept the budget where it was written instead of moving it to suit a favourite.',
+            pattern='Stick to the rule you wrote first',
+            realworld="When a teammate shares a page of MLflow runs and says one looks best, you'll ask for the rule that was written before the runs. Then you cross out the runs that break it and pick the best of the rest.",
             asks=[
                 ask('Which setting is the **independent variable**, the one thing changed on purpose?', ['chunk_size', 'k', 'quality', 'cost_per_1k'], answer=0,
                     evidence=evidence('code', title='Three runs in /Shared/support-bot-rag', text="""run_name   chunk_size  k  quality  cost_per_1k
@@ -213,6 +215,12 @@ A field is a gap if it is missing from `plan`, if its value is `None`, or if its
         practice=practice(
             intro='Check these experiment plans the way a reviewer does, before a single run: every part filled in, and a rule that picks a winner.',
             explain='The big idea: decide how you will judge an experiment before you see any results, so you can\'t talk yourself into an answer. You ticked off the seven parts like a packing list, sent back the missing and the empty ones, and made sure the rule also says what a result too close to call means.',
+            pattern='Every part filled in before the first run',
+            realworld="Before a teammate starts an experiment, you'll read their plan and send back any part that is missing or blank. Ask for the rule that picks a winner, and what happens if it's too close to call, before anyone sees a score.",
+            gotchas=[
+                ['Spaces are not an answer', 'A part holding only spaces looks filled in but says nothing. Send it back like a blank one.'],
+                ['Plan for a near tie', 'A rule that only says when to switch leaves the close calls open. Write down what too close to call means, like "keep model A and add more examples".'],
+            ],
             asks=[
                 ask('Which of the seven parts is missing altogether?', ['eval_set, the test questions', 'test, how A and B are compared', 'decision_rule, what picks a winner'], answer=2,
                     evidence=evidence('code', title='The plan, before the first run', text="""plan = {
@@ -508,6 +516,8 @@ Return the names of the confounds as a list in alphabetical order, like `["index
         practice=practice(
             intro='Compare these runs\' settings the way a reviewer does before trusting a result: everything except the planned change should match.',
             explain='The big idea: a result only counts as evidence when the one thing you planned is the only thing that changed. You lined up two runs setting by setting, froze the index so the documents can\'t move under the experiment, counted a setting only one run logged as a difference, and caught a new model hiding behind the same name.',
+            pattern='Line up the settings, find the second change',
+            realworld="When someone says a new prompt made the bot better, you'll open both runs in MLflow and compare their settings first. If the index, the judge or the model version moved too, ask for a rerun before anyone trusts the result.",
             asks=[
                 ask('You planned to change only the prompt. Which other settings changed?', ['judge only', 'judge and index', 'judge, index and k'], answer=1,
                     evidence=evidence('code', title='Planned change: prompt', text="""run A: prompt=v3  judge=j1  index=v7  k=5
@@ -667,6 +677,8 @@ Return a list with one result per call, in order, like `["shipped", "missing"]`.
         practice=practice(
             intro='Read these agent runs the way a reviewer does: is every design facing the same frozen world, and did the task really succeed?',
             explain='The big idea: freeze what the tools return, so every design faces the same world. You looked each call up in the recording, treated a call that was never recorded as missing rather than live, counted a task only when it passed every try, and checked success from what actually happened instead of the agent\'s own report.',
+            pattern='Freeze the world, then check the end state',
+            realworld="When your team compares two agent designs, you'll ask whether both faced the same recorded tool results and passed each task every time. And when an agent says it finished, you'll check what really happened, like whether the refund call was made.",
             asks=[
                 ask('What does the replay give back for `get_order 77`?', ['"shipped"', '"missing"', 'The live order status'], answer=1,
                     evidence=evidence('code', title='The recording, and what the agent asks', text="""recorded:   get_order:42  -> "shipped"
@@ -1562,6 +1574,8 @@ Step 2, quality. Let `gap` be `wins - losses` and `n` be `wins + losses`. The ga
         practice=practice(
             intro='Make the release call the way a reviewer does: the gates first, with every failure listed, then one quality check.',
             explain='The big idea: one rule, written down first, turns many numbers into one decision. You checked every gate and listed each one that failed before looking at quality, then let the paired check decide: ship on a clear win, too close to call on a small one, and keep the baseline when it was clearly worse, even with every gate passed.',
+            pattern='List every failed gate, then weigh quality',
+            realworld="In a release review, you'll make the call: ship, keep the baseline, or too close to call. Write down every failed gate as a reason, so the team can fix them all in one round.",
             asks=[
                 ask('Which reasons go with the decision?', ['only the must-pass case: it fails first', 'all three: must-pass, cost and speed', 'none: 30 wins to 2 outweighs the gates'], answer=1,
                     evidence=evidence('code', title='Candidate 1 against its budget', text="""must-pass failures: 2

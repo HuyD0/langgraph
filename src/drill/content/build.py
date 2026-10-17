@@ -85,9 +85,13 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
     if entry.get("walkthrough"):
         out["walk"] = entry["walkthrough"]  # tool views redrawn with numbered callouts (model.screen)
+    if entry.get("cards"):
+        out["cards"] = entry["cards"]  # Learn as picture cards (model.card), drawn by page/cards.js
     if note:
         out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
     if entry["id"] in diagrams.DIAGRAMS:  # one picture in Learn, drawn by page/diagrams.js
+        # picture cards carry their own pictures, one per card, and the page draws only those
+        assert not entry.get("cards"), f"{entry['id']}: a lesson with picture cards takes no diagram; draw it as a card"
         out["diagram"] = diagrams.DIAGRAMS[entry["id"]]
     links = callbacks.CALLBACKS.get(entry["id"])
     if links:  # [to, phrase, idea, here] per sticker callback, and the one Look again question if any
