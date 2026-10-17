@@ -85,3 +85,30 @@ def holm(pvalues):
         previous = max(previous, min(1.0, (m - rank) * pvalues[i]))
         adjusted[i] = previous
     return adjusted
+
+
+def stratified(rows, n, by, rare):
+    """Every rare row, then the rest of n spread across the `by` groups in proportion, in order_key order."""
+    import hashlib
+
+    order_key = lambda row: hashlib.sha256(f"{row['lesson_id']}/{row['key']}".encode()).hexdigest()  # noqa: E731
+    rare_rows = [r for r in rows if rare(r)]
+    common = [r for r in rows if not rare(r)]
+    want = max(0, n - len(rare_rows))
+    groups = {}
+    for r in common:
+        groups.setdefault(tuple(r[k] for k in by), []).append(r)
+    taken = []
+    for _, items in sorted(groups.items()):
+        items = sorted(items, key=order_key)
+        taken += items[:round(want * len(items) / max(1, len(common)))]
+    return rare_rows + taken
+
+
+def allowed_to_look(split, looks_so_far, big_decision=False):
+    """The rule for each split: dev any time; test once per candidate; holdout once, for a big decision."""
+    if split == "dev":
+        return True
+    if split == "test":
+        return looks_so_far == 0
+    return big_decision and looks_so_far == 0
