@@ -216,7 +216,7 @@ def test_motion_effects_keep_their_promises():
     fx = page.split("/* fx: start */")[1].split("/* fx: end */")[0]
     assert "infinite" not in fx and "blur(" not in fx, "effects must end on their own and stay cheap to draw"
     played = set(re.findall(r'fxScreen\("([a-z]+)"', page)) | set(re.findall(r'fxOn\(.*?, "([a-z]+)", FX\.', page))
-    assert played >= {"space", "merge", "spark", "turn", "curtain", "heal", "smoke", "seal", "unveil", "room"}
+    assert played >= {"space", "merge", "spark", "bloom", "curtain", "heal", "smoke", "seal", "unveil", "room"}
     for name in played:
         assert f".fx-{name} " in fx, f"fx {name!r} is played but has no .fx-{name} rules"
         assert re.search(rf"\b{name}: ", page.split("const FX = {")[1].split("};")[0]), f"FX.{name} has no markup"
