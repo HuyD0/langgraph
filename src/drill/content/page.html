@@ -40,7 +40,8 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .count:empty { display: none; }
 @media (hover: hover) { .btn:hover { border-color: var(--muted); } .btn.primary:hover { filter: brightness(1.06); } .row:hover { background: var(--sunk); } .opt:hover { border-color: var(--muted); } }
 @media (pointer: coarse) { .btn { min-height: 44px; } .btn:active, .row:active, .opt:active { filter: brightness(0.95); } }
-@media (max-width: 420px) { .nblabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } #nbBtn { padding-inline: 10px; } }
+/* phones: the full top bar needs about 550px, so below that the Notebook button keeps only its icon */
+@media (max-width: 560px) { .nblabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } #nbBtn { padding-inline: 10px; } }
 
 /* home */
 #home { padding-block: 24px 48px; }

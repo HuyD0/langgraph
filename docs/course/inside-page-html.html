@@ -266,7 +266,7 @@ body.ask-on .askbtn { display: inline-flex; }
  },
  {
   "file": "src/drill/content/page.html",
-  "find": "@media (max-width: 420px) { .nblabel",
+  "find": "@media (max-width: 560px) { .nblabel",
   "lesson": "phone"
  },
  {
@@ -455,8 +455,8 @@ function applyLook(look) {
 /* Phones: every button at least 44px tall, so a thumb can hit it */
 @media (pointer: coarse) { .btn { min-height: 44px; } }
 
-/* Small phones: the Notebook button keeps its icon, hides its word */
-@media (max-width: 420px) { .nblabel { position: absolute; width: 1px; height: 1px;
+/* Phones: the Notebook button keeps its icon, hides its word */
+@media (max-width: 560px) { .nblabel { position: absolute; width: 1px; height: 1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 </script>
 <script type="text/plain" id="r-js">
@@ -1221,7 +1221,7 @@ const L = [
   idea: [
     "Most people learn on a phone, so Daily Drill is designed for a **375px-wide** screen first. Two habits do most of the work.",
     "**Big enough to tap:** anything you tap is at least **44px** tall on a touchscreen. `@media (pointer: coarse)` means \"on a touch screen\".",
-    "**Change at narrow widths:** a **media query** applies rules only when the screen fits a condition. `@media (max-width: 420px) { ... }` only applies on small phones. Daily Drill uses one to hide the word \"Notebook\" on its button (keeping the icon), so the top bar fits.",
+    "**Change at narrow widths:** a **media query** applies rules only when the screen fits a condition. `@media (max-width: 560px) { ... }` only applies on phones and other narrow screens. Daily Drill uses one to hide the word \"Notebook\" on its button (keeping the icon), so the top bar fits.",
   ],
   key: "Design for 375px first; taps at least 44px; adjust with @media.",
   real: { id: "r-phone", file: "src/drill/content/page.html", sub: "touch size and small phones", note: "The label is hidden in a way screen readers can still read it. Every change in this project gets checked at 375 by 812 before it ships." },
