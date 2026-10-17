@@ -472,6 +472,38 @@ class MlflowObserver:
         except Exception as exc:
             self._off(exc)
 
+    def served(self, context: dict | None, answer: str, model: str) -> bool:
+        """A prepared answer the page showed without asking a model: a trace like any other answer's,
+        tagged ``route = prepared``, so Got it / Still stuck and the quiet signals land on it too."""
+        ctx = clean_context(context)
+        if not ctx.get("feature") or not self.ready():
+            return False
+        try:
+            import mlflow
+            from mlflow.tracing.constant import TraceMetadataKey
+            from mlflow.tracing.trace_manager import InMemoryTraceManager
+
+            from drill import mlflow_names
+
+            version = app_version()
+            tags = {**{k: ctx[k] for k in TAG_KEYS if k in ctx}, **mlflow_names.context_tags(version),
+                    "route": "prepared", "model": model[:100], "cached": "false"}
+            metadata = mlflow_names.context_metadata(version)
+            if "session" in ctx:
+                metadata[TraceMetadataKey.TRACE_SESSION] = ctx["session"]
+            metadata[TraceMetadataKey.TRACE_USER] = ctx.get("user", "local")
+            inputs = {"question": ctx.get("question", ""), **{k: ctx[k] for k in ("lesson_id", "step") if k in ctx}}
+            root = mlflow.start_span_no_context(ctx["feature"], span_type="CHAIN", inputs=inputs, tags=tags, metadata=metadata)
+            if ctx.get("request"):
+                with InMemoryTraceManager.get_instance().get_trace(root.trace_id) as trace:
+                    if trace is not None:
+                        trace.info.client_request_id = ctx["request"]
+            root.end(outputs={"answer": answer[:TEXT_LIMIT]})
+            return True
+        except Exception as exc:  # noqa: BLE001
+            self._off(exc)
+            return False
+
     def _link_prompt(self, trace_id: str, feature: str) -> None:
         """Link a review or challenge trace to the registered prompt version it was built from."""
         pv = self._prompts.get(feature)

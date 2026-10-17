@@ -489,6 +489,76 @@ def tutor_feedback_cmd(
             console.print(f"Added {len(records)} cases to {mlflow_names.dataset_name('tutor_cases')}.")
 
 
+@tutor_app.command("prepare")
+def tutor_prepare_cmd(
+    profile: str = typer.Option(None, "--profile", "-p", help="Databricks CLI profile whose serving endpoints draft and judge (costs money)."),
+    module: str = typer.Option("", "--module", "-m", help="Only this module (for example use-case)."),
+    lesson: str = typer.Option("", "--lesson", help="Only this lesson."),
+    limit: int = typer.Option(0, "--limit", help="At most this many answers (0: all that are missing or out of date)."),
+    redo: bool = typer.Option(False, "--redo", help="Draft again even answers that are ready (or rejected)."),
+    draft_model: str = typer.Option("", "--draft-model", help="Serving endpoint that drafts (default: the strongest Claude)."),
+    judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
+    workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
+) -> None:
+    """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks."""
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    data = build_data()
+    answers = tp.load()
+    work = tp.todo(data, answers, module or None, lesson or None, redo)
+    if limit:
+        work = work[:limit]
+    if not work:
+        console.print("Nothing to prepare: every answer is ready. `drill tutor prepared` shows the counts.")
+        return
+    draft_model, judge_model = draft_model or tp.DRAFT_MODEL, judge_model or tp.JUDGE_MODEL
+    console.print(f"Preparing {len(work)} answers: drafted by {draft_model}, judged by {judge_model}.")
+    passed = failed = 0
+
+    def done(lid, chip, rec):
+        nonlocal passed, failed
+        passed += rec["status"] == "passed"
+        failed += rec["status"] != "passed"
+        if rec["status"] != "passed":
+            console.print(f"  [yellow]failed[/yellow] {lid} {chip['key']}: {rec.get('judge', {}).get('notes', '')}")
+        if (passed + failed) % 25 == 0:
+            console.print(f"  {passed + failed} of {len(work)} done ({passed} passed)")
+
+    tp.run(data, work, tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile), answers,
+           workers=workers, on_done=done, draft_model=draft_model, judge_model=judge_model)
+    console.print(f"Done: {passed} passed, {failed} failed. Saved in src/drill/content/prepared/. Rebuild the page to serve them.")
+
+
+@tutor_app.command("prepared")
+def tutor_prepared_cmd(
+    sample: int = typer.Option(0, "--sample", help="Show every failed answer and this many passed ones, for a spot check."),
+    check: list[str] = typer.Option([], "--check", help="Mark lesson_id/key as checked by you (repeatable)."),
+    reject: list[str] = typer.Option([], "--reject", help="Mark lesson_id/key as rejected: never served (repeatable)."),
+) -> None:
+    """How many prepared answers are ready, failed or out of date; a spot-check sample; your verdicts."""
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    data, answers = build_data(), tp.load()
+    for verdict, items in (("checked", check), ("rejected", reject)):
+        for item in items:
+            lid, _, key = item.partition("/")
+            if key not in answers.get(lid, {}):
+                console.print(f"[red]No prepared answer {item}[/red]")
+                raise typer.Exit(1)
+            tp.mark(answers, lid, key, verdict)
+    if check or reject:
+        tp.save(data, answers)
+    counts = tp.status(data, answers)
+    console.print(", ".join(f"{k}: {v}" for k, v in counts.items()))
+    for lid, key, rec in tp.sample(answers, sample) if sample else []:
+        judge = rec.get("judge", {})
+        console.print(f"\n[bold]{lid}/{key}[/bold] [{rec.get('status')}] {rec['q']}\n{rec['a']}")
+        if judge.get("notes"):
+            console.print(f"[dim]judge: {judge['notes']}[/dim]")
+
+
 @tutor_app.command("snapshot")
 def tutor_snapshot_cmd(
     out: Path = typer.Option(None, "--out", "-o", help="Where to write it (default ~/Documents/daily-drill/tutor-snapshot.md)."),
