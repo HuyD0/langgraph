@@ -1,6 +1,6 @@
 """LLMOps: Cost and caching in production."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import angle, case, example, exercise, lesson, module, question, source, stack
 
 MODULE = module('llmops', 'LLMOps', 'Cost and caching in production.')
 
@@ -151,10 +151,13 @@ for name in ages:
 
 lesson(MODULE, 'estimate_vs_actual',
     title='Estimate against actual',
+    checked='2026-10-17',
+    sources=[source('Track model usage (Unity Gateway usage table)', 'https://docs.databricks.com/aws/en/ai-gateway/usage-tracking'), source('Track model usage - Azure Databricks', 'https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/usage-tracking')],
     learn=[
         'Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.',
         'So each month, set the **estimate** (what the plan said a project would cost) next to the **actual** (what it really cost). **Percent over** is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.',
-        "When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a **request tag** does this, and the usage table records it next to each request's tokens. That table is in Beta (an early release that may still change), and only account admins can query it.",
+        "When several projects share one model service, each request needs a label saying which project sent it. On the Databricks AI gateway (now called Unity Gateway), a **request tag** does this, and the usage table records it next to each request's tokens.",
+        "By default, querying that table takes two admin roles: account admin and metastore admin (the admin of Unity Catalog's top-level store). Admins can give others access. Usage tracking is billed too: Databricks charges for what it logs.",
         'Flag only projects over by a set margin, such as 20 percent, and look at the biggest first. Then replace the guess in the plan with the measured number.',
     ],
     example=example('Percent over for one project', """estimate = 400   # the plan, dollars

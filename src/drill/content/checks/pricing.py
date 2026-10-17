@@ -66,20 +66,20 @@ CHECKS = {
                 "pay back. Break-even and the monthly net don't use the build cost."),
     ],
     "biggest_swing": [
-        ask("You're doing a sensitivity analysis. A teammate moves the task count and the accuracy "
-            "guess at the same time. What's the problem?",
+        ask("You're doing a sensitivity analysis on the HR plan. A teammate moves the task count and "
+            "how often the AI is right at the same time. What's the problem?",
             ["Nothing: two at a time is faster", "They should move every guess at once", "You can't tell which guess moved it"],
             answer=2,
             clue="A sensitivity analysis changes guesses in a particular way, and keeps the rest still.",
             why="Move one guess at a time and keep the others at their expected values. Move two and you "
                 "can't tell which one caused the swing."),
-        ask("Before building the whole HR bot, you want to know how often the AI answers right. "
-            "What's a cheap way to measure that?",
+        ask("In the HR plan, how often the AI is right swings the value from $11,000 to $29,900. "
+            "Before building the whole bot, what's a cheap way to measure it?",
             ["Try it on 50 past tickets labelled by hand", "Ask staff how good they think it will be", "Read the model maker's benchmark scores"],
             answer=0,
-            clue="Use real tickets where you already know the right answer.",
-            why="Running the prompt on past tickets labelled by hand measures accuracy on your own work. "
-                "Opinions and general benchmarks don't tell you how it does on your tickets."),
+            clue="Use real work where somebody already knows the correct reply.",
+            why="Running the prompt on past tickets labelled by hand shows how often it is right on your own "
+                "work. Opinions and general benchmarks don't tell you how it does on your tickets."),
     ],
     "peak_capacity": [
         ask("Your tokens in the busiest minute fit the Foundry deployment's per-minute limit. "

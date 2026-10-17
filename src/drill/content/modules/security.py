@@ -853,6 +853,8 @@ def shell_policy(command):
 
 lesson(MODULE, 'memory_write_gate',
     title='Guarding what goes into memory',
+    checked='2026-10-15',
+    sources=[source('Memory Injection Attacks on LLM Agents via Query-Only Interaction (MINJA)', 'https://arxiv.org/abs/2503.03704')],
     learn=[
         'Long-term **memory** is the facts an agent saves to use in later chats, like "Ana\'s office is in York". Everything saved there is read again in every later chat. So one planted "fact" can fool the agent for weeks: this is **memory poisoning**, a prompt injection that lasts.',
         'It is easy to do. In one study (MINJA), attackers got a false memory saved about 98 times in 100 just by sending the agent carefully worded questions, like any user could, and it changed the agent\'s later answers about 3 times in 4. OWASP, a well-known security group, now lists it as its own risk for agents (ASI06).',

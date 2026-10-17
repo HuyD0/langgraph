@@ -162,6 +162,11 @@ total = trip + 5      # 15.0""",
 
 lesson(MODULE, 'run_tokens',
     title='Tokens grow every step',
+    checked='2026-10-17',
+    sources=[
+        source('Anthropic: Prompt caching', 'https://platform.claude.com/docs/en/build-with-claude/prompt-caching'),
+        source('OpenAI: Prompt caching', 'https://developers.openai.com/api/docs/guides/prompt-caching'),
+    ],
     learn=[
         'An **agent** resends everything so far on every step. All of that is called the **context**: the instructions, the question, every earlier answer and every tool result. So the input grows with each step, and one task costs far more than one call.',
         'In one company\'s research system, one agent used about 4 times the tokens of a plain chat, and a team of agents about 15 times. Price an agent from whole runs, never from a single call.',
@@ -299,7 +304,7 @@ steps += 300   # steps is now 800""",
             ],
             [
                 'Pricing every input token at full price',
-                'Most providers charge much less, often a tenth, for the part of the prompt they have already seen (prompt caching). OpenAI and Gemini do it by default; Claude, on Anthropic or on Databricks, needs a cache_control mark in the request. The bill still grows every step, just more slowly than the token count, so price from the usage your traces report, which splits cached from fresh tokens.',
+                'Providers charge much less, often a tenth of the input price, for the part of the prompt they have seen recently (prompt caching). OpenAI does it on its own once a prompt is long enough (1,024 tokens on its newer models). Claude caches only when the request carries a cache_control mark. The bill still grows every step, just more slowly than the token count, so price from the usage your traces report, which splits cached from fresh tokens.',
             ],
         ],
     ),
@@ -621,24 +626,25 @@ lesson(MODULE, 'biggest_swing',
         "Every business case rests on guesses, called **assumptions**: how many tasks, how often the AI is right, how much each one saves. If you don't know which guess matters most, the trial measures the easy things and misses the one that sinks the plan.",
         'A **sensitivity analysis** changes one guess at a time, from a bad value to a good one, and keeps the others at their expected values. The **swing** is how far the answer moves. The guess with the biggest swing is the one to measure hardest.',
         'In the HR example, doubling the token price lowers the monthly value by only about $390. If the AI is right 50 in 100 times instead of 80, the value falls from about $23,600 to $11,000, as the example below works out.',
-        'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess (the **worst case**, **base case** and **best case**). Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right: that share is the `success` guess in the example and the exercise. Then run a small pilot to see how many staff really use it.',
+        'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess (the **worst case**, **base case** and **best case**). Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right: that share is the `success` guess in the example and the exercise.',
     ],
     example=example('One guess, low and high', """# value = tasks * success * saving - fixed
 # tasks 6000, saving 7, fixed 10000
+# success: how often the AI is right
 low = 6000 * 0.5 * 7 - 10000    # 11000
 high = 6000 * 0.95 * 7 - 10000  # 29900
 swing = high - low              # 18900
 # Do the same for each other guess,
 # and compare the swings."""),
     check=question(
-        "Doubling the token price barely moves your plan's monthly net, but fewer staff using the bot halves it. What should the POC measure hardest?",
+        "In the HR plan, doubling the token price moves the monthly value by about $390. Moving how often the AI is right from 50 in 100 to 95 in 100 moves it by $18,900. What should the POC measure hardest?",
         [
             'The token price, because it is on the monthly bill',
             'The fixed monthly costs, because they come every month',
-            'How many staff really use the bot, and how often',
+            'How often the AI is right, on labelled past tickets',
         ],
         answer=2,
-        why='The guess with the biggest swing decides whether the plan pays. The token price barely moves the answer, so measuring it hard tells you little.',
+        why='The guess with the biggest swing decides whether the plan pays. How often the AI is right swings the value far more than the token price, so pin it down first.',
     ),
     angle=angle(
         pattern='Move one guess, keep the biggest',
@@ -785,7 +791,7 @@ g["size"] = 5   # base["size"] is still 1""",
             ],
             [
                 'Measuring what is easy',
-                'Token counts are easy to measure, but how often the AI is right and how many people use it usually move the answer far more.',
+                'Token counts are easy to measure, but how often the AI is right usually moves the answer far more.',
             ],
         ],
     ),
@@ -799,9 +805,11 @@ lesson(MODULE, 'peak_capacity',
         source('Databricks AI Gateway usage tracking', 'https://docs.databricks.com/aws/en/ai-gateway/usage-tracking-beta'),
     ],
     learn=[
-        'Traffic is never spread evenly through the day. If you **size** capacity (decide how many tokens a minute to ask for, called **capacity planning**) from the daily average, the busiest minute hits your limit, and users get error 429, "too many requests". So size for the **busiest minute**.',
-        'Take tasks a day times the share that arrive in the busiest hour, and divide by 60 to get tasks a minute. Multiply by a **burst factor**: how much busier the busiest minute is than an average minute of that hour (3 is a fair first guess).',
-        "Multiply by the tokens one task asks for, to get tokens in the busiest minute. Check that against every limit on the path: the **Azure AI Foundry** deployment's limit (Foundry is Microsoft's service that hosts the model; each deployment has a **tokens per minute**, TPM, cap) and the gateway's rate limits.",
+        'Traffic is never spread evenly through the day. To **size** a system is to decide how many tokens a minute it must handle, and doing that ahead of time is called **capacity planning**. Every model has a limit on tokens a minute. If you size from the daily average, the busiest minute goes over that limit, and users get error 429, "too many requests". So size for the **busiest minute**.',
+        'To find it, start with tasks a day. Multiply by the share of them that arrive in the busiest hour, and divide by 60 to get tasks a minute in that hour. Then multiply by a **burst factor**: how much busier the busiest minute is than an average minute of that hour. 3 is a fair first guess.',
+        'Multiply by the tokens one task asks for, and you have the tokens in the busiest minute. Count what a task asks for, not what it uses: the prompt plus the longest answer you allow, because that is what the limit counts.',
+        "Now check that number against the first limit on the path: the model's own. At work the model runs on **Azure AI Foundry**, Microsoft's service that hosts models. Your app talks to a **deployment**: one copy of a model, set up for you. Each deployment has a **quota**, the most it may use, counted in **tokens per minute** (TPM).",
+        "Then check the second limit. Requests reach the model through a **gateway**, a front door that every request passes through. The gateway has its own **rate limits** on how much it lets through each minute, and either limit can send back error 429.",
         'Where the numbers come from: the business owner gives tasks a day. The POC measures the busiest hour, the burst from 1-minute peaks, and the tokens per task. The platform team gives the deployment quota and the gateway limits.',
     ],
     example=example('Average against busiest minute', """tokens = 25000   # per HR ticket

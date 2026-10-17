@@ -206,14 +206,14 @@ Explain the error plainly. Trace YAML -> check -> runbook -> module -> provider.
 Link each source. Mark guesses as guesses.
 Give one safe next check. Do not edit or deploy."""),
     check=question(
-        'An AI assistant says the service principal "must be registered, because it is declared in service_principals.yml on main". What is wrong with relying on that?',
+        'The failed run used commit 300d269. The assistant says a setting is turned off and links to the file. You open the link: it shows the latest version of that file. What do you do?',
         [
-            'Nothing: it names the file and the branch',
-            'It read main, not the run\'s commit',
-            'It should have told you to recreate the SP',
+            'Trust it: the link opens and the file says so',
+            'Open the same file at commit 300d269 and look',
+            'Re-run the plan and see if the error comes back',
         ],
         answer=1,
-        why='Two of the three rules fail: the version (main, not the run\'s commit) and the evidence (a declaration in YAML isn\'t proof that Foundation registered the SP). Recreating identities would break the safety rule.',
+        why='The version rule: the evidence must come from the commit the run used, and the file may have changed since. Re-running a plan to make an error go away would break the safety rule.',
     ),
     angle=angle(
         pattern='Give it the facts, check its claims',
