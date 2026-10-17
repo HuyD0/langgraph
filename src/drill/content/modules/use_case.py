@@ -502,7 +502,7 @@ Return `[functional, non_functional]`: two lists of the requirement dicts, each 
         realworld='Requirement reviews often start with exactly this sort, then a person checks the edge cases. Non-functional requirements map straight onto the Well-Architected pillars.',
         practice=practice(
             intro='Sort the HR assistant\'s requirements the way a reviewer does: for each one, ask whether you would check it by watching it happen or by measuring it.',
-            explain='The big idea: functional requirements are what a system does, and non-functional ones are how well it does it. You asked how you would check each line, by watching or by measuring, spotted a list with nothing to measure, split a sentence that held both kinds, and turned "always up" into a number you can measure.',
+            explain='The big idea: functional requirements say what a system does, and non-functional ones say how well it does it. To tell them apart, ask: would I check this by watching it, or by measuring it? With that one question you saw the product owner\'s list said nothing about speed, cost or privacy, pulled "within 5 seconds" out of the time-off line, and turned "always up" into 99.9 percent uptime.',
             pattern='Watch it, or measure it?',
             realworld='When a team plans a pilot (a small first trial), someone will ask for the non-functional requirements. Bring each one with a number, so the trial can measure it and say pass or fail.',
             gotchas=[
