@@ -218,6 +218,9 @@ def merge_progress(a: dict, b: dict) -> dict:
         first = mine.get("first") or theirs.get("first")  # the shared result: the first time through stays
         if first:
             lessons[lesson_id]["first"] = first
+        again = theirs.get("again") or mine.get("again")  # the Look again question's picks (content/callbacks.py)
+        if again:
+            lessons[lesson_id]["again"] = again
     return {
         "solved": {**(a.get("solved") or {}), **(b.get("solved") or {})},
         "days": sorted(set(a.get("days") or []) | set(b.get("days") or [])),

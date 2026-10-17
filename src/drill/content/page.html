@@ -383,6 +383,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .stack h3, .sec h3 { margin: 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
 .sec { display: grid; gap: 8px; }
 /*INCLUDE page/trust.css*/
+/*INCLUDE page/callbacks.css*/
 .sec p { margin: 0; max-width: 65ch; }
 .say { margin: 4px 0 0; border-left: 3px solid var(--accent); padding-left: 14px; font-size: 17px; }
 .gl { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
@@ -2190,18 +2191,21 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = fals
 
 /*INCLUDE page/trust.js*/
 
+/*INCLUDE page/callbacks.js*/
+
 // ---------- step panes ----------
 /*INCLUDE page/walkthrough.js*/
 function learnPane() {
   const L = LESSONS[cur.id];
   if (L.pack) return packLearnPane(L, L.pack);
   const [cap, code] = L.example, [first, ...rest] = L.learn;
-  closeTrust();
+  closeTrust(); closeCb();
   return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}
     ${rest.map(p => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>`).join("")}
     ${L.walk ? walkHtml(L.walk) : ""}
     <figure class="ex"><figcaption>${esc(cap)}</figcaption><pre class="code">${esc(code)}</pre></figure>
     ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}
+    ${againHtml(cur.id)}
     ${checkedNote(L)}
     ${askPanel()}`;
 }
@@ -2992,7 +2996,7 @@ goHome();
           const lessons = Object.assign({}, r.lessons || {});
           for (const [k, v] of Object.entries(progress.lessons)) {
             const o = lessons[k];
-            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain, checks: v.checks || o.checks, first: o.first || v.first };
+            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain, checks: v.checks || o.checks, first: o.first || v.first, again: v.again || o.again };
           }
           progress = {
             solved: Object.assign({}, r.solved || {}, progress.solved),

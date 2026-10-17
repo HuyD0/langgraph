@@ -249,6 +249,16 @@ def trust(trait: str, *, phrase: str, view: str, tip: str, rmf: str, tevv: bool 
     return {"trait": trait, "phrase": phrase, "view": view, "tip": tip, "rmf": rmf, "tevv": tevv}
 
 
+def callback(to: str, *, phrase: str, idea: str, here: str, again: dict | None = None) -> dict:
+    """A sticker callback (see :mod:`drill.content.callbacks`): the sticker of an earlier lesson ``to``,
+    placed right after ``phrase`` in this lesson's Learn text, where the lesson uses that lesson's idea.
+    ``idea`` names the idea in a few words (the card's heading); ``here`` says in one or two plain
+    sentences what it means in this lesson. ``again`` is an optional Look again question (made with
+    :func:`ask`, so it has a clue) shown after Learn: one question that uses the earlier idea."""
+    assert to and phrase and idea and here, "a callback needs to, phrase, idea and here"
+    return {"to": to, "phrase": phrase, "idea": idea, "here": here, "again": again}
+
+
 def source(title: str, url: str) -> list[str]:
     """A page a lesson's facts were checked against: what it is, and where."""
     assert url.startswith("https://"), f"{title}: a source needs an https link"

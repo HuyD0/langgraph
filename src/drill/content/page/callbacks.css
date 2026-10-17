@@ -1,0 +1,47 @@
+/* ---------- sticker callbacks (content/callbacks.py): an earlier lesson's sticker after a phrase, its card,
+   and the Look again question. Colour says which route the idea came from: --path for the AI path, --track
+   (with the track's octagon sticker) for the Platform track. The card is the trust card's sibling (.trustpop),
+   so it has the same glass in Dusk. A sticker you haven't earned yet is a dashed outline. */
+.cbmark, .cbpop, .again { --cb: var(--path); --cb-soft: var(--path-bg); --cb-ink: var(--path-ink); }
+.cbmark.tr, .cbpop.tr, .again.tr { --cb: var(--track); --cb-soft: var(--track-soft); --cb-ink: var(--track); }
+.cbmark { position: relative; display: inline-grid; place-items: center; width: 30px; height: 30px; margin: -8px 0 -8px 2px; padding: 0; vertical-align: middle; border: 0; border-radius: 50%; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cbmark svg { width: 28px; height: 28px; overflow: visible; }
+.cbmark:focus-visible { outline: 2px solid var(--cb); outline-offset: 1px; }
+/* the sticker is 30px; on touch an invisible ring around it takes the tap, so the target is 44px */
+@media (pointer: coarse) { .cbmark::before { content: ""; position: absolute; inset: -7px; } }
+.cbmark .sh, .cbbig .sh, .againstk .sh { fill: var(--cb-soft); stroke: var(--cb); stroke-width: 2.4; }
+.cbmark .ico, .cbbig .ico, .againstk .ico { fill: none; stroke: var(--cb-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+:root[data-theme="dusk"] .cbmark .ico, :root[data-theme="dusk"] .cbbig .ico, :root[data-theme="dusk"] .againstk .ico { stroke: var(--fg); }
+.cbmark.ahead .sh, .cbpop.ahead .cbbig .sh, .againstk.ahead .sh { fill: none; stroke: var(--muted); stroke-dasharray: 3 4; }
+.cbmark.ahead .ico, .cbpop.ahead .cbbig .ico, .againstk.ahead .ico { stroke: var(--muted); }
+/* a sticker you haven't opened here glows softly until you do */
+.cbmark.fresh svg { animation: cb-glow 2.6s ease-in-out infinite; }
+@keyframes cb-glow { 0%, 100% { filter: drop-shadow(0 0 1px color-mix(in srgb, var(--cb) 40%, transparent)); } 50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cb) 85%, transparent)); } }
+.cbpop { grid-template-columns: auto minmax(0, 1fr); align-items: start; column-gap: 14px; --mark: var(--cb); --mark-glow: color-mix(in srgb, var(--cb) 35%, transparent); }
+.cbbig svg { display: block; width: 56px; height: 56px; }
+.cbbody { display: grid; gap: 8px; min-width: 0; }
+.cbgo { justify-self: start; min-height: 44px; color: var(--cb-ink); }
+:root[data-theme="dusk"] .cbgo { color: var(--cb); }
+
+.again { position: relative; display: grid; gap: 10px; }
+.again .eyebrow, .againq { padding-right: 64px; }  /* room for the sticker in the corner; the answers use the full width */
+.again .eyebrow { color: var(--cb-ink); }
+:root[data-theme="dusk"] .again .eyebrow { color: var(--cb); }
+.againstk { position: absolute; top: 14px; right: 14px; }
+.againstk svg { display: block; width: 46px; height: 46px; }
+.again.own .againstk svg { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--cb) 75%, transparent)); }
+.againq { margin: 0; font: 600 17px/1.35 var(--display); color: var(--fg); }
+.againopts { display: grid; gap: 8px; }
+.againopt { display: flex; gap: 12px; align-items: center; min-height: 44px; padding: 8px 14px; text-align: left; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
+.againopt b { font: 600 12px var(--mono); color: var(--muted); }
+.againopt:not(:disabled):hover { border-color: var(--cb); }
+.againopt:disabled { cursor: default; }
+.againopt.no { border-color: var(--fail); color: var(--muted); text-decoration: line-through; }
+.againopt.yes { border-color: var(--pass); box-shadow: 0 0 0 1px var(--pass); }
+.againopt.yes b { color: var(--pass); }
+.againclue, .againwhy { margin: 0; }
+.againclue b, .againwhy b { margin-right: 6px; font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.againwhy b { color: var(--pass); }
+.againseen { margin: 0; font: 400 13px var(--mono); color: var(--muted); }
+.again .linkbtn { justify-self: start; min-height: 44px; }
+@media (max-width: 420px) { .again .eyebrow, .againq { padding-right: 48px; } .againstk { top: 12px; right: 12px; } .againstk svg { width: 38px; height: 38px; } }

@@ -27,27 +27,37 @@ function trustPopHtml(id) {
     <p class="tt"><b>Tip</b>${esc(tip)}</p>
     <div class="tr" aria-label="${on.size} of 7 trustworthy AI traits practised">${dots}<span>${on.size} of 7 trust traits practised</span></div></div>`;
 }
-// One paragraph of Learn text, with the lesson's trust mark after its phrase if this is the paragraph.
+// One paragraph of Learn text, with the lesson's trust mark after its phrase if this is the paragraph,
+// and any sticker callback whose phrase is here (page/callbacks.js). Each card waits under the paragraph.
 function withTrust(id, text, wrap) {
-  const T = LESSONS[id].trust;
-  if (!T || !text.includes(T[1])) return wrap(md(text));
-  return `<div class="trusthost">${wrap(md(text.replace(T[1], T[1] + TRUST_PIN)).replace(TRUST_PIN, trustMarkHtml(id)))}${trustPopHtml(id)}</div>`;
+  const T = LESSONS[id].trust, hasT = !!T && text.includes(T[1]);
+  const cbs = cbOf(id).map((c, i) => [i, c]).filter(([, c]) => text.includes(c[1]));
+  if (!hasT && !cbs.length) return wrap(md(text));
+  let raw = hasT ? text.replace(T[1], () => T[1] + TRUST_PIN) : text;
+  for (const [i, c] of cbs) raw = raw.replace(c[1], () => c[1] + CB_PIN(i));
+  let html = wrap(md(raw));
+  if (hasT) html = html.replace(TRUST_PIN, () => trustMarkHtml(id));
+  for (const [i] of cbs) html = html.replace(CB_PIN(i), () => cbMarkHtml(id, i));
+  return `<div class="trusthost">${html}${hasT ? trustPopHtml(id) : ""}${cbs.map(([i]) => cbPopHtml(id, i)).join("")}</div>`;
 }
 let trustOpen = null;
 function closeTrust() {
   const b = trustOpen; if (!b) return;
   trustOpen = null; b.setAttribute("aria-expanded", "false");
-  const p = b.closest(".trusthost")?.querySelector(".trustpop"); if (p) { p.hidden = true; p.classList.remove("opening"); }
+  const p = b.closest(".trusthost")?.querySelector(".trustpop:not(.cbpop)"); if (p) { p.hidden = true; p.classList.remove("opening"); }
 }
-function openTrust(b) {
-  closeTrust();
-  const p = b.closest(".trusthost").querySelector(".trustpop");
-  p.hidden = false;
+// A card grows out of the mark that opened it: a circle from the mark to the card's far corner.
+function growPop(b, p) {
   const a = b.getBoundingClientRect(), r = p.getBoundingClientRect();
   const ox = a.left - r.left + a.width / 2, oy = a.top - r.top + a.height / 2;  // the circle grows from the mark to the far corner
   p.style.setProperty("--ox", ox + "px"); p.style.setProperty("--oy", oy + "px");
   p.style.setProperty("--or", Math.ceil(Math.hypot(Math.max(ox, r.width - ox), Math.max(oy, r.height - oy))) + 2 + "px");
   p.classList.remove("opening"); void p.offsetWidth; p.classList.add("opening");
+}
+function openTrust(b) {
+  closeTrust(); closeCb();
+  const p = b.closest(".trusthost").querySelector(".trustpop:not(.cbpop)");
+  p.hidden = false; growPop(b, p);
   b.setAttribute("aria-expanded", "true"); trustOpen = b;
   b.classList.remove("arrive", "fire"); void b.offsetWidth; b.classList.add("fire", "seen");
   b.querySelectorAll(".em").forEach(e => e.remove());
