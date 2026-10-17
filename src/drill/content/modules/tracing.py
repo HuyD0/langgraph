@@ -215,6 +215,8 @@ Start at the root. Step into its slowest child, the one with the biggest `ms`. K
         practice=practice(
             intro='Read slow traces the way an on-call engineer does: start at the root and keep stepping into the slowest child.',
             explain='To find what\'s slow, start at the root and keep following the slowest child down, until you reach the step that is actually slow. You read the trace before trusting a guess about the model, found which helper held an agent team up, and saw that steps running at the same time overlap instead of adding up.',
+            pattern='Take the biggest branch at each level',
+            realworld='When someone says the agent is slow, open its trace in MLflow Tracing or LangSmith and follow the slowest step down. Fix the step you land on, usually one tool or one model call, before you switch models.',
             asks=[
                 ask('Follow the slowest child down from `agent`. Where do you end up?', ['`generate`', '`sql`', '`prompt`'], answer=0,
                     evidence=evidence('code', title='One agent run', text="""agent          1000 ms
@@ -1114,6 +1116,8 @@ Return these lists sorted with the biggest count first. If two labels have the s
         practice=practice(
             intro='Work through failed runs the way an engineer doing error analysis does: count the labels, fix the biggest group, then count again.',
             explain='Label each failed trace, count the labels, and fix the biggest group first. You saw that labels only count properly when they come from a fixed list, that a tool pointing at the broken step needs a person to check it, and that a fix is proved by rerunning and counting again.',
+            pattern='Count the labels, fix the biggest',
+            realworld='When an agent fails on hundreds of runs, label a sample of about 50 failed traces from a fixed set of labels, then count them. Fix the biggest group, rerun the evals and count again.',
             asks=[
                 ask('Which failure mode do you fix first?', ['repeated step', 'ignored task', 'never stopped'], answer=0,
                     evidence=evidence('code', title='Five failed traces, labelled', text="""id   label

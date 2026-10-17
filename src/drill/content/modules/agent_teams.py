@@ -86,6 +86,8 @@ Check these rules in order. Return the answer of the first one that fits:
         practice=practice(
             intro='Place each job on the ladder the way a design review does: the lowest step that does the job.',
             explain='Most tasks don\'t need a team, so you picked the lowest step on the ladder that does the job. Fixed steps meant a workflow, no tools meant one call, and a team only won when the work split into separate parts and one agent passed less than about 45 percent. Everything else stayed one agent.',
+            pattern='Pick the lowest step that does the job',
+            realworld="When someone proposes a team of agents, you'll ask what problem it fixes and whether the work really splits into separate parts. Then you'll ask for an eval that runs one agent and the team side by side.",
             asks=[
                 ask('Which step on the ladder?', ['One call', 'A fixed workflow', 'One agent with tools', 'A team'], answer=0,
                     evidence=evidence('code', title='Summarise one support ticket', text="""task = {
@@ -298,6 +300,8 @@ Return those resources as a list, sorted A to Z. If no resource has more than on
         practice=practice(
             intro='Read who reads and who writes the way a reviewer does: find anything with two writers before the helpers run side by side.',
             explain='Each thing that changes gets one writer, because when two agents change the same thing, one quietly overwrites the other. You counted the writers of each resource, ignored the readers, and kept helpers read-only with a clear brief, so they report back and a single agent writes.',
+            pattern='Readers are fine, two writers clash',
+            realworld="Before helper agents run side by side, you'll check who changes each table, file or answer. Give each one a single writer, and write briefs that keep the other helpers read-only.",
             asks=[
                 ask('Which resource has more than one writer?', ['`tickets`', '`tags`', '`notes`', '`drafts`'], answer=1,
                     evidence=evidence('code', title='Who reads and who writes', text="""tasks = {
@@ -734,6 +738,12 @@ If `found` is empty, return `{"kept": 1.0, "lost": []}`.""",
         practice=practice(
             intro='Check a hand-off the way an evaluator does: list what the helper found, and see which facts reach the final answer.',
             explain='Hand-offs lose details when the main agent rewords a helper\'s message, so you checked which facts reached the final answer. You looked for each fact\'s words in the answer, ignoring capitals, and named what fell out, including a fact that was only reworded and one that vanished. The final answer is graded first; the hand-off check shows where details leaked.',
+            pattern='Follow each fact to the final answer',
+            realworld="When a team of agents gives answers that read well but leave customers asking again, you'll look at the hand-offs. List what each helper found, see which facts reach the final answer, and fix the prompts so reports pass on word for word.",
+            gotchas=[
+                ["Capitals don't count", '"Order 4412" and "order 4412" are the same fact. A check that looks for exact words must ignore capitals, or it calls a fact lost when it is right there.'],
+                ['Grading only the final answer', 'An answer can read well and still drop a fact a helper found. The hand-off check shows where it fell out.'],
+            ],
             asks=[
                 ask('Which fact got lost at the hand-off?', ['order 4412', 'refund approved', 'card ends 0099'], answer=2,
                     evidence=evidence('code', title='One helper, one final answer', text="""The researcher found:

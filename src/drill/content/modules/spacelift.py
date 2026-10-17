@@ -210,6 +210,8 @@ Return what the run proves, checking in this order:
         practice=practice(
             intro='Read Spacelift runs the way a reviewer does: say what each one proves before you say anything is live.',
             explain='A run\'s type and state together say what it proves: a proposed run is only ever a preview, and a tracked run deploys only once someone confirms it. You read each run from the top, matched its state to what it proves, checked it planned the newest commit, and went to the first error when one failed.',
+            pattern='Type and state say what it proves',
+            realworld='When a teammate says a fix is live, or a pull request is ready to review, you open the Spacelift run and check its type, state and commit first. When a run fails, you go straight to the first error in the planning log.',
             asks=[
                 ask('What does this run prove?', ['It was applied: tracked runs on main deploy', 'It planned, and waits for a person to confirm it', 'It failed: it never got past the plan'], answer=1,
                     evidence=evidence('code', title='The run header', text="""Run:    Add sales_daily-report cluster
@@ -399,6 +401,8 @@ Return the list of stacks that will run after it, in the order they run:
         practice=practice(
             intro='Work out which stacks run after a change, and when, the way a platform reviewer does before merging.',
             explain='When a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. You followed the waits down from the changed stack, saw that stacks upstream or off to the side stay still, and caught a stack that could start too early because one of its waits was missing.',
+            pattern='Follow the waits downstream only',
+            realworld='Before you merge a change to a shared stack like network, you work out which stacks will run after it, and in what order. When a stack uses another stack\'s outputs, you check that it waits for that stack, so it never runs too early.',
             asks=[
                 ask('`catalogs` changes. Which stacks run after it?', ['Only `jobs`', '`jobs` and `workspace`', 'Every stack'], answer=0,
                     evidence=evidence('code', title='The stacks and what they wait for', text=_STACKS),
@@ -579,6 +583,8 @@ Return the messages in the same order as `changes`. An empty list means the run 
         practice=practice(
             intro='Read a plan against a plan policy the way the platform team does: what it blocks, what it misses, and what it never sees.',
             explain='A plan policy checks every run automatically, starting with the resources you can\'t rebuild. You flagged only the changes that were both a protected type and a delete, replacements included, noticed a type the protected list was missing, and saw what a policy can\'t catch because it never becomes a plan.',
+            pattern='A protected type plus a delete',
+            realworld='When the platform team adds a plan policy, you check that its protected types cover everything you can\'t rebuild, like storage containers with data in them. When someone suggests a state command to get past a policy, you ask why the plan wants a delete.',
             asks=[
                 ask('The policy protects workspaces, storage accounts and metastores. Which change does it block?', [], answer=2, pick=True,
                     evidence=evidence('plan', title='Stack dbx-service-dev · proposed',

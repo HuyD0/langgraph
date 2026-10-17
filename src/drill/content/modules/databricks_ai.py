@@ -72,6 +72,8 @@ Return a list with one `[name, choice]` pair per task, in the same order as `tas
         practice=practice(
             intro='Pick the Agent Bricks template for each task the way you would on the Create Agent screen: check the most specific need first.',
             explain='You picked the template from what each task needs, checking the most specific need first: several agents means a Supervisor Agent, documents plus fields means Information Extraction, documents alone means a Knowledge Assistant, and anything left is one text task. The order matters, because a broader rule placed first catches tasks meant for a narrower one.',
+            pattern='Check the most specific need first',
+            realworld='Picking the template is the first choice under Agents > Create Agent, and a wrong pick means a rebuild. When a job needs several agents, build the helpers first and add the Supervisor Agent last.',
             asks=[
                 ask('Which template fits?', ['Knowledge Assistant', 'Information Extraction', 'Supervisor Agent', 'Custom LLM'], answer=0,
                     evidence=evidence('code', title='Answer staff questions about HR policy', text="""{"name": "hr-helper",
@@ -683,6 +685,8 @@ A grant of `ALL PRIVILEGES` counts as any privilege. Return the functions the ag
         practice=practice(
             intro='Check an agent\'s tool list the way you would before a deploy: for each function, line up three privileges for the names the agent counts as.',
             explain='An agent can call a function only when three privileges line up for its own names: USE CATALOG, USE SCHEMA and EXECUTE, each granted on the place itself or a place above it. You checked each function against the grants for the agent, not for the people who test it, and matched whole names, not names that only start the same.',
+            pattern='Three grants on the agent\'s own names',
+            realworld='Before you deploy an agent, check that its service principal has USE CATALOG, USE SCHEMA and EXECUTE for every tool it calls. Grants to the people who tested it in a notebook don\'t count.',
             asks=[
                 ask('Can the agent call `main.support.lookup_order`?', ['Yes: all three line up', 'No: one is missing'], answer=0,
                     evidence=evidence('code', title='The agent\'s names and its grants', text="""agent counts as: order-bot, support-bots
@@ -960,6 +964,14 @@ Return `[kept, dropped]`: two lists, each in the same order as `urls`.""",
         practice=practice(
             intro='Check web search citations the way the agent should before the user sees them: cut out each link\'s host and match it against the allow list.',
             explain='A citation only helps if it comes from a site you trust, and the host in the link tells you which site that is. You cut out each host, matched the exact domain or a dot before it, and caught a look-alike and a domain hiding in the path. You also kept in mind that an allowed site can still carry text that tries to give orders.',
+            pattern='Find the site, then read it from the end',
+            realworld='When you build an agent that searches the web, check each citation\'s site against your allow list before the user sees the answer. Record the dropped links in the trace, so a reviewer can see which answers used the web.',
+            gotchas=[
+                ['Trusted site, untrusted text', 'A page on an allowed site can still hold text that tries to give your model orders, for example in a comment. The allow list checks where the text came from, not what it says. Fence it as data too.'],
+                ['The domain in the path', '`https://news-fict.example/microsoft.com/x` mentions microsoft.com, but the site is news-fict.example. Always cut out the host first; never search the whole link for the domain.'],
+                ['Your query leaves the workspace', 'Whatever the agent searches for goes out to the public web. Keep customer names, order numbers and other private data out of search queries.'],
+                ['Ports, `?` and `#`', 'A port like `:443`, a `?` or a `#` also ends the host. So `https://learn.microsoft.com:443/x` is on learn.microsoft.com, and `https://evil.example#.microsoft.com` is on evil.example, a different site.'],
+            ],
             asks=[
                 ask('What is the host of this link?', ['`https://learn.microsoft.com`', '`learn.microsoft.com`', '`learn.microsoft.com/azure`'], answer=1,
                     evidence=evidence('code', title='A citation from web search', text="""allowed: microsoft.com, databricks.com

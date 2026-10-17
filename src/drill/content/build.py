@@ -84,6 +84,8 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
         out["stack"] = [entry["stack"]["title"], entry["stack"]["code"]]
     if entry.get("walkthrough"):
         out["walk"] = entry["walkthrough"]  # tool views redrawn with numbered callouts (model.screen)
+    if entry.get("cards"):
+        out["cards"] = entry["cards"]  # Learn as picture cards (model.card), drawn by page/cards.js
     if note:
         out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
     links = callbacks.CALLBACKS.get(entry["id"])

@@ -341,6 +341,11 @@ body.ask-on .askbtn { display: inline-flex; }
  },
  {
   "file": "src/drill/content/page.html",
+  "find": "if (L.cards) return cardsLearnPane(L);",
+  "lesson": "render"
+ },
+ {
+  "file": "src/drill/content/page.html",
   "find": "withTrust(cur.id, first,",
   "lesson": "render"
  },
@@ -488,6 +493,7 @@ const md = s => inline(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
 function learnPane() {
   const L = LESSONS[cur.id];
   if (L.pack) return packLearnPane(L, L.pack);   // a content-pack lesson is drawn differently
+  if (L.cards) return cardsLearnPane(L);         // a lesson written as picture cards (page/cards.js)
   const [cap, code] = L.example, [first, ...rest] = L.learn;
   closeTrust();
   // withTrust() runs md() on the text, and adds a trust mark where one belongs

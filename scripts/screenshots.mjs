@@ -35,6 +35,8 @@ const SHOTS = [
   ["track-phone-dusk", PHONE, "dusk", `goHome(); at("#track-platform");`],
   ["track-desktop-light", DESKTOP, "light", `goHome(); at("#track-platform");`],
   ["lesson-learn-phone-dusk", PHONE, "dusk", `openLesson("use_case_score", 0);`],
+  ["learn-cards-phone-dusk", PHONE, "dusk", `openLesson("well_architected", 0); at(".pcard:nth-of-type(2)");`],
+  ["learn-cards-phone-light", PHONE, "light", `openLesson("split_requirements", 0); at(".pcard:nth-of-type(2)");`],
   ["trust-mark-phone-dusk", PHONE, "dusk", `openLesson("redact_pii", 0); document.querySelector(".trustmark").click(); at(".trustpop");`],
   ["callback-phone-dusk", PHONE, "dusk", `lp("well_architected").done = true; openLesson("backoff_delays", 0); document.querySelector(".cbmark").click(); at(".cbmark");`],
   ["look-again-phone-light", PHONE, "light", `lp("well_architected").done = true; openLesson("backoff_delays", 0); [...document.querySelectorAll("[data-again]")].find(b => !/Reliability/.test(b.textContent)).click(); at("#againCard");`],

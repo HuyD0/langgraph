@@ -183,6 +183,8 @@ Return the names of the models that no other model beats, in their original orde
         practice=practice(
             intro='Read one run per model the way a reviewer does: throw out any model another one beats, and check the comparison was fair.',
             explain='You threw out any model that another one beats on quality, cost and latency together, and kept the ones nothing beats: the Pareto front, a short list of real trade-offs. Two models with the same numbers both stay, and a score from a different judge can\'t be compared fairly.',
+            pattern='Throw out any model another one beats',
+            realworld='When your team picks a model for a new task, run each candidate on the same eval set with the same judge, and log quality, cost and p95 latency. Drop the ones another model beats, then choose from the rest on what quality is worth to you.',
             asks=[
                 ask('Which model can you throw out?', ['fast-model', 'smart-model', 'old-model'], answer=2,
                     evidence=evidence('code', title=MODEL_RUNS_TITLE, text=MODEL_RUNS),

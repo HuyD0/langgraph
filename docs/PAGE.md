@@ -160,7 +160,12 @@ keep the Python Build. [CURRICULUM.md](CURRICULUM.md) has the rule as a table. T
 `ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
 one plain question, three or so options, a plain line for each wrong one, a clue first and then
 the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
-The Python exercise stays one tap away ("Rather write it in Python?"). A `fix(...)` question is **Fix the YAML**: the learner edits a
+The Python exercise stays one tap away ("Rather write it in Python?"). After practice, the Explain
+step describes what the learner did, not the Python they didn't see: `practice(pattern=...)` is the
+heading under "How you worked it out" (the way of thinking, like "Cross it out: job or bar?"),
+`explain=` the big idea, and `realworld=` the "Where you'll use this" line. `gotchas=` replaces the
+exercise's gotchas in practice mode when some only make sense in code. A test checks every practice
+lesson has a pattern and a realworld line with no code words in them. A `fix(...)` question is **Fix the YAML**: the learner edits a
 real file until the check passes, with problems listed by line ("Line 6 · policy_id isn't
 allowed"). The rules are the contract (required, allowed, types, allowed values, forbidden fields,
 the worker-size rule) plus a goal; `yamlRead` and `yamlCheck` in the page run them, and
@@ -187,6 +192,32 @@ and Dusk: the `--tool-*` tokens.
 "Reading a Spacelift run" (the first Spacelift lesson) uses it, with the same content as the
 annotated screenshots in the platform team's workbook, and tips checked against Spacelift's docs
 (proposed and tracked runs, run promotion, plan policies, contexts, Spacelift-managed state).
+
+## Picture cards: Learn as short cards with pictures
+
+A lesson's Learn step can be short cards, one idea and one picture each, instead of paragraphs:
+`lesson(..., cards=[card(heading, text, picture=..., after=..., note=...)])`. The page draws each
+picture from data (`page/cards.js`) in the app's look, so it fits a phone and follows the theme.
+The lesson's `learn` paragraphs are then written from the cards (`cards_learn` in `model.py`, with
+every picture said in words), so the tutor map, the MCP tools, search and Ask still read text;
+the `example` stays in the data for them but isn't drawn. Trust marks and sticker callbacks work
+in card text (`text`, `after` and `note` all go through `withTrust`).
+
+| Picture | Made with | Draws |
+|---|---|---|
+| Two piles | `piles(pile(title, items, sub=, look=), pile(...), key=)` | Two columns of tiles, like jobs and bars |
+| Cross-out test | `crossout(struck(text, then, verdict, look=, icon=), ...)` | A line struck through, what's lost, what that makes it |
+| Cut a sentence | `split([part, part], [tile(...), ...])` | A sentence cut with scissors, then the lines it becomes |
+| Vague to checkable | `rewrite(("fast", "under 5 seconds"), ...)` | Each vague word crossed out and rewritten |
+| Pillars | `pillars(roof, pillar(name, icon, question, short=, chips=, open=), ...)` | A roof on 3 to 6 pillars; chips rest on them; an `open` pillar is the unanswered question |
+| Trade-off | `seesaw((up, line), (down, line), caption=)` | A plank tipping towards the side that pays |
+| Steps | `steps((icon, title, text), ..., decide=)` | Steps in order; with `decide`, the last is filled: a person makes the call |
+
+Two kinds of thing are told apart by **shape**, never a new colour: `look="solid"` (a filled
+tile) and `look="dashed"` (a ruler-edged tile). Icons are names from the page's sprite (`i-...`);
+a test fails if a card names one the page doesn't have. Keep to one idea per card, two to seven
+cards, with the same example running through them (lesson 1.3 uses a food delivery app, then the
+HR assistant; 1.4 puts the HR assistant's bars on the pillars).
 
 ## What you practise: AI, the platform, or both
 

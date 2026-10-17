@@ -181,6 +181,25 @@ styles `.cloze`, `.gap`, `.clzchip`, `.clzclue`.
 `[[answer|wrong|wrong::clue]]`. It must sound like a person talking (see [../PAGE.md](../PAGE.md)).
 Tests check every gap.
 
+## Learn as picture cards
+
+![The well-architected review's pillars, with the HR assistant's requirements resting on them](learn-cards-phone-dusk.webp)
+![The cross-out test: two lines struck through, and what each loses](learn-cards-phone-light.webp)
+
+**What the learner sees.** Lessons 1.3 (functional and non-functional requirements) and 1.4 (a
+well-architected review) teach Learn as short cards, one idea and one picture each: two piles of
+jobs and bars, the cross-out test, a sentence cut in two, vague words rewritten, five pillars with
+the requirements resting on them (an empty one marked "?"), a see-saw for a trade-off, and the
+steps from a model's draft to a person's decision.
+
+**What draws it.** `cardsLearnPane()` and `PC_PIC` (one function per kind of picture) in
+`page/cards.js`; styles `.pc-*` in `page/cards.css`. `learnPane()` hands over when the lesson has
+`cards`. The content is `cards=[card(...)]` in the lesson ([../PAGE.md](../PAGE.md), "Picture cards").
+
+**Change it safely.** Each picture is also written in words for the tutor and the MCP tools
+(`picture_text`), and a test fails if a card names an icon the page doesn't have. Tell two kinds
+apart by `look` (solid or dashed), never by a new colour.
+
 ## A walkthrough of a tool's screens
 
 ![A Spacelift run header, redrawn with numbered callouts](walkthrough-phone-dusk.webp)

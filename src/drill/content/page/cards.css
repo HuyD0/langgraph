@@ -1,0 +1,97 @@
+/* ---------- picture cards (page/cards.js): a lesson's Learn step as short cards, one idea and one picture each.
+   Surfaces come from the card and aside tokens, so Dusk gets its glass with no rule of its own. A "solid" tile
+   is filled; a "dashed" one has a dashed edge with ruler ticks. Shape, never a new colour, tells two kinds
+   of thing apart. An open pillar (a question nobody answers yet) uses the hint colours: "look here". */
+.pcards { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.pcard { gap: 12px; padding: 16px; }
+.pcard > h3 { margin: 0; font: 800 21px/1.2 var(--head); letter-spacing: 0; text-transform: none; color: var(--fg); text-wrap: balance; }
+.pcard p { margin: 0; }
+.pc-step { font: 600 12px var(--mono); color: var(--muted); letter-spacing: .05em; }
+.pc-fig { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.pc-after { color: var(--muted); font-size: 15px; }
+.pc-note { border-top: 1px solid var(--line); }
+.pc-note summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; font-weight: 600; }
+.pc-note summary .ic { width: 18px; height: 18px; color: var(--muted); }
+.pc-note summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pc-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* tiles: solid (a filled tile with a square, or its icon) and dashed (a ruler edge) */
+.pc-tile { display: flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 10px; border-radius: 10px; font-size: 14px; line-height: 1.3; min-width: 0; overflow-wrap: anywhere; }
+.pc-tile .ic { width: 18px; height: 18px; color: var(--muted); }
+.pc-tile.solid { background: var(--sunk); border: 1px solid var(--line); }
+.pc-tile.solid:not(:has(.ic))::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--fg); flex: none; }
+.pc-tile.dashed { position: relative; border: 1px dashed var(--muted); padding-left: 14px; }
+.pc-tile.dashed::after { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 4px; background: repeating-linear-gradient(180deg, var(--muted) 0 1px, transparent 1px 5px); }
+.pc-piles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pc-pile { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.pc-ph { display: grid; gap: 2px; }
+.pc-ph b { font: 800 16px var(--head); }
+.pc-ph span { font-size: 13px; line-height: 1.35; color: var(--muted); }
+.pc-key { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.pc-key span { display: inline-flex; align-items: center; gap: 6px; }
+.pc-key i { width: 12px; height: 10px; border-radius: 2px; }
+.pc-key i.solid { background: var(--fg); }
+.pc-key i.dashed { border: 1px dashed var(--muted); }
+
+/* the cross-out test: the line struck through, what happens, and what that makes it */
+.pc-row { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); }
+.pc-row s, .pc-rewrite s { color: var(--muted); font-weight: 600; text-decoration-thickness: 2px; }
+.pc-then { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
+.pc-then .ic { width: 16px; height: 16px; margin-top: 3px; color: var(--muted); }
+.pc-verdict { justify-self: start; padding: 3px 10px; border-radius: 999px; font: 600 12px var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.pc-verdict.solid { background: var(--fg); color: var(--bg); }
+.pc-verdict.dashed { border: 1px dashed var(--muted); }
+
+/* a sentence cut in parts: stacked, with a dashed cut line and scissors between them, then the lines it becomes */
+.pc-strip { display: grid; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 15px; font-weight: 600; }
+.pc-part { padding: 10px 12px; }
+.pc-part:first-child { background: var(--sunk); }
+.pc-cut { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 20px; color: var(--muted);
+  background: repeating-linear-gradient(90deg, var(--muted) 0 6px, transparent 6px 11px) center / 100% 2px no-repeat; }
+.pc-cut .ic { width: 18px; height: 18px; padding: 1px; background: var(--card-bg); border-radius: 4px; }
+.pc-into { display: grid; gap: 8px; }
+
+/* vague words rewritten as something you can check */
+.pc-rewrite { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px 10px; font-size: 14px; }
+.pc-rewrite s { font-style: italic; font-weight: 500; }
+.pc-rewrite .ic { width: 16px; height: 16px; color: var(--muted); }
+
+/* pillars under a roof: the thing held up, its pillars, and what rests on each */
+.pc-temple { display: grid; }
+.pc-roofbox { position: relative; height: 46px; display: grid; place-items: end center; padding-bottom: 7px; }
+.pc-roof { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pc-roof polygon { fill: var(--sunk); stroke: var(--fg); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.pc-roofbox b { position: relative; font: 800 14px var(--head); }
+.pc-beam { display: block; height: 8px; border: 1.5px solid var(--fg); border-radius: 2px; background: var(--sunk); }
+.pc-cols { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; padding-inline: 8px; }
+.pc-col { min-height: 130px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px; background: var(--surface); border-inline: 1.5px solid var(--fg); }
+.pc-col .ic { width: 22px; height: 22px; }
+.pc-col.open { background: var(--hint-bg); border-inline-style: dashed; border-color: var(--hint); color: var(--hint); box-shadow: var(--glow-look); }
+.pc-chip { max-width: 100%; padding: 3px 4px; border: 1px dashed var(--muted); border-radius: 5px; background: var(--surface); font: 600 10px/1.2 var(--mono); white-space: nowrap; }
+.pc-q { font: 800 22px/1 var(--head); }
+.pc-pn { margin-top: auto; padding-top: 6px; writing-mode: vertical-rl; transform: rotate(180deg); font: 600 12px/1 var(--body); letter-spacing: .02em; white-space: nowrap; }
+.pc-qs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pc-qs li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 10px; font-size: 14px; }
+.pc-qs .pc-qn { display: block; font-size: 15px; }
+.pc-qs .ic { width: 18px; height: 18px; margin-top: 3px; }
+.pc-qs li.open .pc-qn, .pc-qs li.open .ic { color: var(--hint); }
+
+/* a trade-off: the plank tips towards the side that pays */
+.pc-saw { display: grid; justify-items: center; padding-top: 18px; }
+.pc-plank { width: calc(100% - 16px); display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 0 4px 6px; border-bottom: 3px solid var(--fg); transform: rotate(6deg); transform-origin: 50% 100%; }
+.pc-pan { width: 44%; display: grid; gap: 2px; padding: 8px 10px; border: 1.5px solid var(--fg); border-radius: 10px; background: var(--surface); text-align: center; transform: rotate(-6deg); transform-origin: 50% 100%; }
+.pc-pan b { font: 800 15px/1.2 var(--head); }
+.pc-pan span { font-size: 12px; line-height: 1.3; color: var(--muted); }
+.pc-pivot { width: 40px; height: 30px; margin-top: -1px; }
+.pc-pivot polygon { fill: var(--sunk); stroke: var(--fg); stroke-width: 1.5; stroke-linejoin: round; }
+.pc-cap { text-align: center; font-size: 14px; font-weight: 600; }
+
+/* steps in order; with "decide", the last one is filled: the moment a person makes the call */
+.pc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pc-steps li { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: start; gap: 10px; }
+.pc-steps li:not(:last-child)::before { content: ""; position: absolute; left: 17px; top: 38px; bottom: -12px; width: 2px; background: var(--line); }
+.pc-dot { width: 36px; height: 36px; display: grid; place-items: center; border: 1.5px solid var(--fg); border-radius: 50%; background: var(--surface); }
+.pc-dot .ic { width: 18px; height: 18px; }
+.pc-steps.decide li:last-child .pc-dot { background: var(--fg); color: var(--bg); }
+.pc-steps li > div > b { display: block; }
+.pc-steps li > div > span { font-size: 14px; color: var(--muted); }

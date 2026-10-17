@@ -71,6 +71,8 @@ Check them in that order and return the first one that is `False`, as one of: `"
         practice=practice(
             intro='Work through a "Cannot find service principal" failure stage by stage, and stop at the first gap.',
             explain='A lookup fails when an earlier stage isn\'t done. You checked the stages in the order they must happen: the run\'s commit, Entra ID, declared in YAML, Foundation applied, assigned by Service, and stopped at the first one that wasn\'t true.',
+            pattern='Follow the trail until it goes cold',
+            realworld='When a Spacelift plan fails with "Cannot find service principal", you\'ll walk these stages before you ask anyone. Where the trail stops tells you who to ask: the identity team for Entra ID, the product team for the YAML, the platform owner for a Foundation apply.',
             asks=[
                 ask('What does `data.databricks_service_principal` in the error tell you?', ['Terraform tried to create the SP and failed', 'Terraform looked up an SP that should exist', 'Someone deleted the SP since the last run'], answer=1,
                     evidence=evidence('code', title='The first error in the planning log', text="""Error: Cannot find service principal: sp-sales-etl-uat
@@ -247,6 +249,8 @@ A ready prompt returns `[]`.""",
         practice=practice(
             intro='Build a good prompt for a failed run, then check what the AI says, the way the platform team\'s guidance asks.',
             explain='You gave the assistant the facts a person would need and the read-only rule, kept secrets out, and then checked its claims against the three rules: the same version as the run, evidence you have seen yourself, and nothing changed without approval.',
+            pattern='Three rules: version, evidence, safety',
+            realworld="When a run fails and you ask Copilot or an enterprise ChatGPT for help, you'll send the run, the first error and the commit, with secrets taken out. Then you'll open each file it points at, at that commit, before you repeat what it said or act on it.",
             asks=[
                 ask('What goes in the commit line?', ['The commit the failed run used', 'Today\'s main branch', 'The Terraform state file'], answer=0,
                     evidence=evidence('prompt', title='Your prompt', text="""I am new to Databricks IaC. Investigate READ-ONLY.

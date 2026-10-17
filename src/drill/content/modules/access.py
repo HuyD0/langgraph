@@ -71,6 +71,8 @@ Return `[object, principal, needed_level]` for every missing need, in the same o
         practice=practice(
             intro='Review access before a launch the way a platform reviewer does: compare what each group or app needs with what it has on that one object.',
             explain='Each object type has its levels in order, weakest first, so "is this level high enough?" comes down to where it sits in the list. You looked up what each group or app has on that one object: nothing at all, or a level earlier than the one it needs, meant someone would be refused.',
+            pattern='Have versus need, weakest to strongest',
+            realworld="Before a launch, you'll check who needs what: the team on the experiment, the app on the serving endpoint, the job's service principal on the warehouse. Then you'll compare that with what each one has today, on that object's own permissions.",
             asks=[
                 ask('Is ml-team\'s access to `gpu-dev` enough?', ['Missing: they need exactly CAN_ATTACH_TO', 'Enough: CAN_RESTART is stronger than CAN_ATTACH_TO'], answer=1,
                     evidence=evidence('code', title='cluster gpu-dev', text="""Levels, weakest first:
@@ -327,6 +329,8 @@ Return `[name, credential]` of the location that covers the path, or `None` if n
         practice=practice(
             intro='Trace storage paths the way a platform reviewer does: find the location that covers each path, and the credential that comes with it.',
             explain="A path is covered by a location when it is the location's path or sits in a folder under it. You matched each path on whole folders, so sales never covered sales-archive, and the location you found told you which credential the read uses. Locations can't overlap, so there is never more than one answer.",
+            pattern='Find the covering location, then its credential',
+            realworld="When a read fails with a 403, or someone asks for access to a storage path, you'll find the external location that covers it. Its credential is what the read uses, and READ FILES on that location is what you grant.",
             asks=[
                 ask('Which location covers this path?', ['raw-hr', 'raw-sales', 'Neither'], answer=1,
                     evidence=evidence('code', title='External locations', text="""raw-sales
@@ -522,6 +526,8 @@ Return a list of `[target, answer]`, in the same order as `targets`.""",
         practice=practice(
             intro='Sort access requests the way a platform team does: look at where the target lives, then pick the object.',
             explain='You choose the object by looking at where the target lives. Storage paths went to external locations, Azure service hosts to service credentials before the general web rule could catch them, other web addresses to HTTP connections and databases to federation connections, and anything unknown went to a person instead of a guess.',
+            pattern='Where it lives decides the object',
+            realworld='When an access request comes in, you\'ll start by asking "what are you trying to reach?". A storage path, an Azure service, a web API and a database each need a different object to create and a different privilege to grant.',
             asks=[
                 ask('An analyst wants to query the orders database from Databricks. What do you set up?', ['An external location on its storage', 'A connection and a foreign catalog', "A service credential, since it's on Azure"], answer=1,
                     evidence=evidence('code', title='The target', text='postgresql://orders-fict.postgres.database.azure.com:5432/orders'),
@@ -735,6 +741,8 @@ Return the names of the columns masked for this user, in column order. List each
         practice=practice(
             intro='Work out what each person sees the way Unity Catalog does: match each column\'s tag, then check the policy\'s TO and EXCEPT groups.',
             explain="A column is masked for you when some policy matches its tag and applies to you. You checked each column's tag and its exact value, then whether the policy's TO list took in one of your groups and its EXCEPT list left all of them out. One policy saying yes was enough, and a column with no tag was never masked.",
+            pattern='Tag, then TO, then EXCEPT',
+            realworld="When someone asks why they see masked values instead of real emails, or why a teammate sees the real ones, you'll check the column's tag and the policy's TO and EXCEPT groups. When a new personal-data column lands, you'll check it got tagged, because an untagged column is never masked.",
             asks=[
                 ask('Someone in `analysts` queries this table. Which columns come back masked?', ['email', 'email and phone', 'All three'], answer=0,
                     evidence=evidence('code', title='The policy, and the table\'s columns', text="""CREATE POLICY mask_emails
@@ -986,6 +994,8 @@ Find the grants to people: the ones whose principal contains `"@"`. Return `[pri
         practice=practice(
             intro='Review grant lists the way a reviewer does: find the grants that will break when someone moves team or leaves.',
             explain='People show up in grant lists by their email address, so an "@" is a cheap, reliable sign of a grant to a person. You flagged those, let groups and service principals pass, and remembered that an owner holds every privilege without appearing in the grant list.',
+            pattern='Spot the @, then check the owner',
+            realworld="When you review grants, or a Terraform plan that adds them, you'll flag any principal with an @ in it and ask for a group instead. You'll also check who owns each catalog, job and experiment, because a person as owner breaks things the day they leave.",
             asks=[
                 ask('Which grant would you flag?', ['data-engineers', 'ana@example.com', '6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10'], answer=1,
                     evidence=evidence('code', title='Grants on sales.crm', text="""principal                              privilege  on

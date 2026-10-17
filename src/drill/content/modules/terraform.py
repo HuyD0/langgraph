@@ -50,6 +50,8 @@ So a replacement counts once in `add` and once in `destroy`, and `no-op` counts 
         practice=practice(
             intro='Read a plan\'s changes the way a reviewer does: work out what the summary line will say, then find which resources the numbers are.',
             explain='Checks and policies read the plan as data, and the summary line only counts. You counted each create, update and delete on its own, so a replacement was one add and one destroy and a no-op was nothing. Then you found which resource each number belonged to before trusting it.',
+            pattern='Count each action, then name the resources',
+            realworld='Every Spacelift run and every terraform plan ends with a summary line. Before you approve, you match each number to the resources behind it, so a "1 to destroy" that nobody asked for gets a question.',
             asks=[
                 ask('Which change will the summary line not count at all?', ['`azurerm_subnet.host`', '`databricks_cluster.etl`', '`databricks_schema.raw`'], answer=0,
                     evidence=evidence('code', title='The plan\'s changes, as data', text="""[
@@ -247,6 +249,8 @@ Return the `address` of every replacement, in the same order as `changes`.""",
         practice=practice(
             intro='Review a Spacelift plan the way a reviewer does: find the change you\'d stop on, then decide.',
             explain='A replacement destroys a resource and makes a new one, and the summary counts it as one add and one destroy. You found which -/+ change the destroy belonged to before approving, then asked what depended on it instead of approving or resetting anything.',
+            pattern='Find every -/+, then ask what uses it',
+            realworld='When you review a Spacelift plan that touches a workspace, an external location or a storage account, you look for every -/+ before you approve. If you find one, you ask which grants and jobs use it, and agree a safe time to replace it.',
             asks=[
                 ask('Which change would you stop on?', [], answer=3, pick=True,
                     evidence=evidence('plan', title='Stack dbx-service-dev · proposed',
@@ -419,6 +423,8 @@ Return a dict of all the fields, like `{"Who": "ana@laptop"}`. If there is no `L
         practice=practice(
             intro='Read a state lock error the way a reviewer does: who holds the lock, what it was doing, and whether it\'s safe to unlock.',
             explain='Before you force-unlock state, you read the lock error to see who holds the lock. You found the runner in Who, the apply in Operation and the age in Created, and only unlocked with the ID once you knew that run was dead.',
+            pattern='Who holds it, doing what, since when',
+            realworld='When a plan stops on "Error acquiring the state lock", you read who holds the lock and what it was doing before anyone runs force-unlock. On a stack whose state Spacelift manages, you look at the stack\'s runs instead.',
             asks=[
                 ask('Who is holding the lock?', ['`spacelift@worker-7`', '`tfstate/dbx-service-dev.tfstate`', 'Terraform `1.5.7`'], answer=0,
                     evidence=evidence('code', title='The error your run stopped on', text=_LOCK_ERROR),
@@ -612,6 +618,8 @@ Return the actions in position order.""",
         practice=practice(
             intro='Predict what a plan does to containers made with `count` when the list changes, the way a reviewer does before approving.',
             explain='With count, Terraform knows each copy by its position, so you compared the old and new lists place by place. A name moving to a new place means a replace, and replacing a container loses its data. Naming copies by key with for_each, with a moved block for each one that exists, keeps the plan free of destroys.',
+            pattern='Spot every name that moves place',
+            realworld='When a pull request takes a name out of containers made with count, you check whether the later ones slide to a new place before you approve, because a replace deletes their data. When a team switches to for_each, you look for one moved block per container, so the plan shows 0 to destroy.',
             asks=[
                 ask('You add `"gold"` at the end of the list. What does the plan do?', ['Creates `lake[2]` and leaves the others alone', 'Replaces every container, because the list changed', 'Replaces `lake[0]`, because a new name was added'], answer=0,
                     evidence=evidence('code', title='storage.tf', text="""variable "containers" {
@@ -794,6 +802,8 @@ When every resource is in the list, return it. If you get stuck, with resources 
         practice=practice(
             intro='Work out the order Terraform makes things in, the way a reviewer reads a dependency graph: what\'s ready, what waits, and what\'s stuck.',
             explain='Terraform makes each resource only after the ones it needs. You picked what was ready, saw that two resources ready together can be made at the same time, and spotted two resources stuck waiting on each other. Then you found a dependency Terraform couldn\'t see, because nothing referred to the catalog.',
+            pattern='Ready, waiting, or stuck in a cycle',
+            realworld='When a plan stops with Error: Cycle, you find the two resources that each wait on the other. When a first deploy fails because something "does not exist" yet, you check whether one resource refers to the other or just types its name as text.',
             asks=[
                 ask('Which one can Terraform create first?', ['`rg`', '`vnet`', '`workspace`'], answer=0,
                     evidence=evidence('code', title='What each resource needs first', text="""{
@@ -1049,6 +1059,8 @@ Return the references that don't work, in the order they appear in `refs`.""",
         practice=practice(
             intro='Read modules the way their callers do: only what comes out of them counts.',
             explain='A module is a closed box: values go in as variables and come out only as outputs. You read outputs by name, passed different values to the same module for dev and prod, and fixed a missing value by adding an output rather than reaching inside.',
+            pattern='In as variables, out as outputs',
+            realworld='When a plan stops with Error: Unsupported attribute on a module\'s value, you check that the module declares that output, and add one if it doesn\'t. When someone needs a prod workspace like the dev one, you pass the same module new values instead of copying its folder.',
             asks=[
                 ask('Which reference works in the root code?', ['module.workspace.workspace_url', 'module.workspace.azurerm_databricks_workspace.this.workspace_url', 'azurerm_databricks_workspace.this.workspace_url'], answer=0,
                     evidence=evidence('code', title='modules/workspace/outputs.tf', text="""output "workspace_url" {
@@ -1190,6 +1202,8 @@ Return `[to_import, to_add]`.""",
         practice=practice(
             intro='Adopt resources made by hand without creating, changing or destroying anything by accident.',
             explain="Terraform only knows what is in its state, so something made by hand looks new. You recognised the \"already exists\" error, added an import block instead of recreating anything, and read the import plan for changes the code would make to the real resource.",
+            pattern='Adopt it, then check the plan changes nothing',
+            realworld='When your team brings a storage account or workspace made by hand under Terraform, you add an import block instead of recreating it. Then you read the import plan for any change it would make to the live resource, and agree that change with its owner.',
             asks=[
                 ask('The apply stops with this error. What do you add?', ['An import block with the account\'s ID', 'A moved block to the new address', 'A depends_on on the resource group'], answer=0,
                     evidence=evidence('code', title='The apply', text="""Error: A resource with the ID
@@ -1320,6 +1334,8 @@ Return a dict with one action for each address:
         practice=practice(
             intro='Rename and reorganise Terraform code so the plan shows moves, not destroys.',
             explain='Terraform matches state to code by address, so a rename looks like a destroy and a create. You spotted the destroy-and-create pair, linked the names with a moved block, and kept the block for the environments that had not applied it yet.',
+            pattern='A destroy plus a create is a rename',
+            realworld='When a pull request renames a cluster, moves a resource into a module or switches count to for_each, you look for the matching moved blocks before you approve. If the plan still shows a destroy and a create, a moved block is missing or has a typo.',
             asks=[
                 ask('You only renamed the cluster in the code. What is missing?', ['A moved block from the old name to the new', 'An import block for databricks_cluster.sales_etl', 'Nothing: approve the rename as it is'], answer=0,
                     evidence=evidence('plan', title='Stack team-sales-dev · proposed',
@@ -1474,6 +1490,8 @@ Python compares lists number by number, so `[4, 45, 0] >= [4, 40, 0]` is `True`.
         practice=practice(
             intro='Keep provider upgrades deliberate: read constraints and the lock file the way Terraform does.',
             explain='A version constraint decides which provider versions Terraform may pick, and ~> lets only the last number written go up. The lock file keeps every run on one exact version, so a surprise plan with no code change is often an unlocked upgrade.',
+            pattern='Lock file first, then the constraint',
+            realworld='When a plan wants to change dozens of resources overnight and nobody touched the Terraform, you check whether the provider version moved. You\'ll also review provider upgrade pull requests, where the lock file changes and the plan should change very little.',
             asks=[
                 ask('Version 1.90.5 comes out. What does the next Spacelift run use?', ['1.90.3, from the lock file', '1.90.5, the newest allowed', '1.91.0, the newest release'], answer=0,
                     evidence=evidence('code', title='.terraform.lock.hcl', text="""provider "registry.terraform.io/databricks/databricks" {

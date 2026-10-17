@@ -160,13 +160,18 @@ def fix(question: str, *, start: str, answer: str, rules: dict, goal: list[dict]
             "goal": goal or [], "clue": clue, "why": why, "file": file}
 
 
-def practice(*, intro: str, asks: list[dict], explain: str | None = None) -> dict:
+def practice(*, intro: str, asks: list[dict], explain: str | None = None, pattern: str | None = None,
+             realworld: str | None = None, gotchas: list | None = None) -> dict:
     """The Build step as a few questions about real evidence, for lessons whose skill is a decision
     or reading a plan, run, policy or trace rather than writing Python; the tab says Practice. Three to five asks, easy to
-    tricky; the Python exercise stays one tap away. ``explain`` is the Explain step's big idea
-    for someone who practised this way rather than coding."""
+    tricky; the Python exercise stays one tap away.
+
+    The Explain step then describes what the learner did, not the Python they didn't write:
+    ``pattern`` names the way of thinking they used (the heading, like "Cross it out: job or bar?"),
+    ``explain`` is the big idea, and ``realworld`` is "Where you'll use this" in their job. ``gotchas``,
+    when given, replace the exercise's gotchas in practice mode (for ones that only make sense in code)."""
     assert 2 <= len(asks) <= 6, "a practice set has two to six questions"
-    return {"intro": intro, "asks": asks, "explain": explain}
+    return {"intro": intro, "asks": asks, "explain": explain, "pattern": pattern, "realworld": realworld, "gotchas": gotchas}
 
 
 def example(caption: str, code: str) -> dict:
@@ -283,6 +288,147 @@ def screen(kind: str, *, caption: str, steps: list[str], tips: list[str] | None 
     return {"kind": kind, "caption": caption, "steps": steps, "tips": tips or [], "data": data}
 
 
+# ---------- picture cards: a lesson's Learn step as short cards, one idea and one picture each ----------
+# The page draws each picture from this data (page/cards.js) in the app's own look; ``picture_text``
+# says the same thing in words, for the tutor map, the MCP tools, search and screen readers.
+# Two looks tell two kinds of thing apart by shape, never by a new colour: "solid" (a filled tile)
+# and "dashed" (a ruler-edged tile). Icons are names from page.html's sprite (a test checks).
+PICTURE_KINDS = ("piles", "crossout", "split", "rewrite", "pillars", "seesaw", "steps")
+LOOKS = ("solid", "dashed")
+
+
+def tile(text: str, *, icon: str | None = None, look: str = "solid") -> dict:
+    """One tile in a pile or a split: a short phrase, an optional icon, drawn solid or dashed."""
+    assert look in LOOKS, f"{text}: look is one of {LOOKS}"
+    return {"text": text, "icon": icon, "look": look}
+
+
+def pile(title: str, items: list, *, sub: str = "", look: str = "solid") -> dict:
+    """A column of tiles under a heading. ``items`` are phrases, or ``(icon, phrase)`` pairs."""
+    tiles = [tile(i[1], icon=i[0], look=look) if isinstance(i, tuple) else tile(i, look=look) for i in items]
+    return {"title": title, "sub": sub, "look": look, "items": tiles}
+
+
+def piles(*columns: dict, key: list[tuple[str, str]] | None = None) -> dict:
+    """Two piles side by side, like jobs and bars. ``key`` labels the looks: ``[("solid", "job: functional"), ...]``."""
+    assert len(columns) == 2, "piles are drawn as two columns"
+    return {"kind": "piles", "piles": list(columns), "key": [list(k) for k in key or []]}
+
+
+def struck(text: str, then: str, verdict: str, *, look: str = "solid", icon: str = "x") -> dict:
+    """One row of a cross-out test: the line crossed out, what happens then, and what that makes it."""
+    assert look in LOOKS
+    return {"text": text, "then": then, "verdict": verdict, "look": look, "icon": icon}
+
+
+def crossout(*rows: dict) -> dict:
+    """The cross-out test: cross a line off, see what's lost."""
+    assert rows, "a cross-out needs a row"
+    return {"kind": "crossout", "rows": list(rows)}
+
+
+def split(parts: list[str], into: list[dict]) -> dict:
+    """A sentence cut into parts (``parts``), then the separate lines it becomes (``into``, made with :func:`tile`)."""
+    assert len(parts) >= 2 and into, "a split cuts a sentence into at least two parts"
+    return {"kind": "split", "parts": parts, "into": into}
+
+
+def rewrite(*pairs: tuple[str, str]) -> dict:
+    """Vague words, each crossed out and rewritten as something you can check: ``("fast", "under 5 seconds")``."""
+    assert pairs, "a rewrite needs a pair"
+    return {"kind": "rewrite", "pairs": [list(p) for p in pairs]}
+
+
+def pillar(name: str, icon: str, question: str, *, short: str | None = None, chips: list[str] | None = None,
+           open: bool = False) -> dict:
+    """One pillar: its name, icon and question. The picture writes ``short`` (or the name) up the pillar,
+    so keep it to one word; the list under the picture gives the full name. ``chips`` are short labels
+    resting on it (a requirement like "R4 EU"); ``open`` marks a pillar nothing answers yet, in hint colours."""
+    label = short or name
+    assert " " not in label and len(label) <= 12, f"{name}: give a one-word short name of 12 letters at most"
+    assert all(len(c) <= 8 for c in chips or []), f"{name}: chips are 8 characters at most, to fit a phone"
+    return {"name": name, "short": label, "icon": icon, "question": question, "chips": chips or [], "open": open}
+
+
+def pillars(roof: str, *columns: dict, list_questions: bool = True) -> dict:
+    """A roof (``roof``, the thing being held up) on three to six pillars, each a question. With
+    ``list_questions`` the questions are listed under the picture; otherwise only open pillars are."""
+    assert 3 <= len(columns) <= 6, "three to six pillars fit a phone"
+    return {"kind": "pillars", "roof": roof, "pillars": list(columns), "list": list_questions}
+
+
+def seesaw(up: tuple[str, str], down: tuple[str, str], *, caption: str) -> dict:
+    """A trade-off: the side that goes ``up`` (title, short line) and the side that pays, ``down``."""
+    return {"kind": "seesaw", "up": list(up), "down": list(down), "caption": caption}
+
+
+def steps(*items: tuple[str, str, str], decide: bool = False) -> dict:
+    """Steps in order, each ``(icon, title, text)``. With ``decide``, the last step is drawn solid:
+    the moment a person makes the call."""
+    assert len(items) >= 2, "steps need at least two"
+    return {"kind": "steps", "items": [list(i) for i in items], "decide": decide}
+
+
+def card(heading: str, text: str, *, picture: dict | None = None, after: str | None = None,
+         note: tuple[str, str] | None = None) -> dict:
+    """One Learn card: a short heading, the text (with **bold** and `code`), an optional picture, an
+    optional line after the picture, and an optional folded note ``(summary, text)``."""
+    assert heading and text, "a card needs a heading and text"
+    assert picture is None or picture.get("kind") in PICTURE_KINDS, f"{heading}: unknown picture"
+    return {"heading": heading, "text": text, "picture": picture, "after": after,
+            "note": list(note) if note else None}
+
+
+def picture_text(p: dict | None) -> str:
+    """A picture in words: what the tutor map, the MCP tools and screen readers get."""
+    if not p:
+        return ""
+    k = p["kind"]
+    if k == "piles":
+        return " ".join(f"{c['title']}{' (' + c['sub'] + ')' if c['sub'] else ''}: "
+                        + "; ".join(t["text"] for t in c["items"]) + "." for c in p["piles"])
+    if k == "crossout":
+        return " ".join(f'Cross out "{r["text"]}": {r["then"]} ({r["verdict"]}).' for r in p["rows"])
+    if k == "split":
+        return f'"{" ".join(p["parts"])}" splits into: ' + "; ".join(t["text"] for t in p["into"]) + "."
+    if k == "rewrite":
+        return " ".join(f'"{a}" becomes "{b}".' for a, b in p["pairs"])
+    if k == "pillars":
+        cols = []
+        for c in p["pillars"]:
+            rest = f" holds {', '.join(c['chips'])}" if c["chips"] else (" has nothing on it yet" if c["open"] else "")
+            cols.append(f"{c['name']} ({c['question']}){rest}")
+        return f"{p['roof']} rests on {len(cols)} pillars: " + "; ".join(cols) + "."
+    if k == "seesaw":
+        return f"{p['up'][0]} goes up ({p['up'][1]}) and {p['down'][0]} pays ({p['down'][1]}). {p['caption']}"
+    if k == "steps":
+        return " ".join(f"{n}. {t}: {x}" for n, (_, t, x) in enumerate(p["items"], 1))
+    raise AssertionError(k)
+
+
+def cards_learn(cards: list[dict]) -> list[str]:
+    """The cards as Learn paragraphs, for everything that reads text (the tutor map, MCP tools, search)."""
+    out = []
+    for c in cards:
+        parts = [f"{c['heading']}: {c['text']}", picture_text(c["picture"]), c["after"] or ""]
+        if c["note"]:
+            parts.append(f"{c['note'][0]}: {c['note'][1]}")
+        out.append(" ".join(p for p in parts if p))
+    return out
+
+
+def _icons(cards: list[dict]):
+    """Every icon name the cards use, for the test that checks page.html has each one."""
+    for c in cards:
+        p = c["picture"] or {}
+        for col in p.get("piles", []):
+            yield from (t["icon"] for t in col["items"] if t["icon"])
+        yield from (r["icon"] for r in p.get("rows", []))
+        yield from (t["icon"] for t in p.get("into", []) if t["icon"])
+        yield from (c2["icon"] for c2 in p.get("pillars", []))
+        yield from (i[0] for i in p.get("items", []))
+
+
 def _numbers(value: Any):
     if isinstance(value, dict):
         if isinstance(value.get("n"), int):
@@ -299,7 +445,7 @@ def lesson(
     id: str,
     *,
     title: str,
-    learn: list[str],
+    learn: list[str] | None = None,
     example: dict,
     check: dict,
     angle: dict,
@@ -308,14 +454,23 @@ def lesson(
     checked: str | None = None,
     sources: list[list[str]] | None = None,
     walkthrough: list[dict] | None = None,
+    cards: list[dict] | None = None,
 ) -> dict:
     """Add one lesson to a module. Lessons appear on the page in the order they are added.
+
+    ``cards`` (made with :func:`card`) draw the Learn step as short cards with pictures, in place of
+    ``learn`` paragraphs and the example; ``learn`` is then written from the cards, for everything that
+    reads text. The ``example`` stays in the data for the tutor and the MCP tools.
 
     ``checked`` is the day (YYYY-MM-DD) the lesson's facts were last checked against its
     ``sources``. Lessons about products that change often must have both; the page shows the
     date, and ``drill content stale`` lists lessons due for another look.
     """
     assert id not in owner.lesson_ids, f"{id} is already in {owner.id}"
+    assert (learn is None) != (cards is None), f"{id}: give learn paragraphs or cards, not both"
+    if cards is not None:
+        assert 2 <= len(cards) <= 7, f"{id}: two to seven cards"
+        learn = cards_learn(cards)
     if checked is not None:
         import datetime
         datetime.date.fromisoformat(checked)  # fails loudly on a typo
@@ -323,7 +478,7 @@ def lesson(
     entry = {
         "id": id, "title": title, "learn": learn, "example": example, "check": check,
         "angle": angle, "stack": stack, "exercise": exercise, "checked": checked, "sources": sources,
-        "walkthrough": walkthrough,
+        "walkthrough": walkthrough, "cards": cards,
     }
     owner.lessons.append(entry)
     return entry

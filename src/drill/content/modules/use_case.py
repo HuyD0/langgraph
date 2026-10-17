@@ -1,6 +1,7 @@
 """Use case and fit: pick an AI use case worth doing, write it down, and decide whether it is fit for purpose."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, machine, module, practice, question, source
+from drill.content.model import (angle, ask, card, case, crossout, evidence, example, exercise, lesson, machine, module, pile,
+                                 piles, pillar, pillars, practice, question, rewrite, seesaw, source, split, steps, struck, tile)
 
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
@@ -224,6 +225,8 @@ for n in [1, 2, 3]:
         ],
         practice=practice(
             explain='The big idea: vet an AI idea by starting from a real problem, ruling it out at once if a rule could do it, there is nothing to test on, or a wrong answer would do harm unchecked, and then placing it by value and how doable it is. The order matters. The gates come first, because a valuable idea that does harm unchecked is still shelved. Then two separate questions, value and doable, pick one of four corners: both high is accelerate, high value only is research, doable only is incubate, and neither is shelve. It is like sorting post into four trays by two questions, after binning the junk.',
+            pattern='Rule it out, then place it on the map',
+            realworld='When someone brings an AI idea to your team, run the gates before anyone talks about models: could a rule do it, is there data to test on, could a wrong answer do harm unchecked? Then place it by value and how doable it is, and say which corner it lands in.',
             intro='Six ideas came in. For each one, check the gates first, then how much it is worth and whether you could do it now.',
             asks=[_place(k, idea) for k, idea in enumerate(IDEAS)],
         ),
@@ -290,6 +293,8 @@ Return a list of the gap field names, in the order above. A complete card gives 
         practice=practice(
             intro='Review this use case card the way a reviewer does: go down the ten boxes and send back every gap.',
             explain='The big idea: a use case card answers ten questions on one page, and a blank line, or a success line with no number, is an open question to settle before building. You went down the boxes in order, caught the missing owner and the blank wrong-answer line, and sent back a success line nobody could measure.',
+            pattern='Down the ten boxes, send back every gap',
+            realworld='When a teammate shares a use case card for review, go box by box and send back every gap in one reply. The two you\'ll send back most often: a success line with no number, and no owner.',
             asks=[
                 ask('Which box is missing from this card altogether?', ['owner', 'data', 'feedback'], answer=0,
                     evidence=evidence('code', title='The HR assistant\'s card', text="""card = {
@@ -420,11 +425,33 @@ for ch in "80 in 100":
 
 lesson(MODULE, 'split_requirements',
     title='Functional and non-functional requirements',
-    learn=[
-        'A **requirement** is one thing the finished system must meet, and there are two kinds. **Functional** requirements are the jobs it does: things a user could watch it do, like "answer policy questions" or "hand hard questions to a person". **Non-functional** requirements are how well it does those jobs: how fast, how safe, how cheap, how many people at once. Engineers also call them **quality attributes**.',
-        'To tell them apart, imagine crossing the line off the list. If a job a user relies on disappears, the line was functional: cross out "show the source page" and users lose the source. If the system still does every job, only worse (slower, less safe, dearer), the line was non-functional: cross out "reply within 5 seconds" and it still answers, just slowly.',
-        'One sentence often holds both. "Answer policy questions within 5 seconds" is a job (answer policy questions) and a bar on that job (within 5 seconds). Split it into two lines, so each one can be built and tested on its own.',
-        'Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. The usual ones for AI: speed, availability (also called **uptime**: how much of the time it is working), cost per finished task, privacy (where personal data may go), security (who can see what), how many users at once, and a record of every answer. Each needs a number or a rule you can check, like "under 5 seconds for 95 in 100 answers", or the pilot can\'t say yes or no. The next lesson checks them against the pillars of a well-architected review.',
+    cards=[
+        card('Two kinds of promise',
+             'A **requirement** is something the finished system promises. Picture a food delivery app. Some promises are jobs you could watch it do; others say how well it must do them.',
+             picture=piles(pile('Jobs', ['Order food', 'Track the driver', 'Pay by card'], sub='What you could watch it do'),
+                           pile('Bars', [('clock', 'Food in 30 minutes'), ('lock', 'Card number kept safe'), ('people', 'Works in the Friday rush')],
+                                sub='How well it must do them', look='dashed'),
+                           key=[('solid', 'job: functional'), ('dashed', 'bar: non-functional')]),
+             after='Jobs are **functional** requirements. Bars are **non-functional** requirements. Engineers also call them **quality attributes**.'),
+        card('The cross-out test',
+             'To tell them apart, cross a line off the list and ask what a user loses.',
+             picture=crossout(struck('Track the driver', 'You can\'t see where your food is. Something you could do is gone.', 'Job: functional'),
+                              struck('Food in 30 minutes', 'You can still order. It might just take two hours. Every job still works, only worse.',
+                                     'Bar: non-functional', look='dashed', icon='clock'))),
+        card('One sentence, two promises',
+             'People often write a job and its bar in one line. Cut it in two, so each half can be built and tested on its own.',
+             picture=split(['Answer time-off questions', 'within 5 seconds'],
+                           [tile('Answer time-off questions'), tile('Reply within 5 seconds', icon='clock', look='dashed')])),
+        card('A bar needs a number',
+             '"Fast" can\'t pass or fail, but a number can. If the pilot can\'t answer yes or no, rewrite the bar.',
+             picture=rewrite(('fast', 'under 5 seconds, for 95 in 100 answers'), ('always up', 'working 99.9% of office hours, its **uptime**'),
+                             ('cheap', 'under $1 per answer'), ('secure', 'only HR staff can see the answers'))),
+        card('The HR assistant, sorted',
+             'Bars are the ones teams forget, and they decide whether a working demo can go live. The usual ones for AI: speed, uptime, cost per answer, privacy (where personal data may go), security (who can see what) and how many people at once.',
+             picture=piles(pile('Jobs', ['R1 Answer policy questions', 'R3 Show the source page', 'R5 Hand hard questions to a person']),
+                           pile('Bars', [('clock', 'R2 5 seconds, 95 in 100'), ('lock', 'R4 Personal data stays in the EU'),
+                                         ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed')),
+             after='The next lesson puts each bar under a pillar of a well-architected review.'),
     ],
     example=example('The cross-out test on the HR assistant', """# cross it out: is a job gone?
 "Show the source page"
@@ -472,6 +499,13 @@ Return `[functional, non_functional]`: two lists of the requirement dicts, each 
         practice=practice(
             intro='Sort the HR assistant\'s requirements the way a reviewer does: cross each line out and see whether a job a user relies on disappears.',
             explain='The big idea: functional requirements are the jobs a system does and non-functional ones are how well it does them. You crossed out lines to sort them, spotted a list with no how-well lines at all, split a sentence that held both kinds, and turned "always up" into a number a pilot can test.',
+            pattern='Cross it out: job or bar?',
+            realworld='When a team plans a pilot, someone asks for the non-functional requirements. Bring the bars, each with a number, so the pilot can pass or fail them.',
+            gotchas=[
+                ['Forgetting the non-functional ones', 'A demo can answer every question and still fail to go live because it is too slow, too costly or sends personal data where it may not go. Write the bars down on day one.'],
+                ['A bar with no number', '"Fast" and "secure" can\'t be tested. Write "under 5 seconds for 95 in 100 answers" or "only HR staff can see answers", so the pilot can say yes or no.'],
+                ['One line, two promises', 'A sentence like "answer within 5 seconds" holds a job and a bar. Split it, or the pilot can pass the job and never test the speed.'],
+            ],
             asks=[
                 ask('Which pile does **R4** go in?', ['Functional: a job the system does', 'Non-functional: how well it does its jobs'], answer=1,
                     evidence=evidence('code', title='The HR assistant\'s requirements', text="""R1  Answer policy questions from the HR pages
@@ -614,13 +648,35 @@ lesson(MODULE, 'well_architected',
     title='A well-architected review',
     checked='2026-10-15',
     sources=[source('Azure Well-Architected Framework workloads', 'https://learn.microsoft.com/azure/well-architected/workloads')],
-    learn=[
-        "A **well-architected review** checks a design before you build it. Microsoft's **Azure Well-Architected Framework** splits the review into five **pillars**, and each pillar is one question about how the system could let people down. Ask all five of every design.",
-        "**Reliability**: what happens when something it depends on breaks, like the model being down or out of quota? **Security**: who could see or do something they shouldn't, for example through a **prompt injection** (text in a user's message that tricks the model into ignoring its rules)? **Cost Optimization**: what makes the bill grow? **Operational Excellence**: would you notice it going wrong, and can you test and release changes safely? **Performance Efficiency**: does it stay fast at the busiest minute?",
-        'Your non-functional requirements are the pillars\' targets: "reply within 5 seconds" belongs to Performance Efficiency, "keep personal data in the EU" to Security, "cost under $1 per answer" to Cost Optimization. A pillar with no requirement under it is a question nobody has answered yet.',
-        "The pillars pull against each other: a second copy of the app keeps it up when one fails, and doubles the bill. That is why the framework says a workload should be \"just as reliable\" and \"just as secure\" as it needs to be. A person decides which risks are fine for a pilot, and writes down why.",
-        'A model can draft the review from your use case card, if the **review prompt** sets rules: quote the card for every finding, write "Unknown" and a question where the card says nothing, and leave the decision to a person. Then check every claim against the card, because a model fills gaps with confident guesses.',
-        "Databricks publishes its own version for the lakehouse with two more pillars: **data and AI governance** (who may use which data and models) and **interoperability and usability** (open formats, so other tools and people can use the data).",
+    cards=[
+        card('Five questions hold up a design',
+             'A **well-architected review** checks a design before you build it. Microsoft\'s **Azure Well-Architected Framework** asks five questions, one per **pillar**. Ask all five of every design.',
+             picture=pillars('Your design',
+                             pillar('Reliability', 'power', 'What happens when something it depends on breaks, like the model being down or out of quota?'),
+                             pillar('Security', 'lock', 'Who could see or do something they shouldn\'t? For example through a **prompt injection**: text in a message that tricks the model into ignoring its rules.'),
+                             pillar('Cost Optimization', 'coin', 'What makes the bill grow?', short='Cost'),
+                             pillar('Operational Excellence', 'eye', 'Would you notice it going wrong, and can you test and release changes safely?', short='Operations'),
+                             pillar('Performance Efficiency', 'gauge', 'Does it stay fast at the busiest minute?', short='Performance'))),
+        card('Your bars go on the pillars',
+             'Your non-functional requirements are the pillars\' targets: each bar from the last lesson answers one pillar\'s question. A pillar with nothing on it is a question nobody has answered yet.',
+             picture=pillars('HR assistant',
+                             pillar('Reliability', 'power', 'So the review\'s first question is: what does the assistant do when the model is down?', open=True),
+                             pillar('Security', 'lock', 'R4: personal data stays in the EU.', chips=['R4 EU']),
+                             pillar('Cost Optimization', 'coin', 'R7: under $1 per answer.', short='Cost', chips=['R7 $1']),
+                             pillar('Operational Excellence', 'eye', 'R10: a record of every answer.', short='Operations', chips=['R10 log']),
+                             pillar('Performance Efficiency', 'gauge', 'R2: 5 seconds for 95 in 100. R6: 200 people at once.', short='Performance', chips=['R2 5 s', 'R6 200']),
+                             list_questions=False)),
+        card('Pillars pull against each other',
+             'A second copy of the app keeps it up when one copy fails, and doubles the bill.',
+             picture=seesaw(('Reliability', 'two copies: stays up'), ('Cost', 'twice the bill'), caption='A person chooses the balance, and writes down why.'),
+             after='That is why the framework says a workload should be "just as reliable" and "just as secure" as it needs to be. A pilot rarely needs the most.'),
+        card('A model drafts, a person decides',
+             'A model can draft the review from your use case card, if the **review prompt** sets rules. Then you check every claim against the card, because a model fills gaps with confident guesses.',
+             picture=steps(('listcheck', 'The use case card', 'Every field goes in the prompt. A blank one says "not written", so the gap shows.'),
+                           ('bot', 'The model\'s draft', 'A finding per pillar, each quoting the card. Where the card says nothing: "Unknown", and a question.'),
+                           ('person', 'A person decides', 'Check each quote against the card. Go or no-go is a business call, never the model\'s.'),
+                           decide=True),
+             after='Databricks publishes its own version for the lakehouse, with two more pillars: **data and AI governance** (who may use which data and models) and **interoperability and usability** (open formats, so other tools and people can use the data).'),
     ],
     example=example('The HR assistant, pillar by pillar', """# pillar: its question
 #   -> what the card says
@@ -672,6 +728,8 @@ Build a list of lines, then return them joined with `"\\n"`:
         practice=practice(
             intro='Run a well-architected review of the HR assistant: put each question under its pillar, weigh what a fix costs, then brief a model and check its draft against the card.',
             explain='The big idea: the pillars are five questions to ask of every design, and they pull against each other. You put the busiest minute under Performance, wrote down what a second copy costs, made the blank owner visible to the model, struck its go-ahead, and trusted a finding only because it quoted a line you could check.',
+            pattern='Five questions, then a person decides',
+            realworld='Architecture reviews at work use these pillar names. Bring your requirements sorted under them; the empty pillar is your first question.',
             asks=[
                 ask('You want to ask "Can it handle the busiest minute?" Which pillar does it go under?', ['Reliability', 'Performance Efficiency', 'Cost Optimization'], answer=1,
                     clue='One pillar is about staying fast as use grows.',
@@ -893,6 +951,8 @@ Decide like this:
         practice=practice(
             intro='Judge four pilots against the bars agreed before they started: go, fix or stop.',
             explain='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. You stopped a pilot with great averages because a must-pass case failed, gave one close miss a fix, called a result that met every bar exactly a go, and kept the cost bar where it was agreed.',
+            pattern='Must-pass first, then the agreed bars',
+            realworld='At the end of a pilot you\'ll be in the go, fix or stop meeting. Check the must-pass cases first, then each bar exactly as it was written before the trial, so the call stays the same however the results feel.',
             asks=[
                 ask('Pilot 1 looks great on quality, speed and cost. What\'s the call?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=2,
                     evidence=evidence('code', title='Pilot 1 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
