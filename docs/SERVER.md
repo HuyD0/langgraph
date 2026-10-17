@@ -226,7 +226,7 @@ GRANT SELECT ON TABLE <catalog>.<schema>.lb_docs_history TO `drill-managers`;
 GRANT SELECT ON TABLE <catalog>.<schema>.lb_events_history TO `drill-managers`;
 ```
 
-Tell learners up front that their manager can see their progress and activity.
+Learners are told up front: in team mode (`team` in `/api/health`) the page shows that their manager can see their progress, study list and tutor questions, on the first-visit card and in Settings.
 
 ## What gets measured
 

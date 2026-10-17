@@ -1004,6 +1004,7 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
     <div id="nb-settings" class="pane" role="tabpanel" aria-labelledby="nbtab-settings" hidden>
       <div class="setting"><span id="themeLabel">Look</span><div class="seg" role="group" aria-labelledby="themeLabel"><button data-theme-pick="dusk" aria-pressed="true">Dusk</button><button data-theme-pick="light" aria-pressed="false">Light</button></div></div>
       <div class="setting"><span id="focusLabel">What to practise</span><div class="seg" role="group" aria-labelledby="focusLabel"><button data-focus-pick="ai" aria-pressed="true">AI</button><button data-focus-pick="platform" aria-pressed="false">Platform</button><button data-focus-pick="both" aria-pressed="false">Both</button></div></div>
+      <div class="setting" id="teamSetting" hidden><span>Who sees your progress</span><p class="meta" id="teamNote"></p></div>
     </div>
   </div>
 </aside>
@@ -1500,6 +1501,8 @@ function phasePage(i, prefix) {
 }
 // Set when the local server says no model is running: everything works except the tutor's replies.
 let aiOff = false;
+let teamOn = false;  // at work (drill-server in team mode): the learner is told their manager sees their progress
+const TEAM_LINE = "At work, your manager can see your progress, your study list and the questions you ask the tutor.";
 function aiOffNote() {
   let hidden = false; try { hidden = sessionStorage.getItem("drill-aihide") === "1"; } catch {}
   if (!aiOff || hidden) return "";
@@ -1536,7 +1539,7 @@ function renderHome() {
   } else if (tid && fresh) {  // first visit, choice made: say how it works, once; it goes away as soon as a lesson starts
     hello = `<h1>Welcome to Daily Drill.</h1><p class="meta">${esc(about)}, one short lesson a day. Nothing to install: everything runs right in this page.</p>`;
     card = `<section class="next"><span class="eyebrow">How it works</span>
-      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with a few questions, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> A clue comes before the answer. Select any sentence to save it to your Study list, which brings it back for review.</li></ol>
+      <ol class="howto"><li><b>One lesson a day</b>, about 20 minutes.</li><li><b>Four steps:</b> learn the idea, check it with a few questions, ${progress.focus === "platform" ? "practise it on real YAML and plans" : progress.focus === "both" ? "build it in Python or practise it on real YAML and plans" : "build it in Python"}, then explain it in a sentence.</li><li><b>Stuck?</b> A clue comes before the answer. Select any sentence to save it to your Study list, which brings it back for review.</li>${teamOn ? `<li><b>Who sees it:</b> ${esc(TEAM_LINE)}</li>` : ""}</ol>
       <button class="btn primary" data-open="${tid}">Start the first lesson</button></section>`;
   } else if (tid) {
     const m = modOf[tid], ph = phaseOf[m.id], i = m.lessons.indexOf(tid), s = lp(tid), go = started(tid);
@@ -2994,6 +2997,7 @@ goHome();
   const { s, db, user } = backend;
   sample = s; sampleOff = !sample; document.body.classList.toggle("no-ai", !sample); updateHintBtn(); renderStudy();
   aiOff = !!(backend.local && !s); if (aiOff && !cur) renderHome();
+  if (backend.team) { teamOn = true; $("teamNote").textContent = TEAM_LINE; $("teamSetting").hidden = false; if (!cur) renderHome(); }
   if (db && user) {
     try {
       const id = await user.id();
