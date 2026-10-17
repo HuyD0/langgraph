@@ -106,3 +106,20 @@
 .hface .hair { stroke-width: 1.3; }
 .hface .btn { stroke-width: 1.1; }
 .hface .skin { stroke-width: .6; }
+/* finishing a room (horizonFinale): the finishing stance, a charge at his hand, a blast that fills the
+   banner, a flash and a shake where the spirit stood, then the spirit breaks apart */
+.horizon .cu .charge, .horizon .cu .blast, .horizon .cu .burst { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.horizon .cu .charge { fill: var(--fx-glow); }
+.horizon .cu .blast { fill: none; stroke: var(--fx-glow); stroke-width: 16; stroke-linecap: round; }
+.horizon .cu .blast.hi { stroke: var(--fx-core); stroke-width: 6; }
+.horizon .cu .burst { fill: var(--fx-core); }
+:root[data-theme="dusk"] .horizon .cu .fin { filter: drop-shadow(0 0 6px var(--fx-glow)); }
+.horizon.finale .cu .charge { animation: hz-fin-charge 700ms var(--ease-in) both; }
+.horizon.finale .cu .blast { animation: hz-fin-blast 900ms 650ms var(--ease-out) both; }
+.horizon.finale .cu .burst { animation: hz-fin-burst 900ms 850ms var(--ease-out) both; }
+.horizon.finale .cu .shards .bit { animation-delay: calc(1000ms + var(--d, 0s)); }
+.horizon.finale svg { animation: hz-fin-shake 360ms 800ms steps(6) both; }
+@keyframes hz-fin-charge { 0% { opacity: 0; transform: scale(.1); } 80% { opacity: .95; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes hz-fin-blast { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; stroke-width: 2; } }
+@keyframes hz-fin-burst { 0% { opacity: 0; transform: scale(.2); } 30% { opacity: .95; } 100% { opacity: 0; transform: scale(2.2); } }
+@keyframes hz-fin-shake { 0%, 100% { transform: none; } 20% { transform: translate(2px, -1px); } 40% { transform: translate(-2px, 1px); } 60% { transform: translate(1px, 1px); } 80% { transform: translate(-1px, -1px); } }

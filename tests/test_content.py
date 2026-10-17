@@ -269,10 +269,14 @@ console.log(JSON.stringify({
   phases: [HZ.length, HZ_ENERGY.length, HZ_AT.length],
   whole: HZ_AT.map((_, i) => n(hzCurse(i, 1))),
   half: HZ_AT.map((_, i) => [n(hzCurse(i, .4)), hzCurse(i, .4).includes('class="crack"')]),
-  done: HZ_AT.map((_, i) => [n(hzCurse(i, 0)), hzCurse(i, 0).includes('class="bit"')]),
+  done: HZ_AT.map((_, i) => [n(hzCurse(i, 0)), hzCurse(i, 0).includes('class="stain"')]),
+  finale: (() => { const saved = {}; globalThis.store = { get: k => saved[k] || null, set: (k, v) => { saved[k] = v; } };
+    const cu = { html: "", insertAdjacentHTML(_, h) { this.html += h; } }, band = { cls: [], classList: { add(c) { band.cls.push(c); } }, querySelector: () => cu };
+    const hero = hzSorcerer(30, 90, 10, 20, 1, 4); horizonFinale(band, "p0", [10, 20], hero); const first = cu.html; horizonFinale(band, "p0", [10, 20], hero);
+    return [first.includes('class="bit"') && first.includes('class="burst"') && first.includes('class="blast"') && first.includes('data-pose="4"'), band.cls.length, cu.html === first]; })(),
   html: horizonHtml(2, 3, 4),
   hero: [hzHero(0, 1).match(/r="([\\d.]+)" opacity/)[1], hzHero(0, .2).match(/r="([\\d.]+)" opacity/)[1]].map(Number),
-  track: [hzTrackCurse(1).includes('class="eye"'), hzTrackCurse(0).includes('class="bit"'), hzTrackCurse(.5).includes('class="band"')],
+  track: [hzTrackCurse(1).includes('class="eye"'), hzTrackCurse(0).includes('class="stain"'), hzTrackCurse(.5).includes('class="band"')],
   face: [hzFace("answer").includes('class="h-eye"'), hzFace("clue").includes('class="h-eye"'), (hzCoach("answer", "x").match(/class="eye"/g) || []).length, hzTrackCurse(1).includes('class="body" d="M')],
 }));"""
     (tmp_path / "hz.js").write_text(probe)
@@ -280,7 +284,8 @@ console.log(JSON.stringify({
     assert out["phases"] == [len(modules.LIFECYCLE)] * 3, "one scene, one energy layer and one spirit place per phase"
     assert all(w == 9 for w in out["whole"])
     assert all(0 < e < 9 and crack for e, crack in out["half"])
-    assert all(e == 0 and bits for e, bits in out["done"]), "finishing the phase breaks the spirit up"
+    assert all(e == 0 and stain for e, stain in out["done"]), "a finished phase leaves only a stain"
+    assert out["finale"] == [True, 1, True], "the finale breaks the spirit apart once per room, then never again"
     assert 'aria-hidden="true"' in out["html"] and 'data-hp="0.250"' in out["html"]
     assert out["hero"][1] > out["hero"][0], "the sorcerer's flame grows as lessons get done"
     assert out["track"] == [True, True, True], "the platform track has its own banner, spirit and sorcerer"
