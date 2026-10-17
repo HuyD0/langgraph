@@ -214,7 +214,7 @@ A field is a gap if it is missing from `plan`, if its value is `None`, or if its
         realworld='A team that logs the plan with every MLflow run can show, months later, that the rule came before the result. Blocking a run until the plan is complete turns that from a good intention into a habit.',
         practice=practice(
             intro='Check these experiment plans the way a reviewer does, before a single run: every part filled in, and a rule that picks a winner.',
-            explain='The big idea: decide how you will judge an experiment before you see any results, so you can\'t talk yourself into an answer. You ticked off the seven parts like a packing list, sent back the missing and the empty ones, and made sure the rule also says what a result too close to call means.',
+            explain='The big idea: decide how you will judge an experiment before you see any results, so you can\'t talk yourself into an answer. A plan has seven parts, and a part that is missing, None, or empty text is a gap: the first plan had no decision rule and an empty test; the second had no question and no eval set. A rule like "switch to B if it wins" also needs its too-close-to-call case written down, or the argument happens after the runs.',
             pattern='Every part filled in before the first run',
             realworld="Before a teammate starts an experiment, you'll read their plan and send back any part that is missing or blank. Ask for the rule that picks a winner, and what happens if it's too close to call, before anyone sees a score.",
             gotchas=[

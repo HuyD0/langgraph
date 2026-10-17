@@ -2879,7 +2879,7 @@ document.addEventListener("click", async e => {
   const trk = t.closest("[data-track-go]"); if (trk) { goHome(); requestAnimationFrame(() => { const el = $("track-" + trk.dataset.trackGo); if (el) el.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); }); return; }
   const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
   const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openPocket(sn.dataset.snote); return; }
-  const hz = t.closest("[data-strike]"); if (hz) { horizonStrike(hz); return; }
+  const hz = t.closest("[data-strike]"); if (hz) { horizonStrike(hz, e); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
