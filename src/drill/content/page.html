@@ -386,6 +386,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .sec { display: grid; gap: 8px; }
 /*INCLUDE page/trust.css*/
 /*INCLUDE page/callbacks.css*/
+/*INCLUDE page/diagrams.css*/
 .sec p { margin: 0; max-width: 65ch; }
 .say { margin: 4px 0 0; border-left: 3px solid var(--accent); padding-left: 14px; font-size: 17px; }
 .gl { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
@@ -904,6 +905,7 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
       <div class="goal" id="taskGoal"></div>
       </div>
     </details>
+    <section class="card codeonly" id="livepic" hidden aria-label="What your function did on the example"></section>
     <section class="card mach codeonly" id="machine" hidden aria-label="The example's rows moving through your function">
       <h3>Watch the rows</h3>
       <div class="mstage" id="mStage">
@@ -2196,6 +2198,8 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = fals
 
 /*INCLUDE page/callbacks.js*/
 
+/*INCLUDE page/diagrams.js*/
+
 // ---------- step panes ----------
 /*INCLUDE page/walkthrough.js*/
 /*INCLUDE page/cards.js*/
@@ -2205,8 +2209,9 @@ function learnPane() {
   if (L.cards) return cardsLearnPane(L);  // Learn as picture cards (page/cards.js)
   const [cap, code] = L.example, [first, ...rest] = L.learn;
   closeTrust(); closeCb();
-  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}
-    ${rest.map(p => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>`).join("")}
+  const fig = L.diagram ? diagramHtml(L.diagram) : "", at = L.diagram ? L.diagram.after : -1;  // the picture follows paragraph `after`
+  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}${at === 0 ? fig : ""}
+    ${rest.map((p, i) => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>${at === i + 1 ? fig : ""}`).join("")}
     ${L.walk ? walkHtml(L.walk) : ""}
     <figure class="ex"><figcaption>${esc(cap)}</figcaption><pre class="code">${esc(code)}</pre></figure>
     ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}
@@ -2401,7 +2406,7 @@ function loadProblem(p) {
   $("taskExample").textContent = exampleText(p, ex);
   const names = paramNames(p), first = ex.args[0];
   $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
-  machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
+  machineLoad(p); $("livepic").hidden = true; $("livepic").innerHTML = ""; $("outView").hidden = true; $("outView").innerHTML = "";
   qfLoad(p);
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
@@ -2478,6 +2483,7 @@ async function runTests() {
   await saveProgress(); renderTop();
   const smooth = motionOn() ? "smooth" : "auto";
   if (M.p && gotJson) { $("machine").scrollIntoView({ block: "start", behavior: smooth }); machineRun(gotJson.v); }
+  else if (LIVE[p.id] && gotJson) { livePic(p, gotJson.v, !failedRun); $("livepic").scrollIntoView({ block: "start", behavior: smooth }); }
   else $("result").scrollIntoView({ block: "nearest", behavior: smooth });
 }
 

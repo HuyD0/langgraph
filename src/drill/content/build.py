@@ -11,6 +11,7 @@ The parts, and where each one lives:
 - the glossary, habits and gotchas: :mod:`drill.content.extras`
 - the trust marks (responsible AI, privacy and NIST notes): :mod:`drill.content.trust`
 - the sticker callbacks and Look again questions: :mod:`drill.content.callbacks`
+- the Learn step's diagrams: :mod:`drill.content.diagrams`
 - the page itself: ``page.html`` next to this file, with ``/*DATA*/`` where the content goes
 
 :func:`build_data` returns the content as one dict, which is what the page embeds and what
@@ -26,7 +27,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from drill.content import callbacks, classics, extras, modules, real, review, trust
+from drill.content import callbacks, classics, diagrams, extras, modules, real, review, trust
 from drill.content.checks import more_checks
 from drill.content.model import TRAITS, Module
 
@@ -88,6 +89,10 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
         out["cards"] = entry["cards"]  # Learn as picture cards (model.card), drawn by page/cards.js
     if note:
         out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
+    if entry["id"] in diagrams.DIAGRAMS:  # one picture in Learn, drawn by page/diagrams.js
+        # picture cards carry their own pictures, one per card, and the page draws only those
+        assert not entry.get("cards"), f"{entry['id']}: a lesson with picture cards takes no diagram; draw it as a card"
+        out["diagram"] = diagrams.DIAGRAMS[entry["id"]]
     links = callbacks.CALLBACKS.get(entry["id"])
     if links:  # [to, phrase, idea, here] per sticker callback, and the one Look again question if any
         out["callbacks"] = [[c["to"], c["phrase"], c["idea"], c["here"]] for c in links]

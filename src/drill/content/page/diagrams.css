@@ -1,0 +1,67 @@
+/* ---------- lesson diagrams (content/diagrams.py, drawn by page/diagrams.js). A card in the Learn step
+   with one picture, its caption and numbered notes. Colour keeps its meaning: accent for the one thing the
+   lesson is about, hint for the callout numbers (amber circle, text in the page's own background, the
+   walkthrough's pair, so it reads in every look), the ink and lines for everything else. */
+.dgfig { display: grid; gap: 10px; margin: 18px 0 0; padding: 14px 14px 12px; border-radius: 14px; background: var(--card-bg, var(--surface)); border: 1px solid var(--card-line, var(--line)); box-shadow: var(--card-shadow, none); }
+.dgfig .eyebrow { margin: 0; }
+.dgfig figcaption { font-size: 15px; line-height: 1.5; color: var(--fg); }
+.dg-notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; color: var(--fg); }
+.dg-notes li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; align-items: start; }
+.dg-notes i { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--hint); color: var(--bg); font: 700 11.5px var(--mono); font-style: normal; }
+.dg { width: 100%; height: auto; display: block; overflow: visible; font-family: var(--body); }
+.dg text { fill: var(--fg); font-size: 11px; text-anchor: middle; }
+.dg .dg-tl { font-weight: 600; }
+.dg .dg-ts { font-size: 9.5px; fill: var(--muted); }
+.dg .dg-th { font-size: 9.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; fill: var(--muted); }
+.dg .dg-td { font-size: 10.5px; }
+.dg .dg-mono { font-family: var(--mono); font-size: 9.5px; fill: var(--muted); }
+.dg .dg-ms { font-size: 9.5px; font-family: var(--mono); fill: var(--muted); }
+.dg .dg-ms.in { fill: var(--fg); } .dg .dg-ms.in.on { fill: var(--bg); }  /* a number drawn inside its bar */
+.dg .dg-left { text-anchor: start; } .dg .dg-right { text-anchor: end; }
+.dg .hot { fill: var(--accent); }
+.dg .dg-bx rect { fill: var(--surface); stroke: var(--fg); stroke-width: 1.4; }
+.dg .dg-bx.now rect { stroke: var(--accent); fill: var(--accent-soft); }
+:root[data-theme="dusk"] .dg .dg-bx.now rect { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 80%, transparent)); }
+.dg .dg-ar { fill: none; stroke: var(--fg); stroke-width: 1.3; opacity: .8; }
+.dg marker path { fill: none; stroke: var(--fg); stroke-width: 1.3; }
+.dg .dg-grid { stroke: var(--line); stroke-width: 1; }
+.dg .dg-tree { fill: none; stroke: var(--muted); stroke-width: 1; }
+.dg .dg-bar { fill: var(--surface); stroke: var(--fg); stroke-width: 1.2; }
+.dg .dg-bar.hot { fill: var(--accent); stroke: var(--accent); }
+.dg .dg-bar.cut { stroke-dasharray: 3 3; }
+.dg .dg-band { fill: var(--sunk); }
+.dg .dg-pt { font-size: 9.5px; font-weight: 600; font-family: var(--mono); }
+.dg .dg-pill { fill: var(--sunk); } .dg .dg-pt { fill: var(--muted); }
+.dg .dg-pill.dev, .dg .dg-pill.keep { fill: var(--accent-soft); } .dg .dg-pt.dev, .dg .dg-pt.keep { fill: var(--accent); }
+.dg .dg-pill.test, .dg .dg-pill.expire { fill: var(--hint-bg); } .dg .dg-pt.test, .dg .dg-pt.expire { fill: var(--hint); }
+.dg .dg-pill.delete { fill: var(--fail-bg); } .dg .dg-pt.delete { fill: var(--fail); }
+.dg .dg-steady { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.dg .dg-line { fill: none; stroke: var(--fg); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dg .dg-line.hot { stroke: var(--accent); }
+.dg .dg-today { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
+.dg .dg-dot { fill: var(--surface); stroke: var(--fg); stroke-width: 1.4; }
+.dg .dg-dot.now { fill: var(--accent); stroke: var(--accent); }
+.dg .dg-co circle { fill: var(--hint); }
+.dg .dg-co text { font: 700 9.5px var(--mono); fill: var(--bg); }
+/* steps, replay, pairs and the live picture in Build */
+.dg-steps { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dg-steps .btn { min-height: 40px; }
+.dg-where { font: 400 13px var(--mono); color: var(--muted); }
+.dg .dg-bx.dim rect { opacity: .35; } .dg .dg-bx.dim text { opacity: .4; }
+.dg .dg-bar.grow { transform-box: fill-box; transform-origin: left; animation: dg-grow .9s var(--d, 0s) both cubic-bezier(.2, .7, .2, 1); }
+.dg .dg-ms.late, .dg .dg-co.pop { animation: dg-pop .4s var(--d, 0s) both; transform-box: fill-box; transform-origin: center; }
+@keyframes dg-grow { from { transform: scaleX(0); } }
+@keyframes dg-pop { from { opacity: 0; transform: scale(.4); } }
+.dg-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.dg-half { display: grid; gap: 4px; min-width: 0; }
+.dg-lbl { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.dg-half:first-child .dg-lbl { color: var(--fail); } .dg-half:last-child .dg-lbl { color: var(--pass); }
+.dg .dg-pill.leak, .dg .dg-pill.fail, .dg .dg-pill.wait { fill: var(--fail-bg); } .dg .dg-pt.leak, .dg .dg-pt.fail, .dg .dg-pt.wait { fill: var(--fail); }
+.dg .dg-pill.train { fill: var(--accent-soft); } .dg .dg-pt.train { fill: var(--accent); }
+.dg .dg-pill.ok, .dg .dg-pill.allowed { fill: var(--pass-bg); } .dg .dg-pt.ok, .dg .dg-pt.allowed { fill: var(--pass); }
+.dg .dg-pill.blocked { fill: var(--sunk); } .dg .dg-pt.blocked { fill: var(--muted); }
+.dg .dg-pill.\31 st, .dg .dg-pill.\32 nd, .dg .dg-pill.\33 rd, .dg .dg-pill.\34 th, .dg .dg-pill.\35 th { fill: var(--accent-soft); }
+.dg .dg-pt.\31 st, .dg .dg-pt.\32 nd, .dg .dg-pt.\33 rd, .dg .dg-pt.\34 th, .dg .dg-pt.\35 th { fill: var(--accent); }
+#livepic { display: grid; gap: 10px; }
+#livepic h3 { margin: 0; }
+#livepic .dg-say { margin: 0; font-size: 15px; line-height: 1.5; }

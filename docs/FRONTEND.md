@@ -83,6 +83,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `picture cards: a lesson's Learn step as short cards` | `cardsLearnPane`, `PC_PIC` (one function per kind of picture), drawn from lesson data (`card(...)`); `learnPane` hands over when a lesson has `cards` **In `page/cards.js`** (styles: `page/cards.css`) |
 | `your result` | The result card on the done screen: the marks each step leaves the first time through (`firstMarks`, `finishMarks`, `resultOf`), the picture Share result copies (`resultPng`, `sharePicture`) and Copy as text (`shareText`). The Notebook's Results tab (`renderResults`). **In `page/share.js`** (styles: `page/share.css`) |
 | `trust marks` | The ember after trust phrases in Learn and its tooltip (`withTrust`, `openTrust`, `growPop`); notes in `content/trust.py` **In `page/trust.js`** (styles: `page/trust.css`) |
+| `lesson diagrams` | One picture in Learn, drawn from lesson data: `diagramHtml` and one `dg<Kind>` function per kind (flow, tree, graph, table, chart, pair); step-throughs, one-shot play, and the live picture in Build (`LIVE`, `livePic`). Data in `content/diagrams.py` **In `page/diagrams.js`** (styles: `page/diagrams.css`) |
 | `sticker callbacks` | An earlier lesson's sticker after the phrase that uses its idea, and its card (`cbMarkHtml`, `cbPopHtml`, `openCb`); `withTrust` places both. The Look again card after Learn (`againHtml`, `againStep`, saved as `lp(id).again`). Data in `content/callbacks.py` **In `page/callbacks.js`** (styles: `page/callbacks.css`) |
 | `step panes` | `learnPane`, `checkPane` (the Check questions one at a time: `checkQs`, `checkState`, `checkPick`, `checkHelp`), the Explain gaps (`clozeHtml`), `anglePane` |
 | `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
@@ -139,7 +140,7 @@ as one page.
 | 1 | study list, the pocket | `study-list.js`, `pocket.css`, `study-list.css` | **Done.** Self-contained, and edited often |
 | 2 | notebook, selection toolbar | `notebook.js`, `notebook.css`, `selection.js` | **Done.** Small drawers with their own state |
 | 3 | the machine, practice questions | `machine.js`, `practice.js` and a `.css` for each | **Done.** Feature-local state (`M`, `QF`); the sorting board was retired for practice questions |
-| 4 | walkthrough, trust marks, sticker callbacks, spot the gotcha | `walkthrough.js`, `trust.js`, `callbacks.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
+| 4 | walkthrough, trust marks, sticker callbacks, lesson diagrams, spot the gotcha | `walkthrough.js`, `trust.js`, `callbacks.js`, `diagrams.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
 | 5 | content packs | `packs.js`, `packs.css` | **Done.** Only used when a pack is loaded |
 | 6 | ask about this lesson, backends | `ask.js`, `ask.css`, `backends.js` | **Done**, with a live check: saving, the study list and asking a real model all work on `drill-server` |
 | 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |

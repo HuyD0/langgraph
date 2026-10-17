@@ -24,6 +24,7 @@ Everything is in the package, under `src/drill/content/`:
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
 | `trust.py` | The trust marks: where a lesson touches responsible AI, privacy or governance, one note (trait, NIST AI RMF reference, a perspective and a tip, and whether it is TEVV evidence) |
+| `diagrams.py` | One picture per lesson at most, drawn by the page from this data in five kinds: flow, tree, graph, table, chart (see "Lesson diagrams") |
 | `callbacks.py` | Sticker callbacks: where a lesson uses an idea taught earlier, the earlier lesson's sticker after the phrase, and at most one Look again question |
 | `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Explain step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
 | `freshness.py` | When each lesson's facts were last checked against its sources, and which are due another look (`drill content stale`; see "Keeping content current") |
@@ -218,6 +219,12 @@ tile) and `look="dashed"` (a ruler-edged tile). Icons are names from the page's 
 a test fails if a card names one the page doesn't have. Keep to one idea per card, two to seven
 cards, with the same example running through them (lesson 1.3 uses a food delivery app, then the
 HR assistant; 1.4 puts the HR assistant's bars on the pillars).
+
+**Cards or a diagram?** A [lesson diagram](#lesson-diagrams) adds one picture to Learn paragraphs,
+drawn from the lesson's example: right when one shape (a tree, a flow, a chart) carries the idea.
+Picture cards rebuild the whole Learn step as a sequence of small ideas, each with its own picture:
+right when the text is dense or the idea builds in steps. A lesson takes one or the other (the
+build refuses both).
 
 ## What you practise: AI, the platform, or both
 
@@ -501,6 +508,39 @@ the testing whose record is evidence (experiments, eval runs, registries).
   "next" and the violet of the path. The styles sit with the lesson styles (`.trustmark`,
   `.trustpop`, keyframes `tm-…`), not in the fx block: the mark is part of the page, not a
   passing effect.
+
+## Lesson diagrams
+
+Some ideas are a shape before they are a sentence: a trace is a tree, a circuit breaker is three
+states, a split is a table. Where that is true, the Learn step shows one picture, drawn by the page
+from data in `content/diagrams.py`, in the app's own tokens, so it follows Dusk and Light and fits a
+phone. The shapes are the ordinary ones the learner will meet at work, and each picture is drawn
+from the lesson's own example, so picture and text tell one story.
+
+- Five kinds, one page function each (`page/diagrams.js`): `flow` (boxes and arrows; one box may
+  open up with detail lines, the last may split into shares), `tree` (rows with a bar each, to scale:
+  a trace, workers over time, tokens per helper), `graph` (boxes on a small grid with labelled
+  arrows: a state diagram, stacks that depend on each other), `table` (one column may be pills) and
+  `chart` (lines, bars or dots over two axes, a dashed reference line, one marked point).
+- Add one with `diagram(kind, caption=..., callouts=[...], after=n, **data)`; `after` is the Learn
+  paragraph it follows. The caption says in plain words what the picture shows and the callouts are
+  the numbered notes; the page draws the numbers on the picture and the list under it, so a screen
+  reader gets the same explanation.
+- Colour keeps its one meaning: `accent` for the one thing the lesson is about, `hint` for the
+  callout numbers (amber circle, text in the page background, the walkthrough's pair, so it reads in
+  Light too), ink and lines for everything else.
+- A picture can do more than sit still, where that helps. `steps=[{"now": ..., "say": ...}]` makes
+  it a step-through: Back and Next move the blue box along a flow, between a graph's states or down
+  a tree's rows, and each step's `say` replaces the caption (the retrieval flow, the circuit breaker
+  run from its own sample case, the stacks that run after a change, the YAML field's five stops).
+  `play=True` on a tree whose bars are time grows them in once, in time order, with a Replay (the
+  trace, the workers against the timeout). `live=True` draws the same kind of picture in Build from
+  what the learner's function returned on the example (`LIVE` in `page/diagrams.js`, one drawing per
+  lesson id), so a wrong answer is something you can see. A `pair` is two small pictures, `before`
+  and `fixed`, for a spot-the-difference lesson (leakage, splits that move, a hot key salted).
+- `tests/test_diagrams.py` checks the shapes, that the numbers on the picture match the notes, that
+  every `live` diagram has its drawing and that every label on a picture also appears in the
+  lesson's words, its example, its exercise's sample case, its caption or its callouts.
 
 ## Sticker callbacks
 

@@ -104,6 +104,23 @@ Unopened marks give off embers until they're opened.
 **Change it safely.** The notes are `content/trust.py`, one per lesson at most; the phrase must
 appear once in the Learn text (a test checks). Colours are `--mark` and `--mark-glow`.
 
+## A lesson: a diagram
+
+![A trace drawn as a tree with time bars](diagram-phone-light.webp)
+
+**What the learner sees.** One picture in the Learn step, drawn from the lesson's own example:
+here the trace from Reading agent traces as the tool shows it, a tree on the left and time bars to
+scale on the right, the critical path filled in blue. A caption and amber-numbered notes under it
+say the same thing in words.
+
+**What draws it.** `learnPane()` places `diagramHtml(L.diagram)` after the paragraph the data
+names; one `dg<Kind>()` function per kind in the `lesson diagrams` section draws the SVG. Some
+pictures step through on Back and Next (`steps`), some play once (`play`), some are a before-and-
+after pair, and in Build `livePic()` draws the same kind from what your function returned.
+
+**Change it safely.** The data is `content/diagrams.py`, one per lesson at most; every label must
+appear in the lesson's words (a test checks). Colours are `accent` and `hint` only.
+
 ## A lesson: a sticker callback
 
 ![A sticker callback's card, opened](callback-phone-dusk.webp)
