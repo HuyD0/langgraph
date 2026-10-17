@@ -164,7 +164,10 @@ the answer. With `pick=True` the plan's own rows are the options: tap the change
 The Python exercise stays one tap away ("Rather write it in Python?"). After practice, the Explain
 step describes what the learner did, not the Python they didn't see: `practice(pattern=...)` is the
 heading under "How you worked it out" (the way of thinking, like "Watch it, or measure it?"),
-`explain=` the big idea, and `realworld=` the "Where you'll use this" line. `gotchas=` replaces the
+`explain=` the big idea, and `realworld=` the "Where you'll use this" line. The big idea has to
+make sense to someone who has forgotten the questions: say the idea, then name the examples
+("pulled 'within 5 seconds' out of the time-off line"), never a run of clipped moves ("spotted a
+list, split a sentence, turned a phrase into a number") that only the question would explain. `gotchas=` replaces the
 exercise's gotchas in practice mode when some only make sense in code. A test checks every practice
 lesson has a pattern and a realworld line with no code words in them. A `fix(...)` question is **Fix the YAML**: the learner edits a
 real file until the check passes, with problems listed by line ("Line 6 · policy_id isn't

@@ -51,8 +51,15 @@ strip.
 horizon for that phase (a gate, seals on a rope, a barrier being drawn, a closed curtain, the
 barrier opening, lanterns at night) with blue-flame energy moving through it, and a cursed spirit
 that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the
-last lesson breaks it apart. On the left hill a white-haired, blindfolded sorcerer in a navy high-collared jacket changes
-stance and technique each phase (a scanning ring, a line of energy, a blue and red spiral, measuring arcs, a beam, a quiet halo); it all grows as you learn, and tapping fires it at the spirit. Changing phase reshapes the hills; tapping the banner strikes the
+last lesson breaks it apart. On the left hill a white-haired, blindfolded hero drawn in glowing outline, in a long high-collared
+jacket, grows in three stages as you finish the phase: calm with a hand at his blindfold and faint rings
+(under a third done), two fingers raised to his lips in a sign, cyan rings round his shoulders and a red one lower (from a third),
+arms open inside a field of stars, galaxies and great circles (from two-thirds). On top, a small touch for
+the phase (a scanning ring, a line of energy, a blue and a red orb, measuring arcs, a beam, a quiet halo)
+leaves from his hand. Tapping him lifts his blindfold: his eyes ignite blue and his aura flares, until
+you tap him again (for this visit, `hzAwake`); tapping anywhere else fires at the spirit. The first time you see a finished phase (or the finished track), the hero takes his finishing
+stance, charges and fires a blast across the banner, and the spirit breaks apart; after that the
+room shows only the stain (`horizonFinale`, remembered on the device as `drill-hz-won`). Changing phase reshapes the hills; tapping the banner strikes the
 spirit. The current phase's landmark is lit in blue. Then its shape glowing in the title card, what
 you come out with, then one scene per module. The scene with the next lesson is open; the
 others fold to a row of small shapes.
@@ -170,7 +177,7 @@ written with `ask(...)`: three options and a clue.
 ![The Check step after answering](lesson-check-phone-dusk.webp)
 
 The hero's round portrait sits beside the clue and the verdict (`hzCoach()` in `page/horizon.js`):
-blindfolded for a clue, and with the blindfold pushed up and his blue eyes open when he gives the answer.
+blindfolded for a clue, and with the blindfold pushed up and his eyes glowing cyan when he gives the answer.
 The words stay the lesson's own. The same portrait shows in Explain and Practice, and the done screen has
 him in full, in the phase's stance.
 

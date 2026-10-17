@@ -69,8 +69,9 @@
   --ease-pop: cubic-bezier(.2, 1.5, .4, 1);  /* overshoots a little, then settles */
 
   /* effect colours, only ever used by the fx rules: a hot core, the energy, the dark of a closed
-     space, and the red that meets the energy to make the mix colour */
-  --fx-core: #5f84ff; --fx-glow: #2346d1; --fx-veil: #0b1233; --fx-red: #c2362f; --fx-mix: #6d3fd6;
+     space, and the red that meets the energy to make the mix colour; cyan is the hero's own energy (his rings,
+     galaxies and eyes in the banner), nothing else */
+  --fx-core: #5f84ff; --fx-glow: #2346d1; --fx-veil: #0b1233; --fx-red: #c2362f; --fx-mix: #6d3fd6; --fx-cyan: #0b86a6;
 
   /* layout: one reading column */
   --col: 760px;
@@ -102,7 +103,7 @@
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b; --tok-on: #ffffff;
-  --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
+  --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa; --fx-cyan: #4fe3ff;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
@@ -119,7 +120,7 @@
   --pass: #5fd394; --pass-bg: #12291d; --fail: #ff8a7d; --fail-bg: #2e1513; --hint: #f2c25c; --hint-bg: #2a2212;
   --syn-kw: #c9a2ff; --syn-str: #f2b872; --syn-num: #ff9ccf; --syn-com: #8b94a1; --syn-fn: #8ab4ff; --syn-bi: #6fd3df;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b; --tok-on: #ffffff;
-  --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa;
+  --fx-core: #cfe0ff; --fx-glow: #7f9bff; --fx-veil: #05080d; --fx-red: #ff6b6b; --fx-mix: #a78bfa; --fx-cyan: #4fe3ff;
   --path: #a78bfa; --path-bg: #1b1730; --path-line: #352c55; --path-ink: #b3a6d9;
   --mark: #cfe9ff; --mark-glow: rgba(140, 190, 255, .55);
   --track: #3fd2bf; --track-on: #04201d; --track-soft: #10302c; --track-line: #1f4a45; --track-ink: #8fcfc6;
@@ -140,7 +141,7 @@
   --syn-kw: #9db7ff; --syn-str: #f0c6a0; --syn-num: #f2a7c3; --syn-com: #8f8a9f; --syn-fn: #c3b5ff; --syn-bi: #9fd2db;
   --tok-a: #3b72e0; --tok-b: #c2661e; --tok-c: #8452d0; --tok-d: #138a9b; --tok-on: #ffffff;
   --finish: #b49cff;
-  --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6;
+  --fx-core: #d4f8ff; --fx-glow: #5b8cff; --fx-veil: #030308; --fx-red: #e5484d; --fx-mix: #8b5cf6; --fx-cyan: #3ee6ff;
   --path: #8b5cf6; --path-bg: #150f28; --path-line: #3a2a63; --path-ink: #a99ad6;
   --card-bg: rgba(19, 18, 28, .92); --card-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 28px rgba(0, 0, 0, .35);
   --aside-bg: rgba(93, 85, 103, .22); --aside-line: rgba(220, 221, 235, .10); --aside-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); --aside-blur: blur(12px);
