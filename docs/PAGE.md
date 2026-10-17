@@ -318,6 +318,12 @@ idea, ungraded:
 - **Your feedback**: under each draft, "Was this useful?" and a reason ("Made something up",
   "Missed a risk", "Caught a risk I missed"...). Served locally it goes to `/api/feedback` and onto
   the draft's trace as human feedback; everywhere it is also kept in your progress (`mine.feedback`).
+- **The tutor's answers (Ask about this lesson)**: each answer has a request id, and the hero's
+  portrait sits beside it (eyes open for an explanation, the blindfold for a hint or a question back),
+  labelled "AI tutor · can be wrong". It ends with **Got it** or **Still stuck**: the learner's next
+  step, recorded as `resolved` (true or false) on that answer's trace. Still stuck asks for a simpler
+  explanation, whose trace carries `retry_of` (the first answer's request id), so the pair can become
+  an eval case. On claude.ai, where there is no MLflow, the same feedback is kept in `mine.feedback`.
 - **What you did next**: changing your rating, gates or card after a draft is logged as a signal
   on that draft (`changed_rating_after`, `edited_card_after`).
 - **The eval**: `uv run drill review eval` asks the model to review cards with planted gaps (no

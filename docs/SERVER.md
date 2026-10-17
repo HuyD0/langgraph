@@ -246,8 +246,9 @@ ask_lesson                 the learner's question, lesson and step in; the answe
 - **Named and tagged by what it was for.** The trace name is the feature (`ask_lesson`,
   `hint`, `review`, `explain`, `ask_study_item`, `quiz`, or the MCP tool), and the tags say
   `feature`, `door` (`page` or `mcp`), `lesson_id`, `step`, `hint_level`, `chip` (a one-tap
-  question) and `guard` (`solution_request` when the page turned a request for the solution
-  into a hint). Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.
+  question), `guard` (`solution_request` when the page turned a request for the solution
+  into a hint) and `retry_of` (on a Still stuck re-explanation: the request id of the answer
+  that didn't help, which carries `resolved = false` as human feedback). Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.
 - **Sessions.** Follow-ups in one Ask thread share a session; so do the questions about one
   study-list item, and every tool call from one Claude Code session.
 - **Versions.** `app_version` is the git commit the server runs, with `-dirty` when tracked

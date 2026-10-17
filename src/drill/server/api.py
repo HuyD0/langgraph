@@ -365,6 +365,7 @@ def create_app(
             "owner": owner_for(request, store.owner),
             "lessons": len(bank.lessons),
             "team": team.enabled(store),  # true at work: managers see progress, study lists and questions
+            "app": behind_login(),  # behind a login (the Databricks App): the learner can't start a model themselves
         }
 
     @app.get("/api/me")
@@ -439,7 +440,7 @@ def create_app(
         from drill.server.observe import default_observer
 
         user = owner_for(request, "local")
-        await asyncio.to_thread(mine(request).log, "feedback", "", name=body.name, value=str(body.value)[:60])
+        await asyncio.to_thread(mine(request).log, "feedback", "", name=body.name, value=str(body.value)[:60], request=body.request)
         # The router's own observer: the one that wrote the trace this feedback is about.
         observer = router.observer if hasattr(router.observer, "human_feedback") else default_observer()
         logged = bool(observer and observer.human_feedback(body.request, body.name, body.value, body.rationale, user))

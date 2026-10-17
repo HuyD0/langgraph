@@ -47,9 +47,9 @@ SOURCE_ID = "drill.observe"
 # What the page and the MCP tools may say about a request, and which of those become tags.
 CONTEXT_KEYS = (
     "feature", "door", "lesson_id", "step", "hint_level", "question", "session", "user",
-    "exercise_fn", "word_limit", "chip", "guard", "request", "prompt_version", "blank_fields",
+    "exercise_fn", "word_limit", "chip", "guard", "request", "prompt_version", "blank_fields", "retry_of",
 )
-TAG_KEYS = ("feature", "door", "lesson_id", "step", "hint_level", "chip", "guard", "prompt_version")  # "request" is the client_request_id
+TAG_KEYS = ("feature", "door", "lesson_id", "step", "hint_level", "chip", "guard", "prompt_version", "retry_of")  # "request" is the client_request_id
 REQUEST_ID = re.compile(r"^[A-Za-z0-9_-]{6,64}$")  # the page's id for one request, used to find its trace again
 
 _BIG_O = re.compile(r"\bO\([^)\n]{1,15}\)")

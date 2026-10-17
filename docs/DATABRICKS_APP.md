@@ -79,7 +79,9 @@ MLflow's own fields hold the user (`mlflow.trace.user`, the signed-in email in t
 session (each page visit, or one Ask thread), the commit (`mlflow.source.git.commit`), the version
 (`mlflow.modelId`), token counts, and the page's request id as `client_request_id`. Spans record
 the full prompt, the model, timings (time to first word, total), finish reason and fallbacks, and
-a `checks` span the answer rules. Feedback buttons attach HUMAN feedback (who clicked, why).
+a `checks` span the answer rules. Feedback buttons attach HUMAN feedback (who clicked, why). On the
+tutor's answers that is `resolved` (Got it / Still stuck), and a re-explanation after Still stuck
+is tagged `retry_of` with the request id of the answer it follows.
 
 **Scoring.** The answer rules are on every trace as tags and a span. In the app they are not
 written as assessments one by one, because each write to traces kept in Unity Catalog wakes the

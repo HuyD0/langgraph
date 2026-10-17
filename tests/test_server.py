@@ -854,6 +854,31 @@ def test_an_apps_traces_carry_where_they_ran_who_asked_and_the_pages_request_id(
     assert assessment.source.source_type == "HUMAN" and assessment.source.source_id == "sam@example.com"
 
 
+def test_still_stuck_marks_the_answer_unresolved_and_links_the_simpler_one(store, bank, mlflow_store, monkeypatch):
+    """The tutor's Got it / Still stuck: feedback lands on the answer's own trace, and the re-explanation's
+    trace names the answer it follows, so the pair can become an eval case."""
+    import mlflow
+
+    from drill.server import observe
+
+    monkeypatch.setenv("DRILL_MLFLOW_EXPERIMENT", "drill-stuck-test")
+    observer = observe.MlflowObserver()
+    router = ModelRouter(Route("local", "fake", fake("Because it says what it does.", "Spanish in, Spanish out: yes.")), None, store, observer=observer)
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    ask = {"feature": "ask_lesson", "lesson_id": "split_requirements", "step": "Check", "chip": True}
+    client.post("/api/ask", json={"prompt": "Why not B?", "trace": {**ask, "question": "Why not B?", "request": "ask-first01"}})
+    client.post("/api/feedback", json={"request": "ask-first01", "name": "resolved", "value": False})
+    client.post("/api/ask", json={"prompt": "Still stuck", "trace": {**ask, "question": "Still stuck", "request": "ask-again02", "retry_of": "ask-first01"}})
+    observer.drain()
+
+    by_request = {t.info.client_request_id: t for t in traces_in("drill-stuck-test")}
+    first, again = by_request["ask-first01"], by_request["ask-again02"]
+    assert again.info.tags["retry_of"] == "ask-first01" and "retry_of" not in first.info.tags
+    [resolved] = [a for a in mlflow.get_trace(first.info.trace_id).info.assessments if a.name == "resolved"]
+    assert resolved.value is False and resolved.source.source_type == "HUMAN"
+    assert client.get("/api/health").json()["app"] is False  # not behind a login: the learner runs it themselves
+
+
 def test_names_come_from_settings(monkeypatch):
     from drill import mlflow_names
 

@@ -1502,13 +1502,13 @@ function phasePage(i, prefix) {
   return { d, n: ids.length, scenes };
 }
 // Set when the local server says no model is running: everything works except the tutor's replies.
-let aiOff = false;
+let aiOff = false, aiOffApp = false;  // aiOffApp: the hosted app, where the learner can't start a model
 let teamOn = false;  // at work (drill-server in team mode): the learner is told their manager sees their progress
 const TEAM_LINE = "At work, your manager can see your progress, your study list and the questions you ask the tutor.";
 function aiOffNote() {
   let hidden = false; try { hidden = sessionStorage.getItem("drill-aihide") === "1"; } catch {}
   if (!aiOff || hidden) return "";
-  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload.</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
+  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: ${aiOffApp ? "no tutor model is set up for this app, so ask whoever runs it." : "start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload."}</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
 }
 // What you practise: the AI path, the platform track, or both taking turns. Asked once on the first
 // visit, changeable in the Notebook; saved with progress so every device agrees. Today follows it.
@@ -1673,10 +1673,10 @@ const FB_REASONS = {
 };
 let lastDraft = null;  // { feature, request, before }: to notice when a draft changes what you wrote
 function sendFeedback(request, feature, name, value, rationale) {
-  const list = mine().feedback = (mine().feedback || []).slice(-99);
+  const list = mine().feedback = (mine().feedback || []).slice(-299);  // the tutor's answers add more: room for a few weeks
   list.push({ at: Date.now(), feature, request, name, value, ...(rationale ? { rationale } : {}) });
   saveMine();
-  if (sample && sample.local) fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request, name, value, rationale }) }).catch(() => {});
+  if (sample && sample.feedback) sample.feedback({ request, name, value, rationale }).catch(() => {});
 }
 function feedbackBar(feature, request) {
   return `<div class="fbbar" data-fb-request="${request}" data-fb-feature="${feature}"><span>Was this useful?</span>
@@ -2904,6 +2904,8 @@ document.addEventListener("click", async e => {
   const aq = t.closest("[data-askq]"); if (aq) { const c = askChipList[+aq.dataset.askq]; if (!aq.disabled && c) askLesson(c.q, c.how); return; }
   if (t.closest("[data-askfill]")) { const box = $("askInput"); if (box && !box.disabled) { box.value = ASK_FILL; box.focus(); box.setSelectionRange(ASK_FILL.length, ASK_FILL.length); } return; }
   const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
+  const agot = t.closest("[data-askgot]"); if (agot) { askGot(+agot.dataset.askgot); return; }
+  const ast = t.closest("[data-askstuck]"); if (ast) { askStuck(+ast.dataset.askstuck); return; }
   const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
   const gq = t.closest("[data-gotcha]"); if (gq && !gq.disabled) { answerGotcha(+gq.dataset.gotcha); return; }
   const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
@@ -3001,7 +3003,7 @@ goHome();
   if (backend.local) setInterval(() => { if (cur && !document.hidden) fetch("/api/me", { cache: "no-store" }).catch(() => {}); }, 600000);
   const { s, db, user } = backend;
   sample = s; sampleOff = !sample; document.body.classList.toggle("no-ai", !sample); updateHintBtn(); renderStudy();
-  aiOff = !!(backend.local && !s); if (aiOff && !cur) renderHome();
+  aiOff = !!(backend.local && !s); aiOffApp = !!backend.app; if (aiOff && !cur) renderHome();
   if (backend.team) { teamOn = true; $("teamNote").textContent = TEAM_LINE; $("teamSetting").hidden = false; if (!cur) renderHome(); }
   if (db && user) {
     try {

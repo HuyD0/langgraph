@@ -1,7 +1,7 @@
 // ---------- ask about this lesson ----------
 // A short conversation about the open lesson, kept per lesson while the page is open.
 // Answers stream into place without re-rendering the pane, so typing is never interrupted.
-const askThreads = {};   // lesson id -> [{ q, a, streaming, failed, saved }]
+const askThreads = {};   // lesson id -> [{ q, a, streaming, failed, saved, request, mood, resolved, retryOf }]
 let askBusy = false;
 // The suggested questions make the learner think, not just read more. They follow what learners ask
 // most (the learner's own saved questions, and common questions online): how two terms differ, when
@@ -64,12 +64,30 @@ function askPanel() {
     <div class="thread" id="askThread" aria-live="polite">${askThreadHtml()}</div>
     <form class="ask" id="askForm"><input class="field" id="askInput" placeholder="Ask your own question" aria-label="Ask a question about this lesson" autocomplete="off"${off}><button class="btn" type="submit"${off}>Ask</button></form></section>`;
 }
+// His face says what kind of reply it is: eyes open for an explanation, the blindfold for a hint or a
+// question back to you. The label says the words are generated. Each finished answer ends with
+// "Got it" or "Still stuck": the learner's next step, and the feedback that this answer worked (or didn't).
 function askThreadHtml() {
-  return (askThreads[cur.id] || []).map((turn, i) => {
-    const save = turn.a && !turn.streaming && !turn.failed
-      ? `<button class="linkbtn" data-asksave="${i}"${turn.saved ? " disabled" : ""}>${turn.saved ? "Saved to your study list" : "Save to study list"}</button>` : "";
-    return `<div class="turn"><p class="aq">${esc(turn.q)}</p><div class="aa" id="aa-${i}">${turn.a ? fmt(turn.a) : "<p>Thinking…</p>"}</div>${save}</div>`;
+  const thread = askThreads[cur.id] || [];
+  return thread.map((turn, i) => {
+    const done = turn.a && !turn.streaming && !turn.failed, last = i === thread.length - 1;
+    const save = done ? `<button class="linkbtn" data-asksave="${i}"${turn.saved ? " disabled" : ""}>${turn.saved ? "Saved to your study list" : "Save to study list"}</button>` : "";
+    const verdict = !done ? "" : turn.resolved === true ? `<span class="askgot">${ic("check")}Got it</span>`
+      : turn.resolved === false ? "" : last ? `<button class="chipbtn" data-askgot="${i}">Got it</button><button class="chipbtn" data-askstuck="${i}">Still stuck</button>` : "";
+    const answer = `<div class="aa"><span class="ailab">AI tutor · can be wrong</span><div class="aatext" id="aa-${i}">${turn.a ? fmt(turn.a) : `<p class="thinking">Thinking…</p>`}</div>${verdict || save ? `<div class="aafoot">${verdict}<span class="sep"></span>${save}</div>` : ""}</div>`;
+    return `<div class="turn"><p class="aq">${esc(turn.q)}</p>${turn.failed ? answer : hzCoach(turn.streaming && !turn.a ? "clue thinking" : turn.mood || "answer", answer)}</div>`;
   }).join("");
+}
+// Got it: this answer worked. Still stuck: it didn't, and he tries again, more simply. The new
+// answer's trace names the one it follows (retry_of), so the pair can become an eval case.
+function askGot(i) {
+  const turn = (askThreads[cur.id] || [])[i]; if (!turn || turn.resolved != null) return;
+  turn.resolved = true; sendFeedback(turn.request, "ask_lesson", "resolved", true); renderAskThread();
+}
+function askStuck(i) {
+  const turn = (askThreads[cur.id] || [])[i]; if (!turn || turn.resolved != null || askBusy) return;
+  turn.resolved = false; sendFeedback(turn.request, "ask_lesson", "resolved", false);
+  askLesson("Still stuck", "Your last answer didn't help them. Explain the same idea again, more simply and in fewer words: one everyday comparison, then one short example from the lesson. Do not repeat your last answer's wording. End by asking if that makes sense.", turn.request);
 }
 function renderAskThread() { const el = $("askThread"); if (el) el.innerHTML = askThreadHtml(); }
 function setAskBusy(on) {
@@ -94,7 +112,7 @@ const LEAKED = "That answer started to include code for the exercise, so it's hi
 // What a request is for (feature, lesson, step, question...), so the local server's MLflow traces say so.
 // Only the local server gets it; claude.ai's sample() keeps its own options.
 const withTrace = (opts, trace) => sample && sample.local ? Object.assign({}, opts, { trace }) : opts;
-async function askLesson(question, instruction) {
+async function askLesson(question, instruction, retryOf) {
   if (!sample || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
   const id = cur.id, fn = cur.p.fn, thread = askThreads[id] = askThreads[id] || [];
   thread.session = thread.session || id + "-" + Date.now().toString(36);
@@ -104,7 +122,9 @@ async function askLesson(question, instruction) {
     instruction = "They are asking about the coding exercise. Do not write any code at all. In two or three plain sentences, describe only the first step to take, then ask one question that helps them work out the next step. Mention that the Build step has step-by-step hints.";
   if (guarded && cur.p.practice) instruction = instruction.replace("the Build step has step-by-step hints", "the Practice step gives a clue first, then the answer");
   const history = thread.filter(t => !t.failed).slice(-4).map(t => "Q: " + t.q + "\nA: " + t.a).join("\n\n");
-  const turn = { q: question.trim().slice(0, 500), a: "", streaming: true };
+  // a hint or a question back to them gets the blindfold; an explanation, his eyes
+  const mood = guarded || instruction === QUIZ.how || /^Give me a harder one/.test(question) ? "clue" : "answer";
+  const turn = { q: question.trim().slice(0, 500), a: "", streaming: true, request: rid(), mood, ...(retryOf ? { retryOf } : {}) };
   thread.push(turn);
   const i = thread.length - 1;
   setAskBusy(true); renderAskThread();
@@ -130,7 +150,7 @@ Rules:
       const el = document.getElementById("aa-" + i);
       if (el && cur && cur.id === id) el.innerHTML = fmt(turn.a);
     } }, { feature: "ask_lesson", lesson_id: id, step: STEPS[cur.step], question: turn.q, session: thread.session,
-           exercise_fn: fn, word_limit: 180, chip, guard: guarded ? "solution_request" : "" }));
+           exercise_fn: fn, word_limit: 180, chip, guard: guarded ? "solution_request" : "", request: turn.request, ...(retryOf ? { retry_of: retryOf } : {}) }));
     turn.a = text;
     if (leaks(text)) { turn.a = LEAKED; turn.failed = true; }
   } catch (e) {
