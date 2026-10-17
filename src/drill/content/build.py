@@ -10,6 +10,7 @@ The parts, and where each one lives:
   plus their page-only Learn text in :mod:`drill.content.classics`
 - the glossary, habits and gotchas: :mod:`drill.content.extras`
 - the trust marks (responsible AI, privacy and NIST notes): :mod:`drill.content.trust`
+- the sticker callbacks and Look again questions: :mod:`drill.content.callbacks`
 - the page itself: ``page.html`` next to this file, with ``/*DATA*/`` where the content goes
 
 :func:`build_data` returns the content as one dict, which is what the page embeds and what
@@ -25,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from drill.content import classics, extras, modules, real, review, trust
+from drill.content import callbacks, classics, extras, modules, real, review, trust
 from drill.content.checks import more_checks
 from drill.content.model import TRAITS, Module
 
@@ -85,6 +86,13 @@ def _page_lesson(entry: dict, note: dict | None = None) -> dict:
         out["walk"] = entry["walkthrough"]  # tool views redrawn with numbered callouts (model.screen)
     if note:
         out["trust"] = [note["trait"], note["phrase"], note["view"], note["tip"], note["rmf"], note["tevv"]]
+    links = callbacks.CALLBACKS.get(entry["id"])
+    if links:  # [to, phrase, idea, here] per sticker callback, and the one Look again question if any
+        out["callbacks"] = [[c["to"], c["phrase"], c["idea"], c["here"]] for c in links]
+        again = next(([c["to"], c["again"]] for c in links if c["again"]), None)
+        if again:
+            to, q = again
+            out["again"] = [to, q["question"], list(q["options"]), q["answer"], q["why"], q["clue"]]
     # [day, sources]: a lesson checked against sources, or the content date with none.
     from drill.content.freshness import CONTENT_DATE
     out["checked"] = [entry.get("checked") or CONTENT_DATE, [list(s) for s in entry.get("sources") or []]]

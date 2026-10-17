@@ -24,6 +24,7 @@ Everything is in the package, under `src/drill/content/`:
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
 | `trust.py` | The trust marks: where a lesson touches responsible AI, privacy or governance, one note (trait, NIST AI RMF reference, a perspective and a tip, and whether it is TEVV evidence) |
+| `callbacks.py` | Sticker callbacks: where a lesson uses an idea taught earlier, the earlier lesson's sticker after the phrase, and at most one Look again question |
 | `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Explain step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
 | `freshness.py` | When each lesson's facts were last checked against its sources, and which are due another look (`drill content stale`; see "Keeping content current") |
 | `review.py` | The use case review and challenge prompts, versioned: one source for the page, the server's checks and the eval |
@@ -469,6 +470,32 @@ the testing whose record is evidence (experiments, eval runs, registries).
   "next" and the violet of the path. The styles sit with the lesson styles (`.trustmark`,
   `.trustpop`, keyframes `tm-…`), not in the fx block: the mark is part of the page, not a
   passing effect.
+
+## Sticker callbacks
+
+The course teaches some foundations once, early, and then uses them quietly: requirements (1.3),
+the well-architected pillars (1.4), the bars and must-pass cases (1.5), leakage, prompt
+injection, least privilege, reading a Terraform plan. Where a later lesson uses one, the sticker
+the learner earned in the lesson that taught it sits right after the phrase. Tapping it opens a
+card under the paragraph: the idea in a few words, what it means here, and "Revisit 1.4". If that
+lesson isn't done yet, the sticker is a dashed outline and the card offers it instead. Teachers
+call this a spiral curriculum.
+
+After Learn, a lesson may ask one **Look again** question that uses the earlier idea: a wrong pick
+is crossed out and the clue shows, then the answer is one tap away. Right on your own lights the
+sticker on the card. It is practice only: the result card and the Check step never read it.
+
+- The data is `content/callbacks.py`, keyed by lesson id. Add one with
+  `callback(to, phrase=..., idea=..., here=..., again=ask(...))`. `tests/test_callbacks.py`
+  checks: one or two per lesson, at most one Look again; `to` comes earlier (the path, then the
+  track); the phrase appears once in the Learn text, doesn't cut through markup and doesn't overlap
+  the trust mark; the Look again question has three options, a clue that doesn't give it away and
+  no right answer that stands out by length.
+- Leave "a person decides" and privacy to the trust marks, so the two never double up.
+- Colour says which route the idea came from: `--path` (violet) for the AI path, `--track` (teal,
+  and the track's octagon sticker) for the Platform track. A sticker not opened yet glows softly;
+  opened, it rests, remembered on this device (`drill-cb-seen`). Look again picks are saved in
+  `lp(id).again` and merged like the rest of a lesson's progress.
 
 ## Adding a lesson
 

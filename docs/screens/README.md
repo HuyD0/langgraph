@@ -104,6 +104,36 @@ Unopened marks give off embers until they're opened.
 **Change it safely.** The notes are `content/trust.py`, one per lesson at most; the phrase must
 appear once in the Learn text (a test checks). Colours are `--mark` and `--mark-glow`.
 
+## A lesson: a sticker callback
+
+![A sticker callback's card, opened](callback-phone-dusk.webp)
+
+**What the learner sees.** Where a lesson uses an idea taught earlier, the sticker from that
+lesson sits right after the phrase, here the 1.4 sticker after "Good clients retry". Tapping it
+opens a card: the idea (Reliability), what it means here, and a way back to 1.4. A sticker not
+opened yet glows softly; one from a lesson not done yet is a dashed outline that offers the lesson.
+
+**What draws it.** `withTrust()` places `cbMarkHtml()` after each callback's phrase and adds
+`cbPopHtml()` under the paragraph; `openCb()` and `closeCb()` run from the `sticker callbacks`
+section's own listeners.
+
+**Change it safely.** The data is `content/callbacks.py`, one or two per lesson, each pointing
+to an earlier lesson (a test checks). Colours are `--path`, or `--track` for the Platform track.
+
+## A lesson: Look again
+
+![The Look again card after a wrong pick](look-again-phone-light.webp)
+
+**What the learner sees.** After Learn, one question that uses the earlier idea. A wrong pick is
+crossed out and the clue shows, with "Show me the answer" below; right on your own lights the
+sticker in the corner. It never changes the result card.
+
+**What draws it.** `learnPane()` adds `againHtml()` after the example; picks go through
+`againStep()`, which saves `lp(id).again` and redraws just the card.
+
+**Change it safely.** The question is the `again=` of a callback in `content/callbacks.py`,
+written with `ask(...)`: three options and a clue.
+
 ## A lesson: Check
 
 ![The Check step after answering](lesson-check-phone-dusk.webp)
