@@ -492,8 +492,18 @@ from the lesson's own example, so picture and text tell one story.
 - Colour keeps its one meaning: `accent` for the one thing the lesson is about, `hint` for the
   callout numbers (amber circle, text in the page background, the walkthrough's pair, so it reads in
   Light too), ink and lines for everything else.
-- `tests/test_diagrams.py` checks the shapes, that the numbers on the picture match the notes, and
-  that every label on a picture also appears in the lesson's words, its caption or its callouts.
+- A picture can do more than sit still, where that helps. `steps=[{"now": ..., "say": ...}]` makes
+  it a step-through: Back and Next move the blue box along a flow, between a graph's states or down
+  a tree's rows, and each step's `say` replaces the caption (the retrieval flow, the circuit breaker
+  run from its own sample case, the stacks that run after a change, the YAML field's five stops).
+  `play=True` on a tree whose bars are time grows them in once, in time order, with a Replay (the
+  trace, the workers against the timeout). `live=True` draws the same kind of picture in Build from
+  what the learner's function returned on the example (`LIVE` in `page/diagrams.js`, one drawing per
+  lesson id), so a wrong answer is something you can see. A `pair` is two small pictures, `before`
+  and `fixed`, for a spot-the-difference lesson (leakage, splits that move, a hot key salted).
+- `tests/test_diagrams.py` checks the shapes, that the numbers on the picture match the notes, that
+  every `live` diagram has its drawing and that every label on a picture also appears in the
+  lesson's words, its example, its exercise's sample case, its caption or its callouts.
 
 ## Sticker callbacks
 

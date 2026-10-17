@@ -16,6 +16,8 @@ def data():
 
 def _labels(d):
     """Every word a learner can read on the picture."""
+    if d.get("kind") == "pair":
+        return _labels(d["before"]) + _labels(d["fixed"])  # the halves' own labels are titles, like the caption
     out = []
     for n in d.get("nodes", []):
         out += [n["label"], n.get("sub"), n.get("word")]
@@ -44,17 +46,27 @@ def test_every_diagram_belongs_to_a_real_lesson_and_holds_its_shape(data):
         assert data["lessons"][lesson_id]["diagram"] == d
         for c in d["callouts"]:
             assert 10 < len(c) < 160 and not re.search(r"\d+\s*%", c), f"{lesson_id}: a short plain callout, no % signs"
-    assert len(DIAGRAMS) >= 12
+        for step in d.get("steps") or []:
+            if d["kind"] == "graph":
+                assert step["now"] in {n["id"] for n in d["nodes"]}, f"{lesson_id}: a step names a known node"
+            else:
+                assert 0 <= step["now"] < len(d["nodes"] if d["kind"] == "flow" else d["rows"]), f"{lesson_id}: a step names a known box or row"
+            assert 15 < len(step["say"]) < 200 and not re.search(r"\d+\s*%", step["say"]), f"{lesson_id}: a step says one plain sentence"
+    assert len(DIAGRAMS) >= 15
 
 
 def test_every_label_on_a_picture_is_in_the_lessons_words():
     """A screen reader hears the caption and the callouts; a sighted learner reads the labels. The two must
     agree, so every label appears in the Learn text, the example, the caption or the callouts."""
+    import json
+
     learn = {e["id"]: e for m in modules.load() for e in m.lessons}
+    sample = {b["id"]: json.dumps([c for c in b["cases"] if c.get("sample")] or b["cases"][:1]) for b in build_data()["bank"]}
     problems = {}
     for lesson_id, d in DIAGRAMS.items():
         entry = learn[lesson_id]
-        words = (" ".join(entry["learn"]) + " " + entry["example"]["code"] + " " + d["caption"] + " " + " ".join(d["callouts"])).lower()
+        # the lesson's words: Learn, the example, the exercise's own sample case, the caption and the notes
+        words = (" ".join(entry["learn"]) + " " + entry["example"]["code"] + " " + sample.get(lesson_id, "") + " " + d["caption"] + " " + " ".join(d["callouts"])).lower()
         words = re.sub(r"\s+", " ", words.replace("**", "").replace("`", ""))
         missing = [label for label in _labels(d) if re.sub(r"[.,:;]$", "", re.sub(r"\s+", " ", label.lower().strip())) not in words]
         if missing:
@@ -62,11 +74,16 @@ def test_every_label_on_a_picture_is_in_the_lessons_words():
     assert not problems, f"pictures say things their lessons never do: {problems}"
 
 
+def _numbers(d):
+    ns = []
+    for key in ("nodes", "branches", "rows", "points", "marks"):
+        ns += [x["n"] for x in d.get(key, []) if isinstance(x, dict) and x.get("n")]
+    return ns
+
+
 def test_numbers_on_the_picture_match_the_notes_under_it():
     for lesson_id, d in DIAGRAMS.items():
-        ns = []
-        for key in ("nodes", "branches", "rows", "points", "marks"):
-            ns += [x["n"] for x in d.get(key, []) if isinstance(x, dict) and x.get("n")]
+        ns = _numbers(d["before"]) + _numbers(d["fixed"]) if d["kind"] == "pair" else _numbers(d)
         assert sorted(ns) == list(range(1, len(d["callouts"]) + 1)), f"{lesson_id}: callout numbers {sorted(ns)} vs {len(d['callouts'])} notes"
 
 
@@ -74,6 +91,11 @@ def test_diagrams_are_wired_into_the_learn_step():
     page = page_source()
     learn = page.split("function learnPane()")[1].split("\n}")[0]
     assert "diagramHtml(L.diagram)" in learn and "L.diagram.after" in learn
-    assert all(f"function dg{k.capitalize()}(" in page for k in DIAGRAM_KINDS)
+    assert all(f"function dg{k.capitalize()}(" in page for k in DIAGRAM_KINDS if k != "pair") and "const dgPair" in page
+    live = page.split("const LIVE = {")[1].split("\n};")[0]
+    for lesson_id, d in DIAGRAMS.items():
+        assert (f"\n  {lesson_id}: " in live) == bool(d.get("live")), f"{lesson_id}: live diagrams need a drawing in LIVE, and only they"
+    build = page.split("function loadProblem(")[1] if "function loadProblem(" in page else page
+    assert 'id="livepic"' in page and "livePic(p, gotJson.v" in page
     css = page.split("lesson diagrams (content/diagrams.py")[1]
     assert ".dg-co circle { fill: var(--hint); }" in css and "fill: var(--bg); }" in css, "callout numbers use the walkthrough's amber-on-background pair, readable in Light too"

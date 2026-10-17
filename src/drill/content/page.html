@@ -903,6 +903,7 @@ document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "d
       <div class="goal" id="taskGoal"></div>
       </div>
     </details>
+    <section class="card codeonly" id="livepic" hidden aria-label="What your function did on the example"></section>
     <section class="card mach codeonly" id="machine" hidden aria-label="The example's rows moving through your function">
       <h3>Watch the rows</h3>
       <div class="mstage" id="mStage">
@@ -2399,7 +2400,7 @@ function loadProblem(p) {
   $("taskExample").textContent = exampleText(p, ex);
   const names = paramNames(p), first = ex.args[0];
   $("taskTable").innerHTML = isRows(first) ? `<div class="dtwrap">${rowsTable(first, { caption: `<code>${esc(names[0] || "rows")}</code> as a table`, numbered: true })}</div>` : "";
-  machineLoad(p); $("outView").hidden = true; $("outView").innerHTML = "";
+  machineLoad(p); $("livepic").hidden = true; $("livepic").innerHTML = ""; $("outView").hidden = true; $("outView").innerHTML = "";
   qfLoad(p);
   $("taskGoal").innerHTML = ic("target") + "<span>Aim for: <b>" + md(p.target) + "</b></span>";
   $("help").hidden = !(Ln.concepts && Ln.concepts.length);
@@ -2476,6 +2477,7 @@ async function runTests() {
   await saveProgress(); renderTop();
   const smooth = motionOn() ? "smooth" : "auto";
   if (M.p && gotJson) { $("machine").scrollIntoView({ block: "start", behavior: smooth }); machineRun(gotJson.v); }
+  else if (LIVE[p.id] && gotJson) { livePic(p, gotJson.v, !failedRun); $("livepic").scrollIntoView({ block: "start", behavior: smooth }); }
   else $("result").scrollIntoView({ block: "nearest", behavior: smooth });
 }
 

@@ -43,3 +43,25 @@
 .dg .dg-dot.now { fill: var(--accent); stroke: var(--accent); }
 .dg .dg-co circle { fill: var(--hint); }
 .dg .dg-co text { font: 700 9.5px var(--mono); fill: var(--bg); }
+/* steps, replay, pairs and the live picture in Build */
+.dg-steps { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dg-steps .btn { min-height: 40px; }
+.dg-where { font: 400 13px var(--mono); color: var(--muted); }
+.dg .dg-bx.dim rect { opacity: .35; } .dg .dg-bx.dim text { opacity: .4; }
+.dg .dg-bar.grow { transform-box: fill-box; transform-origin: left; animation: dg-grow .9s var(--d, 0s) both cubic-bezier(.2, .7, .2, 1); }
+.dg .dg-ms.late, .dg .dg-co.pop { animation: dg-pop .4s var(--d, 0s) both; transform-box: fill-box; transform-origin: center; }
+@keyframes dg-grow { from { transform: scaleX(0); } }
+@keyframes dg-pop { from { opacity: 0; transform: scale(.4); } }
+.dg-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.dg-half { display: grid; gap: 4px; min-width: 0; }
+.dg-lbl { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.dg-half:first-child .dg-lbl { color: var(--fail); } .dg-half:last-child .dg-lbl { color: var(--pass); }
+.dg .dg-pill.leak, .dg .dg-pill.fail, .dg .dg-pill.wait { fill: var(--fail-bg); } .dg .dg-pt.leak, .dg .dg-pt.fail, .dg .dg-pt.wait { fill: var(--fail); }
+.dg .dg-pill.train { fill: var(--accent-soft); } .dg .dg-pt.train { fill: var(--accent); }
+.dg .dg-pill.ok, .dg .dg-pill.allowed { fill: var(--pass-bg); } .dg .dg-pt.ok, .dg .dg-pt.allowed { fill: var(--pass); }
+.dg .dg-pill.blocked { fill: var(--sunk); } .dg .dg-pt.blocked { fill: var(--muted); }
+.dg .dg-pill.\31 st, .dg .dg-pill.\32 nd, .dg .dg-pill.\33 rd, .dg .dg-pill.\34 th, .dg .dg-pill.\35 th { fill: var(--accent-soft); }
+.dg .dg-pt.\31 st, .dg .dg-pt.\32 nd, .dg .dg-pt.\33 rd, .dg .dg-pt.\34 th, .dg .dg-pt.\35 th { fill: var(--accent); }
+#livepic { display: grid; gap: 10px; }
+#livepic h3 { margin: 0; }
+#livepic .dg-say { margin: 0; font-size: 15px; line-height: 1.5; }

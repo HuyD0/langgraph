@@ -114,7 +114,9 @@ scale on the right, the critical path filled in blue. A caption and amber-number
 say the same thing in words.
 
 **What draws it.** `learnPane()` places `diagramHtml(L.diagram)` after the paragraph the data
-names; one `dg<Kind>()` function per kind in the `lesson diagrams` section draws the SVG.
+names; one `dg<Kind>()` function per kind in the `lesson diagrams` section draws the SVG. Some
+pictures step through on Back and Next (`steps`), some play once (`play`), some are a before-and-
+after pair, and in Build `livePic()` draws the same kind from what your function returned.
 
 **Change it safely.** The data is `content/diagrams.py`, one per lesson at most; every label must
 appear in the lesson's words (a test checks). Colours are `accent` and `hint` only.
