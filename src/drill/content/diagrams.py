@@ -23,7 +23,7 @@ from drill.content.model import diagram
 
 DIAGRAMS = {
     # ---- Frame
-    'use_case_score': diagram('chart', after=1,
+    'use_case_score': diagram('chart', after=2,
         caption='The example map: value up the side, doable along the bottom. Each dot is an idea from the example, and the corner it lands in says what to do with it; the staffing forecast is low on both, so it is shelved.',
         callouts=['Accelerate: HR policy answers are valuable and doable, so start a pilot',
                   'Research: contract review is valuable, but the data and the definition are not ready yet',

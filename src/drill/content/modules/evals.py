@@ -927,9 +927,9 @@ kappa = (0.90 - 0.74) / (1 - 0.74)   # about 0.62"""),
         why='When almost everything passes, a judge that also says pass almost every time agrees a lot without catching anything.',
     ),
     angle=angle(
-        pattern='Count, then use the formula',
-        text="The big idea: a judge and a human can agree a lot just by luck, so Cohen's kappa takes away the agreement you would expect by chance. Your code goes through the pairs once and counts three things: how often they agree, how often the human says pass, and how often the judge says pass. It turns each count into a share, works out chance agreement from the two pass rates, and puts it all into the kappa formula. 1 means perfect, and 0 means no better than luck.",
-        say='"A judge and a human can agree a lot just by [[luck|habit|design::Like two people guessing coin flips the same way.]]. So I use Cohen\'s [[kappa|recall|average::Named after a statistician and written as a Greek letter, it starts with k.]], which takes away the agreement that chance alone would give."',
+        pattern='Count, then take away luck',
+        text="The big idea: a judge and a human can agree a lot just by luck, so Cohen's kappa takes away the agreement you would expect by chance. Your code goes through the pairs once and counts three things: how often they agree, how often the human says pass, and how often the judge says pass. It turns each count into a share, works out how often they would agree by chance alone, and then sees how much of the real agreement is left over after chance. That leftover is kappa: 1 means perfect, and 0 means no better than luck.",
+        say='"A judge and a human can agree a lot just by [[luck|habit|design::Like two people guessing coin flips the same way.]]. So I use Cohen\'s [[kappa|recall|average::Named after a statistician and written as a Greek letter, it starts with k.]]: it tells me how much better than luck the judge agrees with people."',
         classic=None,
     ),
     stack=stack('scikit-learn and MLflow', """from sklearn.metrics import cohen_kappa_score

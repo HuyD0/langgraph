@@ -1035,10 +1035,11 @@ days[2]   # 'wed', the 3rd day""",
 lesson(MODULE, 'dollars_per_success',
     title='Dollars per success',
     learn=[
-        'A team can pass a few more tasks and still be the worse choice. In one company\'s research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.',
-        'You already know **cost per success** from Evaluating agents (the dollars per success in this lesson\'s title): the whole bill, failed runs included, divided by the runs that passed. It says what one passed task costs. It does not say whether the team\'s extra passes are worth their price.',
-        'For that, work out what each **extra pass** costs, its **marginal cost**: how many more dollars the team spends, divided by how many more tasks it passes. If one more passed task is worth less than that to you, keep one agent.',
-        'Put this number next to the pass rate every time a team is compared with one agent. More spending often buys little extra accuracy, and sometimes less.',
+        'A team of agents can pass a few more tasks than one agent and still be the worse choice, because it costs much more to run. In one company\'s research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.',
+        'You already know **cost per success** from Evaluating agents: the whole bill, failed runs included, divided by the runs that passed. (The dollars per success in this lesson\'s title is the same number.) It tells you what one passed task costs.',
+        'But cost per success can\'t tell you whether the team\'s extra passes are worth their price. For that, work out the **cost of each extra pass**: how many more dollars the team spends, divided by how many more tasks it passes. Economists call this the **marginal cost**.',
+        'The rule in one sentence: if one more passed task is worth less to you than the cost of each extra pass, keep one agent.',
+        'Put the cost of each extra pass next to the pass rate every time you compare a team with one agent. More spending often buys little extra accuracy, and sometimes less.',
     ],
     example=example('Same 10 tasks, two designs', """one agent: $0.50, passed 6 of 10
 team:      $5.90, passed 8 of 10
@@ -1390,22 +1391,26 @@ pair[0]   # 'tea'""",
 lesson(MODULE, 'team_experiment',
     title='One agent or a team: the experiment',
     learn=[
-        'This lesson puts the module together. To find out whether a team beats one agent, run an **experiment**: both designs answer the same questions, and one agent is the **baseline**, the design you compare against.',
+        'This lesson puts the module together. To find out whether a team beats one agent, run an **experiment**: both designs answer the same questions. One agent is the **baseline**, the design you compare against.',
         'Agents give different answers on different tries, so run each question 3 to 5 times. As in Reliable every time (pass hat k), a question counts as **passed every time** only if every try passed.',
-        'Write the **decision rule** before any run, so a lucky result can\'t move the goalposts. For example: the team wins only if it passes every time on at least 1 more question in every 10 (a gain of 0.1 in the share), and one success costs at most 50 cents.',
+        'Write the **decision rule** before any run, so a lucky result can\'t move the goalposts.',
+        'Here is a rule in one sentence: the team wins only if it passes every time on at least 1 more question in 10, at a cost per success of 50 cents or less. In code, "1 more in 10" is a gain of 0.1.',
         'Add a third design: the team without its checker. Comparing the two teams shows what the checker buys you. Taking one part out to see what changes is called an **ablation**.',
     ],
     example=example('20 questions, 3 tries each', """Rule, written first: the team must
-gain at least 0.1 on "passed every
-time", at $0.50 a success or less.
+pass every time on at least 1 more
+question in 10 (0.1), at a cost per
+success of $0.50 or less.
 
-           every time   $ a success
+           passed       cost per
+           every time   success
 one agent  12 of 20     $0.04
 team       15 of 20     $0.35
 team, no
 checker    12 of 20     $0.30
 
-team gain: 0.75 minus 0.6 is 0.15
+team gain: 3 more in 20, which is
+1.5 in 10 (0.15), at $0.35
 → the team wins, and the checker
   is what wins it"""),
     check=question(

@@ -1220,15 +1220,24 @@ if best is None:
 lesson(MODULE, 'pass_rates',
     title='Reliable every time (pass hat k)',
     learn=[
-        'A success rate from one try per task hides how inconsistent an agent is. Run each task several times, say k times, and look at two numbers.',
-        '**pass@k**: the task succeeded **at least once** in k tries. Useful when a person picks the best attempt. **pass^k** (read "pass hat k"): the task succeeded **every time** in k tries. That is closer to what users feel, because each user gets one try.',
-        'The gap grows fast. If each try succeeds 8 times in 10 on its own, three tries in a row all succeed only about 5 times in 10: each extra try is another chance to fail. Agent benchmarks such as tau-bench report pass^k for exactly this reason.',
+        'A success rate from one try per task hides how inconsistent an agent is. So run each task several times, say 3, and count two things.',
+        'First: did the task pass **at least once** in 3 tries? That fits when a person looks at all the attempts and picks the best one.',
+        'Second: did the task pass **every time** in 3 tries? That is closer to what users feel, because each user gets only one try.',
+        'Benchmarks (shared test sets that compare agents) give these two counts short names, with k for the number of tries. **pass@k** means "passes at least once in k tries". **pass^k**, said "pass hat k", means "passes every time in k tries".',
+        'The gap grows fast. If each try succeeds 8 times in 10 on its own, three tries in a row all succeed only about 5 times in 10: each extra try is another chance to fail. Agent benchmarks such as tau-bench report the "every time" count for exactly this reason.',
     ],
-    example=example('Three tasks, three tries each', """task       try 1   try 2   try 3
-refund       ✓       ✓       ✓     → counts for pass@3 and pass^3
-address      ✓       ✗       ✓     → counts for pass@3 only
-cancel       ✗       ✗       ✗     → counts for neither
-pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
+    example=example('Three tasks, three tries each', """task      try 1  try 2  try 3
+refund      ✓      ✓      ✓
+  → at least once, and every time
+address     ✓      ✗      ✓
+  → at least once only
+cancel      ✗      ✗      ✗
+  → neither
+
+At least once in 3 tries:
+  2 of 3 tasks (pass@3)
+Every time in 3 tries:
+  1 of 3 tasks (pass^3)"""),
     check=question(
         'Each try of your agent succeeds 9 times in 10. About how often does it succeed five times in a row?',
         ['Still 9 in 10', 'About 6 in 10', 'About 1 in 10'],
@@ -1237,7 +1246,7 @@ pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
     ),
     angle=angle(
         pattern="Count 'at least once' and 'every time'",
-        text="The big idea: one try per task hides how unreliable an agent is, so you run each task several times and count two things. Your code goes through the tasks one by one. For each task, Python's `any` says whether at least one try worked, and `all` says whether every try worked. Dividing each count by the number of tasks gives pass@k and pass^k. The second is the one users feel, because each user only gets one try.",
+        text="The big idea: one try per task hides how unreliable an agent is, so you run each task several times and count two things. Your code goes through the tasks one by one. For each task, Python's `any` says whether at least one try worked, and `all` says whether every try worked. Dividing each count by the number of tasks gives the two shares, which benchmarks call pass@k and pass^k. The 'every time' share is the one users feel, because each user only gets one try.",
         say='"I run each task several times. I count how often it worked [[at least once|on average|the first time::One good try out of many is enough for this count.]] and how often it worked [[every time|most times|sometimes::No try is allowed to fail.]]. Users feel the second number, because they only get one try."',
         classic=None,
     ),
@@ -1251,13 +1260,13 @@ pass@3 = 2/3, about 0.67    pass^3 = 1/3, about 0.33"""),
         fn='pass_rates',
         prompt="""Each test task was tried several times (call it k times; you don't need k itself). `runs` has one list per task, holding `True` or `False` for each try, like `[[True, True], [True, False]]`. There is always at least one task.
 
-Return a dict with two numbers, each rounded to 2 decimal places:
+Return a dict with two numbers, each rounded to 2 decimal places (so 2 of 3 becomes `0.67`):
 
-- `"pass_at_k"`: the number of tasks that succeeded on at least one try, divided by the number of tasks
-- `"pass_hat_k"`: the number of tasks that succeeded on every try, divided by the number of tasks""",
+- `"pass_at_k"`: how many tasks passed at least once, divided by the number of tasks
+- `"pass_hat_k"`: how many tasks passed every time, divided by the number of tasks""",
         pattern='One pass over the tasks with two counters, using any and all.',
         target='one pass over all the tries',
-        realworld='An agent that solves a task 2 times out of 3 looks fine in a demo and fails one user in three. pass^k is the number that predicts the support tickets.',
+        realworld='An agent that solves a task 2 times out of 3 looks fine in a demo and fails one user in three. The "every time" count is the number that predicts the support tickets.',
         starter="""def pass_rates(runs):
     # your code here
     pass
@@ -1326,7 +1335,7 @@ all([True, False])   # False""",
             ],
             [
                 'k changes the number',
-                'pass^3 and pass^8 are different metrics. Always say which k you used, and keep it fixed when comparing versions.',
+                'Passing every time in 3 tries and every time in 8 tries are different numbers. Always say how many tries you used, and keep it fixed when comparing versions.',
             ],
         ],
     ),

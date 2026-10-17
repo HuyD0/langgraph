@@ -1,6 +1,6 @@
 """Experiment design with MLflow: Runs, grids, fair comparisons and decisions you can defend."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
 MODULE = module('experiments', 'Experiment design with MLflow', 'Runs, grids, fair comparisons and decisions you can defend.')
 
@@ -899,10 +899,13 @@ groups[1].append(7)   # [[], [7]]""",
 lesson(MODULE, 'examples_needed',
     title='How many examples do you need?',
     learn=[
-        'A pass rate measured on an eval set is an estimate, not the truth. Score 70% on 25 questions and the real rate could easily be anywhere from 50% to 90%. The fewer the examples (the smaller the **sample size**), the wider that **margin of error**.',
-        'A quick rule for a pass rate: the margin is about **plus or minus 100 divided by the square root of the number of examples**, in percentage points. That is a 95% **confidence interval**: built this way, it holds the real rate about 95 times out of 100. It is at its widest when the rate is near 50%. So 100 examples give about plus or minus 10 points (the square root of 100 is 10), and 400 give about plus or minus 5. Halving the margin takes **four times** the examples.',
+        'Your eval set gives a score. How far from the real score could it be? A pass rate measured on an eval set is a rough guess, not the truth, and how far off it could be, either way, is its **margin of error**.',
+        'The fewer examples you test on (the smaller the **sample size**), the wider that margin. Score 70% on just 25 questions, and the real pass rate could easily be anywhere from 50% to 90%.',
+        'Some round numbers. With 100 questions, a score of 70 could really be anywhere from about 60 to 80: about 10 **points** off either way (a point is one question in every 100). With 400 questions it is only about 5 points off. That range is called a **confidence interval**: worked out this way, it catches the real pass rate about 95 times in 100.',
+        'The rule of thumb: **halving the margin takes four times the examples**, not twice. Going from 100 questions to 400 takes you from about 10 points to about 5. The margin is widest when about half the answers pass, so treat these as safe planning numbers.',
         "Use it backwards before you run anything: if the improvement you hope to see is smaller than the margin, your eval set can't show it. Add examples first, or compare on the same examples (later in this module), which is more sensitive.",
-        'For scores near 0% or 100% (like 49 out of 50) this simple rule breaks down; statisticians use a **Wilson interval** there (two lessons from now). For metrics with no simple formula, use the **bootstrap**: rebuild the eval set 1,000 times by drawing examples at random with repeats allowed, score each, and keep the middle 95% of the scores.',
+        'For scores near none or near all (like 49 out of 50) this rule breaks down; statisticians use a **Wilson interval** there (two lessons from now).',
+        'For scores with no simple rule, use the **bootstrap**: rebuild the eval set 1,000 times by drawing examples at random with repeats allowed, score each one, and keep the middle 95 in 100 of the scores.',
     ],
     example=example('Margin of error by eval set size', """examples   margin (about)
      25    plus or minus 20 points
@@ -936,9 +939,11 @@ with mlflow.start_run(run_name="prompt-b"):
         fn='examples_needed',
         prompt="""`margin_points` is the margin of error you can accept, like `7`. That means your measured pass rate could be up to 7 points too high or too low (for example, 70% could really be anywhere from 63% to 77%).
 
-The lesson's rule, worked backwards: divide 100 by `margin_points`, then multiply the result by itself. That is how many examples you need.
+Behind the lesson's table is a quick rule: the margin, in points, is about 100 divided by the square root of the number of examples. Your code works it backwards:
 
-Return it as a whole number. If it has a decimal part, round up, because you cannot use part of an example. For example, 204.08 becomes 205.""",
+1. Divide 100 by `margin_points`.
+2. Multiply the result by itself. That is how many examples you need.
+3. Return it as a whole number. If it has a decimal part, round up, because you cannot use part of an example. For example, 204.08 becomes 205.""",
         pattern='Work the rule backwards, then round up to a whole number.',
         target='a few arithmetic steps',
         realworld='Sizing an eval set before building it saves you from labelling 50 examples, running the comparison, and only then discovering the result is noise.',
@@ -1002,6 +1007,8 @@ int(5.0)   # 5, already whole""",
 
 lesson(MODULE, 'smoke_set',
     title='A smoke set for fast iteration',
+    checked='2026-10-15',
+    sources=[source('Building MLflow evaluation datasets', 'https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/build-eval-dataset'), source('Evaluation dataset reference', 'https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/concepts/eval-datasets')],
     learn=[
         'Running every variant on hundreds of questions, several times, is slow and costs money. Most ideas are bad, and you can tell they are bad from far fewer questions.',
         'So keep a small **smoke set** for iterating. Make it **stratified**, meaning a few questions from every group, and add the whole **must-pass** set (the questions the app must never get wrong). Try ideas on it in minutes.',
@@ -1033,7 +1040,8 @@ full = mlflow.genai.datasets.get_dataset(name="main.support.eval_full")   # the 
 df = full.to_df()
 df["group"] = df["tags"].map(lambda tags: tags["group"])
 smoke = mlflow.genai.datasets.create_dataset(name="main.support.eval_smoke")
-smoke.merge_records(df.groupby("group").head(8)[["inputs", "expectations", "tags"]])   # 8 per group"""),
+picked = df.groupby("group").head(8)   # 8 per group
+smoke.merge_records(picked[["inputs", "expectations", "tags"]].to_dict("records"))   # a list of records"""),
     exercise=exercise(
         title='Pick the Smoke Set',
         topic='experiments',
@@ -1125,10 +1133,11 @@ for p in prices.values():
 lesson(MODULE, 'wilson_interval',
     title='Margins near 0% and 100%',
     learn=[
-        'The quick margin rule from "How many examples do you need?" (100 divided by the square root of the number of examples) breaks down when a pass rate is close to 0% or 100%. For 49 out of 50 it gives 98 plus or minus 14 (the square root of 50 is about 7): 84% to 112%, past 100%, which is impossible. For 0 out of 30 it gives 0 plus or minus 18: below 0%, also impossible.',
-        'The **Wilson interval** is the standard fix for a pass rate. It always stays between 0% and 100%, and it stays honest with small samples and extreme rates.',
-        'The formula is a few lines of arithmetic. The exercise gives it to you as Python, piece by piece. You do not need to remember it; you need to know to use it near the edges.',
-        'This matters most for safety checks. "0 failures in 30 tries" does not mean the failure rate is 0%: the Wilson range goes up to about 11%.',
+        'When almost every example passes, or almost none do, the quick margin rule from "How many examples do you need?" gives ranges that cannot be true.',
+        'A worked example. 49 out of 50 passed, which is 98%. The quick rule says the real rate is 98% give or take about 14 points: anywhere from 84% to 112%. Nothing can pass more than 100% of the time. For 0 out of 30 it gives anywhere from minus 18% to 18%, and nothing passes less than 0% of the time.',
+        'The **Wilson interval** is the standard fix for a pass rate. It always stays between 0% and 100%, and it stays honest with small samples and extreme rates. For 49 out of 50 it gives about 89.5% to 99.6%.',
+        'The rule of thumb: when a pass rate is close to 0% or 100%, use Wilson instead of the quick rule. You do not need to remember how it is worked out; the exercise gives you the steps.',
+        'This matters most for safety checks. "0 failures in 30 tries" does not mean the failure rate is 0%: the Wilson range goes up to about 11%, roughly 1 in 9.',
     ],
     example=example('Simple rule against Wilson', """49 of 50 passed (98%)
 simple rule:   84% to 112%    ← past 100%: impossible
@@ -1167,15 +1176,15 @@ mlflow.log_metrics({"pass_rate_low": low, "pass_rate_high": high})"""),
 - `passed`: how many examples passed, like `49`.
 - `total`: how many examples there were, like `50`.
 
-Work out the Wilson range with these lines of Python:
+Work out the Wilson range with these lines of Python, in order:
 
-- `z = 1.96`, which gives a 95% confidence interval
-- `n = total`
-- `p = passed / n`
-- `bottom = 1 + z * z / n`
-- `centre = (p + z * z / (2 * n)) / bottom`
-- `spread = p * (1 - p) / n + z * z / (4 * n * n)`
-- `half = z * (spread ** 0.5) / bottom`
+1. `z = 1.96`, which gives a 95% confidence interval
+2. `n = total`
+3. `p = passed / n`
+4. `bottom = 1 + z * z / n`
+5. `centre = (p + z * z / (2 * n)) / bottom`
+6. `spread = p * (1 - p) / n + z * z / (4 * n * n)`
+7. `half = z * (spread ** 0.5) / bottom`
 
 Return `[centre - half, centre + half]`, each rounded to 3 decimal places. These are fractions, so `0.895` means 89.5%.""",
         pattern='Follow the formula one piece at a time, then round.',
@@ -1353,10 +1362,12 @@ max([4, 9, 2])   # 9""",
 lesson(MODULE, 'paired_verdict',
     title='Comparing on the same examples',
     learn=[
-        'The best way to compare two setups is to run both on **the same examples** and look example by example. This is a **paired comparison**. It is much more sensitive than comparing two overall scores, because the hard examples are hard for both setups and that difficulty cancels out.',
-        'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: how often A passed where B failed, and the other way round. If the disagreements split about evenly, the difference is noise.',
-        "The standard check for pass/fail results is **McNemar's test**. In plain words: call a winner (the difference is **statistically significant**, meaning too big to be luck) only if the gap between the two counts is at least **twice the square root of the number of disagreements**. With 20 disagreements that is about 8.9 (the square root of 20 is about 4.5), so winning 15 to 5 is enough and 12 to 8 is too close to call.",
-        'With fewer than about 25 disagreements the shortcut is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.',
+        'A scores higher than B on your eval set. Is the difference real, or could it be luck? The fairest way to find out is to run both on **the same examples** and compare them one example at a time. This is a **paired comparison**.',
+        'It is much more sensitive than comparing two overall scores, because a hard example is hard for both setups, so that difficulty cancels out.',
+        'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: the examples A passed and B failed, and the other way round. If they split about evenly, the difference is luck.',
+        'A worked example. A and B disagree on 20 examples. If A wins 15 of them and B wins 5, the gap is 10. If A wins 12 and B wins 8, the gap is 4. For 20 disagreements the gap needs to be about 9 or more, so 15 to 5 is a real win and 12 to 8 is too close to call.',
+        "The standard check for pass/fail results is **McNemar's test**. Its rule of thumb: the more disagreements, the bigger the gap must be, but it grows slowly. 20 disagreements need a gap of about 9, 100 need about 20, and 400 need about 40. A gap that clears the line is **statistically significant**, meaning too big to be luck. The exercise gives you the exact steps.",
+        'With fewer than about 25 disagreements the rule of thumb is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.',
         'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples.',
     ],
     example=example('Only disagreements count', """example   A   B
@@ -1365,10 +1376,9 @@ q2        ✓   ✗    A only
 q3        ✗   ✓    B only
 q4        ✗   ✗    agree: ignore
 ...
-20 disagreements: the gap must be at least 8.9
-(twice the square root of 20)
-A only 15, B only 5:  gap 10, enough     → A wins
-A only 12, B only 8:  gap 4, below 8.9   → too close"""),
+20 disagreements: the gap must be about 9 or more
+A only 15, B only 5:  gap 10, enough    → A wins
+A only 12, B only 8:  gap 4, below 9    → too close"""),
     check=question(
         'Out of 200 questions, A and B disagree on 20. A wins 12 of those and B wins 8. What do you conclude?',
         [
@@ -1377,7 +1387,7 @@ A only 12, B only 8:  gap 4, below 8.9   → too close"""),
             'B is better: 8 wins is a fair share',
         ],
         answer=1,
-        why='The 180 agreements say nothing about which is better. Of the 20 that do, the gap of 4 is below twice the square root of 20, about 8.9, so a 12 to 8 split is easily luck.',
+        why='The 180 agreements say nothing about which is better. Of the 20 that do, the gap of 4 is well short of the about 9 that 20 disagreements need, so a 12 to 8 split is easily luck.',
     ),
     angle=angle(
         pattern='Count only the disagreements',
@@ -1398,9 +1408,12 @@ A only 12, B only 8:  gap 4, below 8.9   → too close"""),
 - `a_passed`: one number per example: `1` if A passed it, `0` if not, like `[1, 0, 1]`.
 - `b_passed`: the same for B, in the same order, like `[1, 1, 0]`.
 
-Count `a_only`, the examples only A passed, and `b_only`, the examples only B passed. Examples that both passed or both failed don't count. Then `gap = a_only - b_only`.
+The lesson's line is twice the square root of the number of disagreements (20 disagreements: about 8.9). Your code checks it without a square root:
 
-Return `"a"` if `gap` is above 0 and `gap * gap` is at least `4 * (a_only + b_only)`. Return `"b"` if `gap` is below 0 and the same check holds. Otherwise return `"tie"`. This is the lesson's rule, written without a square root.""",
+1. Count `a_only`, the examples only A passed, and `b_only`, the examples only B passed. Examples that both passed or both failed don't count.
+2. Work out `gap = a_only - b_only`.
+3. The gap is big enough if `gap * gap` is at least `4 * (a_only + b_only)`.
+4. Return `"a"` if the gap is big enough and above 0. Return `"b"` if it is big enough and below 0. Otherwise return `"tie"`.""",
         pattern='Count the disagreements in one pass, then apply the rule.',
         target='one walk through both lists together',
         realworld='This is how a careful team decides whether a new prompt or model is really better on an eval set: same examples, count where they differ, and refuse to ship on a split that luck could explain.',

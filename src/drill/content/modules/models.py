@@ -1,17 +1,19 @@
 """Choosing a model: Quality, cost and latency, and which option pays for itself."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, source, stack
 
 MODULE = module('models', 'Choosing a model', 'Quality, cost and latency, and which option pays for itself.')
 
 lesson(MODULE, 'percentile',
     title='Latency that users feel',
+    checked='2026-10-15',
+    sources=[source('MLflow: Search Traces', 'https://mlflow.org/docs/latest/genai/tracing/search-traces/')],
     learn=[
         '**Latency** is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. **p95** is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.',
         "Measure **end-to-end latency**: the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A **trace** is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.",
     ],
     example=example('Finding slow traces in MLflow', """slow = mlflow.search_traces(
-    filter_string="attributes.execution_time_ms > 5000",
+    filter_string="trace.execution_time_ms > 5000",   # slower than 5 seconds
     max_results=100,
 )"""),
     check=question(
