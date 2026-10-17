@@ -273,6 +273,7 @@ console.log(JSON.stringify({
   html: horizonHtml(2, 3, 4),
   hero: [hzHero(0, 1).match(/r="([\\d.]+)" opacity/)[1], hzHero(0, .2).match(/r="([\\d.]+)" opacity/)[1]].map(Number),
   track: [hzTrackCurse(1).includes('class="eye"'), hzTrackCurse(0).includes('class="bit"'), hzTrackCurse(.5).includes('class="band"')],
+  face: [hzFace("answer").includes('class="h-eye"'), hzFace("clue").includes('class="h-eye"'), (hzCoach("answer", "x").match(/class="eye"/g) || []).length, hzTrackCurse(1).includes('class="body" d="M')],
 }));"""
     (tmp_path / "hz.js").write_text(probe)
     out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, check=True).stdout)
@@ -283,6 +284,7 @@ console.log(JSON.stringify({
     assert 'aria-hidden="true"' in out["html"] and 'data-hp="0.250"' in out["html"]
     assert out["hero"][1] > out["hero"][0], "the sorcerer's flame grows as lessons get done"
     assert out["track"] == [True, True, True], "the platform track has its own banner, spirit and sorcerer"
+    assert out["face"] == [True, False, 0, True], "the blindfold comes off only for the answer; his eyes never count as the spirit's"
     assert '${horizonHtml("t", d, ids.length)}' in page
 
 

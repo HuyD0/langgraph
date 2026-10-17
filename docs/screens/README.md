@@ -78,7 +78,8 @@ It never moves the path's next lesson.
 
 **The banner.** The same battle in teal: a stack of workspaces, a pipeline, and an octagon ward
 (the track's shape) that closes a little more with every lesson until the spirit is sealed and
-broken. `hzTrackScene()` in `page/horizon.js`; the teal comes from `--hz-ink: var(--track)`.
+broken. The track has its own spirit, the drift stack: three crooked boxes like workspaces that no
+longer match their config, with loose cables for arms (`hzDriftStack()`). `hzTrackScene()` in `page/horizon.js`; the teal comes from `--hz-ink: var(--track)`.
 
 **What draws it.** `trackPage()`, `TRACKS`, `trackOf`, `.book.room.track`, `.paper6`, `.stk.soon`;
 teal comes from the `--track*` tokens.
@@ -167,6 +168,11 @@ written with `ask(...)`: three options and a clue.
 ## A lesson: Check
 
 ![The Check step after answering](lesson-check-phone-dusk.webp)
+
+The hero's round portrait sits beside the clue and the verdict (`hzCoach()` in `page/horizon.js`):
+blindfolded for a clue, and with the blindfold pushed up and his blue eyes open when he gives the answer.
+The words stay the lesson's own. The same portrait shows in Explain and Practice, and the done screen has
+him in full, in the phase's stance.
 
 **What the learner sees.** Up to three multiple-choice questions, one at a time ("Question 1 of
 3"). A wrong pick is crossed out and they try again; help is a clue, then the answer. Once a
