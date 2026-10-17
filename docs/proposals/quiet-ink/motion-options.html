@@ -99,7 +99,6 @@
     </div>
     <div class="seg" role="group" aria-label="Look"><button data-look="dusk" aria-pressed="true">Dusk</button><button data-look="light" aria-pressed="false">Light</button></div>
   </div>
-  <p class="rm" id="rmNote" hidden>Your device asks for reduced motion, so the effects jump straight to their end. Turn that off to see them move.</p>
   <div class="grid" id="grid"></div>
   <div class="foot">
     <p><b>All five follow the app's motion rules:</b> they mark real moments (a step, a finish), never loop and never wait for a tap.</p>
@@ -122,8 +121,6 @@ const PANES = [
   `<h3>Plan a rename</h3><p>For each old address: keep, move or destroy. Then any new address left over is a create.</p>`,
   `<h3>Say it back</h3><p>"Terraform knows things by their <b>address</b>. If I rename one without a <b>moved</b> block, it destroys it and makes it again."</p>`,
 ];
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-if (reduce) document.getElementById("rmNote").hidden = false;
 
 // shapes on a 24 grid centred on 0
 const poly = (n, r, rot = -90) => Array.from({ length: n }, (_, i) => { const a = (rot + i * 360 / n) * Math.PI / 180; return (r * Math.cos(a)).toFixed(1) + "," + (r * Math.sin(a)).toFixed(1); }).join(" ");
@@ -167,7 +164,7 @@ document.getElementById("grid").innerHTML = OPTS.map(o => `
   </section>`).join("");
 
 const EASE = { out: "cubic-bezier(.2,.7,.3,1)", pop: "cubic-bezier(.2,1.5,.4,1)", in: "cubic-bezier(.6,0,.9,.4)" };
-const anim = (el, frames, opts) => reduce ? { finished: Promise.resolve() } : el.animate(frames, { fill: "both", ...opts });
+const anim = (el, frames, opts) => el.animate(frames, { fill: "both", ...opts });  // motion plays for everyone, like the app
 const fxEl = (sec, html, css, under) => { const d = document.createElement("div"); d.style.cssText = "position:absolute;pointer-events:none;" + css; d.innerHTML = html; if (under) { d.dataset.fx = ""; under.prepend(d); } else sec.querySelector(".fxlayer").appendChild(d); return d; };
 const tokenColor = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -219,7 +216,7 @@ const FINISH = {
   ember(done, sec) {
     const t = done.querySelector(".dtitle"), r = t.getBoundingClientRect(), f = sec.querySelector(".frame").getBoundingClientRect();
     anim(t, [{ opacity: 0, letterSpacing: ".25em", textShadow: `0 0 18px ${tokenColor("--fx-glow")}` }, { opacity: 1, letterSpacing: "0em", textShadow: "0 0 0 transparent" }], { duration: 700, easing: EASE.out });
-    if (!reduce) for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2, s = fxEl(sec, "", `left:${r.left - f.left + r.width / 2}px;top:${r.top - f.top + r.height / 2}px;width:5px;height:5px;border-radius:50%;background:${tokenColor("--fx-core")};box-shadow:0 0 8px ${tokenColor("--fx-glow")}`);
       anim(s, [{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${Math.cos(a) * 80}px,${Math.sin(a) * 50}px) scale(.3)`, opacity: 0 }], { duration: 700, delay: 120, easing: EASE.out }).finished.then(() => s.remove());
     }
