@@ -489,6 +489,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 /*INCLUDE page/practice.css*/
 /*INCLUDE page/walkthrough.css*/
 /*INCLUDE page/cards.css*/
+/*INCLUDE page/horizon.css*/
 .cloze { display: grid; gap: 10px; }
 .cloze .clz { margin: 4px 0 0; font-size: 18px; line-height: 1.75; }
 .gap { display: inline-block; min-width: 3.2em; padding: 0 8px; border-radius: 8px; text-align: center; line-height: 1.5; }
@@ -1392,6 +1393,7 @@ function phaseFx(from) {
     const dir = to > from ? 1 : -1;
     [...book.children].forEach(c => fxMove(c, [{ opacity: 0, transform: `translateX(${dir * 16}px)` }, { opacity: 1, transform: "none" }], "--dur-slide"));
   } else return;
+  horizonDraw(from);
   const open = () => fxOn(book, "room", FX.room, book.querySelector(".titlecard > svg"));
   if (from == null) setTimeout(open, 450); else open();
 }
@@ -1565,7 +1567,7 @@ function renderHome() {
   const pg = phasePage(nidx, "h");
   const where = nidx === today_ && nid ? "You are here" : st_ === "done" ? "Done" : nidx < today_ ? "Earlier" : "Coming up";
   const chip = `<span class="chip${nidx === today_ && nid ? " here" : ""}">${where}</span>`;
-  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}"><div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
+  const book = `<section class="book room paper${nidx}" id="phasePanel" role="tabpanel" aria-labelledby="phtab${nidx}" aria-label="Phase ${nidx + 1} of 6: ${esc(nph.name)}, ${where}">${horizonHtml(nidx, pg.d, pg.n)}<div class="titlecard">${badgeSvg(nidx, 22, st_)}<span class="mt"><span class="row1"><span class="eyebrow">Phase ${nidx + 1} of ${PHASES.length}</span>${chip}</span><b>${esc(nph.name)}</b><span>${esc(nph.text)}</span><span class="makes">You come out with <b>${esc(PH_MAKES[nidx] || "")}</b></span></span><span class="n${pg.d === pg.n ? " full" : ""}">${pg.d}/${pg.n}</span></div>${pg.scenes}</section>`;
   const after = nidx === today_ ? PHASES[nidx + 1] : null;
   const upnext = after ? `<section class="upnext"><div class="top-row">${badgeSvg(nidx + 1, 10, "")}<span class="eyebrow">Next · ${esc(after.name)}</span></div><p>${esc(after.modules.map(mid => MOD[mid].title).join(" · "))}</p>${minis(phLessons(after))}</section>` : "";
   const block = (id, icon, title, done, total, rows) => {
@@ -1589,7 +1591,7 @@ function renderHome() {
     <div class="sets"><h3>Practice sets</h3></div>
     <div class="list">${set("classics", "Classic interview problems", D.classics)}</div>`;
   hideTip(); requestAnimationFrame(markTrails); setTimeout(markTrails, 60);
-  trackFx();
+  trackFx(); horizonDraw();
   if (!pathOpened) { pathOpened = true; requestAnimationFrame(() => phaseFx(null)); }
 }
 
@@ -2206,6 +2208,7 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = fals
 // ---------- step panes ----------
 /*INCLUDE page/walkthrough.js*/
 /*INCLUDE page/cards.js*/
+/*INCLUDE page/horizon.js*/
 function learnPane() {
   const L = LESSONS[cur.id];
   if (L.pack) return packLearnPane(L, L.pack);
@@ -2873,6 +2876,7 @@ document.addEventListener("click", async e => {
   const trk = t.closest("[data-track-go]"); if (trk) { goHome(); requestAnimationFrame(() => { const el = $("track-" + trk.dataset.trackGo); if (el) el.scrollIntoView({ block: "start", behavior: motionOn() ? "smooth" : "auto" }); }); return; }
   const pg = t.closest("[data-phase-go]"); if (pg) { const i = +pg.dataset.phaseGo, nid = nextLesson(); goHome(); viewPh = i === (nid ? phaseIdx(nid) : PHASES.length - 1) ? null : i; renderHome(); const b = document.querySelector(".pathhead"); if (b) b.scrollIntoView({ block: "start" }); return; }
   const sn = t.closest("[data-snote]"); if (sn) { closeSearch(); openPocket(sn.dataset.snote); return; }
+  const hz = t.closest("[data-strike]"); if (hz) { horizonStrike(hz); return; }
   if (t.closest("[data-aheadok]")) { $("aheadNote").hidden = true; return; }
   const phb = t.closest("[data-phase]");
   if (phb) {  // show one phase's page of stickers; today's phase is the default
