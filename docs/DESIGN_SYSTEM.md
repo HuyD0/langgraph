@@ -51,7 +51,8 @@ artifact gets updated.
 | Machine | `tok-a` to `tok-d`, `tok-on` | The row pills, and the text on them |
 | Surfaces | `card-bg`, `card-line`, `card-shadow`, `aside-bg`, `aside-line`, `aside-shadow`, `aside-blur`, `glow-current`, `glow-look`, `pop-bg`, `pop-line`, `pop-shadow`, `pop-blur` | What a box *is*: a card you read, an aside beside it (key idea, tips, what an AI said), a pop floating over the page (the trust note), the one thing you're on, "look here". Light and Dark fill them plainly; Dusk makes them glass and glow |
 | Tool screens | `tool-bg`, `tool-fg`, `tool-muted`, `tool-line`, `tool-sunk`, `tool-link`, `tool-ok`, `tool-change`, `tool-planned`, `tool-log`, `tool-on`, `tool-frame`, `tool-anno`, `tool-anno-dot`, `tool-anno-ink`, `glow-anno` | A third-party tool redrawn (Spacelift in the walkthrough): its own colours, light in Light and dark in Dark and Dusk, with the annotation style. `tool-on` is text on its pills, `tool-frame` the window's edge, `tool-anno-ink` the number in a callout's circle |
-| Type | `display`, `body`, `mono` | Headings, reading, anything the computer said |
+| Type | `head`, `moment`, `display`, `body`, `mono` | Headings (Kaisei Tokumin); the one brush line for a moment, "Lesson done." (Yuji Boku); the brand name and big numbers (Bricolage Grotesque); reading; anything the computer said |
+| Ink | `ink-wash`, `ink-op` | The soft clouds under the page (an SVG noise picture). Off in Light and Dark; Dusk turns it on at about a quarter strength |
 | Motion | `dur-tap`, `dur-step`, `dur-moment`, `dur-big`, `dur-slide`, `ease-out`, `ease-in`, `ease-pop` | How long things move, and how |
 | Effects | `fx-core`, `fx-glow`, `fx-veil`, `fx-red`, `fx-mix` | Only the motion effects |
 | Layout | `col` | The column width |

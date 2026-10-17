@@ -1,7 +1,7 @@
 <title>Daily Drill</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Kaisei+Tokumin:wght@700;800&family=Yuji+Boku&display=swap">
 <style>
 /* Layout: one reading column for everything (path, then a lesson in four steps); the Notebook slides in from the side. */
 /* Tokens: src/drill/content/tokens.css, inlined by build.py. Edit that file, not this block. */
@@ -16,6 +16,9 @@ b { font-weight: 600; }
 .meta { font-size: 14px; color: var(--muted); }
 .wrap { max-width: var(--col); margin: 0 auto; padding-inline: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .wrap > * { min-width: 0; }
+
+/* the ink wash under everything: --ink-wash and --ink-op come from tokens.css, so only Dusk shows it */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: var(--ink-wash); background-size: 640px; opacity: var(--ink-op); mix-blend-mode: screen; }
 
 /* top bar */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
@@ -40,11 +43,11 @@ b { font-weight: 600; }
 
 /* home */
 #home { padding-block: 24px 48px; }
-.hello h1 { font: 800 clamp(26px, 5vw, 34px)/1.1 var(--display); margin: 0 0 6px; letter-spacing: -0.015em; text-wrap: balance; }
+.hello h1 { font: 800 clamp(26px, 5vw, 34px)/1.1 var(--head); margin: 0 0 6px; letter-spacing: -0.015em; text-wrap: balance; }
 .hello p { margin: 0; color: var(--muted); max-width: 60ch; }
 .next { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 10px; }
 .eyebrow { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
-.next h2 { font: 800 22px/1.2 var(--display); margin: 0; text-wrap: balance; }
+.next h2 { font: 800 22px/1.2 var(--head); margin: 0; text-wrap: balance; }
 .next .btn { justify-self: start; }
 .module { display: grid; gap: 8px; scroll-margin-top: calc(var(--toph, 61px) + 12px); }
 .module > p { margin: -4px 0 4px; color: var(--muted); font-size: 15px; }
@@ -92,7 +95,9 @@ b { font-weight: 600; }
 .donehead { display: grid; gap: 10px; justify-items: start; }
 .donecheck { width: 48px; height: 48px; border-radius: 50%; background: var(--pass); color: var(--surface); display: grid; place-items: center; }
 .donecheck .ic { width: 26px; height: 26px; stroke-width: 2.4; }
-.donehead h1 { font: 800 clamp(26px, 5vw, 32px)/1.1 var(--display); margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
+.donehead h1 { font: 400 clamp(38px, 10vw, 48px)/1.1 var(--moment); margin: 0; text-wrap: balance; }
+/* the ink drop blooms behind the done line, not over it */
+.donehead > * { position: relative; z-index: 1; } .donehead > .fx-bloom { position: absolute; z-index: 0; }
 .donehead p { margin: 0; color: var(--muted); }
 .recap { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .recap li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
@@ -153,7 +158,7 @@ table.dt tr.empty td { color: var(--muted); font: 13px var(--body); white-space:
 .focusask { border: 1px solid color-mix(in srgb, var(--track) 45%, var(--line)); } .focusask b { color: var(--track); } .focusask .seg { justify-self: start; margin-top: 4px; }
 .fcard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; text-align: left; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--card-line); background: var(--card-bg); box-shadow: var(--card-shadow); color: var(--fg); font: inherit; cursor: pointer; min-height: 64px; }
 .fcard svg { grid-row: span 2; width: 36px; height: 36px; overflow: visible; }
-.fcard b { font: 800 17px var(--display); } .fcard span { color: var(--muted); font-size: 14px; }
+.fcard b { font: 800 17px var(--head); } .fcard span { color: var(--muted); font-size: 14px; }
 .fcard .sh { stroke-width: 2; fill: none; } .fcard .sh.ai { stroke: var(--path); } .fcard .sh.pl, .strack .sh.pl { stroke: var(--track); fill: var(--track-soft); stroke-width: 2; }
 @media (hover: hover) { .fcard:hover { border-color: var(--accent); } }
 .next.track { border-color: color-mix(in srgb, var(--track) 55%, var(--line)); }
@@ -183,17 +188,17 @@ details.more > summary .label { color: var(--fg); font-weight: 600; font-size: 1
 .btn .ic { width: 18px; height: 18px; }
 .tab { display: inline-flex; align-items: center; gap: 6px; }
 .tab .ic { width: 17px; height: 17px; }
-.sets h3 { font: 800 18px/1.2 var(--display); margin: 8px 0 0; }
+.sets h3 { font: 800 18px/1.2 var(--head); margin: 8px 0 0; }
 
 /* lesson */
 #lesson { padding-block: 12px calc(96px + env(safe-area-inset-bottom, 0px)); }
-.lesson-title { font: 800 clamp(26px, 5vw, 34px)/1.12 var(--display); margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
+.lesson-title { font: 800 clamp(26px, 5vw, 34px)/1.12 var(--head); margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
 .stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .stepbtn { display: grid; gap: 6px; text-align: left; background: none; border: 0; padding: 0 0 2px; cursor: pointer; color: var(--muted); font: 600 13px var(--body); }
 .stepbtn i { display: block; height: 4px; border-radius: 2px; background: var(--line); }
 .stepbtn.done i { background: var(--pass); }
 .stepbtn[aria-current="step"] { color: var(--fg); }
-.stepbtn[aria-current="step"] i { background: var(--accent); }
+.stepbtn[aria-current="step"] i { background: var(--accent); box-shadow: var(--glow-current); }  /* a still glow in Dusk, nothing in Light and Dark */
 .stepbtn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pane { display: grid; gap: 16px; min-width: 0; }
 .pane > * { min-width: 0; }
@@ -210,7 +215,7 @@ pre.code.aligned.more, .dtwrap.more { -webkit-mask-image: linear-gradient(90deg,
 .syn .fr { color: var(--hint); font-weight: 600; font-style: normal; }
 .card { background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
 .card > * { min-width: 0; }
-.card h2 { font: 800 20px/1.2 var(--display); margin: 0; }
+.card h2 { font: 800 20px/1.2 var(--head); margin: 0; }
 .q { font-weight: 600; font-size: 17px; margin: 0; }
 .opts { display: grid; gap: 8px; }
 .opt { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; min-height: 52px; display: flex; gap: 10px; align-items: center; }
@@ -236,7 +241,7 @@ details.more > div { padding: 0 14px 14px; display: grid; gap: 12px; }
 .callout { background: var(--sunk); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; }
 .callout p { margin: 0; }
 .say { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; font-size: 17px; margin: 0; }
-.pattern-name { font: 800 24px/1.15 var(--display); margin: 0; }
+.pattern-name { font: 800 24px/1.15 var(--head); margin: 0; }
 
 /* build */
 .buildbar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--toph, 61px)); z-index: 10; display: flex; align-items: center; gap: 10px; background: var(--bg); padding-block: 8px; margin-block: -8px; }
@@ -369,7 +374,7 @@ details.quiet > div { display: grid; gap: 14px; padding-top: 8px; }
 .next .btn.primary { min-height: 48px; }
 @media (max-width: 560px) { .next .btn { justify-self: stretch; } }
 .pathhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 8px; }
-.pathhead h2 { font: 800 18px/1.2 var(--display); margin: 0; }
+.pathhead h2 { font: 800 18px/1.2 var(--head); margin: 0; }
 .pathhead span { font: 13px var(--mono); color: var(--muted); white-space: nowrap; }
 .intro { font-size: 19px; line-height: 1.5; margin: 0; max-width: 60ch; color: var(--fg); }
 figure.ex { margin: 0; display: grid; gap: 6px; }
@@ -503,21 +508,6 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 #paneText .q { scroll-margin-top: 90px; }
 .btn.primary[disabled] { opacity: 1; background: var(--sunk); color: var(--muted); border-color: var(--line); box-shadow: none; }
 :root[data-theme="dusk"] .bdg.now { filter: url(#aura); }
-:root[data-theme="dusk"] .stepbtn[aria-current="step"] i { animation: dd-bar 2.4s ease-in-out infinite; }
-:root[data-theme="dusk"] .btn.primary:not([disabled]) { animation: dd-flame 3.2s ease-in-out infinite; }
-/* irregular steps, so it flickers like fire rather than pulsing like a heartbeat; the upward shadow makes it rise */
-@keyframes dd-flame {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 6px rgba(179,234,255,.45), 0 0 18px rgba(91,140,255,.30), 0 -6px 22px -8px rgba(125,160,255,.35), inset 0 1px 0 rgba(255,255,255,.35); }
-  17% { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 6px rgba(179,234,255,.45), 0 0 26px rgba(91,140,255,.42), 0 -12px 28px -8px rgba(125,160,255,.50), inset 0 1px 0 rgba(255,255,255,.35); }
-  29% { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 6px rgba(179,234,255,.45), 0 0 16px rgba(91,140,255,.26), 0 -5px 18px -8px rgba(125,160,255,.30), inset 0 1px 0 rgba(255,255,255,.35); }
-  58% { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 6px rgba(179,234,255,.45), 0 0 30px rgba(91,140,255,.46), 0 -14px 32px -8px rgba(125,160,255,.55), inset 0 1px 0 rgba(255,255,255,.35); }
-  76% { box-shadow: 0 0 0 1px rgba(212,248,255,.35), 0 0 6px rgba(179,234,255,.45), 0 0 20px rgba(91,140,255,.34), 0 -8px 24px -8px rgba(125,160,255,.40), inset 0 1px 0 rgba(255,255,255,.35); }
-}
-@keyframes dd-bar {
-  0%, 100% { box-shadow: 0 0 8px rgba(91,140,255,.55), 0 -3px 8px rgba(125,160,255,.35); }
-  23% { box-shadow: 0 0 12px rgba(91,140,255,.75), 0 -5px 12px rgba(125,160,255,.5); }
-  61% { box-shadow: 0 0 6px rgba(91,140,255,.45), 0 -2px 6px rgba(125,160,255,.3); }
-}
 
 :root[data-theme="dusk"] .stk.next .stg { filter: url(#aura); }
 :root[data-theme="dusk"] .stk.now:not(.next) .stg { filter: drop-shadow(0 0 4px rgba(91,140,255,.55)); }
@@ -553,7 +543,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .titlecard > svg { overflow: visible; }
 .titlecard .mt { display: grid; gap: 2px; min-width: 0; }
 .titlecard .row1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.titlecard .mt > b { font: 800 20px/1.2 var(--display); }
+.titlecard .mt > b { font: 800 20px/1.2 var(--head); }
 .titlecard .mt > span:not(.row1) { font-size: 13px; color: var(--muted); }
 .titlecard .makes b { font-weight: 600; color: var(--fg); }
 .titlecard .n { font: 13px var(--mono); color: var(--muted); align-self: start; }
@@ -614,7 +604,7 @@ p.checked .ic { width: 15px; height: 15px; }
 .callout.ahead p { margin: 0; }
 .callout.ahead .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .mine { gap: 12px; }
-.mine h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.mine h3 { margin: 0; font: 800 18px/1.2 var(--head); }
 .mine h4 { margin: 4px 0 0; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
 .mine p { margin: 0; }
 .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
@@ -662,7 +652,7 @@ p.checked .ic { width: 15px; height: 15px; }
 .fbbar .chipbtn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 .fbbar .chipbtn:disabled:not([aria-pressed="true"]) { opacity: .5; }
 .fbwhy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; }
-.real h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.real h3 { margin: 0; font: 800 18px/1.2 var(--head); }
 .real p { margin: 0; }
 .realuses { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
 .realuses code { color: var(--syn-fn); }
@@ -730,7 +720,7 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .newstk { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; justify-items: center; gap: 8px; text-align: center; }
 .newstk svg { width: 112px; height: 112px; overflow: visible; }
 .newstk .stk { pointer-events: none; }
-.newstk h2 { font: 800 22px/1.2 var(--display); margin: 0; }
+.newstk h2 { font: 800 22px/1.2 var(--head); margin: 0; }
 .newstk p { margin: 0; color: var(--muted); max-width: 46ch; }
 .newstk svg { animation: land .45s cubic-bezier(.2, 1.4, .4, 1) } @keyframes land { from { transform: scale(.6) rotate(-8deg); opacity: 0 } }
 /*INCLUDE page/packs.css*/
@@ -794,10 +784,11 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 .fx-spark polyline + polyline { stroke: var(--fx-glow); stroke-width: 2.5; }
 @keyframes fx-bolt { 0% { opacity: 0; } 10% { opacity: 1; } 25% { opacity: .2; } 38% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 
-/* 4. moving between steps: a small orb at the step you go to (the pane itself turns in, see fxMove) */
-.fx-turn { --hold: var(--dur-step); }
-.fx-turn .orb { left: var(--x); top: var(--y); width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: radial-gradient(circle, var(--fx-core), var(--fx-glow) 45%, transparent 72%); animation: fx-blink var(--dur-step) ease-in-out both; }
-@keyframes fx-blink { 0%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+/* 4. finishing a lesson (quiet ink): one ink drop blooms under the done line, then settles; moving
+   between steps has no effect of its own any more, the pane just rises in (fxMove in setStep) */
+.fx-bloom { --hold: var(--dur-big); overflow: visible; contain: none; }
+.fx-bloom .drop { left: var(--x); top: var(--y); width: 280px; height: 76px; margin: 4px 0 0 -140px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 60%, transparent), transparent 75%); animation: fx-bloom var(--dur-big) var(--ease-out) both; }
+@keyframes fx-bloom { from { transform: scale(0); opacity: .9; } 55% { opacity: .5; } to { transform: scale(1.5, 1); opacity: 0; } }
 
 /* 5. your first keystroke in an exercise: a veil passes down the part of the editor you can see, edged with energy */
 .fx-curtain { --hold: calc(var(--dur-step) * 1.6); border-radius: 10px; }
@@ -850,7 +841,7 @@ mark { background: var(--hint-bg); color: inherit; border-radius: 3px; padding: 
 /* 8 and 9 are entrances on content that is already there: today's week dot lights up (day 7 of a
    streak bursts), and the Grade badge on the done screen flips. Without motion they simply show. */
 .promo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-.promo h2 { font: 800 20px/1.2 var(--display); margin: 2px 0; }
+.promo h2 { font: 800 20px/1.2 var(--head); margin: 2px 0; }
 .promo p { margin: 0; color: var(--muted); }
 .promo .badge { position: relative; width: 72px; height: 72px; perspective: 400px; }
 .promo .face { position: absolute; inset: 0; border-radius: 18px; display: grid; place-content: center; justify-items: center; backface-visibility: hidden; }
@@ -1125,7 +1116,7 @@ const FX = {
   space: '<i class="rim"></i><i class="veil"></i><i class="lines"></i>',
   merge: '<i class="orb b"></i><i class="orb r"></i><i class="flash"></i><i class="orb p"></i><i class="orb w"></i>',
   spark: '<i class="burst"></i><i class="ring"></i><svg viewBox="0 0 320 320"><polyline points="160,160 135,120 151,110 115,62 133,52 93,8"/><polyline points="160,160 195,130 181,118 227,82 213,70 265,30"/><polyline points="160,160 85,170 101,182 45,190"/><polyline points="160,160 233,176 217,188 283,198"/></svg>',
-  turn: '<i class="orb"></i>',
+  bloom: '<i class="drop"></i>',
   curtain: '<i class="veil"></i>',
   heal: '<i class="wash"></i><svg class="cracks" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline pathLength="1" points="62,0 57,12 63,19 54,30 58,40"/><polyline pathLength="1" points="57,12 47,15 43,9"/><polyline pathLength="1" points="54,30 68,33 72,26"/></svg><i class="sweep"></i>',
   smoke: [[-38, -30], [30, -42], [44, 4], [-8, -54], [-46, 10], [14, 30]].map(([x, y]) => `<i style="--dx:${x}px;--dy:${y}px"></i>`).join(""),
@@ -2085,10 +2076,8 @@ function setStep(i, keep) {  // keep: stay where you are on the page (answering 
   if (i !== 2 || pk) $("paneText").innerHTML = i === 0 ? learnPane() : i === 1 ? checkPane() : i === 2 ? practicePane() : anglePane();
   renderFoot();
   if (!keep) window.scrollTo(0, 0);
-  if (was != null && was !== i) {  // the next step turns in from the side you are heading to
-    fxMove(i === 2 && !pk ? $("paneBuild") : $("paneText"), [{ opacity: 0, transform: `scale(.92) rotate(${i > was ? -3 : 3}deg)` }, { opacity: 1, transform: "none" }]);
-    fxScreen("turn", FX.turn, $("stepper").children[i]);
-  }
+  if (was != null && was !== i)  // quiet ink: the next step rises in softly
+    fxMove(i === 2 && !pk ? $("paneBuild") : $("paneText"), [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], "--dur-slide");
 }
 // One primary action per step. On Build it is Run tests, in this bar; Skip is quiet, beside it.
 const building = () => cur.kind === "practice" || (cur.step === 2 && !packOf(cur.id));
@@ -2147,7 +2136,15 @@ function goNext() {
   showDone(id, after || null, fresh);
   const ph = phaseOf[modOf[id].id];
   if (fresh && ph.modules.flatMap(m => MOD[m].lessons).every(isDoneL)) fxScreen("merge", FX.merge);
-  else fxScreen("space", FX.space, $("nextBtn"));
+  else doneBloom();
+}
+// Quiet ink: the done line rises in, one ink drop blooms under it, then the result marks appear one by one.
+function doneBloom() {
+  const head = $("done").querySelector(".donehead"), line = head && head.querySelector("h1");
+  if (!line) return;
+  fxOn(head, "bloom", FX.bloom, line);
+  fxMove(line, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }]);
+  $("done").querySelectorAll(".result .rmark").forEach((m, k) => fxMove(m, [{ opacity: 0 }, { opacity: 0, offset: Math.min(.8, .3 + k * .06) }, { opacity: 1 }], "--dur-big"));
 }
 // The moment after Finish: what you did, the sentence to keep, what's next, and a primary that ends the day.
 function showDone(id, after, fresh) {
@@ -2160,9 +2157,9 @@ function showDone(id, after, fresh) {
   const ids = ph.modules.flatMap(mid => MOD[mid].lessons), doneN = ids.filter(isDoneL).length;
   const inPh = (trackOf[id] ? "the " : "") + ph.name;  // "in the Platform track", "in Frame"
   const days = new Set(progress.days), weekN = weekDays().filter(k => days.has(k)).length;
-  const head = doneN === ids.length ? `Done. ${ph.name} is finished.` : `Done. That’s ${doneN} of ${ids.length} in ${inPh}.`;
+  const head = doneN === ids.length ? `${ph.name} is finished.` : "Lesson done.";  // short: it is set in the brush face
   const left = ids.length - doneN, res = resultOf(id);
-  const sub = `${weekN === 1 ? "Your first day" : weekN + " days"} this week.` + (left === 1 ? ` One more and ${ph.name} is finished.` : "");
+  const sub = (doneN === ids.length ? "" : `That’s ${doneN} of ${ids.length} in ${inPh}. `) + `${weekN === 1 ? "Your first day" : weekN + " days"} this week.` + (left === 1 ? ` One more and ${ph.name} is finished.` : "");
   const sol = progress.solved[p.id], [, , ans] = L.check, fc = (s.first || {}).check;  // the first pick, not the last
   const item = (ok, html) => `<li class="${ok ? "" : "skip"}">${ic(ok ? "check" : "arrowr")}<span>${html}</span></li>`;
   const recap = [

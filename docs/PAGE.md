@@ -409,10 +409,10 @@ They decorate what already happened and never change a lesson's order, wording o
 
 | # | Effect | Plays when | Length | Where in `page.html` |
 |---|---|---|---|---|
-| 1 | Space opens | You finish a lesson | about 1.5 s | `goNext` → `fxScreen("space")` |
+| 1 | Ink bloom | You finish a lesson: "Lesson done." rises in, one ink drop blooms under it, then the result marks appear one by one | about 1.6 s | `goNext` → `doneBloom()` → `fxOn(donehead, "bloom")`. (The dark "space" still opens when you start a review.) |
 | 2 | Merge | You finish a whole phase (six times on the path) | about 1.7 s | `goNext` → `fxScreen("merge")` |
 | 3 | Spark | Every test passes on your first run, with no hints, the first time you solve it | under 1 s | `runTests` → `fxScreen("spark")` |
-| 4 | Step turn | You move between Learn, Check, Build and Explain | 0.4 s | `setStep` → `fxMove` + `fxScreen("turn")` |
+| 4 | Step rise | You move between Learn, Check, Build and Explain: the step rises in 6px, softly | 0.26 s | `setStep` → `fxMove` |
 | 5 | Curtain | Your first keystroke in an exercise | 0.6 s | editor input → `fxScreen("curtain", …, cover)` |
 | 6 | Heal | Tests pass after a run that failed | about 1 s | `runTests` → `fxOn(result, "heal")` |
 | 7 | Smoke | You spot a gotcha | about 1 s | `answerGotcha` → `fxScreen("smoke")` |

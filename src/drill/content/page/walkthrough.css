@@ -1,6 +1,6 @@
 /* walkthrough: a tool's screens redrawn with numbered callouts; "look here" uses the hint colours */
 .walk { display: grid; gap: 18px; }
-.walk h3 { margin: 0; font: 800 18px/1.2 var(--display); }
+.walk h3 { margin: 0; font: 800 18px/1.2 var(--head); }
 .sl { margin: 0; display: grid; gap: 10px; }
 .sl figcaption { font-weight: 600; }
 .sl-view { border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 12px; background: var(--card-bg); padding: 12px; display: grid; gap: 8px; font-size: 13.5px; min-width: 0; overflow: hidden; }

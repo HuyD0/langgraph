@@ -1,7 +1,11 @@
 # Proposal: Quiet ink
 
-Status: **proposal only, no app code yet.** A design-research pass is running separately; when it
-lands, compare its findings with this page, merge the two into one plan, then build on this branch.
+Status: **being built** on branch `claude/quiet-ink-build`. The research pass that ran alongside turned out to be
+the audit in PR #101: nothing in it conflicts with this plan, and its design fixes (dead CSS gone, the Dusk
+primary button on tokens, 44px targets) make the build simpler. Built so far: the type, the ink wash, motion E
+(step rise and the finish bloom), the short brush done line, and a still glow instead of the flicker on the
+primary button and the current step. Not yet: follow-up 2 (the ink spreading into the wash) and follow-up 3
+(E-style marks); the stickers' aura and the walkthrough's flame are kept for now.
 
 ## The idea in one line
 
