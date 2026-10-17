@@ -94,11 +94,15 @@ function hzCurse(i, hp) {
 //   5 Monitor   standing easy, a quiet ring of protection round him
 // Everything he gives off grows with `power` (the share of lessons done); tapping the banner fires the flame.
 function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
-  // Proportions: lanky. Drawn on a grid where the hip is at -21; M() lengthens the legs (hip to -30) and
-  // keeps the jacket and head compact above it, and W narrows him, so his height is in his legs.
-  const M = v => v >= -21 ? v * 30 / 21 : -30 + (v + 21) * .85, W = .66;
-  const S = .82, X = v => (x + v * S * W).toFixed(1), Y = v => (g + M(v) * S).toFixed(1), Z = v => (v * S * .9).toFixed(1);
-  const P = pts => "M" + pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L") + "Z";
+  // Proportions: tall and lanky. Drawn on a grid where the hip is at -21; M() lengthens the legs (hip to
+  // -30) and keeps the jacket and head compact above it. Wd() sets his width by height: shoulders broad,
+  // tapering to a slim waist and slim legs, so the jacket narrows from the shoulders down. His arms hang
+  // straight from the shoulders (X, not tapered), long enough that his hands reach mid-thigh.
+  const M = v => v >= -21 ? v * 30 / 21 : -30 + (v + 21) * .85;
+  const Wd = b => b <= -36 ? .95 : b >= -28 ? .58 : .58 + .37 * (-28 - b) / 8;
+  const S = .82, X = v => (x + v * S * .95).toFixed(1), Y = v => (g + M(v) * S).toFixed(1), Z = v => (v * S * .9).toFixed(1);
+  const XW = (a, b) => (x + a * S * Wd(b)).toFixed(1);
+  const P = pts => "M" + pts.map(([a, b]) => `${XW(a, b)},${Y(b)}`).join(" L") + "Z";
   const F = [15, 14, 15, 15, 19, 8][pose];
   const legs = `<path class="coat" d="${P([[-5, -21], [-F + 2, -1], [-F, 0], [-F + 6, 0], [-1, -15], [3, -15], [F - 6, 0], [F, 0], [F - 2, -2], [6, -21]])}"/>`;
   const coat = `<path class="coat" d="${P([[-4, -40], [-9, -37], [-8, -26], [-7, -18], [7, -18], [8, -26], [9, -37], [4, -40]])}"/>`
@@ -119,14 +123,14 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
     : `<path class="skin" d="M${X(a)},${Y(b)} l${Z(.6)},${Z(-7)} l${Z(1)},0 l${Z(.2)},${Z(5)} l${Z(.6)},${Z(-5.6)} l${Z(1)},${Z(.2)} l${Z(-.4)},${Z(7.4)}Z"/>`;
   const palm = (a, b) => `<path class="skin" d="M${X(a)},${Y(b + 2.4)} q${Z(-.8)},${Z(-2.4)} 0,${Z(-5.6)} q${Z(1.8)},${Z(-.6)} ${Z(2)},${Z(.4)} l${Z(.2)},${Z(4.6)} q${Z(-.6)},${Z(1)} ${Z(-2.2)},${Z(.6)}Z"/>`;
   const atCollar = arm([[-7, -36], [-9, -29], [-3, -36]]) + fist(-2.2, -37.2);
-  const atSide = arm([[-7, -36], [-9, -28], [-8.5, -22]]) + fist(-8.5, -21.4, 1.6);
+  const atSide = arm([[-7, -36], [-9, -27], [-8.6, -16.6]]) + fist(-8.6, -16, 1.6);
   const POSE = [
     [arm([[7, -37], [12, -41], [6, -50]]) + fist(5.6, -51, 1.7) + atSide, [8, -52]],
     [arm([[7, -37], [13, -38], [19, -39]]) + palm(19.4, -39) + atCollar, [22.6, -39.2]],
     [arm([[7, -37], [13, -33], [14, -42]]) + sign(12.6, -42) + atCollar, [14.4, -52]],
     [arm([[7, -37], [13, -33], [14, -42]]) + sign(12.6, -42) + atCollar, [14.4, -56]],
     [arm([[7, -37], [14, -35.5], [20, -35]]) + sign(20, -35, true) + arm([[-7, -36], [-12, -31], [-15, -34]]) + fist(-15.2, -34.6, 1.6), [28.4, -35.6]],
-    [arm([[7, -37], [9, -28], [8.5, -22]]) + fist(8.5, -21.4, 1.6) + atSide, [11, -58]],
+    [arm([[7, -37], [9, -27], [8.6, -16.6]]) + fist(8.6, -16, 1.6) + atSide, [11, -58]],
   ][pose];
   const hx = +X(POSE[1][0]), hy = +Y(POSE[1][1]);
   const orb = `<circle class="h-orb${pose === 3 ? " v" : ""}" cx="${hx}" cy="${hy}" r="${(pose === 3 ? 2.2 + 6 * power : pose === 5 ? 1.2 + 2.4 * power : 1.5 + 5 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
