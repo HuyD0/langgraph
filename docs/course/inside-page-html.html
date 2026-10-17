@@ -345,6 +345,11 @@ body.ask-on .askbtn { display: inline-flex; }
   "lesson": "render"
  },
  {
+  "file": "src/drill/content/page.html",
+  "find": "const fig = L.diagram ? diagramHtml(L.diagram) : \"\", at = L.diagram ? L.diagram.after : -1;",
+  "lesson": "render"
+ },
+ {
   "file": "src/drill/content/tokens.css",
   "find": "/* verdicts: the strong color is for text and icons, its -bg twin is the fill behind them */",
   "lesson": "ds-what"
@@ -489,10 +494,12 @@ function learnPane() {
   const L = LESSONS[cur.id];
   if (L.pack) return packLearnPane(L, L.pack);   // a content-pack lesson is drawn differently
   const [cap, code] = L.example, [first, ...rest] = L.learn;
-  closeTrust();
-  // withTrust() runs md() on the text, and adds a trust mark where one belongs
-  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}
-    ${rest.map(p => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>`).join("")}
+  closeTrust(); closeCb();
+  // a lesson may have one picture: it goes after paragraph number `after`
+  const fig = L.diagram ? diagramHtml(L.diagram) : "", at = L.diagram ? L.diagram.after : -1;
+  // withTrust() runs md() on the text, and adds a trust mark or an earlier lesson's sticker where one belongs
+  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}${at === 0 ? fig : ""}
+    ${rest.map((p, i) => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>${at === i + 1 ? fig : ""}`).join("")}
     ...`;
 }
 </script>
@@ -1269,7 +1276,7 @@ const L = [
     "That's also the danger. If a lesson title contains `<b>` or `<script>`, pasting it in raw makes it real HTML. So text from content or from a person always goes through `esc()` first, which turns `<` into `&lt;` so it shows as a character. This project's rule: **never put raw text into HTML**.",
   ],
   key: "data → function → HTML text → innerHTML; always esc() the data.",
-  real: { id: "r-render", file: "src/drill/content/page.html", sub: "safe text, and the Learn step", note: "learnPane() builds the Learn step you read every day. md() escapes the text, then allows **bold** and `code`; withTrust() uses it too." },
+  real: { id: "r-render", file: "src/drill/content/page.html", sub: "safe text, and the Learn step", note: "learnPane() builds the Learn step you read every day. md() escapes the text, then allows **bold** and `code`; withTrust() uses it too, and places the trust marks and sticker callbacks. A lesson with a picture gets it from diagramHtml(), after the paragraph its data names." },
   play: { html: "p9-html", css: "p9-css", js: "p9-js", tab: "js" },
   task: "Make `row()` return a button for one lesson, like the comment shows. Use `esc()` on the title: the third title has tags in it that must show as plain text.",
   check: (r) => { const rows = r.querySelectorAll("button.row[data-open]"); if (rows.length !== 3) return [false, `Found ${rows.length} rows. row() should return one <button class="row" data-open="..."> per lesson.`]; if (r.querySelector("button.row b")) return [false, "The third title turned into real bold text: wrap the title in esc()."]; const last = rows[2]; if (!last.textContent.includes("<b>")) return [false, "The third row should show the characters <b> as text."]; if (rows[0].dataset.open !== "split_by_key") return [false, "The first row's data-open should be the lesson id, split_by_key."]; return [true, "Three rows, and the sneaky title shows its <b> as plain characters. That's esc() doing its job."]; },
