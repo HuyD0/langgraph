@@ -53,8 +53,9 @@
      --display stays for the brand name and big numbers, whose figures read best in it */
   --head: "Kaisei Tokumin", Georgia, serif;
   --moment: "Yuji Boku", "Kaisei Tokumin", Georgia, serif;
-  /* the ink wash under the page: soft clouds drawn as SVG noise. Off here; Dusk turns it on */
-  --ink-wash: none; --ink-op: 0;
+  /* the screentone under the page: fine diagonal hatching, crossed at the top like the darkest shading on a
+     manga page, thinning to single lines and then nothing down the screen. Off here; Dusk turns it on */
+  --ground-tone: none;
 
   /* motion: how long things move and how. The effects themselves are the "fx" rules in page.html;
      the catalogue of when each one plays is in docs/PAGE.md, "Motion". */
@@ -151,5 +152,5 @@
   --tool-link: #7ea3ff; --tool-ok: #1d7a46; --tool-change: #e8c47a; --tool-planned: #2e63cf; --tool-log: #0f0e18; --tool-on: #ffffff; --tool-anno-ink: #24070d;
   --tool-anno: #ff6b7f; --tool-anno-dot: #ff6b7f; --glow-anno: 0 0 12px rgba(255, 107, 127, .45), 0 0 26px rgba(255, 107, 127, .18);
   --tool-frame: 0 0 0 1px rgba(52, 216, 196, .5), 0 0 18px rgba(52, 216, 196, .28), 0 0 44px rgba(52, 216, 196, .12);
-  --ink-wash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.008 .014' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .4 0 0 0 0 1 0 0 0 3.2 -1.35'/%3E%3CfeGaussianBlur stdDeviation='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"); --ink-op: .26;
+  --ground-tone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'%3E%3Cdefs%3E%3Cpattern id='a' width='6' height='6' patternUnits='userSpaceOnUse' patternTransform='rotate(135)'%3E%3Crect width='1' height='6' fill='%23d2d6f0' fill-opacity='.1'/%3E%3C/pattern%3E%3Cpattern id='b' width='6' height='6' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'%3E%3Crect width='1' height='6' fill='%23d2d6f0' fill-opacity='.085'/%3E%3C/pattern%3E%3ClinearGradient id='fa' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.8' stop-color='%23fff' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='fb' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.34' stop-color='%23fff' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cmask id='ma'%3E%3Crect width='100%' height='100%' fill='url(%23fa)'/%3E%3C/mask%3E%3Cmask id='mb'%3E%3Crect width='100%' height='100%' fill='url(%23fb)'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%' height='100%' fill='url(%23a)' mask='url(%23ma)'/%3E%3Crect width='100%' height='100%' fill='url(%23b)' mask='url(%23mb)'/%3E%3C/svg%3E");
   --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark }

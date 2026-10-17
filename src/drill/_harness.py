@@ -50,7 +50,8 @@ def safe(value):
 
 
 def main() -> None:
-    payload = json.loads(open(sys.argv[1], encoding="utf-8").read())
+    with open(sys.argv[1], encoding="utf-8") as f:
+        payload = json.load(f)
     limit_output(payload.get("max_output_bytes"))
     source = payload["source"]
     function_name = payload["function_name"]

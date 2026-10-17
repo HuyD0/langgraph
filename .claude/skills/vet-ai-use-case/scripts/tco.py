@@ -48,5 +48,9 @@ def report(result: dict) -> str:
 
 
 if __name__ == "__main__":
-    raw = open(sys.argv[1]).read() if len(sys.argv) > 1 else sys.stdin.read()
+    if len(sys.argv) > 1:
+        with open(sys.argv[1]) as f:
+            raw = f.read()
+    else:
+        raw = sys.stdin.read()
     print(report(tco(json.loads(raw))))

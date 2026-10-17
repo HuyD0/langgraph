@@ -17,8 +17,9 @@ b { font-weight: 600; }
 .wrap { max-width: var(--col); margin: 0 auto; padding-inline: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .wrap > * { min-width: 0; }
 
-/* the ink wash under everything: --ink-wash and --ink-op come from tokens.css, so only Dusk shows it */
-body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: var(--ink-wash); background-size: 640px; opacity: var(--ink-op); mix-blend-mode: screen; }
+/* the screentone under everything: --ground-tone comes from tokens.css, so only Dusk shows it. One picture the
+   size of the screen (its line spacing stays in pixels), fixed in place while you scroll */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--ground-tone) 0 0 / 100% 100% no-repeat; }
 
 /* top bar */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
@@ -469,7 +470,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 /* The dusk theme's surfaces: a mauve sheen behind everything, frosted bars, a glowing next step.
    Glass stays on bars and the key-idea box; reading cards stay nearly solid. */
 :root[data-theme="dusk"] .book[class*="paper"]::before { opacity: 1; }
-:root[data-theme="dusk"] body { background: radial-gradient(90% 45% at 15% 0%, rgba(93,85,103,.30), transparent 65%) fixed, radial-gradient(60% 35% at 100% 100%, rgba(93,85,103,.18), transparent 70%) fixed, var(--bg); }
+:root[data-theme="dusk"] body { background: var(--bg); }  /* plain: the screentone (body::before) is the only texture */
 :root[data-theme="dusk"] body::after { content: ""; position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: .05; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"); }
 :root[data-theme="dusk"] .top { background: rgba(7,7,15,.55); backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%); }
 :root[data-theme="dusk"] .foot { background: rgba(19,18,28,.68); backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%); }

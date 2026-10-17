@@ -7,7 +7,7 @@ const src = fs.readFileSync(process.argv[2], "utf8");
 // Just enough of a browser for the study list's own functions.
 const saved = {};
 global.localStorage = { getItem: k => (k in saved ? saved[k] : null), setItem: (k, v) => { saved[k] = String(v); }, removeItem: k => { delete saved[k]; } };
-global.toast = () => {};
+global.toast = _msg => {};
 global.cur = null;
 global.document = { querySelectorAll: () => [] };
 const anything = new Proxy(function () {}, { get: () => anything, apply: () => anything, set: () => true });

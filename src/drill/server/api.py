@@ -288,8 +288,6 @@ def create_app(
     idle = IdleStop.from_env()
 
     async def watch_idle() -> None:
-        import asyncio
-
         while True:
             await asyncio.sleep(60)
             if idle.check():
@@ -297,8 +295,6 @@ def create_app(
 
     @contextlib.asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        import asyncio
-
         watcher = asyncio.create_task(watch_idle()) if idle else None
         notes = None
         if team.enabled(store):  # the manager's view: lessons table, managers' read access, weekly notes

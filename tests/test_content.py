@@ -53,8 +53,6 @@ def test_the_path_has_six_phases_one_sticker_shape_each():
 
 def test_every_module_has_an_icon_for_its_stickers():
     # Each sticker shows its module's icon inside its phase's shape.
-    import re
-    from pathlib import Path
     page = page_source()
     icons = page.split("const MOD_ICON = {", 1)[1].split("};", 1)[0]
     named = set(re.findall(r'"?([a-z-]+)"?\s*:', icons))
@@ -64,8 +62,6 @@ def test_every_module_has_an_icon_for_its_stickers():
 
 def test_every_lesson_picture_belongs_to_a_real_lesson():
     # A lesson's own sticker picture is a sprite symbol "s-<lesson id>"; a typo would silently fall back.
-    import re
-    from pathlib import Path
     page = page_source()
     pictures = re.findall(r'<symbol id="s-([a-z0-9_]+)"', page)
     lessons = {lid for m in modules.load(modules.ORDER) for lid in m.lesson_ids}
@@ -107,7 +103,6 @@ def test_page_embeds_the_content(data):
 
 def test_page_embeds_the_design_tokens(data):
     """tokens.css is the one place colors and fonts live; the page must use only names it defines."""
-    import re
     from pathlib import Path
 
     here = Path(__file__).parent.parent / "src" / "drill" / "content"
@@ -140,8 +135,6 @@ def test_every_gotcha_has_a_lesson_and_code_to_spot(data):
 
 def test_the_page_only_looks_up_elements_that_exist():
     """A removed element that the script still looks up breaks the page silently (the Notebook did)."""
-    import re
-    from pathlib import Path
 
     page = page_source()
     static = set(re.findall(r'id="([A-Za-z0-9_-]+)"', page))
@@ -153,7 +146,6 @@ def test_the_page_only_looks_up_elements_that_exist():
 
 def test_every_machine_fits_its_example(data):
     """The machine animates the sample case, so it must sort exactly the input rows into its bins."""
-    import json
 
     key = lambda r: json.dumps(r, sort_keys=True)
     machines = [p for p in data["bank"] if p.get("machine")]
@@ -172,7 +164,6 @@ def test_every_machine_fits_its_example(data):
 
 
 def test_every_build_it_for_real_card_points_at_a_real_notebook_section():
-    import json
     from pathlib import Path
 
     from drill.content import real
@@ -209,8 +200,6 @@ def test_the_use_case_questions_agree_with_the_python_answer(loaded):
 def test_motion_effects_keep_their_promises():
     """Every effect the script plays has its look, and the looks stay cheap: they never loop or blur,
     each root ends with fx-end (when the script removes it), and the engine checks motion first."""
-    import re
-    from pathlib import Path
 
     page = page_source()
     fx = page.split("/* fx: start */")[1].split("/* fx: end */")[0]
@@ -245,7 +234,6 @@ def test_every_look_has_the_motion_tokens():
 
 def test_phase_tabs_are_one_piece_with_their_room():
     """Home's phases are a real tab list joined to the room below, and only the room's title shape glows."""
-    from pathlib import Path
 
     page = page_source()
     rail = page.split("function railHtml(")[1].split("\n}")[0]
@@ -314,7 +302,6 @@ def test_every_look_is_readable():
 def test_every_trust_mark_sits_on_real_words(loaded, data):
     """Each trust note belongs to a real lesson and its phrase is in that lesson's Learn text exactly once,
     without cutting through **bold** or `code`, so the page can put the ember right after it."""
-    import re
 
     from drill.content.model import TRAITS
     from drill.content.trust import NOTES
@@ -399,7 +386,6 @@ def test_every_explain_gap_is_answerable_and_the_plain_sentence_reads_right():
 
 def test_every_platform_module_tells_the_tutor_its_setting():
     """Without a setting, "give me a harder one" drifts to generic web-app examples."""
-    from drill.content.build import PAGE_TEMPLATE
 
     data = build_data()
     track = next(t for t in data["tracks"] if t["id"] == "platform")
@@ -412,7 +398,6 @@ def test_every_platform_module_tells_the_tutor_its_setting():
 def test_the_frontend_guide_and_screen_gallery_match_the_code():
     """docs/FRONTEND.md's map names page.html's section markers, and docs/screens/README.md shows
     every shot scripts/screenshots.mjs takes: renaming one without the other fails here."""
-    import re
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
@@ -436,7 +421,6 @@ def test_fast_changing_lessons_say_when_they_were_checked():
     # Databricks products are renamed and moved often, so these lessons carry the day their
     # facts were checked and the pages they were checked against; the page shows both.
     import datetime
-    from pathlib import Path
 
     from drill.content.freshness import STALE_DAYS, freshness
     # ...and every platform-track lesson, which teaches products (Spacelift, Terraform, Unity Catalog) that change
@@ -457,14 +441,13 @@ def test_fast_changing_lessons_say_when_they_were_checked():
 
 def test_the_page_script_parses(data, tmp_path):
     # A clash of names or a stray bracket stops the whole page, and no other test runs its script.
-    import re
     import shutil
     import subprocess
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
     html = build_page(data)
-    script = max(re.findall(r"<script>(.*?)</script>", html, re.S), key=len)
+    script = max((part.split("</script>", 1)[0] for part in html.split("<script>")[1:]), key=len)  # the page's own code
     (tmp_path / "page.js").write_text(script)
     result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-800:]
@@ -473,8 +456,6 @@ def test_the_page_script_parses(data, tmp_path):
 def test_every_walkthrough_screen_can_be_drawn_and_explained():
     """A lesson's walkthrough screens (model.screen) each need a renderer in page.html, and every
     numbered callout needs its step: screen() checks the numbers, this checks the page."""
-    import re
-    from drill.content.build import PAGE_TEMPLATE
     from drill.content.model import SCREEN_KINDS
 
     page = page_source()
@@ -492,7 +473,6 @@ def test_new_components_get_dusk_from_surface_tokens_not_their_own_rules():
     --aside-*, --glow-*). A Dusk-only rule that sets a background, shadow or blur on a new
     component means that component looks flat in every other place a new look is added: use the
     tokens instead. The ones below predate the tokens."""
-    import re
     from drill.content.build import PAGE_TEMPLATE
 
     known = {".btn.primary", ".btn.primary.soft", ".callout.ahead", ".drawer", ".foot", ".keyidea", ".mfn",
@@ -516,7 +496,6 @@ def test_new_components_get_dusk_from_surface_tokens_not_their_own_rules():
 def test_practice_sets_can_be_drawn_and_answered():
     """Platform lessons can practise on real evidence (model.practice): the page needs a drawing
     for every kind of evidence, and every question a valid answer and a clue."""
-    from drill.content.build import PAGE_TEMPLATE
     from drill.content.model import EVIDENCE_KINDS
 
     page = page_source()
@@ -548,7 +527,6 @@ def test_every_page_part_is_included_exactly_once():
     # page.html keeps some sections in src/drill/content/page/ and pulls each in with a line of its
     # own, /*INCLUDE page/<file>*/, at the spot it belongs. A part nobody includes would silently
     # vanish from the page; a part included twice would run twice.
-    import re
 
     from drill.content.build import PAGE_PARTS, PAGE_TEMPLATE
     template = PAGE_TEMPLATE.read_text()

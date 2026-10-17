@@ -117,7 +117,7 @@ def test_tracking_failing_at_the_end_does_not_cost_the_session(deps, monkeypatch
     monkeypatch.setattr(mlflow, "start_run", lambda **k: object())
     monkeypatch.setattr(mlflow, "log_params", lambda *a, **k: None)
     monkeypatch.setattr(mlflow, "set_tags", lambda *a, **k: None)
-    monkeypatch.setattr(mlflow, "active_run", lambda: object())
+    monkeypatch.setattr(mlflow, "active_run", object)
     monkeypatch.setattr(mlflow, "end_run", end_run_fails)
     outcome = run_session(build_drill_graph(), deps, scripted(CORRECT), problem_id="two_sum")
     assert outcome.solved and ended == ["FINISHED"]  # it tried to end the run, failed, and the session still finished

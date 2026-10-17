@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from drill.problems.model import Problem, TestCase
 
+__all__ = ["ALL_PROBLEMS", "TOPICS", "get_problem", "list_problems", "problem_ids"]
+
 ALL_PROBLEMS: tuple[Problem, ...] = (
     Problem(
         id="two_sum",

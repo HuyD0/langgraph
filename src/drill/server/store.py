@@ -353,7 +353,8 @@ class DocStore:
                     )
                 )
         except Exception as exc:  # noqa: BLE001
-            log.warning("Could not record %s event: %s", kind, exc)
+            # the kind can come from a request: line breaks out, so it can't forge a log line
+            log.warning("Could not record %s event: %s", kind.replace("\r", " ").replace("\n", " "), exc)
 
     def events(self, since: float = 0.0) -> list[dict]:
         """This owner's events, oldest first."""
