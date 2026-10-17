@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="dusk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dusk type and texture</title>
+<!-- the app's own tokens, never hand-copied colours -->
+<link rel="stylesheet" href="../../../src/drill/content/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Yuji+Boku&family=Kaisei+Tokumin:wght@700;800&family=Reggae+One&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 20px; }
+  h1.page { font: 800 28px/1.1 var(--display); margin: 0; }
+  .lede { color: var(--muted); margin: 0; max-width: 70ch; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+  .controls b { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { min-height: 44px; padding: 0 14px; border: 0; background: none; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+  /* one column per font: the same three app screens */
+  .col { display: grid; gap: 12px; align-content: start; }
+  .colhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .colhead span:first-child { font: 600 13px var(--mono); color: var(--fg); }
+  .colhead span:last-child { font-size: 12px; color: var(--muted); }
+
+  /* a phone-width screen, with the texture as a layer under the content */
+  .screen { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--card-line); border-radius: 18px; background: var(--bg); padding: 16px; display: grid; gap: 12px; }
+  .screen::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--tex, none); background-size: var(--tex-size, 240px); opacity: var(--tex-op, 0); mix-blend-mode: var(--tex-blend, normal); }
+  .card { background: var(--card-bg); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); border-radius: 14px; padding: 16px; display: grid; gap: 8px; }
+  .eyebrow { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .hello { font: var(--hw, 800) 26px/1.1 var(--head); margin: 0; letter-spacing: var(--hls, -0.015em); }
+  .t2 { font: var(--hw, 800) 21px/1.2 var(--head); margin: 0; letter-spacing: var(--hls, -0.01em); }
+  .meta { font-size: 13px; color: var(--muted); margin: 0; }
+  .btn { justify-self: start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); font: 600 15px var(--body); box-shadow: var(--glow-current); }
+  .lb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .lb b { font: 600 13px var(--mono); color: var(--track-ink); }
+  .lb svg { width: 20px; height: 20px; } .lb .sh { fill: var(--track-soft); stroke: var(--track); stroke-width: 1.6; }
+  .ltitle { font: var(--hw, 800) 25px/1.12 var(--head); margin: 0; letter-spacing: var(--hls, -0.015em); }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font: 600 12px var(--body); color: var(--muted); }
+  .steps i { display: block; height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 4px; }
+  .steps .on i { background: var(--accent); box-shadow: var(--glow-current); } .steps .on { color: var(--fg); }
+  .body { margin: 0; font-size: 15px; }
+  .done { font: var(--hw, 800) 28px/1.1 var(--head); margin: 0; letter-spacing: var(--hls, -0.015em); }
+  .result { position: relative; } .result::before { content: ""; position: absolute; left: 16px; right: 16px; top: 0; height: 2px; background: var(--finish, var(--pass)); border-radius: 2px; }
+  .marks { display: flex; gap: 0; }
+  .marks i { width: 26px; height: 30px; margin-right: -4px; clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%); background: linear-gradient(165deg, color-mix(in srgb, var(--pass) 30%, transparent), transparent 70%), var(--sunk); border-bottom: 3px solid var(--pass); }
+  .marks i.k { background: linear-gradient(165deg, color-mix(in srgb, var(--hint) 30%, transparent), transparent 70%), var(--sunk); border-bottom-color: var(--hint); }
+
+  .note { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; }
+  .note b { color: var(--fg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="page">Headings and texture in Dusk</h1>
+  <p class="lede">The same three screens in four heading fonts. The first is what the app uses today. Body text stays IBM Plex Sans in all four; only headings change. Pick a texture to see it under the glass.</p>
+
+  <div class="controls">
+    <b>Texture</b>
+    <div class="seg" role="group" aria-label="Texture">
+      <button data-tex="none" aria-pressed="true">None</button>
+      <button data-tex="paper" aria-pressed="false">Paper grain</button>
+      <button data-tex="ink" aria-pressed="false">Ink wash</button>
+      <button data-tex="copy" aria-pressed="false">Photocopy</button>
+    </div>
+    <b>Look</b>
+    <div class="seg" role="group" aria-label="Look">
+      <button data-look="dusk" aria-pressed="true">Dusk</button>
+      <button data-look="light" aria-pressed="false">Light</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="note">
+    <p><b>Sizes.</b> The three new faces are Japanese fonts; Google only sends the Latin letters to the page, so each adds roughly 20 to 60 KB, not megabytes. All three are under the Open Font License.</p>
+    <p><b>Textures</b> here are drawn by the page itself (SVG noise), so they cost almost nothing. A Texturelabs file could replace any of them, as one small image.</p>
+  </div>
+</div>
+
+<script>
+const FONTS = [
+  { name: "Bricolage Grotesque", note: "today", head: "'Bricolage Grotesque', system-ui, sans-serif", w: 800, ls: "-0.015em" },
+  { name: "Yuji Boku", note: "brush calligraphy", head: "'Yuji Boku', serif", w: 400, ls: "0" },
+  { name: "Kaisei Tokumin", note: "bold display serif", head: "'Kaisei Tokumin', serif", w: 800, ls: "-0.01em" },
+  { name: "Reggae One", note: "chunky poster", head: "'Reggae One', sans-serif", w: 400, ls: "0" },
+];
+const octagon = Array.from({ length: 8 }, (_, i) => { const a = (22.5 + i * 45) * Math.PI / 180; return (9.4 * Math.cos(a)).toFixed(1) + "," + (9.4 * Math.sin(a)).toFixed(1); }).join(" ");
+const screens = `
+  <div class="screen">
+    <h2 class="hello">Wednesday. One lesson.</h2>
+    <div class="card"><span class="eyebrow">Today · Platform · step 3 of 4</span><h3 class="t2">Where did that access come from?</h3><p class="meta">Platform track, How the platform repos fit together.</p><button class="btn">Finish today's lesson</button></div>
+  </div>
+  <div class="screen">
+    <div class="lb"><span>←</span><svg viewBox="-12 -12 24 24"><polygon class="sh" points="${octagon}"/></svg><b>P3.8</b>Terraform foundations</div>
+    <h2 class="ltitle">Renaming without destroying</h2>
+    <div class="steps"><span><i></i>Learn</span><span class="on"><i></i>Check</span><span><i></i>Build</span><span><i></i>Explain</span></div>
+    <p class="body">Terraform knows each resource by its address. Rename it in the code and the plan sees one address gone and a new one.</p>
+  </div>
+  <div class="screen">
+    <h2 class="done">Lesson done.</h2>
+    <div class="card result"><span class="eyebrow">Your result</span>
+      <div class="marks"><i></i><i></i><i class="k"></i><i></i></div>
+      <p class="meta">3 of 4 on your own, 1 with a clue.</p></div>
+  </div>`;
+document.getElementById("grid").innerHTML = FONTS.map(f => `
+  <section class="col" style="--head: ${f.head}; --hw: ${f.w}; --hls: ${f.ls}">
+    <div class="colhead"><span>${f.name}</span><span>${f.note}</span></div>${screens}
+  </section>`).join("");
+
+// Textures: SVG noise drawn by the page, as data URIs (no downloads).
+const svg = body => `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>${body}</svg>`)}")`;
+const TEX = {
+  none: { tex: "none", op: 0 },
+  // fine white grain, like rough paper
+  paper: { tex: svg(`<filter id='f'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 2.2 -1'/></filter><rect width='100%' height='100%' filter='url(#f)'/>`), op: .18, blend: "normal", size: "200px" },
+  // soft violet-blue clouds, like ink spreading in water
+  ink: { tex: svg(`<filter id='f'><feTurbulence type='fractalNoise' baseFrequency='.008 .014' numOctaves='4' seed='7'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .4  0 0 0 0 1  0 0 0 3.2 -1.35'/><feGaussianBlur stdDeviation='3'/></filter><rect width='100%' height='100%' filter='url(#f)'/>`), op: .55, blend: "screen", size: "640px" },
+  // harsh speckle and streaks, like a worn photocopy
+  copy: { tex: svg(`<filter id='f'><feTurbulence type='turbulence' baseFrequency='.9 .04' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -3 1.5'/></filter><rect width='100%' height='100%' filter='url(#f)'/>`), op: .12, blend: "normal", size: "220px" },
+};
+function setTex(k) {
+  const t = TEX[k];
+  document.querySelectorAll(".screen").forEach(s => { s.style.setProperty("--tex", t.tex); s.style.setProperty("--tex-op", t.op); s.style.setProperty("--tex-blend", t.blend || "normal"); s.style.setProperty("--tex-size", t.size || "240px"); });
+  document.querySelectorAll("[data-tex]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tex === k));
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-tex]"); if (t) setTex(t.dataset.tex);
+  const l = e.target.closest("[data-look]"); if (l) { document.documentElement.dataset.theme = l.dataset.look; document.querySelectorAll("[data-look]").forEach(b => b.setAttribute("aria-pressed", b === l)); }
+});
+</script>
+</body>
+</html>
