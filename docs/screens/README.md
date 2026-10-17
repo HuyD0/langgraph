@@ -51,7 +51,8 @@ strip.
 horizon for that phase (a gate, seals on a rope, a barrier being drawn, a closed curtain, the
 barrier opening, lanterns at night) with blue-flame energy moving through it, and a cursed spirit
 that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the
-last lesson breaks it apart. Changing phase reshapes the hills; tapping the banner strikes the
+last lesson breaks it apart. On the left hill a blindfolded sorcerer in a long coat raises a hand
+sign; the flame at his hand grows as you learn, and tapping fires it at the spirit. Changing phase reshapes the hills; tapping the banner strikes the
 spirit. The current phase's landmark is lit in blue. Then its shape glowing in the title card, what
 you come out with, then one scene per module. The scene with the next lesson is open; the
 others fold to a row of small shapes.
@@ -74,6 +75,10 @@ The six-phase count is tested. The banner is decorative: keep it `aria-hidden`, 
 **What the learner sees.** A teal side track under the path: the same room design on blueprint
 paper, octagon stickers numbered P1.1, and faded "Soon" stickers for lessons not written yet.
 It never moves the path's next lesson.
+
+**The banner.** The same battle in teal: a stack of workspaces, a pipeline, and an octagon ward
+(the track's shape) that closes a little more with every lesson until the spirit is sealed and
+broken. `hzTrackScene()` in `page/horizon.js`; the teal comes from `--hz-ink: var(--track)`.
 
 **What draws it.** `trackPage()`, `TRACKS`, `trackOf`, `.book.room.track`, `.paper6`, `.stk.soon`;
 teal comes from the `--track*` tokens.
