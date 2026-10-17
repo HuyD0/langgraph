@@ -249,6 +249,9 @@ ask_lesson                 the learner's question, lesson and step in; the answe
   question), `guard` (`solution_request` when the page turned a request for the solution
   into a hint) and `retry_of` (on a Still stuck re-explanation: the request id of the answer
   that didn't help, which carries `resolved = false` as human feedback).
+- **Prepared answers.** `POST /api/served` (`answer`, `trace`) records an answer the page showed
+  without asking a model as an `ask_lesson` trace tagged `route = prepared`, and logs the question
+  like any other (`prepared: true`) for the manager's view.
 - **Feedback.** `POST /api/feedback` (`request`, `name`, `value`, `rationale`, `source`) attaches
   feedback to the trace with that request id: HUMAN from the learner, or CODE (`source: "code"`,
   from `drill.page.signals`) for what the page saw them do. `uv run drill tutor feedback` reads it back. Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.

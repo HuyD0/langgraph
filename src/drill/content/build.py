@@ -177,7 +177,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
         classic = entry["angle"][3]
         assert classic is None or classic in bank, f"{lesson_id}: unknown classic {classic!r}"
 
-    return json.loads(json.dumps({
+    data = json.loads(json.dumps({
         "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids, "planned": m.planned, "setting": m.setting} for m in loaded],
         "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in lifecycle],
         "tracks": [{"id": i, "name": n, "text": t, "modules": ms} for i, n, t, ms in tracks],
@@ -194,6 +194,11 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
         "real": real.data(),
         "skill": skill_files(),
     }, ensure_ascii=False))
+    from drill import tutor_prepared
+
+    # The tutor's answers to its standard questions, written ahead and checked, so Ask works with no model.
+    data["prepared"] = tutor_prepared.served(data)
+    return data
 
 
 def _pack_assets(extra: dict, mode: str) -> dict:

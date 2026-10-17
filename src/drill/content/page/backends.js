@@ -55,9 +55,10 @@ async function localBackend() {
   }
   const s = !health.ai ? null : Object.assign(
     (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", trace: opts.trace }, opts.onText),
-    { json: (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", json: true, trace: opts.trace }), local: true,
-      // feedback on one answer, attached in MLflow to the trace the page tagged with `request`
-      feedback: body => fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }) });
+    { json: (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", json: true, trace: opts.trace }), local: true });
+  // Feedback on one answer (attached in MLflow to the trace the page tagged with `request`), and a
+  // prepared answer the page showed: both work with no model running.
+  const post = (path, body) => fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, trace: body.trace ? { session: VISIT, ...body.trace } : undefined }) });
   const call = async (method, path, body) => {
     const res = await fetch("/api/docs/" + path, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     if (!res.ok) await fail(res);
@@ -88,5 +89,6 @@ async function localBackend() {
       }),
     }),
   };
-  return { s, db, user: { id: async () => health.user }, local: true, team: !!health.team, app: !!health.app };  // team: at work, a manager sees progress
+  return { s, db, user: { id: async () => health.user }, local: true, team: !!health.team, app: !!health.app,
+    feedback: body => post("/api/feedback", body), served: body => post("/api/served", body) };  // team: at work, a manager sees progress
 }

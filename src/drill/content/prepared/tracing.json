@@ -1,0 +1,1312 @@
+{
+ "context_fill": {
+  "check:0:1": {
+   "q": "Why not “The problem goes away, because the fact fits mo…”?",
+   "a": "That option gets one thing right. A bigger **context window** (the most tokens a model can read in one call) does let more text fit. Your agent would hit the hard limit later in the run.\n\nBut fitting was never the problem. The question says the right fact is *already in the prompt*. So the fact fits fine. The answers still get worse.\n\nThat drop is **context rot**: answers get worse as the prompt gets longer, even when the right fact is there. It comes from length, not from running out of room. The lesson is clear that a model with a bigger window does not fix it. Your prompt would be just as long as before, so the slip would still happen.\n\nThe real fix is to keep the prompt short and useful. Measure each call's fill, clean up old tool results when it passes a line like 80 percent, and pick fewer, better chunks.\n\n\"It still slips as the prompt grows, so keep the context short\" is better because it names the real cause, length, and points to the fix that actually helps.",
+   "step": "Check",
+   "fingerprint": "2ce7e4c5bc682192",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only small gap is that 'fill' and 'tool results' are used without a definition, but the answer is accurate, on topic, under 200 words, and contains no solution code."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It slips sooner, because bigger windows read le…”?",
+   "a": "That option gets one thing right. It does not expect the bigger window to fix the problem, and the lesson agrees. A bigger window does not cure **context rot**, the drop in answer quality as the prompt gets longer.\n\nWhere it goes wrong is the reason it gives. The lesson never says bigger windows read less carefully, or that they slip sooner. The cause of context rot is the length of the prompt you actually send, not the size of the window.\n\nThink of the window as the size of a bucket. A bigger bucket does not make the water worse. It just lets you pour in more before it overflows. A run with a twice-as-big window can keep growing its history for longer. As the prompt grows, answers still get worse, much as before.\n\nSo the \"slips sooner\" option blames the wrong thing. It points you at the model's window, when the thing to watch is each call's fill: its input tokens as a percent of the window.\n\n\"It still slips as the prompt grows, so keep the context short\" is better because it names the real cause and gives the fix that works.",
+   "step": "Check",
+   "fingerprint": "2f706ee66f70cf74",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Keep going until it hits the limit”?",
+   "a": "\"Keep going until it hits the limit\" gets one thing right. At 85 percent the call still fits. Nothing has broken yet, so the run could carry on for now.\n\nBut it misses three things.\n\nFirst, quality is already slipping. Remember **context rot**: answers get worse as the prompt gets longer, even when the right fact is in there. At 85 percent, the model is reading a lot of old, noisy text.\n\nSecond, the fill only goes up. The agent resends its whole history on every call. In the lesson's example, each call added about 30,000 tokens. From 85 percent, one more call could jump past 100 percent.\n\nThird, hitting the limit means failure. The call errors out, or text gets cut off, often in the middle of a task. Then you lose work.\n\nThe 80 percent line is an early warning. It gives you room to act before trouble arrives.\n\nClean up, like clearing old tool results, is right because it shrinks the prompt now, while the run still has room. That keeps answers sharp and the run safely under the limit.",
+   "step": "Check",
+   "fingerprint": "023dead84b7e7627",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the closing 'better answer' part runs to two sentences instead of one, and the 'call errors out or text is cut off' detail goes slightly beyond the lesson, though it does not contradict it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Switch to a model with a bigger window”?",
+   "a": "A bigger window gets one thing right. It gives the run more room, so call 12 would no longer be near the limit. The **window** is the most tokens a model can read in one call.\n\nIt misses the real problem, in two ways.\n\nFirst, **context rot**. Answers get worse as the prompt gets longer, even when the right fact is in it. A bigger window does not fix that. The prompt is just as long and just as cluttered, so answers can still slip.\n\nSecond, the growth keeps going. An agent sends its whole history again on every call, so each call reads more than the last. With a bigger window, the fill still climbs call after call. You only reach the line later, then face the same choice.\n\nSo the 80 percent line is a signal to act on the prompt itself, not to find a bigger container.\n\nThe right answer is to clean up, for example by clearing old tool results. That shrinks the prompt, which keeps the model's answers sharp and makes room for the calls still to come.",
+   "step": "Check",
+   "fingerprint": "eac18225c119bc8d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Add more chunks so nothing is missed”?",
+   "a": "\"Add more chunks\" starts from a fair worry. If the fact the model needs was never retrieved, it can't use it. (A **chunk** is one piece of text your search step pulls in to add to the prompt.)\n\nBut it misses two things from this lesson.\n\nFirst, more chunks make the prompt longer. The lesson says answers get worse as the prompt grows, even when the right fact is in it. That drop is **context rot**. Going past 50 chunks pushes the prompt the wrong way. It also raises the call's fill, its input tokens as a percent of the window.\n\nSecond, it leaves the real problem alone. The question still sits at the very top. Models pay the most attention near the end of the prompt, so the question ends up where it gets the least attention.\n\nThe lesson also suggests testing fewer, better chunks. Try 5 against 50 and compare the eval scores (scores from tests that check answer quality). Fewer often wins.\n\n\"Put the question after the chunks\" is better because it moves the question to where models pay the most attention, without making the prompt any longer.",
+   "step": "Check",
+   "fingerprint": "123869b1de3a2f51",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It says the question at the top 'gets the least attention', but the lesson only says models pay the most attention near the end, so this claim goes beyond the lesson."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Send the chunks in a random order”?",
+   "a": "Shuffling the chunks does touch on something real: where text sits in a prompt matters. So it's thinking about order, which is the right area.\n\nBut it changes the wrong thing. The problem in this prompt is the question, not the chunks. The question sits at the very top. Then 50 chunks pile up after it. Models pay the most attention near the end of the prompt. Shuffling the chunks leaves the question at the top, still far from the end.\n\nRandom order also adds noise. Each run gets a different layout. That makes it hard to compare eval scores, which are the test results you use to judge a change. You can't tell if a better score came from your change or from luck.\n\nThe prompt also stays just as long. It's the same 50 chunks, just mixed up. So context rot, the way answers get worse as prompts get longer, is still there.\n\n\"Put the question after the chunks\" is better because it moves the question to the end, where the model pays the most attention.",
+   "step": "Check",
+   "fingerprint": "94cefb42659b2fbf",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It says the problem is 'the question, not the chunks', but the lesson also says fewer, better chunks often beat more, so 50 chunks is part of the problem. The eval-noise argument against random order is also not from the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Track the biggest, note the first” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* \"An agent resends its whole history on every call, so each call reads more tokens than the last. Answers get worse as the prompt grows. That is called context rot. It starts well before the window is full. The window is the most tokens a model can read at once.\"\n\n*The idea.* \"So I measure each call's fill: its input tokens as a percent of the window. I walk through the calls once and track two things. The biggest fill shows how close the run got to the limit. The first call over a line, say 80 percent, shows when cleanup should have started, for example clearing old tool results.\"\n\n*An edge case.* \"Some calls may not report token usage. I skip those rather than count them as zero. If no call crosses the line, I say so clearly instead of guessing.\"\n\n**A likely follow-up**\n\n\"Why not just use a model with a bigger window?\"\n\n*Hint:* A bigger window does not stop context rot. It only delays hitting the limit, and answers still get worse as prompts grow. Smaller, cleaner prompts usually win. Put the question after the retrieved text, and use fewer, better chunks.",
+   "step": "Explain",
+   "fingerprint": "32383021b648aa9e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor overreach only: 'starts well before the window is full' and 'usually win' go slightly beyond the lesson's wording ('often beat'), but nothing contradicts it."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that context fill is going unwatched**\n\n- **Answers get worse late in a run.** Early steps are sharp. Later steps miss facts that are in the prompt, repeat work, or drift from the goal. That is context rot: quality drops as the prompt grows.\n- **Short tests pass, long tasks fail.** Your evals use quick, few-step tasks and score well. Real users run long tasks, and the scores fall.\n- **Sudden hard errors.** A run crashes with a \"context length exceeded\" style message. Nobody saw it coming because nobody tracked the fill.\n- **Input tokens climb on every call.** In your traces, each model call reads more than the last, and nothing ever trims it.\n- **More chunks, worse scores.** Retrieving 50 chunks scores lower than 5, yet the prompt keeps the 50.\n\n**Quickest check**\n\nOpen one long run's trace in MLflow. Look at each chat model call, which MLflow calls a *span* (one step in the trace). Note its input tokens. Divide by your model's window and see where the fill first passes 80 percent. If that point lines up with where answers start slipping, you have found the problem.",
+   "step": "Learn",
+   "fingerprint": "31c54808eb2e6722",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'evals' is not explained, and the 50-versus-5 chunks sign is stated more firmly than the lesson's 'often beat more'. Neither is serious enough to fail."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule needs extra care.\n\n**One agent, several models.** Some agents use a small, cheap model for easy steps and a bigger one for hard steps. Each model has its own window, so one fixed `WINDOW` gives a wrong fill for some calls. Look up the window for the model each call actually used.\n\n**Token counts go missing.** Some providers, or some streaming setups (where the reply arrives piece by piece), don't report `input_tokens`. The `if use` check then skips those calls quietly, and a nearly full call can go unseen. Count how many calls had no usage data, and treat that as a warning, not as \"fine.\"\n\n**The line is too late.** Context rot can hurt answers well before 80 percent, especially on hard questions. A fixed line is only a starting guess. Run your evals at a few fill levels, see where scores start to drop, and set your cleanup line just before that point.",
+   "step": "Learn",
+   "fingerprint": "dbc234d2142f781d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only slightly unsupported detail is 'especially on hard questions', which the lesson does not state but also does not contradict."
+   }
+  },
+  "learn:term": {
+   "q": "What does “context window” mean here?",
+   "a": "A **context window** is the most text a model can read in one call. It is measured in **tokens**, which are small chunks of text, often a word or part of a word.\n\nThink of a desk. Everything the model needs for one answer must fit on the desk at once: your question, the chat history, and any retrieved documents. The window is the size of that desk. If the pile gets bigger than the desk, it no longer fits, and the call fails or gets cut off.\n\nIn the lesson's example, the first line sets the desk size:\n\n```\nwindow: 128000 tokens\n```\n\nEach call then shows how many tokens it sent, and what percent of the window that is. Call 0 uses 12,000 tokens, which is 9 percent. By call 3 it uses 108,000 tokens, which is 84 percent. The pile grows because an agent resends its whole history on every call.\n\nIn the MLflow code, `WINDOW = 128000` holds that same limit, so each call's tokens can be turned into a percent.\n\nOne catch: even when everything fits, a fuller desk still gives worse answers. That drop is called context rot.",
+   "step": "Learn",
+   "fingerprint": "7c3eb9422c0556d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that the call 'fails or gets cut off' goes slightly beyond the lesson but does not contradict it."
+   }
+  }
+ },
+ "detect_loop": {
+  "check:0:0": {
+   "q": "Why not “Yes, it sees the same calls coming back”?",
+   "a": "That answer gets one thing right. The calls really do come back: A shows up again and again, and so does B.\n\nBut the check doesn't ask \"have I seen this call before?\" It asks \"is this call the same as the one just before it?\" It only counts repeats **in a row**.\n\nWalk through the trace:\n\n```\nA   # count starts at 1\nB   # different from A, count goes back to 1\nA   # different from B, back to 1\nB   # back to 1 again\n```\n\nThe count never gets past 1, so it never reaches 3. The check never fires. The agent loops forever while the guardrail sees nothing wrong. Looking back over the last three calls fails the same way: A, B, A are not all the same.\n\nSo the repeat check only catches one kind of loop. A smarter agent can get stuck in a pattern it was never built to spot.\n\n\"No, so you also need a total step limit\" is better because a cap like `recursion_limit` of 25 stops the run after a fixed number of steps, whatever shape the loop takes.",
+   "step": "Check",
+   "fingerprint": "97382451bd77c565",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only if you lower the limit to 2 calls”?",
+   "a": "**Why lowering the limit doesn't help**\n\nThe idea has one thing right. A smaller limit catches a true repeat sooner. With a limit of 2, `search('weather paris')` twice in a row would stop the run one call earlier.\n\nBut look at the pattern A, B, A, B. No call is ever followed by the same call. Each time, the \"repeats in a row\" count goes back to 1. So it never reaches 2, or 3, or any number above 1.\n\nA limit of 1 is no fix either. Every single call would \"match,\" so the check would stop every agent on its first step.\n\nA limit of 2 also has a cost. Real agents sometimes retry a call once, for example after a brief network error. A limit of 2 would stop those healthy runs too.\n\n**Why the other answer is better**\n\n\"No, so you also need a total step limit\" is better because a cap on total steps, such as `recursion_limit` set to 25, stops any loop, whatever its pattern, once the agent has taken too many steps.",
+   "step": "Check",
+   "fingerprint": "b3b898b08deade8c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real failures. Minor nitpicks: the network-retry point is not from the lesson, and \"every call would match\" for a limit of 1 is loose, since the first call has nothing before it to match."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Leave the default, it stops in time”?",
+   "a": "\"Leave the default, it stops in time\" gets one thing right. LangGraph does have a built-in step cap, called `recursion_limit`. A \"step\" is one move through the graph, like the model thinking once or a tool running once. So a stuck agent will not run forever.\n\nThe problem is how late it stops. In langgraph 1.2.11 the default is 10,007 steps. A looping agent can repeat the same tool call thousands of times before it hits that cap. Each step can cost tokens (the pieces of text the model reads and writes, which you pay for), time and money. The question even tells you what happened: the agent ran for hours. That is the default \"working.\" It technically stopped, but far too late to be useful.\n\nA guardrail should stop a bad run early, before it does damage. A huge default does not do that.\n\n\"Pass your own small limit, like 25\" is better because it stops a stuck agent after a few wasted steps instead of thousands:\n\n```python\ngraph.invoke(inputs, config={\"recursion_limit\": 25})\n```",
+   "step": "Check",
+   "fingerprint": "621b7af6d9f649a3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Set it higher so the run can finish”?",
+   "a": "\"Set it higher so the run can finish\" assumes the agent was close to done and just needed more room. In this story, it wasn't. It was **stuck**, meaning it kept repeating itself without making progress. A stuck agent never finishes, however many steps you allow.\n\nThere's also a problem with the number. You never set `recursion_limit`, so LangGraph used its default. In langgraph 1.2.11 that default is 10,007 steps. That's why the run went on for hours. Raising it further only lets the loop run longer, which costs more time and more tokens. Tokens are the chunks of text the model reads and writes, and you pay for each one.\n\nThe option does get one thing right. Some real tasks need more steps than others, so a limit can sometimes be too tight. But that isn't what happened here.\n\n**Pass your own small limit, like 25** is better because it stops a stuck agent within a few steps instead of hours, so a loop stays cheap and you find out quickly.\n\n```python\ngraph.invoke(inputs, config={\"recursion_limit\": 25})\n```",
+   "step": "Check",
+   "fingerprint": "c447a37f75e72df2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claim that some real tasks need more steps goes slightly beyond the lesson, but it does not contradict it."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Restart the run from the beginning”?",
+   "a": "Restarting gets one thing right. A fresh run starts clean, so any confusion from the first attempt is gone.\n\nBut it misses the bigger problem. The run hit its **token cap**, the limit on how much text the model may read and write. (A **token** is a small chunk of a word.) Restarting changes nothing about the task or the cap. So the new run will likely burn through the same budget and stop at the same spot. You pay twice and get nothing back.\n\nIt also throws away the work already done. Halfway through, the agent may have found useful facts. A restart deletes them.\n\nAnd the model never learns what happened. From its side, the run just vanished. It can't adjust, because it was never told there was a limit.\n\n**\"Tell the model why it was stopped\"** is better because the model can then wrap up with what it has, such as a partial answer or a clear note that it ran out of budget, instead of failing silently or repeating the same costly path.",
+   "step": "Check",
+   "fingerprint": "51256c4d8028d10c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Raise the cap and carry on quietly”?",
+   "a": "\"Raise the cap and carry on quietly\" gets one thing right. Sometimes a task really does need more room, and a bigger cap can be a fair fix. A **token** is a small chunk of text the model reads or writes. You pay for every one, so a token cap is a spending limit.\n\nBut raising the cap automatically, every time it is hit, means there is no real limit at all. The cap exists to stop a run that is burning money. If the agent is stuck repeating itself, a bigger cap just lets it waste more before it stops again.\n\n\"Quietly\" is the second problem. Nobody learns anything. The model doesn't know it ran out, so it can't wrap up, summarise what it found, or explain what is left. You don't see it in your logs either, so you can't spot that this task keeps hitting the limit. A **log** is the record your system writes about each run.\n\nThe right answer is \"Tell the model why it was stopped.\" It turns a sudden cut-off into a clear signal, so the model can end with a useful partial answer instead of nothing.",
+   "step": "Check",
+   "fingerprint": "e3f2b423d2b97c3a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No check fails. The points about logs and a task sometimes needing a bigger cap come from outside the lesson but do not contradict it, and the closing explanation runs to two sentences instead of one."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count repeats in a row” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* An agent can get stuck. It calls the same tool with the same arguments over and over. Each call costs time and money, and nothing new happens.\n\n*The idea:* I walk through the agent's calls once. I remember the previous call and how many times in a row it has appeared. A match adds one to the count. A different call resets it. When the count reaches a limit, like 3, I stop the run and tell the model why it was stopped.\n\n*A trade-off:* Some repeats are fine, like polling (checking a slow job again and again until it finishes). So the limit shouldn't be too low. Also, this only catches repeats *in a row*. An agent that flips between two calls slips past it. That's why I also set a step cap, like `recursion_limit` of 25 in LangGraph.\n\n**A likely follow-up**\n\n\"How do you decide two calls are the same?\"\n\nHint: compare only the tool name and its arguments. Each call also has its own id, which never repeats. If you include it, no two calls ever match, and you'd miss every loop.",
+   "step": "Explain",
+   "fingerprint": "c0ebccb6fbdaba5a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that loop guardrails are missing or broken**\n\n**In your traces.** A trace is the step-by-step record of one agent run. Look for the same tool call, with the same arguments, appearing again and again. For example, `search('weather paris')` three, ten or fifty times in a row.\n\n**In your numbers.**\n- A few runs use far more steps, tokens or seconds than the rest.\n- Your token bill jumps with no matching rise in users.\n- Some runs end with a recursion error after thousands of steps. That means the default limit of 10,007 was the only thing that stopped them.\n\n**In your results.** Users wait a long time and then get no answer, or a vague one.\n\n**Signs the guardrail is built wrong.**\n- It never fires, even on obvious loops. A common cause is comparing each call's `id`, which is unique every time, so no two calls ever match.\n- It stops healthy runs too early, such as after two different searches.\n\n**Quickest check.** Sort recent runs by step count. Open the longest one and read its tool calls. Then confirm your `invoke` call passes a small `recursion_limit`, such as 25.",
+   "step": "Learn",
+   "fingerprint": "2ab5c413a692ee7c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Repeat detection is a good first guardrail, but it has blind spots. Here are three.\n\n**The agent loops in a cycle, not a straight repeat.**\nA stuck agent might go `search`, `read_page`, `search`, `read_page` forever. No call repeats twice in a row, so a \"repeats in a row\" check never fires. Keep a short memory of recent calls and stop if the same call shows up too often, even with gaps. Your step cap (`recursion_limit`) is the backup here.\n\n**The arguments change a little each time.**\n`'weather paris'`, then `'Paris weather'`, then `'weather in Paris'` all mean the same thing. But an exact text match sees three different calls. Tidy the arguments before comparing, for example by lowercasing and trimming spaces. You can also cap how many times any one tool can be used.\n\n**Repeating is actually correct.**\nSome tools are meant to be called again and again. One example is checking whether a Databricks job has finished, which is called \"polling\". Here a repeat is not a loop. Leave that tool out of the repeat check, add a wait between calls, and rely on a time limit instead.",
+   "step": "Learn",
+   "fingerprint": "1e609c95384e0ff2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “guardrails” mean here?",
+   "a": "Think of the guardrails along a mountain road. They don't steer the car. They only matter when something goes wrong, and then they stop the car before it goes over the edge.\n\nFor agents, a **guardrail** is a limit your code checks while the agent runs. The model still decides what to do next. The guardrail stops the run when the agent is clearly stuck or spending too much.\n\nIn the lesson's example, the trace shows `search('weather paris')` three times in a row. After the first call, nothing new is learned. The `route` function compares the tool name and arguments of each call. If the last three match, it returns `\"stop\"` instead of `\"tools\"`. That is the guardrail stepping in.\n\nThe second guardrail is `recursion_limit`, passed in `config`. It caps the total number of steps. It catches loops the repeat check misses, like an agent switching back and forth between two different calls. With a limit of 25, the run ends after 25 steps no matter what.\n\nThe lesson also mentions caps on tokens (the chunks of text a model reads and writes, which you pay for) and on time.",
+   "step": "Learn",
+   "fingerprint": "8740bca1d77cff6b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "failure_counts": {
+  "check:0:1": {
+   "q": "Why not “Fix the newest failure, then the one before it,…”?",
+   "a": "\"Fix the newest failure first\" has one thing going for it. Recent runs used the latest version of your agent, so their problems are probably still real. It also feels concrete, because you always know what to work on next.\n\nBut it sorts problems by *when* they happened, not by *how often* they happen. The newest failure might be a rare one that shows up in 3 of 300 runs. You could spend a whole day on it while a problem behind 100 other failures waits.\n\nGoing one by one also hides patterns. Ten failures might all be the same \"repeated step\" problem. Read separately, they look like ten different bugs, and you may fix the same thing several times. With 300 failures and one week, you won't reach the end of the list.\n\nThat's why the right answer is \"Label a sample, count the labels, fix the biggest group.\" Labeling a sample of about 50 failures and counting the labels shows you which single fix will clear the most failures, so your week goes where it helps most.",
+   "step": "Check",
+   "fingerprint": "0cbc8caefa8cf4b6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The point that recent runs 'used the latest version' is not in the lesson, but it is hedged and doesn't contradict anything, so it passes. The closing 'one sentence' is really two."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Rewrite the whole system prompt, then rerun eve…”?",
+   "a": "Rewriting the system prompt is not a silly idea. The **system prompt** is the standing instruction the agent reads before every task, and sometimes it really is the cause. So the instinct to fix something is right.\n\nThe problem is that it's a guess. You haven't looked at why the runs failed. You might rewrite the prompt and miss the real problem, such as the agent repeating the same search over and over. A big rewrite also changes many things at once. If results get better or worse, you can't tell which change did it.\n\nRerunning every task is costly too. With 300 failures and one week, that time is better spent learning what went wrong.\n\nLabeling gives you evidence. In the lesson's example, `repeated step` is the largest group, with 41 traces, ahead of `never stopped` with 22. That tells you where one fix pays off most. It also hands you trace ids like `t-193` to open and read.\n\nLabeling a sample and counting the labels is better because it shows you which single problem causes the most failures, so your first fix targets real evidence instead of a hunch.",
+   "step": "Check",
+   "fingerprint": "9e42827c97ee317d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Let each person count their own”?",
+   "a": "\"Let each person count their own\" sounds fair, but it leaves the real problem in place.\n\n**What it gets right:** each person probably uses their own words the same way every time. So inside one person's pile, the counts make some sense.\n\n**What it misses:** the whole point of counting is to find the *biggest* problem across all failures. If one person writes \"looped\" and the other writes \"kept repeating\" for the same thing, that one problem gets split into two smaller piles. Say each pile has about 20. Neither looks like the top problem, even though together they might be 41 and clearly the biggest. You could end up fixing the wrong thing first.\n\nIt also breaks later steps. A search in MLflow for `feedback.failure_label = 'repeated step'` only finds traces with that exact name. And an LLM judge (a model that grades) can't learn to match \"your\" labels if there are two sets of names.\n\n**Why \"Agree on a fixed list of labels\" is right:** when everyone picks from the same short list, one problem always gets one name, so the counts add up correctly and the biggest group is real.",
+   "step": "Check",
+   "fingerprint": "6fbb74c78b238845",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the claim that an LLM judge 'can't learn' to match labels is a slight stretch of the lesson, which only says the judge's labels should match yours."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Use longer, more detailed labels”?",
+   "a": "Longer labels don't solve the real problem. The problem is that two people used **different names for the same thing**. When you count labels, the computer treats `looped` and `kept repeating` as two separate piles. Your biggest group gets split in half, and it might not look like the biggest anymore.\n\nMaking labels longer actually makes this worse. A long, detailed label gives people even more words to choose differently. One person writes \"agent repeated the same search several times.\" Another writes \"searched again and again without new results.\" Same problem, still two piles.\n\nThere is one thing that idea gets right: detail is useful. You want to know *why* a trace got its label. But that detail belongs in the `rationale` field (the short note explaining the label, like \"Same search 4 times\"). It doesn't belong in the label itself. The label should stay short and exact so counting works.\n\nA fixed list of labels is better because everyone picks from the same names, like `repeated step`. Then the same problem always lands in the same pile, and the counts are true.",
+   "step": "Check",
+   "fingerprint": "202a73308f67a97f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It labels faster than a person”?",
+   "a": "\"It labels faster than a person\" is true. Speed is the reason you want an LLM judge (a model that grades) in the first place. Labelling 500 traces by hand would take you days.\n\nBut speed is not something you need to check. You already know the judge is fast. The real question is whether its labels are right.\n\nThink about what happens if they're wrong. Say the judge calls many \"never stopped\" traces \"repeated step\". Your counts now say \"repeated step\" is the biggest group. You spend your time fixing that, while the real top problem stays broken. A fast judge with bad labels just gives you wrong counts sooner.\n\nYour 50 hand labels are your answer key. Run the judge on those same 50 and compare its label with yours on each trace. If they mostly agree, you can trust it on the next 500. If they don't, fix the judge's instructions first.\n\n\"Its labels match yours on the 50\" is better because it checks that the judge is correct, and that is what makes its counts worth acting on.",
+   "step": "Check",
+   "fingerprint": "be5f4007f1ace9df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'would take you days' claim is not in the lesson, but it does not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “It uses more labels than you did”?",
+   "a": "\"It uses more labels than you did\" sounds like the judge is being more thorough. It isn't, and it can be a warning sign.\n\n**What it gets right:** it pays attention to the judge's labels. That is the right thing to inspect before you trust it with 500 traces.\n\n**What it misses:** the number of labels says nothing about whether the labels are *correct*. And the lesson asks you to use a **fixed list** of labels, so the same problem always gets the same name. A judge that adds extra labels breaks that rule. For example, it might call one problem \"repeated step\" in some traces and \"looped search\" in others. That one problem now sits in two smaller piles. Your counts shrink, and the real biggest group may no longer look biggest. You could end up fixing the wrong thing first.\n\n**Why \"Its labels match yours on the 50\" is better:** your 50 hand labels are the known right answers, so if the judge gives the same label you did on those same traces, you have real evidence it will label the next 500 the way you would.",
+   "step": "Check",
+   "fingerprint": "9bdcf0b2a5d31b13",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor stretch: 'what it gets right' is thin, since the option is about label count rather than checking the judge's labels. Otherwise it fits the lesson and stays under 200 words."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Group by label, count, then sort” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"We had hundreds of failed agent runs. Reading them at random wasted time. Fixing them one by one never ended.\"\n\n*The idea:* \"So I took a sample of about 50 failed traces. A trace is the step-by-step record of one run. I gave each one a single label from a fixed list, like 'repeated step' or 'never stopped'. Then I grouped the traces by label, counted each group, and sorted biggest first. The top group showed which fix would help most.\"\n\n*The trade-off:* \"One label per trace keeps counting simple. But some traces fail in two ways. I pick the first thing that went wrong. When two labels have the same count, I sort them A to Z, so the report comes out the same every time.\"\n\n**A likely follow-up**\n\n\"How would you label more than 50 traces?\"\n\n*Hint for a strong answer:* Use an LLM judge, which is a model that grades. Trust it only after its labels match yours on the batch you labeled by hand. Save every label on its trace in MLflow so you can search for it later.",
+   "step": "Explain",
+   "fingerprint": "ab414d0d5dd36c2a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No hard problems. The 'pick the first thing that went wrong' rule is not in the lesson, but it is a plausible convention and does not contradict it."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Fixes keep landing, but the failure rate barely moves.** You may be fixing small, rare problems while the biggest group stays untouched.\n- **The same problem has many names.** For example \"loop\", \"repeated search\" and \"stuck again\". Each name gets a small count, so the real biggest group is split up and hidden.\n- **A huge \"other\" pile.** If most traces land there, your label list doesn't fit your failures.\n- **Counts don't add up.** The labels total less than your sample, say 38 out of 50. Some traces were skipped.\n- **The judge drifts.** The **LLM judge** (a model that grades) gives labels that differ from what a person would give on the same traces.\n- **The top count doesn't shrink.** You fixed \"repeated step\", ran again, and it's still on top.\n\n**Quickest check**\n\nPull the counts by label from MLflow. Confirm they add up to your sample size. Then open the two example ids for the top label and read them. If both clearly show that exact problem, your labels are working. If they don't, tighten your fixed label list and relabel before fixing anything.",
+   "step": "Learn",
+   "fingerprint": "afd112d0a4818ec9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the quick check treats two clean example reads as proof that the labels work, which overclaims. The 'other pile' and 'counts don't add up' signs go slightly beyond the lesson but don't contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Good question. Here are three cases where \"label, count, fix the biggest\" needs extra care.\n\n**One run fails in several ways.** A single label can hide a second problem. For example, a run that repeated a step may also have ignored the task. Let each trace carry a main label plus extra ones, or label the first thing that went wrong, since later errors often follow from it.\n\n**Your agent or users change.** After you fix the top group, new failure types appear that your fixed list has no name for. Keep an \"other\" label. When it grows, read those traces and add a new label. Re-check your **LLM judge** (the grading model) against fresh human labels too, because its agreement with you can slip.\n\n**Count isn't the same as harm.** Nine \"ignored task\" runs might cost more than 41 harmless repeats, for example if they give users wrong answers. Weigh each group by how bad it is, not just how big. Also, with only a handful of failures, the counts are too small to trust. Read every trace instead of ranking.",
+   "step": "Learn",
+   "fingerprint": "2064b39481679292",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'other' and 'Your agent or users change' items and the 'harm' item each run to four sentences, over the requested two or three, and suggesting multiple labels per trace stretches the lesson's one-label rule, though it is framed as an extension."
+   }
+  },
+  "learn:term": {
+   "q": "How is “taxonomy” different from “MAST”?",
+   "a": "A **taxonomy** is the general idea: a fixed list of categories you sort things into. Any field can have one. MAST is one specific taxonomy, built by researchers for one job: naming the common ways AI agents fail.\n\nThink of a library. \"A shelving system\" is the general idea: every book goes in a set category. The Dewey Decimal System is one particular shelving system that many libraries use. Taxonomy is like \"a shelving system.\" MAST is like Dewey.\n\n**How they work together**\n\n- The taxonomy idea says: use the same fixed names every time, so the same problem always lands in the same pile. That makes your counts trustworthy.\n- MAST gives you a ready-made list to start from. It includes failures like repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.\n\nIn the lesson's example, the labels `repeated step`, `never stopped`, and `ignored task` match MAST's failure types. Because each failure gets one name from a fixed list, you can count them: 41, 22, 9. That tells you to fix `repeated step` first.",
+   "step": "Learn",
+   "fingerprint": "633be97b3374a40b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that the example labels 'match MAST's failure types' is a mild inference, but the lesson's MAST list supports it."
+   }
+  }
+ },
+ "slowest_chain": {
+  "check:0:0": {
+   "q": "Why not “4200 ms”?",
+   "a": "\"4200 ms\" is a real number from the trace. It is how long the `agent_run` span lasted from start to finish. So it gets that part right.\n\nBut the question asks how long the parent took **on its own**. A parent's time includes its children's time. The 4200 ms counts the time spent in `plan`, `tool:search` and `answer` too. Those children ran one after another, so their times add up: 600 + 3100 + 400 = 4100 ms.\n\nAnswering 4200 ms mixes the parent's own time with its children's time. That can mislead you when hunting for what's slow. It makes the parent look like the problem, when most of that time was really spent in a child, mostly `tool:search`.\n\nA span's own time is what is left after you take its children away: 4200 − 4100 = 100 ms.\n\n\"100 ms\" is better because it removes the children's time and keeps only the time that belongs to the parent alone.",
+   "step": "Check",
+   "fingerprint": "972ac7694650da1f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “8300 ms”?",
+   "a": "\"8300 ms\" comes from adding everything: 4200 + 600 + 3100 + 400. It gets one thing right. It sees that the children's times matter to the answer.\n\nBut it adds them when it should take them away. The parent's 4200 ms is measured from when the parent starts to when it ends. The children run during that window, so their time is already inside the 4200. Adding them again counts the same time twice.\n\nPicture a 4200 ms box. The three children fill most of it: 600 + 3100 + 400 = 4100 ms. The question asks how much of the box is left over. That leftover is the parent's own time, the work it did itself, outside any child.\n\nAlso, \"8300 ms\" is longer than the whole run. A part of a run can never take longer than the run itself, so that is a good sign something went wrong.\n\n\"100 ms\" is better because it starts from the parent's total and subtracts the children's time: 4200 − 4100 = 100 ms.",
+   "step": "Check",
+   "fingerprint": "88223b9014b8b268",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The line \"longer than the whole run\" assumes the 4200 ms parent is the root, which the Check question doesn't say; \"longer than the parent's own 4200 ms\" would be safer."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Inside the plan span”?",
+   "a": "\"Inside the plan span\" gets one thing right. It looks *inside* a child span instead of staring at the whole run. Going down the tree is the correct move.\n\nThe problem is which child it picks. The run took 9 seconds. `plan` took only 1 of those seconds. Even if you made `plan` instant, the run would still take about 8 seconds. You would be fixing the wrong step.\n\nThe rule is to follow the **slowest** child down. That chain of slowest steps is the **critical path**: the steps that decide how long the whole run takes. `plan` is not on it. It ties with `write` as the fastest child.\n\nThe search tool took 7 of the 9 seconds. That is most of the run. Opening that span next might show something like a slow web request inside it, and that is where a fix would really pay off.\n\n\"Inside the search tool span\" is better because search is the slowest child, so it is where the run's time actually went.",
+   "step": "Check",
+   "fingerprint": "64b4d6f6c0b37ef5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “At the write step's prompt”?",
+   "a": "\"At the write step's prompt\" picks a real place to look. A prompt is the text you send to the model, and a long or messy one can slow a model call down. So the instinct to look inside a step is a good one.\n\nThe problem is which step. Write took 1 second out of 9. Even if you made it instant, the run would still take 8 seconds. That fix barely moves the total.\n\nThe lesson's rule is to start at the root (the top span, the whole run) and follow the slowest child down. Here the children are plan at 1 second, search at 7 seconds, and write at 1 second. Search is the slowest by far. It is the next step on the critical path, the chain of slowest steps from the top down.\n\n\"Inside the search tool span\" is better because search holds 7 of the 9 seconds, so that is where the real delay lives, likely in a web request inside it.",
+   "step": "Check",
+   "fingerprint": "0a71d3e6ee2870e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Count how many spans each helper made”?",
+   "a": "Counting spans gets one thing right. Because each helper is traced under its own name, you can group spans by helper. So you are looking at the right tree.\n\nBut a count tells you how many steps a helper took, not how long they took. Those are different things.\n\nPicture this. The planner makes 12 spans, each a quick model call of about 50 ms. That is 600 ms in total. The researcher makes just 2 spans, but one is a web request that takes 3 seconds. Counting points you at the planner. The real holdup is the researcher.\n\nMany small steps can be fast. One big step can be slow. A count can't tell these apart, because it ignores the `ms` on each span. That is the time each step took.\n\nSo the right option is \"Follow the slowest child from the top.\" It is better because it uses time, not number of steps: starting at the team's top span and always stepping into the slowest child leads you straight to the helper, and the single call, that held the run up.",
+   "step": "Check",
+   "fingerprint": "c4b67c787ba7ea4d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Compare how long each helper's reply is”?",
+   "a": "Comparing reply lengths has a grain of sense. A model writes its answer piece by piece, so a very long reply does take longer to produce. A helper that writes pages of text might be a little slower than one that writes a line.\n\nBut reply length measures how much text came out, not how long the helper took. Most of the waiting often happens before any text appears: tool calls, web requests, or several model calls in a row. A researcher could give a short summary after a 3-second web search. A writer could produce a long draft in under a second. Judging by length, you would blame the writer, and you would be wrong.\n\nThe trace already records real time for every span, so there is no need to guess from a side clue. (A span is one recorded step in the run.)\n\n\"Follow the slowest child from the top\" is the better answer because it uses the measured times to go straight from the whole team run to the helper, and the step inside it, that actually took the longest.",
+   "step": "Check",
+   "fingerprint": "8fb6b5f91b78b150",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The claim about where waiting happens and the 'long draft in under a second' example come from outside the lesson and are a bit unrealistic, but they don't contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Follow the slowest child down” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"An agent run is slow, and its trace has dozens of spans. I need to find which step to fix first.\"\n\n*The idea:* \"I start at the root span, which is the whole run. I look at its children and step into the slowest one. I repeat until I reach a span with no children. That chain of slowest steps is the critical path. Its last step is usually one tool or one model call.\"\n\n*An edge case:* \"A span's time includes its children's time. So a parent can be slow even when all its children are fast. Then the time is spent in the parent's own work. At each step, I check its own time, which is its total minus its children's time. Then I decide whether to keep going down.\"\n\n**A follow-up an interviewer might ask**\n\n\"What if a span's children run in parallel, at the same time?\"\n\n*Hint at a strong answer:* The parent waits only as long as its slowest child. Its time is not the sum of all the children's times. So following the slowest child still finds the real holdup. Speeding up the other children would not make the run finish sooner.",
+   "step": "Explain",
+   "fingerprint": "cccbe4bb3a677a74",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The parallel-children hint goes beyond the lesson but does not contradict it, and the answer is right at the length limit (about 200 words)."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the trace was read wrong**\n\n- **You \"fix\" a step and the run is no faster.** The root span's total time barely moves. You probably blamed a parent for time that really belonged to one of its children. In the lesson's example, `tool:search` looks slow at 3100 ms, but `http_get` inside it takes 2900 ms. The web request is the real culprit.\n- **The \"slowest span\" is always the root.** If you rank every span in one flat list, the top span wins every time, because it contains everything. That tells you nothing.\n- **An agent team shows one big blob.** If helpers aren't traced under their own names, you see one long span with no children. You can't tell which helper held things up.\n- **Own times don't add up.** A parent's time should be at least the sum of its children's times. If it isn't, spans may be attached to the wrong parent.\n\n**Quickest check**\n\nTake the span you blamed. Subtract its children's times from its total. If little is left, look one level deeper. After your fix, rerun and confirm the root's time dropped by about what you saved.",
+   "step": "Learn",
+   "fingerprint": "f6f313bbd44cb757",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The one soft spot is the claim that a parent's time should be at least the sum of its children's times. It follows from the lesson's 'parent includes children' idea but is not stated outright."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule works best when the run is one clear chain of steps. Here are three cases where it needs extra care.\n\n**Many small steps add up.** An agent might call a model 20 times in a loop, each call quick. No single child looks slow, yet together they eat most of the run. Group spans by name and add up their times, or count how often each step repeats.\n\n**The parent is slow itself.** Sometimes a span's own time, the part left after removing its children, is the big number. That can mean work nobody traced, like parsing text or waiting in a queue. Before you step down, compare the parent's own time with its slowest child. Add spans around untraced code if needed.\n\n**One trace is not the whole story.** A single run might hit a rare slow web request. Look across many traces of the same agent. Check whether the same step is slow in the typical runs and in the slowest ones. Fix the step that is slow again and again, not one unlucky run.",
+   "step": "Learn",
+   "fingerprint": "79ec79babc7650d6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “trace” different from “spans”?",
+   "a": "A **trace** is the whole record of one agent run. A **span** is one timed step inside that run.\n\nSo a trace is made of spans. One run gives you one trace. That trace holds many spans: the run itself, each model call, each tool call, each web request.\n\nSpans nest. A span can sit inside another span. The outer one is the **parent**. The ones directly inside it are its **children**. Put together, they form a tree, and that whole tree is the trace.\n\nEveryday comparison: a trace is like the receipt for one shopping trip. Each line on the receipt is a span. Some lines group others, like a \"Groceries\" heading with items listed under it.\n\nIn the lesson's example, the whole tree is one trace. `agent_run`, `plan`, `tool:search`, `http_get` and `answer` are five spans. `http_get` (2900 ms) is a child of `tool:search` (3100 ms). So the search span's own time is just 200 ms.\n\nShort version: the trace is the full story, and the spans are the steps in it.",
+   "step": "Learn",
+   "fingerprint": "75a5323d5ac173a0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "summarize_by_tag": {
+  "check:0:0": {
+   "q": "Why not “Nothing: MLflow can work out the config afterwa…”?",
+   "a": "It's tempting because MLflow does record a lot on its own. With `mlflow.langchain.autolog()`, each trace captures inputs, outputs, timings and token counts. And `mlflow.search_traces` can filter traces long after they were created. So the \"afterwards\" part is half right: the *analysis* can happen later.\n\nWhat it misses is that a config is a choice made in your code. Examples are chunk size 512, `k=5`, or which prompt version you used. A trace only knows what it was told. If nobody wrote \"this request used `cs512-k5`\" onto the trace, that fact simply isn't there. MLflow can't guess it from the answer text or the timings.\n\nLast week's traffic is already recorded. You can't go back and learn which config served which request. A filter like `tags.config = 'cs512-k5'` will match nothing, so you can't sort the traces into two piles to compare.\n\nThat's why \"Each trace was tagged with its config at the time\" is the right answer: the tag must be saved when the trace is created, because that's the only moment the app knows which config it's running.",
+   "step": "Check",
+   "fingerprint": "020e62f4dbb49de9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only minor stretch is treating 'cs512' as chunk size 512, which the lesson never spells out, but it does not contradict the lesson."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “You built a new eval set from that week's traff…”?",
+   "a": "Building an eval set from last week's traffic isn't wrong in itself. An **eval set** is a fixed list of test questions, sometimes with expected answers. Pulling real questions from production makes a good one, and you could later run both configs on it.\n\nBut it misses what the question asks. You want to compare the two configs on what *actually happened* last week. That means you need to know which config answered each real request. An eval set holds the questions. It doesn't record which config served them.\n\nThat fact can only be captured at the moment each trace is created. If no `config` tag was saved then, it's gone. No amount of later work can recover it. You can't sort last week's traces into \"config A\" and \"config B\" piles without it.\n\nAlso, an eval set is something you build afterwards. The question asks what must *already* be true.\n\n\"Each trace was tagged with its config at the time\" is better because it's the only option that lets you split last week's real traces by config and compare them directly.",
+   "step": "Check",
+   "fingerprint": "ed516e0bcd31c507",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Read the 10 newest traces one by one”?",
+   "a": "Reading the 10 newest traces one by one gets one thing right: you are looking at real data. Opening a single trace is also a good way to spot something odd, like one slow retrieval step.\n\nBut it can't answer \"did the new prompt make answers slower?\" Here's why:\n\n- **Ten is too few.** Response times jump around from question to question. A few long questions can make a version look slow when it isn't.\n- **\"Newest\" isn't the same as \"new prompt.\"** The 10 most recent traces might all be the new version. Then you have nothing to compare against. Or they might be a random mix, and you'd have to sort them in your head.\n- **It ignores the tags.** You tagged every trace with its prompt version for exactly this kind of question. Reading by date throws that work away.\n- **It's hard to repeat.** Eyeballing timings by hand is slow, and two people might come away with different answers.\n\n\"Group by prompt version, compare times\" is better because it uses every tagged trace and puts each version's average time side by side, so the comparison is fair and the answer is clear.",
+   "step": "Check",
+   "fingerprint": "1b6394c54bd17ba2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Average the time across all traces”?",
+   "a": "Averaging the time across all traces gets one thing right: it measures time, which is what you care about. It gives you a real number for how slow the app is overall.\n\nBut it mixes every trace into one pile. Traces from the old prompt and traces from the new prompt all go into the same average. So you get a single number that blends both versions together. You can't tell whether the new prompt made things slower, because nothing in that number separates old from new.\n\nIt also hides the size of any change. Say the new prompt is much slower but only a small share of traces used it. The overall average barely moves, and you might wrongly decide nothing changed.\n\nThis is why you tag traces in the first place. The prompt version tag is already sitting on every trace. Averaging across everything throws that tag away and ignores the very thing you set up to answer this question.\n\n\"Group by prompt version, compare times\" is better because it gives each version its own average, so you can put the old and new numbers side by side and see the difference directly.",
+   "step": "Check",
+   "fingerprint": "ed358a1c45acd674",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The model name on each trace”?",
+   "a": "Tagging each trace with the model name is a good habit. The lesson recommends it. A tag is a label you attach to a whole trace, so you can later split results by model, like comparing `fast-model` against another one.\n\nBut it doesn't solve this problem. The question is about finding retrieval steps *inside* each trace. A trace holds many spans, one per step: a model call, a retrieval, a tool. A model name tag sits on the whole trace, so every span in that trace shares the same label. It tells you which model ran the request. It doesn't tell you which span fetched documents. Your evaluation would still have to guess.\n\nThe fix belongs on the spans themselves. Marking a span with a type, like `span_type=\"RETRIEVER\"` in `@mlflow.trace(span_type=\"RETRIEVER\")`, labels that exact step as a retrieval. Evaluation and analysis tools can then pick it out directly.\n\n\"A RETRIEVER type on those spans\" is better because it labels each retrieval step itself, so your evaluation can find every one without guessing.",
+   "step": "Check",
+   "fingerprint": "59612814f31a640b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A longer name for each span”?",
+   "a": "A longer name isn't wrong in spirit. A name like `retrieve_docs_from_vector_store` does tell a human what the step does. Reading one trace by eye, that helps.\n\nBut your evaluation isn't a human reading names. It's code that has to find every retrieval step, in every trace, automatically.\n\nNames are free text. Each person picks their own. One function is `retrieve`, another is `search_kb`, and a LangGraph node might be called `fetch`. To find them all, you'd have to guess words to search for. Then it breaks the day someone renames a function.\n\nA span type is different. It's a fixed label from a short, agreed list (`RETRIEVER`, `TOOL`, `CHAT_MODEL`). MLflow and its evaluation tools already know to look for it. So \"find all retrieval steps\" becomes one exact match, not a guess.\n\n```python\n@mlflow.trace(span_type=\"RETRIEVER\")\ndef search_kb(question, k):\n    ...\n```\n\nThe name here doesn't matter. The type still says \"this is a retrieval.\"\n\nA `RETRIEVER` type is better because it's a standard label that tools can reliably find, whatever each span happens to be called.",
+   "step": "Check",
+   "fingerprint": "53251514fd40b63b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the claim that MLflow's evaluation tools 'already know' to look for span types goes slightly beyond the lesson but fits its point that types let evaluation find spans."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Log what the model saw” matter?",
+   "a": "When an answer is wrong, the question is always \"why?\" You can only answer that if you can see exactly what the model was given. That means the full prompt (the text sent to the model), the retrieved chunks (the pieces of documents your search pulled in), and every tool call with its inputs and outputs.\n\nIf you don't log these, you're left guessing. Was the model confused? Did the search fetch the wrong documents? Did a tool return an error? Each cause needs a different fix. Without the evidence, you might change the prompt when the real problem was retrieval.\n\nA small example. A user asks, \"What's our refund window?\" The app says 14 days, but the policy says 30. With a trace, you open that request and see the retriever returned last year's policy document. Now you know to fix the document index, not the model.\n\nWithout the trace, you can't recover that moment. You can rerun the question, but the documents or data may have changed since. The original cause is gone. That's why you record it when the request happens.",
+   "step": "Explain",
+   "fingerprint": "48833e28b49de594",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Group by a tag, then average” in an interview?",
+   "a": "Here's a spoken answer you could give in about 30 seconds.\n\n**The problem.** \"I'm comparing two versions of an app, say v1 and v2. I have thousands of traces mixed together, and I need to know which version is faster.\"\n\n**The idea.** \"Every trace is tagged with its version when it's created. So I sort the traces into piles by that tag. For each pile, I add up the times and count the traces as I go. Then I divide total by count to get each version's average. It walks through the traces once.\"\n\n**The trade-off.** \"Traces missing the tag get skipped. That keeps the numbers honest, but it also hides a problem. If many are skipped, my tagging is broken, and I should fix that early, while building the app.\"\n\n**Likely follow-up:** \"Is the average enough to pick a winner?\"\n\n*Hint for a strong answer:* Say no. Report the count next to each average, because an average from five traces means little. Mention that one very slow request can drag an average up. Looking at the median (the middle value) or the slowest 5% of requests gives a fairer picture.",
+   "step": "Explain",
+   "fingerprint": "a163c92ab37612ff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Filters come back short.** You search for one version's traces and get far fewer than you expected, or none at all.\n- **Piles that shouldn't exist.** One version shows up under two names, like `fast-model` and `Fast-Model`. Its results get split, so each pile looks smaller and noisier than it really is.\n- **Retrieval scores are blank.** Evaluations that check retrieved documents find nothing. Usually the retrieval step was never marked with the `RETRIEVER` span type. A span is one step inside a trace.\n- **Versions won't line up.** You can't put v1 and v2 side by side question by question. Often `mlflow.set_active_model` was never called, so traces aren't linked to a named version.\n\n**Quickest check**\n\nPick a time window. Count every trace in it. Then count the traces for each value of the `config` tag separately, and add those counts together. The sum should equal the total. If it's smaller, some traces are missing the tag.\n\nWhile you're there, read the list of tag values and look for typos. Then open one trace and confirm each step has the right span type.",
+   "step": "Learn",
+   "fingerprint": "0f3c5d8644abe758",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where tagging traces and comparing by tag needs extra care.\n\n**Tags that don't match.** If one run says `fast-model` and another says `fast_model`, they land in separate piles. If someone forgets a tag, those traces get skipped. Set tags from one shared config object in code, never by typing them by hand.\n\n**Very few traces per version.** An average of five traces is shaky. One slow request can swing it a lot. Run both versions on the same fixed set of questions, compare them question by question, and look at the slowest cases, not just the average.\n\n**Things changing besides the version.** Say v1 ran last month and v2 ran today. Your documents, traffic or model endpoint may have changed too. Then the gap isn't only your change. Run both versions side by side on the same data, and tag the data or index version as well.\n\nA related trap: don't put per-request details like a user ID in tags. That creates thousands of tiny piles. Keep those in span attributes instead.",
+   "step": "Learn",
+   "fingerprint": "fa36e0848ef7fba3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes all checks, but it slightly overshoots the format: the 'related trap' makes a fourth item against the 2-3 asked for, and the third situation runs to four sentences."
+   }
+  },
+  "learn:term": {
+   "q": "How is “config” different from “model”?",
+   "a": "Both are tags, meaning labels you attach to a trace so you can split results later. They answer different questions.\n\n**`model`** says *which language model* produced the answer. In the lesson's LangGraph example it's `ENDPOINT`, the model serving endpoint (the web address your app calls to reach the model). In the first example it's `\"fast-model\"`.\n\n**`config`** says *how the rest of your app was set up* around that model. It names a bundle of settings. The lesson's value is `\"cs512-k5\"`. The `k5` part matches `retrieve(question, k=5)`, so it likely means \"fetch 5 documents.\" The lesson doesn't say what `cs512` stands for. It's just part of the name your team picked for that setup.\n\nThink of a coffee shop. The `model` is the coffee bean. The `config` is the brewing recipe. Change either one and the cup tastes different.\n\nTagging both lets you separate the two causes. Keep `config` fixed and swap `model`, and any difference comes from the model. Keep `model` fixed and change `config`, and you're testing your setup. Without both tags, you couldn't tell which change made things better or worse.",
+   "step": "Learn",
+   "fingerprint": "bfe3331fa43d1eed",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only slight stretch is that the lesson never defines ENDPOINT or what config contains, so those glosses are reasonable inference. The cs512-k5 reading is hedged and the answer says what the lesson leaves unstated."
+   }
+  }
+ },
+ "summary_recall": {
+  "check:0:0": {
+   "q": "Why not “Check that each summary is under 500 words”?",
+   "a": "A word limit only tells you how long the summary is. In this Check question, the runs are already shorter, so length isn't the problem. The problem is that the agent rewrites a table it already wrote.\n\nA summary can be well under 500 words and still leave out the table name. The lesson's example shows this. \"Fix the HR tickets. Next: rerun the job.\" is very short. Yet when asked \"Which table did we write to?\", the agent says \"I'm not sure.\" A length check would pass that summary. It can't see what got dropped.\n\nThe lesson's rule is to judge a summary by whether the agent can still finish the task, not by how short it is. Counting words measures shortness, so it tests the wrong thing.\n\n**Plant facts, compact, then ask probe questions** is the right answer. You hide details like a table name in a long run. You compact it, which means swapping old messages for a summary. Then you ask about those details.\n\nThat approach is better because it directly checks whether the agent still remembers the exact details it needs, like which table it wrote, so it catches the forgetting that causes the repeated work.",
+   "step": "Check",
+   "fingerprint": "bd0607bd02ef66a1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Ask the model whether its summary looks complete”?",
+   "a": "Asking the model \"does your summary look complete?\" sounds sensible. It is cheap, and it might catch an obvious gap, like a missing \"next step\" section.\n\nBut it has two big problems.\n\nFirst, the model is grading its own work. Models tend to say \"yes, looks good.\" A summary can read smoothly and still be missing the one detail that matters.\n\nSecond, it never tests the actual failure. The bug here is that the agent rewrites a table it already wrote. That happens because the exact table name was dropped during **compaction** (swapping old messages for a short summary). \"Looks complete\" is a feeling, not a check. Nobody asks, \"Which table did we write to?\" So nobody finds out the agent can't answer.\n\nYou also get no number. You can't compare two summary prompts, or see if a change made things better or worse.\n\nThat is why \"Plant facts, compact, then ask probe questions\" is the right answer. You hide known details in the run, then directly ask about each one, so you get a real count of what survived the summary.",
+   "step": "Check",
+   "fingerprint": "84b9867a9701b4f1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Summarise everything into one line”?",
+   "a": "\"Summarise everything into one line\" does get one thing right. It makes the context much smaller, so the agent has room to keep going.\n\nThe problem is what gets lost. A one-line summary is the vague kind the lesson warns about. Exact details like table names, ticket ids and error codes get dropped. The lesson's example shows this: the summary says \"Fix the HR tickets. Next: rerun the job.\" Then the probe question \"Which table did we write to?\" gets \"I'm not sure.\" An agent that forgets details like that may redo work, or say it is finished when it is not.\n\nIt is also the wrong place to start. The lesson says to try the cheap fix first. Only if runs are still too long should you summarise. Even then, the summary should have required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. The last few messages should stay word for word.\n\n\"Clear old tool results, keep a note\" is better because it is the cheaper first step: it only swaps out old tool outputs, leaving a note that each tool ran.",
+   "step": "Check",
+   "fingerprint": "6013a07402f21ef6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Switch off the tools for the run”?",
+   "a": "\"Switch off the tools for the run\" spots something true. Tool results are often the biggest thing filling the context. The context is everything the model can see at once. A single database query can return thousands of lines, and those pile up fast.\n\nBut switching tools off throws away the agent's hands. Tools are how it reads tables, runs jobs and updates tickets. Without them, it can talk about the task but cannot do it. Remember the lesson's rule: judge a fix by whether the agent can still finish the task. This one fails that test straight away.\n\nIt also does nothing about the old results already sitting in the context. The space is still used up.\n\nClearing old tool results is gentler. The agent keeps its tools. Only old outputs get swapped for a short `[cleared]` note, and the newest few stay in full. In the lesson's code, `ClearToolUsesEdit(trigger=60000, keep=3)` does exactly this.\n\n\"Clear old tool results, keep a note\" is better because it frees up space while the agent keeps working and still knows which tools already ran, so it won't redo them.",
+   "step": "Check",
+   "fingerprint": "9e4481ea9805dd9e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claims that tool results are often the biggest context filler and that one query can return thousands of lines go beyond the lesson, but they are plausible and do not contradict it."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A, because it saves more room”?",
+   "a": "Option A has a fair point. Saving room matters. The context window is how much text the model can see at once. A shorter summary leaves more space for new work, and it costs fewer tokens (the small chunks of text that models count and charge for).\n\nBut room is not the goal. A summary exists so the agent can keep going and finish the task. If prompt A makes summaries half as long, it probably cut something. Often it is the exact details: a table name, a ticket id, an error code. Those are the first things a vague summary drops.\n\nWhen those details go missing, the agent pays for it later. It might redo work it already did. It might write to the wrong table. Or it might say it is finished when it is not. Any space you saved gets spent again, and the task may still fail.\n\nThat is why the lesson says to judge a summary by results, not by length.\n\nB is better because a summary's real job is to keep what the agent needs to finish, and more finished tasks shows it did that job.",
+   "step": "Check",
+   "fingerprint": "60ec6e0250cd777a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Neither, summaries are always vague”?",
+   "a": "\"Neither, summaries are always vague\" gets one thing right. A vague prompt like \"summarise this\" really does drop exact details, such as table names, ticket ids and error codes. The lesson's example shows it: after compaction, the agent can't say which table it wrote to.\n\nBut it misses two things.\n\nFirst, vagueness is not fixed. Compaction (swapping old messages for a short summary) is often needed once the context fills up, so the useful question is how to make it better. A prompt with required sections asks for the goal, decisions, exact names, ids and error codes, open tasks and the next step. That makes keeping details more likely. It doesn't guarantee it, so you still test, for example with planted facts and probe questions.\n\nSecond, the question gives you evidence: with prompt B, the agent finishes more of its tasks. Saying \"neither\" throws that evidence away.\n\n\"B, because the agent still finishes\" is better because the lesson says to judge a summary by whether the agent can still finish the task, not by how short it is.",
+   "step": "Check",
+   "fingerprint": "8157fddc6ecc8ab5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Tell the summary what it must keep” matter?",
+   "a": "A summary is written by a model. If you only say \"summarise the chat\", it keeps the general idea and drops the specifics. To the model, \"we wrote to a table\" sounds like enough. But the agent needs the exact name to carry on.\n\n**Example:** an agent is fixing HR tickets. It wrote cleaned rows to `hr_tickets_clean` and is working on ticket `HR-4821`. The context fills up, so it gets compacted, meaning the old messages are swapped for a summary: \"Fix the HR tickets. Next: rerun the job.\"\n\nNow the agent can't say which table it used. It might write to a new table, redo the cleaning, or pick the wrong ticket. Worse, it might decide it is finished because the summary sounds tidy.\n\nSo spell out what the summary must keep:\n\n- the goal\n- decisions made\n- exact names, ids and error codes\n- open tasks\n- the next step\n\nThen test it with a probe question. That is a question about a detail you know was in the run, like \"Which table did we write to?\" If the agent can't answer, the summary lost something the agent needed.",
+   "step": "Explain",
+   "fingerprint": "47785bfd89851a74",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check each planted fact in a set” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"When an agent compacts its context, a vague summary can drop exact details like a table name or ticket id. Then the agent redoes work or claims it's finished when it isn't.\"\n\n*The idea:* \"So I plant a few facts in a long run, compact it, and ask probe questions. I put the agent's answers in a set, which is a collection that answers 'is this in it?' instantly, like a book's index. I check each planted fact against it. Hits divided by facts planted gives the share kept, and the misses go on a sorted forgotten list.\"\n\n*The trade-off:* \"The check is an exact match. A near miss, like a table name with one letter wrong, counts as forgotten. That's strict on purpose, because an agent writing to the wrong table is a real failure.\"\n\n**A likely follow-up**\n\n\"Is a shorter summary a better summary?\"\n\n*Hint for a strong answer:* No. Judge a summary by whether the agent can still finish the task. A tiny summary that loses the ticket id scores badly, however short it is.",
+   "step": "Explain",
+   "fingerprint": "5ff9d5d64e6f1123",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that compaction is losing details**\n\nTrouble usually shows up right after compaction. Compaction is the moment old messages get swapped for a summary. Look in your traces (the step-by-step record of each run) just after that point.\n\n- **Repeated work.** The agent calls the same tool again with the same inputs, because it forgot the first result.\n- **Fuzzy or invented details.** A table name, ticket id or error code is missing, slightly wrong, or made up.\n- **Early \"done\".** The agent says it has finished while open tasks remain.\n- **Questions it already had answers to.** It asks the user for something given earlier in the run.\n\nWatch your numbers too. Short test runs may look perfect because they never get long enough to compact. Then real, longer runs fail more often. A summary that is very short and tidy is also a warning sign. Short is not the same as useful.\n\n**Quickest check**\n\nTake one long run and plant three or four exact facts in it. Force a compaction. Then ask a probe question about each fact, such as \"Which ticket id are we fixing?\" Count how many come back exactly right. Any miss means your summary prompt needs a required section for that kind of detail.",
+   "step": "Learn",
+   "fingerprint": "14345aedef9941ff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. It is about 208 words, which is borderline on length, and it adds a few plausible signs the lesson does not state (invented details, re-asking the user)."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where planting facts and probing needs extra care.\n\n**1. Facts that change during the run.** Say the agent wrote to a staging table, then switched to the real one. A probe can't tell an old value from the current one, so a stale answer might look correct. Plant the change too, and count only the latest value as right. Ask the summary to keep \"latest values only.\"\n\n**2. The agent rewords the answer.** It may say \"the HR tickets table\" when you planted `hr_tickets`. An exact match scores that as forgotten, even though the agent remembered. Tell the probe to reply with the exact name only. Or have a person, or a second model acting as a judge, decide if the meaning matches.\n\n**3. Very long runs that compact many times.** Each summary gets summarised again, and details fade a little each round. Test after several compactions, not just one. For details that must survive, have the agent write them to a separate notes file it can reread, instead of trusting the summary alone.",
+   "step": "Learn",
+   "fingerprint": "807393e19b5c0d5f",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": false,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The brief asked for two or three sentences per situation, but points 1 and 2 each run to four sentences after the heading, so the format is not followed."
+   }
+  },
+  "learn:term": {
+   "q": "What does “compact” mean here?",
+   "a": "Think of a long meeting. Someone writes notes so a latecomer can catch up without replaying the whole recording. Compacting is writing those notes.\n\nAn agent's **context** is everything the model can see at once: your messages, its replies and tool results. It has a size limit, measured in **tokens** (small chunks of text, roughly pieces of words). When the context gets too full, the agent compacts it. It swaps the old messages for a short summary and carries on.\n\nThe risk is the same as with bad meeting notes. If the summary is vague, exact details vanish.\n\nIn the lesson's example, the long run held three planted facts: the goal, a table name and a ticket id. After compacting, the summary only said \"Fix the HR tickets. Next: rerun the job.\" The goal roughly survived. The table name and ticket id did not. So when asked \"Which table did we write to?\", the agent answered \"I'm not sure.\"\n\nIn the LangChain code, `SummarizationMiddleware` does the compacting. Past 100000 tokens, it summarises older messages and keeps the last 20 word for word.",
+   "step": "Learn",
+   "fingerprint": "f8e22f98f55a94ba",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The remark that the goal 'roughly survived' is a mild inference, since the lesson only marks the table as forgotten, but it does not contradict the lesson."
+   }
+  }
+ },
+ "trace_table_row": {
+  "check:0:0": {
+   "q": "Why not “Record only 1 run in 10, and judge those”?",
+   "a": "That option gets one thing right. Judging, which means asking a model to read a trace and score it, is the expensive part. Doing it for only 1 run in 10 really does cut the cost.\n\nThe mistake is applying the \"1 in 10\" to recording too. Recording a trace is cheap. It just saves what happened. If you only record 1 run in 10, the other 9 are gone for good.\n\nThat hurts in a few ways:\n\n- A failing run is often rare. It may well land in the 9 you threw away.\n- A user reports a bad answer, and there is no trace to open.\n- Your trace table is missing rows. Sorting by steps or tool errors can't surface a run that was never saved.\n- You can't go back later and judge the runs you skipped.\n\nSo you keep paying for agent runs but lose the evidence you need most.\n\n\"Record every run, and judge only 1 in 10\" is better because you still save on the expensive judging, while every trace stays available to sort, filter and open when something goes wrong.",
+   "step": "Check",
+   "fingerprint": "0315285e014c1e9b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that recording a trace is cheap isn't stated in the lesson, but it is implied and doesn't contradict it. Otherwise the answer is accurate, within length, and gives no exercise solution."
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Judge only the runs users complained about”?",
+   "a": "\"Judge only the runs users complained about\" gets two things right. Complaints point you at real problems. And judging fewer runs does save money. Here, \"judging\" means having a model score how good a run was.\n\nBut it misses a lot. If you only judge complaints, you only see the failures someone chose to report. A bad run can still slip by with no complaint. It might take nine steps, hit four tool errors, or come close to filling the context window. That is the most text a model can read in one call. The run could still end with an answer nobody flags, and you would never look at it.\n\nYou also lose your view of normal runs. If you never judge ordinary runs, you can't tell whether quality is getting better or worse overall.\n\n\"Record every run, and judge only 1 in 10\" is better. It keeps every trace for later digging and cuts judging costs to a tenth. It also checks a steady slice of all runs, not just the ones someone reported.",
+   "step": "Check",
+   "fingerprint": "36b006bf30702065",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: the 'better' part runs to three sentences instead of one, and 'complaints point you at real problems' is a reasonable inference rather than something the lesson states."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The ones with the fewest tokens”?",
+   "a": "\"The ones with the fewest tokens\" has one small grain of truth. A run with very few tokens (tokens are the chunks of text a model reads and writes) can mean it stopped early, maybe because something broke on the first step. So a tiny number is not always good news.\n\nMost of the time, though, few tokens just means a short, simple run. The agent asked one question, got an answer and finished. Those are usually the runs that went fine. Reading them first spends your time on the boring cases.\n\nTrouble tends to show up as size and struggle, not smallness. An agent that is stuck often loops: it calls the model again and again, retries tools and piles up tokens. A token count only tells you how big a run was. It does not say whether anything went wrong.\n\n\"The ones with many steps or tool errors\" is better because those two numbers point straight at runs where the agent struggled or something actually failed, so they are the runs most likely to teach you something.",
+   "step": "Check",
+   "fingerprint": "5adc82fbf57d9e20",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'stopped early' grain of truth and the looping claim are not in the lesson, but they are plausible and do not contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The first 20 rows in the table”?",
+   "a": "\"The first 20 rows\" gets one thing right. It keeps your reading to a small, doable number. Nobody can read 2,000 traces, so picking a handful is the right instinct.\n\nThe problem is *which* handful. The order of rows in a table usually has nothing to do with quality. It might be the order the runs happened, or the order of their `trace_id` (the label each trace gets). So the first 20 rows are close to a random pick. Most runs are fine, so those 20 will probably be ordinary, healthy runs. The few broken ones could sit at row 1,437, and you'd never see them.\n\nIt also skips the reason you built the table. You turned each trace into numbers so you could **sort and filter** them, like a spreadsheet. Taking the top 20 without sorting first throws that advantage away.\n\n\"The ones with many steps or tool errors\" is better because sorting by those numbers puts the runs most likely to have gone wrong at the top, so your limited reading time goes to the runs that matter.",
+   "step": "Check",
+   "fingerprint": "cf2239640df0fc7a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The run made too many tool calls”?",
+   "a": "\"The run made too many tool calls\" has a small grain of truth. Each tool result is usually pasted back into the prompt for the next model call, so lots of tool calls can make prompts grow. That is one possible cause.\n\nBut the biggest prompt doesn't measure tool calls. It is the most input tokens in any single model call. Tokens are the small chunks of text a model reads. The number tells you how much text the model had to read in one go. It doesn't say why. A huge prompt could come from one long document, a long chat history, or a single tool that returned a wall of text. The row has no column that counts tool calls, so you can't read \"too many tool calls\" from it.\n\nThe context window is the most a model can read in one call. A biggest prompt near that limit means the run was close to hitting it. Past the limit, text gets cut off or the call fails.\n\n\"The run nearly ran out of room\" is better because it states exactly what the number measures: how close one call came to filling the context window.",
+   "step": "Check",
+   "fingerprint": "dff42e3dd5bc93fa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the claim about what happens past the context limit goes beyond the lesson but does not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The run cost less than usual”?",
+   "a": "\"The run cost less than usual\" points the wrong way. A big prompt means many input tokens. Tokens are the small chunks of text a model reads and writes, and you pay per token. So a huge prompt usually makes a run cost **more**, not less.\n\nIt does get one thing right. Token counts and cost are linked. But cost is better read from the `total` column, which adds up the tokens from every call in the run.\n\nThe biggest prompt, the `peak` column, answers a different question. It is the most input tokens in any **single** call. You compare it with the context window, which is the most text a model can read in one call. When `peak` sits close to that limit, the run was nearly too big for the model. One more long tool result could have pushed it over. Then the model would fail, or older text would get cut off.\n\n\"The run nearly ran out of room\" is better because the biggest prompt measures how full one call got, compared with the most that call can hold.",
+   "step": "Check",
+   "fingerprint": "da439d76643a4277",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes, but the claims that you pay per token and that an over-full prompt makes the model fail or cut off older text go beyond the lesson, though they are generally true."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Four numbers from one trace” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* \"A trace is the step-by-step record of one agent run. Reading traces one at a time stops working after a few dozen runs. I can't find the bad runs by eye.\"\n\n*The idea:* \"So I turn each trace into one row of four numbers. They are steps (model calls), tool errors, the biggest prompt, and total tokens. Then I sort and filter the rows like a spreadsheet. Runs with many steps or many tool errors are the ones I open first.\"\n\n*A trade-off:* \"Total tokens tells me roughly what a run cost, but it hides one risk. The biggest single prompt shows how close a run came to the context window, which is the most a model can read in one call. A run can have a modest total but one huge prompt, so I keep both numbers.\"\n\n**A likely follow-up**\n\n\"You have millions of traces. Do you keep them all?\"\n\n*Hint:* Say yes. Keep every trace, with personal data hidden first. On Databricks, store them as tables in Unity Catalog so you can query them with SQL. To save money, judge only a sample, such as 1 in 10. Recording fewer traces can throw away exactly the failing runs you need.",
+   "step": "Explain",
+   "fingerprint": "bbf5a08fcb669732",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The remark that total tokens shows roughly what a run cost is a small inference the lesson doesn't state, and the full answer runs to about 200 words."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs this went wrong**\n\n- **You are still reading traces one by one.** After a few dozen runs you miss the bad ones. Users report failures you never saw.\n- **The errors column is always 0**, yet logs or users show tools failing. Something is not being counted.\n- **Every row looks fine**, but quality drops in real use. This often means traces were *recorded* only for a sample, so the failing runs were never kept. Keep every trace. Sample only the judging.\n- **Peak and total look odd.** If peak is larger than total, the numbers are mixed up. If total equals peak on runs with many steps, tokens from the other calls were dropped.\n- **Runs that hit the context window** (the most a model can read in one call) show a small peak. The biggest prompt is being missed.\n- **Empty traces break the table** or show strange values instead of zeros.\n\n**Quickest check**\n\nPick one trace you know failed. Open it and count by hand: model calls, failed tool calls, the largest single input, and all tokens added up. Compare with its row. If they differ, fix the counting before trusting any sort or filter.",
+   "step": "Learn",
+   "fingerprint": "ae949a8cb3932cfb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where turning each trace into a row of numbers needs extra care.\n\n**1. Quiet failures.** A run can take two steps, hit no tool errors and still give a wrong answer. The numbers only show effort and trouble, not whether the answer was correct. So also judge a sample of runs for quality, using a person or an \"LLM judge\" (a model asked to grade answers), even when their rows look calm.\n\n**2. Much bigger systems.** If one trace covers several agents working together, a single row blends them all. You can't tell which agent caused the errors. Add columns for each agent, or make one row per agent per run, so sorting still points to the right place.\n\n**3. Things change over time.** After you switch models or edit a prompt, \"normal\" step counts and token use shift. A new model may also have a bigger or smaller context window, which changes what a high \"biggest prompt\" means. Compare rows against recent runs on the same setup, not against old fixed limits.",
+   "step": "Learn",
+   "fingerprint": "7585d8b0fb62c23f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Unity Catalog” mean here?",
+   "a": "**Unity Catalog** is Databricks' organised home for data. It also controls who is allowed to see what.\n\nThink of a library. The building holds many sections. Each section holds shelves. Each shelf holds books. A librarian checks your card before you take a book. Unity Catalog works the same way. A **catalog** is the section. A **schema** is a shelf inside it. A **table** is a book on that shelf. Access rules play the librarian's part.\n\nIn this lesson, production traces can be saved as tables in Unity Catalog. A table is just rows and columns, like a spreadsheet. Because traces live in tables, you can ask questions with **SQL**, a common language for pulling rows out of tables. For example, you could ask for the runs with the most tool errors.\n\nIn the lesson's code, it shows up in this comment:\n\n```python\n# Traces kept in Unity Catalog: add\n# locations=[\"catalog.schema\"]\n```\n\nThat `\"catalog.schema\"` is the address, written as section then shelf. It tells `mlflow.search_traces` where to look for stored traces. You would swap in your real catalog and schema names.",
+   "step": "Learn",
+   "fingerprint": "1753df251d3e0fe6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No problems found. The access-control and catalog/schema/table details go beyond the lesson text but are accurate and do not contradict it. The answer is about 177 words."
+   }
+  }
+ }
+}

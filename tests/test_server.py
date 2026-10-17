@@ -917,6 +917,29 @@ def test_the_apps_quiet_signals_wait_for_one_burst_but_got_it_does_not(store, ba
     assert "saved" in names()
 
 
+def test_a_prepared_answer_gets_a_trace_its_feedback_can_land_on(store, bank, mlflow_store, monkeypatch):
+    """With no model running, the page shows a prepared answer and says so: the server records it as
+    an ask_lesson trace (route = prepared), so Got it / Still stuck count for it like any answer."""
+    import mlflow
+
+    from drill.server import observe
+
+    monkeypatch.setenv("DRILL_MLFLOW_EXPERIMENT", "drill-served-test")
+    observer = observe.MlflowObserver()
+    client = TestClient(create_app(store=store, router=ModelRouter(None, None, store, observer=observer), bank=bank, with_mcp=False))
+    assert not client.get("/api/health").json()["ai"]
+    trace = {"feature": "ask_lesson", "lesson_id": "use_case_score", "step": "Learn", "question": "When does this stop working?",
+             "chip": True, "request": "ask-prep001"}
+    assert client.post("/api/served", json={"answer": "When the data changes.", "trace": trace}).json()["logged"]
+    client.post("/api/feedback", json={"request": "ask-prep001", "name": "resolved", "value": True})
+    observer.drain()
+    [t] = traces_in("drill-served-test")
+    assert t.info.client_request_id == "ask-prep001" and t.info.tags["route"] == "prepared" and t.info.tags["lesson_id"] == "use_case_score"
+    assert [a.value for a in mlflow.get_trace(t.info.trace_id).info.assessments if a.name == "resolved"] == [True]
+    [asked] = [e for e in store.events() if e["kind"] == "asked"]  # the manager's view counts it like any question
+    assert asked["detail"]["prepared"] and asked["detail"]["question"] == "When does this stop working?"
+
+
 def test_names_come_from_settings(monkeypatch):
     from drill import mlflow_names
 

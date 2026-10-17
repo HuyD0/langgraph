@@ -1,0 +1,966 @@
+{
+ "average_precision": {
+  "check:0:0": {
+   "q": "Why not “The model is excellent: 0.97 means near perfect”?",
+   "a": "**Why \"0.97 means near perfect\" isn't the best answer**\n\nIt gets one thing right. A ROC-AUC of 0.97 is real. It means a random fraud usually gets a higher score than a random normal transaction. The model has learned something.\n\nWhat it misses is how rare fraud is. With 1 fraud in 200, there are 199 normal transactions for every fraud. Most of them are easy to rank below the fraud. ROC-AUC counts all those easy wins, so the score looks great. That's what \"flatters\" means here: it makes the model look better than it is for this job.\n\nPR-AUC (average precision) tells a different story. Walk down the list from the highest score. Each time you reach a real fraud, note the precision so far. Precision is the share of flagged items that are really fraud. Those precisions average about 0.18. So at those points, only about 18% of the flagged transactions are fraud. The rest are false alarms. That beats the random baseline of 0.005 (1 in 200), but it's far from \"near perfect.\"\n\n**Why the other option is better:** \"ROC-AUC flatters it; PR-AUC says most alerts are false alarms\" is right because it reads both numbers honestly for a rare event.",
+   "step": "Check",
+   "fingerprint": "37040abe8ef571e9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The answer is about 200 words, slightly long, and the 'about 18% of flagged are fraud' line loosely equates average precision with precision at a single point."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “PR-AUC must be a bug when ROC-AUC is this high”?",
+   "a": "It's a fair instinct to double-check when two metrics disagree. Checking that labels and scores weren't swapped is a good habit. But here the gap isn't a bug. It's exactly what rare positives do.\n\nPicture 10,000 transactions: 50 fraud, 9,950 legit. ROC-AUC 0.97 means a random fraud case usually scores above a random legit one. That sounds great. But even if only 3% of legit transactions score high, that's about 300 false alarms crowding the top of the list. The 50 real frauds are mixed in among them. So when you walk down the list, precision (the share of flagged items that are really fraud) stays low. That's why PR-AUC is 0.18.\n\nROC-AUC looks good because thousands of easy legit transactions are ranked correctly. Those easy wins hide the crowded top.\n\nAlso remember PR-AUC's baseline. Random guessing scores the share of positives, which is 1 in 200, or 0.005. So 0.18 is far better than random. It's just honest about the false alarms.\n\n\"ROC-AUC flatters it; PR-AUC says most alerts are false alarms\" is better because it explains the gap as the expected effect of rare positives, not a mistake.",
+   "step": "Check",
+   "fingerprint": "38841dcc42532538",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It's close to perfect”?",
+   "a": "\"It's close to perfect\" gets the direction backwards. For PR-AUC, bigger is better, and a perfect model scores 1.0. A score of 0.01 is about as far from 1.0 as you can get.\n\nThe mix-up is understandable. Some numbers, like an error rate or a loss (a number that measures how wrong the model is), are best when they are near 0. PR-AUC is not one of those. It measures how well the real positives (here, orders that really got returned) land near the top of the ranked list.\n\nWhat that answer misses is the baseline. The baseline is what random guessing would score. For PR-AUC, the baseline is the share of positives, not 0.5. Here 1 in 100 orders is returned, so the share is 0.01. A model that just shuffled the orders randomly would score about 0.01 too.\n\nSo this model ranks returns no better than a coin-flip-style shuffle.\n\n**\"It's about as good as guessing\" is the right answer, because 0.01 matches the 1% share of returns, which is exactly what random guessing scores.**",
+   "step": "Check",
+   "fingerprint": "c2ba10517c74f4c8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It must be a bug”?",
+   "a": "\"It must be a bug\" comes from a fair instinct. A score of 0.01 looks shockingly low. If you're used to ROC-AUC, where guessing scores 0.5, then 0.01 seems impossible without a mistake. A quick sanity check of your code is never a bad habit.\n\nBut that answer misses what the number is telling you. PR-AUC's baseline (what random guessing scores) is the share of positives. Here, 1 in 100 orders gets returned, so the share is 0.01. A model that ranks orders at random would score about 0.01.\n\nSo nothing is broken. The math is working fine. The result is just bad news about the model. It isn't putting the real returns near the top of the list any better than chance would. Blaming a bug could send you hunting for an error that isn't there, when the real job is to improve the model.\n\n\"It's about as good as guessing\" is better because it matches 0.01 against the right baseline, the 1% share of returns, and reads the score correctly.",
+   "step": "Check",
+   "fingerprint": "0e711d247cda260c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Accuracy, to back up the 0.95”?",
+   "a": "Asking for a second number is a good instinct. The 0.95 does need backing up. Accuracy just backs it up with the wrong kind of number.\n\n**Accuracy** is the share of all predictions that were correct. With rare events, that share is mostly made of easy negatives. Say 1 machine in 100 fails. A model that always says \"no failure\" is right 99 times out of 100. That is 99% accuracy, yet it catches zero failures. So accuracy flatters the model in the same way ROC-AUC does. Both get inflated by all those easy negatives.\n\nAccuracy also depends on one threshold. That is the score cutoff where you switch from \"no failure\" to \"failure.\" So it judges a single setting, not the model across every threshold. Neither number would tell you whether the real failures actually show up near the top of the list.\n\n**\"PR-AUC for the same model\"** is the better ask. It rewards ranking the real failures near the top. Its baseline is the share of positives, about 0.01 here, not 0.5. That makes it the honest score for rare events like machine failures.",
+   "step": "Check",
+   "fingerprint": "5fb1f4c88aa9be13",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. Minor: the PR-AUC part runs four sentences instead of the requested one, and 'baseline' is not explained as 'what random guessing scores'."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Nothing: 0.95 is close to perfect”?",
+   "a": "The answer gets one thing right. A ROC-AUC of 0.95 is real information. It means a random failure gets a higher score than a random normal machine 95% of the time. That is far better than guessing, which scores 0.5.\n\nWhat it misses is that failures are rare. When almost every example is a negative (really 0), there are huge numbers of easy normal machines to rank below the failures. That pads ROC-AUC and flatters the model.\n\nPicture 10,000 normal machines and 10 failures. Being \"95% right\" still leaves about 5% of the normals, roughly 500, scoring above a typical failure. So a technician checking the top of the list could face around 50 false alarms for every real failure. ROC-AUC alone hides that.\n\nPR-AUC exposes it. It rewards real positives (examples that are really 1) found near the top of the list. Its baseline is the share of positives, here about 0.001, not 0.5.\n\nSo \"PR-AUC for the same model\" is the better answer, because it shows whether the alerts at the top of the list are actually worth acting on when failures are rare.",
+   "step": "Check",
+   "fingerprint": "daebb2ce1a1e88bc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The 500 and 50 false-alarm figures go beyond the lesson, but they are consistent with a 0.95 ROC-AUC on 10,000 normals and 10 failures. The answer is about 187 words, so it stays under the limit."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Sort by score, then walk down” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* Precision and recall change with the threshold. That's the cut-off score where we say \"yes, this is a 1.\" I want one number that judges the model across every threshold.\n\n*The idea:* Sort the examples by score, highest first, like ranking exam papers. Walk down the list. Each time I reach a real positive, I note the precision so far: the share of examples passed that were really positive. Average those notes. That's average precision, the usual way to compute PR-AUC. It rewards putting the real positives near the top.\n\n*A trade-off:* It only looks at the order of the scores, not their size. A model can rank well and still give scores that don't match real probabilities.\n\n**A likely follow-up:** \"Why not just use ROC-AUC?\"\n\n*Hint for a strong answer:* When positives are rare, there are many easy negatives to rank below them. That makes ROC-AUC look flattering. Then mention the baseline. Random guessing on PR-AUC scores about the share of positives, around 0.01 for 1% positives, not 0.5. So you compare a PR-AUC score against that baseline, not against 0.5.",
+   "step": "Explain",
+   "fingerprint": "0a411f3c4445c854",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'order not size of scores' trade-off is not in the lesson, but it is true and does not contradict it. The answer is about 188 words, just under the limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **ROC-AUC looks great, real use disappoints.** You report a ROC-AUC (the \"chance a real positive outranks a negative\" score) of 0.95. Then in production, the top of your alert list is mostly false alarms. That's ROC-AUC flattering you, because rare positives sit above a crowd of easy negatives.\n- **PR-AUC judged against the wrong baseline.** A PR-AUC (area under the precision-recall curve) of 0.15 can sound poor. With 1% positives it's 15 times better than guessing. And 0.5 doesn't mean \"random\" here.\n- **Only ROC-AUC in your logs.** If your MLflow run (one logged experiment) has `roc_auc` but no `pr_auc`, the honest number for rare events was never looked at.\n- **Your hand-made score disagrees with the library.** This often means the list was sorted lowest-first by mistake.\n\n**Quickest check**\n\n1. Work out the share of positives in your data. Compare PR-AUC to it, not to 0.5.\n2. Sort by score and read the top 20 examples. Count how many are really positive. If few are, the high ROC-AUC was misleading.\n3. Compare your number with `average_precision_score` on the same data.",
+   "step": "Learn",
+   "fingerprint": "1094898945651f7c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Average precision is a strong default for rare events, but here are three places it needs extra care.\n\n**1. The share of positives changes over time.** Random guessing scores about the share of positives, so the \"floor\" moves when that share moves. A PR-AUC of 0.30 means more when positives are 1% of the data than when they are 20%. Always log the share of positives next to `pr_auc`, and compare a score against that baseline.\n\n**2. Very few real positives.** With only a handful of real 1s, one example moving up or down the list can swing the score a lot. Gather more labeled positives if you can. Otherwise, check how much the score shifts when you re-run on different random samples, and treat small differences as noise.\n\n**3. Retrieval in a RAG app.** RAG means \"retrieval-augmented generation\": the app fetches documents, then an LLM answers from them. Usually only the top few fetched documents reach the LLM, so a good ranking far down the list doesn't help. Measure precision or recall within the top few results instead.",
+   "step": "Learn",
+   "fingerprint": "eed3fb51bbf54c55",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “PR-AUC” different from “average precision”?",
+   "a": "They're two views of the same idea. One is the goal and the other is the recipe.\n\n**PR-AUC** is the goal. Picture a curve of precision against recall, one point per threshold. PR-AUC is the area under that curve. Precision means \"of what I flagged, how much was real?\" Recall means \"of all the real ones, how much did I find?\"\n\n**Average precision** is the recipe. You walk down the list once, from highest score to lowest. At each real positive, you note the precision so far. Then you average those notes. In the lesson's example, that gives (1.00 + 0.67 + 0.60) / 3, about 0.76.\n\n**How they fit together:** average precision is a step-by-step way to measure that area without drawing anything. Each real positive adds one step to recall. The precision at that moment is the height of that step. That's why libraries like scikit-learn report PR-AUC with `average_precision_score`.\n\n**Everyday comparison:** PR-AUC is \"the area of this room.\" Average precision is counting the floor tiles to get it. Another method, like drawing slanted lines between points, can give a slightly different number. So say which method you used.",
+   "step": "Learn",
+   "fingerprint": "eab368743e41b4c5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer passes every check. It is about 190 words. The remark about slanted lines giving a slightly different number goes beyond the lesson, but it is true and does not contradict it."
+   }
+  }
+ },
+ "best_threshold": {
+  "check:0:1": {
+   "q": "Why not “Both go up”?",
+   "a": "\"Both go up\" gets one half right. Precision usually does rise. It misses that recall cannot rise.\n\nFirst, two terms:\n- **Precision**: of the items you said \"yes\" to, how many really were yes.\n- **Recall**: of all the items that really were yes, how many you caught.\n\nRaising the threshold from 0.5 to 0.9 means the model says \"yes\" less often. Only the most confident scores get through. Those are more likely to be right, so precision usually climbs.\n\nBut saying \"yes\" less often can never help you catch *more* true yeses. Any item that was below 0.5 is still below 0.9. Some items that passed at 0.5 now fail. So recall stays the same or drops. It never goes up.\n\nTake the lesson's scores `[0.9, 0.65, 0.4]`. Say the first two are truly spam. At 0.5 you catch both, so recall is 2 of 2. At 0.7 you catch only one, so recall is 1 of 2.\n\n\"Precision goes up, recall goes down\" is better because it names the real trade-off: fewer yeses buy you accuracy on each yes at the cost of missing true ones.",
+   "step": "Check",
+   "fingerprint": "ae7ca4b88bb50b3d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the last sentence says 'accuracy on each yes' for precision, which blurs a term the lesson treats as separate, and the example uses 0.7 while the question says 0.9."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Recall goes up, precision goes down”?",
+   "a": "That option gets one thing right. Precision and recall do usually move in opposite directions when you shift the threshold. That is the trade-off the lesson describes.\n\nBut it has the direction backwards.\n\nTwo quick definitions:\n- **Precision**: of everything the model said \"yes\" to, how many were really yes.\n- **Recall**: of all the real yeses out there, how many the model caught.\n\nRaising the threshold from 0.5 to 0.9 makes the model stricter. Fewer scores clear the bar, so you get fewer \"yes\" answers.\n\nTake the lesson's scores, `[0.9, 0.65, 0.4]`. At 0.5 you get two yeses. At 0.9 you get one, since 0.9 is \"at or above\" 0.9.\n\nRecall can't go up here. Your list of yeses only shrinks, so you can't catch more real yeses than before. It usually goes down.\n\nPrecision usually goes up. The yeses that survive are the ones the model was most confident about, and those are more often correct.\n\n\"Precision goes up, recall goes down\" is better because a stricter threshold means fewer, more confident yeses. Those are usually more accurate, but they miss more of the real cases.",
+   "step": "Check",
+   "fingerprint": "f23b375570b40af1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Lower, so more payments get flagged”?",
+   "a": "\"Lower\" moves the threshold the wrong way for this problem.\n\nRecall the rule: a score at or above the threshold means \"yes, flag it.\" If you lower the threshold, more scores clear the bar. So more payments get flagged. Some of those extra flags will be real fraud, which is the one thing this option gets right. It raises **recall**, meaning you catch more of the fraud that is really there.\n\nBut the checkers' complaint is **false alarms**. A false alarm is a payment flagged as fraud that turns out to be fine. Flagging more payments usually adds more of these, not fewer. That lowers **precision**, meaning a smaller share of the flags are real fraud. The checkers would drown even faster.\n\nUsing the lesson's scores:\n\n```\nscores = [0.9, 0.65, 0.4]\n# t = 0.7  -> [1, 0, 0]\n# t = 0.5  -> [1, 1, 0]   lower threshold, more flags\n```\n\n\"Higher, so fewer payments get flagged\" is better because only the most confident scores get flagged, which cuts false alarms and raises precision. The cost is that you may miss a little more real fraud.",
+   "step": "Check",
+   "fingerprint": "d6f9ac8d1fa23be8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor nits: it says higher 'raises precision' where the lesson says 'usually', and 'a little more real fraud' is unsupported, since the loss could be bigger."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Nowhere: thresholds don't change alarms”?",
+   "a": "\"Nowhere\" gets one thing right. Moving the threshold does not change the model's scores. A payment that scored 0.65 still scores 0.65.\n\nWhat it misses: the threshold decides which scores count as \"flag it.\" Every payment at or above the line goes to a checker. So the threshold directly controls how many alarms they get.\n\nUsing the lesson's `scores = [0.9, 0.65, 0.4]`:\n\n- At 0.5, two payments get flagged.\n- At 0.7, only one does.\n\nSame model, same scores, fewer alarms.\n\nRaising it has a cost, though. Fewer false alarms means more of the flags are real fraud. That is called higher **precision**: of the things you flagged, how many were right. But some real fraud now falls below the line and slips through. That is lower **recall**: of all the real fraud, how much you caught. So choose the new threshold by testing it on data you kept aside for tuning, not by guessing.\n\n\"Higher, so fewer payments get flagged\" is better because it moves the one setting that controls alarm count, in the direction the checkers need.",
+   "step": "Check",
+   "fingerprint": "87737b6b9ffe1907",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Try more thresholds on it”?",
+   "a": "\"Try more thresholds on it\" has one good instinct. Searching more widely for a better threshold is a reasonable idea. But that search belongs on the validation set, not the test set.\n\nThe test set has one job. It acts as data the model has never influenced, so its score tells you how the model will likely do on brand-new data in the real world.\n\nOnce you try several thresholds on the test set and keep the best one, the test set is helping you choose. It has become a second validation set. The winning threshold will look good partly by luck, because it happened to fit those particular test examples. That makes the test score too optimistic. Nothing honest is left to check against.\n\nIf you think 0.7 might not be the best choice, go back and try more thresholds on the validation set. Then use the test set at the very end.\n\n\"Check 0.7 on it once\" is better because a single check keeps the test score an honest, untouched estimate of how your chosen threshold will perform on new data.",
+   "step": "Check",
+   "fingerprint": "979e26fa5f0efdb8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Skip it, validation was enough”?",
+   "a": "\"Skip it, validation was enough\" gets one thing right. The validation set did its job. You used it to try thresholds and pick `0.7`, and you shouldn't keep tuning after that.\n\nWhat it misses is that the validation score is now a bit too hopeful. You picked `0.7` *because* it did best on that particular set of examples. Some of that win may come from quirks of those examples, not from real skill. This is called **overfitting**: a choice that fits the data you tuned on better than it fits new data. So the validation number can't tell you how `0.7` will do on data it has never seen.\n\nThe **test set** is data you kept aside and never used for any choice. Checking `0.7` on it gives an honest estimate of real-world performance. You check it only once. If you peek, adjust, and peek again, the test set quietly becomes a second validation set and stops being honest.\n\n\"Check 0.7 on it once\" is better because it gives you a fair, unbiased score for the threshold you already chose, without letting the test set influence that choice.",
+   "step": "Check",
+   "fingerprint": "ad1baeb2b231c084",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Don't compare decimals with ==” matter?",
+   "a": "Computers store decimals in binary (base 2), and many decimals can't be written exactly that way. So they get stored as a very close guess. Usually you never notice. But `==` checks for an *exact* match, and close isn't exact.\n\n```python\nscore = 0.1 + 0.2\nprint(score)         # 0.30000000000000004\nprint(score == 0.3)  # False\n```\n\n**Why this bites in real work:**\n\n- **Edge cases flip.** Your rule is \"at or above the threshold means yes.\" A score that should equal the threshold exactly might be stored a hair below it. That example quietly becomes a \"no.\" Your counts shift, and you can't see why.\n- **Lookups fail.** Say you search your results for the run where `threshold == 0.3`. If that threshold was computed, not typed, it may be `0.30000000000000004`. The search finds nothing.\n- **Tests break randomly.** A check like `similarity == 0.8` can pass on one machine and fail after a tiny change in the math.\n\n**The fix:** check \"close enough\" instead of \"exactly equal.\" In Python, `math.isclose(a, b)` does this. It treats two numbers as equal if they differ by only a tiny amount, called a tolerance.",
+   "step": "Explain",
+   "fingerprint": "b139605b82ed85fa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Try every threshold, keep the best” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"A classifier gives a score, not a yes or no. So I need a cut-off, called a threshold. A score at or above it means yes.\"\n\n*The idea:* \"I try each score in the list as the threshold. For each one, I turn every score into a 1 or a 0. Then I count how many match the right answers. I keep the threshold with the most correct. A later threshold only wins if it gets strictly more right, so ties keep the earlier one.\"\n\n*The trade-off:* \"This checks every threshold against every example. That's fine for 100 examples, which is 10,000 checks. For 10,000 examples it's 100 million checks, which is slow. I also tune on the validation set, the data held back for tuning. Then I check once on the test set.\"\n\n**Likely follow-up:** \"How would you make it faster?\"\n\n*Hint for a strong answer:* Sort the scores first. Then walk through them once, in order. Each step to the next threshold flips only a few examples from yes to no. So you update the running count instead of recounting everything. Mention that equal scores must flip together.",
+   "step": "Explain",
+   "fingerprint": "c76f8896cd018b68",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Test score looks too good, then drops in real use.** This often means the threshold was tuned on the test set. The test set should be a fresh, final check, used once.\n- **Accuracy is high, but the business is unhappy.** Say 98% of emails are not spam. A model that almost never says \"yes\" still scores about 98% accuracy, yet misses most spam. That means the threshold was picked for accuracy, not for what matters.\n- **The threshold is still 0.5.** If nobody chose it on purpose, it was probably never tuned.\n- **Nobody can say which threshold is live.** In MLflow, runs show metrics but no `threshold` parameter. Then you can't tell which cutoff produced which result.\n\n**Quickest check**\n\nOpen your MLflow runs. Confirm each one logged `threshold`. Then compare the validation score with the test score. A big gap is a red flag.\n\nFinally, look at precision and recall at that threshold, not just accuracy. Precision means \"of the ones we flagged, how many were right.\" Recall means \"of the real ones, how many did we catch.\" If either one is far from what the business needs, the threshold needs another look.",
+   "step": "Learn",
+   "fingerprint": "e3ee879b53ab7faa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'threshold is still 0.5' sign is not from the lesson, which only uses 0.5 as an example value, not a default."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**Data that changes over time.** A threshold tuned on last year's data can slowly stop fitting. Scores shift when users, products, or spam tricks change. This is called drift. Keep checking precision and recall on fresh labeled examples, and re-tune when they slip. Log each new threshold in MLflow so you can compare versions.\n\n**Very little data.** With only a few dozen validation examples, one example can move the \"best\" threshold a lot. You end up fitting luck, not a real pattern. Pick a value from a range where results stay steady. Or use cross-validation: tune on several different splits of the data and average the results.\n\n**An LLM instead of a trained classifier.** An LLM (large language model) often replies with a label, not a score. If you ask it for a confidence number, that number may not be trustworthy. Get a real score if you can, for example from token probabilities (how likely the model thought each word was). Then check on labeled examples that higher scores really mean \"yes\" more often before you set a threshold.",
+   "step": "Learn",
+   "fingerprint": "7b6717c152352d91",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “threshold” mean here?",
+   "a": "A **threshold** is a cut-off line. You pick a number. Anything at or above it counts as \"yes.\" Anything below counts as \"no.\"\n\nThink of a ride at a theme park with a height sign. If you are at or above the line, you can ride. Below it, you can't. The sign doesn't measure you. It just turns your height into a yes or a no.\n\nA classifier works the same way. It doesn't say \"spam\" or \"not spam\" directly. It gives a **score**, a number between 0 and 1 that shows how confident it is. The threshold turns that score into a decision.\n\nIn the lesson's example, the scores are `[0.9, 0.65, 0.4]`.\n\n- With a threshold of `0.5`, the first two pass and the last doesn't: `[1, 1, 0]`.\n- With a threshold of `0.7`, only `0.9` passes: `[1, 0, 0]`.\n\nSame model, same scores, different decisions. Raising the line means fewer yeses. That usually raises **precision**, which means your yeses are more often correct. It usually lowers **recall**, which means you catch fewer of the real yeses.",
+   "step": "Learn",
+   "fingerprint": "e7d3e339627b7151",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems; the only small stretch is 'a number between 0 and 1 that shows how confident it is', which the lesson does not state, though its example scores fit it."
+   }
+  }
+ },
+ "calibration_table": {
+  "check:0:0": {
+   "q": "Why not “Nothing: the threshold stays at 90, where it wa…”?",
+   "a": "That option gets one thing right. The number on the rule really is still 90. Nobody changed the setting.\n\nBut the setting is not what matters. What matters is what \"above 90%\" actually means. You set that threshold (the cut-off point for auto-approving) because you trusted that a 90% prediction is right about 90% of the time. The table shows that trust is misplaced.\n\nIn the 80-100% bucket, the model says 0.92 on average. Only 61% of those cases really happened. So when the model sounds very sure, it is wrong about 4 times in 10, not 1 time in 10.\n\nYour rule auto-approves exactly those confident predictions. They skip the human check, so those mistakes go straight through. On paper the rule looks safe. In practice it lets through far more errors than you planned for.\n\nThe threshold's number stayed the same, but its meaning did not. \"Nothing changed\" misses that.\n\n\"Overconfident: the rule approves far more mistakes than it seems\" is better because it names the real problem: the model's high scores overstate how often it is right, so a rule built on them quietly approves many wrong cases.",
+   "step": "Check",
+   "fingerprint": "2eebd72f6cb55119",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: \"exactly those confident predictions\" treats the 80-100% bucket as the same set as \"above 90%\", and \"its meaning did not\" is slightly ambiguous wording; neither is a real error."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Underconfident: the threshold could safely be l…”?",
+   "a": "That option gets one thing right. It notices that the prediction and what really happened don't match, and that this should affect the threshold.\n\nBut it reads the gap in the wrong direction. **Underconfident** means the model says a *lower* number than reality. For example, it says 60% but is right 90% of the time. Here it is the reverse. The model says 0.92 on average, but only 61% of those cases really happened. It claims more certainty than it earns. That is **overconfident**.\n\nLowering the threshold would make things worse. The rule would let in even more predictions, including weaker ones. If the high bucket is already wrong about 4 times in 10, loosening the rule adds more mistakes, not fewer.\n\nThe fix goes the other way. You could raise the threshold, send more cases to a person, or recalibrate the model. Recalibrating means adjusting its scores so they match how often things really happen.\n\n\"Overconfident: the rule approves far more mistakes than it seems\" is better because it reads the gap correctly. Saying 92% while being right only 61% of the time means \"auto-approve above 90%\" lets through many more errors than the number suggests.",
+   "step": "Check",
+   "fingerprint": "10e406993cd04a0e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Trust it: the model knows itself”?",
+   "a": "\"Trust it: the model knows itself\" assumes the model's confidence is honest. The lesson warns that many models are overconfident, and that LLMs (large language models, the kind behind chatbots) asked to rate their own confidence often are.\n\nWhat it gets right: the 95% is the number your decision would use. Auto-approve above a threshold only works if you have a probability to compare against.\n\nWhat it misses: you don't yet know if that number means what it says. A calibrated model that says 95% is right about 95% of the time it says so. If this model is overconfident, your auto-approve threshold means something it does not, and wrong answers slip through without a person seeing them.\n\nThe lesson's example table shows what overconfidence looks like. In the 80-100% bucket, the average prediction was 0.92, but only 0.61 really happened. That gap is the kind of thing you'd want to catch before trusting the number.\n\n\"Check how often its 95% answers are right\" is better because it compares what the model claims with what actually happened, and that comparison is exactly what calibration checks.",
+   "step": "Check",
+   "fingerprint": "0aaba64d7a9f603b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Raise the bar to 99% and ship”?",
+   "a": "\"Raise the bar to 99% and ship\" has a sensible instinct behind it. You want to be more careful before auto-approving, and a higher threshold sounds safer. A threshold is just the cutoff line: above it, approve automatically; below it, send to a person.\n\nThe problem is that a higher bar only helps if the model's numbers are honest. That is the very thing you don't know yet. The model says 95% on most answers, which is already a warning sign of overconfidence. An overconfident model's \"99%\" might be right only 60% of the time, just like the 80-100% bucket in the lesson's table. Moving the line doesn't make the numbers mean more. It just moves the line on a ruler you haven't checked. Also, if the model mostly says 95%, a 99% bar might catch almost nothing, or the model might simply start saying 99%.\n\n\"Check how often its 95% answers are right\" is better because it tests whether the number deserves trust before any threshold depends on it. That is a calibration check.",
+   "step": "Check",
+   "fingerprint": "e78e76231a2fd45e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No check fails. The only weak spot is the speculative aside that the model 'might simply start saying 99%', which the lesson does not support, and the closing part runs to two sentences where one was asked for."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Model B, it plays it safe”?",
+   "a": "\"Model B, it plays it safe\" sounds sensible, but it is not the best answer.\n\n**What it gets right:** a model that hedges near 50% avoids one problem. It rarely makes the big, confident mistakes an overconfident model makes. \"Hedging\" means giving a cautious middle answer instead of committing.\n\n**What it misses:** a Brier score equal to always guessing 50% (that is, 0.25) means Model B's chances, on average, sit no closer to what happened than a blanket 50% guess would. B might not say 50% every time. But its numbers do no better overall than a coin-flip guess. So they tell you little about which customers will really cancel.\n\nThat matters when a probability drives a decision. Suppose you contact everyone above 80%. B's scores give you little reason to think the people it ranks high are the ones who leave. \"Safe\" here mostly means \"not much help.\"\n\n**Why Model A is better:** a Brier score close to 0 means its predicted chances land close to what really happened, case after case, so you can trust them.",
+   "step": "Check",
+   "fingerprint": "195e5fc70c4e164b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the only slight stretch is the ranking talk (\"people it ranks high\"), which goes beyond what the lesson says about Brier scores."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Neither: Brier can't compare them”?",
+   "a": "\"Neither\" has one fair point. A Brier score is a single number. It squashes everything into one average, so it can't show you *where* a model goes wrong. For that you'd look at the buckets, or **bins**, in a reliability table.\n\nBut that doesn't stop it from comparing two models. Both models here predict the same thing: which customers cancel. So you can line their scores up side by side. Lower means their predicted chances sat closer to what really happened (1 for cancelled, 0 for stayed).\n\nModel B scores about 0.25. That is the same score you'd get by guessing 50% for every customer. So, overall, its chances are no better than a coin-flip guess. That doesn't prove it learned nothing. But it gives you no reason to trust its numbers more than that guess.\n\nModel A scores close to 0. That only happens when the gaps between its predictions and what happened are small, case after case.\n\n**Model A is the better answer: a Brier score near 0 means its predicted chances stayed close to what really happened, while Model B did no better than always guessing 50%.**",
+   "step": "Check",
+   "fingerprint": "3707891e20c42cab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Five buckets with running totals” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"A model that says 70% should be right about 70% of the time. I want to check whether its probabilities are honest.\"\n\n*The idea:* \"I sort each prediction into one of five buckets by its probability, like mail into slots. I keep three running totals per bucket: how many predictions landed there, the sum of their probabilities, and how many really happened. Then, for each bucket, I compare the average prediction with the share that happened. If they match, the model is calibrated. That means its stated confidence fits reality. It walks through the predictions once.\"\n\n*Trade-off:* \"Bucket count is a balance. More buckets show more detail, but each holds fewer predictions, so the numbers get noisy. An empty bucket has no average, so I skip it rather than divide by zero.\"\n\n**A likely follow-up**\n\n\"Why not just report the Brier score?\"\n\n*Hint:* The Brier score is one number for everything. It tells you *how much* the model is off, not *where*. The table can show, say, that the model is fine at low confidence but overconfident above 80%. That matters when an auto-approve threshold sits right there.",
+   "step": "Explain",
+   "fingerprint": "a3035452dac64989",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The auto-approve lane leaks mistakes.** Items the model was \"95% sure\" about get overturned by people far more than 1 time in 20.\n- **Confidence clusters at the top.** Most scores sit at 0.9 or higher. LLMs rating their own confidence often do this. If nearly everything is \"very sure,\" the number isn't telling you much.\n- **Accuracy looks fine, but the Brier score doesn't.** The model picks the right answer often, yet its Brier score is close to 0.25. That's what always guessing 50% would get.\n- **Good in testing, worse in real use.** The Brier score was low on your test set, then climbs on live data logged in MLflow. The test data may not look like real traffic.\n- **Tiny buckets.** A bucket with only a few predictions can look perfect or awful by luck alone.\n\n**Quickest check**\n\nTake recent predictions where you now know the real outcome. Look only at the highest bucket, 80–100%. Compare its average prediction with how often the thing really happened. Suppose it says 0.92 but only 0.61 happened, like the lesson's example. Then the model is overconfident. Any threshold you set on those numbers is misleading.",
+   "step": "Learn",
+   "fingerprint": "1a9ca77524795ed2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where checking calibration needs extra care.\n\n**Very little data.** With only a handful of predictions in a bucket, the \"really happened\" number jumps around by luck. Use fewer buckets, show how many predictions each bucket holds, and don't trust a bucket with only a few in it.\n\n**LLMs rating their own confidence.** When you ask a chatbot \"how sure are you?\", it tends to answer 80% or 90% almost every time, so most predictions land in one bucket. Build a labeled test set (examples where you know the right answer) and check the scores against it. You can also try a different signal, like asking the same question several times and counting how often the answers agree.\n\n**Data that changes over time.** A model calibrated on last year's data can drift as users, products or prompts change. Recheck the reliability table on fresh data on a schedule. Log the Brier score to MLflow each time so you can spot it creeping up.",
+   "step": "Learn",
+   "fingerprint": "f0d1ba45fa7b613f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “calibration” mean here?",
+   "a": "**Calibration** means a model's confidence numbers can be taken at face value.\n\nThink of a weather forecaster. Look back at every day they said \"70% chance of rain.\" If it rained on about 7 out of 10 of those days, their 70% is honest. If it rained on only 4 out of 10, they sound surer than they really are. That is being **overconfident**.\n\nA model works the same way. When it says \"70% likely,\" it should be right about 70% of the time *across all the times it said that*. One single prediction can't show this. You need many of them together.\n\nThat's why the lesson's example groups predictions into buckets:\n\n- In the 0-20% bucket, the model's average guess was 0.12, and the thing really happened 0.10 of the time. Those are close, so this bucket is calibrated.\n- In the 80-100% bucket, it averaged 0.92 but was right only 0.61 of the time. It claimed about 92% but delivered about 61%. That is overconfident.\n\nThis matters for rules like \"auto-approve above 90%.\" With this model, a 92% score is really closer to a 61% chance. So that rule would approve many cases it shouldn't.",
+   "step": "Learn",
+   "fingerprint": "afd521f5ce432d2c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "precision_recall": {
+  "check:0:1": {
+   "q": "Why not “Precision 0.2, recall 0.8”?",
+   "a": "\"Precision 0.2, recall 0.8\" uses the right two numbers but puts them in the wrong places. The numbers are swapped.\n\n**Precision** asks: of the emails the filter flagged, how many were really spam? The filter flagged 10 emails, and 8 of those were spam. So 8 out of 10 were right, which is 0.8. Here the bottom of the fraction (the denominator) is the 10 flagged emails.\n\n**Recall** asks: of all the spam that existed, how much did the filter catch? There were 40 spam emails, and it caught 8. So 8 out of 40 were caught, which is 0.2. Here the denominator is the 40 spam emails in total.\n\nThe swapped answer describes a different filter. That filter would catch most of the spam but flag lots of good email too. Ours is the reverse. It is careful, since its flags are usually right, but it misses most of the spam.\n\nA handy check: precision divides by what the model *flagged*, and recall divides by what it *should have* flagged.\n\n\"Precision 0.8, recall 0.2\" is better because it matches each question to the right denominator: 10 flagged emails for precision, 40 real spam emails for recall.",
+   "step": "Check",
+   "fingerprint": "47f45cbd0bdcdff1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Precision 0.8, recall 0.8”?",
+   "a": "\"Precision 0.8, recall 0.8\" gets half of it right.\n\n**What it gets right:** precision really is 0.8. Precision asks: of the emails the filter flagged, how many were truly spam? It flagged 10, and 8 were spam. That's 8 out of 10, so 0.8.\n\n**What it misses:** recall asks a different question. Of all the spam that existed, how much did the filter catch? There were 40 spam emails, and it caught only 8. The other 32 slipped into the inbox. Catching 8 out of 40 is one in five, which is 0.2.\n\nThe 0.8 answer quietly reuses the flagged pile of 10 for both numbers. Recall has to look at the whole pile of real spam, including the ones the filter never flagged. Those missed ones are called false negatives: the model said \"no\", but the truth was \"yes\".\n\nThis is the lesson's big point. A filter can look sharp on what it flags while missing most of what matters.\n\n**Why \"Precision 0.8, recall 0.2\" is better:** it shows that the filter is usually right when it flags something, but it catches only a small share of the spam.",
+   "step": "Check",
+   "fingerprint": "f2c19ae108415fa8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Yes, 99% is an excellent score”?",
+   "a": "The 99% figure is real. The model is right on 99 out of every 100 machines. That part of \"Yes, 99% is an excellent score\" holds up.\n\nThe problem is how it gets there. It never thinks about the machines at all. It just says \"no breakdown\" every time. Since breakdowns are rare, saying \"no\" is almost always right by luck.\n\nNow look at the one machine that matters: the one that breaks. The model misses it. It would miss every breakdown, forever. That is the whole job, and it fails at it completely.\n\nThis is why accuracy (the share of all answers that are right) lies when one kind of case is rare. The easy, common cases swamp the score.\n\nRecall asks: of the breakdowns that really happened, how many did the model catch? Here the answer is none, so recall is zero.\n\n\"No, it never catches a breakdown\" is better because it judges the model on the rare case you actually care about, not on the easy ones.",
+   "step": "Check",
+   "fingerprint": "48246745bd30beab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes, if the test set was large”?",
+   "a": "\"Yes, if the test set was large\" gets one thing right. A bigger test set (the batch of examples you check the model on) makes the 99% figure more trustworthy. With only 10 machines, 99% could be luck. With 10,000, it is a solid number.\n\nBut it misses the real problem. A larger test set only makes you more sure the model scores 99%. It does not change what the model does. This model says \"no breakdown\" every single time. So it scores 99% just because breakdowns are rare. It never flags a single one.\n\nThat is why we look at **recall**: of all the machines that really broke down, how many did the model catch? Here the answer is none. Recall is 0. No amount of test data fixes that, because the model never says \"yes.\"\n\nAccuracy (the share of all answers that are right) hides this. The 99 easy \"no\" cases drown out the 1 case you actually care about.\n\n\"No, it never catches a breakdown\" is better because it names the real failure: the model misses every breakdown, which is the whole reason it exists.",
+   "step": "Check",
+   "fingerprint": "923651dc66e6bc14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor nit: \"with only 10 machines, 99% could be luck\" is awkward, since 10 machines can't score 99%, but nothing contradicts the lesson."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Precision: how many it hid were toxic”?",
+   "a": "\"Precision: how many it hid were toxic\" describes precision correctly. It just measures the wrong thing for this goal.\n\nPrecision looks only at the comments the filter hid. It asks: of those, how many were really toxic? A high score means the filter rarely hides harmless comments by mistake. Those mistakes are called false positives, or `fp`.\n\nBut the question says hiding some harmless comments is fine. The real worry is toxic comments slipping through. Those are false negatives, or `fn`: the filter said \"fine\" when the comment was toxic. Precision never counts them. They are not in its formula at all.\n\nHere is how that can go wrong. Say there are 100 toxic comments. The filter hides just one, and that one is toxic. Precision is 1 out of 1, which is 100%. That looks perfect. Yet 99 toxic comments got through.\n\nRecall is better because it asks \"of all the toxic comments, how many did we catch?\", so it directly measures the misses this filter must avoid.",
+   "step": "Check",
+   "fingerprint": "1b66349624b698ad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Accuracy: how many it got right overall”?",
+   "a": "Accuracy sounds sensible. It counts how many answers were right out of all answers. That part is true, and it's a fine number when the classes are roughly balanced.\n\nThe trouble is that toxic comments are rare. Say 1 in 100 comments is toxic. A filter that never hides anything is right 99 times out of 100. That's 99% accuracy, and it catches zero toxic comments. Accuracy is mostly measuring the easy, common case (harmless comments) and hiding the failure you care about.\n\nThe goal in this question is to catch nearly every toxic comment, even if some harmless ones get hidden too. Hiding a harmless comment is a \"false positive\" (flagged, but really fine). Missing a toxic one is a \"false negative\" (not flagged, but really toxic). Here, false negatives are the costly mistake. Accuracy mixes both mistakes into one number, so it can't tell you how many toxic comments slipped through.\n\n**Recall is better because it measures exactly that: out of all the toxic comments that really exist, how many the filter caught.**",
+   "step": "Check",
+   "fingerprint": "ba2d18137df01b7a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Return the answer, don't print it” matter?",
+   "a": "Printing and returning look alike when you run code by hand. Both seem to \"give you the answer.\" But they do very different jobs.\n\n`print` shows a value on the screen for a human to read. Then the value is gone. `return` hands the value back to whoever called your function, so other code can use it.\n\nThe tests are \"other code.\" They call your function and check what comes back. If you only print, the function gives back `None`, which is Python's word for \"nothing.\" The test sees `None` and fails, even though the right number flashed on screen.\n\nThe same thing happens in real work. Here is a small example, unrelated to the exercise:\n\n```python\ndef double(x):\n    print(x * 2)\n\nresult = double(5)   # screen shows 10\nprint(result)        # None\n```\n\nNow picture passing that into `mlflow.log_metrics({\"score\": result})`. MLflow would get `None` instead of a number. The run would fail, or your dashboard would be missing the score. Nobody reads the console output later. Only returned values flow into the next step.\n\nSo use `print` while debugging. Use `return` for the answer.",
+   "step": "Explain",
+   "fingerprint": "9fe4b1940593e6f0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count three piles, then divide” in an interview?",
+   "a": "**A 30-second answer you could say out loud:**\n\n**The problem.** \"When the thing I'm looking for is rare, like fraud, accuracy lies. If 1 in 100 cases is fraud, a model that always says 'no' scores 99% and catches nothing.\"\n\n**The idea.** \"So I line up each prediction with the right answer and count three piles. True positives: I said yes, and it was yes. False positives: I said yes, but it was no. False negatives: I said no, but it was yes. Precision is true positives divided by everything I flagged. Recall is true positives divided by everything I should have flagged.\"\n\n**The trade-off.** \"The two pull against each other. Flag more cases and recall rises, but precision usually drops, because more false alarms get in.\"\n\n**Likely follow-up:** \"For fraud, which would you favour?\"\n\n**Hint for a strong answer:** Tie it to cost. Missed fraud is often expensive, which argues for recall. But too many false alarms annoy customers and overload reviewers. Name the cost of each mistake. Then say you'd log both numbers in MLflow on every run, so you can compare runs side by side.",
+   "step": "Explain",
+   "fingerprint": "37b227a8fc7daaf2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Accuracy looks great, but the rare cases slip through.** A 99% score on fraud data sounds impressive. Then real fraud keeps getting through once the model is live.\n- **The model almost never says \"yes\".** If it flags nothing, or close to nothing, it may have learned to always answer \"no\". That scores high accuracy for free.\n- **Recall near 0.** It catches almost none of the cases you care about.\n- **Precision near 0, or flags everywhere.** It shouts \"yes\" so often that people start ignoring the alerts.\n- **Only accuracy shows up in your MLflow runs.** If `precision` and `recall` are missing from the logged metrics, nobody checked the rare class.\n- **A 0 where you expected a number.** This can mean the model made no \"yes\" predictions at all. Precision then has nothing to divide by.\n\n**Quickest check**\n\nCount the three piles: `tp`, `fp` and `fn`. Also compare two simple counts: how many real \"yes\" cases exist, and how many \"yes\" answers the model gave. If the model's count is tiny or zero, accuracy was hiding the problem.",
+   "step": "Learn",
+   "fingerprint": "acb38a3eb4a934a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: tp, fp and fn are used without being spelled out, but the lesson defines them and nothing contradicts the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where counting `tp`, `fp` and `fn` needs extra care.\n\n**LLM or RAG apps.** A chatbot's answer isn't a clean yes or no, so there's nothing simple to count. Break the job into yes/no checks first. For example: \"did the retriever (the part that fetches documents) bring back the right document?\" Then precision and recall work again. A human or a grading model often decides what counts as right.\n\n**Very few rare cases.** Say your test set has only 5 fraud cases. Catching one more or one less moves recall by 20 points. Gather more labelled examples (cases where you know the right answer), and treat numbers from tiny samples as rough guesses.\n\n**Data that changes over time.** Fraudsters change tactics, so last month's precision may not hold today. Keep logging both numbers in MLflow on fresh data. When they drift (slowly change), recheck your threshold. That's the score cutoff where the model switches to saying \"yes.\"",
+   "step": "Learn",
+   "fingerprint": "7bef0632e5aee618",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. The 5-case recall arithmetic is right, the answer is about 160 words, and it gives no solution code. It runs a bit over the two-to-three-sentence limit per point, and the threshold idea comes from outside the lesson, but neither is wrong."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Precision” mean here?",
+   "a": "Picture a metal detector at the beach. It beeps 10 times. You dig each time. 7 times you find a real coin. 3 times it's a bottle cap. Its **precision** is 7 out of 10. In plain words: when it beeps, how often is it right?\n\nPrecision only looks at the beeps. It says nothing about coins you walked past without a beep. That's what recall measures.\n\nIn the lesson's example, a \"beep\" is the model saying \"yes,\" like flagging a payment as fraud. Two of the three counts matter here:\n\n- `tp` (true positive): the model said yes, and it really was yes. A real coin.\n- `fp` (false positive): the model said yes, but it was really no. A bottle cap.\n\nPrecision is then:\n\n```\nprecision = tp / (tp + fp)\n```\n\nThe bottom part, `tp + fp`, is every time the model said yes. The top part, `tp`, is the times it was right. So precision is the share of its \"yes\" answers you can trust.\n\nHigh precision means few false alarms.",
+   "step": "Learn",
+   "fingerprint": "6bb24dbb03e9dfdb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "split_by_key": {
+  "check:0:0": {
+   "q": "Why not “The model is too small for the task”?",
+   "a": "\"The model is too small for the task\" sounds reasonable, because small models can struggle. But it doesn't fit the numbers.\n\nA model that's too small can't capture the patterns in the data. Think of it as having too little room to learn. If that were the problem, it would do badly everywhere, including on the test set. It would not score 97 in 100 in testing.\n\nWhat we actually see is a big gap: great in testing, much worse in production. That gap is the clue. It says the test score was too optimistic, not that the model was too weak.\n\nThe question also tells us that rows from the same users appeared in both training and test. So the model may have memorised those users' habits. The test then quizzed it on people it already knew. Real users in production are new to it, so the score drops.\n\n\"Leakage: the test users were in training too\" is better because it explains both the inflated test score and the drop in production, using the fact the question gives you.",
+   "step": "Check",
+   "fingerprint": "b5d5cee861fecb4d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The test set was too large to score fairly”?",
+   "a": "That option points at the wrong thing. A test set being large doesn't make a score unfair. If anything, more test rows give you a *more* trustworthy score, because one lucky or unlucky row matters less.\n\nIt does get one thing right: something about the test was off, since 97 dropped to 70. But size can't explain a score that's too *high*. A bigger exam doesn't make students look smarter than they are.\n\nIt also ignores the biggest clue in the question: rows from the same users were in both training and test. That means the model had already seen those users' habits during training. At test time, it partly recognised them instead of predicting fresh. That's like seeing exam questions in advance. The score looks great, then real users in production (the live system) show its true level.\n\n\"Leakage: the test users were in training too\" is better because it explains both the inflated test score and the drop in production, using the exact clue the question gives you.",
+   "step": "Check",
+   "fingerprint": "784c7bc56de658bc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “At random, ticket by ticket”?",
+   "a": "Picking at random, ticket by ticket, does get one thing right. It mixes the data well, so training and test look similar overall. For many problems, that's fine.\n\nThe trouble here is that each customer wrote many tickets. Split at random, and the same customer almost always lands on both sides. Their writing style, their product and their usual complaints all appear in training. The model can learn \"this customer tends to say X\" instead of what tickets mean in general. Then the test set asks about that same customer, and the model looks smarter than it is.\n\nThat's **leakage**: information about the test set sneaking into training. The test score comes out inflated. Later, in **production** (the live system real users depend on), new customers show up that the model has never seen, and the results disappoint.\n\nSplitting by customer is better because it keeps all of a customer's tickets on one side, so the test measures how the model does on people it has truly never met.",
+   "step": "Check",
+   "fingerprint": "d0136c57bb2408ff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “By length, short ones go to test”?",
+   "a": "Splitting by length does one thing right. It is a clear rule, and each ticket lands on exactly one side. No single ticket gets counted twice.\n\nBut it misses the real danger. One customer usually writes both short and long tickets. So that customer's short tickets go to test while their long ones go to training. The model has already seen how that person writes, their product and their usual problems. When it meets their short tickets in test, it is partly recognising a familiar customer, not showing it learned something general. That is **leakage**, and it makes the test score look better than it really is.\n\nThere is a second problem. The test set would contain only short tickets. In production, the live system real users depend on, tickets come in every length. So the score would only tell you how the model handles short ones, not the mix it will actually face.\n\nSplitting by customer is better because every ticket from a customer stays on one side, so the test truly measures how the model does on people it has never seen.",
+   "step": "Check",
+   "fingerprint": "fda91acce6950075",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Whether the model is big enough”?",
+   "a": "Model size is a fair thing to wonder about in general. It's one of the choices you make when building a model. But it doesn't fit this situation.\n\nThe clue in the question is that 99% \"feels too good to be true.\" That's a worry about the score itself: can you trust it? Checking the model's size tells you nothing about that. A score is only meaningful if the test set holds data the model has never seen. If that isn't true, the number is inflated however the model was built.\n\nSo the first thing to question is the test, not the model. If the same document sits in both training and test, the model may simply be recognising something it already studied, not sorting a new document. That's **leakage**: information from the test set slipping into training. The lesson calls it the most common reason a model that looked great disappoints in production, meaning the live system real users depend on.\n\n\"Whether a document is in both sets\" is better because it directly checks whether the 99% is honest, which is exactly what the suspicious score is warning you about.",
+   "step": "Check",
+   "fingerprint": "28c58bcd49e1fb93",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Whether the test set has enough rows”?",
+   "a": "It's a fair thought, just not the first thing to check.\n\n**What it gets right:** a tiny test set can mislead. If there are only 20 documents, getting them all right could be luck. So size does matter for how much you trust a score.\n\n**What it misses:** a bigger test set doesn't fix the usual cause of \"too good to be true.\" If the same documents sit in both training and test, the model has already seen the answers. It can score 99% on 10 rows or 10,000 rows. Adding more rows just gives you a bigger, equally inflated score.\n\nThat's leakage: information from the test set slipping into training. The lesson calls it the most common reason a model looks great in testing and then disappoints in production, the live system real users depend on.\n\n**Why \"Whether a document is in both sets\" is better:** it checks directly for leakage, the likeliest explanation for a suspiciously high score, so it tells you whether the 99% means anything at all.",
+   "step": "Check",
+   "fingerprint": "f27ffa8d30d02324",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Don't test on what you trained on” matter?",
+   "a": "A test is only useful if it checks something the model hasn't already seen. If an example sits in both your training data and your test data, the model can just remember the answer. The score looks great, but it tells you nothing about new cases. This is called **leakage**: information from the test set \"leaks\" into training.\n\n**A small example.** You build a churn model, which predicts which customers will cancel. Customer `u7` has 50 rows of activity. You shuffle all rows and split them randomly. Now 40 of `u7`'s rows land in training and 10 in test. The model learns `u7`'s habits, then \"predicts\" those 10 test rows easily. You report 95% accuracy.\n\n**What happens in real work.** You ship it. Real customers it has never met show up, and accuracy drops to 70%. The team trusted the 95% and made plans around it. Now they have to explain the gap.\n\n**The fix:**\n- Remove duplicate rows first, so the same example can't appear twice.\n- Split by user or document, not by row. Then every row for one user goes to the same side, either all in training or all in test.",
+   "step": "Explain",
+   "fingerprint": "61e30a124817724d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check each row against a set” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"If one user's rows land in both training and test, the model has already seen that user. So the test score looks better than it really is. That's called leakage.\"\n\n*The idea:* \"I choose the test users first and put them in a set. A set is a collection built for quick 'is this in here?' checks. Then I walk through the rows once. For each row I ask one question: is this row's user in `test_users`? Yes goes to test. No goes to train. Every row from a test user ends up on the same side.\"\n\n*The trade-off:* \"A plain list would also work. But a list is read name by name on every check. That's fine for two users and slow for ten thousand. A set answers instantly, like a book's index.\"\n\n**A likely follow-up**\n\n\"What happens if a row has no user ID?\"\n\n*Hint for a strong answer:* Make the choice on purpose, not by accident. You could drop those rows, or send them all to one side. Then record that choice with `mlflow.log_params` so anyone reviewing the model can see it.",
+   "step": "Explain",
+   "fingerprint": "ec9d1d06141d7630",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "The main warning sign is **a score that looks too good**. Watch for these:\n\n- **Test score almost matches training score.** A model usually does a bit worse on data it hasn't seen. If the two are nearly identical and both very high, be suspicious.\n- **A big drop after launch.** It scored great in testing, then disappoints in production (the live system real users depend on). This is the classic sign of leakage.\n- **Strong on familiar users, weak on new ones.** If new customers get much worse predictions than existing ones, the model may have memorised people rather than learned patterns.\n- **Missing or vague records.** In MLflow, open the run. If there's no `split` parameter, or it doesn't say `by_user`, nobody can prove the split was honest.\n\n**Quickest check:** list every user in the training data and every user in the test data, then look for names that appear in both. That shared group is called the overlap. It should be empty. Even one shared user means the test score is inflated. Fix the split, retrain, and expect a lower, but honest, number.",
+   "step": "Learn",
+   "fingerprint": "8e4890b6e0e2e5d8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Splitting by user works well for a model trained on past rows. Here are three places it needs a rethink.\n\n**Data that changes over time.** If the model predicts tomorrow, a by-user split can still let it peek at the future through other users' later rows. Split by date instead: train on older data and test on the newest weeks.\n\n**An LLM or RAG app.** An LLM (large language model, the kind behind ChatGPT) is usually trained by someone else, and RAG means it looks up your documents before answering. Leakage here means test questions you also used while tweaking prompts, or questions copied straight from those documents. Keep a separate, hand-written set of questions aside for the final check only.\n\n**Very little data.** With only 30 users, two test users give a shaky, luck-driven score. Use cross-validation instead: split the users into, say, five groups, test on each group in turn while training on the rest, and average the scores. The rule stays the same: no user ever lands on both sides of a split.",
+   "step": "Learn",
+   "fingerprint": "a9d1dcfff621c6bf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “leakage” mean here?",
+   "a": "**Leakage** means information from the test set slips into training. The test then stops being a fair check.\n\n**An everyday comparison:** a teacher hands out practice questions, then puts some of the very same questions on the final exam. Scores go up, but partly because students have seen those questions before. The grade looks better than their real skill.\n\n**In the lesson, the \"questions\" are users.** Say user `u1` has ten rows. If you split row by row, some of `u1`'s rows could land in `train` and others in `test`. The model learns `u1`'s habits in training, then meets `u1` again in the test. It scores well because it recognises `u1`, not because it learned patterns that work for new people. The score is **inflated**, meaning higher than it deserves.\n\nThe example avoids this. It checks each row's `row['user']` against `test_users`. Every row from `u1` or `u7` goes to `test`. Everyone else goes to `train`. No user ends up on both sides.\n\nThis matters because in production (the live system) your model meets customers it has never seen. An honest split tells you how it will really do there.",
+   "step": "Learn",
+   "fingerprint": "a1d5a01061090f0e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

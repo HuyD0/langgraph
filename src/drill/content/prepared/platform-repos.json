@@ -1,0 +1,548 @@
+{
+ "cluster_from_yaml": {
+  "check:0:0": {
+   "q": "Why not “It runs with 1 worker and never grows”?",
+   "a": "That guess sounds reasonable. If you only say the smallest size, it feels natural to assume the cluster stays at that size. And `1` really is the value the team wrote.\n\nBut the lesson's rules don't fill in missing sizes. Size must be one of two shapes:\n\n- a fixed `num_workers`, or\n- both `min_workers` and `max_workers`, for autoscaling (the cluster adds or removes workers as the load changes).\n\n`min_workers` on its own is neither shape. It is half of the autoscaling pair. So it counts as a problem, just like a raw `policy_id`.\n\nProblems are caught before anything is built. The entry never reaches the plan, so no cluster runs at all, with 1 worker or any other number. Guessing \"it stays at 1\" means guessing a default the runbook does not have. Reading the plan well means not inventing behaviour the YAML didn't ask for.\n\n\"The check rejects it: min and max go together\" is better because it names the actual rule: autoscaling needs both limits, and an incomplete size is sent back instead of quietly patched.",
+   "step": "Check",
+   "fingerprint": "fba7ad78e70438d0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The runbook fills in a max_workers for it”?",
+   "a": "It's a reasonable guess, because the runbook *does* fill some gaps. If no policy is named, it uses `Personal Compute`. It also builds the final name from the code and name. So \"the runbook adds defaults\" is true in general.\n\nBut size is not one of those defaults. The lesson sets a strict rule: either a fixed `num_workers`, or both `min_workers` and `max_workers` for autoscaling. Autoscaling means Databricks adds or removes workers between a low and a high number. Half a range is not allowed, and the runbook never guesses the missing half.\n\nLook at the runbook line `max_workers = try(c.max_workers, null)`. `try` means \"use this value if it exists, otherwise use the fallback.\" Here the fallback is `null`, which means \"nothing.\" That passes along an empty value. It does not invent a number like 4.\n\nThe check also runs first, before anything is built. A cluster with only `min_workers: 1` gets sent back like an incomplete order form.\n\n\"The check rejects it: min and max go together\" is better because size has no default, and an incomplete autoscaling range is a mistake the check stops before Terraform plans anything.",
+   "step": "Check",
+   "fingerprint": "0c42ec30a92e9198",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “MKT_Weekly-Load”?",
+   "a": "`MKT_Weekly-Load` gets most of the work right. It puts the code first, then `_`, then the name. It also keeps the `-` in `Weekly-Load`, which is correct. The runbook doesn't touch dashes.\n\nWhat it misses is the last step. The runbook doesn't just join the two parts. It wraps the joined text in `lower()`, a Terraform function that turns every letter into lower case. So the capitals you typed in the YAML don't survive into the plan.\n\nYou can picture it as two steps, in order:\n\n```\njoin with \"_\":   MKT_Weekly-Load\nlower():         mkt_weekly-load\n```\n\n`MKT_Weekly-Load` stops after the first step. It's what you'd get if you only read the YAML. It isn't what Terraform will actually build.\n\nThis is the lesson's big idea: predict the plan from the YAML plus the runbook's rules. If the plan showed capitals, that would be a sign something changed in the runbook.\n\n`mkt_weekly-load` is better because it applies both of the runbook's steps: it joins the code and name with `_`, then lower-cases the whole result.",
+   "step": "Check",
+   "fingerprint": "3636e39121d08dd7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “weekly-load”?",
+   "a": "`weekly-load` gets one part right. The runbook does turn the name into **lower case**, so `Weekly-Load` becomes `weekly-load`. That step is correct.\n\nWhat it misses is the **team code**. The runbook does not use the name from `clusters.yml` on its own. It joins the code and the name with `_`, then lower-cases the whole thing. In the runbook's Terraform, that is this line:\n\n```hcl\nname = lower(\"${c.code}_${c.name}\")\n```\n\nSo for this team:\n\n- `c.code` is `MKT`\n- `c.name` is `Weekly-Load`\n- joined: `MKT_Weekly-Load`\n- lower-cased: `mkt_weekly-load`\n\nThe lesson says this prefix is **on purpose**. It is one of the expected differences between what the YAML asked for and what the plan builds. When you read a plan, a cluster named just `weekly-load` would be a surprise. It would mean the code was never added.\n\n`mkt_weekly-load` is better because it follows both runbook steps: code and name joined with `_`, then lower case.",
+   "step": "Check",
+   "fingerprint": "bdee36d841871922",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “It works: an id is more exact than a name”?",
+   "a": "That option gets one thing right. A policy's id does point to exactly one policy. In that narrow sense it is precise.\n\nWhat it misses is the rule. The question asks what *happens*, not whether an id is a good idea. The lesson says a raw `policy_id` is **not allowed** in `clusters.yml`, so the entry is rejected. However exact the id is, it never reaches the cluster.\n\nIt also misses how the runbook is built. Teams give a policy **name** (`policy_name`), or leave it out and get `Personal Compute`. The workspace module then finds the id itself. It does this with `data \"databricks_cluster_policy\"`, a lookup that reads a policy that already exists rather than creating one. So the id still ends up in the plan. The module fetches it, and the team never writes it.\n\nHere is that difference in YAML:\n\n```yaml\n# rejected\npolicy_id: 0012AB\n\n# allowed\npolicy_name: Personal Compute\n```\n\n\"It's rejected: teams name the policy\" is better because it states the lesson's rule and says how the id really gets filled in: the module looks it up from the name.",
+   "step": "Check",
+   "fingerprint": "91a119cd47fce906",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The line \"the id still ends up in the plan\" goes slightly beyond the lesson, and sits a little awkwardly beside \"it never reaches the cluster\", but both fit the lesson's idea that the module looks up the id."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The runbook swaps in Personal Compute”?",
+   "a": "It's a tempting answer, because part of it is true. The runbook does fall back to **Personal Compute**, but only when a team names **no** policy at all.\n\nHere the team did write something: `policy_id: 0012AB`. That is not \"no policy.\" It is a field the YAML is not allowed to contain. So the default never comes into play. The check fails first, and the request is sent back.\n\nA quiet swap would also hide the mistake. The team clearly wanted a specific policy. If the runbook dropped their id and used Personal Compute, the plan would show a cluster under rules they never asked for. Nobody would be told why.\n\nThe allowed way is to give the policy's name, like `policy_name: Shared Compute`. The workspace module then looks up the id itself, using a `data` block (Terraform's way to read something that already exists). An id copied from one workspace may not even match the id in UAT or PROD. A name works in every environment.\n\n\"It's rejected: teams name the policy\" is better because a forbidden field stops the request, while the default only fills in a policy that was left out.",
+   "step": "Check",
+   "fingerprint": "338f1d4ac9f1eff4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that ids differ between workspaces and that a name 'works in every environment' goes beyond the lesson, though it does not contradict it. The answer is also close to the 200-word limit."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check it, then build what the runbook would” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* A Terraform plan is a preview of what Terraform will create or change. It can be long. If you only skim it, a mistake can look like a normal change.\n\n*The idea.* So I predict the plan from the YAML before I read it. First I check the request against the rules, like \"no raw `policy_id`.\" I report every problem, not just the first. Then I apply the runbook's own changes, like the name prefix and the default policy. Now any gap between my prediction and the plan means something. Either it's on purpose, or it's a bug.\n\n*A trade-off.* My prediction is only as good as my copy of the runbook's rules. If the runbook changes and my check doesn't, they drift apart. Also, some failures only show up at plan time. A policy name can pass my check, but the lookup still fails if that policy doesn't exist in the workspace.\n\n**Likely follow-up:** \"Why collect all the problems instead of stopping at the first one?\"\n\n*Hint:* The team can fix their `clusters.yml` in one go. That means fewer failed Spacelift runs.",
+   "step": "Explain",
+   "fingerprint": "11ddae38cb6dda5c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\nThe trouble shows up when you read a plan without first guessing what it should say. A plan is Terraform's list of what it will build. Watch for these in the Spacelift proposed plan:\n\n- **A name you can't explain.** You expected `sales_daily-report` but see something else, such as upper case or a missing code.\n- **Personal Compute where you didn't expect it.** The team thought it named a policy, but the default was used. Check that the YAML really names one.\n- **A policy lookup error.** The named policy doesn't exist yet. The module only looks policies up. It never creates them.\n- **The wrong `can_manage` group,** or none at all, instead of something like `grp-sales-dev-owners`.\n- **Rejections you didn't see coming.** These come from a raw `policy_id`, or from a size that mixes `num_workers` with min/max, or gives neither.\n\n**Quickest check**\n\nBefore opening the plan, write one line per field from the YAML: name, policy, workers, manager. Then compare it to the plan field by field. For every difference, say whether it is on purpose (the prefix or the default policy) or a mistake. If you can't say which, stop before approving.",
+   "step": "Learn",
+   "fingerprint": "8bea3dea3d20fa16",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'rejections' bullet sits under 'watch in the proposed plan', though rejected input would fail before a plan is built; still consistent with the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The named policy doesn't exist in that environment.**\nThe module only looks policies up. It never creates them. If `team-sales` names a policy that exists in DEV but not yet in UAT, the plan fails with an error instead of showing a difference. Before promoting, check that the policy exists in each workspace the YAML will reach.\n\n**2. Someone changed the cluster by hand.**\nIf an admin resized `sales_daily-report` in the Databricks UI, that is called \"drift\": the real cluster no longer matches the code. The plan will show changes nobody asked for in YAML, because Terraform wants to undo the hand edit. Find out why it was changed. Then either put that change into `clusters.yml` or let the apply put the cluster back.\n\n**3. Two entries end up with the same final name.**\nLower-casing can merge names that looked different. For example, `SALES` with `Daily-Report` and `sales` with `daily-report` both become `sales_daily-report`. Each entry looks fine on its own. So check the whole list for duplicate final names, not just one cluster at a time.",
+   "step": "Learn",
+   "fingerprint": "a474e5aa1cdbb21f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. Point 2 (drift) goes beyond the lesson text but does not contradict it, and the answer stays under 200 words."
+   }
+  },
+  "learn:term": {
+   "q": "How is “points” different from “code”?",
+   "a": "They sound alike, but they do different jobs.\n\n**\"Points\"** is about *where* things live. `team.yml` doesn't describe the cluster itself. It just says \"the cluster details are over in `clusters.yml`.\" Pointing means holding a reference, like a signpost, not the actual contents.\n\n**\"Code\"** is a piece of *data*. It's the team's short label, like `SALES`, written inside `clusters.yml` next to the cluster's name and size. The runbook uses it to build the final cluster name.\n\n**How they work together:** the runbook follows the pointer from `team.yml` to find `clusters.yml`. Inside that file it reads the `code`. In the lesson's example, `code: SALES` and `name: daily-report` become `sales_daily-report`.\n\n**An everyday comparison:** think of a filing cabinet. A label on the drawer says \"Sales orders are in folder 3.\" That's pointing. Inside folder 3, each order form has a department stamp reading \"SALES.\" That's the code. The label tells you where to look. The stamp is part of what you find there.",
+   "step": "Learn",
+   "fingerprint": "8e6553d737ce0fdd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "field_status": {
+  "check:0:0": {
+   "q": "Why not “SUPPORTED: the YAML is valid”?",
+   "a": "\"SUPPORTED: the YAML is valid\" gets one thing right. The YAML really is valid. The check (the Pydantic step that rejects unknown fields and wrong types) knows `autotermination_minutes` and accepts the number `30`. So the field gets past the first two stops.\n\nBut valid is not the same as SUPPORTED. SUPPORTED means the field reaches the provider as written. The provider is the plugin that actually talks to Databricks.\n\nHere the runbook never reads `autotermination_minutes`. In the lesson's runbook, only `name` and `policy_name` are copied into `dbx_clusters`. Everything else stops there. So the module never sees the field, and the provider never sets it. The cluster in team-sales will not shut itself off after 30 idle minutes, even though the file says it should. The Spacelift plan won't show the setting either. Spacelift is the service that runs Terraform and shows that plan for review.\n\nIt's like a parcel with a perfect label that never leaves the sorting office.\n\n\"DROPPED: it is accepted but never passed on\" is better because it describes what actually happened all the way down, not just whether the file passed the check.",
+   "step": "Check",
+   "fingerprint": "81c50e5b8baeb0d4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “INVALID: the check rejects it”?",
+   "a": "\"INVALID\" gets one thing right: something is wrong with this field. A team wrote `autotermination_minutes: 30` and expected clusters to shut down after 30 idle minutes. That won't happen.\n\nBut \"INVALID\" puts the problem at the wrong stop. INVALID means the check (the Pydantic step) rejected the field. Here the check did the opposite. It allowed the field. So the field got past stop two just fine.\n\nThe trouble starts at stop three, the runbook. The runbook only passes on the fields it reads. It never reads `autotermination_minutes`, so the value goes no further:\n\n```hcl\ndbx_clusters = [for c in local.clusters : {\n  name        = lower(\"${c.code}_${c.name}\")\n  policy_name = try(c.policy_name, \"Personal Compute\")\n  # no autotermination_minutes here, so it never reaches the provider\n}]\n```\n\nThat is also why this case is easy to miss. An INVALID field fails loudly at the check. This one fails silently. The YAML looks fine, and the Spacelift plan simply shows no auto-termination setting.\n\n\"DROPPED\" is the better answer because it says exactly what happened: the field was accepted by the check but never passed on by the runbook, so it does nothing.",
+   "step": "Check",
+   "fingerprint": "834e30fb906b3a52",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. Claims like 'fails loudly' and the plan showing no auto-termination setting go slightly past the lesson text but are consistent with it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “SUPPORTED: it arrived exactly as written”?",
+   "a": "\"SUPPORTED\" gets one thing right. The `name` field did reach the provider. The check accepted it, and the runbook passed it on, so it wasn't dropped.\n\nWhat it misses is the \"as written\" part. The team wrote `daily-report`. The plan shows `sales_daily-report`. Those are different values, so something changed it on the way down.\n\nThat something is the runbook. In the stack's `locals` block, it builds the name like this:\n\n```hcl\nname = lower(\"${c.code}_${c.name}\")\n```\n\nIt puts the team's short code (`sales`) and an underscore in front. Then `lower` makes it all lower case. So the module and provider receive a new value, not the one in the file.\n\nThis matters for review. The Spacelift plan is a preview of what would be created, read before anything is applied. A reviewer who knows the field is transformed expects `sales_daily-report` there and won't flag it as a mistake.\n\n\"TRANSFORMED: it was changed on the way\" is better because it says both things at once: the field reached the provider, and the runbook changed it before it got there.",
+   "step": "Check",
+   "fingerprint": "e81cd63256ed1f31",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “DEFAULTED: the runbook filled it in”?",
+   "a": "\"DEFAULTED\" gets one thing right. The runbook did step in and add something to the name. The `sales_` prefix was not in the team's YAML. The runbook put it there.\n\nBut DEFAULTED means something narrower. It is for a field the team **left out**, so the runbook supplied a whole value of its own. Think of `policy_name`: skip it, and the runbook's `try(...)` drops in `\"Personal Compute\"`.\n\nThat is not what happened here. The team **did** write `name: daily-report`. Their value arrived. It just did not arrive as written. The runbook took it and changed it on the way, using this line:\n\n```hcl\nname = lower(\"${c.code}_${c.name}\")\n```\n\nThis joins the team's short code (`sales`) and their name with an underscore. Then `lower` makes it all lowercase. So `daily-report` becomes `sales_daily-report`. The team's own words are still in there, with a prefix in front.\n\n\"TRANSFORMED: it was changed on the way\" is the better answer because the team gave a value and the runbook reshaped it, rather than filling in a gap.",
+   "step": "Check",
+   "fingerprint": "3f44b8f074ce3fd6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “SUPPORTED: the check allowed it”?",
+   "a": "\"SUPPORTED: the check allowed it\" gets one thing right. The field passed the check, so it is not INVALID. The Pydantic check found a known field name and a value of the right type.\n\nBut passing the check is only stop two of five. The check looks at the YAML file on its own. It has no idea what happens next. SUPPORTED means the field reaches the provider as written, and you haven't looked yet.\n\nThe runbook might never pass the field on. Then it is DROPPED: it sits in `clusters.yml`, looks fine, and changes nothing in the Spacelift plan. Or the runbook or module might change it on the way, which makes it TRANSFORMED. You can't tell which until you open the runbook and the module.\n\nThink of the parcel again. A correctly filled-in label doesn't prove it was delivered.\n\nSo **UNKNOWN** is the right answer. It honestly says you have only followed the field part of the way, and you need to trace it through the runbook, the module and the provider before you can give it a final word.",
+   "step": "Check",
+   "fingerprint": "389ba1c6d4d6bf45",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “DROPPED: nothing uses it yet”?",
+   "a": "\"DROPPED\" gets one thing right. A new field that only the check knows about often *does* end up unused. That is a real risk, and it is good to suspect it.\n\nBut you haven't looked yet. You have only seen two stops: the YAML and the check. The runbook (the Terraform code that reads the YAML) and the module (the code that builds the resources) are still unopened. Maybe the runbook passes the field on. Maybe the module uses it. \"Nothing uses it\" is a claim about places you haven't checked.\n\nDROPPED is a finding. You only earn it by following the field to a stop where it disappears, like a `for` loop in the runbook that never mentions it. Saying it early is a guess dressed up as a fact.\n\nThat matters to a reviewer. Someone reading your note next to a Spacelift plan will trust the word you chose. A wrong DROPPED could send a team-sales engineer to \"fix\" something that already works.\n\n**\"UNKNOWN: not traced all the way yet\" is better because it honestly says you haven't reached the end, so you can't name the outcome yet.**",
+   "step": "Check",
+   "fingerprint": "51e09487e18ab2ee",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Follow the field all the way down” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* A product team adds a field to `clusters.yml`. The Pydantic check accepts it, so everyone assumes it works. But valid YAML doesn't prove anything gets built.\n\n*The idea.* I follow the field through five stops: the YAML, the check, the Terraform runbook, the module and the provider. The provider is the plugin that talks to Databricks. Then I sum it up in one word. `policy_name` ends up as `databricks_cluster.policy_id`, so it's SUPPORTED. Leave it out and the runbook's `try(...)` fills in \"Personal Compute\", so it's DEFAULTED.\n\n*The edge case.* The risky one is DROPPED. Say team-sales adds a field the check knows, but the runbook never copies it into `dbx_clusters`. The file looks fine and the cluster ignores it. Until I've checked every stop, I call it UNKNOWN rather than guess.\n\n**A likely follow-up:** \"How would you catch dropped fields before PROD?\"\n\n*Hint:* Mention the Spacelift plan in DEV. A plan is the preview of changes that someone approves before anything is built. Reviewers compare it with the YAML. Then suggest an automated test that flags fields the check accepts but the runbook never reads.",
+   "step": "Explain",
+   "fingerprint": "a16c062beed6026f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that a field is being dropped**\n\n- A team edits `clusters.yml`, the check passes, and the Spacelift plan says \"no changes.\" Valid YAML, zero effect. That is the classic sign.\n- The cluster in the DEV workspace doesn't match the file. For example, the YAML asks for one policy, but the cluster shows another, or none.\n- Support tickets like \"I set `autotermination_minutes` weeks ago and nothing happened.\"\n- Reviewers mark a field SUPPORTED, but nobody can point to the provider attribute it ends up in. (An attribute is a named setting on a resource, like `policy_id` on `databricks_cluster`.)\n- A setting looks right in DEV but different in UAT or PROD. This can mean a default is quietly filling the gap.\n\n**The quickest check**\n\nChange only that one field in the DEV config. Then open the proposed plan in Spacelift (the preview of changes before anything is applied). If the plan shows that attribute changing, the field reaches the provider. If the plan is empty, the field is dropped somewhere.\n\nThen search the runbook's `locals` for the field name. If it never appears there, you've found where it stops.",
+   "step": "Learn",
+   "fingerprint": "1cc8393a51c89995",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor looseness: 'plan is empty means dropped' ignores a new value that equals the default, and the DEV-vs-UAT/PROD bullet is speculative. The word 'locals' is unexplained, and the answer is close to the 200-word limit."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule needs extra care.\n\n**1. The same field across DEV, UAT and PROD.** Each environment has its own YAML, like `config/DEV/team-sales/clusters.yml`. If team-sales sets `policy_name` in DEV but leaves it out in PROD, it is SUPPORTED in DEV and DEFAULTED in PROD. So give the field one word per environment, not one word overall.\n\n**2. The runbook or a module changes later.** Your trace is a snapshot. If someone edits the runbook so a field is no longer passed on, a field that was SUPPORTED becomes DROPPED, and the YAML still looks fine. Re-trace after any runbook or module change, and check the new Spacelift plan.\n\n**3. Many teams and many fields.** Following every field by hand, five stops each, takes a long time. Trace the fields that matter most, like policies and owner groups. Mark the rest UNKNOWN until you have checked them. Honest gaps are better than guessed labels.",
+   "step": "Learn",
+   "fingerprint": "45a86599efc43e3e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “YAML” different from “config repo”?",
+   "a": "They answer two different questions. **YAML** is *how* a request is written. The **config repo** is *where* those requests are kept.\n\n**YAML** is a plain-text format for settings. Each line is a name and a value, like `policy_name: Shared Compute - Standard`. Indents show what belongs together. A file such as `clusters.yml` is written in YAML.\n\nThe **config repo** is a shared repository. A repository is a folder tracked by Git, a tool that records every change and who made it. Every team's YAML files live there, sorted by environment and team. For example:\n\n```\nconfig/DEV/team-sales/team.yml\nconfig/DEV/team-sales/clusters.yml\n```\n\n**How they work together:** team-sales writes its `clusters.yml` in YAML and adds it to the config repo. The runbook then reads that file from the repo. You can see this in the lesson's stack code: `file(\"${path.module}/config/DEV/team-sales/clusters.yml\")`.\n\n**Everyday comparison:** YAML is the order form, and the config repo is the shared office tray where all filled-in forms go. A neatly filled-in form only matters once someone picks it up and acts on it.",
+   "step": "Learn",
+   "fingerprint": "b529755c07ae5cc0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "folder_access": {
+  "check:0:0": {
+   "q": "Why not “CAN_EDIT, because that is what the YAML says”?",
+   "a": "That answer gets one thing right. The YAML really does grant `grp-sales-dev-owners` the `CAN_EDIT` level in `folder_grants`. That grant is real, and it does end up in the plan.\n\nWhat it misses is that the YAML is not the whole story. Because the same group is named as `owner_group`, the runbook (the Terraform root code that reads `team.yml`) adds a second entry you never typed: `grp-sales-dev-owners` with `CAN_MANAGE`.\n\nSo the group now appears twice in the folder's access list, once at `CAN_EDIT` and once at `CAN_MANAGE`. A group listed twice does not get both levels, and the first or last entry does not win either. It gets the **highest** of them. The levels, lowest first, are `CAN_READ`, `CAN_RUN`, `CAN_EDIT`, `CAN_MANAGE`. `CAN_MANAGE` sits above `CAN_EDIT`.\n\nReading only the YAML would make the plan look wrong when it is actually correct.\n\n\"`CAN_MANAGE`, the higher of the two\" is better because it counts the owner access the runbook adds and then keeps the highest level for a group that shows up twice.",
+   "step": "Check",
+   "fingerprint": "b661cab2c00a7e74",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Both, as two separate permissions”?",
+   "a": "\"Both, as two separate permissions\" gets one thing right. The list the runbook builds really does name `grp-sales-dev-owners` twice. Once is the `CAN_MANAGE` the runbook adds for the owner. The other is the `CAN_EDIT` typed in `team.yml`. So if you only read the list, \"both\" looks reasonable.\n\nWhat it misses is what the folder does with that list. A group has one **effective** permission on a folder. Effective means the level that actually applies when someone tries to do something. When a group shows up twice, it keeps the **highest** of its levels, not a pile of separate ones.\n\nThe levels also stack, lowest first: `CAN_READ`, `CAN_RUN`, `CAN_EDIT`, `CAN_MANAGE`. Each one includes everything below it. `CAN_MANAGE` can already do everything `CAN_EDIT` can, and more. So a separate `CAN_EDIT` would add nothing.\n\nThat's why, in review, you check who ends up with what, not how many lines the list has.\n\n\"CAN_MANAGE, the higher of the two\" is better because it describes the single level the group actually ends up with on the folder.",
+   "step": "Check",
+   "fingerprint": "a4c71c5913169aa9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claim that each level includes everything below it is an inference from the lesson's lowest-first ordering rather than something the lesson states outright."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It's a mistake: take it out of the plan”?",
+   "a": "\"It's a mistake: take it out of the plan\" starts from a good instinct. A reviewer should question access nobody asked for. Spotting that `team.yml` never mentions `users` is careful reading.\n\nBut it misses where that line comes from. The runbook adds it on purpose. In the `folder_access` local, after the owner group and the explicit grants, it always appends `users` at `CAN_READ`. `users` is the built-in group holding everyone in the workspace. So the plan is doing exactly what the code says. Nothing went wrong.\n\n\"Take it out of the plan\" also doesn't work as a fix. The plan is only Terraform's preview of changes, built from the code and the YAML. You can't edit one line of it. To drop that grant, you'd have to change the runbook itself. That changes the default for every team, not just `team-sales`. That's a platform decision, not a review comment.\n\n\"It's expected: the runbook adds it\" is better because it traces the access to its real source and checks who ends up with what, instead of assuming the plan invented it.",
+   "step": "Check",
+   "fingerprint": "b3d6e1d80808e5c2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It's a leak: someone edited it by hand”?",
+   "a": "**Why \"It's a leak: someone edited it by hand\" isn't the best answer**\n\nIt does get one thing right. Spotting access that nobody typed in `team.yml` and asking where it came from is a good habit. Access you can't explain is worth a question.\n\nWhat it misses is where that access actually comes from. The runbook (the Terraform root code that reads the YAML) adds access on its own. It gives the owner group `CAN_MANAGE` and every workspace user `CAN_READ` by default. You can see the second rule in the stack's code:\n\n```hcl\n[{ group_name = \"users\", permission_level = \"CAN_READ\" }],\n```\n\nThat line is part of `local.folder_access`. So `users` getting `CAN_READ` is written into the runbook itself. You don't need a hand edit to explain it.\n\nCalling it a leak skips the lesson's key step. Before you call something a mistake, check what the runbook adds. Then review who ends up with what.\n\n**Why \"It's expected: the runbook adds it\" is better:** it names the real source, the runbook's default for every workspace user, so the reviewer can confirm it in the code instead of guessing.",
+   "step": "Check",
+   "fingerprint": "1cceea1260e05bb8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Yes: the first group listed wins”?",
+   "a": "\"Yes: the first group listed wins\" gets one thing right. It notices that a list can name the same group more than once, and that something must settle which level that group ends up with.\n\nBut it picks the wrong rule. Position in the list never decides anything. When a group appears twice, Databricks gives it the **highest** of its levels. So if `grp-sales-dev-owners` shows up with `CAN_EDIT` and with `CAN_MANAGE`, it gets `CAN_MANAGE`, whichever line comes first.\n\nThe question also says both plans end with the same groups holding the same permissions. A plan is Terraform's preview of what it will change. If the end result matches, nobody can do more or less in `/Teams/team-sales` under one plan than under the other. Flagging the order would make the reviewer chase a difference that changes nothing.\n\nA reviewer's job is to check access, not layout.\n\n\"No: only who ends up with what matters\" is better because the final permission each group holds on the folder is the only thing that affects what people can do, and here that is identical.",
+   "step": "Check",
+   "fingerprint": "5e6b96b5229bcb19",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It says \"Databricks gives it the highest\" of its levels, but the lesson never credits Databricks; the interview angle says the runbook code keeps whichever level ranks higher, so the tutor assigns the rule to the wrong actor."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Yes: it must match the order in team.yml”?",
+   "a": "It's a reasonable instinct. You want the plan to reflect what the team asked for in `team.yml`. That part is right.\n\nBut order isn't what the team asked for. They asked for access. A folder's permissions work like a guest list, not a queue. Databricks checks whether a group is on the list and at what level. Whether `grp-sales-dev-analysts` appears first or third changes nothing about what it can do.\n\nThe plan (Terraform's preview of the changes it will make) also can't match `team.yml` order anyway. The runbook builds the list itself. It puts the owner group at `CAN_MANAGE` first, then the explicit `folder_grants`, then `users` at `CAN_READ` last. Two of those entries aren't in `team.yml` at all. So \"must match the order\" would flag nearly every plan, even correct ones.\n\nFlagging order wastes the reviewer's attention on noise. It also pulls focus from the real question: did any group end up with a level it shouldn't have?\n\n\"No: only who ends up with what matters\" is better because each group's final permission level is what controls access to the folder, and the order of the list never does.",
+   "step": "Check",
+   "fingerprint": "5e310050798a0c81",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add what the runbook adds, keep the highest” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"A reviewer sees `CAN_MANAGE` in a plan for `grp-sales-dev-owners`, but `team.yml` never typed that. It looks like a mistake.\"\n\n**The idea:** \"The plan is the YAML plus what the runbook adds. The runbook gives the owner group `CAN_MANAGE` and gives all workspace `users` `CAN_READ`. Then it adds the explicit `folder_grants`. If a group shows up twice, it keeps its highest level, not both. So I review who ends up with what, not the order of the list.\"\n\n**An edge case:** \"Say a team lists its own owner group in `folder_grants` at `CAN_EDIT`. It still ends up with `CAN_MANAGE`, because the higher level wins. So YAML can raise access but can never lower what the runbook adds.\"\n\n**A likely follow-up**\n\n*\"What if team-sales doesn't want every user to see its folder?\"*\n\nA strong answer: YAML can't remove the default, because the highest level always wins. You'd change the runbook itself. For example, add an opt-out field that Pydantic (the tool that checks each YAML field) validates. That change then goes through a reviewed plan in Spacelift, from DEV through UAT to PROD.",
+   "step": "Explain",
+   "fingerprint": "816d691c914ca293",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the idea was skipped**\n\n- **\"Mystery\" permissions in review.** Someone flags `CAN_MANAGE` on `grp-sales-dev-owners` as a bug, even though `team.yml` never asked for it. The runbook added it. Nothing went wrong.\n- **\"Fixes\" that fight the runbook.** A teammate edits `team.yml` to remove the \"extra\" access. The next Spacelift plan shows it again, because the runbook adds it every run.\n- **Wrong levels after apply.** A group listed twice shows the *lower* level. Or a group ends up with two entries. Either way, the highest-wins rule was missed.\n- **Noise about order.** A review comment complains that entries moved around. Order doesn't matter. Only who ends up with what matters.\n- **Surprise lockouts.** Workspace users can't open notebooks under `/Teams/team-sales` because the default `CAN_READ` for `users` went missing.\n\n**Quickest check**\n\nBefore reading the plan, write a short \"expected\" list, one line per group:\n\n- Start with what `team.yml` asks for.\n- Add what the runbook adds.\n- Where a group appears twice, keep only its higher level.\n\nThen compare your list to the plan's folder permissions, group by group. Any group that differs is where to look.",
+   "step": "Learn",
+   "fingerprint": "30e794d752260527",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"YAML plus what the runbook adds, highest wins\" needs extra care.\n\n**1. Access that never shows up in the plan.**\nThe plan only lists what this Terraform resource manages. People can still get in from outside it. A grant on the parent `/Teams` folder flows down by inheritance, and workspace admins can see everything. When you ask who can reach a folder, check the parent folder and the admin group too, not just this list.\n\n**2. When the default is wrong for the team.**\nGiving `users` `CAN_READ` suits a shared DEV workspace. It may be too open in PROD, or for a team handling sensitive data. Don't quietly delete the grant in one stack. Add a clear opt-out to the runbook, such as a `team.yml` field that Pydantic (the tool that checks every YAML field) validates, so reviewers can see the exception.\n\n**3. Other kinds of objects.**\nThe four-level ladder is for folders. Clusters and jobs have their own permission levels, such as `CAN_ATTACH_TO` or `CAN_MANAGE_RUN`. Before you decide which level is \"higher,\" look up that object's own list.",
+   "step": "Learn",
+   "fingerprint": "eff9dcb210375e8b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. Workspace admins seeing everything and the cluster and job permission names come from outside the lesson, but they are accurate and don't contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “highest” mean here?",
+   "a": "\"Highest\" means the most powerful of the four permission levels.\n\nThink of passes for an office building. A lobby pass gets you through the front door. A staff pass also opens the offices. A manager pass opens every room and lets you hand out passes. If someone is given two passes, they don't need both. They just use the stronger one, because it already covers everything the weaker one does.\n\nFolder permissions work the same way. Lowest first: `CAN_READ`, `CAN_RUN`, `CAN_EDIT`, `CAN_MANAGE`. Each level includes what the ones below it allow. So `CAN_MANAGE` is the highest.\n\nIn the lesson's example, the runbook gives `grp-sales-dev-owners` `CAN_MANAGE` because it is the owner group. Now suppose `team.yml` also listed that same group under `folder_grants` with `CAN_EDIT`. The group is named twice. It ends up with `CAN_MANAGE`, the higher of the two. It doesn't get both, and the lower one doesn't win.\n\nThat's why a plan can show a stronger level than the YAML asked for. Check what the runbook adds before calling it a mistake.",
+   "step": "Learn",
+   "fingerprint": "5e6240a993784276",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: it says each level includes everything below it, which the lesson never states, and it opens with a one-line definition before the everyday comparison. Neither contradicts the lesson."
+   }
+  }
+ }
+}

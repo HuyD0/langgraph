@@ -173,6 +173,14 @@ def no_model(reason: str) -> dict:
     return {"code": "unavailable", "text": NO_MODEL_TEXT.get(reason, NO_MODEL_TEXT["upstream"])}
 
 
+class ServedBody(BaseModel):
+    """A prepared answer the page showed (no model asked): ``trace`` as in /api/ask, and the answer."""
+
+    answer: str = Field(max_length=4000)
+    model: str = Field(default="prepared", max_length=100)
+    trace: dict = Field(default_factory=dict)
+
+
 class FeedbackBody(BaseModel):
     """A person's feedback on one answer: ``request`` is the id the page sent with it."""
 
@@ -437,6 +445,20 @@ def create_app(
             media_type="text/plain; charset=utf-8",
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )
+
+    @app.post("/api/served")
+    async def served_answer(body: ServedBody, request: Request) -> dict:
+        from drill.server.observe import default_observer
+
+        trace = {**body.trace, "door": "page", "user": owner_for(request, "local")}
+        # logged like a live answer's question, so the manager's view counts it the same way
+        detail = {k: body.trace[k] for k in ("feature", "step", "chip") if body.trace.get(k) is not None}
+        if body.trace.get("question"):
+            detail["question"] = str(body.trace["question"])[:500]
+        await asyncio.to_thread(mine(request).log, "asked", str(body.trace.get("lesson_id") or ""), prepared=True, **detail)
+        observer = router.observer if hasattr(router.observer, "served") else default_observer()
+        logged = bool(observer and await asyncio.to_thread(observer.served, trace, body.answer, body.model))
+        return {"ok": True, "logged": logged}
 
     @app.post("/api/feedback")
     async def feedback(body: FeedbackBody, request: Request) -> dict:

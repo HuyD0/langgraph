@@ -12,7 +12,8 @@ let askBusy = false;
 const quoted = t => "“" + short(t.replace(/\*\*|`/g, ""), 48) + "”";
 const QUIZ = { q: "Quiz me", how: "Ask ONE short question that makes them recall or use this lesson's main idea: not trivia, and not the coding exercise. Do not give the answer. Tell them to reply in the box below and you will check it. When they reply, say what is right, fix what is not, then offer one more question." };
 function askChips() {
-  const L = LESSONS[cur.id], s = lp(cur.id), chips = [], add = (q, how) => chips.push({ q, how });
+  // `key` names the questions whose answers are prepared ahead (drill.tutor_prepared.chips asks the same, in the same words)
+  const L = LESSONS[cur.id], s = lp(cur.id), chips = [], add = (q, how, key) => chips.push({ q, how, key });
   if (cur.step === 0) {
     // the lesson's bold terms, if they are terms: up to three words, no quotes or brackets
     const bold = [...new Set((L.learn.join(" ").match(/\*\*([^*]+)\*\*/g) || []).map(t => t.slice(2, -2)))]
@@ -24,19 +25,19 @@ function askChips() {
     const one = bold.find(inGloss) || bold.find(t => t.length >= 6 || /\s/.test(t));
     const terms = pair ? pair.slice(0, 2) : one ? [one] : [];
     if (terms.length === 2) add(`How is ${quoted(terms[0])} different from ${quoted(terms[1])}?`,
-      `Contrast ${terms[0]} and ${terms[1]} as this lesson uses them: what each one is, how they differ, and how they work together, with an everyday comparison and the lesson's example.`);
+      `Contrast ${terms[0]} and ${terms[1]} as this lesson uses them: what each one is, how they differ, and how they work together, with an everyday comparison and the lesson's example.`, "learn:term");
     else if (terms.length) add(`What does ${quoted(terms[0])} mean here?`,
-      `Explain ${terms[0]} as this lesson uses it: an everyday comparison first, then where it appears in the lesson's example.`);
-    else add("Why does this matter?", "Explain why this lesson's idea matters: what goes wrong without it, in one short, realistic example. Plain words.");
+      `Explain ${terms[0]} as this lesson uses it: an everyday comparison first, then where it appears in the lesson's example.`, "learn:term");
+    else add("Why does this matter?", "Explain why this lesson's idea matters: what goes wrong without it, in one short, realistic example. Plain words.", "learn:term");
     add("When does this stop working?",
-      "Give 2 or 3 concrete situations where this lesson's rule or method changes, breaks, or needs extra care: for example an LLM or RAG app instead of a trained model, data that changes over time, very little data, or a much bigger system. For each, say what to do instead. Keep each to two or three sentences. No code.");
+      "Give 2 or 3 concrete situations where this lesson's rule or method changes, breaks, or needs extra care: for example an LLM or RAG app instead of a trained model, data that changes over time, very little data, or a much bigger system. For each, say what to do instead. Keep each to two or three sentences. No code.", "learn:stops");
     add("How would I spot it going wrong?",
-      "Describe the warning signs that this lesson's idea was skipped or done wrong: what they would see in their numbers, logs, traces or results (for example a score that looks too good and then drops in real use). Then the quickest check to confirm it. No code.");
+      "Describe the warning signs that this lesson's idea was skipped or done wrong: what they would see in their numbers, logs, traces or results (for example a score that looks too good and then drops in real use). Then the quickest check to confirm it. No code.", "learn:spot");
     chips.push(QUIZ);
   } else if (cur.step === 1 && (() => { const st = checkState(cur.id); return st.solved[st.at]; })()) {
-    const [q, opts, ans] = checkQs(cur.id)[checkState(cur.id).at];
+    const at = checkState(cur.id).at, [q, opts, ans] = checkQs(cur.id)[at];
     opts.forEach((o, k) => { if (k !== ans) add(`Why not ${quoted(o)}?`,
-      `In the lesson's Check question ("${q}"), explain in plain words why "${o}" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes "${opts[ans]}" better.`); });
+      `In the lesson's Check question ("${q}"), explain in plain words why "${o}" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes "${opts[ans]}" better.`, `check:${at}:${k}`); });
     add("Give me a harder one like this",
       "Ask ONE new multiple-choice question in the style of the lesson's Check, a little harder, set in the same world as the lesson (its setting, names and tools), with three options labelled A, B and C. Do not give the answer; tell them to reply with a letter and you will check it.");
   } else if (cur.step === 3) {
@@ -45,24 +46,30 @@ function askChips() {
       `Their own sentence for this lesson: "${s.said.trim()}". Say what it gets right, then the one most important thing it misses or gets wrong, if any, and suggest one small change. Do not rewrite it for them in full.`);
     chips.push(QUIZ);
     add(`How do I explain ${quoted(pattern)} in an interview?`,
-      "Give a 30-second spoken answer in three short parts: the problem, the idea, and one trade-off or edge case. Then one follow-up question an interviewer might ask, with a hint at a strong answer.");
+      "Give a 30-second spoken answer in three short parts: the problem, the idea, and one trade-off or edge case. Then one follow-up question an interviewer might ask, with a hint at a strong answer.", "explain:interview");
     if (g) add(`Why does ${quoted(g.title)} matter?`,
-      `This lesson's gotcha is "${g.title}": ${g.why} Explain in plain words what goes wrong in real work when it is ignored, with one small example.`);
+      `This lesson's gotcha is "${g.title}": ${g.why} Explain in plain words what goes wrong in real work when it is ignored, with one small example.`, "explain:gotcha");
   }
   return chips.slice(0, 4);
 }
+// Answers to the standard questions, written ahead and checked (drill.tutor_prepared): shown at once,
+// with no model, when the chip's words match exactly. With no live tutor, Ask keeps just these.
+const PREP = D.prepared || {};
+const prepFor = c => c && c.key && cur && (PREP[cur.id] || {})[c.key] && PREP[cur.id][c.key].q === c.q ? PREP[cur.id][c.key] : null;
 const ASK_FILL = "In my situation, ";  // the learner finishes it: their real setup, not an invented one
 let askChipList = [];
 function askPanel() {
   if (!cur || cur.kind !== "lesson") return "";
-  askChipList = askChips();
-  const off = askBusy ? " disabled" : "";
+  askChipList = askChips().filter(c => sample || prepFor(c));
+  const off = askBusy ? " disabled" : "", live = !!sample;
+  if (!live && !askChipList.length && !(askThreads[cur.id] || []).length) return "";
   const chips = askChipList.map((c, i) => `<button class="mini" data-askq="${i}"${off}>${esc(c.q)}</button>`).join("")
-    + (cur.step !== 1 ? `<button class="mini fill" data-askfill${off}>Apply it to my situation…</button>` : "");
-  return `<section class="asklesson ai-only" aria-label="Ask about this lesson"><h3>Ask about this lesson</h3>
+    + (live && cur.step !== 1 ? `<button class="mini fill" data-askfill${off}>Apply it to my situation…</button>` : "");
+  return `<section class="asklesson" aria-label="Ask about this lesson"><h3>Ask about this lesson</h3>
     ${chips ? `<div class="minis" role="group" aria-label="Suggested questions">${chips}</div>` : ""}
     <div class="thread" id="askThread" aria-live="polite">${askThreadHtml()}</div>
-    <form class="ask" id="askForm"><input class="field" id="askInput" placeholder="Ask your own question" aria-label="Ask a question about this lesson" autocomplete="off"${off}><button class="btn" type="submit"${off}>Ask</button></form></section>`;
+    ${live ? `<form class="ask" id="askForm"><input class="field" id="askInput" placeholder="Ask your own question" aria-label="Ask a question about this lesson" autocomplete="off"${off}><button class="btn" type="submit"${off}>Ask</button></form>`
+      : `<p class="meta askoff">Typed questions need the live tutor, which isn't running right now. The questions above have answers ready.</p>`}</section>`;
 }
 // His face says what kind of reply it is: eyes open for an explanation, the blindfold for a hint or a
 // question back to you. The label says the words are generated. Each finished answer ends with
@@ -74,7 +81,7 @@ function askThreadHtml() {
     const save = done ? `<button class="linkbtn" data-asksave="${i}"${turn.saved ? " disabled" : ""}>${turn.saved ? "Saved to your study list" : "Save to study list"}</button>` : "";
     const verdict = !done ? "" : turn.resolved === true ? `<span class="askgot">${ic("check")}Got it</span>`
       : turn.resolved === false ? "" : last ? `<button class="chipbtn" data-askgot="${i}">Got it</button><button class="chipbtn" data-askstuck="${i}">Still stuck</button>` : "";
-    const answer = `<div class="aa"><span class="ailab">AI tutor · can be wrong</span><div class="aatext" id="aa-${i}">${turn.a ? fmt(turn.a) : `<p class="thinking">Thinking…</p>`}</div>${verdict || save ? `<div class="aafoot">${verdict}<span class="sep"></span>${save}</div>` : ""}</div>`;
+    const answer = `<div class="aa">${turn.failed ? "" : `<span class="ailab">${turn.prepared ? "AI tutor · written ahead and checked" : "AI tutor · can be wrong"}</span>`}<div class="aatext" id="aa-${i}">${turn.a ? fmt(turn.a) : `<p class="thinking">Thinking…</p>`}</div>${verdict || save ? `<div class="aafoot">${verdict}<span class="sep"></span>${save}</div>` : ""}</div>`;
     return `<div class="turn"><p class="aq">${esc(turn.q)}</p>${turn.failed ? answer : hzCoach(turn.streaming && !turn.a ? "clue thinking" : turn.mood || "answer", answer)}</div>`;
   }).join("");
 }
@@ -86,8 +93,12 @@ function askGot(i) {
   if (askLast && askLast.request === turn.request) askLast.got = true;
 }
 function askStuck(i) {
-  const turn = (askThreads[cur.id] || [])[i]; if (!turn || turn.resolved != null || askBusy) return;
+  const thread = askThreads[cur.id] || [], turn = thread[i]; if (!turn || turn.resolved != null || askBusy) return;
   turn.resolved = false; sendFeedback(turn.request, "ask_lesson", "resolved", false);
+  if (!sample) {  // no live tutor to explain it again: say so, and point at the lesson's own help
+    thread.push({ q: "Still stuck", a: "The live tutor isn't running right now, so it can't explain this another way. Try the lesson's key idea again, or the clue in the Check step.", failed: true });
+    renderAskThread(); return;
+  }
   askLesson("Still stuck", "Your last answer didn't help them. Explain the same idea again, more simply and in fewer words: one everyday comparison, then one short example from the lesson. Do not repeat your last answer's wording. End by asking if that makes sense.", turn.request);
 }
 function renderAskThread() { const el = $("askThread"); if (el) el.innerHTML = askThreadHtml(); }
@@ -132,8 +143,9 @@ const sameAsk = (x, y) => {
   let n = 0; a.forEach(t => { if (b.has(t)) n++; });
   return n / Math.min(a.size, b.size) >= .6;
 };
-async function askLesson(question, instruction, retryOf) {
-  if (!sample || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
+async function askLesson(question, instruction, retryOf, key) {
+  const prep = !retryOf && prepFor({ key, q: question });
+  if ((!sample && !prep) || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
   if (!instruction && !retryOf && askLast && askLast.id === cur.id && !askLast.got && sameAsk(question, askLast.q)) askSignal("asked_again", true, question.trim().slice(0, 300));
   const id = cur.id, fn = cur.p.fn, thread = askThreads[id] = askThreads[id] || [];
   thread.session = thread.session || id + "-" + Date.now().toString(36);
@@ -145,6 +157,14 @@ async function askLesson(question, instruction, retryOf) {
   const history = thread.filter(t => !t.failed).slice(-4).map(t => "Q: " + t.q + "\nA: " + t.a).join("\n\n");
   // a hint or a question back to them gets the blindfold; an explanation, his eyes
   const mood = guarded || instruction === QUIZ.how || /^Give me a harder one/.test(question) ? "clue" : "answer";
+  if (prep) {  // written ahead: shown at once, and traced on the server like any answer
+    const turn = { q: question.trim(), a: prep.a, request: rid(), mood, prepared: true };
+    thread.push(turn);
+    askLast = { id, request: turn.request, q: turn.q, at: Date.now(), sent: {} };
+    if (servedTo) servedTo({ answer: prep.a, model: "prepared", trace: { feature: "ask_lesson", lesson_id: id, step: STEPS[cur.step], question: turn.q,
+      session: thread.session, chip: true, request: turn.request } }).catch(() => {});
+    renderAskThread(); return;
+  }
   const turn = { q: question.trim().slice(0, 500), a: "", streaming: true, request: rid(), mood, ...(retryOf ? { retryOf } : {}) };
   thread.push(turn);
   const i = thread.length - 1;

@@ -1,0 +1,384 @@
+{
+ "ai_unstuck": {
+  "check:0:0": {
+   "q": "Why not “Trust it: the link opens and the file says so”?",
+   "a": "\"Trust it\" gets one thing right. You opened the link and read the line yourself. That covers half of the *evidence* rule: the claim points at a real file, and the file really says it.\n\nBut it fails the *version* rule. A commit is a saved snapshot of the repo at one moment. The failed run used snapshot `300d269`. The link shows the latest version of the file, which is what's on `main` (the shared branch everyone merges into) today. Those can differ.\n\nSay the assistant claims a setting in `service_principals.yml` for `sp-sales-etl-uat` is turned off. Since run `4182`, someone may have merged a pull request that changed that line. Today's file might say \"off\" while the run read \"on\", or the other way round. Either way, you'd be explaining the failure with a file the run never saw. You might then \"fix\" something that wasn't the cause.\n\n\"Open the same file at commit `300d269` and look\" is better because it checks the claim against the exact snapshot the run used, so the evidence matches what actually happened.",
+   "step": "Check",
+   "fingerprint": "277a6a79eeec50ee",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Re-run the plan and see if the error comes back”?",
+   "a": "\"Re-run the plan\" sounds practical. It does get one thing right: you want to know if the problem is real.\n\nBut it doesn't answer the actual question. The assistant made a claim: \"this setting is turned off.\" The link it gave shows the latest version of the file, not the version the failed run used. So the real gap is the *Version* rule. You haven't yet seen what the file said at `300d269`.\n\nA re-run doesn't close that gap. If the error comes back, you still haven't opened the line the claim rests on. If it goes away, you don't know why, and the lesson warns that re-running a plan to make an error go away hides the cause. A plan is the proposed list of changes Spacelift shows before anything is applied. It is still a new run, not a way to read the old evidence.\n\n**\"Open the same file at commit `300d269` and look\"** is the right answer. It checks the assistant's claim against exactly what the failed run read, by your own eyes, without running anything.",
+   "step": "Check",
+   "fingerprint": "8a511cddee20e982",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The whole log and the state file”?",
+   "a": "Wanting to give the AI plenty of context is a good instinct. That part is right. But this option creates two problems and misses one thing.\n\n**Safety.** A Terraform state file is the record Terraform keeps of everything it built. It often holds secrets in plain text, like service principal client secrets or tokens. A whole Spacelift log can contain credentials too. Pasting either into an assistant leaks them. The lesson says never to paste these.\n\n**Focus.** A full log for a `dbx-service-uat` run can be thousands of lines long. The real cause, such as `Cannot find service principal: sp-sales-etl-uat`, gets buried. Later errors are often just knock-on effects of the first one.\n\n**The missing piece: the commit.** Without the run's commit, the assistant may read today's `main` branch instead of the code the run actually used. Its claims could then point at lines that weren't there during the run.\n\n\"The first error and the run's commit\" is better because it gives the assistant what it needs to trace the cause at the right version, without exposing any secrets.",
+   "step": "Check",
+   "fingerprint": "62ddeb8ceb539edf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Just \"why did my run fail?\"”?",
+   "a": "\"Why did my run fail?\" gets one thing right. It pastes nothing secret. No tokens, no keys, no state file (the file where Terraform records what it built).\n\nBut it gives the assistant almost nothing to work with. It doesn't know which stack failed, such as `dbx-service-uat`. It doesn't know the error, such as `Cannot find service principal: sp-sales-etl-uat`. So it can only guess. Guesses about Terraform and Databricks often sound confident, which makes them easy to trust by mistake.\n\nIt also misses the commit, meaning the exact saved version of the config repo that the run used. Without it, the assistant may read today's `main` branch. That branch might have a different `service_principals.yml`. Then every file and line it points to could be wrong for your run, and you'd fail the Version rule straight away.\n\n\"The first error and the run's commit\" is better because it tells the assistant exactly what broke and which version of the files to read, so you can check each claim against the real code at that commit.",
+   "step": "Check",
+   "fingerprint": "729abc60c56d711b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Re-run it: the AI read every file”?",
+   "a": "It gets one thing right. AI assistants really are fast readers. Tracing a name from the YAML, through the runbook, to the module is exactly what they're good at.\n\nBut \"it read every file\" is not proof. Three problems:\n\n- **Evidence.** The AI's claims are leads, not facts. Until you've opened the file and line yourself, you don't know it read them correctly.\n- **Version.** It may have read today's `main` branch, not the commit the run actually used, like `300d269`.\n- **Safety.** Re-running a plan just to make an error disappear hides the cause. A plan is Terraform's preview of what it would change. Re-running is an action, not a check.\n\nTake `Cannot find service principal: sp-sales-etl-uat`. A service principal is a non-human identity in Microsoft Entra ID. Maybe it's a typo in `service_principals.yml`. Maybe it was never created in UAT. A re-run might pass by luck or fail again. Either way, you still don't know which, and it could break the same way in PROD.\n\n\"Hold off and find the cause first\" is better because you confirm the real reason, at the run's commit, before anything changes.",
+   "step": "Check",
+   "fingerprint": "843419cd11150520",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Re-run it twice to be sure”?",
+   "a": "\"Re-run it twice to be sure\" sounds careful, but it still follows the assistant's advice without checking it.\n\n**What it gets right:** a plan (Spacelift's preview of what Terraform would change) doesn't change anything by itself. Seeing the same error twice also tells you it isn't a one-off blip.\n\n**What it misses:**\n\n- **It doesn't explain anything.** Take `Cannot find service principal: sp-sales-etl-uat`. A second or third run tells you nothing about *why* that identity is missing in Entra ID, or why the YAML names it.\n- **A pass can hide the cause.** If run two happens to succeed, you might move on. The real problem, maybe a typo in `service_principals.yml` or an identity never created in UAT, is still there. It could surface again in PROD.\n- **It treats the assistant as a witness.** \"The error will go away\" is a claim with no file or line behind it. It's a lead, not evidence.\n\n**\"Hold off and find the cause first\"** is better because it means tracing the error yourself, from the YAML to the runbook to the module at the run's commit, before anyone touches the stack.",
+   "step": "Check",
+   "fingerprint": "efb84a6ceacf33e9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Give it the facts, check its claims” in an interview?",
+   "a": "**30-second answer**\n\n*Problem.* A Spacelift run for `dbx-service-uat` fails with \"Cannot find service principal: sp-sales-etl-uat\". I'm new to the runbook, so I ask an AI assistant. But it can sound sure and still be wrong. For example, it might read today's `main` branch instead of the commit the run used.\n\n*Idea.* I brief it like a new colleague. I give it the run, the first error, the repo and the commit, plus read-only rules. Then I treat every claim as a lead. I open each linked file and line at the run's commit before I believe it.\n\n*Trade-off.* Checking takes time. The AI saves me reading, not verifying. It also can't see what I must never paste: tokens, state files (Terraform's record of real resources, which can hold secrets) or raw logs with credentials.\n\n**Likely follow-up:** \"The assistant says to recreate the service principal. Do you?\"\n\n*Hint:* No. That might clear the error but hide the cause. Run one safe read-only check instead. For example, confirm the name in `service_principals.yml` at that commit matches Entra ID. Then raise any change for approval.",
+   "step": "Explain",
+   "fingerprint": "7264c36cb710e97c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The line \"It also can't see what I must never paste\" is a little muddled, but it matches the lesson's never-paste rule."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that the AI was trusted instead of checked:\n\n- **Links point at `main`, not the run's commit.** The answer reads today's branch, so line numbers drift. The file it quotes may not match what run 4182 actually used.\n- **Claims with no file and line.** It says \"the runbook drops `sp-sales-etl-uat`\" but never shows where.\n- **Links that don't say it.** You open the cited line in `service_principals.yml` and it says something else.\n- **The fix is a reset.** It suggests re-running the plan, resetting Terraform state (the file recording what exists), or recreating the service principal. The error vanishes, then comes back in PROD, because the cause was never found.\n- **Secrets in the chat history.** A pasted log shows a token or client secret.\n\n**Quickest check:** pick the AI's single most important claim. Open that file at the run's commit, for example `config-repo @ 300d269`. Then go to the exact line. If it doesn't say what the AI said, treat the whole answer as unverified leads.",
+   "step": "Learn",
+   "fingerprint": "7f1a995d6005462f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that the error 'comes back in PROD' goes slightly beyond the lesson, which only says a reset hides the cause, but it does not contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the method needs extra care.\n\n**The cause isn't in the repo.** Sometimes `sp-sales-etl-uat` was deleted in Microsoft Entra ID, or someone changed a setting by hand in the workspace. That is called drift: the real world no longer matches the code. An assistant reading `config-repo @ 300d269` can't see this. Check the live system yourself, read-only, or ask the identity owners.\n\n**The error text hides a secret.** A provider error can echo a token, a client secret or a storage key inside its message. A quick \"looks like a secret\" check only catches obvious patterns. Read the excerpt line by line and redact anything sensitive before pasting, even in an enterprise tool.\n\n**The change is too big.** A pull request touching `team-sales` across DEV, UAT and PROD, Foundation and Service, is too much to review at once. The assistant may skim and miss a dropped field. Split the review by stage and environment. Then check each claim against the file and line yourself.",
+   "step": "Learn",
+   "fingerprint": "665155fba826faeb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. Minor: the first and third items run to four sentences, over the requested two or three, and 'drift' and the 'only catches obvious patterns' point come from outside the lesson but do not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "How is “explaining” different from “tracing”?",
+   "a": "**Explaining** is about meaning. You hand the AI one thing you don't understand, like the error `Cannot find service principal: sp-sales-etl-uat`. It tells you in plain words what that means. (A service principal is a non-human identity: an account a program uses. Here it comes from Microsoft Entra ID.)\n\n**Tracing** is about location. The AI follows one name, `sp-sales-etl-uat`, from file to file. Where does `service_principals.yml` ask for it? What does the Pydantic check accept? How does the runbook pass it on? Which module and provider finally look it up?\n\nSo explaining answers \"what is this?\" Tracing answers \"where does this come from, and where does it go?\"\n\nAn everyday comparison: explaining is a friend telling you what a dashboard warning light means. Tracing is following the wire from that light back to the part that set it off.\n\nThey work together. The explanation tells you what to look for. The trace shows you where to look. Either way, each claim is only a lead until you open the file at the run's commit, `300d269`, and see it yourself.",
+   "step": "Learn",
+   "fingerprint": "1105b4f38e78e4c8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "lookup_failed": {
+  "check:0:1": {
+   "q": "Why not “The Service stack is reading an old copy of the…”?",
+   "a": "**What it gets right:** reading an old copy is a real risk. That is why the lesson's first check is \"same commit as the run?\" You make sure you are reading the config the failed run actually used. So it is worth ruling out first. But it belongs to that first check, not to the Service stage.\n\n**What it misses:** the timeline already points somewhere. Foundation was applied yesterday. The SP was declared this morning. So when Foundation ran, `sp-sales-etl-uat` was not in `service_principals.yml` yet. Foundation never registered it in the Databricks account. \"Registered\" means added to the account's list of known identities.\n\nThe Service plan's `data` lookup only finds SPs that are already registered. Even if Service read today's YAML, the lookup would still fail. An earlier stage is not done.\n\nThe question does not say whether the SP exists in Entra ID. You would still confirm that before blaming Foundation.\n\n\"Foundation applied before the declaration: apply again\" is better because it names the first stage that isn't true and gives the fix: run Foundation again so it sees the new declaration.",
+   "step": "Check",
+   "fingerprint": "13765e8df4fe2fab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The SP was never created in Microsoft Entra ID”?",
+   "a": "It's a fair guess. A missing Entra ID identity really would break the lookup, and Entra ID is the first stage in the order. So it isn't a silly answer.\n\nBut nothing in the question points to Entra ID. The question gives you a timing clue instead. Foundation was applied **yesterday**. The SP was declared in `service_principals.yml` **this morning**.\n\nFoundation only registers the SPs that are declared at the moment it runs. \"Registers\" means it adds them to the Databricks account. Yesterday's apply read a `service_principals.yml` that didn't list `sp-sales-etl-uat` yet. So Foundation never saw it.\n\nNow walk the stages in order. \"Declared\" is true now. But \"Foundation applied\" is not true for this SP, because that apply came before the declaration. That is the first gap. The Service plan's `data` lookup fails because the account has nothing to find.\n\nThe Entra ID answer guesses at a stage the facts don't question. It also ignores the one detail the question went out of its way to give.\n\n\"Foundation applied before the declaration: apply again\" is better because it uses that timing clue to name the exact stage that isn't done, and the fix that completes it.",
+   "step": "Check",
+   "fingerprint": "a4ee43364beef85b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Nothing: Terraform creates what's missing”?",
+   "a": "That answer has a grain of truth. Terraform *can* create things, but only when the code uses a `resource` block. A `resource` block says \"make this and keep it in line with the code.\"\n\nThe error path here says `data`, as in `data.databricks_service_principal.by_name`. A `data` block is a lookup. It asks the Databricks account, \"find me the SP called `sp-sales-etl-uat`.\" It never creates anything. If the SP is not there, the plan simply fails.\n\nIt also misses why the SP is missing. In this platform, an SP has to pass earlier stages first. It must exist in Microsoft Entra ID. It must be declared in `service_principals.yml`. And the Foundation stack must have been applied, which registers it in the account. The catalog module expects all that to be done already. So \"let Terraform create it\" would skip the stages that should have produced it. Instead, you check each stage in order and fix the first gap.\n\n\"`data` means it only looks up what exists\" is better because it tells you the failure is a missing earlier stage, not a step Terraform forgot to do.",
+   "step": "Check",
+   "fingerprint": "bbfdbb5df36fdc0d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The SP must be added by hand in Databricks”?",
+   "a": "**Why \"The SP must be added by hand in Databricks\" isn't the best answer**\n\nIt gets one thing right. The SP has to exist before the plan can find it. Terraform won't make it here.\n\nBut it skips the real point of the question. The teammate's mistake is about what the code does. The word `data` in the error path means a **lookup**: Terraform only searches for something that should already be there. It was never written to create anything. That is why \"Terraform should just create it\" is wrong.\n\nIt also guesses at a fix the lesson never gives. In the lesson, an SP becomes findable by passing stages in order:\n\n1. It exists in Microsoft Entra ID.\n2. It is declared in `service_principals.yml`.\n3. The Foundation stack is applied, which registers it in the Databricks account.\n4. The Service stack assigns it to the workspace.\n\nA lookup fails when one of these is not done. So you check them in order and stop at the first gap. In the lesson's example, that gap was a missing entry in `service_principals.yml`.\n\n**Why the other option is better:** \"`data` means it only looks up what exists\" names the actual reason the teammate is wrong, and it points you to the stages that come before the lookup.",
+   "step": "Check",
+   "fingerprint": "37a76741ca8e0932",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": false,
+    "standalone": true,
+    "pass": false,
+    "notes": "It runs to about 220 words, over the 200-word limit, and the numbered stage list plus 'check in order, stop at the first gap' lays out the ordered-check logic that next_check is meant to make the learner write."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Nothing: the file on main declares it”?",
+   "a": "It gets one thing right. Looking in `service_principals.yml` is the correct place to check the \"declared\" stage. Foundation only picks up SPs listed there.\n\nWhat it misses is timing. A **commit** is a saved snapshot of the repo at one moment. `main` is the shared branch, and it keeps moving as people merge changes. Yesterday's Service plan read the config at one specific commit. Today's `main` may be different.\n\nSomeone might have added `sp-sales-etl-uat` to the file after the run failed, perhaps as a fix. If you read today's `main`, you would tick \"declared\" and move on. But the failed run may never have seen that line. You would then chase a later stage that was never the real problem.\n\nThere is a second trap. Even if the line is in the file now, that only proves the declared stage. Foundation still has to be **applied**, meaning actually run for real, not just previewed, before the SP is registered in the account.\n\n\"The same file at the run's commit\" is better because it shows exactly what the failed run read, so your check is about that run and not about today.",
+   "step": "Check",
+   "fingerprint": "57e722fc21ebda32",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the answer is accurate and on topic, though the 'second trap' paragraph is a small tangent and the length is close to the limit."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “That the SP's name is in lower case”?",
+   "a": "Checking the name isn't a silly idea. The lesson does say that once every stage checks out, what's left to suspect is the name or the scope. So the name matters. It just comes later, not at this step.\n\nThe question is about something else. You're looking at `service_principals.yml` on `main` *today*. The failed plan ran *yesterday*. The repo may have changed in between. Maybe someone declared `sp-sales-etl-uat` this morning, after the run failed.\n\nIf so, today's file tells you nothing about what the run actually read. Checking the case of the name doesn't fix that. You'd be inspecting the wrong version of the file. You might then wrongly tick off \"declared\" and move on. But the real gap could be that it wasn't declared when the run happened.\n\nThat's why the lesson says to confirm you're on the same commit before anything else. A **commit** is a saved snapshot of the repo at one moment.\n\n\"The same file at the run's commit\" is better because it checks what the failed run really saw, so your answer for the \"declared\" stage is true for that run.",
+   "step": "Check",
+   "fingerprint": "4ba6e844ffadbf81",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Use OIDC, not client secrets” matter?",
+   "a": "When Spacelift runs your Terraform, it must sign in to Azure as an identity, usually a service principal. There are two ways to do that.\n\nA **client secret** is a long password for that SP. Someone creates it, pastes it into Spacelift, and it expires on a set date. Then someone must **rotate** it: make a new one and swap it in everywhere.\n\n**OIDC** (OpenID Connect) with **workload identity federation** is different. You tell Entra ID to trust sign-in tokens that Spacelift issues for one specific stack. Each run gets a short-lived token. No password is stored anywhere.\n\nTerraform also keeps a **state file**, its record of everything it manages. It stores values in plain text. If a secret ends up in a resource, anyone who can read the state can read the secret.\n\nExample: the UAT Service stack signs in as `sp-platform-deploy-uat` with a client secret. The secret expires on a Friday. Every UAT apply then fails with an auth error until someone rotates it. And if that secret was ever written into state, it may already be exposed.\n\nWith OIDC, there is nothing to expire or leak.",
+   "step": "Explain",
+   "fingerprint": "076d9acabd066350",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check the stages in order, stop at the first gap” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem.** A Terraform plan fails with `Cannot find service principal: sp-sales-etl-uat`. A service principal is an identity for a program, not a person. The `data` in the error path tells me this was a lookup. Terraform expected the SP to already exist. It was never going to create it.\n\n**The idea.** A lookup only works once earlier stages are done, in order. The SP exists in Entra ID. It's declared in `service_principals.yml`. Foundation has been applied. Service has assigned it to the workspace. I check each stage in that order and stop at the first one that isn't true. That's where the fix goes.\n\n**An edge case.** Before anything else, I confirm I'm reading the config at the same commit the failed run used. If every stage checks out, the likely problem is the name or scope, such as a typo or the wrong environment.\n\n**A follow-up an interviewer might ask**\n\n*\"Why not check everything and report every gap?\"*\n\nHint: later stages depend on earlier ones. If Foundation never saw the SP, Service can't assign it either. That later \"no\" is just a side effect. The first gap is the real cause.",
+   "step": "Explain",
+   "fingerprint": "e27beeb1cc130797",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the typo and wrong-environment examples go slightly beyond the lesson's 'name or scope' but do not contradict it."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the stages were skipped or checked out of order:**\n\n- You \"fix\" something and the next plan fails with the same `Cannot find service principal` error. You fixed a later stage while an earlier one was still missing.\n- The config you are reading looks correct, but the run still failed. You are probably looking at the latest repo, not the commit the run used.\n- Someone says \"it's in the YAML.\" It is, but only in `dbx_access_connector.yml`, not `service_principals.yml`. Foundation never picked it up.\n- Someone points to a green run in Spacelift. It was a **proposed** run, a preview only. Nothing was applied.\n- You spend an hour on name typos or scope before confirming that `sp-sales-etl-uat` exists in Entra ID at all.\n\n**Quickest check:**\n\n1. Open the failed run in Spacelift and note its commit.\n2. At that commit, walk the stages from the top:\n   - Is the SP in Entra ID?\n   - Is it in `service_principals.yml`?\n   - Does the Foundation stack show an **applied** run, not just a proposed one?\n   - Did Service assign it to the workspace?\n3. Stop at the first \"no.\" That is your fix.",
+   "step": "Learn",
+   "fingerprint": "69c93c5bd0092a9c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The method assumes each answer you give is accurate and current. Here are three cases where that needs extra care.\n\n**All stages pass, but the lookup still fails.** Then the problem is usually the name or the scope. Compare the exact `display_name` character by character, including the environment suffix, since `sp-sales-etl-dev` is not `sp-sales-etl-uat`. Also confirm the lookup runs in the workspace the SP was assigned to.\n\n**A \"yes\" goes stale.** Someone may rename or delete the SP in Entra ID after Foundation was applied. This is called **drift**: the real setup no longer matches what Terraform last saw. Re-check each stage against the live system, not against what was true last week.\n\n**Several SPs fail at once.** The lookup uses `for_each` over a list of names, so one missing SP can fail the whole plan. Run the stage checks for each name separately, because each one may stop at a different stage.",
+   "step": "Learn",
+   "fingerprint": "808cb47582956d45",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “data” different from “look up”?",
+   "a": "They are two sides of one thing. `data` is the word written in the Terraform code. \"Look up\" is what that code does when the plan runs.\n\nA `data` block tells Terraform: \"this already exists somewhere; go find it.\" A `resource` block says the opposite: \"make this.\" So `data \"databricks_service_principal\" \"by_name\"` never creates an SP. It searches the Databricks account for one whose `display_name` matches.\n\nWhen the error path shows `module.dbx_credentials.data.databricks_service_principal.by_name`, the word `data` tells you the failure happened during a lookup. Nothing was being built.\n\nThink of collecting a parcel at the post office. Your pickup slip is the `data` block. Asking at the counter is the look-up. The clerk can only hand over what actually arrived.\n\nUsually the lookup fails because an earlier stage isn't done, so `sp-sales-etl-uat` was never registered. But if every stage checks out, the problem is in the lookup itself. The name may not match exactly, or the scope may be wrong. Scope means where it searches, such as the wrong account or workspace.",
+   "step": "Learn",
+   "fingerprint": "76516b664c949852",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}
