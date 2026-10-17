@@ -16,6 +16,7 @@
 .dg .dg-td { font-size: 10.5px; }
 .dg .dg-mono { font-family: var(--mono); font-size: 9.5px; fill: var(--muted); }
 .dg .dg-ms { font-size: 9.5px; font-family: var(--mono); fill: var(--muted); }
+.dg .dg-ms.in { fill: var(--fg); } .dg .dg-ms.in.on { fill: var(--bg); }  /* a number drawn inside its bar */
 .dg .dg-left { text-anchor: start; } .dg .dg-right { text-anchor: end; }
 .dg .hot { fill: var(--accent); }
 .dg .dg-bx rect { fill: var(--surface); stroke: var(--fg); stroke-width: 1.4; }

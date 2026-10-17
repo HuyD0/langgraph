@@ -60,8 +60,8 @@ function dgTree(d) {
     body += dgText(`dg-tl dg-left${r.hot ? " hot" : ""}`, 8 + depth * 12, y + 11, r.name);
     const x = px(r.start || 0), w = Math.max(px(r.size) - X0, 3);
     body += `<rect class="dg-bar${r.hot ? " hot" : ""}${r.cut ? " cut" : ""}" x="${dgNum(x)}" y="${y}" width="${dgNum(w)}" height="14" rx="3"/>`;
-    const label = `${r.size} ${d.unit}`, fits = x + w + 48 < DG_W;
-    body += dgText(`dg-ms ${fits ? "dg-left" : "dg-right"}`, fits ? x + w + 4 : x - 4, y + 11, label) + dgCallout(x + 2, y, r.n);
+    const label = `${r.size} ${d.unit}`, fits = x + w + 48 < DG_W;  // no room to the right: the number sits inside the bar's end
+    body += dgText(`dg-ms ${fits ? "dg-left" : "dg-right in" + (r.hot ? " on" : "")}`, fits ? x + w + 4 : x + w - 4, y + 11, label) + dgCallout(x + 2, y, r.n);
   });
   if (d.marker) body += `<line class="dg-today" x1="${dgNum(px(d.marker.at))}" y1="${top - 10}" x2="${dgNum(px(d.marker.at))}" y2="${top + rows.length * rowH}"/>` + dgText("dg-ts hot" + dgEdge(px(d.marker.at) + 40), px(d.marker.at), top - 12, d.marker.label);
   return dgSvg(top + rows.length * rowH + 18, body, d.caption);
