@@ -51,8 +51,8 @@ strip.
 horizon for that phase (a gate, seals on a rope, a barrier being drawn, a closed curtain, the
 barrier opening, lanterns at night) with blue-flame energy moving through it, and a cursed spirit
 that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the
-last lesson breaks it apart. On the left hill a blindfolded sorcerer in a long coat raises a hand
-sign; the flame at his hand grows as you learn, and tapping fires it at the spirit. Changing phase reshapes the hills; tapping the banner strikes the
+last lesson breaks it apart. On the left hill a white-haired, blindfolded sorcerer in a navy high-collared jacket raises two
+fingers in a sign inside a blue and violet spiral; the spiral and the flame at his fingers grow as you learn, and tapping fires it at the spirit. Changing phase reshapes the hills; tapping the banner strikes the
 spirit. The current phase's landmark is lit in blue. Then its shape glowing in the title card, what
 you come out with, then one scene per module. The scene with the next lesson is open; the
 others fold to a row of small shapes.

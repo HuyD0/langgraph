@@ -2,7 +2,7 @@
 // A strip of original line art at the top of Home's phase room: a horizon that reshapes for each phase
 // (gate, seals, barrier, curtain, opening, lanterns), a layer of blue-flame energy, and a cursed spirit
 // that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the last
-// lesson exorcises it. A blindfolded sorcerer on the left hill grows stronger as it weakens. The platform
+// lesson exorcises it. A white-haired, blindfolded sorcerer on the left hill grows stronger as it weakens. The platform
 // track gets its own banner in teal (`hzTrackScene`). Decorative only (aria-hidden); tapping it strikes the spirit for fun.
 // Neutral names; every colour is a token.
 const HZ = [
@@ -84,22 +84,34 @@ function hzCurse(i, hp) {
   const [x, y, s] = HZ_AT[i];
   return hzSpirit(x, y, s * (.75 + .25 * hp), hp) + (i === 1 ? `<path class="bind" d="M292 70 L344 84 M294 86 L342 68"/>` : "");
 }
-// The sorcerer: an original figure in a long dark high-collared coat, blindfolded, one hand raised in a
-// sign. The flame at his hand grows with `power` (the share of lessons done); tapping the banner fires it.
+// The sorcerer: an original figure with spiky white hair and a black blindfold, smiling, in a navy
+// high-collared jacket with a round button. He stands wide, two fingers raised in a sign, the other hand
+// at his collar, with blue and violet energy spiralling round him. The spiral, sparks and the flame at his
+// fingertips grow with `power` (the share of lessons done); tapping the banner fires the flame.
 function hzSorcerer(x, g, tx, ty, power) {
-  const S = .9, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1);
-  const hx = +X(16), hy = +Y(-27);
-  const coat = `<path class="coat" d="M${X(-5)},${Y(-30)} L${X(-8)},${Y(-6)} L${X(-11)},${Y(0)} L${X(-2)},${Y(-1)} L${X(0)},${Y(-12)} L${X(2)},${Y(-1)} L${X(10)},${Y(0)} L${X(7)},${Y(-6)} L${X(5)},${Y(-30)} L${X(3)},${Y(-34)} L${X(-3)},${Y(-34)}Z"/>`;
-  const collar = `<path class="coatln" d="M${X(-3)},${Y(-34)} L${X(-3.5)},${Y(-38)} M${X(3)},${Y(-34)} L${X(3.5)},${Y(-38)}"/>`;
-  const head = `<circle class="skin" cx="${X(0)}" cy="${Y(-41)}" r="${(3.6 * S).toFixed(1)}"/>`;
-  const hair = `<path class="hair" d="M${X(-4)},${Y(-41)} q${-1},${-6} ${4 * S},${-7 * S} q${5 * S},${0} ${4.5 * S},${6 * S} l${-1.5 * S},${-1.5 * S} l${-1 * S},${2 * S} l${-1.5 * S},${-2.2 * S} l${-1.5 * S},${2 * S} l${-1.4 * S},${-2.4 * S} l${-1.2 * S},${2.4 * S}z"/>`;
-  const eyes = `<path class="band" d="M${X(-3.4)},${Y(-42.2)} L${X(3.7)},${Y(-41.8)} L${X(3.7)},${Y(-39.6)} L${X(-3.4)},${Y(-40)}Z"/><path class="tails" d="M${X(-3.4)},${Y(-41.4)} q${-3 * S},${-1 * S} ${-6 * S},${1.5 * S} M${X(-3.4)},${Y(-40.6)} q${-2.5 * S},${1.2 * S} ${-5 * S},${3.6 * S}"/>`;
-  const arm = `<path class="coatln" d="M${X(3)},${Y(-31)} L${X(10)},${Y(-29)} L${hx},${hy}"/><path class="coatln" d="M${X(-3)},${Y(-31)} L${X(-7)},${Y(-22)} L${X(-5)},${Y(-17)}"/>`;
-  const sign = `<path class="sign" d="M${hx},${hy} l.4,-3.4 M${hx + .9},${hy} l.6,-3.2"/>`;
-  const orb = `<circle class="orb" cx="${hx + 1}" cy="${hy - 2}" r="${(2 + 7 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
-  const shield = `<circle class="shield" cx="${X(0)}" cy="${Y(-22)}" r="${(26 * S).toFixed(1)}"/>`;
-  const beam = `<path class="beam" d="M${hx + 1},${hy - 2} L${tx},${ty}"/>`;
-  return `<g class="fighter">${shield}${coat}${collar}${arm}${head}${hair}${eyes}${sign}${orb}${beam}</g>`;
+  const S = .82, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1);
+  const P = pts => "M" + pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L") + "Z";
+  const hx = +X(14.4), hy = +Y(-52);
+  const legs = `<path class="coat" d="${P([[-5, -21], [-13, -1], [-15, 0], [-9, 0], [-1, -15], [3, -15], [8, 0], [14, 0], [12, -2], [6, -21]])}"/>`;
+  const coat = `<path class="coat" d="${P([[-4, -40], [-9, -37], [-8, -26], [-7, -18], [7, -18], [8, -26], [9, -37], [4, -40]])}"/>`
+    + `<path class="coatln" d="M${X(.5)},${Y(-38)} V${Y(-19)}"/>`;
+  const collar = `<path class="coat" d="${P([[-3.6, -45], [3.6, -45], [4.2, -39], [-4.2, -39]])}"/><circle class="btn" cx="${X(0)}" cy="${Y(-40.6)}" r="${(1.1 * S).toFixed(1)}"/>`;
+  const arms = `<path class="sleeve" d="M${X(7)},${Y(-37)} L${X(13)},${Y(-33)} L${X(14)},${Y(-42)}"/><path class="sleeve" d="M${X(-7)},${Y(-36)} L${X(-9)},${Y(-29)} L${X(-3)},${Y(-36)}"/>`;
+  const hands = `<path class="skin" d="M${X(12.6)},${Y(-42)} l${(.6 * S).toFixed(1)},${(-7 * S).toFixed(1)} l${(1 * S).toFixed(1)},0 l${(.2 * S).toFixed(1)},${(5 * S).toFixed(1)} l${(.6 * S).toFixed(1)},${(-5.6 * S).toFixed(1)} l${(1 * S).toFixed(1)},${(.2 * S).toFixed(1)} l${(-.4 * S).toFixed(1)},${(7.4 * S).toFixed(1)}Z"/>`
+    + `<circle class="skin" cx="${X(-2.2)}" cy="${Y(-37.2)}" r="${(1.8 * S).toFixed(1)}"/>`;
+  const head = `<ellipse class="skin" cx="${X(0)}" cy="${Y(-49.5)}" rx="${(3.8 * S).toFixed(1)}" ry="${(4.4 * S).toFixed(1)}"/>`
+    + `<path class="smile" d="M${X(-1.4)},${Y(-46.6)} q${(1.4 * S).toFixed(1)},${(1.1 * S).toFixed(1)} ${(2.8 * S).toFixed(1)},${(-.2 * S).toFixed(1)}"/>`;
+  const band = `<path class="band" d="${P([[-4.3, -52.6], [4.3, -52.6], [4.1, -48.8], [-4.1, -48.8]])}"/>`;
+  const hair = `<path class="hair" d="${P([[-4.2, -52.4], [-6.8, -54.4], [-4.4, -55], [-7, -58], [-3.4, -57.2], [-3.8, -60.6], [-1, -58.2], [.4, -61.6], [1.6, -58.2], [4.2, -60.4], [3.8, -57], [7.2, -57.8], [4.8, -54.8], [7, -54], [4.2, -52.4]])}"/>`;
+  const R = 1 + .25 * power, C = [X(1), Y(-30)];
+  const swirl = [[0, "", 18, 30, -24], [1, " b", 15, 27, 32], [2, " c", 21, 24, 74]].map(([k, c, rx, ry, rot]) =>
+    `<ellipse class="swirl${c}" cx="${C[0]}" cy="${C[1]}" rx="${(rx * S * R).toFixed(1)}" ry="${(ry * S * R).toFixed(1)}" transform="rotate(${rot} ${C[0]} ${C[1]})" pathLength="1" style="--d:${(-k * .5).toFixed(1)}s"/>`).join("");
+  const SP = [[-16, -44], [17, -20], [-12, -8], [20, -46], [-19, -26], [11, -58], [-8, -60], [22, -32], [-21, -14], [15, -6]];
+  const sparks = SP.slice(0, 4 + Math.round(6 * power)).map(([a, b], k) =>
+    `<path class="spark${k % 3 ? "" : " v"}" d="M${X(a)},${Y(b - 1.4)} l${(.5 * S).toFixed(1)},${(1.4 * S).toFixed(1)} l${(-.5 * S).toFixed(1)},${(1.4 * S).toFixed(1)} l${(-.5 * S).toFixed(1)},${(-1.4 * S).toFixed(1)}Z" style="--d:${(k * .29).toFixed(2)}s"/>`).join("");
+  const orb = `<circle class="orb" cx="${hx}" cy="${hy}" r="${(1.5 + 5 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
+  const beam = `<path class="beam" d="M${hx},${hy} L${tx},${ty}"/>`;
+  return `<g class="fighter"><g class="aura" opacity="${(.4 + .6 * power).toFixed(2)}">${swirl}</g>${legs}${coat}${arms}${collar}${head}${band}${hair}${hands}<g class="aura" opacity="${(.5 + .5 * power).toFixed(2)}">${sparks}</g>${orb}${beam}</g>`;
 }
 const HZ_HERO_X = 30;
 const hzGround = (i, x) => { const a = HZ[i].a, k = Math.min(7, Math.floor(x / 50)), f = (x - k * 50) / 50; return a[k] + (a[k + 1] - a[k]) * f; };
