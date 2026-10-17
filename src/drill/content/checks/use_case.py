@@ -34,14 +34,14 @@ CHECKS = {
     "split_requirements": [
         ask("\"Translate each answer into Spanish when the user asks.\" What kind of requirement "
             "is that?",
-            ["Functional: something it must do", "Non-functional: about how well it works", "Neither: just a nice-to-have idea"],
+            ["Functional: a job the system does", "Non-functional: how well it does its jobs", "Neither: it is not a requirement at all"],
             answer=0,
             clue="Cross the line out. Does a job disappear?",
             why="Cross it out and users can no longer get a Spanish answer: a job is gone, so it's "
                 "functional. Non-functional requirements are about how well: speed, cost, uptime, security."),
         ask("Your team is writing the cost requirement for the HR assistant. Which version could "
             "the pilot actually test?",
-            ["It should be cheap to run", "Under 50 cents per finished answer", "Cheaper than most other AI tools"],
+            ["It should be cheap to run", "Under 50 cents per answer", "Cheaper than most other AI tools"],
             answer=1,
             clue="Look for the one you could check against the bill at the end of the pilot.",
             why="A number turns a wish into a test: after the pilot you work out the cost of each "

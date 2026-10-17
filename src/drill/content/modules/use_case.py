@@ -421,10 +421,10 @@ for ch in "80 in 100":
 lesson(MODULE, 'split_requirements',
     title='Functional and non-functional requirements',
     learn=[
-        'A **requirement** is one thing the finished system must meet, and there are two kinds. **Functional** requirements are the jobs it does: things you could watch it do, like "answer policy questions" or "hand hard questions to a person". **Non-functional** requirements are how well it does those jobs: how fast, how safe, how cheap, how many people at once. Engineers also call them **quality attributes**.',
-        'To tell them apart, cross the line out. If a job disappears, the line was functional: cross out "show the source page" and users lose the source. If the system still does every job, only worse (slower, less safe, dearer), the line was non-functional: cross out "reply within 5 seconds" and it still answers, just slowly.',
+        'A **requirement** is one thing the finished system must meet, and there are two kinds. **Functional** requirements are the jobs it does: things a user could watch it do, like "answer policy questions" or "hand hard questions to a person". **Non-functional** requirements are how well it does those jobs: how fast, how safe, how cheap, how many people at once. Engineers also call them **quality attributes**.',
+        'To tell them apart, imagine crossing the line off the list. If a job a user relies on disappears, the line was functional: cross out "show the source page" and users lose the source. If the system still does every job, only worse (slower, less safe, dearer), the line was non-functional: cross out "reply within 5 seconds" and it still answers, just slowly.',
         'One sentence often holds both. "Answer policy questions within 5 seconds" is a job (answer policy questions) and a bar on that job (within 5 seconds). Split it into two lines, so each one can be built and tested on its own.',
-        'Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. The usual ones for AI: speed, availability (how much of the time it is up), cost per finished task, privacy (where personal data may go), security (who can see what), how many users at once, and a record of every answer. Each needs a number or a rule you can check, like "under 5 seconds for 95 in 100 answers", or the pilot can\'t say yes or no. The next lesson checks them against the pillars of a well-architected review.',
+        'Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. The usual ones for AI: speed, availability (also called **uptime**: how much of the time it is working), cost per finished task, privacy (where personal data may go), security (who can see what), how many users at once, and a record of every answer. Each needs a number or a rule you can check, like "under 5 seconds for 95 in 100 answers", or the pilot can\'t say yes or no. The next lesson checks them against the pillars of a well-architected review.',
     ],
     example=example('The cross-out test on the HR assistant', """# cross it out: is a job gone?
 "Show the source page"
@@ -444,7 +444,7 @@ lesson(MODULE, 'split_requirements',
             'Be available 99.9 percent of working hours',
         ],
         answer=2,
-        why='The first two say what the system does. Availability says how well it must keep doing it, which makes it non-functional.',
+        why='The first two are jobs the system does. Availability is how well it keeps doing them, so it is non-functional.',
     ),
     angle=angle(
         pattern='Sort by a list of how-well words',
@@ -470,40 +470,40 @@ Return `[functional, non_functional]`: two lists of the requirement dicts, each 
         target='one pass over the requirements',
         realworld='Requirement reviews often start with exactly this sort, then a person checks the edge cases. Non-functional requirements map straight onto the Well-Architected pillars.',
         practice=practice(
-            intro='Sort the HR assistant\'s requirements the way a reviewer does: cross each line out and see whether a job disappears.',
+            intro='Sort the HR assistant\'s requirements the way a reviewer does: cross each line out and see whether a job a user relies on disappears.',
             explain='The big idea: functional requirements are the jobs a system does and non-functional ones are how well it does them. You crossed out lines to sort them, spotted a list with no how-well lines at all, split a sentence that held both kinds, and turned "always up" into a number a pilot can test.',
             asks=[
-                ask('Which pile does **R4** go in?', ['Functional: something it must do', 'Non-functional: how it must do it'], answer=1,
+                ask('Which pile does **R4** go in?', ['Functional: a job the system does', 'Non-functional: how well it does its jobs'], answer=1,
                     evidence=evidence('code', title='The HR assistant\'s requirements', text="""R1  Answer policy questions from the HR pages
 R2  Reply within 5 seconds for 95 in 100 questions
 R3  Show the source page for every answer
-R4  Keep personal data inside the EU region
+R4  Personal data never leaves the EU
 R5  Hand hard questions to a person
 R6  Serve 200 users at once
-R7  Cost under $1 per finished answer"""),
+R7  Cost under $1 per answer"""),
                     clue='Cross R4 out. Does the assistant still answer questions?',
-                    why='Crossed out, it still answers every question, only less safely. Where personal data may go is privacy: a rule about how the job is done, not the job. Non-functional.',
-                    wrong=['It adds nothing users can ask for. It limits how the job is done.', None]),
-                ask('What is missing from that list?', ['Nothing: those three lines cover the whole job', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
+                    why='Crossed out, it still answers every question, only less safely. Where personal data may go is privacy: a rule about how well the job is done, not a job. Non-functional.',
+                    wrong=['Cross it out and it still answers every question. It is a rule about how well, not a job.', None]),
+                ask('What is missing from the product owner\'s requirements?', ['Nothing: those three lines cover the whole job', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
                     evidence=evidence('claim', who='The product owner said', text='"The requirements are done: it answers policy questions from the HR pages, shows the source page, and hands hard questions to a person."'),
                     clue='All three lines say what it does. Which pile is that?',
                     why='All three are functional. A demo can do every one and still not go live, because it is too slow, too costly or sends personal data where it may not go.',
                     wrong=['That is the whole job, but not how well it must do it.', None, 'It has enough to do. What is missing is how well.']),
-                ask('R10 mixes both kinds. Which part is the non-functional one?', ['Answer leave questions', 'within 5 seconds', 'Neither: it is one requirement'], answer=1,
-                    evidence=evidence('code', title='A new line', text='R10  Answer leave questions within 5 seconds'),
-                    clue='Cross out each half in turn. Which one leaves the job standing?',
+                ask('R8 mixes both kinds. Which part is the non-functional one?', ['Answer time-off questions', 'within 5 seconds', 'Neither: it is one requirement'], answer=1,
+                    evidence=evidence('code', title='A new line', text='R8  Answer time-off questions within 5 seconds'),
+                    clue='Cross out each half in turn. Which one still leaves a job to do?',
                     why='"Within 5 seconds" is a bar on the job. Split it into its own line, so the pilot can test the job and the speed separately.',
                     wrong=['Cross that out and the job is gone. That half is functional.', None, 'It holds two: a job and a bar on it. Split them.']),
-                ask('How would you rewrite R8 so the pilot can test it?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
-                    evidence=evidence('claim', who='A teammate added', text='"R8: The assistant should always be up."'),
+                ask('How would you rewrite R9 so the pilot can test it?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
+                    evidence=evidence('claim', who='A teammate added', text='"R9: The assistant should always be up."'),
                     clue='"Always" can\'t be measured. What share of the time, and when?',
                     why='A number turns a hope into a bar the pilot can check: it either stayed up 99.9 percent of working hours or it didn\'t.',
                     wrong=['Stronger words still can\'t be measured.', None, 'That is a way to build it, not how well it must work.']),
-                ask('R9 sounds like something the assistant does. Which pile does it go in?', ['Functional: something it must do', 'Non-functional: how it must do it'], answer=1,
-                    evidence=evidence('code', title='One more line', text='R9  Keep an audit log of answers'),
-                    clue='Cross R9 out. Does the assistant still answer every question?',
-                    why='Crossed out, every job still gets done; you only lose the record that lets someone check the answers later. Like speed, cost and privacy, it is about how well the system behaves.',
-                    wrong=['Cross it out and every job is still done. It is a how-well line.', None]),
+                ask('R10 sounds like something the assistant does. Which pile does it go in?', ['Functional: a job the system does', 'Non-functional: how well it does its jobs'], answer=1,
+                    evidence=evidence('code', title='One more line', text='R10  Keep a record of every answer, for audits'),
+                    clue='Cross R10 out. Does any user lose something they could ask for or see?',
+                    why='Users still get every answer, with its source. Only the team loses the record they use to check answers later. That is about how well the system is run, so it is non-functional. (Some teams file it as a feature; either way, it has to be on the list.)',
+                    wrong=['Cross it out and users lose nothing they can ask for or see. It is a how-well line.', None]),
             ],
         ),
         starter="""def split_requirements(reqs):
@@ -532,18 +532,18 @@ R7  Cost under $1 per finished answer"""),
                 {"id": "R1", "text": "Answer policy questions from the HR pages"},
                 {"id": "R2", "text": "Reply within 5 seconds for 95 in 100 questions"},
                 {"id": "R3", "text": "Show the source page for every answer"},
-                {"id": "R4", "text": "Keep personal data inside the EU region"},
+                {"id": "R4", "text": "Personal data never leaves the EU"},
                 {"id": "R5", "text": "Hand hard questions to a person"},
                 {"id": "R6", "text": "Serve 200 users at once"},
-                {"id": "R7", "text": "Cost under $1 per finished answer"},
+                {"id": "R7", "text": "Cost under $1 per answer"},
             ], expected=[
                 [{"id": "R1", "text": "Answer policy questions from the HR pages"},
                  {"id": "R3", "text": "Show the source page for every answer"},
                  {"id": "R5", "text": "Hand hard questions to a person"}],
                 [{"id": "R2", "text": "Reply within 5 seconds for 95 in 100 questions"},
-                 {"id": "R4", "text": "Keep personal data inside the EU region"},
+                 {"id": "R4", "text": "Personal data never leaves the EU"},
                  {"id": "R6", "text": "Serve 200 users at once"},
-                 {"id": "R7", "text": "Cost under $1 per finished answer"}],
+                 {"id": "R7", "text": "Cost under $1 per answer"}],
             ], sample=True),
             case([], expected=[[], []]),
             case([{"id": "A", "text": "99.9 percent UPTIME"}, {"id": "B", "text": "Encrypt every stored answer"}],
@@ -631,7 +631,7 @@ Security: who sees what?
 Cost: what grows the bill?
   -> R7: under $1 an answer
 Operations: would we notice?
-  -> R9: every answer kept
+  -> R10: every answer kept
 Performance: busiest minute?
   -> R2: 5 seconds, 95 in 100"""),
     check=question(
