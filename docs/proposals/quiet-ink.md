@@ -26,7 +26,12 @@ Both are Google Fonts under the Open Font License; only their Latin letters load
 together. As tokens: `--head` replaces `--display` on headings, and a new `--moment` is used for the
 one big line. The brand name keeps Bricolage so the logo doesn't change.
 
-### 2. Ink wash (Dusk only)
+### 2. Ink wash (Dusk only), since replaced by a dot grid
+
+After living with it, the owner didn't like the smoky clouds. Dusk now has a fine dot grid that tapers
+off down the screen, under one soft violet glow along the top (`--ground-dots`; option 2 of the dot grid
+drafts). The text below is the original proposal.
+
 
 Soft violet-blue clouds drawn by the page itself (SVG noise, no image file), behind the cards, at
 about a quarter strength. Light stays plain. It doesn't move on its own; it only stirs once on a finish (follow-up 2).
