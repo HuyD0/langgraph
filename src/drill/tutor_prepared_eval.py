@@ -12,19 +12,14 @@ What it records, in the app's local experiment (``daily-drill`` on the MLflow at
   The run records the dataset's digest, so a score always points at the exact data it measured.
 - **Run**: parameters (drafting model, judge, reference judge, prompt versions, git commit, how many),
   tags (``kind = tutor_prepared_eval``, environment, app version), and a pass rate per check.
-- **Traces**: one per answer. The root span (``tutor.prepared_answer``) returns the stored answer, with
-  its drafting model and fingerprint as attributes; the judge's call is a child span with its prompt and reply.
-- **Splits**, as the Evals module teaches. Whole **lessons** are split, so all of a lesson's questions stay
-  together (the leakage rule). Each phase's lessons are dealt 60/20/20 across dev (tune the judge here),
-  test (report before a release) and holdout (big decisions only, ``--split holdout``), so every phase is
-  in every split ("Dev, test and holdout sets": stratify). The assignment is then frozen in
-  ``content/prepared_splits.json``: a lesson never moves, and a new one goes to whichever split its phase
-  is short of ("Splits that don't move"). A plain hash split left Design and Ship with no holdout at all.
-- **Numbers with their margin**: each pass rate with its Wilson 95% interval, and the judge's agreement
-  with the reference judge as Cohen's kappa (raw agreement flatters a judge when nearly everything passes).
-- **Scorers**: the judge's five checks (each its own pass/fail with the judge's reason), the live
-  tutor's code checks (word limit, no maths notation, no exercise code), and ``agrees_with_reference``:
-  whether this judge reached the same verdict as the reference judge, overall and per check.
+- **Traces**: one per answer. The root span (``tutor.prepared_answer``) returns the stored answer, with its
+  drafting model and fingerprint as attributes, and tags for split, phase and kind. The judge's verdicts are
+  assessments on that trace; the ``passes`` verdict carries the judge's model, prompt version, tokens and
+  time. (The judge's call is not a trace of its own: on a local SQLite-backed MLflow server every extra write
+  queues behind the others.)
+- **Scorers**: ``judge`` (``passes`` and the five checks, each with the judge's reason when it fails) and
+  ``rules`` (the live tutor's code checks: word limit, no maths notation, no exercise code).
+- **Cost**: the judge's calls, tokens, seconds and list-price cost, in total and per answer.
 """
 
 from __future__ import annotations
@@ -35,6 +30,7 @@ import math
 import os
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +40,7 @@ from drill import tutor_prepared as tp
 EXPERIMENT_KIND = "tutor_prepared_eval"
 JUDGE_MODEL = "databricks-claude-haiku-5-5"  # fast and cheap; agreement with the reference judge says if it is good enough
 CHECKS = ("correct", "answers_it", "plain", "no_giveaway", "standalone")
+KAPPA_GATE = 0.6  # "substantial" agreement: below it, the judge disagrees with the reference too often to monitor with
 
 
 SPLITS = ("dev", "test", "holdout")
@@ -154,6 +151,11 @@ def register_prompts(mlflow) -> dict[str, Any]:
             continue
         out[short] = mlflow.genai.register_prompt(name=name, template=template, commit_message=f"from {git_commit()[:7]}",
                                                   tags={"source": "src/drill/tutor_prepared.py"})
+    for short, pv in out.items():  # the version the prepared answers are drafted and judged with
+        try:
+            mlflow.genai.set_prompt_alias(_name(short), "production", int(pv.version))
+        except Exception:  # noqa: BLE001 - a store without aliases
+            pass
     return out
 
 
@@ -173,6 +175,12 @@ def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
                 "inputs": {"lesson_id": lid, "key": chip["key"], "step": chip["step"], "question": chip["q"],
                            "phase": phase.get(lid, ""), "kind": kind_of(chip["key"])},
                 "expectations": {"reference_pass": bool(ref.get("pass")), **{f"reference_{c}": bool(ref.get(c)) for c in CHECKS}},
+                # labels to filter the dataset by in the UI; "source" follows the course's three kinds of
+                # example: golden (you checked it), past failure (the reference judge failed it), or prepared
+                "tags": {"split": split_of(lid) if _assigned else "", "phase": phase.get(lid, ""), "kind": kind_of(chip["key"]),
+                         "source": "golden" if rec.get("status") in ("checked", "rejected") else "past_failure" if not ref.get("pass") else "prepared",
+                         "human_verdict": rec.get("status") if rec.get("status") in ("checked", "rejected") else "",
+                         "draft_model": rec.get("model", ""), "reference_judge": ref.get("model", ""), "fingerprint": rec.get("fingerprint", "")},
             })
     return rows
 
@@ -201,6 +209,7 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
     if not is_databricks_uri(mlflow.get_tracking_uri()):
         try:
             ds.set_tags({"git_commit": commit, "records": str(len(rows)), "split": split,
+                         "version": f"tutor_prepared_{split}-{time.strftime('%Y-%m-%d')}-{commit[:7]}",
                          "split_rule": "lessons dealt 60/20/20 within each phase, frozen in prepared_splits.json"})
         except Exception:  # noqa: BLE001 - older stores keep no dataset tags
             pass
@@ -210,11 +219,19 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
 def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0) -> dict:
     """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers."""
     import mlflow
-    from mlflow.entities import AssessmentSource, Feedback, SpanType
+    from mlflow.entities import AssessmentSource, Feedback, SpanType  # noqa: F401
     from mlflow.genai.scorers import scorer
 
     from drill.content.build import build_data
     from drill.server.observe import answer_checks, app_version
+
+    # MLflow imports some of its modules lazily, from inside the worker threads (its usage telemetry, the
+    # LLM-judge metrics). Several threads importing at once deadlock on Python's import locks, so load them
+    # here first, and leave the telemetry off for this process.
+    os.environ.setdefault("MLFLOW_DISABLE_TELEMETRY", "true")
+    import mlflow.genai.judges  # noqa: F401
+    import mlflow.metrics.genai  # noqa: F401
+    import mlflow.tracking.request_header.registry  # noqa: F401
 
     data, answers = build_data(), tp.load()
     experiment = mlflow.set_experiment(mlflow_names.experiment())
@@ -252,47 +269,45 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                                           "question_kind": kind})
         return rec["a"]
 
-    # The judge's own call is a trace of its own (scorers run after the answer's trace is closed),
-    # tagged with the trace it judged; each verdict carries this trace's id, so either leads to the other.
-    @mlflow.trace(name="judge", span_type=SpanType.LLM)
-    def judge_call(text: str, judged: str) -> tuple[str, str]:
-        span = mlflow.get_current_active_span()
-        if span is not None:
-            span.set_attributes({"model": judge_model})
-        mlflow.update_current_trace(tags={"kind": "judge", "judged_trace": judged, "judge_model": judge_model})
-        return chat(text), mlflow.get_active_trace_id() or ""
-
     source = AssessmentSource(source_type="LLM_JUDGE", source_id=judge_model)
+    judge_prompt = f"{prompts['tutor_prepared_judge'].name}/{prompts['tutor_prepared_judge'].version}"
 
+    # The judge's call is not a trace of its own: on a local MLflow server every extra trace and verdict is
+    # another write, and a SQLite store takes one at a time. Its model, prompt version, tokens and time go
+    # on the verdicts instead, which sit on the answer's trace. Agreement with the reference judge is a run
+    # metric (kappa), not one verdict per answer.
     @scorer(name="judge")
-    def judge(inputs, outputs, expectations, trace):
-        """The five checks, from the judge prompt, plus whether this judge agrees with the reference one."""
+    def judge(inputs, outputs, expectations):
+        """The five checks, from the judge prompt, and whether it passes overall."""
         lid, chip = inputs["lesson_id"], by_key[(inputs["lesson_id"], inputs["key"])]
         fn = fns.get(lid, "")
         giveaway = "" if chip["step"] == "Check" else ", and does not say which option of the lesson's Check questions is right"
-        reply, judge_trace = judge_call(tp.JUDGE.format(context=tp._context(data, lid), q=chip["q"], how=chip["how"], answer=outputs,
-                                                         giveaway=(f" (`{fn}`)" if fn else "") + giveaway), trace.info.trace_id if trace else "")
-        verdict = tp._verdict(reply)
+        reply = chat(tp.JUDGE.format(context=tp._context(data, lid), q=chip["q"], how=chip["how"], answer=outputs,
+                                     giveaway=(f" (`{fn}`)" if fn else "") + giveaway))
+        verdict, usage = tp._verdict(reply), chat.last()
         with lock:
-            seen.append({"phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""), "verdict": verdict, "reference": expectations or {}})
-        meta = {"judge_trace_id": judge_trace}
-        out = [Feedback(name=c, value=verdict[c], rationale=verdict["notes"] or None, source=source, metadata=meta) for c in CHECKS]
-        out.append(Feedback(name="passes", value=verdict["pass"], rationale=verdict["notes"] or None, source=source, metadata=meta))
-        if expectations:
-            out.append(Feedback(name="agrees_with_reference", value=verdict["pass"] == expectations.get("reference_pass"), source=source, metadata=meta))
-            out += [Feedback(name=f"agrees_on_{c}", value=verdict[c] == expectations.get(f"reference_{c}"), source=source, metadata=meta) for c in CHECKS]
-        return out
+            seen.append({"phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""), "verdict": verdict, "reference": expectations or {}, "usage": usage})
+        meta = {"judge_model": judge_model, "judge_prompt": judge_prompt, **{k: str(v) for k, v in usage.items() if k != "model"}}
+        why = verdict["notes"] or None
+        return ([Feedback(name="passes", value=verdict["pass"], rationale=why, source=source, metadata=meta)]
+                + [Feedback(name=c, value=verdict[c], rationale=why if not verdict[c] else None, source=source) for c in CHECKS])
 
     @scorer(name="rules")
     def rules(inputs, outputs):
-        """The live tutor's own code checks, as passes."""
+        """The live tutor's own code checks (word limit, no maths notation, no exercise code), as one pass."""
         checks = answer_checks(outputs, {"exercise_fn": fns.get(inputs["lesson_id"], ""), "word_limit": 200})
-        code = AssessmentSource(source_type="CODE", source_id="drill.observe.answer_checks")
-        return [Feedback(name="within_word_limit", value=not checks.get("over_word_limit", False), source=code),
-                Feedback(name="plain_language", value=not checks["big_o"], source=code),
-                Feedback(name="no_solution_leak", value=not checks.get("solution_leak", False), source=code)]
+        broken = [name for name in ("over_word_limit", "big_o", "solution_leak") if checks.get(name)]
+        return Feedback(name="rules", value=not broken, rationale=("broke: " + ", ".join(broken)) if broken else None,
+                        source=AssessmentSource(source_type="CODE", source_id="drill.observe.answer_checks"),
+                        metadata={"words": str(checks["words"])})
 
+    model = mlflow.set_active_model(name=f"daily-drill-{app_version()}")  # results show on the app version too
     with mlflow.start_run(run_name=f"tutor-prepared-{split}-{judge_model.removeprefix('databricks-')}-{commit[:7]}") as run:
+        mlflow.set_tag("mlflow.note.content", (
+            f"Prepared tutor answers, {split} split ({len(rows)} answers), judged again by {judge_model}. "
+            f"Reference verdicts from {tp.JUDGE_MODEL}. Pass rates carry Wilson 95% intervals; agreement with the "
+            f"reference is Cohen's kappa. Gate: kappa >= {KAPPA_GATE} for this judge to be trusted for monitoring. "
+            "Splits: lessons dealt 60/20/20 within each phase, frozen in content/prepared_splits.json."))
         mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": EXPERIMENT_KIND, "split": split,
                          "mlflow.source.git.commit": commit})
         draft_models = sorted({r.get("model", "") for recs in answers.values() for r in recs.values() if r.get("model")})
@@ -302,7 +317,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "judge_prompt": f"{prompts['tutor_prepared_judge'].name}/{prompts['tutor_prepared_judge'].version}",
             "dataset": mlflow_names.dataset_name(f"tutor_prepared_{split}"), "split": split, "records": len(rows),
             "split_rule": "lessons dealt 60/20/20 within each phase, frozen in prepared_splits.json", "git_commit": commit,
-            "strata_missing": len(empty),
+            "strata_missing": len(empty), "kappa_gate": KAPPA_GATE, "app_model": getattr(model, "name", ""),
+            "price_per_mtok": "{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?"))),
         })
         mlflow.log_table({"phase": [k[0] for k in table], "kind": [k[1] for k in table],
                           **{sp: [table[k][sp] for k in table] for sp in SPLITS}}, "strata.json")
@@ -315,9 +331,18 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         if limit:
             data_in = data_in[:limit]  # a quick check of the plumbing, not a result
             mlflow.set_tag("limited", str(limit))
-        result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules])
+        result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules],
+                                       model_id=getattr(model, "model_id", None))
         numbers = summary(seen)
+        u = chat.usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
+        numbers.update({"judge_rate_limited": float(u["rate_limited"]), "judge_calls": float(u["calls"]), "judge_input_tokens": float(u["input_tokens"]),
+                        "judge_output_tokens": float(u["output_tokens"]), "judge_seconds": float(u["seconds"]),
+                        "judge_cost_usd": tp.cost(judge_model, u["input_tokens"], u["output_tokens"]),
+                        "judge_cost_per_answer_usd": tp.cost(judge_model, u["input_tokens"], u["output_tokens"]) / max(1, u["calls"])})
+        # the course's must-pass gate: is this judge close enough to the reference to monitor with?
+        numbers["judge_gate_passed"] = float(numbers.get("passes_kappa", -1.0) >= KAPPA_GATE)
         mlflow.log_metrics({k: v for k, v in numbers.items() if isinstance(v, float)})
+        mlflow.set_tag("judge_gate", "passed" if numbers["judge_gate_passed"] else "failed")
         mlflow.log_table(per_stratum(seen), "by_stratum.json")
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}

@@ -525,8 +525,41 @@ def tutor_prepare_cmd(
         if (passed + failed) % 25 == 0:
             console.print(f"  {passed + failed} of {len(work)} done ({passed} passed)")
 
-    tp.run(data, work, tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile), answers,
-           workers=workers, on_done=done, draft_model=draft_model, judge_model=judge_model)
+    # One MLflow run for the batch (in the app's experiment), one trace per answer, the model calls inside.
+    import contextlib
+    import time
+
+    import mlflow
+
+    from drill import mlflow_names, tutor_prepared_eval as tpe
+    from drill.server.observe import app_version
+
+    run_ctx = contextlib.nullcontext()
+    try:
+        mlflow.set_experiment(mlflow_names.experiment())
+        mlflow.openai.autolog()
+        prompts = tpe.register_prompts(mlflow)
+        run_ctx = mlflow.start_run(run_name=f"tutor-prepare-{time.strftime('%Y-%m-%d')}-{tpe.git_commit()[:7]}")
+        traced = True
+    except Exception as exc:  # noqa: BLE001 - no MLflow: prepare anyway, untraced
+        console.print(f"[yellow]MLflow unavailable ({str(exc)[:80]}): preparing without traces.[/yellow]")
+        prompts, traced = {}, False
+    with run_ctx:
+        if traced:
+            mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "tutor_prepare", "mlflow.source.git.commit": tpe.git_commit(),
+                             "mlflow.note.content": f"Drafting and judging {len(work)} prepared tutor answers."})
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "answers": len(work), "module": module or "all",
+                               "lesson": lesson or "all", "redo": redo, "workers": workers,
+                               **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
+        drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
+        tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced,
+               draft_model=draft_model, judge_model=judge_model)
+        spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
+        total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
+        console.print(f"Cost at list price: ${total:.2f} (${total / max(1, len(work)):.4f} an answer). The DBU charge is in system.billing.usage.")
+        if traced:
+            mlflow.log_metrics({"passed": passed, "failed": failed, "pass_rate": passed / max(1, passed + failed), **spend,
+                                "cost_usd": total, "cost_per_answer_usd": total / max(1, len(work))})
     console.print(f"Done: {passed} passed, {failed} failed. Saved in src/drill/content/prepared/. Rebuild the page to serve them.")
 
 
@@ -565,7 +598,7 @@ def tutor_prepared_eval_cmd(
     judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: Haiku)."),
     split: str = typer.Option("dev", "--split", help="dev (tune here), test (before a release) or holdout (big decisions only)."),
     holdout_ok: bool = typer.Option(False, "--yes-holdout", help="Confirm a holdout run: once you change things because of it, it is no longer a holdout."),
-    workers: int = typer.Option(10, "--workers", help="Answers judged at the same time."),
+    workers: int = typer.Option(4, "--workers", help="Answers judged at the same time (the workspace limits tokens per minute)."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os

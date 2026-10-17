@@ -264,8 +264,25 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
             "status": "passed" if verdict["pass"] else "failed", "model": draft_model, "judge": {"model": judge_model, **verdict}}
 
 
+# List prices per million tokens (input, output), Anthropic's first-party rates as of 2026-09. Databricks bills
+# Claude in DBUs, so the exact charge can differ: system.billing.usage has it a few hours later.
+PRICES = {"databricks-claude-opus-5-5": (4.0, 20.0), "databricks-claude-sonnet-5-5": (2.0, 10.0),
+          "databricks-claude-haiku-4-5": (1.0, 5.0),
+          "databricks-claude-haiku-5-5": (1.0, 5.0)}  # not in the price list yet: Haiku 4.5's rates as a stand-in
+
+
+def cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    pin, pout = PRICES.get(model, (0.0, 0.0))
+    return (input_tokens * pin + output_tokens * pout) / 1e6
+
+
 def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
-    """A plain prompt-in, text-out call to a Databricks serving endpoint, signed with the CLI login."""
+    """A plain prompt-in, text-out call to a Databricks serving endpoint, signed with the CLI login.
+    ``call.usage`` keeps a running total of calls, tokens and seconds (thread-safe), and ``call.last`` the
+    latest call's numbers in this thread, so a run can log what it cost."""
+    import threading
+    import time
+
     import httpx
     from databricks.sdk.config import Config
     from openai import OpenAI
@@ -275,14 +292,39 @@ def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
     config = Config(profile=profile) if profile else Config()
     client = OpenAI(base_url=gateway_base_url(config.host, model), api_key="databricks",
                     http_client=httpx.Client(auth=DatabricksAuth(config), timeout=180), max_retries=3)
+    lock, local = threading.Lock(), threading.local()
 
     def call(text: str) -> str:
-        reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": text}], max_tokens=8000)  # room to reason first: the newest models do
+        import openai
+
+        t0 = time.monotonic()
+        for attempt in range(8):  # the workspace limits tokens per minute per model: wait and try again
+            try:
+                reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": text}], max_tokens=8000)  # room to reason first: the newest models do
+                break
+            except openai.RateLimitError:
+                if attempt == 7:
+                    raise
+                with lock:
+                    call.usage["rate_limited"] += 1
+                time.sleep(min(60, 5 * 2 ** attempt))
         content = reply.choices[0].message.content or ""
         if isinstance(content, list):  # newer Claude endpoints answer in blocks: keep the text ones
             content = "".join(b.get("text", "") if isinstance(b, dict) else getattr(b, "text", "") or "" for b in content
                               if (b.get("type") if isinstance(b, dict) else getattr(b, "type", "text")) == "text")
+        u = reply.usage
+        last = {"model": model, "input_tokens": getattr(u, "prompt_tokens", 0) or 0, "output_tokens": getattr(u, "completion_tokens", 0) or 0,
+                "seconds": round(time.monotonic() - t0, 2)}
+        local.last = last
+        with lock:
+            for k in ("input_tokens", "output_tokens", "seconds"):
+                call.usage[k] += last[k]
+            call.usage["calls"] += 1
         return content
+
+    call.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0, "seconds": 0.0, "rate_limited": 0}
+    call.last = lambda: getattr(local, "last", {})
+    call.model = model
     return call
 
 
@@ -301,13 +343,28 @@ def todo(data: dict, answers: dict, module: str | None = None, lesson: str | Non
     return out
 
 
+def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge: Callable, **models: str) -> dict:
+    """``prepare_one`` as one MLflow trace: the question in, the answer and verdict out; the draft and judge
+    calls inside it (with ``mlflow.openai.autolog`` on) carry their own prompts, tokens and timing."""
+    import mlflow
+
+    with mlflow.start_span(name="tutor.prepare", span_type="CHAIN") as span:
+        span.set_inputs({"lesson_id": lid, "key": chip["key"], "step": chip["step"], "question": chip["q"]})
+        mlflow.update_current_trace(tags={"kind": "tutor_prepare", "lesson_id": lid, "key": chip["key"], "step": chip["step"]})
+        rec = prepare_one(data, lid, chip, draft, judge, **models)
+        span.set_outputs({"answer": rec["a"], "status": rec["status"]})
+        span.set_attributes({"judge_notes": rec.get("judge", {}).get("notes", ""), "fingerprint": rec["fingerprint"]})
+        return rec
+
+
 def run(data: dict, work: list[tuple[str, dict]], draft: Callable, judge: Callable, answers: dict,
-        workers: int = 6, on_done: Callable[[str, dict, dict], None] | None = None, **models: str) -> dict:
+        workers: int = 6, on_done: Callable[[str, dict, dict], None] | None = None, traced: bool = False, **models: str) -> dict:
     """Prepare ``work`` a few at a time, saving after each module's worth so a stop loses little."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
+    one = traced_prepare_one if traced else prepare_one
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(prepare_one, data, lid, chip, draft, judge, **models): (lid, chip) for lid, chip in work}
+        futures = {pool.submit(one, data, lid, chip, draft, judge, **models): (lid, chip) for lid, chip in work}
         for n, fut in enumerate(as_completed(futures), 1):
             lid, chip = futures[fut]
             try:
