@@ -286,7 +286,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                                      giveaway=(f" (`{fn}`)" if fn else "") + giveaway))
         verdict, usage = tp._verdict(reply), chat.last()
         with lock:
-            seen.append({"phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""), "verdict": verdict, "reference": expectations or {}, "usage": usage})
+            seen.append({"lesson_id": lid, "key": inputs["key"], "phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""),
+                         "verdict": verdict, "reference": expectations or {}, "usage": usage})
         meta = {"judge_model": judge_model, "judge_prompt": judge_prompt, **{k: str(v) for k, v in usage.items() if k != "model"}}
         why = verdict["notes"] or None
         return ([Feedback(name="passes", value=verdict["pass"], rationale=why, source=source, metadata=meta)]
@@ -344,6 +345,11 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         mlflow.log_metrics({k: v for k, v in numbers.items() if isinstance(v, float)})
         mlflow.set_tag("judge_gate", "passed" if numbers["judge_gate_passed"] else "failed")
         mlflow.log_table(per_stratum(seen), "by_stratum.json")
+        # every answer's verdict beside the reference one, so two runs can be compared answer by answer
+        mlflow.log_table({"lesson_id": [x["lesson_id"] for x in seen], "key": [x["key"] for x in seen],
+                          "passes": [x["verdict"]["pass"] for x in seen],
+                          "reference_pass": [bool(x["reference"].get("reference_pass")) for x in seen],
+                          "notes": [x["verdict"]["notes"] for x in seen]}, "answers.json")
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 
@@ -383,3 +389,32 @@ def per_stratum(seen: list[dict]) -> dict[str, list]:
         rows["ci_high"].append(round(high, 3))
         rows["agreement"].append(round(sum(i["verdict"]["pass"] == bool(i["reference"].get("reference_pass")) for i in items) / len(items), 3))
     return rows
+
+
+def mcnemar(b: int, c: int) -> float:
+    """The exact two-sided McNemar p-value from the disagreements alone (the course's "Real win or luck"):
+    ``b`` answers only the first run got right, ``c`` only the second. Small p: the difference is real."""
+    n = b + c
+    if not n:
+        return 1.0
+    tail = sum(math.comb(n, k) for k in range(0, min(b, c) + 1)) / 2 ** n
+    return min(1.0, 2 * tail)
+
+
+def compare(run_a: str, run_b: str) -> dict:
+    """Two judge runs on the same answers: which one agrees with the reference more often, and is it luck?"""
+    import mlflow
+
+    def table(run_id: str) -> dict[tuple[str, str], tuple[bool, bool]]:
+        df = mlflow.load_table("answers.json", run_ids=[run_id])
+        return {(r.lesson_id, r.key): (bool(r.passes), bool(r.reference_pass)) for r in df.itertuples()}
+
+    a, b = table(run_a), table(run_b)
+    both = sorted(set(a) & set(b))
+    a_right = [a[k][0] == a[k][1] for k in both]
+    b_right = [b[k][0] == b[k][1] for k in both]
+    only_a = sum(x and not y for x, y in zip(a_right, b_right))
+    only_b = sum(y and not x for x, y in zip(a_right, b_right))
+    return {"answers": len(both), "agreement_a": sum(a_right) / max(1, len(both)), "agreement_b": sum(b_right) / max(1, len(both)),
+            "only_a_agrees": only_a, "only_b_agrees": only_b, "p_value": mcnemar(only_a, only_b)}
+

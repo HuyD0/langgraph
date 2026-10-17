@@ -45,3 +45,9 @@ def test_wilson_and_kappa_match_the_course():
     b = [True] * 98 + [False] * 2
     assert round(tpe.kappa(a, b), 2) == 0.66  # the same as sklearn.metrics.cohen_kappa_score
     assert tpe.kappa([True] * 5, [True] * 5) is None  # no variation: kappa is undefined, not perfect
+
+
+def test_mcnemar_counts_only_the_disagreements():
+    # the course's example: the challenger wins 12, loses 8 of 20 disagreements: too close to call
+    assert round(tpe.mcnemar(12, 8), 3) == 0.503
+    assert tpe.mcnemar(15, 2) < 0.01 and tpe.mcnemar(0, 0) == 1.0

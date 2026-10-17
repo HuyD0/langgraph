@@ -624,6 +624,18 @@ def tutor_prepared_eval_cmd(
         console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
 
 
+@tutor_app.command("prepared-compare")
+def tutor_prepared_compare_cmd(run_a: str = typer.Argument(..., help="The first eval run id."),
+                               run_b: str = typer.Argument(..., help="The second eval run id.")) -> None:
+    """Compare two judge runs on the same answers with McNemar's test: only the disagreements count."""
+    from drill import tutor_prepared_eval as tpe
+
+    r = tpe.compare(run_a, run_b)
+    console.print(f"{r['answers']} answers in both runs. Agreement with the reference: A {r['agreement_a']:.1%}, B {r['agreement_b']:.1%}.")
+    console.print(f"Only A agreed on {r['only_a_agrees']}, only B on {r['only_b_agrees']}. McNemar p = {r['p_value']:.3f}"
+                  + (" (a real difference)" if r["p_value"] < 0.05 else " (could be luck)"))
+
+
 @tutor_app.command("snapshot")
 def tutor_snapshot_cmd(
     out: Path = typer.Option(None, "--out", "-o", help="Where to write it (default ~/Documents/daily-drill/tutor-snapshot.md)."),
