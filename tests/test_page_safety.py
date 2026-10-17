@@ -125,3 +125,13 @@ def test_a_sleeping_app_is_named_as_such():
     assert "The app has gone to sleep. Reload in a minute, or ask whoever runs it to start it." in backends
     assert "res.json()" not in backends.split("const jsonOf", 1)[1].split("\n", 1)[1], "every body read goes through jsonOf"
     assert 'fetch("/api/me"' in page_source()
+
+
+def test_learners_at_work_are_told_their_manager_sees_their_progress():
+    """docs/DATABRICKS_APP.md promises learners are told up front. /api/health says team mode is on;
+    the page then shows the line on the first-visit card and in Settings, and nowhere else."""
+    page = page_source()
+    assert "team: !!health.team" in page and 'TEAM_LINE = "At work, your manager can see your progress' in page
+    assert "${teamOn ? `<li><b>Who sees it:</b>" in page and 'id="teamSetting" hidden' in page
+    boot = page.split("const backend = window.claude ?")[1].split("if (db && user)")[0]
+    assert "if (backend.team) { teamOn = true;" in boot

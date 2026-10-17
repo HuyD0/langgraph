@@ -247,4 +247,4 @@ written while the app runs, at most once a day per learner and only after new ac
 same model and daily token cap as the tutor; a week nobody studies costs nothing.
 `DRILL_TEAM_SUMMARIES=0` in `app.yaml` turns them off.
 
-Tell learners up front that their manager can see their progress, study list and questions.
+Learners are told up front: in team mode the page says "At work, your manager can see your progress, your study list and the questions you ask the tutor" on the first-visit card and in the Notebook's Settings.

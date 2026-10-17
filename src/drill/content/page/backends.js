@@ -86,5 +86,5 @@ async function localBackend() {
       }),
     }),
   };
-  return { s, db, user: { id: async () => health.user }, local: true };
+  return { s, db, user: { id: async () => health.user }, local: true, team: !!health.team };  // team: at work, a manager sees progress
 }
