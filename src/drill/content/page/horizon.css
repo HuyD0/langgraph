@@ -46,21 +46,26 @@
 .horizon .ln { fill: none; stroke: var(--hz-ink); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
 .horizon .fl { fill: var(--hz-ink); }
 .horizon .ac { fill: var(--accent); }
-/* the sorcerer */
-.horizon .cu .coat { fill: var(--fx-veil); stroke: var(--fx-glow); stroke-width: .7; stroke-linejoin: round; }
-.horizon .cu .coatln { fill: none; stroke: var(--fx-veil); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-:root[data-theme="dusk"] .horizon .cu .coatln { stroke: color-mix(in srgb, var(--fx-veil) 70%, var(--fx-glow)); }
-.horizon .cu .skin { fill: color-mix(in srgb, var(--fx-core) 15%, white); stroke: var(--fx-veil); stroke-width: .4; }
-.horizon .cu .hair { fill: var(--fx-veil); stroke: var(--fx-glow); stroke-width: .4; stroke-linejoin: round; }
-.horizon .cu .band { fill: var(--fx-veil); stroke: var(--fx-glow); stroke-width: .3; }
-.horizon .cu .tails { fill: none; stroke: var(--fx-veil); stroke-width: 1.1; stroke-linecap: round; animation: hz-cu-wave 1.8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 100% 0; }
-@keyframes hz-cu-wave { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
-.horizon .cu .glint { fill: var(--fx-glow); }
-:root[data-theme="dusk"] .horizon .cu .glint { fill: var(--fx-core); filter: drop-shadow(0 0 1.5px var(--fx-glow)); }
-.horizon .cu .sign { stroke: var(--fx-veil); stroke-width: .9; stroke-linecap: round; }
+/* the sorcerer: navy jacket, white hair, black blindfold, a blue and violet spiral */
+.horizon .cu .coat { fill: color-mix(in srgb, var(--fx-veil) 78%, var(--fx-glow)); stroke: var(--fx-glow); stroke-width: .5; stroke-linejoin: round; }
+.horizon .cu .coatln { fill: none; stroke: var(--fx-veil); stroke-width: .5; }
+.horizon .cu .sleeve { fill: none; stroke: color-mix(in srgb, var(--fx-veil) 78%, var(--fx-glow)); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+.horizon .cu .btn { fill: none; stroke: var(--fx-core); stroke-width: .5; }
+.horizon .cu .skin { fill: color-mix(in srgb, var(--fx-mix) 10%, white); stroke: var(--fx-veil); stroke-width: .3; stroke-linejoin: round; }
+.horizon .cu .hair { fill: color-mix(in srgb, var(--fx-core) 10%, white); stroke: var(--fx-glow); stroke-width: .4; stroke-linejoin: round; }
+.horizon .cu .band { fill: var(--fx-veil); }
+.horizon .cu .smile { fill: none; stroke: var(--fx-veil); stroke-width: .4; stroke-linecap: round; }
+.horizon .cu .swirl { fill: none; stroke: var(--fx-glow); stroke-width: 1.3; stroke-linecap: round; stroke-dasharray: .42 .58; animation: hz-cu-swirl 2.4s linear infinite; animation-delay: var(--d, 0s); }
+.horizon .cu .swirl.b { stroke: var(--fx-mix); stroke-width: 1; stroke-dasharray: .3 .7; animation-duration: 1.9s; }
+.horizon .cu .swirl.c { stroke: var(--fx-core); stroke-width: .6; stroke-dasharray: .22 .78; animation-duration: 1.5s; }
+.horizon .cu .spark { fill: var(--fx-core); animation: hz-cu-twinkle 1.4s ease-in-out infinite alternate; animation-delay: var(--d, 0s); transform-box: fill-box; transform-origin: center; }
+.horizon .cu .spark.v { fill: var(--fx-mix); }
+:root[data-theme="dusk"] .horizon .cu .aura { filter: drop-shadow(0 0 2px var(--fx-glow)) drop-shadow(0 0 5px color-mix(in srgb, var(--fx-mix) 60%, transparent)); }
+:root[data-theme="dusk"] .horizon .cu .hair { filter: drop-shadow(0 0 2px var(--fx-glow)); }
+@keyframes hz-cu-swirl { to { stroke-dashoffset: -1; } }
+@keyframes hz-cu-twinkle { from { transform: scale(.5); opacity: .4; } to { transform: scale(1.15); opacity: 1; } }
 .horizon .cu .orb { fill: var(--fx-glow); animation: hz-cu-pulse 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 :root[data-theme="dusk"] .horizon .cu .orb { filter: drop-shadow(0 0 4px var(--fx-glow)); }
-.horizon .cu .shield { fill: none; stroke: var(--fx-glow); stroke-width: .6; stroke-dasharray: 2 5; opacity: .45; animation: hz-en-spin 9s linear infinite; transform-box: fill-box; transform-origin: center; }
 .horizon .cu .beam { fill: none; stroke: var(--fx-core); stroke-width: 2.4; stroke-linecap: round; opacity: 0; }
 :root[data-theme="dusk"] .horizon .cu .beam { filter: drop-shadow(0 0 4px var(--fx-glow)); }
 .horizon .cu.struck .beam { animation: hz-cu-beam .45s ease-out; }
