@@ -53,7 +53,7 @@ barrier opening, lanterns at night) with blue-flame energy moving through it, an
 that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the
 last lesson breaks it apart. On the left hill a white-haired, blindfolded hero drawn in glowing outline, in a long high-collared
 jacket, grows in three stages as you finish the phase: calm with a hand at his blindfold and faint rings
-(under a third done), two fingers raised in a sign with a blue and a red ring round him (from a third),
+(under a third done), two fingers raised to his lips in a sign, cyan rings round his shoulders and a red one lower (from a third),
 arms open inside a field of stars, galaxies and great circles (from two-thirds). On top, a small touch for
 the phase (a scanning ring, a line of energy, a blue and a red orb, measuring arcs, a beam, a quiet halo)
 leaves from his hand. Tapping him lifts his blindfold: his eyes ignite blue and his aura flares, until
@@ -177,7 +177,7 @@ written with `ask(...)`: three options and a clue.
 ![The Check step after answering](lesson-check-phone-dusk.webp)
 
 The hero's round portrait sits beside the clue and the verdict (`hzCoach()` in `page/horizon.js`):
-blindfolded for a clue, and with the blindfold pushed up and his blue eyes open when he gives the answer.
+blindfolded for a clue, and with the blindfold pushed up and his eyes glowing cyan when he gives the answer.
 The words stay the lesson's own. The same portrait shows in Explain and Practice, and the done screen has
 him in full, in the phase's stance.
 

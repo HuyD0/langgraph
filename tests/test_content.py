@@ -224,7 +224,7 @@ def test_every_look_has_the_motion_tokens():
     from pathlib import Path
 
     tokens = (Path(__file__).parent.parent / "src" / "drill" / "content" / "tokens.css").read_text()
-    for name in ("--fx-core", "--fx-glow", "--fx-veil", "--fx-red", "--fx-mix"):
+    for name in ("--fx-core", "--fx-glow", "--fx-veil", "--fx-red", "--fx-mix", "--fx-cyan"):
         assert tokens.count(name + ":") == 4, name
     for name in ("--path", "--path-bg", "--path-line", "--path-ink"):
         assert tokens.count(name + ":") == 4, name
@@ -279,7 +279,7 @@ console.log(JSON.stringify({
   track: [hzTrackCurse(1).includes('class="eye"'), hzTrackCurse(0).includes('class="stain"'), hzTrackCurse(.5).includes('class="band"')],
   awake: [hzHero(0, .5, true).includes('class="h-eye-blue"'), hzHero(0, .5, true).includes('class="band"'), n(hzCurse(0, 1) + hzHero(0, 1, true)), hzHero(0, .5).includes('class="h-eye-blue"'), horizonHtml(0, 0, 4).includes('data-awakened="false"')],
   stages: [0, .5, .9].map(p => hzSorcerer(30, 90, 200, 60, p, 0).match(/data-stage="(\d)"/)[1]),
-  face: [hzFace("answer").includes('class="h-eye"'), hzFace("clue").includes('class="h-eye"'), (hzCoach("answer", "x").match(/class="eye"/g) || []).length, hzTrackCurse(1).includes('class="body" d="M')],
+  face: [hzFace("answer").includes('class="h-eye-blue"'), hzFace("clue").includes('class="h-eye-blue"'), (hzCoach("answer", "x").match(/class="eye"/g) || []).length, hzTrackCurse(1).includes('class="body" d="M')],
 }));"""
     (tmp_path / "hz.js").write_text(probe)
     out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, check=True).stdout)
