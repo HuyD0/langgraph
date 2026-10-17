@@ -2,7 +2,8 @@
 // A strip of original line art at the top of Home's phase room: a horizon that reshapes for each phase
 // (gate, seals, barrier, curtain, opening, lanterns), a layer of blue-flame energy, and a cursed spirit
 // that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the last
-// lesson exorcises it. Decorative only (aria-hidden); tapping it strikes the spirit for fun.
+// lesson exorcises it. A blindfolded sorcerer on the left hill grows stronger as it weakens. The platform
+// track gets its own banner in teal (`hzTrackScene`). Decorative only (aria-hidden); tapping it strikes the spirit for fun.
 // Neutral names; every colour is a token.
 const HZ = [
   { sun: [70, 74], night: 0, veil: 0, open: 0, a: [92, 84, 80, 86, 90, 84, 82, 88, 92], b: [106, 102, 100, 104, 106, 102, 100, 104, 106], mark: "gate" },
@@ -83,6 +84,49 @@ function hzCurse(i, hp) {
   const [x, y, s] = HZ_AT[i];
   return hzSpirit(x, y, s * (.75 + .25 * hp), hp) + (i === 1 ? `<path class="bind" d="M292 70 L344 84 M294 86 L342 68"/>` : "");
 }
+// The sorcerer: an original figure in a long dark high-collared coat, blindfolded, one hand raised in a
+// sign. The flame at his hand grows with `power` (the share of lessons done); tapping the banner fires it.
+function hzSorcerer(x, g, tx, ty, power) {
+  const S = .9, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1);
+  const hx = +X(16), hy = +Y(-27);
+  const coat = `<path class="coat" d="M${X(-5)},${Y(-30)} L${X(-8)},${Y(-6)} L${X(-11)},${Y(0)} L${X(-2)},${Y(-1)} L${X(0)},${Y(-12)} L${X(2)},${Y(-1)} L${X(10)},${Y(0)} L${X(7)},${Y(-6)} L${X(5)},${Y(-30)} L${X(3)},${Y(-34)} L${X(-3)},${Y(-34)}Z"/>`;
+  const collar = `<path class="coatln" d="M${X(-3)},${Y(-34)} L${X(-3.5)},${Y(-38)} M${X(3)},${Y(-34)} L${X(3.5)},${Y(-38)}"/>`;
+  const head = `<circle class="skin" cx="${X(0)}" cy="${Y(-41)}" r="${(3.6 * S).toFixed(1)}"/>`;
+  const hair = `<path class="hair" d="M${X(-4)},${Y(-41)} q${-1},${-6} ${4 * S},${-7 * S} q${5 * S},${0} ${4.5 * S},${6 * S} l${-1.5 * S},${-1.5 * S} l${-1 * S},${2 * S} l${-1.5 * S},${-2.2 * S} l${-1.5 * S},${2 * S} l${-1.4 * S},${-2.4 * S} l${-1.2 * S},${2.4 * S}z"/>`;
+  const eyes = `<path class="band" d="M${X(-3.4)},${Y(-42.2)} L${X(3.7)},${Y(-41.8)} L${X(3.7)},${Y(-39.6)} L${X(-3.4)},${Y(-40)}Z"/><path class="tails" d="M${X(-3.4)},${Y(-41.4)} q${-3 * S},${-1 * S} ${-6 * S},${1.5 * S} M${X(-3.4)},${Y(-40.6)} q${-2.5 * S},${1.2 * S} ${-5 * S},${3.6 * S}"/>`;
+  const arm = `<path class="coatln" d="M${X(3)},${Y(-31)} L${X(10)},${Y(-29)} L${hx},${hy}"/><path class="coatln" d="M${X(-3)},${Y(-31)} L${X(-7)},${Y(-22)} L${X(-5)},${Y(-17)}"/>`;
+  const sign = `<path class="sign" d="M${hx},${hy} l.4,-3.4 M${hx + .9},${hy} l.6,-3.2"/>`;
+  const orb = `<circle class="orb" cx="${hx + 1}" cy="${hy - 2}" r="${(2 + 7 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
+  const shield = `<circle class="shield" cx="${X(0)}" cy="${Y(-22)}" r="${(26 * S).toFixed(1)}"/>`;
+  const beam = `<path class="beam" d="M${hx + 1},${hy - 2} L${tx},${ty}"/>`;
+  return `<g class="fighter">${shield}${coat}${collar}${arm}${head}${hair}${eyes}${sign}${orb}${beam}</g>`;
+}
+const HZ_HERO_X = 30;
+const hzGround = (i, x) => { const a = HZ[i].a, k = Math.min(7, Math.floor(x / 50)), f = (x - k * 50) / 50; return a[k] + (a[k + 1] - a[k]) * f; };
+const hzTarget = i => [HZ_AT[i][0], HZ_AT[i][1] - 30 * HZ_AT[i][2]];
+const hzHero = (i, hp) => hzSorcerer(HZ_HERO_X, hzGround(i, HZ_HERO_X), ...hzTarget(i), 1 - hp);
+
+// The platform track's banner, in the track's teal: a blueprint ground, a stack of workspaces, a pipeline
+// running right, and an octagon ward (the track's shape) that is drawn a little more with every lesson
+// until it closes around the spirit.
+const HZ_WARD = [320, 64, 40];
+const hzOct = (cx, cy, r) => "M" + Array.from({ length: 8 }, (_, k) => { const a = Math.PI / 8 + k * Math.PI / 4; return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`; }).join(" L") + "Z";
+function hzTrackScene(svg, hp) {
+  const grid = [40, 80, 120, 160, 200, 240].map(x => `<path class="ln grid" d="M${x} 96 v20"/>`).join("");
+  const stack = [0, 1, 2].map(k => `<rect class="ln" x="${150 + k * 4}" y="${84 - k * 13}" width="34" height="11" rx="2"/><circle class="fl" cx="${157 + k * 4}" cy="${89.5 - k * 13}" r="1.3"/>`).join("");
+  const pipe = `<path class="ln" d="M190 66 H226 V88 H262 M226 66 V50 H270" stroke-dasharray="3 3"/><rect class="ln" x="262" y="82" width="12" height="12" rx="2"/>`;
+  const [cx, cy, r] = HZ_WARD;
+  const ward = `<path class="ln ward" d="${hzOct(cx, cy, r)}" pathLength="1" stroke-dasharray="${(1 - hp).toFixed(3)} 1"/><path class="ln" d="${hzOct(cx, cy, r)}" pathLength="1" opacity=".2"/>`;
+  svg.innerHTML = `<path class="ln" d="M0 96 H400"/>${grid}${stack}<g class="mk">${pipe}</g>${ward}`;
+}
+const HZ_TRACK_ENERGY = `<path class="st" d="M190 66 H226 V88 H262"/><path class="st hi" d="M226 66 V50 H270"/>` + hzEmb([[170, 50], [226, 60], [268, 80]]);
+const HZ_TRACK_AT = [320, 96, .5];
+function hzTrackCurse(hp) {
+  const [x, y, sc] = HZ_TRACK_AT;
+  const foe = hp <= 0 ? hzShards(x, y - 30) + `<ellipse cx="${x}" cy="${y + 2}" rx="18" ry="2.5" class="stain"/>` : hzSpirit(x, y, sc * (.75 + .25 * hp), hp);
+  return foe + hzSorcerer(HZ_HERO_X, 96, x, y - 30 * sc, 1 - hp);
+}
+
 const HZ_SVG = cls => `<svg${cls ? ` class="${cls}"` : ""} viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice"></svg>`;
 function horizonHtml(i, done, total) {
   const hp = total ? (total - done) / total : 0;
@@ -91,10 +135,14 @@ function horizonHtml(i, done, total) {
 // Fill the banner after the room is drawn; with `from`, the hills, sun and landmark morph from that phase.
 let hzRaf = 0;
 function horizonDraw(from) {
-  const band = document.querySelector(".horizon"); if (!band) return;
+  for (const t of document.querySelectorAll('.horizon[data-hz="t"]')) {
+    const [base, cu, en] = t.querySelectorAll("svg"), hp = +t.dataset.hp;
+    hzTrackScene(base, hp); cu.innerHTML = hzTrackCurse(hp); en.innerHTML = HZ_TRACK_ENERGY;
+  }
+  const band = document.querySelector(".phasebox .horizon"); if (!band) return;
   const [base, cu, en] = band.querySelectorAll("svg"), i = +band.dataset.hz, hp = +band.dataset.hp;
   cancelAnimationFrame(hzRaf);
-  cu.innerHTML = hzCurse(i, hp); en.innerHTML = HZ_ENERGY[i];
+  cu.innerHTML = hzCurse(i, hp) + hzHero(i, hp); en.innerHTML = HZ_ENERGY[i];
   if (from == null || from === i) { hzScene(base, i, i, 1); return; }
   const t0 = performance.now(), D = 650;
   fxMove(cu, [{ opacity: 0 }, { opacity: 0, offset: .5 }, { opacity: 1 }], "--dur-slide");

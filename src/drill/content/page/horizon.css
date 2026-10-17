@@ -1,7 +1,11 @@
 /* the phase banner (page/horizon.js): line art in the path's violet, energy in the blue flame,
    the spirit in the red-black effect colours. The current phase's landmark is lit in blue. */
-.horizon { position: relative; aspect-ratio: 10 / 3; max-height: 150px; width: 100%; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--room) 6%, transparent); overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.horizon { position: relative; aspect-ratio: 10 / 3; max-height: 150px; width: 100%; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 10px; --hz-ink: var(--path); background: color-mix(in srgb, var(--hz-ink) 6%, transparent); overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .horizon svg.en { pointer-events: none; }
+.book.room.track .horizon { --hz-ink: var(--track); }
+.horizon .ln.grid { opacity: .35; }
+.horizon .ln.ward { stroke-width: 1.8; }
+:root[data-theme="dusk"] .horizon .ward { filter: drop-shadow(0 0 3px var(--hz-ink)); }
 .phasebox.here .horizon .mk .ln { stroke: var(--accent); }
 :root[data-theme="dusk"] .phasebox.here .horizon .mk { filter: drop-shadow(0 0 3px var(--accent)); }
 .horizon .cu .stain { fill: var(--fx-red); opacity: .3; }
@@ -18,7 +22,7 @@
 :root:not([data-theme="dusk"]) .horizon .cu .body { fill: color-mix(in srgb, var(--fx-veil) 85%, transparent); }
 .horizon .cu .eye { fill: var(--fx-red); animation: hz-cu-blink 3.2s infinite; animation-delay: var(--d, 0s); transform-box: fill-box; transform-origin: center; }
 .horizon .cu .wob { animation: hz-cu-wob 2.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
-.horizon .cu .bind { fill: none; stroke: var(--path); stroke-width: 1.4; }
+.horizon .cu .bind { fill: none; stroke: var(--hz-ink); stroke-width: 1.4; }
 .horizon .cu .crack { fill: none; stroke: var(--fx-core); stroke-width: 1.2; stroke-linecap: round; }
 .horizon .cu .limb { fill: none; stroke: var(--fx-red); stroke-width: 1.3; stroke-linecap: round; }
 .horizon .cu .hatch { stroke: var(--fx-red); stroke-width: .7; opacity: .55; }
@@ -39,6 +43,26 @@
 @keyframes hz-en-rise { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
 @keyframes hz-en-spin { to { transform: rotate(360deg); } }
 @keyframes hz-en-flick { from { transform: scaleY(.85); opacity: .75; } to { transform: scaleY(1.1); opacity: 1; } }
-.horizon .ln { fill: none; stroke: var(--path); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
-.horizon .fl { fill: var(--path); }
+.horizon .ln { fill: none; stroke: var(--hz-ink); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.horizon .fl { fill: var(--hz-ink); }
 .horizon .ac { fill: var(--accent); }
+/* the sorcerer */
+.horizon .cu .coat { fill: var(--fx-veil); stroke: var(--fx-glow); stroke-width: .7; stroke-linejoin: round; }
+.horizon .cu .coatln { fill: none; stroke: var(--fx-veil); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+:root[data-theme="dusk"] .horizon .cu .coatln { stroke: color-mix(in srgb, var(--fx-veil) 70%, var(--fx-glow)); }
+.horizon .cu .skin { fill: color-mix(in srgb, var(--fx-core) 15%, white); stroke: var(--fx-veil); stroke-width: .4; }
+.horizon .cu .hair { fill: var(--fx-veil); stroke: var(--fx-glow); stroke-width: .4; stroke-linejoin: round; }
+.horizon .cu .band { fill: var(--fx-veil); stroke: var(--fx-glow); stroke-width: .3; }
+.horizon .cu .tails { fill: none; stroke: var(--fx-veil); stroke-width: 1.1; stroke-linecap: round; animation: hz-cu-wave 1.8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 100% 0; }
+@keyframes hz-cu-wave { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+.horizon .cu .glint { fill: var(--fx-glow); }
+:root[data-theme="dusk"] .horizon .cu .glint { fill: var(--fx-core); filter: drop-shadow(0 0 1.5px var(--fx-glow)); }
+.horizon .cu .sign { stroke: var(--fx-veil); stroke-width: .9; stroke-linecap: round; }
+.horizon .cu .orb { fill: var(--fx-glow); animation: hz-cu-pulse 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+:root[data-theme="dusk"] .horizon .cu .orb { filter: drop-shadow(0 0 4px var(--fx-glow)); }
+.horizon .cu .shield { fill: none; stroke: var(--fx-glow); stroke-width: .6; stroke-dasharray: 2 5; opacity: .45; animation: hz-en-spin 9s linear infinite; transform-box: fill-box; transform-origin: center; }
+.horizon .cu .beam { fill: none; stroke: var(--fx-core); stroke-width: 2.4; stroke-linecap: round; opacity: 0; }
+:root[data-theme="dusk"] .horizon .cu .beam { filter: drop-shadow(0 0 4px var(--fx-glow)); }
+.horizon .cu.struck .beam { animation: hz-cu-beam .45s ease-out; }
+@keyframes hz-cu-pulse { from { transform: scale(.85); } to { transform: scale(1.12); } }
+@keyframes hz-cu-beam { 0% { opacity: 1; stroke-width: 3.4; } 100% { opacity: 0; stroke-width: .5; } }

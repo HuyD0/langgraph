@@ -271,6 +271,8 @@ console.log(JSON.stringify({
   half: HZ_AT.map((_, i) => [n(hzCurse(i, .4)), hzCurse(i, .4).includes('class="crack"')]),
   done: HZ_AT.map((_, i) => [n(hzCurse(i, 0)), hzCurse(i, 0).includes('class="bit"')]),
   html: horizonHtml(2, 3, 4),
+  hero: [hzHero(0, 1).match(/r="([\\d.]+)" opacity/)[1], hzHero(0, .2).match(/r="([\\d.]+)" opacity/)[1]].map(Number),
+  track: [hzTrackCurse(1).includes('class="eye"'), hzTrackCurse(0).includes('class="bit"'), hzTrackCurse(.5).includes('class="band"')],
 }));"""
     (tmp_path / "hz.js").write_text(probe)
     out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, check=True).stdout)
@@ -279,6 +281,9 @@ console.log(JSON.stringify({
     assert all(0 < e < 9 and crack for e, crack in out["half"])
     assert all(e == 0 and bits for e, bits in out["done"]), "finishing the phase breaks the spirit up"
     assert 'aria-hidden="true"' in out["html"] and 'data-hp="0.250"' in out["html"]
+    assert out["hero"][1] > out["hero"][0], "the sorcerer's flame grows as lessons get done"
+    assert out["track"] == [True, True, True], "the platform track has its own banner, spirit and sorcerer"
+    assert '${horizonHtml("t", d, ids.length)}' in page
 
 
 def test_a_practice_lesson_explains_itself_to_someone_who_practised(loaded):
