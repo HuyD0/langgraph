@@ -385,6 +385,7 @@ figure.ex figcaption, .stack .meta { font-size: 14px; color: var(--muted); }
 .sec { display: grid; gap: 8px; }
 /*INCLUDE page/trust.css*/
 /*INCLUDE page/callbacks.css*/
+/*INCLUDE page/diagrams.css*/
 .sec p { margin: 0; max-width: 65ch; }
 .say { margin: 4px 0 0; border-left: 3px solid var(--accent); padding-left: 14px; font-size: 17px; }
 .gl { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
@@ -2194,6 +2195,8 @@ function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = fals
 
 /*INCLUDE page/callbacks.js*/
 
+/*INCLUDE page/diagrams.js*/
+
 // ---------- step panes ----------
 /*INCLUDE page/walkthrough.js*/
 function learnPane() {
@@ -2201,8 +2204,9 @@ function learnPane() {
   if (L.pack) return packLearnPane(L, L.pack);
   const [cap, code] = L.example, [first, ...rest] = L.learn;
   closeTrust(); closeCb();
-  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}
-    ${rest.map(p => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>`).join("")}
+  const fig = L.diagram ? diagramHtml(L.diagram) : "", at = L.diagram ? L.diagram.after : -1;  // the picture follows paragraph `after`
+  return `${withTrust(cur.id, first, h => `<p class="intro">${h}</p>`)}${at === 0 ? fig : ""}
+    ${rest.map((p, i) => `<div class="prose">${withTrust(cur.id, p, h => `<p>${h}</p>`)}</div>${at === i + 1 ? fig : ""}`).join("")}
     ${L.walk ? walkHtml(L.walk) : ""}
     <figure class="ex"><figcaption>${esc(cap)}</figcaption><pre class="code">${esc(code)}</pre></figure>
     ${L.stack ? `<section class="stack"><h3>In your stack</h3><span class="meta">${esc(L.stack[0])}</span><pre class="code">${esc(L.stack[1])}</pre></section>` : ""}

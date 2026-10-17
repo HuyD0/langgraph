@@ -1,0 +1,44 @@
+/* ---------- lesson diagrams (content/diagrams.py, drawn by page/diagrams.js). A card in the Learn step
+   with one picture, its caption and numbered notes. Colour keeps its meaning: accent for the one thing the
+   lesson is about, hint for the callout numbers (amber circle, text in the page's own background, the
+   walkthrough's pair, so it reads in every look), the ink and lines for everything else. */
+.dgfig { display: grid; gap: 10px; margin: 18px 0 0; padding: 14px 14px 12px; border-radius: 14px; background: var(--card-bg, var(--surface)); border: 1px solid var(--card-line, var(--line)); box-shadow: var(--card-shadow, none); }
+.dgfig .eyebrow { margin: 0; }
+.dgfig figcaption { font-size: 15px; line-height: 1.5; color: var(--fg); }
+.dg-notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; color: var(--fg); }
+.dg-notes li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; align-items: start; }
+.dg-notes i { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--hint); color: var(--bg); font: 700 11.5px var(--mono); font-style: normal; }
+.dg { width: 100%; height: auto; display: block; overflow: visible; font-family: var(--body); }
+.dg text { fill: var(--fg); font-size: 11px; text-anchor: middle; }
+.dg .dg-tl { font-weight: 600; }
+.dg .dg-ts { font-size: 9.5px; fill: var(--muted); }
+.dg .dg-th { font-size: 9.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; fill: var(--muted); }
+.dg .dg-td { font-size: 10.5px; }
+.dg .dg-mono { font-family: var(--mono); font-size: 9.5px; fill: var(--muted); }
+.dg .dg-ms { font-size: 9.5px; font-family: var(--mono); fill: var(--muted); }
+.dg .dg-left { text-anchor: start; } .dg .dg-right { text-anchor: end; }
+.dg .hot { fill: var(--accent); }
+.dg .dg-bx rect { fill: var(--surface); stroke: var(--fg); stroke-width: 1.4; }
+.dg .dg-bx.now rect { stroke: var(--accent); fill: var(--accent-soft); }
+:root[data-theme="dusk"] .dg .dg-bx.now rect { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 80%, transparent)); }
+.dg .dg-ar { fill: none; stroke: var(--fg); stroke-width: 1.3; opacity: .8; }
+.dg marker path { fill: none; stroke: var(--fg); stroke-width: 1.3; }
+.dg .dg-grid { stroke: var(--line); stroke-width: 1; }
+.dg .dg-tree { fill: none; stroke: var(--muted); stroke-width: 1; }
+.dg .dg-bar { fill: var(--surface); stroke: var(--fg); stroke-width: 1.2; }
+.dg .dg-bar.hot { fill: var(--accent); stroke: var(--accent); }
+.dg .dg-bar.cut { stroke-dasharray: 3 3; }
+.dg .dg-band { fill: var(--sunk); }
+.dg .dg-pt { font-size: 9.5px; font-weight: 600; font-family: var(--mono); }
+.dg .dg-pill { fill: var(--sunk); } .dg .dg-pt { fill: var(--muted); }
+.dg .dg-pill.dev, .dg .dg-pill.keep { fill: var(--accent-soft); } .dg .dg-pt.dev, .dg .dg-pt.keep { fill: var(--accent); }
+.dg .dg-pill.test, .dg .dg-pill.expire { fill: var(--hint-bg); } .dg .dg-pt.test, .dg .dg-pt.expire { fill: var(--hint); }
+.dg .dg-pill.delete { fill: var(--fail-bg); } .dg .dg-pt.delete { fill: var(--fail); }
+.dg .dg-steady { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.dg .dg-line { fill: none; stroke: var(--fg); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dg .dg-line.hot { stroke: var(--accent); }
+.dg .dg-today { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
+.dg .dg-dot { fill: var(--surface); stroke: var(--fg); stroke-width: 1.4; }
+.dg .dg-dot.now { fill: var(--accent); stroke: var(--accent); }
+.dg .dg-co circle { fill: var(--hint); }
+.dg .dg-co text { font: 700 9.5px var(--mono); fill: var(--bg); }

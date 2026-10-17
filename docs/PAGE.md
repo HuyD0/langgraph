@@ -24,6 +24,7 @@ Everything is in the package, under `src/drill/content/`:
 | `model.py` | The helpers a lesson is written with: `lesson`, `exercise`, `case`, `question`, `angle`, `stack` |
 | `classics.py` | The Learn panel for the 9 classic interview problems. The problems themselves are `drill.problems`, the same bank `drill start` drills |
 | `trust.py` | The trust marks: where a lesson touches responsible AI, privacy or governance, one note (trait, NIST AI RMF reference, a perspective and a tip, and whether it is TEVV evidence) |
+| `diagrams.py` | One picture per lesson at most, drawn by the page from this data in five kinds: flow, tree, graph, table, chart (see "Lesson diagrams") |
 | `callbacks.py` | Sticker callbacks: where a lesson uses an idea taught earlier, the earlier lesson's sticker after the phrase, and at most one Look again question |
 | `extras.py` | The glossary, and the gotcha cards: each names the lesson whose Explain step shows it as a "Spot the gotcha" challenge, or the Build-step moment a working habit appears |
 | `freshness.py` | When each lesson's facts were last checked against its sources, and which are due another look (`drill content stale`; see "Keeping content current") |
@@ -470,6 +471,29 @@ the testing whose record is evidence (experiments, eval runs, registries).
   "next" and the violet of the path. The styles sit with the lesson styles (`.trustmark`,
   `.trustpop`, keyframes `tm-…`), not in the fx block: the mark is part of the page, not a
   passing effect.
+
+## Lesson diagrams
+
+Some ideas are a shape before they are a sentence: a trace is a tree, a circuit breaker is three
+states, a split is a table. Where that is true, the Learn step shows one picture, drawn by the page
+from data in `content/diagrams.py`, in the app's own tokens, so it follows Dusk and Light and fits a
+phone. The shapes are the ordinary ones the learner will meet at work, and each picture is drawn
+from the lesson's own example, so picture and text tell one story.
+
+- Five kinds, one page function each (`page/diagrams.js`): `flow` (boxes and arrows; one box may
+  open up with detail lines, the last may split into shares), `tree` (rows with a bar each, to scale:
+  a trace, workers over time, tokens per helper), `graph` (boxes on a small grid with labelled
+  arrows: a state diagram, stacks that depend on each other), `table` (one column may be pills) and
+  `chart` (lines, bars or dots over two axes, a dashed reference line, one marked point).
+- Add one with `diagram(kind, caption=..., callouts=[...], after=n, **data)`; `after` is the Learn
+  paragraph it follows. The caption says in plain words what the picture shows and the callouts are
+  the numbered notes; the page draws the numbers on the picture and the list under it, so a screen
+  reader gets the same explanation.
+- Colour keeps its one meaning: `accent` for the one thing the lesson is about, `hint` for the
+  callout numbers (amber circle, text in the page background, the walkthrough's pair, so it reads in
+  Light too), ink and lines for everything else.
+- `tests/test_diagrams.py` checks the shapes, that the numbers on the picture match the notes, and
+  that every label on a picture also appears in the lesson's words, its caption or its callouts.
 
 ## Sticker callbacks
 

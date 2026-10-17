@@ -259,6 +259,27 @@ def callback(to: str, *, phrase: str, idea: str, here: str, again: dict | None =
     return {"to": to, "phrase": phrase, "idea": idea, "here": here, "again": again}
 
 
+DIAGRAM_KINDS = ("flow", "tree", "graph", "table", "chart")
+
+
+def diagram(kind: str, *, caption: str, callouts: list[str], after: int = 0, **data) -> dict:
+    """One picture for a lesson's Learn step (see :mod:`drill.content.diagrams`), drawn by the page from
+    this data. ``kind`` is flow, tree, graph, table or chart; ``caption`` says in plain words what the
+    picture shows; ``callouts`` are the numbered notes, in the order of the numbers on the picture;
+    ``after`` is the Learn paragraph the picture follows. The rest is the kind's own data."""
+    assert kind in DIAGRAM_KINDS, f"unknown diagram kind {kind!r}; use one of {', '.join(DIAGRAM_KINDS)}"
+    assert 20 < len(caption) < 400 and 1 <= len(callouts) <= 6, "a caption of a sentence or three, and 1 to 6 callouts"
+    need = {"flow": ("nodes",), "tree": ("rows", "max", "unit"), "graph": ("nodes", "edges"), "table": ("columns", "rows"), "chart": ("x", "y")}[kind]
+    for key in need:
+        assert key in data, f"a {kind} diagram needs {key}"
+    if kind == "table":
+        assert all(len(r) == len(data["columns"]) for r in data["rows"]), "every row has one cell per column"
+    if kind == "graph":
+        ids = {n["id"] for n in data["nodes"]}
+        assert all(e["from"] in ids and e["to"] in ids for e in data["edges"]), "edges join known nodes"
+    return {"kind": kind, "caption": caption, "callouts": callouts, "after": after, **data}
+
+
 def source(title: str, url: str) -> list[str]:
     """A page a lesson's facts were checked against: what it is, and where."""
     assert url.startswith("https://"), f"{title}: a source needs an https link"
