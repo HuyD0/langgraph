@@ -31,6 +31,10 @@ env:
   # one by one (each write would wake the warehouse); `drill traces score` adds them in a batch.
   - name: DRILL_CHECKS_AS_FEEDBACK
     value: "false"
+  # The page's quiet signals on tutor answers (saved, asked again...) are held and written once an
+  # hour, for the same reason. Got it / Still stuck is still written straight away.
+  - name: DRILL_SIGNALS_EVERY_MINUTES
+    value: "60"
   # Upload traces in the background, so no answer waits on tracing.
   - name: MLFLOW_ENABLE_ASYNC_LOGGING
     value: "true"

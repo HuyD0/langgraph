@@ -894,6 +894,29 @@ def test_still_stuck_marks_the_answer_unresolved_and_links_the_simpler_one(store
         "failed_answer": "Because it says what it does.", "better_answer": "Spanish in, Spanish out: yes."}
 
 
+def test_the_apps_quiet_signals_wait_for_one_burst_but_got_it_does_not(store, bank, mlflow_store, monkeypatch):
+    """In the app each feedback write wakes the warehouse: signals are held, Got it / Still stuck is not."""
+    import mlflow
+
+    from drill.server import observe
+
+    monkeypatch.setenv("DRILL_MLFLOW_EXPERIMENT", "drill-held-test")
+    monkeypatch.setenv("DRILL_SIGNALS_EVERY_MINUTES", "60")
+    observer = observe.MlflowObserver()
+    router = ModelRouter(Route("local", "fake", fake("A gate is a stop.")), None, store, observer=observer)
+    client = TestClient(create_app(store=store, router=router, bank=bank, with_mcp=False))
+    client.post("/api/ask", json={"prompt": "What is a gate?", "trace": {"feature": "ask_lesson", "request": "ask-held001"}})
+    client.post("/api/feedback", json={"request": "ask-held001", "name": "saved", "value": True, "source": "code"})
+    client.post("/api/feedback", json={"request": "ask-held001", "name": "resolved", "value": True})
+    observer.drain()
+    [trace] = traces_in("drill-held-test")
+    names = lambda: {a.name for a in mlflow.get_trace(trace.info.trace_id).info.assessments}  # noqa: E731
+    assert "resolved" in names() and "saved" not in names()
+    assert observer.flush_signals() == 1
+    observer.drain()
+    assert "saved" in names()
+
+
 def test_names_come_from_settings(monkeypatch):
     from drill import mlflow_names
 

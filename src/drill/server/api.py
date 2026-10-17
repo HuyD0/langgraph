@@ -313,6 +313,8 @@ def create_app(
             for task in (watcher, notes):
                 if task:
                     task.cancel()
+            if hasattr(router.observer, "flush_signals"):  # held quiet signals are written before the app stops
+                router.observer.flush_signals()
 
     app = FastAPI(title="Daily Drill", lifespan=lifespan)
     app.state.store, app.state.router, app.state.bank = store, router, bank

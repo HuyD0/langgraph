@@ -45,6 +45,14 @@ RETRY_SECONDS = 30.0
 SOURCE_ID = "drill.observe"
 PAGE_SIGNALS = "drill.page.signals"  # what the page saw the learner do after an answer
 
+
+def signals_every() -> float:
+    """Minutes to hold the page's quiet signals before writing them in one go; 0 writes them at once."""
+    try:
+        return max(0.0, float(os.getenv("DRILL_SIGNALS_EVERY_MINUTES", "0") or 0))
+    except ValueError:
+        return 0.0
+
 # What the page and the MCP tools may say about a request, and which of those become tags.
 CONTEXT_KEYS = (
     "feature", "door", "lesson_id", "step", "hint_level", "question", "session", "user",
@@ -211,6 +219,13 @@ class MlflowObserver:
         self._worker: threading.Thread | None = None
         self._prompts: dict = {}  # feature -> the registered prompt version its traces are linked to
         self._reconnect: threading.Thread | None = None
+        # The page's quiet signals (saved, asked again...) can wait: with DRILL_SIGNALS_EVERY_MINUTES
+        # set (the app: 60), they are held and written in one burst, so a busy day wakes the SQL
+        # warehouse that keeps Unity Catalog traces once an hour, not once per signal. The learner's
+        # own feedback (Got it / Still stuck) is always written straight away.
+        self._held: list[tuple] = []
+        self._held_lock = threading.Lock()
+        self._held_timer: threading.Thread | None = None
         self.ready(wait=True)  # at start-up, connect before the first request
 
     # -- connecting --------------------------------------------------------
@@ -535,14 +550,45 @@ class MlflowObserver:
         said, so it is recorded as CODE feedback from the page rather than HUMAN."""
         if not REQUEST_ID.match(request or "") or not self.ready():
             return False
+        item = ("human", request, name, value, rationale, user, signal)
+        if signal and signals_every() > 0:
+            with self._held_lock:
+                if len(self._held) >= 2000:
+                    return False
+                self._held.append(item)
+            if self._held_timer is None or not self._held_timer.is_alive():
+                self._held_timer = threading.Thread(target=self._release_held, name="drill-signals", daemon=True)
+                self._held_timer.start()
+            return True
         try:
-            self._feedback.put_nowait(("human", request, name, value, rationale, user, signal))
+            self._feedback.put_nowait(item)
         except queue.Full:
             return False
         if self._worker is None or not self._worker.is_alive():
             self._worker = threading.Thread(target=self._log_feedback, name="drill-feedback", daemon=True)
             self._worker.start()
         return True
+
+    def flush_signals(self) -> int:
+        """Write the held signals now (every hour, and when the app stops). Returns how many."""
+        with self._held_lock:
+            held, self._held = self._held, []
+        for item in held:
+            try:
+                self._feedback.put(item, timeout=5)
+            except queue.Full:
+                log.info("feedback queue full: dropped %s signals", len(held))
+                break
+        if held and (self._worker is None or not self._worker.is_alive()):
+            self._worker = threading.Thread(target=self._log_feedback, name="drill-feedback", daemon=True)
+            self._worker.start()
+        return len(held)
+
+    def _release_held(self) -> None:
+        while True:
+            time.sleep(signals_every() * 60)
+            if not self.flush_signals():
+                return  # nothing came in for a whole round: the next signal starts the clock again
 
     def _log_human(self, request: str, name: str, value: Any, rationale: str | None, user: str, signal: bool = False) -> None:
         if not REQUEST_ID.fullmatch(request or ""):
