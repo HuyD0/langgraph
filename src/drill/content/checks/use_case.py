@@ -36,9 +36,9 @@ CHECKS = {
             "is that?",
             ["Functional: something it must do", "Non-functional: about how well it works", "Neither: just a nice-to-have idea"],
             answer=0,
-            clue="Is it about what the app does, or about how well it does it?",
-            why="Translating is something the app does, so it's functional. Non-functional "
-                "requirements are about how well: speed, cost, uptime, security."),
+            clue="Cross the line out. Does a job disappear?",
+            why="Cross it out and users can no longer get a Spanish answer: a job is gone, so it's "
+                "functional. Non-functional requirements are about how well: speed, cost, uptime, security."),
         ask("Your team is writing the cost requirement for the HR assistant. Which version could "
             "the pilot actually test?",
             ["It should be cheap to run", "Under 50 cents per finished answer", "Cheaper than most other AI tools"],
