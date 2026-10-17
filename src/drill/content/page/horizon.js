@@ -96,7 +96,7 @@ function hzCurse(i, hp) {
 function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
   // Proportions: lanky. Drawn on a grid where the hip is at -21; M() lengthens the legs (hip to -30) and
   // keeps the jacket and head compact above it, and W narrows him, so his height is in his legs.
-  const M = v => v >= -21 ? v * 30 / 21 : -30 + (v + 21) * .85, W = .86;
+  const M = v => v >= -21 ? v * 30 / 21 : -30 + (v + 21) * .85, W = .66;
   const S = .82, X = v => (x + v * S * W).toFixed(1), Y = v => (g + M(v) * S).toFixed(1), Z = v => (v * S * .9).toFixed(1);
   const P = pts => "M" + pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L") + "Z";
   const F = [15, 14, 15, 15, 19, 8][pose];
