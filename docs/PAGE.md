@@ -547,8 +547,10 @@ from the lesson's own example, so picture and text tell one story.
 ## Sticker callbacks
 
 The course teaches some foundations once, early, and then uses them quietly: requirements (1.3),
-the well-architected pillars (1.4), the bars and must-pass cases (1.5), leakage, prompt
-injection, least privilege, reading a Terraform plan. Where a later lesson uses one, the sticker
+the well-architected pillars (1.4), the bars and must-pass cases (1.5), leakage, precision and
+recall, cost per finished task, tokens that grow every step, the baseline and its controls,
+deciding before the runs, a real win or luck, reading a trace, prompt injection, never trusting
+model output, least privilege, retries, idempotent writes, reading a Terraform plan. Where a later lesson uses one, the sticker
 the learner earned in the lesson that taught it sits right after the phrase. Tapping it opens a
 card under the paragraph: the idea in a few words, what it means here, and "Revisit 1.4". If that
 lesson isn't done yet, the sticker is a dashed outline and the card offers it instead. Teachers
