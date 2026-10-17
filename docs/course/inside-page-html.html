@@ -141,7 +141,6 @@ textarea.code { width: 100%; min-height: 260px; resize: vertical; border: 0; out
 .where { display: grid; gap: 6px; font-size: 15px; }
 .where ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 .nav { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 18px; }
-@media (prefers-reduced-motion: reduce) { .stage, .meter i { transition: none; } }
 /* Ask in line: a button under each part, a small conversation that opens right there */
 .askbtn { display: none; align-items: center; gap: 6px; justify-self: start; border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 999px; padding: 4px 12px; min-height: 36px; font: 600 13px var(--body); cursor: pointer; }
 body.ask-on .askbtn { display: inline-flex; }
@@ -916,8 +915,6 @@ render();
 .btn.primary { background: #2346d1; color: #fff; border-color: #2346d1; }
 
 /* Step 1: show a 2px accent outline when a button has keyboard focus */
-
-/* Step 2: no movement for people who asked for less */
 </script>
 <script type="text/plain" id="a12-css">
 .btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
@@ -926,10 +923,6 @@ render();
 .btn.primary { background: #2346d1; color: #fff; border-color: #2346d1; }
 
 .btn:focus-visible { outline: 2px solid #2346d1; outline-offset: 2px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .btn { transition: none; }
-}
 </script>
 
 <script type="text/plain" id="p13-html">
@@ -1314,18 +1307,18 @@ const L = [
   answer: { js: "a11-js" },
   quiz: { q: "Why does Daily Drill wrap localStorage in try/catch?", opts: ["It makes saving faster", "Some browsers refuse storage, and the page should keep working", "JSON needs it"], a: 1, why: "In a private window setItem can throw. Without try/catch, one refusal would break the whole page." },
 },
-{ id: "access", part: 3, title: "Motion and access for everyone",
+{ id: "access", part: 3, title: "Access for everyone",
   idea: [
-    "A good page works for everyone, not only people with a mouse and good eyesight. Three habits in Daily Drill:",
+    "A good page works for everyone, not only people with a mouse and good eyesight. Two habits in Daily Drill:",
     "**Visible focus.** People who use the keyboard move with Tab. `:focus-visible` styles the element they're on, so they can see it. Never remove the focus ring without a replacement.",
-    "**Motion only when wanted** is the usual rule. Some people get dizzy from animation and ask their phone for less; `@media (prefers-reduced-motion: reduce)` turns it off for them. Daily Drill chose otherwise: its animations play for everyone, with no switch. That's a trade-off its owner made knowingly (looping effects that can't be stopped fail WCAG 2.2.2), so most apps should keep the rule. **Words for icons:** an icon-only button gets an `aria-label`, so a screen reader can say what it does. And colour never works alone: a pass also says \"passed\".",
+    "**Words for icons.** An icon-only button gets an `aria-label`, so a screen reader can say what it does. And colour never works alone: a pass also says \"passed\". Motion in Daily Drill is the same for everyone: there is no setting to turn it down.",
   ],
-  key: "Focus you can see, motion people can stop (or a choice made on purpose), words for every icon.",
-  real: { id: "r-access", file: "src/drill/content/page.html", sub: "focus, reduced motion, labels", note: "Every change gets checked with the keyboard. docs/FRONTEND.md, \"Before you call it done\"." },
+  key: "Focus you can see, and words for every icon.",
+  real: { id: "r-access", file: "src/drill/content/page.html", sub: "focus and labels", note: "Every change gets checked with the keyboard. docs/FRONTEND.md, \"Before you call it done\"." },
   play: { html: "p12-html", css: "p12-css", tab: "css" },
-  task: "Add a **2px outline** for buttons with keyboard focus (`.btn:focus-visible`), and turn the hover movement **off** for people who prefer reduced motion.",
-  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); if (!/\.btn:focus-visible\s*\{[^}]*outline\s*:[^;}]*2px/.test(css)) return [false, "Add a rule .btn:focus-visible { outline: 2px solid ...; }."]; const m = css.match(/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{([\s\S]*)\}/); if (!m) return [false, "Add @media (prefers-reduced-motion: reduce) { ... }."]; if (!/\.btn[^{]*\{[^}]*transition\s*:\s*none/.test(m[1])) return [false, "Inside the reduced-motion block, set .btn { transition: none; }."]; return [true, "Keyboard users can see where they are, and nobody gets motion they asked not to have."]; },
-  clue: "`.btn:focus-visible { outline: 2px solid #2346d1; outline-offset: 2px; }` and `@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }`.",
+  task: "Add a **2px outline** for buttons with keyboard focus (`.btn:focus-visible`), so someone moving with Tab can see which button they're on.",
+  check: (r, ctx) => { const css = ctx.src.css.replace(/\/\*[\s\S]*?\*\//g, ""); if (!/\.btn:focus-visible\s*\{[^}]*outline\s*:[^;}]*2px/.test(css)) return [false, "Add a rule .btn:focus-visible { outline: 2px solid ...; }."]; return [true, "Keyboard users can see where they are."]; },
+  clue: "`.btn:focus-visible { outline: 2px solid #2346d1; outline-offset: 2px; }`",
   answer: { css: "a12-css" },
   quiz: { q: "Someone can't use a mouse. What helps them most on this page?", opts: ["Bigger fonts", "A visible focus ring as they Tab through buttons", "More animation"], a: 1, why: "Without a visible focus, keyboard users can't tell which button Enter will press." },
 },
