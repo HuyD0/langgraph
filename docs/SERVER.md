@@ -248,7 +248,10 @@ ask_lesson                 the learner's question, lesson and step in; the answe
   `feature`, `door` (`page` or `mcp`), `lesson_id`, `step`, `hint_level`, `chip` (a one-tap
   question), `guard` (`solution_request` when the page turned a request for the solution
   into a hint) and `retry_of` (on a Still stuck re-explanation: the request id of the answer
-  that didn't help, which carries `resolved = false` as human feedback). Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.
+  that didn't help, which carries `resolved = false` as human feedback).
+- **Feedback.** `POST /api/feedback` (`request`, `name`, `value`, `rationale`, `source`) attaches
+  feedback to the trace with that request id: HUMAN from the learner, or CODE (`source: "code"`,
+  from `drill.page.signals`) for what the page saw them do. `uv run drill tutor feedback` reads it back. Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.
 - **Sessions.** Follow-ups in one Ask thread share a session; so do the questions about one
   study-list item, and every tool call from one Claude Code session.
 - **Versions.** `app_version` is the git commit the server runs, with `-dirty` when tracked

@@ -430,6 +430,65 @@ def tutor_map_cmd() -> None:
     console.print(f"Wrote {path.relative_to(PROJECT_ROOT)}")
 
 
+@tutor_app.command("feedback")
+def tutor_feedback_cmd(
+    days: float = typer.Option(7.0, "--days", help="Read answers from this many days back."),
+    dataset: bool = typer.Option(False, "--dataset", help="Also add the answers that didn't help to the tutor_cases eval dataset."),
+    target: str = typer.Option("", "--target", help="Read the deployed app's traces on Databricks instead of this Mac's (personal or work)."),
+    profile: str = typer.Option(None, "--profile", "-p", help="Databricks CLI profile (default: the one databricks.yml names for the target)."),
+) -> None:
+    """How often the tutor's answers worked (Got it / Still stuck and the quiet signals), and the eval cases they make."""
+    import os
+
+    import mlflow
+
+    from drill import mlflow_names, tutor_feedback
+
+    if target:
+        from drill import cloud
+
+        prof = _cloud(lambda: cloud.profile_for(target, profile))
+        saved = cloud.read_overrides(target)
+        if "experiment_id" not in saved:
+            console.print(f"[red]Run `uv run drill cloud setup --target {target}` first.[/red]")
+            raise typer.Exit(1)
+        if saved.get("warehouse_id"):
+            os.environ.setdefault("MLFLOW_TRACING_SQL_WAREHOUSE_ID", saved["warehouse_id"])
+        mlflow.set_tracking_uri(f"databricks://{prof}" if prof else "databricks")
+        experiment_id = saved["experiment_id"]
+    else:
+        if not os.getenv("MLFLOW_TRACKING_URI"):
+            from drill.server.store import data_dir
+
+            mlflow.set_tracking_uri(f"sqlite:///{data_dir() / 'mlflow.db'}")  # where drill-server traces by default
+        found = mlflow.get_experiment_by_name(mlflow_names.experiment())
+        if found is None:
+            console.print(f"No experiment named {mlflow_names.experiment()} yet: ask the tutor something with drill-server running first.")
+            return
+        experiment_id = found.experiment_id
+    answers = tutor_feedback.read(experiment_id, days)
+    if not answers:
+        console.print("No tutor answers in that window.")
+        return
+    s = tutor_feedback.summarise(answers)
+    share = lambda v: "no ratings yet" if v is None else f"{v:.0%}"  # noqa: E731
+    console.print(f"{s['answers']} answers ({s['first_answers']} first answers, {s['rated']} rated Got it or Still stuck)")
+    console.print(f"  First answer worked (Got it): {share(s['first_answer_resolved'])}")
+    console.print(f"  Still stuck: {s['still_stuck']}; the simpler answer then worked: {share(s['retry_resolved'])}")
+    for name in tutor_feedback.SIGNALS:
+        console.print(f"  {name}: {s[name]['true']} of {s[name]['answers']}")
+    if s["lessons_most_stuck"]:
+        console.print("  Lessons where answers most often didn't help: " + ", ".join(f"{k} ({v})" for k, v in s["lessons_most_stuck"]))
+    if dataset:
+        records = tutor_feedback.cases(answers)
+        if not records:
+            console.print("No answers that didn't help, so nothing to add to tutor_cases.")
+            return
+        saved_ds = tutor_feedback.save_cases(mlflow, experiment_id, records)
+        if saved_ds is not None:
+            console.print(f"Added {len(records)} cases to {mlflow_names.dataset_name('tutor_cases')}.")
+
+
 @tutor_app.command("snapshot")
 def tutor_snapshot_cmd(
     out: Path = typer.Option(None, "--out", "-o", help="Where to write it (default ~/Documents/daily-drill/tutor-snapshot.md)."),

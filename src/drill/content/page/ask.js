@@ -83,6 +83,7 @@ function askThreadHtml() {
 function askGot(i) {
   const turn = (askThreads[cur.id] || [])[i]; if (!turn || turn.resolved != null) return;
   turn.resolved = true; sendFeedback(turn.request, "ask_lesson", "resolved", true); renderAskThread();
+  if (askLast && askLast.request === turn.request) askLast.got = true;
 }
 function askStuck(i) {
   const turn = (askThreads[cur.id] || [])[i]; if (!turn || turn.resolved != null || askBusy) return;
@@ -112,8 +113,28 @@ const LEAKED = "That answer started to include code for the exercise, so it's hi
 // What a request is for (feature, lesson, step, question...), so the local server's MLflow traces say so.
 // Only the local server gets it; claude.ai's sample() keeps its own options.
 const withTrace = (opts, trace) => sample && sample.local ? Object.assign({}, opts, { trace }) : opts;
+// ---------- quiet signals: what the learner did after an answer, noted on that answer's trace ----------
+// No buttons: the page records what already happened, as CODE feedback (a signal, not an opinion).
+// Each answer gets each signal once, and only within half an hour on the same lesson.
+let askLast = null;  // the latest finished answer: { id, request, q, at, sent }
+const ASK_SIGNAL_MS = 30 * 60000;
+function askSignal(name, value, rationale) {
+  const a = askLast;
+  if (!a || !cur || cur.id !== a.id || Date.now() - a.at > ASK_SIGNAL_MS || name in a.sent) return;
+  a.sent[name] = value; sendFeedback(a.request, "ask_lesson", name, value, rationale, "code");
+}
+const askNextTry = right => askSignal("next_right", right);  // the first try at the next question: learned, or not
+const askGaveUp = () => askSignal("gave_up", true);           // opened "Tell me the answer" after asking
+// Asking nearly the same thing again (most of the words of the shorter question) means the answer didn't land.
+const sameAsk = (x, y) => {
+  const w = t => new Set(t.toLowerCase().match(/[a-z0-9]{3,}/g) || []), a = w(x), b = w(y);
+  if (!a.size || !b.size) return false;
+  let n = 0; a.forEach(t => { if (b.has(t)) n++; });
+  return n / Math.min(a.size, b.size) >= .6;
+};
 async function askLesson(question, instruction, retryOf) {
   if (!sample || askBusy || !cur || cur.kind !== "lesson" || !question.trim()) return;
+  if (!instruction && !retryOf && askLast && askLast.id === cur.id && !askLast.got && sameAsk(question, askLast.q)) askSignal("asked_again", true, question.trim().slice(0, 300));
   const id = cur.id, fn = cur.p.fn, thread = askThreads[id] = askThreads[id] || [];
   thread.session = thread.session || id + "-" + Date.now().toString(36);
   const leaks = text => !!fn && new RegExp("def\\s+" + fn + "\\s*\\(").test(text);
@@ -159,6 +180,7 @@ Rules:
     turn.failed = true;
   }
   turn.streaming = false;
+  if (!turn.failed) askLast = { id, request: turn.request, q: turn.q, at: Date.now(), sent: {} };
   setAskBusy(false);
   if (cur && cur.id === id) renderAskThread();
 }
@@ -168,4 +190,5 @@ async function saveAsk(i) {
   const it = await addItem(turn.q + " (" + L.title + ")", "Ask · " + L.title, "text");
   await updateItem(it.id, { explanation: turn.a });
   turn.saved = true; renderAskThread(); toast("Saved to your study list");
+  sendFeedback(turn.request, "ask_lesson", "saved", true, "", "code");
 }
