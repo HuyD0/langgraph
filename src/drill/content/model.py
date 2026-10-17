@@ -259,6 +259,42 @@ def callback(to: str, *, phrase: str, idea: str, here: str, again: dict | None =
     return {"to": to, "phrase": phrase, "idea": idea, "here": here, "again": again}
 
 
+DIAGRAM_KINDS = ("flow", "tree", "graph", "table", "chart", "pair")
+
+
+def diagram(kind: str, *, caption: str, callouts: list[str], after: int = 0, **data) -> dict:
+    """One picture for a lesson's Learn step (see :mod:`drill.content.diagrams`), drawn by the page from
+    this data. ``kind`` is flow, tree, graph, table or chart; ``caption`` says in plain words what the
+    picture shows; ``callouts`` are the numbered notes, in the order of the numbers on the picture;
+    ``after`` is the Learn paragraph the picture follows. The rest is the kind's own data.
+
+    Three ways a picture can do more than sit still. ``steps``: a list of ``{"now": ..., "say": ...}``
+    the learner taps through (``now`` is a node index for flow, a node id for graph, a row index for
+    tree), each step's ``say`` replacing the caption. ``play=True`` on a tree whose bars are time: they
+    grow in once, in time order, with a Replay. ``live=True``: in Build, the same kind of picture is
+    drawn from what the learner's function returned on the example (page/diagrams.js, ``LIVE``).
+    A ``pair`` is two small pictures, ``before`` and ``fixed``, each a dict with its own ``kind``,
+    ``label`` and data, for a spot-the-difference lesson."""
+    assert kind in DIAGRAM_KINDS, f"unknown diagram kind {kind!r}; use one of {', '.join(DIAGRAM_KINDS)}"
+    assert 20 < len(caption) < 400 and 1 <= len(callouts) <= 6, "a caption of a sentence or three, and 1 to 6 callouts"
+    need = {"flow": ("nodes",), "tree": ("rows", "max", "unit"), "graph": ("nodes", "edges"), "table": ("columns", "rows"), "chart": ("x", "y"), "pair": ("before", "fixed")}[kind]
+    for key in need:
+        assert key in data, f"a {kind} diagram needs {key}"
+    if kind == "pair":
+        for half in (data["before"], data["fixed"]):
+            assert half["kind"] in ("table", "tree", "flow") and half.get("label"), "each half has a kind and a short label"
+    if data.get("steps"):
+        assert kind in ("flow", "graph", "tree") and all(s.get("say") and "now" in s for s in data["steps"]), "steps need now and say, on a flow, graph or tree"
+    if data.get("play"):
+        assert kind == "tree", "only a tree's bars play"
+    if kind == "table":
+        assert all(len(r) == len(data["columns"]) for r in data["rows"]), "every row has one cell per column"
+    if kind == "graph":
+        ids = {n["id"] for n in data["nodes"]}
+        assert all(e["from"] in ids and e["to"] in ids for e in data["edges"]), "edges join known nodes"
+    return {"kind": kind, "caption": caption, "callouts": callouts, "after": after, **data}
+
+
 def source(title: str, url: str) -> list[str]:
     """A page a lesson's facts were checked against: what it is, and where."""
     assert url.startswith("https://"), f"{title}: a source needs an https link"

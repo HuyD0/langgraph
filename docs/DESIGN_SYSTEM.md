@@ -87,6 +87,7 @@ them before making a new one; a new one gets a row here.
 | Walkthrough | `.walk`, `.sl`, `.sl-view`, `.sl-mark`, `.sl-n`, `.sl-steps`, `.sl-tips` | Tool lessons (Spacelift) | Numbered callouts in the hint colours match numbered steps |
 | Study list | `.studyrow` (Home), `.duechip` (header), `.pocket` (the sheet), `.pk-row`, `.seals` | Home row, header chip elsewhere | Never floats over the page or pulses; the sheet opens only when asked for |
 | Trust mark | `.trustmark`, `.trustpop` | Learn text | An ember after the words that matter; `mark` colours only |
+| Lesson diagram | `.dgfig`, `.dg` (`.dg-bx`, `.dg-bar`, `.dg-pill`, `.dg-line`, `.dg-co`) | Learn text | One picture per lesson in the ordinary shapes; `accent` for what the lesson is about, `hint` for callout numbers, nothing else coloured |
 | Sticker callback | `.cbmark` (`.tr`, `.ahead`, `.fresh`), `.cbpop`, `.again` (`.againopt`, `.own`) | Learn text, and one card after Learn | The earlier lesson's sticker in its route's colour (`path`, or `track` with the octagon); the card is the trust card's sibling; an unearned sticker is a dashed outline |
 | Date note | `.checked` (`p.checked`, `details.checked`, `.old`) | Under Learn | "Checked against the docs on …" with its sources, or "Content as of …"; turns `hint` after 180 days |
 | Practice step | `.px`, `.px-seq`, `.px-match`, `.px-edit`, `.px-rules`, `.px-q`, `.px-next` | Content-pack lessons | Replaces the editor: choose, order, match, repair or reason; the next safe check in `accent-soft` |
