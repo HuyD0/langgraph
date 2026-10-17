@@ -1,7 +1,7 @@
 """Use case and fit: pick an AI use case worth doing, write it down, and decide whether it is fit for purpose."""
 
-from drill.content.model import (angle, ask, card, case, crossout, evidence, example, exercise, lesson, machine, module, pile,
-                                 piles, pillar, pillars, practice, question, rewrite, seesaw, source, split, steps, struck, tile)
+from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, machine, module, pile, piles,
+                                 pillar, pillars, practice, question, rewrite, seesaw, sortby, sortrow, source, split, steps, tile)
 
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
@@ -426,43 +426,46 @@ for ch in "80 in 100":
 lesson(MODULE, 'split_requirements',
     title='Functional and non-functional requirements',
     cards=[
-        card('Two kinds of promise',
-             'A **requirement** is something the finished system promises. Picture a food delivery app. Some promises are jobs you could watch it do; others say how well it must do them.',
-             picture=piles(pile('Jobs', ['Order food', 'Track the driver', 'Pay by card'], sub='What you could watch it do'),
-                           pile('Bars', [('clock', 'Food in 30 minutes'), ('lock', 'Card number kept safe'), ('people', 'Works in the Friday rush')],
-                                sub='How well it must do them', look='dashed'),
-                           key=[('solid', 'job: functional'), ('dashed', 'bar: non-functional')]),
-             after='Jobs are **functional** requirements. Bars are **non-functional** requirements. Engineers also call them **quality attributes**.'),
-        card('The cross-out test',
-             'To tell them apart, cross a line off the list and ask what a user loses.',
-             picture=crossout(struck('Track the driver', 'You can\'t see where your food is. Something you could do is gone.', 'Job: functional'),
-                              struck('Food in 30 minutes', 'You can still order. It might just take two hours. Every job still works, only worse.',
-                                     'Bar: non-functional', look='dashed', icon='clock'))),
-        card('One sentence, two promises',
-             'People often write a job and its bar in one line. Cut it in two, so each half can be built and tested on its own.',
-             picture=split(['Answer time-off questions', 'within 5 seconds'],
-                           [tile('Answer time-off questions'), tile('Reply within 5 seconds', icon='clock', look='dashed')])),
-        card('A bar needs a number',
-             '"Fast" can\'t pass or fail, but a number can. If the pilot can\'t answer yes or no, rewrite the bar.',
+        card('What it does, and how well',
+             'A **requirement** is something a system must do or be. Requirements come in two kinds. Picture a food delivery app.',
+             picture=piles(pile('Functional', ['Order food', 'Track the driver', 'Pay by card'], sub='What it does'),
+                           pile('Non-functional', [('clock', 'Food arrives in 30 minutes'), ('lock', 'Card numbers kept safe'), ('people', 'Works in the Friday rush')],
+                                sub='How well it does it', look='dashed')),
+             after='**Functional** requirements are what the system does. **Non-functional** requirements are how well it does it: how fast, how safe, how cheap, how many people at once.',
+             note=('Good to know: another name', 'Engineers also call non-functional requirements quality attributes.')),
+        card('The test: watch it, or measure it?',
+             'For each requirement, ask how you would check it. If you would check it by watching it happen, it is functional. If you would check it by measuring something, like time, cost or how many people, it is non-functional.',
+             picture=sortby('How would you check it?',
+                            sortrow('Track the driver', 'Watch it: open the map and see the driver move.', 'Functional', icon='eye'),
+                            sortrow('Food arrives in 30 minutes', 'Measure it: time a hundred orders.', 'Non-functional', look='dashed', icon='clock'),
+                            sortrow('Card numbers kept safe', 'Measure it: you can\'t watch this in the app. A security check counts card numbers stored without protection, and the answer must be none.',
+                                    'Non-functional', look='dashed', icon='lock')),
+             after='Teams test them the same way: **functional testing** checks that it does each thing, and performance, load and security testing measure how well.'),
+        card('Give it a number',
+             '"Fast" can\'t pass or fail, but a number can. If you can\'t say yes or no after measuring, rewrite the requirement.',
              picture=rewrite(('fast', 'under 5 seconds, for 95 in 100 answers'), ('always up', 'working 99.9% of office hours, its **uptime**'),
                              ('cheap', 'under $1 per answer'), ('secure', 'only HR staff can see the answers'))),
+        card('One sentence can hold both',
+             'People often write both kinds in one line. Cut it in two, so each half can be checked on its own: one by watching, one by measuring.',
+             picture=split(['Answer time-off questions', 'within 5 seconds'],
+                           [tile('Answer time-off questions'), tile('Reply within 5 seconds', icon='clock', look='dashed')])),
         card('The HR assistant, sorted',
-             'Bars are the ones teams forget, and they decide whether a working demo can go live. The usual ones for AI: speed, uptime, cost per answer, privacy (where personal data may go), security (who can see what) and how many people at once.',
-             picture=piles(pile('Jobs', ['R1 Answer policy questions', 'R3 Show the source page', 'R5 Hand hard questions to a person']),
-                           pile('Bars', [('clock', 'R2 5 seconds, 95 in 100'), ('lock', 'R4 Personal data stays in the EU'),
-                                         ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed')),
-             after='The next lesson puts each bar under a pillar of a well-architected review.'),
+             'The HR assistant is an AI chatbot that answers staff questions about HR policy, like leave and expenses. Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. For AI the usual ones are speed, uptime, cost per answer, privacy (where personal data may go), security (who can see what) and how many people at once.',
+             picture=piles(pile('Functional', ['R1 Answer policy questions', 'R3 Show the source page', 'R5 Hand hard questions to a person']),
+                           pile('Non-functional', [('clock', 'R2 5 seconds, 95 in 100'), ('lock', 'R4 Personal data stays in the EU'),
+                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed')),
+             after='The next lesson puts each non-functional requirement under a pillar of a well-architected review.'),
     ],
-    example=example('The cross-out test on the HR assistant', """# cross it out: is a job gone?
+    example=example('How would you check it? The HR assistant', """# how would you check it?
 "Show the source page"
-#  gone   -> functional
+#  watch it   -> functional
 "Reply within 5 seconds"
-#  slower -> non-functional
+#  measure it -> non-functional
 
 # one line holding both: split it
 "Answer within 5 seconds"
-#  job: "Answer"
-#  bar: "within 5 seconds"""),
+#  watch:   "Answer"
+#  measure: "within 5 seconds"""),
     check=question(
         'Which of these is a non-functional requirement?',
         [
@@ -471,12 +474,12 @@ lesson(MODULE, 'split_requirements',
             'Be available 99.9 percent of working hours',
         ],
         answer=2,
-        why='The first two are jobs the system does. Availability is how well it keeps doing them, so it is non-functional.',
+        why='You could watch the system do the first two. Availability you measure: how much of the time it stays up. So it is non-functional.',
     ),
     angle=angle(
         pattern='Sort by a list of how-well words',
-        text='The big idea: functional requirements are the jobs a system does and non-functional ones are how well it does them; crossing a line out tells you which. A reviewer\'s quick first sort can look for words about speed, uptime, cost, security and scale. Your code makes two empty lists. For each requirement it lowercases the text and checks whether any word from the how-well list appears in it. If one does, the row goes in the non-functional list, otherwise in the functional list. It returns both lists, in their original order. It is like sorting post into bills and letters by looking for a price on the envelope; a person still checks the pile.',
-        say='"I cross each line out. If a [[job|word|page::Something you could watch it do.]] disappears, it was functional. If it\'s still done, just [[worse|later|twice::Slower, less safe or dearer.]], it was non-functional, and it needs a [[number|name|owner::"Fast" can\'t be tested; "under 5 seconds" can.]] the pilot can test."',
+        text='The big idea: functional requirements are what a system does and non-functional ones are how well it does it; asking whether you would check a line by watching or by measuring tells you which. A reviewer\'s quick first sort can look for words about speed, uptime, cost, security and scale. Your code makes two empty lists. For each requirement it lowercases the text and checks whether any word from the how-well list appears in it. If one does, the row goes in the non-functional list, otherwise in the functional list. It returns both lists, in their original order. It is like sorting post into bills and letters by looking for a price on the envelope; a person still checks the pile.',
+        say='"I ask how I\'d check it. If I\'d [[watch|read|build::See it happen, like tapping a button.]] it happen, it\'s functional. If I\'d [[measure|guess|code::With a stopwatch, a bill or a count.]] it, it\'s non-functional, and it needs a [[number|name|owner::"Fast" can\'t pass or fail; "under 5 seconds" can.]] to pass or fail."',
         classic=None,
     ),
     exercise=exercise(
@@ -497,17 +500,17 @@ Return `[functional, non_functional]`: two lists of the requirement dicts, each 
         target='one pass over the requirements',
         realworld='Requirement reviews often start with exactly this sort, then a person checks the edge cases. Non-functional requirements map straight onto the Well-Architected pillars.',
         practice=practice(
-            intro='Sort the HR assistant\'s requirements the way a reviewer does: cross each line out and see whether a job a user relies on disappears.',
-            explain='The big idea: functional requirements are the jobs a system does and non-functional ones are how well it does them. You crossed out lines to sort them, spotted a list with no how-well lines at all, split a sentence that held both kinds, and turned "always up" into a number a pilot can test.',
-            pattern='Cross it out: job or bar?',
-            realworld='When a team plans a pilot, someone asks for the non-functional requirements. Bring the bars, each with a number, so the pilot can pass or fail them.',
+            intro='Sort the HR assistant\'s requirements the way a reviewer does: for each one, ask whether you would check it by watching it happen or by measuring it.',
+            explain='The big idea: functional requirements are what a system does, and non-functional ones are how well it does it. You asked how you would check each line, by watching or by measuring, spotted a list with nothing to measure, split a sentence that held both kinds, and turned "always up" into a number you can measure.',
+            pattern='Watch it, or measure it?',
+            realworld='When a team plans a pilot (a small first trial), someone will ask for the non-functional requirements. Bring each one with a number, so the trial can measure it and say pass or fail.',
             gotchas=[
-                ['Forgetting the non-functional ones', 'A demo can answer every question and still fail to go live because it is too slow, too costly or sends personal data where it may not go. Write the bars down on day one.'],
-                ['A bar with no number', '"Fast" and "secure" can\'t be tested. Write "under 5 seconds for 95 in 100 answers" or "only HR staff can see answers", so the pilot can say yes or no.'],
-                ['One line, two promises', 'A sentence like "answer within 5 seconds" holds a job and a bar. Split it, or the pilot can pass the job and never test the speed.'],
+                ['Forgetting the non-functional ones', 'A demo can answer every question and still not go live because it is too slow, too costly or sends personal data where it may not go. Write these down on day one.'],
+                ['Nothing to measure', '"Fast" and "secure" can\'t pass or fail. Write "under 5 seconds for 95 in 100 answers" or "only HR staff can see answers".'],
+                ['One line, both kinds', 'A sentence like "answer within 5 seconds" holds both. Split it, or the trial can check the answer and never time it.'],
             ],
             asks=[
-                ask('Which pile does **R4** go in?', ['Functional: a job the system does', 'Non-functional: how well it does its jobs'], answer=1,
+                ask('Which kind is **R4**?', ['Functional: what the system does', 'Non-functional: how well it does it'], answer=1,
                     evidence=evidence('code', title='The HR assistant\'s requirements', text="""R1  Answer policy questions from the HR pages
 R2  Reply within 5 seconds for 95 in 100 questions
 R3  Show the source page for every answer
@@ -515,29 +518,29 @@ R4  Personal data never leaves the EU
 R5  Hand hard questions to a person
 R6  Serve 200 users at once
 R7  Cost under $1 per answer"""),
-                    clue='Cross R4 out. Does the assistant still answer questions?',
-                    why='Crossed out, it still answers every question, only less safely. Where personal data may go is privacy: a rule about how well the job is done, not a job. Non-functional.',
-                    wrong=['Cross it out and it still answers every question. It is a rule about how well, not a job.', None]),
-                ask('What is missing from the product owner\'s requirements?', ['Nothing: those three lines cover the whole job', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
+                    clue='How would you check R4: by watching the assistant do something, or by checking where the data is stored?',
+                    why='A user never sees where their data is stored, so you can\'t watch it. You check it by inspecting where the data lives, which is measuring. Where personal data may go is privacy: non-functional.',
+                    wrong=['You can\'t watch this happen in the app. You check it by inspecting where the data is stored.', None]),
+                ask('What is missing from the product owner\'s requirements?', ['Nothing: those three lines cover everything', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
                     evidence=evidence('claim', who='The product owner said', text='"The requirements are done: it answers policy questions from the HR pages, shows the source page, and hands hard questions to a person."'),
-                    clue='All three lines say what it does. Which pile is that?',
-                    why='All three are functional. A demo can do every one and still not go live, because it is too slow, too costly or sends personal data where it may not go.',
-                    wrong=['That is the whole job, but not how well it must do it.', None, 'It has enough to do. What is missing is how well.']),
-                ask('R8 mixes both kinds. Which part is the non-functional one?', ['Answer time-off questions', 'within 5 seconds', 'Neither: it is one requirement'], answer=1,
+                    clue='You could watch the assistant do all three. Which kind is that?',
+                    why='All three are functional: you can watch it do each one. Nothing says how fast, how safe or how cheap, so a demo that does all three can still be too slow or too costly to go live.',
+                    wrong=['Those say what it does. Nothing says how well, so there is nothing to measure.', None, 'It has enough to do. What is missing is how well.']),
+                ask('R8 holds both kinds. Which part is the non-functional one?', ['Answer time-off questions', 'within 5 seconds', 'Neither: it is one requirement'], answer=1,
                     evidence=evidence('code', title='A new line', text='R8  Answer time-off questions within 5 seconds'),
-                    clue='Cross out each half in turn. Which one still leaves a job to do?',
-                    why='"Within 5 seconds" is a bar on the job. Split it into its own line, so the pilot can test the job and the speed separately.',
-                    wrong=['Cross that out and the job is gone. That half is functional.', None, 'It holds two: a job and a bar on it. Split them.']),
-                ask('How would you rewrite R9 so the pilot can test it?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
+                    clue='Which half would you watch, and which would you time with a stopwatch?',
+                    why='"Within 5 seconds" is measured with a stopwatch, so it is the non-functional half. Split it into its own line so each half can be checked on its own.',
+                    wrong=['You would check that half by watching it answer. That makes it functional.', None, 'It holds two: one you watch, one you measure. Split them.']),
+                ask('How would you rewrite R9 so it can be measured?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
                     evidence=evidence('claim', who='A teammate added', text='"R9: The assistant should always be up."'),
                     clue='"Always" can\'t be measured. What share of the time, and when?',
-                    why='A number turns a hope into a bar the pilot can check: it either stayed up 99.9 percent of working hours or it didn\'t.',
+                    why='A number turns a hope into something you can measure: it either stayed up 99.9 percent of working hours or it didn\'t.',
                     wrong=['Stronger words still can\'t be measured.', None, 'That is a way to build it, not how well it must work.']),
-                ask('R10 sounds like something the assistant does. Which pile does it go in?', ['Functional: a job the system does', 'Non-functional: how well it does its jobs'], answer=1,
+                ask('R10 sounds like something the assistant does. Which kind is it?', ['Functional: what the system does', 'Non-functional: how well it does it'], answer=1,
                     evidence=evidence('code', title='One more line', text='R10  Keep a record of every answer, for audits'),
-                    clue='Cross R10 out. Does any user lose something they could ask for or see?',
-                    why='Users still get every answer, with its source. Only the team loses the record they use to check answers later. That is about how well the system is run, so it is non-functional. (Some teams file it as a feature; either way, it has to be on the list.)',
-                    wrong=['Cross it out and users lose nothing they can ask for or see. It is a how-well line.', None]),
+                    clue='Could a user watch it happen? How would you check it?',
+                    why='Users never see it. You check it by looking through the records later and counting that every answer is there, which is measuring. It is about how well the system is run, so it is non-functional. (Some teams file it as a feature; either way, it has to be on the list.)',
+                    wrong=['A user can\'t watch it happen. You would check it by counting the records, so it is non-functional.', None]),
             ],
         ),
         starter="""def split_requirements(reqs):
@@ -637,7 +640,7 @@ R7  Cost under $1 per answer"""),
             ],
             [
                 'Trusting the word list',
-                'A word list is a first pile, not the answer: "Show the cost of each request" is a job users can see, yet it holds the word cost. Run the cross-out test on every line the list sorts.',
+                'A word list is a first pile, not the answer: "Show the cost of each request" is something users can watch it do, yet it holds the word cost. Ask "watch it or measure it?" of every line the list sorts.',
             ],
         ],
         machine=machine(bins=['functional', 'non_functional'], who=['what it must do', 'how well it must do it'], label_field='id'),
@@ -657,8 +660,8 @@ lesson(MODULE, 'well_architected',
                              pillar('Cost Optimization', 'coin', 'What makes the bill grow?', short='Cost'),
                              pillar('Operational Excellence', 'eye', 'Would you notice it going wrong, and can you test and release changes safely?', short='Operations'),
                              pillar('Performance Efficiency', 'gauge', 'Does it stay fast at the busiest minute?', short='Performance'))),
-        card('Your bars go on the pillars',
-             'Your non-functional requirements are the pillars\' targets: each bar from the last lesson answers one pillar\'s question. A pillar with nothing on it is a question nobody has answered yet.',
+        card('Requirements rest on the pillars',
+             'Your non-functional requirements are the pillars\' targets: each one from the last lesson answers one pillar\'s question. A pillar with nothing on it is a question nobody has answered yet.',
              picture=pillars('HR assistant',
                              pillar('Reliability', 'power', 'So the review\'s first question is: what does the assistant do when the model is down?', open=True),
                              pillar('Security', 'lock', 'R4: personal data stays in the EU.', chips=['R4 EU']),

@@ -163,7 +163,7 @@ one plain question, three or so options, a plain line for each wrong one, a clue
 the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
 The Python exercise stays one tap away ("Rather write it in Python?"). After practice, the Explain
 step describes what the learner did, not the Python they didn't see: `practice(pattern=...)` is the
-heading under "How you worked it out" (the way of thinking, like "Cross it out: job or bar?"),
+heading under "How you worked it out" (the way of thinking, like "Watch it, or measure it?"),
 `explain=` the big idea, and `realworld=` the "Where you'll use this" line. `gotchas=` replaces the
 exercise's gotchas in practice mode when some only make sense in code. A test checks every practice
 lesson has a pattern and a realworld line with no code words in them. A `fix(...)` question is **Fix the YAML**: the learner edits a
@@ -206,7 +206,8 @@ in card text (`text`, `after` and `note` all go through `withTrust`).
 
 | Picture | Made with | Draws |
 |---|---|---|
-| Two piles | `piles(pile(title, items, sub=, look=), pile(...), key=)` | Two columns of tiles, like jobs and bars |
+| Two piles | `piles(pile(title, items, sub=, look=), pile(...), key=)` | Two columns of tiles, like functional and non-functional |
+| Sort by a question | `sortby(question, sortrow(text, answer, verdict, look=, icon=), ...)` | The same question asked of each thing, its answer, and the pile it lands in |
 | Cross-out test | `crossout(struck(text, then, verdict, look=, icon=), ...)` | A line struck through, what's lost, what that makes it |
 | Cut a sentence | `split([part, part], [tile(...), ...])` | A sentence cut with scissors, then the lines it becomes |
 | Vague to checkable | `rewrite(("fast", "under 5 seconds"), ...)` | Each vague word crossed out and rewritten |
@@ -218,7 +219,8 @@ Two kinds of thing are told apart by **shape**, never a new colour: `look="solid
 tile) and `look="dashed"` (a ruler-edged tile). Icons are names from the page's sprite (`i-...`);
 a test fails if a card names one the page doesn't have. Keep to one idea per card, two to seven
 cards, with the same example running through them (lesson 1.3 uses a food delivery app, then the
-HR assistant; 1.4 puts the HR assistant's bars on the pillars).
+HR assistant; 1.4 puts the HR assistant's non-functional requirements on the pillars). Use the real
+terms on the cards themselves, never a made-up shorthand for them.
 
 **Cards or a diagram?** A [lesson diagram](#lesson-diagrams) adds one picture to Learn paragraphs,
 drawn from the lesson's example: right when one shape (a tree, a flow, a chart) carries the idea.

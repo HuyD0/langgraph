@@ -9,6 +9,8 @@ const pcStruck = s => `<s><span class="pc-vh">Crossed out: </span>${esc(s)}</s>`
 const PC_PIC = {
   piles: p => `<div class="pc-piles">${p.piles.map(c => `<div class="pc-pile"><div class="pc-ph"><b>${esc(c.title)}</b>${c.sub ? `<span>${esc(c.sub)}</span>` : ""}</div>${c.items.map(pcTile).join("")}</div>`).join("")}</div>
     ${p.key.length ? `<div class="pc-key">${p.key.map(([look, label]) => `<span><i class="${look}" aria-hidden="true"></i>${esc(label)}</span>`).join("")}</div>` : ""}`,
+  // the same plain question asked of each row; the answer says why it lands where it does
+  sortby: p => `<p class="pc-ask">${md(p.question)}</p>` + p.rows.map(r => `<div class="pc-row"><b class="pc-thing">${esc(r.text)}</b><p class="pc-then">${ic(r.icon)}<span>${md(r.then)}</span></p><span class="pc-verdict ${r.look}">${esc(r.verdict)}</span></div>`).join(""),
   crossout: p => p.rows.map(r => `<div class="pc-row">${pcStruck(r.text)}<p class="pc-then">${ic(r.icon)}<span>${md(r.then)}</span></p><span class="pc-verdict ${r.look}">${esc(r.verdict)}</span></div>`).join(""),
   split: p => `<div class="pc-strip">${p.parts.map((s, i) => `${i ? `<span class="pc-cut" aria-label="cut here">${ic("scissors")}</span>` : ""}<span class="pc-part">${esc(s)}</span>`).join("")}</div>
     <div class="pc-into">${p.into.map(pcTile).join("")}</div>`,
