@@ -51,3 +51,16 @@ def test_mcnemar_counts_only_the_disagreements():
     # the course's example: the challenger wins 12, loses 8 of 20 disagreements: too close to call
     assert round(tpe.mcnemar(12, 8), 3) == 0.503
     assert tpe.mcnemar(15, 2) < 0.01 and tpe.mcnemar(0, 0) == 1.0
+
+
+def test_the_sample_keeps_every_reference_failure_and_spreads_the_rest():
+    rows = [{"inputs": {"lesson_id": f"l{i}", "key": "learn:term", "phase": ["Frame", "Ship"][i % 2], "kind": "term"},
+             "expectations": {"reference_pass": i % 10 != 0}} for i in range(100)]
+    picked = tpe.stratified_sample(rows, 30)
+    assert sum(not r["expectations"]["reference_pass"] for r in picked) == 10  # all ten failures
+    assert {r["inputs"]["phase"] for r in picked if r["expectations"]["reference_pass"]} == {"Frame", "Ship"}
+    assert picked == tpe.stratified_sample(rows, 30)  # the same sample every time
+    s = tpe.summary([{"verdict": {"pass": False, **{c: True for c in tpe.CHECKS}}, "reference": {"reference_pass": False}}] * 9
+                    + [{"verdict": {"pass": True, **{c: True for c in tpe.CHECKS}}, "reference": {"reference_pass": True}}] * 20,
+                    {"failed": 10, "passed": 990})
+    assert s["catch_rate"] == 1.0 and s["keep_rate"] == 1.0 and s["weighted_agreement"] == 1.0

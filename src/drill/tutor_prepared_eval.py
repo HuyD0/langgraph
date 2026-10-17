@@ -185,6 +185,23 @@ def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
     return rows
 
 
+def stratified_sample(rows: list[dict], n: int) -> list[dict]:
+    """``n`` answers for tuning the judge: every answer the reference judge failed (they are rare, and the
+    point is to see whether this judge catches them), then passed answers shared out across phase and kind
+    in proportion, picked in hash order so the same sample comes back every time."""
+    failed = [r for r in rows if not r["expectations"]["reference_pass"]]
+    passed = [r for r in rows if r["expectations"]["reference_pass"]]
+    want = max(0, n - len(failed))
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for r in passed:
+        groups.setdefault((r["inputs"]["phase"], r["inputs"]["kind"]), []).append(r)
+    chosen: list[dict] = []
+    for _, items in sorted(groups.items()):
+        items.sort(key=lambda r: hashlib.sha256(f"{r['inputs']['lesson_id']}/{r['inputs']['key']}".encode()).hexdigest())
+        chosen += items[:round(want * len(items) / max(1, len(passed)))]
+    return failed + chosen
+
+
 def strata(rows: list[dict]) -> dict[tuple[str, str], dict[str, int]]:
     """How many answers of each (phase, kind) land in each split: every cell should be filled."""
     out: dict[tuple[str, str], dict[str, int]] = {}
@@ -216,7 +233,8 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
     return ds
 
 
-def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0) -> dict:
+def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0,
+             sample: int = 0) -> dict:
     """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers."""
     import mlflow
     from mlflow.entities import AssessmentSource, Feedback, SpanType  # noqa: F401
@@ -249,6 +267,12 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     datasets = {sp: dataset(mlflow, experiment.experiment_id, [r for r in every if split_of(r["inputs"]["lesson_id"]) == sp], commit, sp)
                 for sp in SPLITS}  # all three kept up to date; only ``split`` is judged
     rows = [r for r in every if split_of(r["inputs"]["lesson_id"]) == split]
+    population = {"failed": sum(not r["expectations"]["reference_pass"] for r in rows), "passed": sum(r["expectations"]["reference_pass"] for r in rows)}
+    eval_name = f"tutor_prepared_{split}"
+    if sample:  # its own registered dataset, so the next judge version is scored on exactly these answers
+        rows = stratified_sample(rows, sample)
+        eval_name = f"tutor_prepared_{split}_sample"
+        datasets[eval_name] = dataset(mlflow, experiment.experiment_id, rows, commit, f"{split}_sample")
     seen: list[dict] = []
     lock = threading.Lock()
     prompts = register_prompts(mlflow)
@@ -316,7 +340,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "draft_models": ",".join(draft_models), "judge_model": judge_model, "reference_judge": tp.JUDGE_MODEL,
             "draft_prompt": f"{prompts['tutor_prepared_draft'].name}/{prompts['tutor_prepared_draft'].version}",
             "judge_prompt": f"{prompts['tutor_prepared_judge'].name}/{prompts['tutor_prepared_judge'].version}",
-            "dataset": mlflow_names.dataset_name(f"tutor_prepared_{split}"), "split": split, "records": len(rows),
+            "dataset": mlflow_names.dataset_name(eval_name), "split": split, "records": len(rows), "sample": sample or "all",
             "split_rule": "lessons dealt 60/20/20 within each phase, frozen in prepared_splits.json", "git_commit": commit,
             "strata_missing": len(empty), "kappa_gate": KAPPA_GATE, "app_model": getattr(model, "name", ""),
             "price_per_mtok": "{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?"))),
@@ -326,7 +350,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         # The records are read out of the split's dataset, and the run names that dataset and its digest:
         # the exact version scored. (Handing evaluate() the dataset object itself hangs on a local MLflow
         # server after a few rows; its records as a list do not.)
-        ds = datasets[split]
+        ds = datasets.get(eval_name, datasets[split])
         mlflow.log_params({"dataset_id": ds.dataset_id, "dataset_digest": ds.digest})
         data_in = [{"inputs": r["inputs"], "expectations": r["expectations"]} for r in ds.to_df()[["inputs", "expectations"]].to_dict("records")]
         if limit:
@@ -334,7 +358,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             mlflow.set_tag("limited", str(limit))
         result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules],
                                        model_id=getattr(model, "model_id", None))
-        numbers = summary(seen)
+        numbers = summary(seen, population)
         u = chat.usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
         numbers.update({"judge_rate_limited": float(u["rate_limited"]), "judge_calls": float(u["calls"]), "judge_input_tokens": float(u["input_tokens"]),
                         "judge_output_tokens": float(u["output_tokens"]), "judge_seconds": float(u["seconds"]),
@@ -354,10 +378,24 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 
 
-def summary(seen: list[dict]) -> dict[str, float]:
-    """The pass rate with its interval, and the judge's agreement with the reference judge (kappa and raw)."""
+def summary(seen: list[dict], population: dict[str, int] | None = None) -> dict[str, float]:
+    """The pass rate with its interval, and the judge's agreement with the reference judge (kappa and raw).
+
+    With a stratified sample, failures are over-represented on purpose, so the headline numbers are split by
+    the reference verdict: ``catch_rate`` (of the answers the reference failed, the share this judge failed
+    too) and ``keep_rate`` (of those it passed, the share this judge passed too), each with its interval, and
+    ``weighted_agreement``, the two re-weighted to the split's real mix (``population``)."""
     out: dict[str, float] = {}
     n = len(seen)
+    ref_failed = [s for s in seen if not s["reference"].get("reference_pass")]
+    ref_passed = [s for s in seen if s["reference"].get("reference_pass")]
+    for name, items, want in (("catch", ref_failed, False), ("keep", ref_passed, True)):
+        rate, low, high = wilson(sum(s["verdict"]["pass"] == want for s in items), len(items))
+        out.update({f"{name}_rate": rate, f"{name}_ci_low": low, f"{name}_ci_high": high, f"{name}_n": float(len(items))})
+    if population and sum(population.values()):
+        total = sum(population.values())
+        out["weighted_agreement"] = (out["catch_rate"] * population["failed"] + out["keep_rate"] * population["passed"]) / total
+        out["population_failed_share"] = population["failed"] / total
     for check in ("pass", *CHECKS):
         mine = [s["verdict"][check] for s in seen]
         ref = [bool(s["reference"].get("reference_pass" if check == "pass" else f"reference_{check}")) for s in seen]

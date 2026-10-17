@@ -599,6 +599,7 @@ def tutor_prepared_eval_cmd(
     split: str = typer.Option("dev", "--split", help="dev (tune here), test (before a release) or holdout (big decisions only)."),
     holdout_ok: bool = typer.Option(False, "--yes-holdout", help="Confirm a holdout run: once you change things because of it, it is no longer a holdout."),
     workers: int = typer.Option(4, "--workers", help="Answers judged at the same time (the workspace limits tokens per minute)."),
+    sample: int = typer.Option(0, "--sample", help="A stratified sample of this many (every reference failure, the rest spread by phase and kind); 0: the whole split."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os
@@ -613,12 +614,17 @@ def tutor_prepared_eval_cmd(
         console.print("[red]The holdout is for big decisions only. Add --yes-holdout if this is one.[/red]")
         raise typer.Exit(1)
     console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
-    result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers)
+    result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample)
     n = result["numbers"]
     console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
     if result["strata_missing"]:
         console.print(f"[yellow]Strata missing from a split: {', '.join(result['strata_missing'][:8])}[/yellow]")
-    console.print(f"  Pass rate: {n['passes_rate']:.1%} (95% interval {n['passes_ci_low']:.1%} to {n['passes_ci_high']:.1%})")
+    console.print(f"  Catches the reference's failures: {n['catch_rate']:.1%} of {n['catch_n']:.0f} ({n['catch_ci_low']:.0%} to {n['catch_ci_high']:.0%})")
+    console.print(f"  Keeps the reference's passes: {n['keep_rate']:.1%} of {n['keep_n']:.0f} ({n['keep_ci_low']:.0%} to {n['keep_ci_high']:.0%})")
+    if "weighted_agreement" in n:
+        console.print(f"  Agreement re-weighted to the split's real mix: {n['weighted_agreement']:.1%}")
+    console.print(f"  Pass rate in this sample: {n['passes_rate']:.1%} (95% interval {n['passes_ci_low']:.1%} to {n['passes_ci_high']:.1%})")
+    console.print(f"  Cost: ${n['judge_cost_usd']:.2f} at list price ({n['judge_calls']:.0f} calls, {n['judge_rate_limited']:.0f} rate-limited)")
     console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
     for check in tpe.CHECKS:
         console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
