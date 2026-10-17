@@ -80,7 +80,7 @@ function hzScene(svg, from, to, t) {
 const HZ_AT = [[374, 94, .42], [318, 98, .56], [200, 102, .72], [200, 102, .78], [200, 100, .6], [300, 102, .44]];
 // hp: share of the phase's lessons still to do (1 = untouched, 0 = phase finished).
 function hzCurse(i, hp) {
-  if (hp <= 0) return hzShards(HZ_AT[i][0], HZ_AT[i][1] - 30) + `<ellipse cx="${HZ_AT[i][0]}" cy="${HZ_AT[i][1] + 2}" rx="18" ry="2.5" class="stain"/>`;
+  if (hp <= 0) return `<ellipse cx="${HZ_AT[i][0]}" cy="${HZ_AT[i][1] + 2}" rx="18" ry="2.5" class="stain"/>`;
   const [x, y, s] = HZ_AT[i];
   return hzSpirit(x, y, s * (.75 + .25 * hp), hp) + (i === 1 ? `<path class="bind" d="M292 70 L344 84 M294 86 L342 68"/>` : "");
 }
@@ -187,7 +187,7 @@ function hzDriftStack(cx, base, sc, hp) {
 }
 function hzTrackCurse(hp) {
   const [x, y, sc] = HZ_TRACK_AT;
-  const foe = hp <= 0 ? hzShards(x, y - 30) + `<ellipse cx="${x}" cy="${y + 2}" rx="18" ry="2.5" class="stain"/>` : hzDriftStack(x, y, sc * (.75 + .25 * hp), hp);
+  const foe = hp <= 0 ? `<ellipse cx="${x}" cy="${y + 2}" rx="18" ry="2.5" class="stain"/>` : hzDriftStack(x, y, sc * (.75 + .25 * hp), hp);
   return foe + hzSorcerer(HZ_HERO_X, 96, x, y - 30 * sc, 1 - hp);
 }
 
@@ -198,15 +198,34 @@ function horizonHtml(i, done, total) {
 }
 // Fill the banner after the room is drawn; with `from`, the hills, sun and landmark morph from that phase.
 let hzRaf = 0;
+// Finishing a room: the first time you see it finished, the hero takes his finishing stance (pose 4, at full
+// power), charges at his hand, and fires a blast that fills the banner; a flash where the spirit stood, the
+// spirit breaks apart, then the room settles to its finished look. Once per room, remembered on this device
+// (drill-hz-won). `hero` is his finishing-stance drawing for this room.
+const hzWon = () => { try { return JSON.parse(store.get("drill-hz-won") || "[]"); } catch { return []; } };
+function horizonFinale(band, key, [tx, ty], hero) {
+  const won = hzWon(); if (won.includes(key)) return;
+  store.set("drill-hz-won", JSON.stringify([...won, key]));
+  const cu = band.querySelector("svg.cu"), old = cu.querySelector && cu.querySelector(".hero");
+  if (old) old.remove();
+  const [, hx, hy] = hero.match(/class="h-beam" d="M([\d.]+),([\d.]+)/) || [0, 30, 60];
+  cu.insertAdjacentHTML("beforeend", `<g class="fin">${hero}<circle class="charge" cx="${hx}" cy="${hy}" r="9"/>`
+    + `<path class="blast" d="M${hx},${hy} L${tx},${ty}"/><path class="blast hi" d="M${hx},${hy} L${tx},${ty}"/>`
+    + `<circle class="burst" cx="${tx}" cy="${ty}" r="34"/><g class="shards">${hzShards(tx, ty)}</g></g>`);
+  band.classList.add("finale");
+  if (typeof document !== "undefined") setTimeout(() => { band.classList.remove("finale"); horizonDraw(); }, 3000);
+}
 function horizonDraw(from) {
   for (const t of document.querySelectorAll('.horizon[data-hz="t"]')) {
     const [base, cu, en] = t.querySelectorAll("svg"), hp = +t.dataset.hp;
     hzTrackScene(base, hp); cu.innerHTML = hzTrackCurse(hp); en.innerHTML = HZ_TRACK_ENERGY;
+    if (hp <= 0) { const tg = [HZ_TRACK_AT[0], HZ_TRACK_AT[1] - 30 * HZ_TRACK_AT[2]]; horizonFinale(t, "t", tg, hzSorcerer(HZ_HERO_X, 96, ...tg, 1, 4)); }
   }
   const band = document.querySelector(".phasebox .horizon"); if (!band) return;
   const [base, cu, en] = band.querySelectorAll("svg"), i = +band.dataset.hz, hp = +band.dataset.hp;
   cancelAnimationFrame(hzRaf);
   cu.innerHTML = hzCurse(i, hp) + hzHero(i, hp); en.innerHTML = HZ_ENERGY[i];
+  if (hp <= 0) horizonFinale(band, "p" + i, hzTarget(i), hzSorcerer(HZ_HERO_X, hzGround(i, HZ_HERO_X), ...hzTarget(i), 1, 4));
   if (from == null || from === i) { hzScene(base, i, i, 1); return; }
   const t0 = performance.now(), D = 650;
   fxMove(cu, [{ opacity: 0 }, { opacity: 0, offset: .5 }, { opacity: 1 }], "--dur-slide");
