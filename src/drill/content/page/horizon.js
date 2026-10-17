@@ -108,8 +108,11 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
   const collar = `<path class="ol" d="${P([[-3.4, -53.2], [3.4, -53.2], [4, -48.8], [0, -47.8], [-4, -48.8]])}"/><circle class="btn" cx="${X(0)}" cy="${Y(-50)}" r="${Z(.9)}"/>`;
   const head = `<ellipse class="skin" cx="${X(0)}" cy="${Y(-56.6)}" rx="${Z(3.2)}" ry="${Z(3.9)}"/>`
     + `<path class="smile" d="M${X(-1.2)},${Y(-54.2)} q${Z(1.2)},${Z(.9)} ${Z(2.4)},${Z(-.2)}"/>`;
-  const band = `<path class="band" d="${P([[-3.5, -58.8], [3.5, -58.8], [3.4, -56.2], [-3.4, -56.2]])}"/>`;
-  // with the blindfold pushed up: two blue eyes (h-eye, never "eye", which is the spirit's)
+  // in the calm stage his hand lifts one side of the blindfold, and one eye glows under it
+  const band = stage === 0
+    ? `<circle class="h-eye-blue" cx="${X(1.6)}" cy="${Y(-57.4)}" r="${Z(.9)}"/><path class="band" d="${P([[-3.5, -58.8], [3.7, -60.8], [3.8, -58.4], [-3.4, -56.2]])}"/>`
+    : `<path class="band" d="${P([[-3.5, -58.8], [3.5, -58.8], [3.4, -56.2], [-3.4, -56.2]])}"/>`;
+  // with the blindfold pushed up: two glowing blue eyes (h-eye-blue, never "eye", which is the spirit's)
   const bandUp = `<path class="band up" d="${P([[-3.9, -62.2], [3.7, -61.2], [3.7, -59.6], [-3.9, -60.6]])}"/>`;
   const eyesOpen = [-1.4, 1.5].map(a => `<circle class="h-eye-blue" cx="${X(a)}" cy="${Y(-57.4)}" r="${Z(.95)}"/><circle class="h-eye-core" cx="${X(a)}" cy="${Y(-57.4)}" r="${Z(.38)}"/>`).join("");
   const hair = `<path class="hair" d="${P([[-3.6, -58.4], [-6.6, -59.2], [-4.8, -60.6], [-6.8, -62.8], [-3.8, -62.4], [-3.8, -65.4], [-1.4, -63], [0, -66.4], [1.4, -63], [3.8, -65.4], [3.8, -62.4], [6.8, -62.8], [4.8, -60.6], [6.6, -59.2], [3.6, -58.4]])}"/>`;
@@ -121,8 +124,8 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
   const palm = (a, b, s) => `<path class="skin" d="M${X(a - 1.2 * s)},${Y(b - 1)} l${Z(2.4 * s)},${Z(-.4)} l${Z(1.4 * s)},${Z(3.2)} l${Z(-.6 * s)},${Z(.4)} l${Z(-.6 * s)},${Z(-1.4)} l${Z(.2 * s)},${Z(2.4)} l${Z(-.8 * s)},${Z(.2)} l${Z(-.6 * s)},${Z(-2.2)} l${Z(-.6 * s)},${Z(1.8)} l${Z(-.7 * s)},${Z(-.3)}Z"/>`;
   // [arms behind the head, hands in front of it, where the energy leaves him]
   const STAGE = [
-    [arm([[7, -47.4], [12.4, -51.6], [5.4, -57]]) + arm([[-7, -47.4], [-8.6, -38], [-8.4, -30]]), fist(4.6, -57.4, 1.6) + fist(-8.4, -29.2), [5, -58]],
-    [arm([[7, -47.4], [9.4, -40], [2.4, -42.4]]) + arm([[-7, -47.4], [-8.6, -40], [-1.6, -41.4]]), fist(-1, -42.2, 1.6) + sign(.4, -42.6), [1.4, -50]],
+    [arm([[7, -47.4], [12.6, -53], [5.6, -59.4]]) + arm([[-7, -47.4], [-8.6, -38], [-8.4, -30]]), fist(4.8, -60, 1.6) + fist(-8.4, -29.2), [5, -61]],
+    [arm([[7, -47.4], [9.8, -41], [2, -48.4]]) + arm([[-7, -47.4], [-8.8, -41], [-1.2, -46.6]]), fist(-.6, -47.2, 1.5) + sign(.1, -48.6), [1.2, -56]],
     [arm([[7, -47.4], [12.4, -39], [16.4, -32]]) + arm([[-7, -47.4], [-12.4, -39], [-16.4, -32]]), palm(16.6, -31, 1) + palm(-16.6, -31, -1), [17.4, -28.6]],
   ][stage];
   const hx = +X(STAGE[2][0]), hy = +Y(STAGE[2][1]);
@@ -135,12 +138,13 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
   const field = [
     [12, 18, 24].map((r, k) => `<circle class="h-ring" cx="${X(0)}" cy="${Y(-56)}" r="${Z(r * R)}" style="--d:${-k * .9}s"/>`).join("")
       + [[-17, -60], [21, -48], [-11, -38]].map(([a, b]) => `<circle class="h-dot" cx="${X(a)}" cy="${Y(b)}" r="${Z(.7)}"/>`).join(""),
-    `<circle class="h-sphere" cx="${C[0]}" cy="${C[1]}" r="${Z(25 * R)}"/>` + ring(0, "", 22, 7, -16, -8) + ring(1, " c", 24, 6, -10, -6) + ring(2, " r", 26, 8, 16, 6)
-      + HZ_SKY.slice(0, 10).map(([a, b]) => `<circle class="h-dot" cx="${X(a * 14 + 4)}" cy="${Y(b * 8 - 40)}" r="${Z(.4)}"/>`).join(""),
-    `<circle class="h-dom" cx="${C[0]}" cy="${C[1]}" r="${Z(30 * R)}"/><circle class="h-dom v" cx="${C[0]}" cy="${C[1]}" r="${Z(36 * R)}"/>`
+    `<circle class="h-sphere" cx="${C[0]}" cy="${C[1]}" r="${Z(27 * R)}"/>` + ring(0, " y", 22, 6.5, -14, -12) + ring(1, " y", 25, 7.5, -8, -9) + ring(2, " r", 29, 9, 16, 6)
+      + HZ_SKY.slice(0, 14).map(([a, b]) => `<circle class="h-dot y" cx="${X(a * 16 - 6)}" cy="${Y(b * 9 - 40)}" r="${Z(.45)}"/>`).join(""),
+    `<circle class="h-dom" cx="${C[0]}" cy="${C[1]}" r="${Z(30 * R)}"/><circle class="h-dom in" cx="${C[0]}" cy="${C[1]}" r="${Z(24 * R)}"/><circle class="h-dom v" cx="${C[0]}" cy="${C[1]}" r="${Z(36 * R)}"/>`
       + HZ_SKY.map(([a, b, r]) => `<circle class="h-dot" cx="${X(a * 28)}" cy="${Y(b * 28 - 34)}" r="${Z(r)}"/>`).join("")
       + galaxy(-18, -50, 0) + galaxy(19, -46, 1) + galaxy(18, -16, 2)
-      + [[11, 2, ""], [16, 3.2, " c"], [21, 4.4, " v"]].map(([rx, ry, c], k) => `<ellipse class="h-floor${c}" cx="${X(0)}" cy="${Y(-.6)}" rx="${Z(rx * R)}" ry="${Z(ry * R)}" pathLength="1" style="--d:${-k * .6}s"/>`).join("")
+      + [-1, 1].map(s => `<ellipse class="swirl y" cx="${X(17 * s)}" cy="${Y(-29)}" rx="${Z(7)}" ry="${Z(2.2)}" transform="rotate(${-16 * s} ${X(17 * s)} ${Y(-29)})" pathLength="1"/><ellipse class="swirl b" cx="${X(16 * s)}" cy="${Y(-27)}" rx="${Z(10)}" ry="${Z(3)}" transform="rotate(${-12 * s} ${X(16 * s)} ${Y(-27)})" pathLength="1" style="--d:-.7s"/>`).join("")
+      + [[9, 1.8, ""], [14, 2.8, " v"], [19, 3.8, ""], [24, 4.8, " v"]].map(([rx, ry, c], k) => `<ellipse class="h-floor${c}" cx="${X(0)}" cy="${Y(-.6)}" rx="${Z(rx * R)}" ry="${Z(ry * R)}" pathLength="1" style="--d:${-k * .6}s"/>`).join("")
       + ring(0, " b", 23, 6, 14, 10),
   ][stage];
   // the phase's touch, from the hand
@@ -160,7 +164,7 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
   // unveiled (the learner tapped him): the aura flares to full whatever the progress
   const au = k => `class="h-aura${unveiled ? " mix" : ""}" opacity="${unveiled ? 1 : (k + (1 - k) * power).toFixed(2)}"`;
   return `<g class="hero${unveiled ? " awake" : ""}" data-pose="${pose}" data-stage="${stage}"><g ${au(.4)}>${field}</g>${orb}<g ${au(.4)}>${tech}</g>`
-    + `<g class="h-body">${leg(-1)}${leg(1)}${coat}${STAGE[0]}${collar}${head}${unveiled ? eyesOpen : band}${hair}${unveiled ? bandUp : ""}${STAGE[1]}</g><g ${au(.5)}>${sparks}</g>${beam}</g>`;
+    + `<g class="h-body">${leg(-1)}${leg(1)}${coat}${STAGE[0]}${collar}${head}${unveiled ? eyesOpen : band}${hair}${unveiled ? bandUp : ""}${STAGE[1]}</g><g ${au(.5)}>${sparks}${stage === 2 ? HZ_SKY.slice(0, 14).map(([a, b]) => `<circle class="h-dot" cx="${X(a * 6)}" cy="${Y(b * 11 - 38)}" r="${Z(.32)}"/>`).join("") : ""}</g>${beam}</g>`;
 }
 const HZ_HERO_X = 30;
 const hzGround = (i, x) => { const a = HZ[i].a, k = Math.min(7, Math.floor(x / 50)), f = (x - k * 50) / 50; return a[k] + (a[k + 1] - a[k]) * f; };
@@ -270,18 +274,21 @@ function horizonStrike(band, ev) {
 // ---------- the hero beside the help (outside the banner)
 // His portrait sits beside the boxes that already exist: the clue (blindfolded), the verdict, and the answer
 // (blindfold up, his eyes showing). He says nothing of his own: the box beside him keeps the lesson's words.
-// The portrait is drawn on its own, close up: a tall dark collar over the chin with a round button, a narrow
-// face, angular white hair. A blindfold for a clue or a verdict; for the answer it's gone and his eyes glow.
+// The portrait is drawn on its own, close up, in the banner hero's glowing outline: dark shoulders with a blue
+// rim, a tall collar over the chin with a round button, an oval face, glowing spiky white hair. A blindfold for
+// a clue or a verdict; for the answer it's gone and his eyes glow blue (the banner's h-eye-blue, never "eye").
 function hzFace(mood) {
   const P = pts => "M" + pts.map(([x, y]) => `${x},${y}`).join(" L") + "Z";
-  const coat = `<path class="coat" d="M-2,60 L1,47 Q5,41 14,39 L38,39 Q47,41 51,47 L54,60Z"/>`;
-  const face = `<path class="skin" d="M17,33 V16 Q17,11 22,11 H30 Q35,11 35,16 V33Z"/>`;
-  const collar = `<path class="coat" d="M13,50 L15,31 L37,31 L39,50 Q26,54 13,50Z"/><path class="seam" d="M13,50 Q26,54 39,50 M26,44.6 V60"/><circle class="btn" cx="26" cy="42" r="2.6"/>`;
-  const hair = `<path class="hair" d="${P([[8, 15], [12, 9], [5, 5], [18, 6], [21, 0], [27, 5], [35, -1], [37, 6], [48, 2], [44, 9], [50, 13], [36, 15], [26, 13], [16, 15]])}"/>`;
+  const coat = `<path class="ol" d="M1,61 L3.5,51 Q7,44.5 16,42.5 L36,42.5 Q45,44.5 48.5,51 L51,61Z"/><path class="seam" d="M12,61 Q12.5,52 16,47 M40,61 Q39.5,52 36,47"/>`;
+  const face = `<ellipse class="skin" cx="18.2" cy="23.4" rx="1.3" ry="2.2"/><ellipse class="skin" cx="33.8" cy="23.4" rx="1.3" ry="2.2"/>`
+    + `<path class="skin" d="M18.6,18.6 L18.8,27 Q20,33.4 26,36.2 Q32,33.4 33.2,27 L33.4,18.6Z"/><path class="smile" d="M26.4,25.6 l-.7,2.6 l1,.2 M24,30.6 q2,1.3 4,-.1"/>`;
+  const collar = `<path class="ol" d="M15.6,53 L16.6,32.6 Q26,38.8 35.4,32.6 L36.4,53 Q26,56 15.6,53Z"/><path class="seam" d="M26,36.8 V61"/><circle class="btn" cx="26" cy="44" r="2.1"/>`;
+  // a crown of upward spikes, a little wider than the face, the fringe dipping over the forehead
+  const hair = `<path class="hair" d="${P([[17.4, 20.4], [13.2, 15.6], [16.4, 14.6], [12.2, 8.6], [17.4, 10], [16.8, 3.4], [21, 8], [23.4, .6], [26, 6.6], [28.6, .6], [31, 8], [35.2, 3.4], [34.6, 10], [39.8, 8.6], [35.6, 14.6], [38.8, 15.6], [34.6, 20.4], [32.6, 16.8], [29.6, 18.4], [26.8, 16.6], [24, 18.4], [21.2, 16.8], [19.2, 18.6]])}"/>`;
   const eyes = mood === "answer"
-    ? [21.9, 30.1].map(x => `<g class="h-eyes"><circle class="h-eye" cx="${x}" cy="22" r="3"/><circle class="h-glint" cx="${x}" cy="22" r="1.25"/></g>`).join("")
-    : `<path class="band" d="M15.5,19 H36.5 V25.4 H15.5Z"/>`;
-  const sparks = mood === "right" ? [[45, 22], [7, 30]].map(([x, y], k) => `<path class="spark" d="M${x},${y - 3} l1,3 l-1,3 l-1,-3Z" style="--d:${k * .4}s"/>`).join("") : "";
+    ? `<g class="h-eyes">${[22.4, 29.6].map(x => `<ellipse class="h-eye-blue" cx="${x}" cy="22.2" rx="2" ry="1.25"/><circle class="h-eye-core" cx="${x}" cy="22.2" r=".6"/>`).join("")}</g>`
+    : `<path class="band" d="M18,19.2 Q26,18 34,19.2 L33.9,24.8 Q26,23.8 18.1,24.8Z"/>`;
+  const sparks = mood === "right" ? [[45, 24], [7, 30]].map(([x, y], k) => `<path class="spark" d="M${x},${y - 3} l1,3 l-1,3 l-1,-3Z" style="--d:${k * .4}s"/>`).join("") : "";
   return `<span class="horizon hface ${mood}" aria-hidden="true"><svg class="cu" viewBox="0 0 52 60">${coat}${face}${eyes}${collar}${hair}${sparks}</svg></span>`;
 }
 const hzCoach = (mood, html) => `<div class="hcoach">${hzFace(mood)}${html}</div>`;
