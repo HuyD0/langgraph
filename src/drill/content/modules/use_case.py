@@ -293,7 +293,7 @@ Return a list of the gap field names, in the order above. A complete card gives 
         realworld='A use case card is the first page of most AI project proposals. Reviewers send it back when the success line has no number or nobody owns the decision.',
         practice=practice(
             intro='Review this use case card the way a reviewer does: go down the ten boxes and send back every gap.',
-            explain='The big idea: a use case card answers ten questions on one page, and a blank line, or a success line with no number, is an open question to settle before building. You went down the boxes in order, caught the missing owner and the blank wrong-answer line, and sent back a success line nobody could measure.',
+            explain='The big idea: a use case card answers ten questions on one page, and every box has to be filled before building: a missing box, a blank box, or a success line with no number is an open question. On the HR card you found no owner line at all, a success line that only said "faster", and a wrong-answer box the team wanted to leave blank. Each one goes back to the author.',
             pattern='Down the ten boxes, send back every gap',
             realworld='When a teammate shares a use case card for review, go box by box and send back every gap in one reply. The two you\'ll send back most often: a success line with no number, and no owner.',
             asks=[
@@ -731,7 +731,7 @@ Build a list of lines, then return them joined with `"\\n"`:
         realworld='Teams increasingly draft design reviews with a model and then check them. The quality of the draft comes from the prompt: full context, one question at a time, and rules against guessing.',
         practice=practice(
             intro='Run a well-architected review of the HR assistant: put each question under its pillar, weigh what a fix costs, then brief a model and check its draft against the card.',
-            explain='The big idea: the pillars are five questions to ask of every design, and they pull against each other. You put the busiest minute under Performance, wrote down what a second copy costs, made the blank owner visible to the model, struck its go-ahead, and trusted a finding only because it quoted a line you could check.',
+            explain='The big idea: the five pillars are five questions to ask of every design, and they pull against each other, so a review writes down each trade and who chose it. Running two copies of the assistant helps Reliability and doubles the bill. When a model drafts the review, it gets the whole card, with "not written" in any blank box, and it drafts findings only: the "safe to build" line is a person\'s call, and a finding counts when it quotes a line you can find on the card.',
             pattern='Five questions, then a person decides',
             realworld='Architecture reviews at work use these pillar names. Bring your requirements sorted under them; the empty pillar is your first question.',
             asks=[
@@ -954,7 +954,7 @@ Decide like this:
         realworld='Pilots are usually judged go, fix or stop against bars agreed up front. Writing the rule in code keeps the decision the same however the results make people feel.',
         practice=practice(
             intro='Judge four pilots against the bars agreed before they started: go, fix or stop.',
-            explain='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. You stopped a pilot with great averages because a must-pass case failed, gave one close miss a fix, called a result that met every bar exactly a go, and kept the cost bar where it was agreed.',
+            explain='The big idea: decide fit for purpose against bars written down before the trial, and a failed must-pass case is an automatic stop. Pilot 1 had great averages and one must-pass failure: stop. Pilot 2 missed only speed, by half a second: fix and retest. Pilot 3 met every bar exactly: go, because meeting a bar is meeting it. Pilot 4 was $1 over the cost bar, and raising the bar to fit it would be deciding after the result.',
             pattern='Must-pass first, then the agreed bars',
             realworld='At the end of a pilot you\'ll be in the go, fix or stop meeting. Check the must-pass cases first, then each bar exactly as it was written before the trial, so the call stays the same however the results feel.',
             asks=[

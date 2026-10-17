@@ -56,6 +56,9 @@ Steps:
    each lesson's four steps, and each tour's boxes line up with what they describe.
 7. Read every lesson as a beginner would: plain words, no unexplained acronyms, no step that
    assumes knowledge the lesson didn't give. Fix what fails.
+   Read each Explain recap on its own, a day later: it must name the examples it refers to, not
+   just the moves ("you split a sentence" says nothing; "you pulled 'within 5 seconds' out of the
+   time-off line" does).
 8. When I approve a lesson, set it to `ready`. `app.yaml` already points `DRILL_CONTENT_PACKS` at
    `content-packs/internal`, so don't edit it: commit the pack and deploy with
    `uv run drill cloud deploy --target work` (or `./scripts/port-to-workspace.sh`).
