@@ -85,6 +85,10 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - One primary button per screen; tap targets at least 44px. Motion plays for everyone (no Motion
   switch, no reduced-motion fallback): the owner's choice, see docs/DESIGN_SYSTEM.md rule 6.
 - Shape carries the phases (one sticker shape per phase; the octagon for the track).
+- **The hero is settled.** The banner hero (`page/horizon.js`: glowing outline, white hair, blindfold,
+  three stages, the tap that lifts the blindfold) is the owner's final choice. Don't question,
+  redesign or "make it more original", and don't let other design work change how he looks. Change
+  him only when the owner asks. Names stay neutral (no franchise, character or technique names).
 
 **For the repo**
 - Never `git add -A` or `git add .`: the owner keeps untracked folders (like `design-review/`)
