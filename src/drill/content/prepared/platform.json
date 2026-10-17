@@ -1,0 +1,948 @@
+{
+ "allocate_capacity": {
+  "check:0:1": {
+   "q": "Why not “The app that wanted 50,000”?",
+   "a": "\"The app that wanted 50,000\" is a sensible guess. Many sharing schemes do pass unused capacity to whoever is still hungry. That instinct is real. This plan just doesn't work that way.\n\nWalk through it. The two graduated apps split 60,000 evenly, so each can take up to 30,000. The first app wants only 10,000, so it takes 10,000. The second wants 50,000, but its share stops at 30,000. That leaves 20,000 unused.\n\nHere is the part the guess misses. The plan makes **one pass** over the graduated apps. Each gets its share or less, and that's it. Spare capacity is never offered to graduated apps a second time. So the 50,000 app stays at 30,000.\n\nWhy design it that way? It keeps one hungry graduated app from soaking up everything. It also gives the sandbox, the shared experiment space, a dependable source of leftovers.\n\n\"The sandbox tier\" is better because, in this plan, whatever graduated apps leave unused flows down to the next tier, never back up to them.",
+   "step": "Check",
+   "fingerprint": "79a1ba280c5db319",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer is sound. The only soft spot is the \"why design it that way\" paragraph, which is the tutor's own reasoning rather than something the lesson states, though it doesn't contradict the lesson."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nobody: they stay unused”?",
+   "a": "\"Nobody: they stay unused\" gets one thing right. The 20,000 does **not** go to the other graduated app. In this plan, graduated apps split what's left evenly. With 60,000 and two apps, each can take up to 30,000. The first wants 10,000, so it takes 10,000. The second wants 50,000, but it is capped at its 30,000 share. Spare capacity is never offered to graduated apps a second time. So the hungry app can't grab the leftover.\n\nWhat it misses is the last step of the plan: **whatever is still spare goes to the sandbox**. The sandbox is the shared experiment space, for example where team-sales tries a new agent idea before it graduates. So the 20,000 is not wasted. It flows down to the next tier. \"Unused\" would mean paid-for or available capacity sitting idle. A tier plan is designed to avoid exactly that.\n\nHere is the flow:\n\n```\n60,000 → graduated: 10,000 + 30,000 (capped)\nleftover 20,000 → sandbox tier\n```\n\n\"The sandbox tier\" is better because the plan always hands any capacity the higher tiers don't use down to the sandbox. It doesn't leave that capacity idle.",
+   "step": "Check",
+   "fingerprint": "e5d3de53e2614996",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “More capacity for the experiment”?",
+   "a": "\"More capacity for the experiment\" sounds helpful, but it fixes the wrong thing.\n\n**What it gets right:** the burst did run into a limit. If the experiment had more room of its own, this one weekend might have gone fine.\n\n**What it misses:** the help-center assistant didn't fail because the experiment was short on capacity. It failed because nothing decided **who comes first**. With no rule, whoever sends the biggest burst wins. Give the experiment more capacity and the next, bigger burst wins again. The help-center assistant is still unprotected, so it can still get error 429 (\"too many requests,\" meaning the service refused the call).\n\nIt also spends money in the wrong place. You'd be paying extra for the least important work while the app customers rely on gets no guarantee.\n\n**Why \"Tiers, with critical apps served first\" is better:** it settles the order ahead of time. The help-center assistant always gets what it needs first, graduated apps share the rest, and the sandbox (the shared experiment space) only gets what is spare, so no burst can push critical work aside.",
+   "step": "Check",
+   "fingerprint": "73fcdc3cfe442554",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Giving every app the same share”?",
+   "a": "\"Giving every app the same share\" gets one thing right. It stops a single burst from taking everything. The weekend experiment could no longer grab all the capacity.\n\nBut it treats every app as equally important. The help-center assistant that customers rely on gets the same slice as a weekend experiment. If its slice is smaller than what it needs, it still gets error 429 (\"too many requests\").\n\nTake the lesson's 60,000 tokens a minute. Say six apps share it equally. Each gets 10,000. The help-center wants 25,000, so most of its requests still fail. Equal shares only changed how the shortage is spread out. They never decided who should be protected.\n\nThe lesson's design also has equal splits, but only inside a tier. A tier is a group of apps with its own rule. Graduated apps split evenly with each other. They do that only after critical apps have been served.\n\n\"Tiers, with critical apps served first\" is better because it decides ahead of time that the help-center gets its full 25,000 before anyone else gets anything.",
+   "step": "Check",
+   "fingerprint": "5ce4030d0e4b61a3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “They fail with error 429”?",
+   "a": "\"They fail with error 429\" describes what *can* happen. Error 429 means \"too many requests\": the service is full and turns the request away. If the PTU deployment has no backup, that is exactly what the extra requests get. So the option isn't made up.\n\nBut it isn't what *should* happen. Provisioned throughput (reserved capacity, counted in PTUs) exists to protect your most important app. The busiest moment is when the most users are waiting. Failing then is the worst timing. You'd be paying every hour for reserved capacity and still letting `help-center` users see errors when it matters most.\n\nThe lesson's fix is spillover. In the Terraform, the `help-center-ptu` deployment sets `spilloverDeploymentName = \"help-center-paygo\"`. That names a pay-as-you-go deployment of the same model in the same resource. When the reserved capacity is full, the extra requests go there instead of being refused.\n\n\"Spillover sends them to pay-as-you-go\" is better because the critical app keeps answering at its peak, and you only pay extra for the overflow.",
+   "step": "Check",
+   "fingerprint": "e062674a30ff4545",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “They wait in line until later”?",
+   "a": "\"They wait in line until later\" gets one thing right: the extra requests shouldn't just be thrown away. Keeping them is better than dropping them.\n\nBut think about who sent them. This is the help-center assistant, a critical app with customers waiting on the other end. An answer that arrives \"later\" may come too late to help. And the busiest moments are exactly when the most customers are waiting. So the line grows just when you can least afford it.\n\nThe lesson's plan has no waiting step. The critical app gets reserved capacity, counted in PTUs (provisioned throughput units). That is capacity you pay for every hour, used or not. When it is full, you turn on spillover. A second deployment of the same model, billed per use (pay-as-you-go), takes the extra requests.\n\nIn the Terraform, that is this line in `help_center`:\n\n```hcl\nspilloverDeploymentName = \"help-center-paygo\"\n```\n\n\"Spillover sends them to pay-as-you-go\" is better because the extra requests get answered right away on capacity that is ready now, instead of leaving customers waiting.",
+   "step": "Check",
+   "fingerprint": "048b6463d43d457a",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "\"When it is full, you turn on spillover\" wrongly suggests you switch it on after the deployment fills, when the lesson says to turn it on ahead of time so overflow goes to pay-as-you-go automatically; \"ready now\" and \"right away\" also go beyond what the lesson says."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Give the sandbox its own deployment” matter?",
+   "a": "A **deployment** in Foundry is one named copy of a model with its own **quota**: the most tokens (small chunks of text) it accepts per minute. Every app that calls the same deployment shares that one limit.\n\nHere is what goes wrong when the sandbox has no deployment of its own. Say `team-sales` starts an **eval run** from its sandbox. An eval run is a test that sends hundreds of sample questions to score the model. The job is pointed at `help-center-paygo`, production's deployment. In a few minutes it sends a huge burst. The deployment can't tell which requests matter more. It just hits its limit. Customers using the help-center assistant now get error 429, \"too many requests\", until the eval finishes.\n\nNobody meant harm. But your tiers never get a chance to work, because everyone is drawing from one shared pool.\n\nGive the sandbox its own deployment, and it gets its own quota. Now a big eval only slows the sandbox down. Production keeps its tokens.\n\nA good habit: have the sandbox's config name the sandbox deployment, so experiments can't reach production by accident.",
+   "step": "Explain",
+   "fingerprint": "c578ecf07f011da4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Serve tiers in order of importance” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* When model capacity runs short, whoever sends the biggest burst wins. A weekend experiment can starve the help-center assistant, which then gets error 429 (\"too many requests\").\n\n*The idea.* Decide who comes first before that happens. Put each app in a tier, which is a group with its own rule. The tiers are critical, graduated and sandbox. Critical apps are served first. Graduated apps split what is left evenly, and none takes more than it asked for. The sandbox gets whatever is still spare.\n\n*A trade-off.* Once a critical app's traffic is steady, it moves to provisioned throughput. That is reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not. So it buys a guarantee, not a lower price. Spillover sends extra requests to a pay-as-you-go deployment instead of failing them.\n\n**A likely follow-up**\n\n\"What happens when one graduated app wants far more than its even share?\"\n\nHint: it gets capped at its share. In the lesson, doc-search wanted 30,000 but got 17,500. Any spare goes down to the sandbox. It is not offered to graduated apps a second time. Explain why that matters: the order stays simple and predictable.",
+   "step": "Explain",
+   "fingerprint": "2fc5f6fb27df6927",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The critical app gets errors first.** `help-center` returns 429 (\"too many requests\") at busy times, while sandbox experiments keep running. Tiers were not served most important first.\n- **Errors line up with someone else's burst.** A weekend sandbox job from `team-sales` starts, and critical errors start at the same moment.\n- **One graduated app crowds out another.** `doc-search` takes far more than an even share, and `hr-bot` gets less than the small amount it asked for.\n- **Full PTU, failed requests.** When the reserved deployment is full, extra requests fail instead of moving to the pay-as-you-go one. Spillover is probably not set.\n- **Reserved capacity sits idle.** The PTU deployment shows low use most hours. You pay every hour anyway. It may be sized too big, or traffic may not be steady yet.\n\n**Quickest check**\n\nTake your busiest recent window. Count 429s per app, grouped by tier. Errors should hit the sandbox first, then graduated apps, and the critical app last. If that order is upside down, the tiers are not working.\n\nThen open the PTU deployment in the Spacelift plan. Confirm `spilloverDeploymentName` names a real pay-as-you-go deployment.",
+   "step": "Learn",
+   "fingerprint": "3f1ac6469792b081",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does \"serve tiers in order\" stop working?**\n\n**1. Critical apps ask for everything.**\nIf two critical apps, say `team-support`'s help-center and `team-sales`'s pricing agent, together want more than the total, nothing is left. Graduated and sandbox apps get zero. Fix it by capping each critical request. Or give critical apps their own reserved PTU capacity, so they stop drawing from the shared pool.\n\n**2. Traffic changes over time.**\nGraduated deployments are sized from the busiest minute someone measured. A month-end spike or a new data source makes that number stale. Re-measure on a schedule, and update the request in that team's YAML. Once a graduated app's traffic grows steady, consider promoting it to the critical tier.\n\n**3. Many graduated apps share the pool.**\nAn even split gets thin with many apps. Spare is also never offered back to graduated apps. So `hr-bot`'s unused share goes to the sandbox, even while `doc-search` still wants more. If that waste matters, hand the leftover to graduated apps that still want more before the sandbox gets it. Or give each app a weight, so a bigger app gets a bigger share.",
+   "step": "Learn",
+   "fingerprint": "43bbdeeeb3704c43",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'promote a graduated app to critical' advice goes slightly beyond the lesson, and 'PTU' is not re-explained, but neither contradicts the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "How is “who comes first” different from “tier”?",
+   "a": "**\"Who comes first\"** is the decision. It's a policy you settle ahead of time: when capacity runs short, whose requests get served before whose. Without it, the biggest burst wins.\n\n**A tier** is how you carry out that decision. It's a group you put each app in: critical, graduated or sandbox. Each tier has its own rule for how much it can take.\n\nSo the decision answers \"in what order?\" A tier answers \"which group is this app in, and what's its rule?\" You set the order of the tiers once. After that, you only place each new app in a tier.\n\nEveryday comparison: an emergency room. \"Most urgent first\" is the decision. Triage levels are the tiers. Nurses don't re-argue the policy for each patient. They just assign a level.\n\nIn the lesson's example, 60,000 tokens a minute are shared. `help-center` is critical, so it's served first and gets its 25,000. The two graduated apps split the remaining 35,000, up to 17,500 each. The sandbox shares what's left, 12,500.\n\nTiers without an order are just labels. An order without tiers has nothing to act on.",
+   "step": "Learn",
+   "fingerprint": "9e033f8cf2786c8f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The example is slightly incomplete: it never says hr-bot asked for only 5,000, so 35,000 split between the graduated apps leaves 12,500 spare without explanation."
+   }
+  }
+ },
+ "check_limits": {
+  "check:0:0": {
+   "q": "Why not “Nothing: the space limit still caps everyone”?",
+   "a": "It's half right. The space limit really does still cap everyone. Nobody can pull more than 100,000 tokens a minute out of the sandbox, so the shared total is safe.\n\nBut that was never the risk. The per-user limit exists so that **no single person can use up the whole space**. When it equals the space limit, it never kicks in before the space limit does. It does nothing.\n\nPicture someone on `team-sales` starting an eval run that loops. An eval run is a batch of test calls that scores a model or agent. Their run is allowed 100,000 tokens a minute, which is the entire sandbox. Everyone else, say a member of `grp-marketing-dev-owners`, now gets error 429 (\"too many requests\"). The cap held, yet the space stopped being shared.\n\nSo \"nothing goes wrong\" only counts the total. It misses who gets a turn. A fair setup gives each user a slice well below the whole, like 20,000.\n\n\"One busy user can take the whole space\" is better because it names the real failure: a per-user limit equal to the space limit lets one person lock everyone else out.",
+   "step": "Check",
+   "fingerprint": "cd19e6fa1aaf6ff4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Every request fails: the limits are equal”?",
+   "a": "That option is right about one thing: setting the per-user limit equal to the space limit is a mistake. But it gets the result wrong.\n\nA rate limit is a ceiling, not a gate. It says \"you may use up to this many tokens a minute.\" It does not reject requests just because two ceilings match. So with both set to 100,000, requests still go through. Nothing fails at first.\n\nThe real problem shows up when someone is busy. Say a looping eval run from `sp-sales-etl-dev` hits the sandbox. Its per-user ceiling is 100,000, so nothing stops it from using the space's full 100,000 tokens that minute. Once the space is used up, everyone else, like members of `team-sales` or `team-a`, gets error 429 (\"too many requests\") until the minute resets.\n\nSo the per-user limit protects no one. It is meant to be a slice, like 20,000, well below the whole.\n\n\"One busy user can take the whole space\" is better because it names what actually happens: a user limit as big as the space lets a single caller crowd out everyone else.",
+   "step": "Check",
+   "fingerprint": "63111123600c4f6a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Yes, the group gets more room”?",
+   "a": "It's an easy pick, because part of it is true. On paper, 120,000 is far more than the 20,000 default each user gets. So the group's members do get more room than a normal user.\n\nBut look at what a limit is for. A limit protects others when it stops one party from taking everything. The space limit is 100,000 tokens a minute, and the service limit always wins. So the group can never actually use 120,000. It hits the 100,000 ceiling first.\n\nThat means the group limit adds no real ceiling. One looping agent in the research group could use the whole space. Every other team in the sandbox, say `team-sales` testing against `sandbox-gpt`, would then get error 429 (\"too many requests\").\n\nSo \"more room\" misses the point. The extra room is only extra on paper. And the room it does give is the whole space, which is exactly what limits are meant to prevent.\n\n\"No, the space limit wins anyway\" is better because it names the real effect: a group limit at or above the space limit never stops anyone, so it protects nothing.",
+   "step": "Check",
+   "fingerprint": "050141d616e950cb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only slight wobble is that \"the extra room is only extra on paper\" sits a little awkwardly beside the earlier point that members do get more room than the 20,000 user default, but this does not contradict the lesson."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes, it replaces the space limit”?",
+   "a": "The word \"replaces\" is the trap. A group limit does replace something, but not the space limit.\n\n**What it gets right:** a group limit really is a replacement. For members of the research group, the group's shared pool is used *instead of* their per-user limit. So the 20,000 tokens a minute each person would normally get no longer applies to them.\n\n**What it misses:** the space limit (the `RATE_LIMIT_KEY_SERVICE` entry, the cap on the whole sandbox) is never replaced. It sits above everything and always wins. Every request still has to fit inside 100,000 tokens a minute, whatever the group says.\n\nSo a group limit of 120,000 can never be reached. The real ceiling for the research group is the space limit of 100,000. That means the group could use the entire sandbox. Every other team, such as `team-sales`, would get error 429 (\"too many requests\"). The group limit is there to stop exactly that, so here it protects nothing.\n\n**Why \"No, the space limit wins anyway\" is better:** it names the real rule. The space limit always caps the group, so a group limit at or above it does nothing.",
+   "step": "Check",
+   "fingerprint": "55dc0121b51699be",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it is close to the 200-word guide, and 'the group limit is there to stop exactly that' slightly overstates the group limit's purpose, but nothing contradicts the lesson."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The eval run gets cheaper”?",
+   "a": "\"The eval run gets cheaper\" doesn't hold up. Nothing about sharing a deployment lowers the price. A Foundry **deployment** is a model set up with a fixed amount of capacity, measured in tokens a minute. Every token the eval sends still counts. An eval that loops all afternoon sends far more tokens than usual, so if anything it gets *more* expensive.\n\nThat option also misses the real point of the question. It frames the risk as cost to the experiment, but the bigger risk is to someone else. The eval and the live app draw from the same capacity. When the eval uses it up, the live app's calls start failing with error 429 (\"too many requests\"). For a live app, that means real users or jobs stop getting answers.\n\nThis is why the lesson gives `sandbox-gpt` its own deployment. The sandbox can then run out of capacity without touching production.\n\n\"The live app runs short of capacity\" is better because it names the actual harm: the looping eval eats the shared capacity that the production app depends on.",
+   "step": "Check",
+   "fingerprint": "da68a337c2a5c390",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Nothing: the two are separate”?",
+   "a": "\"Nothing: the two are separate\" sounds reasonable, because some things *are* separate. The sandbox might have its own gateway service, its own rate limits and its own entry in the config repo. On paper, it looks like its own space.\n\nBut the question says they share one **Foundry deployment**. A deployment is the actual model running in Azure, with a fixed amount of capacity (tokens a minute). That capacity is one pool. Both the sandbox and the live app draw from it.\n\nGateway limits don't change that. They cap how much each person or group can send. They don't set aside capacity for anyone else. So an eval run looping all afternoon keeps pulling tokens from the same pool. Say a live app from `team-sales` runs on that deployment. It now gets slow replies or error 429 (\"too many requests\") at the worst time.\n\nThat's why the lesson gives the sandbox its own deployment, like `sandbox-gpt`. Then experiments can only use up their own capacity.\n\n\"The live app runs short of capacity\" is better because it names the real link: one shared deployment means one shared pool, so the sandbox's heavy use comes straight out of what the live app needs.",
+   "step": "Check",
+   "fingerprint": "93151d3f2fb02838",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problem. It is about 200 words, right at the limit. It also says gateway limits only cap each person or group and leaves out the service limit, which is a small simplification."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Give each user a limit below the shared one” matter?",
+   "a": "A shared space has one budget. Without per-user limits, the first busy person can spend all of it.\n\nThe sandbox's limit is counted in **tokens a minute**. A token is a small chunk of text the model reads or writes. When the budget runs out, the gateway sends back error 429, which means \"too many requests\". Everyone gets that error until the minute resets.\n\nHere is how it goes wrong. The sandbox allows 100,000 tokens a minute. Someone in `team-sales` starts an eval run that loops over a big test set. That loop alone burns 100,000 tokens every minute. Now a member of `team-finance` tries a quick prompt and gets 429. So does everyone else. Nobody did anything wrong except share one pool.\n\nA per-user limit fixes this. Give each user a default of 20,000 tokens a minute. The looping eval now hits its own ceiling and slows down. The other 80,000 stays free for everyone else.\n\nThe slice must sit well below the space limit. A per-user limit of 100,000 is the whole space again, so it protects nobody.",
+   "step": "Explain",
+   "fingerprint": "025582353edc6bc4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Three rules, three fixed messages” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* \"Our sandbox is a shared experiment space on Azure Databricks. If one looping agent uses the whole token limit, every other team, like `team-sales`, gets error 429, which means 'too many requests'.\"\n\n*The idea.* \"So the config must pass three rules. A user's slice sits below the space limit. Any group's shared pool sits below it too. And the sandbox has its own Foundry deployment, not a production one. Each broken rule returns one fixed message, always the same exact words. That makes results easy to test and easy to read in a Spacelift policy check, the automatic review before an apply.\"\n\n*A trade-off.* \"Fixed messages are predictable, but less detailed. If three groups are too high, you get one message, not three. Someone still has to open the YAML to find which groups.\"\n\n**A likely follow-up**\n\n\"Why is a group limit equal to the space limit a mistake, not just generous?\"\n\n*Hint:* The service limit always wins. A group pool at or above it caps nothing, so one group can still use up the whole space.",
+   "step": "Explain",
+   "fingerprint": "d2160ecf5077efaa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Many people get error 429 at the same moment.** 429 means \"too many requests.\" If team-sales and team-finance both hit it in the same minute, the whole space's limit was used up, not just one person's slice.\n- **One name owns most of the usage.** In the gateway's usage numbers, a single identity, like `sp-sales-etl-dev` stuck in an eval loop, takes nearly all the tokens.\n- **A group limit never kicks in.** Members of `grp-sales-dev-owners` keep going until the space itself runs dry. That suggests the group pool is set at or above the space limit, so it protects nothing.\n- **Live apps slow down when experiments run.** Production errors or slowdowns that line up with sandbox busy hours point to a shared Foundry deployment. Foundry is Azure's model hosting, and a deployment is one model's reserved capacity.\n\n**Quickest check**\n\nOpen the sandbox's `databricks_ai_gateway_model_service` config in the Terraform code. Put the three numbers side by side: space, user default and each group. Each slice should sit clearly below the space. Then confirm the sandbox's deployment name is not one that production apps also use.",
+   "step": "Learn",
+   "fingerprint": "c2fc16ec1686f70f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When fair limits stop being enough**\n\n**1. The sandbox gets crowded.** Each user gets 20,000 tokens a minute, but the whole space only has 100,000. If eight people run experiments at once, they can still hit error 429 (\"too many requests\") while each stays under their own slice. The space limit always wins. Lower the per-user default or raise the space limit, and keep both values in the `databricks_ai_gateway_model_service` config in Terraform.\n\n**2. A group grows large.** A group limit is one shared pool, meaning all members draw from the same bucket. If `grp-sales-dev-owners` gets 50,000 and has twenty members, each person may get less than the normal 20,000. Check the group's size before you give it a pool, or split it into smaller groups.\n\n**3. An experiment turns into a real app.** Suppose a `team-sales` agent becomes something people depend on every day. Then sandbox limits will throttle it, and raising them just squeezes everyone else. Graduate it instead: give it its own Foundry deployment and promote it through DEV, UAT and PROD.",
+   "step": "Learn",
+   "fingerprint": "17c809de2f47a93a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the first situation runs to four sentences, slightly over the two-or-three target."
+   }
+  },
+  "learn:term": {
+   "q": "How is “service” different from “user”?",
+   "a": "The **service** limit is one cap for the whole sandbox. It adds up every token from everyone. (A token is a small chunk of text the model reads or writes.) In the example, that's 100,000 tokens a minute, set with `RATE_LIMIT_KEY_SERVICE`.\n\nThe **user** limit is a cap for each single identity, like a person or `sp-sales-etl-dev`. Each one has its own separate count. In the example, that's 20,000 tokens a minute each, set with `RATE_LIMIT_KEY_USER_DEFAULT`.\n\nThink of a shared office coffee machine that makes 100 cups an hour. That's the service limit. The rule \"each person takes at most 20 cups\" is the user limit.\n\nThey work together. Every request must fit under both. The service limit always wins. Even if your own slice has room, you still get a 429 once the whole space hits 100,000.\n\nThat's why the user limit must sit well below the service limit. Look at the first mistake in the example: a user limit of 100,000. That equals the whole space, so one looping agent could drain the sandbox and lock everyone else out.",
+   "step": "Learn",
+   "fingerprint": "9cd7dc2b41efa5cd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems; the only small nit is that '429' is used without saying it means 'too many requests'."
+   }
+  }
+ },
+ "grants_to_revoke": {
+  "check:0:0": {
+   "q": "Why not “Nothing: the UI grant stays”?",
+   "a": "\"Nothing: the UI grant stays\" sounds reasonable. Terraform usually ignores things it didn't create, so a hand-made grant feels safe. That instinct is right for the non-authoritative `databricks_grant` resource. It only manages the one principal you give it (the user, group or service being given access) and leaves everyone else alone.\n\nBut the code here uses `databricks_grants`, with an \"s\". That resource is **authoritative**. \"Authoritative\" means it owns the full list of grants on that object. At each apply it compares the live grants with the code. Anything live that the code doesn't mention gets revoked, meaning taken away.\n\nSo when Spacelift runs the Service stack, the proposed plan will show `analysts` losing `SELECT` on the catalog. Once someone approves the apply, the UI grant is gone. Nobody gets an error, so it's easy to miss until analysts lose access.\n\nThe fix is to add `analysts` to the code, ideally through the team's YAML in the config repo, so the grant survives every apply.\n\n\"The analysts' grant is removed\" is better because `databricks_grants` makes live grants match the code exactly, and `analysts` isn't in the code.",
+   "step": "Check",
+   "fingerprint": "b277a3036db13c7d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor: it assumes the grant is on the catalog and says 'nobody gets an error', neither of which the lesson states."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The apply fails on the clash”?",
+   "a": "\"The apply fails on the clash\" spots something real. The live grants and the code disagree. In Terraform terms, that gap is called **drift**: the real setup has moved away from what the code says.\n\nWhat it misses is how `databricks_grants` treats that gap. It is **authoritative**, meaning the code is the full list of who may have what. A difference is not an error to stop on. It is exactly what the resource is built to fix. Terraform sees no conflict to refuse over. It just plans to make live match code.\n\nSo in the Spacelift stack, the proposed plan shows a change that removes `analysts`' `SELECT`. If that plan is approved, the apply goes through without any error.\n\nIf the team wants `analysts` to keep access, the grant belongs in code. Another option is the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).\n\n\"The analysts' grant is removed\" is better because it describes what an authoritative resource actually does: it quietly revokes anything not in code, rather than failing.",
+   "step": "Check",
+   "fingerprint": "d9f53d83ba240701",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the word \"quietly\" sits slightly oddly beside the point that the plan shows the removal, but it is not wrong."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Revoke it by hand in Catalog Explorer”?",
+   "a": "Revoking by hand does get one thing right. Access is removed straight away in the live workspace, so `contractors` can no longer read the `sales` catalog.\n\nThe problem is what happens next. The code still says `contractors` gets `SELECT`. `databricks_grants` is authoritative, which means every apply makes the live grants match the code exactly. So the next time Spacelift runs the Service stack, the plan sees a gap between code and live. The apply then gives `SELECT` back to `contractors`. Your revoke silently undoes itself.\n\nIt also skips the platform team's process. A hand change has no proposed plan, no policy checks and no approved apply. Nothing in the config repo records why the access was removed. It also only touches one environment, so DEV, UAT and PROD can drift apart.\n\nRemoving the `contractors` grant from the code and then applying is better because the code stays the single source of truth, so the revoke is reviewed, recorded and kept on every future apply.",
+   "step": "Check",
+   "fingerprint": "d12bf73adfc4487f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Wait for the grant to run out”?",
+   "a": "\"Wait for the grant to run out\" doesn't fit how this lesson describes grants. There isn't much it gets right.\n\nThe lesson's model is simple. `databricks_grants` is **authoritative**. That means on every apply, it makes the live grants match the code exactly. The code is the source of truth.\n\nSo look at what the code says. It still gives `contractors` the `SELECT` privilege (permission to read data). The lesson never mentions an end date or a timer on a grant. Nothing in this setup makes the grant \"run out.\" As long as that line stays in the code, every apply through DEV, UAT and PROD keeps `contractors` with `SELECT`.\n\nWaiting just leaves the access in place. It also doesn't fix the real problem: the code still asks for the grant.\n\n\"Remove it from the code, then apply\" is better because the code decides what access exists, so removing the line makes the next apply take `SELECT` away from `contractors`.",
+   "step": "Check",
+   "fingerprint": "07ad47d3b976db04",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “databricks_grants, the authoritative one”?",
+   "a": "`databricks_grants` does get one part right. It can give a group access to a catalog. If you list `grp-sales-dev-owners` in a `grant` block, that group will get its privileges.\n\nThe problem is the word **authoritative**. It means \"the code is the whole truth.\" On apply, Terraform makes the catalog's grants match the code exactly. Every grant not written in that resource is removed.\n\nPicture the `sales` catalog in DEV. `sp-sales-etl-dev` already has `SELECT` on it. Someone also added a grant by hand in Catalog Explorer. Now your Spacelift stack applies a `databricks_grants` resource that lists only `grp-sales-dev-owners`. After the apply, the service principal and the hand-added grant both lose their access. The question asked you to leave every other grant alone, and this resource breaks that rule.\n\n`databricks_grant` is the better answer because it is **non-authoritative**. It manages only the one principal you name, which is the user, group or service being given access, and it leaves every other grant on the catalog untouched.",
+   "step": "Check",
+   "fingerprint": "df0fa8a095f2b772",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor only: the closing explanation of why `databricks_grant` is better runs to two sentences, not the one requested."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Neither: add it by hand in Catalog Explorer”?",
+   "a": "**Why not \"add it by hand in Catalog Explorer\"?**\n\nThis option does get one thing right. Clicking in Catalog Explorer really can add one group's grant and leave the others alone, at least for today.\n\nBut the question asks what your *Terraform* should do. A hand-made grant lives outside the code. That causes three problems:\n\n- **No review.** It never goes through a Spacelift plan, policy checks or an approved apply.\n- **Not repeatable.** You would have to click it again in DEV, UAT and PROD, and hope nobody makes a typo.\n- **It can vanish.** If that catalog is managed by the authoritative `databricks_grants`, the next apply removes anything not in code. Your hand-added grant for, say, `grp-sales-dev-owners` silently disappears.\n\nThat gap between what is live and what is in code is called **drift**. Hand edits are the classic way drift starts.\n\n**Why `databricks_grant` is better:** it puts that one group's grant in code, so it is reviewed and repeatable, and because it is non-authoritative, it adds only that principal's privileges without removing anyone else's.",
+   "step": "Check",
+   "fingerprint": "d463195c3c5a67d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Live minus code, per principal” in an interview?",
+   "a": "**Your 30-second answer**\n\n**The problem.** Our Service stage uses `databricks_grants`, which is *authoritative*. That means on apply it makes the live grants match the code exactly. So a grant someone added by hand in Catalog Explorer gets removed. I want to predict those removals before Spacelift applies.\n\n**The idea.** Compare live grants to code, one principal at a time. A principal is the user, group or service principal getting access. For each one, take its live privileges and drop any that the code also lists. Whatever is left will be revoked. If a principal like `sp-sales-etl-dev` isn't in the code at all, it loses everything.\n\n**Edge case.** Names must match exactly. A renamed Entra ID group, or `SELECT` written differently, looks like a different thing. That can make a grant look like drift when it isn't.\n\n**Likely follow-up**\n\n*\"How would you stop these surprise revokes?\"*\n\nHint: Name two fixes. First, put the grant in the team's YAML so it lives in code. Second, use the non-authoritative `databricks_grant` for that principal, which leaves other grants alone. Then add a bonus: show predicted revokes in the Spacelift plan, so a policy check can flag them before PROD.",
+   "step": "Explain",
+   "fingerprint": "49553664850733cd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Access vanishes right after a deploy.** Someone gave `grp-sales-dev-owners` `SELECT` by hand in Catalog Explorer. It worked for days. Then the next Spacelift apply ran, and \"permission denied\" tickets appeared.\n- **Jobs break with no YAML change.** An ETL job run by `sp-sales-etl-dev` fails on permissions after an apply. Nobody touched `team.yml` or `service_principals.yml`.\n- **The plan removes things nobody asked to remove.** The proposed plan is Spacelift's preview of changes. It shows privileges being dropped from the `databricks_grants` resource for a principal (a user, group or service principal).\n- **DEV works, UAT or PROD doesn't.** Someone patched DEV by hand. The code never had that grant, so the other environments never get it.\n\n**Quickest check**\n\nBefore approving an apply, read the plan for the grants resource. Look for any privilege marked for removal.\n\nThen compare, one principal at a time:\n\n- what Catalog Explorer shows live\n- what the code grants\n\nAnything live but missing from code will be removed. The fix is to add it to code. Or use the non-authoritative `databricks_grant` for that principal.",
+   "step": "Learn",
+   "fingerprint": "31048d36be9a0dab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The 'compare live vs code per principal' check is the same idea the lesson states, with no code or answer given."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"code is the full truth\" holds in most cases. Here are three where it needs extra care.\n\n**1. Two tools manage the same catalog.** Say the Foundation stack and the Service stack both use `databricks_grants` on `sales`. Each apply removes the other stack's grants, so they keep undoing each other. Give each catalog or schema to exactly one stack.\n\n**2. Mixing `databricks_grants` and `databricks_grant` on one object.** The authoritative one treats grants from the non-authoritative one as extra and removes them. Then the other adds them back. This makes endless drift, meaning live and code never settle. Pick one style per object.\n\n**3. An urgent hand grant in PROD.** Someone gives `sp-sales-etl-prod` access in Catalog Explorer to fix an outage. The next Spacelift apply quietly removes it. Put the grant in the team's YAML through a pull request soon after. Also add a policy check that flags any removal in the plan, so a reviewer sees it before approving.",
+   "step": "Learn",
+   "fingerprint": "d6a8401a97b24b4e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems; items 2 and 3 run to four sentences against the two-to-three limit, and the mixing claim in item 2 goes slightly beyond what the lesson states."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Unity Catalog” mean here?",
+   "a": "**Unity Catalog** is the part of Databricks that decides who can see and use which data.\n\nThink of a key-card system in an office building. One security desk keeps a single list: this badge opens these doors. Unity Catalog is that security desk for data. It keeps one list of who can reach which data, across every workspace.\n\nData sits in layers. A **catalog** is the top folder. Inside it are **schemas** (sub-folders), and inside those are tables. Each layer needs its own permission, called a **privilege**.\n\nIn the lesson's example, `databricks_catalog.sales` is a catalog, say for team-sales. The `databricks_grants` block tells Unity Catalog what the group `data-engineers` may do there:\n\n- `USE_CATALOG`: enter the catalog at all.\n- `USE_SCHEMA`: enter schemas inside it.\n- `SELECT`: read tables.\n\nSo Unity Catalog holds the live key list. Your Terraform code is the written plan for that list. Because `databricks_grants` is authoritative, each Spacelift apply resets the live list to match the code.",
+   "step": "Learn",
+   "fingerprint": "70693a8a4d3c53b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "missing_tags": {
+  "check:0:0": {
+   "q": "Why not “azurerm_databricks_workspace”?",
+   "a": "It's a fair guess. `azurerm_databricks_workspace` has \"databricks\" in its name, and it is the workspace your Databricks work runs in. So it feels like it belongs with the Databricks resources.\n\nBut the name prefix tells you which provider made it. A provider is the Terraform plugin that talks to one system. The prefix `azurerm_` means the azurerm provider creates it, so it is a real Azure resource. Azure bills for it, and Azure Policy can check it. That means it has a `tags` field.\n\nSkipping it would be a real mistake. The workspace for team-sales in PROD could reach Spacelift's apply step with no `cost-center` tag. Its spend would then land in nobody's budget. This is exactly the kind of gap the check exists to catch. So your tag check should look at it and list anything missing.\n\n`databricks_catalog` is the better answer. It comes from the databricks provider and lives inside the workspace, so it has no Azure `tags` field at all and there is nothing to check.",
+   "step": "Check",
+   "fingerprint": "2ef0e5078a7093fb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “azurerm_storage_account”?",
+   "a": "It's a fair guess. A storage account isn't Databricks itself. It's a supporting piece, like the storage behind team-sales' catalog in DEV. So it can feel out of scope for a Databricks platform check.\n\nBut the tag check doesn't ask \"is this Databricks?\" It asks \"can this resource carry Azure tags?\" `azurerm_storage_account` comes from the azurerm provider, Terraform's plugin for Azure. That makes it a real Azure resource with a `tags` field. It also costs money, often a lot, because it holds the data.\n\nIf the check skipped it, that storage could show up on the bill with no `owner` or `cost-center`. That is exactly the spend nobody can attribute. Azure Policy, Azure's rule engine for resources, could also flag or block it at apply time in UAT or PROD. So the check must include it and list any missing names.\n\n`databricks_catalog` is the better answer because it lives inside Databricks, comes from the databricks provider, and has no Azure tags field at all. There is nothing there to check.",
+   "step": "Check",
+   "fingerprint": "224694e97b8d77c7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Terraform won't be able to apply it”?",
+   "a": "\"Terraform won't be able to apply it\" sounds reasonable, but it isn't true. In the azurerm provider, `tags` is optional. Terraform will happily create a storage account with no tags at all. The plan runs, the apply succeeds, and nothing looks wrong.\n\nThere is a grain of truth in it. Some platforms add an Azure Policy rule set to \"deny.\" That means Azure itself refuses to create resources that lack certain tags. Then the apply would fail. But that's a choice your platform team makes, not something Terraform does on its own. And it's still not the reason the tags matter. It's just one way of enforcing them.\n\nThe real problem shows up later, on the bill. Say the storage account belongs to team-sales but carries no `owner` or `cost-center` tag. Its spend lands in a pile nobody can claim. The finance view can't charge it back, and policy reports can't link it to a team.\n\n\"Nobody can say whose spend it is\" is better because it names the actual harm: untagged resources quietly create cost that no team can be held responsible for.",
+   "step": "Check",
+   "fingerprint": "d10e3fcbb3fa1a80",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The account will be read-only”?",
+   "a": "\"The account will be read-only\" sounds plausible, but tags don't work that way. A tag is just a label: a key and a value, like `owner = \"platform\"`. Azure stores it on the resource. It doesn't change what the resource can do. A storage account with no tags can still be read and written like any other.\n\nMaking something read-only is a different Azure feature called a **resource lock**. It has nothing to do with tags.\n\nThere is a small grain of truth nearby. An **Azure Policy** (a rule Azure checks when resources are created) can be set to block untagged resources. But that stops the apply in Spacelift. It doesn't create a locked, read-only account.\n\nThe real risk is quieter. Say team-sales asks for that storage account in UAT. The plan builds it with no `owner` or `cost-center` tag. It runs fine, and it costs money every month. But the cost reports can't link that spend to team-sales or anyone else.\n\n\"Nobody can say whose spend it is\" is better because cost allocation, the lesson's main point, depends entirely on tags. Missing tags mean spend nobody can attribute.",
+   "step": "Check",
+   "fingerprint": "3e3f8b3ffca43bad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Right: set them once on the provider”?",
+   "a": "That answer has a good instinct. Defining tags once, in one place, is exactly what teams want. Nobody wants to retype `owner` and `cost-center` on every resource.\n\nThe problem is the tool. The `azurerm` provider (Terraform's plugin for Azure) has no provider-wide default tags. There is no setting on the provider block that stamps tags onto everything it creates. So if your teammate counts on that, something like `azurerm_databricks_workspace` for `team-sales` goes out with no tags at all.\n\nThat has real costs. Spend on that workspace can't be traced back to a team. Azure Policy (Azure's rule checker) may also flag or block it.\n\nThe fix keeps the \"define once\" idea. You put the shared map in `local.tags`, then pull it into each Azure resource by hand:\n\n```hcl\nresource \"azurerm_databricks_workspace\" \"this\" {\n  # ...\n  tags = merge(local.tags, { component = \"dbw\" })\n}\n```\n\nHere `merge` combines the shared map with anything extra for this resource.\n\n\"Wrong: merge `local.tags` into each one\" is better because it names the missing feature and gives the pattern teams actually use, which is one shared map merged into every resource.",
+   "step": "Check",
+   "fingerprint": "c8c08810abb53abe",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Right, but only on storage accounts”?",
+   "a": "\"Right, but only on storage accounts\" sounds careful, but it still agrees with the teammate's wrong idea.\n\nThe `azurerm` provider (Terraform's plugin for Azure) has no provider-wide default tags. It doesn't add your team's tags to anything on its own. That includes storage accounts, `azurerm_databricks_workspace`, and every other Azure resource. No resource type is a special case.\n\nThe option does get one small thing right. Storage accounts can carry Azure tags. But they only get them if you write them in. \"Can be tagged\" is not the same as \"tagged for you.\"\n\nThe risk is real. If the team believes storage accounts are covered, nobody adds tags there. That spend then shows up with no owner or cost center. Azure Policy (Azure's rule checker) may also block or flag those resources.\n\nThe fix is the same for each resource:\n\n```hcl\ntags = merge(local.tags, { component = \"storage\" })\n```\n\n\"Wrong: merge `local.tags` into each one\" is better because it states the real rule, that nothing is tagged by default, and gives the habit that fixes it everywhere.",
+   "step": "Check",
+   "fingerprint": "0e6b09f0e344cebf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “List the gaps per resource” in an interview?",
+   "a": "**Problem.** Azure tags decide who pays for what. Azure Policy, the rules Azure enforces on resources, often depends on them too. The `azurerm` provider has no provider-wide default tags. So one forgotten `merge(local.tags, ...)` leaves spend nobody can attribute. Picture an untagged `azurerm_databricks_workspace` for team-sales.\n\n**Idea.** I check the Terraform plan before anything is applied. For each resource that can carry tags, I walk through the required tag names in order and note which ones are missing. I report only the resources that have gaps. Each one is listed by its address, which is its full name in the plan. The reviewer sees exactly what to fix and where.\n\n**Edge case.** Resources from the `databricks` provider, like `databricks_cluster` or `databricks_catalog`, live inside Databricks. They have no Azure tags field, so I skip them rather than flag them as failures.\n\n**Likely follow-up:** \"Where would you run this check?\"\n\n*Hint:* Run it as a Spacelift policy check on the proposed plan. That catches gaps in DEV before they ever reach UAT or PROD.",
+   "step": "Explain",
+   "fingerprint": "d6cb3cf56ebd3821",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **An \"untagged\" slice in the cost report.** Azure Cost Management groups spend by tag. If a chunk shows no `cost-center` or `owner`, nobody can be billed for it. Watch for it growing after a new workspace or storage account goes live.\n- **Azure Policy blocks an apply late.** Policy is Azure's rule engine. If it requires tags, a resource missing one can fail at the PROD apply, even though the DEV run passed.\n- **Non-compliant resources in the Policy dashboard.** Resources made outside Terraform, or ones that skipped `merge(local.tags, ...)`, show up here.\n- **A tag check that looks too good.** If it never flags anything, it may not be reading tags at all.\n- **A tag check that cries wolf.** If it flags `databricks_cluster` or `databricks_catalog`, it is treating Databricks-side resources as taggable. They have no Azure tags field.\n\n**Quickest check**\n\nOpen the proposed plan for a Service stack in Spacelift. Pick one azurerm resource, such as `azurerm_databricks_workspace`. Confirm its `tags` include every key from `local.tags`, plus its own extras like `component`.",
+   "step": "Learn",
+   "fingerprint": "2dfa7f9bf20c90f3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No contradiction with the lesson. The Cost Management and Policy dashboard details, and the 'passes in DEV, fails in PROD' scenario, go beyond the lesson but are plausible."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. A tag is present but its value is wrong.**\nThe check only looks at tag names. So `cost-center = \"TBD\"`, or a typo in the value like `owner = \"platfrom\"`, still passes. Add a value check too. Keep a list of allowed values and test against it during Spacelift's policy checks (the automatic rules that run on a plan before anyone approves it).\n\n**2. Spend on Databricks-provider resources.**\nThings like `databricks_cluster` or `databricks_catalog` have no Azure tags field, so the check skips them. A clean report doesn't mean every cost is labelled. Track those resources with a separate rule. Don't assume the Azure tag check covers them.\n\n**3. Many teams and many stacks.**\nAs team-sales, team-finance and others each get their own Service stack across DEV, UAT and PROD, copies of the required tag list can drift apart. A stack is one Spacelift run of a Terraform stage. Keep one shared `local.tags` and one required list. Run the same check on every stack's plan, so no stage quietly skips it.",
+   "step": "Learn",
+   "fingerprint": "a97546e573bb5006",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "Point 3 defines a stack as \"one Spacelift run of a Terraform stage\", but in the lesson a stack is how Spacelift runs a stage, and each run (plan, checks, apply) happens within it, so a stack is not a run."
+   }
+  },
+  "learn:term": {
+   "q": "How is “cost allocation” different from “Azure Policy”?",
+   "a": "Both use the same tags, but they do different jobs.\n\n**Cost allocation** is about the bill. Azure lists what each resource cost. Tags like `cost-center = \"1234\"` let finance split that bill by team or project. It only reports. It never stops anything.\n\n**Azure Policy** is about rules. Azure checks these rules when a resource is created or changed. A rule might say \"every resource needs an `owner` tag.\" Azure can then flag a resource that breaks the rule, or block it.\n\nHere's an everyday comparison. In a shared office fridge, name labels show whose lunch is whose. That's cost allocation. A sign saying \"unlabelled food gets thrown out\" is the rule. That's policy. The rule keeps the labels on, so the sorting works.\n\nIn the lesson's example, `local.tags` gives every azurerm resource `env`, `owner` and `cost-center`. Then `merge` (which joins two tag maps into one) adds `component = \"dbw\"` for the workspace. Policy can insist those tags exist. Cost allocation can then charge the `azurerm_databricks_workspace` spend to cost center `1234`.",
+   "step": "Learn",
+   "fingerprint": "fe9a96b1505450f1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "overlapping_subnets": {
+  "check:0:0": {
+   "q": "Why not “No”?",
+   "a": "\"No\" is tempting. The two blocks start at different addresses, `10.20.0.0` and `10.20.2.0`, so they look separate. But a different start does not mean no overlap.\n\nTurn each block into a range first:\n\n- `10.20.0.0/22` holds 1024 addresses: `10.20.0.0` to `10.20.3.255`.\n- `10.20.2.0/24` holds 256 addresses: `10.20.2.0` to `10.20.2.255`.\n\nNow use the bookings test from the lesson. Two ranges overlap when each one starts at or before the other ends. The `/22` starts at `10.20.0.0`, which is before the `/24` ends. The `/24` starts at `10.20.2.0`, which is before the `/22` ends. Both are true, so they overlap.\n\nIn fact, the `/24` sits wholly inside the `/22`. It is the third of the four `/24`-sized blocks that the `/22` covers. Every address in it also belongs to the bigger block.\n\nIf these were a workspace's host and container subnets, they would break the lesson's rule that the two must not overlap.\n\n\"Yes: the /24 is inside the /22\" is better because it gives the right verdict and names exactly how the blocks overlap.",
+   "step": "Check",
+   "fingerprint": "c78f0bbacead09fa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only if they're in different VNets”?",
+   "a": "This option mixes up two separate questions. One is whether the ranges overlap. The other is whether the overlap causes trouble.\n\n**What it gets right:** Overlap between different VNets (virtual networks) can matter. If a workspace VNet is peered, meaning directly linked, to another VNet, their addresses must not clash. That is why the lesson says \"or anything they connect to.\"\n\n**What it misses:** Overlap is a plain fact about address ranges. It does not depend on which VNet a block lives in.\n\n- `10.20.0.0/22` runs from 10.20.0.0 to 10.20.3.255.\n- `10.20.2.0/24` runs from 10.20.2.0 to 10.20.2.255.\n\nThe second range sits fully inside the first. So they overlap, wherever they are.\n\nBeing in the same VNet doesn't make this safe. Picture `snet-host` and `snet-container` for a workspace's VNet injection. They live in the same VNet. Azure will reject the overlap there, and a Spacelift apply would fail.\n\n\"Yes: the /24 is inside the /22\" is better because it answers from the ranges themselves, and that holds true in any VNet.",
+   "step": "Check",
+   "fingerprint": "a8c177b31a61c07e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claim that Azure rejects same-VNet overlap and the Spacelift apply fails goes beyond the lesson, but it is accurate and consistent with it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “/24: bigger number, more room”?",
+   "a": "It's a natural guess, since bigger numbers often mean \"more.\" Here it works the other way round.\n\n**What it gets right:** `/24` is a real, valid size. It gives 256 addresses, `10.20.0.0` to `10.20.0.255`. Azure reserves 5, so 251 are left for nodes. That's fine for a small setup.\n\n**What it misses:** the number after the slash counts how much of the address is *locked*. An address is 32 on/off digits, called bits. A `/24` locks the first 24 bits and leaves 8 free to vary. A `/22` locks only 22, so 10 bits are free. Each extra free bit doubles the block. So `/22` gives 1024 addresses, `10.20.0.0` to `10.20.3.255`, with 1019 usable.\n\nEach node takes one address in the host subnet and one in the container subnet. If team-sales' clusters keep growing, a `/24` could run out. Then new nodes can't start.\n\n**Why `/22` is better:** a smaller number after the slash locks fewer bits, so the block is four times bigger and leaves room for clusters to grow.",
+   "step": "Check",
+   "fingerprint": "ce4d440d9a82489f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Same size: only the start differs”?",
+   "a": "\"Same size: only the start differs\" gets one thing half right. Two CIDR blocks can look alike at the front. `10.20.0.0/24` and `10.20.0.0/22` even share the same starting address. So it's easy to think the front part is all that changes.\n\nBut the front part only says where the block begins. The number after the slash says how big it is. That's the piece this answer misses.\n\nFrom the lesson's example:\n\n```\n10.20.0.0/24 -> 256 addresses:  10.20.0.0 to 10.20.0.255\n10.20.0.0/22 -> 1024 addresses: 10.20.0.0 to 10.20.3.255\n```\n\nSame start, very different sizes. A `/22` is four times bigger than a `/24`.\n\nSize matters here. Each node (one machine in a cluster) takes one address in the host subnet. Azure also keeps 5 addresses for itself in every subnet. So a `/24` leaves 251 usable addresses, and a `/22` leaves 1019. If team-sales keeps adding nodes to its clusters, the `/24` fills up first.\n\n\"/22: smaller number, bigger block\" is better because a smaller number after the slash gives a bigger block, which leaves room for more nodes.",
+   "step": "Check",
+   "fingerprint": "b3845d6c3c12f44e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Each node takes two addresses in it”?",
+   "a": "That option mixes up \"two subnets\" with \"two addresses in one subnet.\"\n\n**What it gets right:** each node does use two addresses in total. But they sit in different places. A node takes **one** address in the host subnet and **one** in the container subnet. Inside the host subnet, it uses only one.\n\n**What it misses:** with one address per node, 64 nodes need 64 host addresses. A `/26` has exactly 64. So the node count alone doesn't explain the shortfall. Something else is eating addresses.\n\nThat something is Azure itself. In every subnet, Azure keeps 5 addresses for its own use, such as the network address and the gateway (the subnet's door to other networks). Your nodes can never take those. So a `/26` gives you 64 − 5 = 59 usable addresses. That is 5 short of 64.\n\nIf `team-sales` sized clusters in `clusters.yml` for 64 nodes, the host subnet would need to be a `/25` (128 addresses, 123 usable).\n\n**\"Azure keeps 5 addresses in every subnet\" is better because it names the real reason:** only 59 of the 64 addresses are left for nodes.",
+   "step": "Check",
+   "fingerprint": "8d32f0bb0d99a3df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The 'network address and gateway' examples go slightly beyond the lesson but are accurate."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A /26 is too small for any cluster”?",
+   "a": "That option gets one thing right. A `/26` really is too small for your busiest day. But it overstates the problem and skips the reason.\n\nA `/26` holds 64 addresses. Azure keeps 5 of them in every subnet for its own use, such as the network's gateway (the address traffic leaves through). That leaves 59 addresses for nodes. A node is one machine in a cluster, and each one needs its own address.\n\nSo a `/26` works fine for plenty of clusters. A team like `team-sales` running a 10-node job cluster in DEV would fit easily. Even a 59-node cluster would fit. \"Too small for any cluster\" is simply false.\n\nWhat the option misses is *why* 64 nodes won't fit. The block isn't useless. It is just 5 short, because the reserved addresses come off the top. The fix is a bigger block, like a `/25` (128 addresses, 123 usable).\n\n\"Azure keeps 5 addresses in every subnet\" is better because it names the exact cause: 64 minus 5 leaves 59, which is fewer than the 64 nodes you need.",
+   "step": "Check",
+   "fingerprint": "057c5861726c4e7c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problem. The gateway example for the reserved addresses is not in the lesson, but it is true and does not contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Turn blocks into ranges, compare pairs” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* With VNet injection, a workspace like team-sales' DEV one gets a host subnet and a container subnet. If they overlap each other, or a network they connect to, the setup fails or traffic gets confused. I want to catch that early, in the Spacelift plan, before anything is applied.\n\n*The idea:* A CIDR like `10.20.0.0/24` is hard to compare as text. So I turn each block into a range: its first and last address as plain numbers. Then I compare every pair. Two ranges overlap when each one starts at or before the other ends, like two bookings sharing a time slot.\n\n*The trade-off:* Checking every pair means the work grows fast as the list grows. But a workspace only has a handful of subnets, so it's fine and easy to read.\n\n**Likely follow-up:** \"What if you checked thousands of subnets across all environments?\"\n\n*Hint:* Sort the ranges by start address. Then walk through the list once, comparing each range with the furthest end seen so far.",
+   "step": "Explain",
+   "fingerprint": "9f917567999d7a87",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'the setup fails or traffic gets confused' goes slightly beyond the lesson, and 'subnet' and 'Spacelift plan' are not explained. Neither is serious enough to fail the answer."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The apply fails, not the plan.** Spacelift's proposed plan looks clean. Then the approved apply stops with an Azure error saying an address range overlaps or conflicts. Terraform only learns about the clash when Azure tries to build the network.\n- **Peering breaks.** Peering means linking two virtual networks so they can talk. If your workspace subnets share addresses with the hub network or another workspace, the link is refused, or traffic goes to the wrong place.\n- **DEV works, PROD doesn't.** DEV runs small clusters, so a tight subnet seems fine. In PROD, a bigger job for `team-sales` can't start, and the cluster event log reports that the subnet has no free addresses.\n\n**Quickest check**\n\nWrite each subnet's first and last address. Then compare every pair. Two ranges overlap when each one starts at or before the other ends. Ranges that share even one end address still count as overlapping.\n\nFor size, take each subnet's address count and subtract the 5 that Azure reserves. Compare what's left to the most nodes you expect to run at once.",
+   "step": "Learn",
+   "fingerprint": "195ad82a94410513",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Many subnets, not a handful.** Checking every pair gets slow once the platform spans dozens of workspaces across DEV, UAT and PROD. The work grows much faster than the list does. Instead, sort the ranges by first address, then walk through the list once and compare each range only with the next one.\n\n**2. Overlaps with networks outside your list.** Your check only sees the subnets in the YAML. A workspace's VNet may be peered (linked so traffic flows between them) to a hub network or an on-premises network your team never wrote down. Pull those ranges in too, for example from the Foundation stage's outputs, and include them in the comparison.\n\n**3. Messy or wrong input.** A team might type `10.20.0.5/24` (the address doesn't sit at the start of its block) or `10.20.0.0/33` (there is no `/33`). Turning that into a range could give surprising results. Have Pydantic reject bad CIDRs before any comparison runs.\n\nAlso remember that \"no overlap\" is not \"big enough.\" Each node needs an address in each subnet, and Azure keeps 5 per subnet, so check sizes separately.",
+   "step": "Learn",
+   "fingerprint": "0aa371334de03620",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “VNet injection” different from “host”?",
+   "a": "They sit at different levels. **VNet injection** is the whole setup. **Host** is one part of it.\n\n**VNet injection** decides where your workspace's clusters live. With it, they run inside your own virtual network (VNet), a private network you control in Azure.\n\n**Host** names one subnet in that setup. A subnet is a slice of the network's addresses. VNet injection uses two subnets: a **host** subnet and a **container** subnet.\n\nThey work together like this. VNet injection needs both subnets. Each node (one machine in a cluster) takes an address in each one. Azure also reserves 5 addresses per subnet. So both must be big enough for your clusters. And they must not overlap each other or anything they connect to.\n\nAn everyday comparison: VNet injection is choosing to hold your event in your own building. The host subnet is one room you book there. The container subnet is a second room. Every guest needs a seat in both rooms, and the rooms can't share floor space.\n\nExample: `snet-host` at `10.20.0.0/24` gives 256 addresses, from 10.20.0.0 to 10.20.0.255. The container subnet then needs its own block that doesn't overlap it.",
+   "step": "Learn",
+   "fingerprint": "019f641d6fdc7176",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

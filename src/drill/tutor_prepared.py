@@ -124,23 +124,29 @@ def _context(data: dict, lid: str) -> str:
     ]))
 
 
-def prompt(data: dict, lid: str, chip: dict) -> str:
-    fn = next((p.get("fn") for p in data["bank"] if p["id"] == lid), "") or ""
-    return f"""You are a patient tutor helping with one lesson of an AI engineering course. {LEARNER}
+DRAFT = """You are a patient tutor helping with one lesson of an AI engineering course. {learner}
 
-{_context(data, lid)}
+{context}
 
-They are on the {chip['step']} step of the lesson.
-Their message: {chip['q']}
-How to answer: {chip['how']}
+They are on the {step} step of the lesson.
+Their message: {question}
+How to answer: {how}
 Rules:
 - This answer is written ahead and shown to every learner who taps this question, so don't refer to anything they said before, and don't ask them to reply.
 - Stay on this lesson's topic.
 - Never write code for the lesson's coding exercise (`{fn}`), not even part of it, and don't list what its answer would contain.
-- {"Before the Check step is answered, never say which option of its questions is right." if chip['step'] != "Check" else "The Check question is already answered, so you may say which option is right."}
+- {check_rule}
 - Only add a code example if it makes the answer clearer, and make sure it matches what you said.
 - Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.
 - Reply with the answer only."""
+
+
+def prompt(data: dict, lid: str, chip: dict) -> str:
+    fn = next((p.get("fn") for p in data["bank"] if p["id"] == lid), "") or ""
+    check_rule = ("The Check question is already answered, so you may say which option is right." if chip["step"] == "Check"
+                  else "Before the Check step is answered, never say which option of its questions is right.")
+    return DRAFT.format(learner=LEARNER, context=_context(data, lid), step=chip["step"], question=chip["q"], how=chip["how"],
+                        fn=fn, check_rule=check_rule)
 
 
 JUDGE = """You check a tutor's answer before it is shown to beginners. Be strict.

@@ -1,0 +1,766 @@
+{
+ "guard_destroys": {
+  "check:0:0": {
+   "q": "Why not “No: the policy sees every change to the account”?",
+   "a": "That answer gets one thing right. Inside Spacelift, the policy really does check every run. Every plan for the Foundation or Service stack passes through it. Even a replacement, which is a delete followed by a create, gets caught.\n\nWhat it misses is the word \"account.\" The policy never watches the storage account itself. It only reads the **plan**, the list of changes Terraform proposes for one Spacelift run. If a change never becomes a Spacelift plan, the policy never sees it.\n\nSo a storage account can still disappear in other ways:\n\n- Someone with enough Azure rights deletes it in the Azure portal, the web console for Azure.\n- Someone runs a delete command with the Azure CLI, the command-line tool for Azure.\n- Someone runs `terraform destroy` on their own laptop, skipping Spacelift entirely.\n- Someone deletes the whole resource group, the Azure folder that holds the account.\n\nNone of these meet the policy. That's why teams also add Azure resource locks and keep powerful rights tightly limited.\n\n\"Yes: a delete outside Spacelift never meets the policy\" is better because it names the real limit: the policy guards the Spacelift pipeline, not the resource.",
+   "step": "Check",
+   "fingerprint": "e82088bb31209d92",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems; the Azure resource locks and the portal, CLI and laptop examples go beyond the lesson but do not contradict it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only if the Rego rule has a bug”?",
+   "a": "\"Only if the Rego rule has a bug\" gets one thing right. A buggy rule can miss a delete. For example, if the protected set spells the type wrong, or the rule ignores replacements, a storage account could slip through.\n\nBut it assumes the policy sees every change. It doesn't. A plan policy only runs inside Spacelift. It reads the plan (Terraform's list of proposed changes) for that run, and nothing else.\n\nSo a perfect rule still can't stop deletes that never become a Spacelift plan:\n\n- Someone removes the storage account in the Azure portal.\n- Someone runs `az storage account delete` from the Azure CLI (the command-line tool for Azure).\n- Someone runs `terraform destroy` on their own laptop against the PROD state.\n\nNone of these create a Spacelift run, so the policy never gets a chance to check them. The policy is a guardrail on one road, not a wall around the resource.\n\n\"Yes: a delete outside Spacelift never meets the policy\" is better because it names the real limit: the policy only checks what goes through Spacelift.",
+   "step": "Check",
+   "fingerprint": "e0371ad1d99d2034",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Only if the reviewer turns it on”?",
+   "a": "\"Only if the reviewer turns it on\" gets one thing right. People still matter in this process. In Spacelift, a run goes from a proposed plan, to policy checks, to an apply that someone approves. A human reviewer is still part of that.\n\nWhat it misses is the main point of a plan policy. A plan policy runs automatically on every Spacelift run. Nobody switches it on for each run. It checks the plan by itself, whether the reviewer is alert or half asleep.\n\nThat matters on a Friday evening. Picture a tired reviewer skimming a plan for team-sales in PROD. Say that plan would destroy a Databricks workspace or a storage account. The reviewer might miss it. The policy still reads every change and can block the run. If the policy depended on the reviewer, it would fail exactly when you need it most. That's why the lesson calls it \"code review that never gets tired.\"\n\n\"Yes, it runs on every run by itself\" is better because it states the key fact: the guardrail works on every run without depending on anyone's attention.",
+   "step": "Check",
+   "fingerprint": "b02a28b566cec153",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “No, it waits for a person to look”?",
+   "a": "That answer gets one thing right. A person does still take part. In Spacelift, a stack goes from a proposed plan to policy checks to an approved apply, and a human gives that approval.\n\nBut it mixes up two separate steps. The plan policy doesn't wait for anyone. It runs automatically on every run, right after the plan is made. So it checks the plan whether the reviewer reads closely, skims, or is already halfway out the door on Friday.\n\nThat's the whole point of a policy. It's code review that never gets tired. Picture a Friday change to team-sales in PROD whose plan would destroy a workspace. The tired reviewer might miss that line. The policy won't. It sees a delete on a protected resource type and blocks the run before anyone can approve it.\n\nThe human review and the policy work together. The policy just doesn't depend on the human.\n\n\"Yes, it runs on every run by itself\" is better because it captures what a plan policy is: an automatic check that doesn't rely on a reviewer paying attention.",
+   "step": "Check",
+   "fingerprint": "ab6e1bbe63c2b85d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The only soft spot is that 'a human gives that approval' goes slightly beyond the lesson's 'approved apply', but it is a reasonable reading."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Tags on every resource”?",
+   "a": "\"Tags on every resource\" isn't a bad policy. Tags are labels on Azure resources, like `owner = grp-sales-dev-owners` or a cost center. A rule that requires them keeps billing and ownership clear. Many platform teams add one eventually.\n\nBut it's not the first thing to protect. The lesson's advice is to start with what you can't rebuild. A missing tag is cheap to fix. You add it to the YAML, run the stack again, and nothing is lost.\n\nA deleted workspace or storage account is different. Notebooks, jobs, permissions and data for `team-sales` can be gone. Re-running Terraform recreates an empty shell, not what was inside.\n\nA tag rule is also noisy at the start. It checks every resource, so it may block lots of runs. Teams can start ignoring a policy that keeps blocking them over small things. That weakens the guardrail. A guardrail is a safety check that stops the worst mistakes.\n\n\"Storage accounts and workspaces\" is better because blocking their accidental destruction protects the things whose loss is permanent, which is where an automatic check pays off most.",
+   "step": "Check",
+   "fingerprint": "101d7d26bdab3c53",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the claims that tag rules are noisy and that many teams add them eventually go beyond the lesson, but they don't contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Clusters people start by hand”?",
+   "a": "It gets one thing right. Clusters matter, and teams like team-sales use them every day. But it misses two things.\n\nFirst, a plan policy only sees what's in the Terraform plan. The plan is Terraform's list of proposed changes for a run. A cluster someone starts by hand in the Databricks UI isn't managed by Terraform. So it never shows up in `input.terraform.resource_changes`, and the policy has nothing to check.\n\nSecond, clusters are easy to replace. If one goes away, someone can start a new one in a few minutes.\n\nThe lesson says to start with the resources you can't rebuild: workspaces, storage accounts and metastores. A metastore is the top-level catalog that tracks a region's data and permissions. Deleting one of these by accident is the costly mistake that a reviewer who never gets tired should catch first.\n\n\"Storage accounts and workspaces\" is better because they appear in the plan, and they're the resources you can't rebuild if a run deletes them.",
+   "step": "Check",
+   "fingerprint": "7e47fca5de97637a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Protect the resources you can't rebuild” matter?",
+   "a": "Terraform can rebuild the *shell* of a resource, but not what lives inside it. A workspace holds notebooks, job history and people's work. The lake storage account holds the actual data files. The metastore (the central list of catalogs, tables and who may read them) holds every table registration and grant. None of that lives in your Terraform code. Destroy the resource and it is gone, even if `apply` creates a fresh, empty one a minute later.\n\nHere is how it slips through. Someone fixes a typo in the storage account's name in the Foundation stage code. Azure can't rename a storage account. So the plan (Terraform's preview of its changes) shows a replacement: delete the old one, then create a new one. In a long plan, that line is easy to miss. A tired reviewer approves it in PROD. The new account is empty, and team-sales's tables now point at nothing.\n\nA plan policy that makes these deletes an error stops the run before apply. Tiredness can't wave it through.",
+   "step": "Explain",
+   "fingerprint": "11911162d673e70a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check each change against a set” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* A Terraform plan for a Service stack can list dozens of changes. If one of them destroys a workspace or a storage account in PROD, we lose things we can't rebuild. A tired human reviewer can miss that one line.\n\n*The idea.* I put the protected resource types into a set. A set is a collection built to answer \"is this in it?\" instantly, like a book's index. Then I walk through the plan's changes once, in order. A change gets a message only if its type is in the set and its actions include `delete`. If there are no messages, Spacelift lets the run go ahead.\n\n*The edge case.* A replacement counts too. When Terraform must rebuild something, its actions are `delete` and then `create`. So a replaced `azurerm_databricks_workspace` still gets flagged, even though it can look like a simple update.\n\n**Likely follow-up**\n\n\"Why block instead of just warn?\"\n\n*Hint:* Some resources hold things you can't get back. A metastore is one example: it stores the catalog's metadata, the records of what tables exist and who can use them. Destroying those should stop the run. Lower-risk types could just get a warning, so the policy doesn't slow down every team's runs.",
+   "step": "Explain",
+   "fingerprint": "5547ccba091c8a32",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. It runs slightly long at about 210 words, and the metastore explanation goes a little beyond the lesson but is accurate."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The policy never says anything.** Weeks of runs and zero denials can look like good news. Often it means the rule never matches at all.\n- **A replacement slips through.** Terraform sometimes swaps a resource out instead of editing it. For example, changing the region of the `team-sales` workspace forces this. The plan shows \"destroy and recreate\", yet the run still goes ahead. That usually means the rule was written to catch a plain delete only.\n- **A typo in a protected type.** If `azurerm_databricks_workspace` is misspelled in your set, nothing errors. It just silently protects nothing.\n- **The policy isn't attached to every stack.** It guards the DEV Foundation stack but not the PROD Service stack. A \"stack\" is one Spacelift setup that runs one stage in one environment.\n\n**Quickest check**\n\nIn DEV, make a change you know forces a workspace or storage account to be replaced. Open a proposed run, which is the plan-only preview. It should be blocked with a clear message naming the resource address. Then look at the policy results in the run's details on each stack. Confirm the policy actually ran there.",
+   "step": "Learn",
+   "fingerprint": "3af7d3388017c6c6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule works well until the plan stops telling the whole story.\n\n**1. A team really is leaving.** Say `team-sales` is retired and its workspace should go. The policy blocks that real request too. Keep the block in place, and add an approved override path. For example, require a specific label on the Spacelift run plus a named approver before the delete may pass.\n\n**2. A harmless rename looks like a destroy.** If someone renames a resource's address (its name inside the Terraform code), the plan shows \"delete old, create new.\" The policy blocks a simple tidy-up. Use Terraform's `moved` block, which tells Terraform \"this is the same thing under a new name,\" so the plan shows a move instead of a delete.\n\n**3. Deletes that never pass through a plan.** The policy only sees Spacelift plans. Someone deleting a storage account in the Azure portal skips it entirely. Add Azure resource locks on critical items as a second guard. Also review the `protected` list whenever new resource types join the platform.",
+   "step": "Learn",
+   "fingerprint": "45b2f1ac7f37f00e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. Minor: each item runs to four sentences instead of two or three, and 'Azure resource locks' is not explained."
+   }
+  },
+  "learn:term": {
+   "q": "What does “plan policy” mean here?",
+   "a": "Think of a building inspector who reviews every blueprint before work starts. The inspector builds nothing. They just read the plan and say \"fine,\" \"be careful,\" or \"stop.\"\n\nA **plan policy** is that inspector for Spacelift. Each stack, like the Service stage for a workspace, first makes a plan. A plan is Terraform's list of what it intends to create, change or delete. Before anyone approves the apply, the plan policy reads that list automatically, on every run. It can warn, or it can block.\n\nIn the lesson's Rego example, `input.terraform.resource_changes` is that list of planned changes. The rule looks at each change, called `rc`, and checks two things:\n\n- Does `rc.change.actions` contain `\"delete\"`?\n- Is `rc.type` in `protected`, the set of types you can't rebuild, like workspaces, storage accounts and metastores?\n\nWhen both are true, the rule adds a message to `deny`, such as \"`azurerm_databricks_workspace.sales_dev` would be destroyed.\" That message blocks the run.\n\nA replacement's actions include delete, so the rule catches replacements too.",
+   "step": "Learn",
+   "fingerprint": "254db3c08db077af",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "plan_policy": {
+  "check:0:0": {
+   "q": "Why not “So the run still applies while the rule is test…”?",
+   "a": "That option isn't wrong about the facts. A **warn** rule does let the run carry on. Spacelift prints the message in yellow, and the plan can still be approved and applied.\n\nBut it describes a side effect, not the reason. Letting runs through is just how a warning behaves. The point of starting with one is what you **learn** during that time.\n\nSay you add the rule \"no public network access.\" While it only warns, you watch the yellow messages on real runs. Maybe it flags the workspace for `team-sales` in DEV, as expected. Maybe it also flags something you didn't mean to catch, because the rule was written too broadly. That kind of wrong flag is called a **false positive**. You fix the rule, and nobody's run got blocked by your mistake. Then you switch it to **deny**, which blocks the run in red.\n\n\"So the run still applies\" doesn't say what you gain from those runs.\n\n\"To see what it would block before it blocks anyone\" is better because it names the real goal: checking the rule's results against real changes before it can stop any team's work.",
+   "step": "Check",
+   "fingerprint": "8afd660da76bb250",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Because a deny rule needs an admin to approve it”?",
+   "a": "That option mixes up two different things.\n\n**What it gets close to:** a deny rule is strict. When it fires, the Spacelift run stops in red. Someone then has to fix the change, or adjust the rule, before the stack can move on.\n\n**What it misses:** nothing in a plan policy says a deny rule needs an admin to approve it. \"Deny\" just means \"block this run.\" Approval is a separate step in the stack: a person approves the apply after the plan and the policy checks. So the option gives a reason that isn't true, and it skips the real worry.\n\nThe real worry is surprise. A brand-new rule, like \"no public network access,\" might match changes you didn't expect. For example, it might catch an existing workspace for `team-sales` in DEV that was set up before the rule existed. As a deny rule on day one, it could block that team's runs with no warning.\n\n**Why \"To see what it would block before it blocks anyone\" is better:** a warning prints in yellow and lets the run through, so you learn what the rule catches and can fix it before it ever stops real work.",
+   "step": "Check",
+   "fingerprint": "ce356249ed2cd325",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it is close to the 200-word limit, and calling deny's strictness 'what it gets close to' is a slight stretch since the option's claim is false."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Never destroy data you can't recreate”?",
+   "a": "\"Never destroy data you can't recreate\" is a real rule from this lesson, and it matters. It just isn't the one this plan breaks.\n\nThat rule asks two things about a change: is this a protected type, and is the action a delete? It only fires when both are true. Here, nothing is being deleted. So whichever types your team marks as protected, rule 1 has nothing to say. The storage account and its data stay where they are.\n\nThe risk in this plan is different. Turning on public access means anyone on the internet can try to reach that storage account. Nothing is lost, but it is exposed. Rule 1 never looks at access settings, so it would let this change through.\n\nThat is why each rule checks every change on its own. Each one asks a separate question. A change can pass one rule and still break another.\n\n\"Never open things to the public internet\" is the better answer because it checks the exact setting this plan changes: whether public access is switched on.",
+   "step": "Check",
+   "fingerprint": "ed63844e238f6153",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Always tag every resource”?",
+   "a": "\"Always tag every resource\" is a real rule many platform teams use. Tags are labels on a resource, like `owner = grp-sales-dev-owners` or `env = dev`. They help you track who owns something and what it costs. So the instinct to want rules like this is sound.\n\nBut it doesn't fit this plan. A tagging rule only asks, \"Does this resource have its labels?\" It never looks at network settings. Picture a storage account for `team-sales` with perfect tags and public access turned on. The tagging rule would pass it, and the data would still be open to anyone on the internet.\n\nAlso, tagging isn't one of the two rules this lesson builds. The lesson's rules are \"never destroy data you can't recreate\" and \"never open things to the public internet.\" Nothing is being deleted here, so rule 1 stays quiet. The plan's only problem is the network opening.\n\n\"Never open things to the public internet\" is the better answer because it checks the exact setting this plan is changing, public network access, and blocks or warns on it.",
+   "step": "Check",
+   "fingerprint": "9baed07bc86037c5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The remark that tagging is a common real-world rule goes beyond the lesson but does not contradict it."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Make the wiki page easier to find”?",
+   "a": "Making the wiki page easier to find does fix one real problem. Someone new might not know the rule exists, and a clear link helps them learn it.\n\nBut that probably isn't what went wrong last Friday. The rule was written down. The delete still slipped through. That means a reviewer, maybe rushing through a PROD Service stack plan, didn't stop to check. A page that's easier to find is still a page someone has to remember to open, read and apply by hand. On a busy day, that step is exactly the one that gets skipped.\n\nSo the rule still lives in people's heads, with a link attached. Nothing actually checks the plan. A delete of team-sales' catalog or workspace can still reach an approved apply.\n\nA plan policy is a rule written as code that Spacelift runs on every proposed plan. It looks at every change on its own. If it spots a protected resource being deleted, it can **deny** the run, meaning it blocks the run and shows the reason in red.\n\n\"Turn it into a plan policy\" is better because the check then runs automatically on every plan and can block the run, so it no longer depends on anyone remembering it.",
+   "step": "Check",
+   "fingerprint": "170d32c513c33075",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it is about 205 words, slightly over the 200 guide, and it guesses at why Friday's delete slipped through, though it hedges with 'probably' and 'maybe'."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Add a line to the review checklist”?",
+   "a": "A checklist line gets one thing right. It writes the rule down where reviewers will see it. That's better than a wiki page nobody opens.\n\nBut it misses the real problem. The checklist still depends on a person reading it and doing it. The delete slipped through last Friday because someone was busy and skipped a step. A checklist is just the same wiki rule in a new spot. On the next busy day, someone can tick the box without really looking.\n\nPicture a Service stack plan for `team-sales` in PROD that deletes a catalog. A tired reviewer scrolls past it, ticks \"checked for deletes,\" and approves. Nothing stops them.\n\nA **plan policy** is a rule written as code that Spacelift runs on every proposed plan, before anyone approves it. It doesn't get tired or skip steps. If you set it to **deny**, which means block the run, that PROD delete stops in red no matter how rushed the team is.\n\n\"Turn it into a plan policy\" is better because the check runs by itself on every plan, so it can't be skipped.",
+   "step": "Check",
+   "fingerprint": "86b9228176dee38d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Two separate rules per change” in an interview?",
+   "a": "**A 30-second spoken answer:**\n\n**The problem.** Our platform team reviews every Terraform plan, which is the preview of what will change. On a busy day, someone can skip a review rule that only lives in people's heads.\n\n**The idea.** Policy as code turns those rules into checks that run on every plan, as a Spacelift plan policy or a `terraform test`. We start with two rules: never destroy data we can't recreate, and never open workspaces or storage to the public internet. Each rule checks every change on its own. Neither check stops the other.\n\n**The edge case.** One change can break both rules. Say a change deletes a protected workspace and also has public access on. It gets two messages, rule 1 first. The author sees every problem in one run, not one at a time.\n\n**A likely follow-up:** \"How would you add a third rule without surprising product teams like `team-sales`?\"\n\n**Hint for a strong answer:** Roll it out as a **warn** first. That prints in yellow and lets the run through. You see what it would have blocked. Only then switch it to **deny**, which blocks the run in red.",
+   "step": "Explain",
+   "fingerprint": "624bcf414b7920e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Calling a workspace a 'protected' type is a small assumption the lesson doesn't state, and the answer is close to the 200-word limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Every run is green, forever.** No warnings, no denials, ever. That's too clean. Product teams will sometimes ask for risky things. A silent policy is often one that isn't checking.\n- **Only one message when there should be two.** Say a change to `team-sales` both deletes a protected catalog and turns public access on. If the log shows just the \"would be destroyed\" message, the rules are blocking each other. Each rule should check every change on its own.\n- **A surprise in Azure.** Someone finds a PROD workspace with `public_network_access_enabled` set to true, but every Spacelift run passed. The rule missed it, or it never ran on that stack. A stack is one stage that Spacelift runs.\n- **Yellow that never turns red.** A rule stays a warning for months. People learn to scroll past it, so it blocks nothing.\n\n**Quickest check**\n\nOn a DEV stack, push a deliberately bad change. Delete a protected resource and open it to the public internet in the same change. You should see both messages in the plan output, rule 1 first. The plan is Terraform's preview of what it would change. If one message is missing, or the run goes green, the policy isn't doing its job.",
+   "step": "Learn",
+   "fingerprint": "55696f9960c3c42f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; it is about 205 words, right at the length limit, and the 'yellow never turns red' sign goes slightly beyond the lesson but fits its warn-first advice."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When this stops working**\n\n**1. Values that are \"known after apply.\"** Sometimes a setting like `public_network_access_enabled` comes from a module output or a variable that Terraform can't work out until apply. The plan just says \"known after apply,\" so rule 2 sees nothing and passes it. Set the value explicitly in the runbook defaults, and treat an unknown public-access value on a workspace or storage account as a warning or a deny.\n\n**2. Tests that only use a mocked provider.** `mock_provider \"azurerm\" {}` fakes Azure, so it never talks to the real cloud. Your `terraform test` can pass while a real plan in UAT or PROD still slips through. Keep the Spacelift plan policy running on real plans in every stage.\n\n**3. Real exceptions.** Say `team-sales` has an approved reason to recreate a storage account. A hard deny blocks them with no way through. Add a short, reviewed exception list in the policy, naming the exact resource, an owner like `grp-sales-dev-owners`, and an expiry date. Roll the rule out as a warning first.",
+   "step": "Learn",
+   "fingerprint": "19824789e90d6dda",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No check fails. Minor: the third situation runs to four sentences, and it ends on a rollout-as-warning line that isn't really about exceptions."
+   }
+  },
+  "learn:term": {
+   "q": "How is “deny” different from “warn”?",
+   "a": "Both are outcomes a Spacelift plan policy can give when a rule matches a change. A plan is Terraform's preview of what it will create, change or delete.\n\n**Deny** blocks the run. The stack shows red, and nothing gets applied until someone fixes the plan.\n\n**Warn** prints the message in yellow but lets the run carry on. People see it, but nobody is stopped.\n\nThink of a new speed camera. For the first month it only sends \"you were speeding\" letters. Once drivers know it's there, it starts handing out fines.\n\nThat's how the two work together. Say you add rule 2: never open workspaces or storage to the public internet. You start it as a warning. Suppose a plan for `team-sales` turns on `public_network_access_enabled` for its DEV workspace. The run still goes through, but \"... allows public network access\" shows in yellow.\n\nAfter a few runs, you know which stacks would trip the rule. You also learn whether it's too strict. Fix those stacks, then switch the rule to deny so it blocks for real.",
+   "step": "Learn",
+   "fingerprint": "0fc598ee0a462c9f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "read_a_run": {
+  "check:0:0": {
+   "q": "Why not “Everything in the plan: it finished and passed …”?",
+   "a": "That option reads the right clues but draws the wrong conclusion.\n\n**What it gets right:** the run really did finish, and the GO lines really are passed checks. `FINISHED` and \"Plan checks are GO\" are both true facts from the screen.\n\n**What it misses:** the run type. A **proposed** run is a preview. Spacelift starts one for a push to a branch that isn't the stack's tracked branch, such as a pull request adding `grp-sales-uat-owners` to a folder. It plans, reports back to the pull request, and stops. It never reaches the apply step, which is the step that actually changes the UAT workspace.\n\nSo `FINISHED` here only means \"planning worked.\" The GO lines only mean automatic steps passed, like the plan running and its JSON being made. None of them is a deployment, and none is a person approving.\n\nThink of the parcel tracking page: \"label printed\" is a finished step, but the parcel hasn't arrived.\n\n\"Nothing: a proposed run only previews\" is better because it reads type and state together, and a proposed run can never deploy, however well it finished.",
+   "step": "Check",
+   "fingerprint": "cf92e2eff5177457",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only the resources the policies approved”?",
+   "a": "This option is tempting because the log talks about checks, and policies are part of the Spacelift flow. But it mixes up checking with deploying.\n\nStart with the run type. **Proposed** means a preview. Spacelift plans, reports back to the pull request, and stops. It never applies, which means it never actually makes the changes. So nothing reached the UAT workspace. **FINISHED** on a proposed run only means planning worked.\n\nThe GO wording doesn't change that. Every GO marks one automatic step that passed, like the plan running or its JSON being made. Only the GO right after **Evaluated N plan policies** is the policies' result. Even that one is a check on a plan, not a deploy. And no GO is a person approving.\n\nSo \"Only the resources the policies approved\" assumes some resources were deployed. On a proposed run, none were. Deploying needs a tracked run that someone confirms.\n\n\"Nothing: a proposed run only previews\" is better because it reads the run's type and state together, and a proposed run never deploys, whatever the log says.",
+   "step": "Check",
+   "fingerprint": "c205216e159f2425",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Yes, GO means a reviewer signed off”?",
+   "a": "\"Yes, GO means a reviewer signed off\" gets one thing right: GO is good news. On a proposed run, the GO after **Evaluated N plan policies** means the plan policies passed. Plan policies are rules the platform team wrote, such as \"never destroy a PROD catalog.\" Spacelift checks the plan against them automatically.\n\nWhat it misses is that no person is behind that GO. Every GO line marks one automatic step passing: the plan ran, its JSON was made, the resource list was uploaded, the policies passed. Someone may well have looked at the pull request too. But GO doesn't show that. Answering \"yes\" reports something the log never said.\n\nIt also blurs what a proposed run is. It only previews. Even with every GO, nothing was deployed. A person confirms a deploy later, on a tracked run waiting in `UNCONFIRMED`, because the stack has `autodeploy = false`.\n\n\"No, GO is an automatic check passing\" is better because it states exactly what the log proves. Any human review is a separate question, and you check it in the pull request.",
+   "step": "Check",
+   "fingerprint": "650005c9f94974b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes, GO means it has been deployed”?",
+   "a": "That answer makes two mistakes at once.\n\nFirst, it mixes up \"checked\" with \"deployed.\" This was a **proposed** run, which is a preview. Spacelift plans it, reports to the pull request, and stops. A proposed run never deploys anything, whatever its log says. So if a pull request changes `grp-sales-dev-owners` permissions on a team folder, nothing has changed in the DEV workspace yet.\n\nSecond, it answers a different question. The manager asked whether *someone approved* it. The answer jumps to \"deployed,\" which is a bigger claim and still wrong.\n\nThe answer does get one small thing right. GO does mean something passed. But every GO line in the planning log is an automatic step: the plan ran, its JSON (a machine-readable copy of the plan) was made, the resource list was uploaded. The GO after **Evaluated N plan policies** means the policy rules found no problem. No person was involved.\n\nDeploying only happens on a **tracked** run, after someone confirms it.\n\n\"No, GO is an automatic check passing\" is better because it answers the manager's actual question and says exactly what GO proves: a rule passed, not a person approving.",
+   "step": "Check",
+   "fingerprint": "0dd79dd66f6cfff5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Tracked: it plans, then it applies”?",
+   "a": "\"Tracked: it plans, then it applies\" describes tracked runs correctly. A tracked run does plan first and then apply, which means it makes the real changes in Azure Databricks. The problem is that this push doesn't start a tracked run.\n\nWhat decides the run type is the branch you pushed to. The stack's `branch` setting names its **tracked branch**, here `main`. Only pushes to `main` start tracked runs. Your push went to a feature branch, so Spacelift starts a **proposed** run instead.\n\nPicture it on the `dbx-service-dev` stack. You push `feature/iac-review` with a new folder permission for `grp-sales-dev-owners`. Spacelift plans the change, posts the result to your pull request, and stops. Nothing touches the DEV workspace. The real change only happens later, when the code is merged into `main` and a tracked run is confirmed.\n\nSo the tempting answer mixes up \"a run started\" with \"a deploy started.\" On a feature branch, it's always a preview.\n\n\"Proposed: it plans and reports back\" is better because a push to any branch other than the tracked one only ever starts a preview, never a deploy.",
+   "step": "Check",
+   "fingerprint": "ca493d67f9540b37",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “None: a feature branch starts nothing”?",
+   "a": "\"None\" gets one thing right. A push to a feature branch never deploys anything. On a stack that tracks `main`, nothing reaches your Databricks workspace from that push.\n\nBut \"nothing\" goes too far. The question itself says a run starts. And Spacelift really does start one. For a push to any branch that isn't the stack's tracked branch, it starts a **proposed** run. That is a preview-only run.\n\nTake the `dbx-service-dev` stack, which tracks `main`. A push to `feature/iac-review` starts a proposed run. It plans the change, for example adding `grp-sales-dev-owners` to a team's folder permissions. It runs the plan policies. It reports the result back to the pull request. Then it stops. Nothing is applied.\n\nThat preview is the whole point of a review. It is how you see what would change before anyone touches DEV, UAT or PROD.\n\n\"Proposed: it plans and reports back\" is better because it describes what Spacelift actually does. It starts a real run that only previews and never deploys.",
+   "step": "Check",
+   "fingerprint": "5feb11c8101d8807",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Upgrade providers on purpose” matter?",
+   "a": "A **provider** is the plugin Terraform uses to talk to a platform. `azurerm` talks to Azure. Two files decide which version you get:\n\n- The **constraint** in your code, like `~> 4.0`, means \"any 4.x version is fine.\"\n- The **lock file**, `.terraform.lock.hcl`, records the exact version last chosen, like `3.116.0`.\n\nWhen they disagree, Terraform stops before planning. Your proposed run shows FAILED, and the first error in the planning log is that \"does not match configured version constraint\" line.\n\nHere is how it bites in real work. Someone edits the constraint to `~> 4.0` for the `dbx-service-dev` stack. They don't update the lock file. Every pull request on that stack now fails to plan. The `team-sales` cluster change waiting for review is stuck too.\n\nThe quick fix is risky. A jump from 3.x to 4.x can rename settings or replace resources. That could touch `grp-sales-dev-owners` permissions.\n\nSo upgrade on purpose:\n\n1. Run `terraform init -upgrade` in a branch.\n2. Read the proposed run's Changes tab for surprise replacements.\n3. Commit the new lock file with the change.\n\nThen every run uses the version you actually reviewed.",
+   "step": "Explain",
+   "fingerprint": "faee7b2e175123e4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer passes. The \"quick fix\" is vague, and the claim that 3.x to 4.x can rename settings goes beyond the lesson, but neither contradicts it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Header first, then changes, then the log” in an interview?",
+   "a": "**30-second answer**\n\n*The problem.* A Spacelift run page shows a lot at once. If you jump straight into the log, a green GO line can look like \"approved\" or \"deployed\". It is neither.\n\n*The idea.* Read top down. The header says which stack, which environment, which commit (the saved version of the code), and what state. Then the Changes tab shows how many resources would be added, changed or destroyed, and which ones. For `dbx-service-dev`, that might be a permission on the folder for `grp-sales-dev-owners`. Last comes the planning log: the plan summary line, the first error if it failed, and the policy result.\n\n*The trade-off.* Each layer depends on the one above it. A tidy Changes tab means little if the header shows the wrong commit or the wrong environment. Also, a replacement shows up as one add plus one destroy. Check which resource is being replaced before calling it harmless.\n\n**Likely follow-up:** \"What does a GO line in the log tell you?\"\n\n*Hint:* Each GO marks one automatic step that passed. Only the GO after \"Evaluated N plan policies\" is the plan policies' result. None of them is a person approving.",
+   "step": "Explain",
+   "fingerprint": "25881f86c297423f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that a run was misread:**\n\n- Someone says \"it's deployed\" because the pull request shows *Finished*. Then `grp-sales-dev-owners` still can't open their folder in the DEV workspace. That run was proposed. It only previewed.\n- A review note says \"approved\" and points at GO lines in the planning log. GO lines are automatic checks passing. None of them is a person saying yes.\n- The **Changes** tab said \"1 to add, 1 to destroy,\" but the review only mentioned the add. A replacement was missed. For example, a permission set for `team-sales` would be deleted and recreated.\n- Changes appear in UAT that nobody expected. The reviewer never checked which environment or commit the header showed.\n- A tracked run sits in UNCONFIRMED for days. Everyone thinks it already applied.\n\n**Quickest check:** open the run and read the header first. Look at its type and state together. Then confirm the commit and the stack, such as `dbx-service-dev`. If you want proof of a deploy, look for a tracked run on `main` for that commit and check its state.",
+   "step": "Learn",
+   "fingerprint": "f732c2df2a5a1e3b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"type plus state tells you what a run proves\" is a good start. Here are three places it needs extra care.\n\n**1. `autodeploy` is turned on.** In the example stack, `autodeploy = false`, so tracked runs wait in UNCONFIRMED for a person. If a stack like `dbx-service-uat` has `autodeploy = true`, a push to `main` plans and applies with no pause. So tracked FINISHED does not prove anyone reviewed it. Check the stack's settings before you say a person approved anything.\n\n**2. A tracked run fails during apply.** Apply is the step that makes real changes. If it fails halfway, some resources may already exist. For example, `sp-sales-etl-dev` might be created while its group access was not. Read the apply log and list what actually changed. Don't treat the failure as \"nothing deployed.\"\n\n**3. The preview is out of date.** A proposed plan shows what would change at the moment it ran. If other changes reach `main` before yours merges, the tracked plan may differ. Always read the tracked run's own Changes tab before confirming it.",
+   "step": "Learn",
+   "fingerprint": "d0c98f0b91412045",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “run” different from “stack”?",
+   "a": "A **stack** is the long-lived setup. It says what Terraform should run and where: which code folder, which branch it follows (its \"tracked branch\"), and which settings apply. In this lesson, `dbx-service-dev` is the stack for the Service stage in DEV. It tracks `main` and has `autodeploy = false`.\n\nA **run** is one go of Terraform on that stack. It starts, does its work, and ends in a state like *FINISHED* or *FAILED*. One stack collects many runs over time.\n\nEveryday comparison: a stack is a bus route, and a run is one trip on it. The route stays the same. Each trip has its own time, passengers and outcome.\n\nThe stack also decides what kind of run a push starts:\n\n- A push to `main` starts a **tracked** run. It plans, then waits in *UNCONFIRMED* for a person before applying.\n- A pull request from `feature/iac-review` starts a **proposed** run on the same stack. It plans, reports back to the pull request, and stops.\n\nSo the run's header tells you which stack it belongs to. The run's type and state tell you what happened this time.",
+   "step": "Learn",
+   "fingerprint": "2c37bbb491c468cc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "runs_after": {
+  "check:0:0": {
+   "q": "Why not “Straight after network”?",
+   "a": "\"Straight after network\" gets one thing right. `jobs` does run because of the `network` change. It sits downstream: `network` → `workspace` → `catalogs` → `jobs`. And it can't go before `network` finishes.\n\nWhat it misses is who `jobs` actually waits for. It doesn't wait for `network` directly. It waits for `workspace` and `catalogs`. Both of those are also running in this change, because they sit downstream of `network` too.\n\nIf `jobs` went straight after `network`, it could try to apply too early. Say `workspace` is still updating the Databricks workspace for team-sales. Or `catalogs` hasn't finished the catalog that sp-sales-etl-dev reads from. Then the `jobs` apply would point at things that aren't ready yet. The apply is the step where Terraform makes the real changes.\n\nThink of the relay race. The `jobs` runner can't leave just because the first runner started. They need the baton from every runner handing it to them.\n\n\"Once workspace and catalogs have both finished\" is better because it names exactly the stacks `jobs` waits for, and it only lets `jobs` start when every one of them is done.",
+   "step": "Check",
+   "fingerprint": "7955c936c3387f1c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “At the same time as workspace”?",
+   "a": "\"At the same time as `workspace`\" gets one thing right. `jobs` does run after this `network` change. It is downstream: it waits for `workspace`, which waits for `network`. So Spacelift will start a run for it.\n\nWhat it misses is the waiting. A stack only starts once every stack it waits for has finished. `jobs` waits for `workspace`, so it cannot run alongside it. Picture `jobs` creating a job for `team-sales` that runs as `sp-sales-etl-dev`. If the workspace is still being changed, that job has nothing stable to land in.\n\nIt also misses the second wait. `jobs` waits for `catalogs` too, and `catalogs` itself waits for `workspace`. So the real chain is `workspace`, then `catalogs`, then `jobs`. If `jobs` started early, its job might point at a catalog that doesn't exist yet.\n\nThink of the relay race. A runner leaves only when every runner handing them the baton has arrived. `jobs` has two batons coming in, and one of them arrives last.\n\n\"Once `workspace` and `catalogs` have both finished\" is better because it respects every stack `jobs` waits for, not just the one that changed first.",
+   "step": "Check",
+   "fingerprint": "41ec7f6c5c55a87a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Yes, every stack runs on a change”?",
+   "a": "\"Yes, every stack runs on a change\" gets one thing right. A change in `network` does trigger more than one run. Spacelift also starts runs for the stacks that depend on `network`, like `workspace`. So the change does spread.\n\nWhat it misses is *where* the change spreads. It only moves **downstream**. That means it follows the \"waits for\" links, from a stack to the stacks that wait for it, then to the stacks that wait for those. A stack runs only if there is a chain of those links back to the change.\n\n`billing` waits for nothing. No link connects it to `network`, directly or through another stack. So nothing about the `network` change reaches it, and it does not run.\n\nThat is on purpose. Imagine a small subnet tweak in DEV kicking off plans for every stack on the platform. You would get slow runs, extra approvals and more chances for surprises. Skipping unrelated stacks keeps a small change small.\n\n\"No, it doesn't depend on network\" is better because it names the real rule: only stacks connected to the change by dependencies run.",
+   "step": "Check",
+   "fingerprint": "76b7cbe53eb30244",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes, but only after workspace”?",
+   "a": "\"Yes, but only after workspace\" gets one thing right. Order does matter in Spacelift. A stack that runs has to wait until every stack it waits for has finished.\n\nBut that rule only sorts stacks that are already running. It never adds new ones. First Spacelift decides **who runs**, then it decides **in what order**.\n\nSo start with who runs. When `network` changes, Spacelift follows the \"waits for\" links outward from `network`. Those links lead to `workspace`, and then to anything that waits for `workspace`. That is the **downstream** set: every stack linked back to the change, directly or through another stack.\n\n`billing` waits for nothing. No link connects it to `network`, so it is not downstream. It does not run at all, so the question of when it runs never comes up.\n\nThe answer also adds a wait that isn't there. `billing` does not wait for `workspace`, so \"after workspace\" has no basis.\n\nThis is what keeps a small change small. A subnet tweak in `network` shouldn't trigger a `billing` run in DEV, UAT or PROD.\n\n\"No, it doesn't depend on network\" is better because it checks who runs first, and `billing` has no link to `network` at all.",
+   "step": "Check",
+   "fingerprint": "11682564e7673b56",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor wording issue: 'follows the waits-for links outward from network' blurs the direction, since the links point from workspace to network. Otherwise it matches the lesson and is just under 200 words."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “network, workspace and catalogs”?",
+   "a": "That answer gets two things right. `workspace` runs because it changed. `catalogs` runs because it waits for `workspace`, so it sits **downstream** (further along the chain of stacks that depend on something).\n\nThe mistake is including `network`. Runs only flow downstream, away from the change. They never flow back **upstream** (toward the stacks a changed stack depends on).\n\n`network` is upstream of `workspace`. `workspace` needs the subnets `network` already made. But a change in `workspace` doesn't touch those subnets. Nothing in `network`'s code or state is different, so Spacelift has no reason to run it.\n\nWhat about the rule that `workspace` waits for `network`? That wait only matters if `network` is running too. Here it isn't, so `workspace` can start right away.\n\nThink of a team-sales update to a workspace setting. It shouldn't re-plan the platform team's network in DEV, UAT or PROD. Leaving `network` alone keeps a small change small.\n\n\"`workspace`, then `catalogs`\" is better because it runs only the changed stack and what depends on it, in waiting order.",
+   "step": "Check",
+   "fingerprint": "577c445715b2b282",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Only workspace”?",
+   "a": "\"Only workspace\" gets half of it right. `workspace` changed, so it runs. And `network` does not run, because `network` sits *upstream* (before `workspace` in the chain). A change never flows backwards.\n\nWhat it misses is the *downstream* part. Downstream means every stack that waits for the changed one, directly or through another stack. `catalogs` waits for `workspace`. So when `workspace` applies a change, Spacelift starts a run for `catalogs` too.\n\nThink about what `catalogs` does. It might create the Unity Catalog catalogs for `team-sales` and grant `grp-sales-dev-owners` access, all inside that workspace. If the workspace changed, those catalogs need a fresh plan to check they still match. Skipping `catalogs` could leave it out of step with the workspace it lives in.\n\nOrder matters as well. `catalogs` only starts once `workspace` has finished. That is the relay-race rule: a runner leaves only when the runner handing them the baton has arrived.\n\n\"workspace, then catalogs\" is better because it includes the stack downstream of the change and runs it after the stack it waits for.",
+   "step": "Check",
+   "fingerprint": "870d153bfe16f538",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Downstream, then in waiting order” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* Our Azure Databricks platform is split into Spacelift stacks, like `network`, `workspace`, `catalogs` and `jobs`. A stack is one Terraform folder with its own state. When `network` changes, everything relying on it must re-run, in a safe order.\n\n*The idea.* Two steps. First, find who runs. Start at the changed stack and keep adding stacks that wait for it until nothing new appears. That chain is \"downstream.\" Then order them. Repeatedly pick a stack whose waits are all finished, and break ties by name. It's like a relay: nobody leaves before every baton arrives.\n\n*Edge case.* A wait only counts if that stack is running. If `jobs` waits on a stack outside the change, it isn't blocked. Stacks not downstream don't run, so a small change stays small.\n\n**Likely follow-up:** \"What if two stacks wait for each other?\"\n\n*Hint:* That's a cycle, meaning a loop. Neither stack ever has all its waits done, so ordering gets stuck. A strong answer says you'd detect this and stop with a clear error before any apply reaches PROD.",
+   "step": "Explain",
+   "fingerprint": "f900892e5e2c574c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A stack runs too early.** The `jobs` plan fails with \"catalog not found\" because `catalogs` hasn't applied yet. You rerun it and it passes. A run that fails and then passes with no code change often means the order was wrong. (A *plan* is Terraform's preview of changes. An *apply* makes them.)\n- **A stack never runs.** `network` changed, but `catalogs` kept old settings. Everything looks green. Later, PROD doesn't match the code. That mismatch is called *drift*.\n- **Too many stacks run.** A change to `catalogs` also starts `monitoring`, which doesn't wait for it. The run queue fills up, and a small change no longer stays small.\n- **The order shifts between runs.** Two stacks are both ready, but they swap places from one run to the next. Results become hard to repeat, because nothing settles which ready stack goes first.\n\n**Quickest check**\n\nPick one real change, such as `network` in DEV. Using the dependency list, write down by hand who should run and in what order. Then open Spacelift's run history, the list of past runs with their start and finish times. Compare the two. Every stack should start only after all the stacks it waits for have finished. No extra stacks should appear.",
+   "step": "Learn",
+   "fingerprint": "f6b1ecc8eb9c0526",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the answer is about 205 words, which is borderline on length but acceptable."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the rule needs extra care.\n\n**A loop in the waits.** Say `workspace` waits for `catalogs` and `catalogs` waits for `workspace`. Neither stack can ever be ready, so the ordering step gets stuck with stacks left over. Check for leftovers, report them as a loop (a \"cycle\"), and fix the dependency instead of guessing an order.\n\n**A run fails partway.** Say the UAT apply for `catalogs` fails because `sp-sales-etl-uat` is missing a grant (a permission). Then `jobs`, which waits for `catalogs`, should not run on top of a broken stack. Stop or skip everything downstream of the failed stack. Stacks that never waited on it, like `monitoring`, can still finish.\n\n**Many stacks at once.** With dozens of stacks, running one at a time is slow. Real Spacelift can run every ready stack side by side. In that case there is no single queue, so \"first by name\" doesn't describe real timing. It is only a tie-break that keeps the lesson's one-at-a-time order predictable. What still holds is the waiting rule: a stack never starts before the stacks it waits for.",
+   "step": "Learn",
+   "fingerprint": "366448c87e3741e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The failed-run and parallel-run points go beyond the lesson but don't contradict it; the failure and parallel sections run a bit over the two-to-three-sentence guide."
+   }
+  },
+  "learn:term": {
+   "q": "How is “Spacelift” different from “stack”?",
+   "a": "**Spacelift** is the tool. A **stack** is one piece of work that the tool runs.\n\nSpacelift is a service that runs Terraform for you. It watches your code. When the code changes, it makes a plan (a preview of what will change), runs policy checks, and applies the change once approved. It also remembers which stacks wait for which.\n\nA stack is one Terraform folder with its own state. \"State\" is Terraform's record of what it has already built. In this lesson, `network`, `workspace`, `monitoring`, `catalogs` and `jobs` are each a separate stack.\n\nThink of an airport. Spacelift is the control tower. Each stack is one plane. The tower decides when each plane leaves. It knows which planes must arrive before another can go.\n\nHere is how they work together. When `network` changes, Spacelift notices. It starts runs for every stack downstream, meaning every stack that waits for `network`, directly or through another stack. Then it puts them in order: `monitoring`, `workspace`, `catalogs`, `jobs`. `jobs` goes last because it waits for both `workspace` and `catalogs`.\n\nSo there is one Spacelift and many stacks.",
+   "step": "Learn",
+   "fingerprint": "072fa420332b313c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

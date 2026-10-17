@@ -1,0 +1,1330 @@
+{
+ "biggest_swing": {
+  "check:0:0": {
+   "q": "Why not “The token price, because it is on the monthly b…”?",
+   "a": "It's a fair instinct. The token price is real money, and it shows up on the bill every month. It's also easy to see, which makes it feel important. You should still keep an eye on it.\n\nBut this lesson asks a different question. It isn't \"which cost is most visible?\" It's \"which guess, if we got it wrong, would change the answer most?\" That's what the **swing** tells you: how far the monthly value moves when one guess goes from its bad value to its good one.\n\nDoubling the token price moves the value by about $390. Even if your price guess is way off, the plan barely changes. Measuring it carefully in the POC (the proof of concept, a small trial run) would teach you very little.\n\nThe success rate swings the value by $18,900. That's about 48 times bigger. If the AI is right only 50 in 100 times, the plan could fall apart. That's the guess to pin down.\n\n\"How often the AI is right, on labelled past tickets\" is better because it targets the guess with the biggest swing, and it measures that guess against real, hand-checked answers.",
+   "step": "Check",
+   "fingerprint": "64356a01b4e900f0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “The fixed monthly costs, because they come ever…”?",
+   "a": "That answer has one thing right. Fixed costs are real, and they come off the value every month. A plan has to count them.\n\nBut \"comes every month\" isn't what makes a guess worth measuring. Every part of this plan is monthly. Tasks, savings and the token bill all repeat each month too. So repeating doesn't set fixed costs apart.\n\nWhat matters is the **swing**: how far the answer moves when you change one guess from its bad value to its good value. Fixed costs are usually well known already, because they come from contracts and quotes. A guess you already know well has a small swing, so a trial learns little by measuring it.\n\nThe question gives you the swings to compare. Token price moves the value by about $390. How often the AI is right moves it by $18,900. That second one is the guess that can sink the plan. It's also the one nobody knows yet.\n\n\"How often the AI is right, on labelled past tickets\" is better because it measures the guess with the biggest swing, using real tickets where the right answer is already known.",
+   "step": "Check",
+   "fingerprint": "99debc02ee68fa75",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that fixed costs are usually well known from contracts and quotes is not in the lesson, which treats every input as an assumption. It doesn't contradict the lesson, but it is the main reason given for ruling out fixed costs."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Nothing: two at a time is faster”?",
+   "a": "It's true that moving two guesses together means fewer runs, so it is faster. But speed isn't the goal. The goal is to find **which** guess matters most, and moving two at once hides that.\n\nHere's why. Say the teammate drops the task count from 6000 to 3000 and success from 0.8 to 0.5 at the same time. The monthly value falls from $23,600 to $500. That's a big drop. But which guess caused it? You can't split the drop between them.\n\nTry them one at a time instead:\n\n- Success at 0.5 alone gives $11,000. That's a drop of $12,600.\n- Tasks at 3000 alone gives $6,800. That's a drop of $16,800.\n\nNotice that these two drops don't add up to the combined drop. The guesses multiply together in the formula, so their effects tangle. That's another reason a joint move can't be pulled apart afterwards.\n\nSo \"Nothing\" misses the whole point. A faster answer that can't tell you what to measure isn't useful.\n\n\"You can't tell which guess moved it\" is better because a sensitivity analysis only works when each swing belongs to one guess, so you can compare the swings and measure the biggest one hardest.",
+   "step": "Check",
+   "fingerprint": "2848e51c673afa02",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “They should move every guess at once”?",
+   "a": "\"They should move every guess at once\" gets one thing right. Moving all the guesses together to their bad values, then to their good values, is a real and useful check. It shows the full range the plan could land in, from the **worst case** to the **best case**.\n\nBut it doesn't fix the teammate's problem. It makes it worse. The teammate moved two guesses together, so when the monthly value dropped, nobody could say which guess caused the drop. Move every guess and the answer still moves, but the blame is now spread across all of them.\n\nA **sensitivity analysis** has one job: find the guess with the biggest **swing**, meaning how far the answer moves when that one guess goes from bad to good. To see each guess's own swing, you change only that guess and hold the others at their expected values. Then you can compare swings and know where to spend your trial, such as hand-labelling 50 tickets to measure `success`.\n\n\"You can't tell which guess moved it\" is better because it names the real flaw: changing guesses together hides each one's swing.",
+   "step": "Check",
+   "fingerprint": "1cd57021bc4a2203",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that moving all guesses to worst or best together is a 'real and useful check' goes slightly beyond the lesson, though it doesn't contradict it. The answer is about 186 words, so it fits the limit."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Ask staff how good they think it will be”?",
+   "a": "Asking staff is cheap and quick, and that part is right. Staff know the tickets well. They might warn you about tricky cases, like policy questions with exceptions, and that is useful to hear.\n\nBut their answer is still a guess. You would be swapping one guess for another. The whole point of the sensitivity analysis was to find the guess with the biggest swing, here `success`, and replace it with something real. An opinion can't do that.\n\nPeople are also poor at judging AI accuracy in their heads. Some expect it to be nearly perfect. Others expect it to fail at everything. Either way, the number you put in the plan could be badly off. And with this guess, a wrong number moves the value anywhere from $11,000 to $29,900.\n\nOpinions also can't be checked or repeated. If someone asks \"how do you know it's 80 in 100?\", \"staff said so\" is weak.\n\nTrying the prompt on 50 past tickets labelled by hand (each one marked by a person with the correct answer) is better. It is still cheap, and it gives you a measured share of right answers that you can put in place of the `success` guess.",
+   "step": "Check",
+   "fingerprint": "8e9a1153ef694895",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes, but it is right at the ~200-word limit, and the claim that people judge AI accuracy poorly goes beyond the lesson, though it doesn't contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Read the model maker's benchmark scores”?",
+   "a": "Reading the model maker's benchmark scores is cheap, and that part is right. A **benchmark** is a standard test the maker runs on its model, such as maths puzzles or general knowledge questions. The scores are free to read and give a rough idea of how capable the model is in general.\n\nBut they don't measure your guess. The `success` guess is \"how often the AI is right on *our* HR tickets, with *our* prompt.\" A benchmark uses someone else's questions, someone else's prompt, and none of your company's policies. A model can score well there and still get your tickets wrong. The maker also picks which tests to publish, so the numbers may lean flattering.\n\nThat matters most here. This guess has the biggest swing in the plan, from $11,000 to $29,900. So it deserves a real measurement, not a borrowed one.\n\nTrying the prompt on 50 past tickets labelled by hand is better because it is still cheap, and it measures the exact thing the plan depends on: your tickets, your prompt, and your idea of a correct answer.",
+   "step": "Check",
+   "fingerprint": "c11a77a9eaa813e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that makers choose which tests to publish goes beyond the lesson, but it does not contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Move one guess, keep the biggest” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"A business case rests on guesses, called assumptions. Examples are how many tasks there are, how often the AI is right, and how much each task saves. A trial can't measure everything. So teams often measure the easy things and miss the one guess that sinks the plan.\"\n\n*The idea:* \"I run a sensitivity analysis. I move one guess from its worst case to its best case. I keep the others at their expected value. The swing is how far the result moves. In an HR example, the AI's success rate swung the monthly value by about $18,900. Doubling the token price cost only about $390. So I'd measure success first, by testing the prompt on 50 hand-labelled past tickets with MLflow.\"\n\n*The trade-off:* \"Moving one guess at a time misses guesses that make each other worse. Low success and high costs together can hurt more than either alone.\"\n\n**Likely follow-up:** \"Where do your low and high values come from?\"\n\n*Hint:* Agree them with the business owner before you start, so nobody picks them to suit the answer. Then swap the biggest-swing guess for a measured number.",
+   "step": "Explain",
+   "fingerprint": "ca31cc3add93580f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The $18,900 swing (50% to 95% success) is set beside the $390 cost of doubling the token price, so the two ranges differ. The one-at-a-time trade-off is the tutor's own addition, though it does not contradict the lesson."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The trial measured the easy things.** You have exact token costs and task counts. But `success`, how often the AI is right, is still a number someone picked in a meeting.\n- **The value collapses after launch.** The plan promised about $23,600 a month. Real use delivers closer to $11,000. Often the cause is a hit rate that was never tested on real tickets.\n- **The swings look odd.** Every guess shows a similar swing. That can mean two guesses were moved at once, or the low and high values were set too close together. A swing below zero means the gap wasn't made positive.\n- **No one agreed the ranges.** The worst, base and best cases came from one person, not from you and the business owner together.\n\n**Quickest check**\n\nMake a small table. Give each guess one row with its low, base and high value and its swing. Sort the rows by swing, biggest first. Look at the top row. Has that guess been measured, for example on 50 hand-labelled past tickets? Or is it still a guess? If it's still a guess, the analysis was skipped where it mattered most.",
+   "step": "Learn",
+   "fingerprint": "ae0fe2b1ee58b6de",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No serious problems. Minor: 'Every guess shows a similar swing' is not in the lesson and is not always a sign of error, and 'hit rate' is not defined."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "One-guess-at-a-time works well for a first look. Here are three places it needs extra care.\n\n**Guesses that move together.** Sometimes guesses are linked. More tasks might mean harder tickets, so `success` drops as `tasks` rises. Changing one at a time hides this. Also test a few combined scenarios, such as \"everything bad at once,\" to see the real downside.\n\n**Cliffs in the middle.** The method only checks the low and high ends. But value may not change smoothly. If staff stop trusting the AI below 70 in 100 right, value could collapse at that point. Check a few middle values too, and ask the business owner where the cliffs are.\n\n**Guesses that drift over time.** A share measured on 50 past tickets is a snapshot. New ticket types, policy changes or a model update can change it. A share from only 50 tickets is also rough. So re-run the evaluation on fresh hand-labelled tickets regularly. Then update the plan with the new number.",
+   "step": "Learn",
+   "fingerprint": "c097c8d6d0915713",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; each point runs slightly over the 2-3 sentence guide (the drift point has about five), but the content is accurate, plain and about 165 words."
+   }
+  },
+  "learn:term": {
+   "q": "How is “worst case” different from “base case”?",
+   "a": "**Base case** is your expected value for a guess: the number you think is most likely. **Worst case** is a bad but still believable value for that same guess. You and the business owner agree on both, along with a **best case** (a good but believable value).\n\nThink of a commute. Most days it takes 30 minutes. That's your base case. On a bad-traffic day it takes 50. That's your worst case. You plan around 30, but you want to know how late a bad day could make you.\n\nThey work together in the sensitivity analysis. Every guess starts at its base case. Then you move just one guess to its worst case, then to its best case, and see how far the answer moves. That gap is the **swing**.\n\nIn the HR example, `tasks` stays at 6000, `saving` at 7 and `fixed` at 10000. The base case for `success` is 0.8, which gives about $23,600 a month. Its worst case is 0.5, which drops the value to $11,000. Its best case is 0.95, which gives $29,900. So the swing for `success` is $18,900.",
+   "step": "Learn",
+   "fingerprint": "5869eb3431624bde",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "cost_per_finished_task": {
+  "check:0:0": {
+   "q": "Why not “The cheaper model still sends the same number o…”?",
+   "a": "That option is partly true. A cheaper model may well use about the same number of **tokens** (the small chunks of text a model reads and writes). But it does not explain the result.\n\nThe token bill is tokens times price. If the price halves and the tokens stay the same, the model's bill still halves. In the HR ticket example, it drops from 6.5 cents to about 3.25 cents. So \"same number of tokens\" can't be why the cost hardly moves. The bill did move.\n\nWhat the option misses is the size of the other costs. A finished ticket costs about $1.865:\n\n- model: $0.065\n- **human review** (a person checking some answers): $0.60\n- **rework** (redoing failed answers): $1.20\n\nSaving about 3 cents out of $1.865 is under 2 percent. That is why the total barely changes.\n\n\"Checking and redoing answers cost far more than tokens\" is the better answer. It names the real reason: the model is under 4 percent of the cost per finished task, so even halving it can't shift the total much.",
+   "step": "Check",
+   "fingerprint": "25dde2cfe935fe8a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Token prices only count for answers, not for pr…”?",
+   "a": "That option has a small grain of truth. Output tokens (the words the model writes back) often cost more each than input tokens. Tokens are the small chunks of text a model reads and writes. But the option is still wrong. You pay for prompt tokens too, the text you send in. The lesson's MLflow code counts both: `input_tokens * IN` plus `output_tokens * OUT`.\n\nIt also misses the point of the question. Even if only answers were billed, that would not explain why halving the price barely moves the total.\n\nLook at the HR ticket numbers:\n\n- Model: $0.065\n- Checking: $0.60\n- Redo: $1.20\n- Total: $1.865\n\nHalve the model cost and it drops to about $0.0325. The total becomes about $1.83. You save roughly 3 cents, under 2 percent. The checking and redo costs don't change at all, because people's time costs the same whichever model you use.\n\n\"Checking and redoing answers cost far more than tokens\" is the better answer because the model is under 4 percent of a finished ticket. So even a big cut to token prices hardly changes the total.",
+   "step": "Check",
+   "fingerprint": "a75ad0b364a817b9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; minor nits are that the closing explanation runs to two sentences rather than the requested one, and the inline `input_tokens * IN` code is slightly technical."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The model's price list”?",
+   "a": "The model's price list is a real source in this lesson, just not for this number.\n\nIt tells you one thing: what the model charges for tokens. Tokens are the small chunks of text the model reads and writes. That price goes into the model's share of the cost, the 6.5 cents in the HR ticket example.\n\nBut checking an answer is human work. How long it takes depends on your team, your tickets and how your HR process runs. The model's maker has no idea how fast your staff read and approve an answer. So the price list simply doesn't contain that number.\n\nThere's a second reason it matters. In the HR ticket bot, the model is under 4 percent of the cost per finished task. Checking and redoing failed answers are most of the bill. Getting the check time right moves the total far more than the token price does.\n\nThe business owner is better because they run the work, so they know how long a check takes, how many answers get checked and what an hour of staff time costs.",
+   "step": "Check",
+   "fingerprint": "6386ca7b578433f4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The POC's traces”?",
+   "a": "\"The POC's traces\" sounds reasonable. The POC (proof of concept, a small trial build) is where you measure things. But traces are the wrong tool for this number.\n\nA trace is the record MLflow saves each time the bot runs. In the lesson's code, the useful part is `token_usage`: how many tokens went in and came out. Multiply those by the price list's token prices and you get the model's cost per task. So traces are the right source for that part.\n\nWhat traces don't hold is a person's checking time. The checking happens after the bot answers, by a human, outside the model run. The lesson's code says this directly: \"Checking and redo costs come from the POC's review notes, not traces.\" So traces miss this number completely.\n\nThen the lesson names who supplies the check details. The business owner gives the hourly rate, how many answers get checked, and how long a check takes.\n\n\"The business owner\" is better because the lesson lists them as the source for how long a person takes to check one answer.",
+   "step": "Check",
+   "fingerprint": "629c3615e8a9860c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It stays the same: tokens didn't change”?",
+   "a": "That option gets one thing right. The tokens did not change, so the model's bill per task stays the same. A prompt fix that keeps the same tokens costs nothing extra to run.\n\nWhat it misses is that tokens are only one part of the **cost per finished task**. That cost is the model's bill, plus **human review** (a person checking some answers), plus **rework** (redoing the answers that fail). In the lesson's HR ticket bot, the model is under 4 percent of the total. Most of the money sits in the people costs.\n\nHalving failures shrinks the rework part directly. Say each redo costs $8, like the lesson's example:\n\n- Before: 1 in 5 fails, so rework is 0.2 × $8 = $1.60 a task.\n- After: 1 in 10 fails, so rework is 0.1 × $8 = $0.80 a task.\n\nThat saves 80 cents on every task. The token bill stays the same, so the total still drops.\n\n\"It goes down: less rework to pay for\" is better because the cost per finished task includes paying people to redo failures, and fewer failures means less of that cost.",
+   "step": "Check",
+   "fingerprint": "65504a05b22d5014",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “It goes up: fixes always cost more”?",
+   "a": "**Why not \"It goes up: fixes always cost more\"?**\n\nThis answer has one fair point. Making a fix takes some work. Someone has to rewrite and test the prompt, and some fixes do make prompts longer and pricier.\n\nBut the question rules that out. It says the tokens stay the same, so the model's bill per task does not change. The work of writing the fix happens once. It is not paid again on every ticket, so it is not part of the cost per finished task.\n\nWhat the answer misses is **rework**, the cost of redoing failed answers. That cost depends on how often answers fail. Say a redo costs $8, like the HR ticket by hand:\n\n- 1 in 5 fail: 0.2 × $8 = $1.60 a task\n- Half as many, 1 in 10: 0.1 × $8 = $0.80 a task\n\nThat saves 80 cents on every task. The model's bill is the same, so nothing grows to cancel it out.\n\n**Why \"It goes down: less rework to pay for\" is better:** halving the failures halves the rework cost, and nothing else in the total gets bigger, so each finished task costs less.",
+   "step": "Check",
+   "fingerprint": "5a7730c8ef56da7d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Add checking and redoing to the cost” matter?",
+   "a": "When people price an AI task, they often look only at the token bill. That is the money the model provider charges for the text going in and out. It is usually the smallest part.\n\nThe real cost of a finished task adds two more things. First, a person checks some answers. That is **human review**. Second, someone fixes the answers that fail. That is **rework**.\n\nIf you skip these, your saving looks far bigger than it is. Then the project gets approved, the real bills arrive, and the value seems to vanish. That is one reason many AI trials get dropped.\n\nA small example: a task costs $5 by hand today, and the model costs 10 cents. That looks like a $4.90 saving. Now add the other two costs:\n\n- **Checking:** 40 in 100 answers get checked, 3 minutes each, at $60 an hour. That adds $1.20.\n- **Redoing:** 20 in 100 answers fail and cost $5 each to redo. That adds $1.00.\n\nThe real cost is $2.30, so the true saving is $2.70. It is not $4.90. Pricing it fully up front avoids that surprise.",
+   "step": "Explain",
+   "fingerprint": "c017ce5f91c25f7f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The arithmetic checks out ($1.20 checking + $1.00 redo + $0.10 model = $2.30, so a $2.70 saving). Calling it the 'true saving' slightly glosses over the separate cost of uncaught mistakes, but this is minor and nothing in it contradicts the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add up the three costs” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* Teams often price an AI task by the model's token bill alone. That number looks tiny, so the project looks cheap. Then the real costs show up, and the project gets dropped after the trial.\n\n*The idea:* I price a finished task instead. That's three costs added together. First, the model's tokens. Second, a person checking some answers, called human review. Third, redoing the answers that fail, called rework. In an HR ticket example, the model was under 4 percent of about $1.87 a ticket. Each number has a clear source: the price list, the trial build, or the business owner.\n\n*An edge case:* Some wrong answers slip through unnoticed and cost money later. I keep that cost separate and take it off the saving, so it isn't counted twice.\n\n**A likely follow-up**\n\n\"How would you bring this cost down?\"\n\n*Hint:* Don't start with a cheaper model, because it's the smallest slice. First, lower the failure rate, since each failure costs a full redo. Then, once the bot has earned trust, check fewer answers.",
+   "step": "Explain",
+   "fingerprint": "3062908581127310",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor only: \"tokens\" is not explained, and \"so it isn't counted twice\" is the tutor's own reason, not one the lesson states. Neither contradicts the lesson."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The saving looks too good.** The plan says a ticket costs a few cents, so nearly all of today's $8 looks saved. Later the real spend is far higher, because people's time was never counted.\n- **The model is most of the cost.** In a task with human review, the model's bill is usually a small slice. In the HR ticket bot it is under 4 percent. If your token cost is close to your total, review or rework is probably missing.\n- **The trial measured only tokens.** Your POC (the small trial build) reports token counts but no failure rate. Nobody wrote down how many answers were checked or how long a check took.\n- **Numbers have no source.** The hourly rate or check time was guessed instead of coming from the business owner.\n- **Slipped-through mistakes are counted twice.** They appear inside the cost per task and are also taken off the saving.\n\n**Quickest check**\n\nRebuild one finished task by hand, the way the lesson's $1.865 example does. Add the token cost, the checking cost and the redo cost. Then see whether the model share looks plausibly small. Also confirm that every number names where it came from.",
+   "step": "Learn",
+   "fingerprint": "757f07303eeecd8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the claim that the model is 'usually a small slice' goes slightly beyond the lesson (which only says under 4 percent for the HR bot), and the length is close to the 200-word limit."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. When the work drifts over time.** The POC measured tokens and failure rates on today's tickets. New policies, new question types or a model update can change both. Re-check them from live traces and review notes every so often, and redo the sum when they move.\n\n**2. When the trial was tiny.** If the POC saw only a few dozen tickets, its failure rate is a rough guess, and a small swing changes the redo cost a lot. Price a low and a high case, and ask the business owner again later, since the share they want checked may drop as trust grows.\n\n**3. When one task makes many model calls.** An agent (a program that lets the model choose steps and use tools) may loop or retry, so some tasks cost far more tokens than others. An average can hide this. Look at the most expensive tasks too, and set a limit on steps per task.",
+   "step": "Learn",
+   "fingerprint": "f78bcc6d0762de44",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “fully loaded cost” different from “human review”?",
+   "a": "They sit at different levels. One is the whole bill. The other is one line on that bill.\n\n**Fully loaded cost** is the total cost of one finished task. It adds up three parts: the model's token bill, plus human review, plus rework (redoing the answers that fail).\n\n**Human review** is just one of those parts. It is the cost of a person checking some of the answers. You get it from how many answers are checked, how long each check takes, and that person's hourly rate.\n\nSo human review feeds into the fully loaded cost. It is never the whole of it.\n\nThink of a meal at a restaurant. The fully loaded cost is everything it took to put the plate on the table. Human review is like the chef tasting some dishes before they go out. It is a real cost, but only one piece.\n\nIn the HR ticket bot:\n\n- Model: $0.065\n- Human review: 30 in 100 checked, 2 minutes each, at $60 an hour = $0.60\n- Rework: $1.20\n- Fully loaded cost: $1.865 a ticket\n\nHere human review costs about nine times the model's bill.",
+   "step": "Learn",
+   "fingerprint": "3ab8eb5294e3a427",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "make_a_skill": {
+  "check:0:0": {
+   "q": "Why not “Ask Claude in the instructions to add up the co…”?",
+   "a": "Asking Claude to \"add up the costs carefully\" gets one thing right. It puts the cost step into the skill's instructions, so Claude will not forget to do it.\n\nBut it misses how a model works. Claude writes answers by predicting likely text, one piece at a time. It does not run a calculator underneath. Most of the time the sum comes out right. Sometimes a digit slips or a line gets skipped. The word \"carefully\" does not change that. It only asks for care. It does not give Claude a tool that cannot slip.\n\nThere is a second problem. The total might differ from one run to the next. For a cost figure that someone will use to decide whether to build, \"usually right\" is not good enough.\n\nA **script** is a small program the skill runs, like `scripts/tco.py` in this repository. It takes the cost inputs and does the arithmetic the same exact way every time. Claude's job becomes running it and reporting the table it prints.\n\nSo the script option is better because the computer does the exact maths and the model only explains the result.",
+   "step": "Check",
+   "fingerprint": "8a8d282986e64197",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Write the current prices into the description”?",
+   "a": "That option gets one thing right. To report a total cost of ownership (TCO, meaning every cost of running the system added up), the skill does need prices from somewhere.\n\nBut it puts them in the wrong place, and it still leaves the hard part unsolved.\n\n**Wrong place.** The description has one job: to tell Claude what the skill does and when to use it. Claude reads it up front, alongside every other skill's description, to decide whether this skill matches a request. It is capped at 1,024 characters. A price list there crowds out the \"when to use it\" wording, which makes the skill less likely to be picked at all.\n\n**Still unreliable.** Even with the right prices in front of it, Claude would still add up the total itself. A model can get sums wrong, especially when there are many line items.\n\n**Goes stale.** Prices change. Then a fixed list gives old answers with full confidence.\n\nA script is better because it does the arithmetic the same exact way every time. That is what the skill's `scripts/tco.py` does.",
+   "step": "Check",
+   "fingerprint": "4abed1ae5779a1ca",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'goes stale' point and the 'crowds out the when-to-use wording' point are reasonable inferences that go beyond the lesson but do not contradict it. The closing 'better' explanation also runs to two sentences instead of one."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The script that adds up costs”?",
+   "a": "The script is a real part of the skill. It matters because a model can get sums wrong and `scripts/tco.py` cannot. If Claude used your skill but reported a wrong total cost, the script would be a good place to look.\n\nBut that is not the problem here. The problem is that Claude never uses the skill at all. The script only runs at step 8, after Claude has already picked the skill and started following its steps. If the skill is never picked, the script never runs. So changing it cannot fix this.\n\nThink about what Claude sees first. Up front, it reads only the `name` and `description` of every skill. It loads the rest, including the steps and the script, only when a request matches. So when a skill is ignored, the cause sits in those few lines of frontmatter, the settings between the `---` markers.\n\n\"The description: when to use it\" is better because the description is what Claude checks to decide whether your skill fits the request. A vague or missing \"Use when...\" means it never gets chosen.",
+   "step": "Check",
+   "fingerprint": "838715e60da93902",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the last paragraph runs to two sentences where one was requested, and 'never gets chosen' slightly overstates the lesson, but neither is wrong."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The output format at the end”?",
+   "a": "The output format is a fair thing to check. It shapes what Claude writes back once the skill is running. A messy format can make the answer hard to read.\n\nBut that is not the problem here. The skill never runs at all. The output format sits in the body of `SKILL.md`, and Claude only opens the body *after* it has picked the skill. So fixing the format can't help Claude pick it.\n\nHere is the order Claude works in:\n\n1. Up front, it reads just the `name` and `description` of every skill.\n2. If a request matches one, it loads the rest: the steps, the output format, any reference files.\n\nYour skill is failing at step 1. If the description is vague, or doesn't say when to use it, Claude never reaches step 2. A clear \"Use when someone asks whether an AI idea is worth doing...\" gives it a reason to match.\n\nThe description is better because, of the two things Claude reads up front, it is the one that says when to use the skill, and that decides whether the skill is ever picked.",
+   "step": "Check",
+   "fingerprint": "7e3a49c4c9f4d4d9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “In ~/.claude/skills/ in your home”?",
+   "a": "`~/.claude/skills/` does work. Claude Code would find the skill there and load it. The catch is whose computer that folder is on.\n\nThe `~` symbol is shorthand for your home folder, the personal folder your user account owns. So `~/.claude/skills/` exists only on your machine. A skill you put there is yours alone. That is the right spot for something just for you, like a personal habit or a draft you are still testing.\n\nThe question asks for everyone on the project. Your teammates each have their own home folder. Your copy never reaches theirs. Each person would have to copy the folder by hand, and their copies would drift apart as you edit yours.\n\nA project's `.claude/skills/` folder sits inside the project's repository. A repository is the shared folder of code the whole team works from, usually tracked with Git. Git is a tool that records changes and shares them between people. When you commit the skill there and teammates pull the latest changes, they all get the same version, including later fixes.\n\n**In the project's `.claude/skills/` is better because the skill travels with the project, so everyone gets one identical, up-to-date copy automatically.**",
+   "step": "Check",
+   "fingerprint": "9e3ae2a6af0f6204",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The Git, commit and pull details go beyond the lesson but do not contradict it, and the answer is about 195 words, just under the limit."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Zipped and uploaded in Settings”?",
+   "a": "\"Zipped and uploaded in Settings\" is a real way to install a skill, so it is not a made-up option. But it belongs to a different place and a different audience.\n\n**What it gets right:** On claude.ai (the chat website), you do zip the skill folder and upload it in Settings, with code execution turned on. That works.\n\n**What it misses:** The question asks about two things.\n\n- **Claude Code**, the tool that runs in your terminal and works inside your project folder. Uploading in claude.ai Settings does not put the skill into Claude Code.\n- **Everyone on your project.** An upload in Settings is tied to your own account. Your teammates would each have to zip and upload it themselves.\n\nA project's `.claude/skills/` folder sits inside the project's files. When the project is shared, for example through git (a tool that tracks and shares code changes), the skill goes along with it. Anyone who opens the project in Claude Code gets `vet-ai-use-case` with no extra setup.\n\n**Why `.claude/skills/` wins:** it lives inside the project itself, so every teammate who uses the project in Claude Code gets the skill automatically.",
+   "step": "Check",
+   "fingerprint": "5e40d09a1869aa25",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. The claims about git sharing and uploads being tied to one account go beyond the lesson but do not contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check the rules, then write the file” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem.** A Claude skill is a `SKILL.md` file. Claude reads its name and description first. If those break the rules, the skill will not load. So a file that looks fine can still be useless.\n\n**The idea.** I check before I write. First I collect every rule the name or description breaks. If there are any, I return them all together, so they can be fixed in one go. Only when everything passes do I build the file. That means the frontmatter (the settings between `---` markers), then a title, then the numbered steps. It's like a form that is checked before it is sent.\n\n**A trade-off.** Collecting every problem takes a little more care than stopping at the first one. But it saves round trips. Nobody fixes one error only to hit the next.\n\n**A likely follow-up:** \"Why not just write the file and let Claude reject it?\"\n\n*Hint for a strong answer:* A file that breaks the rules simply will not load. Checking first means you only ever produce a file that works. You also get clear reasons for any failure, at the moment you can fix them.",
+   "step": "Explain",
+   "fingerprint": "2cdc72f37bcfde5f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The line 'you only ever produce a file that works' slightly overclaims, since passing the checks only means the file will load."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\nThe clearest sign is silence. You ask Claude to assess an AI idea and it just answers freely, with no gates or cost table. That usually means the skill never loaded. Either the frontmatter (the settings between the `---` markers) broke a rule, or the description was too vague to match your request.\n\nA second sign is drift. Two similar ideas get vetted in different orders, or a step goes missing. The steps in the body may be unclear, or too long for Claude to follow closely.\n\nA third sign is wrong sums. The total cost of ownership doesn't add up when you check it by hand. That means Claude did the maths itself instead of running `scripts/tco.py`.\n\n**Quickest check**\n\nIn Claude Code, type `/vet-ai-use-case`. If it isn't offered, the skill didn't load. Check the folder location and the frontmatter.\n\nNext, ask a plain question like \"Is this AI idea worth building?\" without naming the skill. If the skill doesn't start, rewrite the description so it clearly says when to use it.\n\nFinally, run one test idea with a known gap. Check that the gap gets flagged and that the cost table came from the script.",
+   "step": "Learn",
+   "fingerprint": "75deb3e474874160",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the answer sits right at the ~200-word limit, and 'That means Claude did the maths itself' is a slight overclaim, since wrong inputs could also give a bad total."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "A skill keeps working only while its trigger, its tools and its facts stay right. Here are three places that can break.\n\n**Many skills with similar descriptions.** Claude picks a skill from its name and description alone, so two overlapping skills can fire at the wrong time. Make each description name a clear, distinct trigger, then test with requests meant to match it and requests meant to skip it.\n\n**No way to run the script.** On claude.ai, the cost step depends on code execution being turned on in Settings. If it is off, Claude may add up the cost itself and get it wrong, so turn it on, or have the skill say plainly that the table could not be produced.\n\n**Your vetting rules or prices change.** The skill only knows what you wrote, so old gates or cost rates give confident but stale answers. Keep changing details in reference files or script inputs, review them on a schedule, and rerun your test cases after each edit.",
+   "step": "Learn",
+   "fingerprint": "d6d0b70f88cd6283",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “Claude skill” different from “SKILL.md”?",
+   "a": "A **Claude skill** is the whole package: a folder that teaches Claude one routine. **`SKILL.md`** is one file inside that folder, the one holding the instructions.\n\nThink of a meal kit. The skill is the whole box. `SKILL.md` is the recipe card on top. The box can also hold extra items, such as pre-measured spices. Those are like reference files and scripts. You can't have the kit without the card, but the card alone isn't the whole kit.\n\nIn this lesson's example, the skill is the folder `.claude/skills/vet-ai-use-case`. Inside it:\n\n- `SKILL.md` holds the frontmatter (the settings between `---` markers, such as `name` and `description`) and the numbered steps.\n- `scripts/tco.py` is a helper script that adds up the cost table exactly.\n\nThey work together like this. Claude first reads only the `name` and `description` from `SKILL.md`. If a request matches, it reads the rest of the file. Then it follows the steps, opening the other files only when a step needs them. For example, step 8 tells it to run `tco.py`.\n\nSo `SKILL.md` is the required core, and the skill is that file plus everything it brings along.",
+   "step": "Learn",
+   "fingerprint": "f55104f444e8c929",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "payback_plan": {
+  "check:0:0": {
+   "q": "Why not “It pays back the build, just more slowly than p…”?",
+   "a": "That answer gets one thing right. Each task still saves money. The saving per task doesn't vanish just because volume is low.\n\nWhat it misses is what break-even means. Break-even is the number of tasks a month you need just to cover the fixed monthly costs (search, logging, monitoring). Below that line, the savings don't even pay the running bills. Nothing is left over to pay back the build.\n\nHere's an example with numbers that fit the question. Say each task saves $5 and fixed costs are $10,000 a month. Then break-even is $10,000 ÷ $5 = 2,000 tasks.\n\n- At 1,500 tasks: 1,500 × $5 = $7,500 saved.\n- Minus $10,000 fixed = **−$2,500 a month**.\n\nSo the monthly net is below zero. \"Slower payback\" would need a smaller *positive* net. A negative net means each month digs the hole deeper. That's why payback has no answer here, and the lesson's code returns `None`, Python's word for no value.\n\n\"It loses money every month, so the build never pays back\" is better because it sees that falling below break-even makes the monthly net negative, not just smaller.",
+   "step": "Check",
+   "fingerprint": "2b042d30bfca2e6a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It is fine, because break-even ignores the buil…”?",
+   "a": "That option gets one thing right. Break-even really does ignore the build cost. It only asks how many tasks a month you need to cover the running costs, like search, logging and monitoring.\n\nBut it draws the wrong conclusion from that. Leaving out the build doesn't make things safer. It means break-even is the *easiest* bar to clear. If you can't clear it, you're in trouble before the build even comes up.\n\nHere's a quick picture. Say break-even is 2,000 tasks because fixed costs are $10,000 a month and each task saves $5. At 1,500 tasks, you save $7,500. You still pay $10,000. So the **monthly net** (savings minus fixed costs) is minus $2,500. You lose money every single month.\n\nWith a negative monthly net, there's nothing to pay the build back with. **Payback** (build cost divided by monthly net) has no sensible answer. That's why the lesson says payback is `None` in that case.\n\n\"It loses money every month, so the build never pays back\" is better because it reads falling short of break-even correctly. Running costs aren't covered, so the build can't be recovered either.",
+   "step": "Check",
+   "fingerprint": "25e34656ea7e8ca5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “A hard saving: it cuts the bill”?",
+   "a": "\"A hard saving: it cuts the bill\" gets one thing right. The bot really does save staff time, and that time has value.\n\nBut a hard saving means money actually leaves the bill. In this lesson, that only happens in two ways: the company hires fewer people, or it pays less overtime. The business owner has just said neither will happen. The same people get paid the same amount, so the bill stays the same.\n\nWhat you get instead is freed-up time. Staff have quieter afternoons, or they spend those hours on other work. That can still be useful. It just doesn't lower costs on its own.\n\nThis matters for the numbers. Your saving per task feeds straight into monthly net, payback and break-even. If you count soft time as hard money, all three look better than they really are. A build could look like it pays back in six months when it never pays back at all.\n\n\"A soft saving: time, not money\" is better because it says exactly what happened: staff gained time, but no money left the bill.",
+   "step": "Check",
+   "fingerprint": "007c6471bb474268",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only slight stretch is 'only two ways' and 'never pays back at all', which go a little beyond the lesson's wording but do not contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “A fixed cost: it comes monthly”?",
+   "a": "\"A fixed cost: it comes monthly\" mixes up two different ideas from the lesson.\n\nIt gets one thing half right. Things do happen every month in this plan. The bot saves staff time every month.\n\nBut a **fixed cost** is money going *out*. It is what you pay each month to keep the bot running, like search, logging and monitoring. You pay it no matter how many tickets come in. The question is not about anything you pay. It is about something the bot *saves*. So the real question is what kind of saving it is.\n\nHere, the owner says nobody will be hired less and no overtime will be cut. Staff get time back, but the company's bills stay the same. That is a **soft saving**: quieter afternoons, not real money.\n\nThis matters for the numbers. Only **hard savings**, money that actually stops being spent, belong in `saving_per_task`. If you count soft savings, the monthly net looks bigger than it is. Then payback looks faster than it will really be.\n\n\"A soft saving: time, not money\" is better because it names exactly what is happening: time is saved, but no money is.",
+   "step": "Check",
+   "fingerprint": "0b800912f5f58084",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Break-even needs more tasks”?",
+   "a": "\"Break-even needs more tasks\" has the right instinct. A bigger cost usually means you need more to cover it. But it mixes up two different kinds of cost.\n\nBreak-even is `fixed / saving`. It only uses the **fixed monthly costs**, the bills that come every month (search, logging, monitoring), and the saving per task. The build cost is not in that sum at all. The build is a **one-off cost**: you pay it once, not every month. So a pricier build leaves break-even exactly where it was.\n\nBreak-even would need more tasks if the monthly bills went up, or if each task saved less. Neither happened here.\n\nThe build cost lives in payback, `build / net`. The monthly net hasn't changed, because tasks and saving stayed the same. So a bigger build divided by the same net gives more months.\n\nIn the HR example, say the build rises from $150,000 to $200,000:\n\n- Payback: 150,000 / 23,810 is about 6.3 months, and 200,000 / 23,810 is about 8.4 months.\n- Break-even: still 1,775 tickets a month.\n\n\"Payback takes longer\" is better because the build cost only feeds into payback, never into break-even.",
+   "step": "Check",
+   "fingerprint": "c90243fa8ceacdd7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it is close to the 200-word limit and uses slash-division shorthand like `build / net`, but this matches the lesson's own formulas."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The monthly net goes down”?",
+   "a": "It's a natural guess, because a bigger bill feels like it should shrink every number. But look at what goes into the monthly net.\n\n**Monthly net** is the saving per task times tasks a month, minus the fixed monthly costs. The fixed monthly costs are things like search, logging and monitoring. The build cost isn't in that sum at all.\n\nThe build cost is a **one-time** cost. You pay it once, up front. The monthly net only covers money that comes and goes every month. In this question, the saving per task and tasks a month stay the same. Nothing says the fixed monthly costs changed either. So the monthly net stays exactly where it was.\n\nThe build cost shows up in only one place: **payback**, which is the build cost divided by the monthly net. A bigger number on top, with the same number underneath, gives a bigger answer. For example, in the HR plan, a $200,000 build instead of $150,000 still has a net of $23,810 a month. Payback grows from about 6.3 months to about 8.4.\n\n\"Payback takes longer\" is better because the build cost only feeds into payback, so payback is the number that changes.",
+   "step": "Check",
+   "fingerprint": "49f3232f8b4bf7fd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The maths checks out ($150,000/$23,810 ≈ 6.3 and $200,000/$23,810 ≈ 8.4), and it stays right at the edge of the length limit. It says only vaguely what the 'net goes down' answer gets right."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check before you divide” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"A task can save money every time and still lose money overall. Running costs come every month, and the build has to be paid back. Payback months is the build cost divided by the monthly net. If the monthly net is zero, Python crashes on the divide. If it's negative, you get negative months, which looks like an answer but means nothing.\"\n\n*The idea:* \"So I work out the monthly net first: saving per task times tasks a month, minus fixed costs. I only divide if that net is above zero. If it isn't, I report 'no payback' instead of a fake number.\"\n\n*The edge case:* \"The trade-off is that 'no payback' isn't a number. Whatever reads the result has to handle that case, or a chart or report could break later.\"\n\n**A likely follow-up**\n\n*\"Break-even divides too. What could go wrong there?\"*\n\nHint for a strong answer: break-even is fixed costs divided by saving per task. If the saving per task is zero or negative, no number of tasks ever covers the running costs. So the same habit applies: check what you're dividing by before you divide.",
+   "step": "Explain",
+   "fingerprint": "35ed2d1fc0009da6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the math was skipped or done wrong**\n\n- **Payback comes out negative.** That means the monthly net was below zero and someone divided anyway. A negative number of months is nonsense. It really means \"never pays back.\"\n- **Payback is huge, like 80 months.** The net is barely above zero. A small dip in volume and it flips to a loss.\n- **Real tasks a month sit close to break-even.** If break-even is 1,775 and you only see 2,000 tickets, you have almost no cushion.\n- **The case looked great, then the savings never show up in the budget.** Often the \"saving\" was soft, like quieter afternoons. Nobody hired fewer people.\n- **Saving per task ignores uncaught mistakes.** The numbers look rosy until mistakes found later start costing money.\n- **The MLflow run still logs the original guesses.** Nobody swapped them for numbers the POC (proof of concept, the small trial build) actually measured.\n\n**Quickest check**\n\nTake the measured tasks a month from the POC. Compare it to break-even. Then redo the monthly net by hand. If it isn't comfortably above zero, the business case doesn't hold.",
+   "step": "Learn",
+   "fingerprint": "93e5c9327a4a1a71",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 80-month bullet blames a barely positive net, but a very large build cost could also cause a long payback. Otherwise it fits the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the simple formulas need care.\n\n**The monthly net is zero or negative.** Payback divides the build cost by the monthly net. If fixed costs eat all the savings, the net is zero or below. Dividing then gives an error or a meaningless negative number of months. The build never pays back, so payback should be `None`, Python's word for \"no value.\" Then compare tasks a month to break-even to see how far short you are.\n\n**The saving per task is zero or negative.** Break-even divides fixed costs by the saving per task. If the AI costs more per finished task than today's way, no number of tasks covers the running costs. Fix the cost per task first, for example with a cheaper model or fewer retries.\n\n**The numbers drift over time.** LLM prices change. Ticket volume grows or shrinks. Uncaught mistakes may rise as questions change. A single flat month can mislead. Swap the guesses for numbers the POC (proof of concept, a small trial) measured. Log them again in MLflow and recheck as they change.",
+   "step": "Learn",
+   "fingerprint": "cbea0429d02548ab",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": false,
+    "standalone": true,
+    "pass": false,
+    "notes": "The first case spells out the core logic of the `payback_plan` exercise: when the monthly net is zero or below, payback should be `None`. That hands the learner the key guard of the solution."
+   }
+  },
+  "learn:term": {
+   "q": "How is “hard saving” different from “soft saving”?",
+   "a": "Both come from the same thing: staff spending less time on a task. The difference is whether that freed time turns into real money.\n\nA **hard saving** shows up in the budget. In the lesson's words: fewer new hires or less overtime. Money that would have been spent is now not spent.\n\nA **soft saving** is time freed up that doesn't change any bill. People have quieter afternoons, but the company pays the same wages as before.\n\nAn everyday comparison: you buy a dishwasher. If it lets you cancel the cleaner you pay each week, that's a hard saving. If it just gives you a calmer evening, that's a soft saving. Nice, but your bank balance is the same.\n\nHow they work together: the lesson has the business owner confirm which kind the staff time saved really is. That check comes before you trust the numbers.\n\nIn the HR example, the saving per ticket is about $5.64. Times 6,000 tickets, that drives the monthly net and the 6.3-month payback. Those numbers only describe real money if the owner confirms the time saved is a hard saving.",
+   "step": "Learn",
+   "fingerprint": "3f6ea43dff4bf1f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the claim that the owner's check 'comes before' trusting the numbers is a mild inference but consistent with the lesson."
+   }
+  }
+ },
+ "peak_capacity": {
+  "check:0:1": {
+   "q": "Why not “The gateway counts only output tokens against t…”?",
+   "a": "That option gets one thing right. The gateway, the front door every request passes through, does have its own rate limits, and it can send back error 429, \"too many requests\".\n\nBut the claim itself is backwards. The lesson says limits count what a task *asks for*: the prompt plus the longest answer you allow. Input tokens count too. And if only output tokens counted, you would use up the limit *more slowly*. That would mean fewer 429 errors, not more.\n\nIt also misses the biggest clue in the question: \"every morning\". The errors show up at one time of day. A rule about which tokens get counted would apply all day long. A pattern tied to the clock points to traffic that bunches up. Many users arrive at once, so one busy minute goes over the tokens-per-minute limit even though the daily average sits far below it.\n\n\"It was sized from the daily average, not the busiest minute\" is better because it explains both the morning timing and why a low average still leads to 429 errors.",
+   "step": "Check",
+   "fingerprint": "4107127a757dc5d1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No hard failure. The weakest point is calling the claim 'backwards' and arguing it would cause fewer 429s, because the real flaw is that the lesson says the prompt plus the longest allowed answer is counted. The lesson also states that rule for the limit in general, not specifically for the gateway."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Tokens cost more in the morning, so the limit s…”?",
+   "a": "This option gets one thing right. It notices that the trouble is tied to a time of day. The errors come every morning, so something about mornings matters.\n\nBut it blames the wrong thing. The tokens-per-minute limit (the most tokens your deployment may use in one minute) is a fixed number set by the platform team. It does not shrink in the morning. Price also has nothing to do with error 429. Cost is what you pay for tokens. The limit is how many tokens a minute you are allowed. These are separate things.\n\nWhat really happens in the morning is a rush. Many users arrive at once, so the busiest minute carries far more tokens than an average minute. The daily average hides that rush because it spreads the traffic evenly across the whole day. The limit stays the same, but the demand jumps over it, and the model or the gateway sends back \"too many requests\".\n\n\"It was sized from the daily average, not the busiest minute\" is better because it names the real cause: the limit was set too low for the morning peak.",
+   "step": "Check",
+   "fingerprint": "d9f2326f32ccbb10",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No serious problems. The closing sentence is a little loose: it says the limit was 'set too low' rather than that the plan was sized from the daily average, and the answer runs close to 200 words."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The daily token total”?",
+   "a": "The daily token total isn't useless. It tells you how much work the system does in a day, which helps with things like cost. So it's a real number worth knowing.\n\nBut it doesn't answer this question. The limits that cause error 429 (\"too many requests\") are counted **per minute**, not per day. A daily total spreads the work evenly across the hours. That hides the busy minutes, which is exactly the mistake this lesson warns about. You've also already checked the busiest minute against the deployment's quota (the most tokens a minute that one copy of the model may use). Looking at the daily total adds nothing new about whether users will hit 429.\n\nWhat it misses is the second limit on the path. Every request passes through the **gateway**, the front door in front of the model. The gateway has its own **rate limits**, meaning caps on how much it lets through each minute. Your busiest minute could fit the model's quota and still be blocked at the gateway.\n\n\"The gateway's rate limits too\" is better because it checks the other per-minute limit that can also send back error 429.",
+   "step": "Check",
+   "fingerprint": "2833cf5b8f1439f4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Nothing: that's the only limit”?",
+   "a": "\"Nothing: that's the only limit\" gets one thing right. Checking the Foundry deployment's quota is a real and necessary step. A **quota** is the most tokens per minute that one **deployment** (your copy of the model) may use. If your busiest minute fits under it, the model itself won't turn you away.\n\nBut the model is not the only limit. Every request first passes through the **gateway**, the front door between your app and the model. The gateway has its own **rate limits**, which cap how much it lets through each minute. Those limits are set separately, often by the platform team. They can be lower than the deployment's quota.\n\nSo your busiest minute could fit the model's quota and still go over the gateway's limit. Users would still see error 429, \"too many requests\". It doesn't matter which limit sent it. To the user, it's the same failure.\n\nThink of it as two doors in a row. You need to fit through both.\n\n\"The gateway's rate limits too\" is better because it checks every limit on the request's path, and either one can send back a 429.",
+   "step": "Check",
+   "fingerprint": "435c0ac2252f8888",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Each task is sent three times”?",
+   "a": "\"Each task is sent three times\" gets one thing right. Multiplying by 3 does triple the tokens you plan for. But it gives the wrong reason for doing it.\n\nThe burst factor is not about repeats. Each task is still counted once. The factor is about *timing*. Even inside the busiest hour, tasks don't arrive evenly, one neat batch per minute. They bunch up. A few minutes get a rush, and others are quiet.\n\nYour average for that hour hides those rushes. The burst factor is your guess at how much busier the busiest minute is than an average minute of that hour. 3 is a fair first guess. The POC (proof of concept, your small trial run) then checks it against real 1-minute peaks.\n\nIf tasks really were sent three times, that extra traffic would use up the limit too. But that is a separate question from the one the burst factor answers.\n\n\"Some minutes are far busier than others\" is better because it names the real reason: traffic comes in bursts, and the limit is counted per minute, so you must size for the busiest one.",
+   "step": "Check",
+   "fingerprint": "52da66b2783b6d38",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “To leave room for three models”?",
+   "a": "The option \"To leave room for three models\" gets one thing half right. Multiplying by 3 does make your number bigger, so you end up with spare room. But the reason for that room has nothing to do with how many models you run.\n\nThe 3 is not a count of anything. It is the **burst factor**: how much busier the busiest single minute is than an average minute of the busiest hour. Within that hour, tasks don't arrive in a smooth stream. They bunch up. One minute might get 3 tickets while the next gets none. The 3 is just a fair first guess for how big that bunching is. Your POC (proof of concept, the small trial version) can measure the real value from 1-minute peaks. It might turn out to be 2 or 5.\n\nIf you ran three models, that would change where traffic goes. It would not change how unevenly it arrives.\n\n\"Some minutes are far busier than others\" is better because it names the real reason: traffic bunches up within the hour, and the tokens-per-minute limit is checked minute by minute.",
+   "step": "Check",
+   "fingerprint": "d25ab2b2a176a257",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Size for the busiest minute, not the day” matter?",
+   "a": "The limit is checked minute by minute, or even faster. It never looks at your whole day. So a day that looks fine on average can still break.\n\nRequests bunch up. Many arrive in one busy hour, and inside that hour they come in bursts. A burst is a short spell when far more requests arrive than usual.\n\nHere is what goes wrong. Say you pick a **quota** from the daily average. A quota is the most tokens a minute your model deployment may use. Quiet minutes pass fine. Then the rush hits, the busiest minute goes over the limit, and users get error 429, \"too many requests\". The bot fails exactly when the most people need it.\n\nA small example: 270 HR tickets a day, 25,000 tokens each. Spread evenly over 8 hours, that is about 14,000 tokens a minute. Now say a fifth of the tickets land in one hour, and the busiest minute is 3 times busier than that hour's average. That minute needs about 67,500 tokens, almost 5 times the average.\n\nSo start from the busiest hour and multiply by a burst factor. Then compare the result with the deployment's tokens-per-minute limit. Check the gateway's limit too.",
+   "step": "Explain",
+   "fingerprint": "9c441471db2a8ed6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Daily count to busiest minute” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Traffic is never even through the day. If I size from the daily average, the busiest minute goes over the model's tokens-per-minute limit. Then users get error 429, 'too many requests'.\"\n\n*The idea:* \"So I size for the busiest minute. I take tasks a day, keep the share that lands in the busiest hour, and divide by 60. I multiply by a burst factor, often 3 to start, for spikes inside that hour. Then I multiply by the tokens each task asks for: the prompt plus the longest answer allowed.\"\n\n*The trade-off:* \"Sizing for the peak means paying for room you rarely use. But running short means failed requests at the worst moment, like a café understaffed at lunch.\"\n\n**A likely follow-up**\n\n\"Where do those numbers come from?\"\n\nHint: the business owner gives tasks a day. A proof of concept (POC, a small trial run) measures the busy hour, the burst, and tokens per task. The platform team gives the deployment quota (the most one model copy may use) and the gateway limits (caps at the front door every request passes through). Add that either limit can return 429.",
+   "step": "Explain",
+   "fingerprint": "32c719cd2e7e7e7d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**The warning signs**\n\nThe clearest sign is error 429, \"too many requests\", showing up in your logs in clumps. It comes at busy times, like Monday morning, and is quiet the rest of the day. Your daily or hourly charts look calm and well under the limit. That mismatch is the clue: someone sized from the average.\n\nOther signs:\n- Users report slow answers or failures at the same times each day. Your app may be quietly retrying after each 429.\n- A test with smooth, even traffic passed. Real traffic still fails, because real traffic comes in bursts.\n- You hit the limit even though the tokens you actually used look lower. That happens because the quota counts the prompt plus the longest answer allowed (`max_tokens`), not what was used.\n\n**The quickest check**\n\nLook up the busiest few minutes from last week in the gateway's usage table. Add room on top, because that table shows tokens used, not tokens asked for. Then compare against both limits: the deployment's tokens-per-minute quota and the gateway's rate limits. Also check which of the two sent the 429s. That tells you which limit to raise.",
+   "step": "Learn",
+   "fingerprint": "a273b44d902b752f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The busy times change.** A company-wide announcement or month-end payroll can push far more tickets into one hour than the POC (proof of concept, the small trial version) ever saw. A burst factor of 3 may then be too low. Re-run the usage-table query every few weeks, plan for the worst real minute plus spare room, and grow the quota as use grows.\n\n**2. One task makes several model calls.** Some apps call the model more than once per ticket. For example, they draft an answer, check it, then rewrite it. Each extra call adds its own prompt and answer, so tokens per task can be two or three times what you expected. Count the tokens across every call one task might make in the worst case, not just the first call.\n\n**3. Other apps share your limits.** Your deployment's quota or the gateway's rate limits may be shared with other teams. Your busiest minute can fit by itself, yet still hit error 429 when their busiest minute lands at the same time. Ask the platform team who else shares those limits. Then check that everyone's peaks added together still fit.",
+   "step": "Learn",
+   "fingerprint": "c9108382d5605d24",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Items 2 and 3 each run to four sentences, over the two-or-three limit, but the content is consistent with the lesson and all five checks pass."
+   }
+  },
+  "learn:term": {
+   "q": "How is “size” different from “capacity planning”?",
+   "a": "They're closely linked, but they aren't the same thing.\n\n**To size** a system is to decide one number: how many tokens a minute it must handle. It answers \"how big?\"\n\n**Capacity planning** is doing that sizing *ahead of time*, as part of a bigger job. You gather the inputs, work out the size, and then check it against the limits on the path. Those are the deployment's quota and the gateway's rate limits. That way, nothing breaks after launch.\n\nSo sizing is one step. Capacity planning is the whole habit of doing that step early and acting on it.\n\n**Everyday comparison:** a café owner decides \"we need 4 staff for the lunch rush.\" That's sizing. Working this out the week before opening, then checking the budget and the rota, is capacity planning.\n\n**In the lesson's example:** working out that the busiest minute needs about 75000 tokens is sizing. Doing it before go-live, then asking the platform team for a quota above 75000, is capacity planning. It also means checking the gateway limits too, so users don't hit error 429.",
+   "step": "Learn",
+   "fingerprint": "6bb28a945d720fe6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "run_tokens": {
+  "check:0:1": {
+   "q": "Why not “Output tokens cost less than input tokens, per …”?",
+   "a": "That option fails in two ways.\n\nFirst, it is usually not even true. On most price lists, output tokens (the words the model writes) cost *more* per token than input tokens (the words you send in), not less.\n\nSecond, even if it were true, it would not explain the mistake. The teammate's error is about *how many* tokens get used, not what each token costs. Pricing per token only matters after you have the right count. And their count is wrong.\n\nHere is why. On step 1 the agent sends the first context. On step 2 it sends that again, plus step 1's answer and tool result. Each later step resends everything before it, so each input is bigger than the last. Six steps cost far more than six copies of the first call. It is like an email thread where every reply quotes everything above it.\n\n\"Each step resends everything that earlier steps added\" is better because it names the real cause: the input grows every step, so the teammate's count was too low.",
+   "step": "Check",
+   "fingerprint": "76d19beb61ae7bd7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that output tokens usually cost more than input tokens is not in the lesson, but it is true in practice and does not contradict the lesson, so I let it pass."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The first call is always the most expensive step”?",
+   "a": "That option points the wrong way. The first call is actually the *cheapest* step, not the most expensive.\n\nHere is why. On the first call, the context is only the instructions and the question. The context is everything the agent sends to the model. After that call, the model's answer and any tool result get added to the context. On the next call, the agent sends all of it again, plus the new parts. So each call reads more input tokens than the one before.\n\nIn the lesson's example, the calls read 4000, then 5000, then 6000 tokens. The first call is the smallest one.\n\nThe option does get one thing right. It notices that the calls don't all cost the same. But it guesses the wrong direction. If the first call really were the biggest, \"6 times the first call\" would be too high. In fact it is too low, because every later step costs more than the first.\n\n\"Each step resends everything that earlier steps added\" is better because it names the real mistake: the input keeps growing, so six steps cost more than six first calls.",
+   "step": "Check",
+   "fingerprint": "a6c0a9a4f6d1e728",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; it is near the length limit, and 'cheapest' refers to input tokens, which matches the lesson's example."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “That one call, times the price list”?",
+   "a": "That option gets one thing right. The price list really is how you turn tokens into dollars. That part stays.\n\nWhat it misses is that an agent doesn't make one call per task. It makes many. On every step it resends the whole **context**, meaning the instructions, the question, and every earlier answer and tool result. So each call is bigger than the one before. In the lesson's example, three steps read 4000, then 5000, then 6000 tokens. That adds up to 15000, not 4000.\n\nOne test call can't show you that growth. It also can't show spread. Hard tasks take more steps, so some runs cost far more than others. In the research system, a team of agents used about 15 times the tokens of a plain chat. Pricing from one call would miss most of the bill.\n\nThe right answer is \"Whole runs on real tasks, from traces.\" A **trace** is the record of each step an agent took, including its token counts. It's better because it measures what a full task actually costs, and it gives you a low, typical and high count to price from.",
+   "step": "Check",
+   "fingerprint": "f9a04d1a59249cdc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only loose spots are 'not 4000' (the lesson contrasts 15000 with 12000) and 'miss most of the bill', which stretches the 15x team figure."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “A plain chat with the same model”?",
+   "a": "A plain chat gets one thing right. It uses the same model, so the price per token is the same. That part of your sum would be correct.\n\nWhat it misses is how an agent actually works. A plain chat is roughly one question and one answer. An agent loops. On every step it resends the whole **context**: the instructions, the question, every earlier answer and every tool result. So the input gets bigger each step, and a plain chat never shows that growth.\n\nThe lesson's numbers show how big the gap is. One agent used about 4 times the tokens of a plain chat. A team of agents used about 15 times. If you priced from a plain chat, your estimate could be several times too low.\n\nA plain chat also gives you only one number. Hard tasks take more steps, so you need a low, typical and high count.\n\n\"Whole runs on real tasks, from traces\" is better because **traces** (the step-by-step records your POC saves) capture every step's tokens on real work, including the growing context and the spread from easy tasks to hard ones.",
+   "step": "Check",
+   "fingerprint": "55da3cb5bdb3db69",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Only the easy count, the usual case”?",
+   "a": "\"Only the easy count\" gets one thing right. It uses a real number, measured from real tasks in the POC (your trial build). And if easy tasks really are common, that number does describe many runs.\n\nBut it hides the expensive end. Hard tasks took 12 steps, not 3. On every step the agent resends the whole context (everything so far). So each extra step costs more than the one before. A 12-step task costs much more than four times a 3-step task.\n\nIf you report only the easy count, your budget looks small and safe. Then the hard tasks arrive and the real bill is far higher. Also, nothing in the question says easy tasks are the usual case. Calling them \"usual\" is a guess.\n\nPricing should cover the whole spread of real runs, not the cheapest slice.\n\n\"A low, a typical and a high count\" is the right answer. It shows the cheap case, the normal case and the worst case, so the price you plan for matches what hard tasks will actually cost.",
+   "step": "Check",
+   "fingerprint": "2bbca8cb195e38e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Only the hardest, to be safe”?",
+   "a": "\"Only the hardest, to be safe\" gets one thing right. Hard tasks really do cost more. A 12-step run resends a much bigger context each step than a 3-step run, so its token count is far higher. Knowing that worst case helps you set a ceiling on spending.\n\nBut reporting only that number misleads people. Most of the 20 tasks may have been easy. If you price every task as if it took 12 steps, your estimate could be several times too high. A budget that inflated can make a good project look too expensive to build.\n\nIt also hides the spread. The people reading your report can't tell whether hard tasks happen once in a while or all the time. That mix is what decides the real monthly bill.\n\nAnd \"the hardest\" is only the hardest of 20. Real users may send something harder still, so this number isn't truly \"safe\" either.\n\nA low, a typical and a high count is the better answer, because it shows the usual cost and the full range together, so people can plan for the normal case and still prepare for the expensive one.",
+   "step": "Check",
+   "fingerprint": "e0ff8b669ccec861",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Price the whole run, not one call” matter?",
+   "a": "When you test an agent, it's tempting to send one request, note its token count, and multiply by the number of tasks you expect. That estimate is always too low.\n\nAn agent works in steps. On each step it resends the whole **context**: the instructions, the question, and every earlier answer and tool result. So each step reads more than the one before.\n\nA small example: the first call reads 4,000 tokens. Price from that, and you plan for 4,000 per task. But a three-step run reads 4,000, then 5,000, then 6,000. That's 15,000 tokens, nearly four times your plan. Hard tasks take more steps, so they cost even more.\n\nIn real work, the budget runs out early. Someone gets a surprise bill. A product that looked cheap can turn out to lose money on every user.\n\nSo price from whole runs. An **MLflow trace** is a step-by-step record of one run, and it adds up the tokens of every call for you. Measure several real tasks, then give a low, typical and high count.",
+   "step": "Explain",
+   "fingerprint": "fe5ccc20ffdba708",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'always too low' claim is a little strong, and the answer is close to the 200-word limit."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “A running total that grows” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* An agent doesn't send only the new bit on each step. It resends the whole context: the instructions, the question, every earlier answer and every tool result. So the price of one call badly underestimates the price of a task. (A token is a small chunk of text. Models count and charge by tokens.)\n\n*The idea.* Picture an email thread where every reply quotes everything above it. Each step reads the full thread, then the thread grows. Start at 4,000 tokens and run three steps: the agent reads 4,000, then 5,000, then 6,000. That's 15,000 in, not 12,000.\n\n*The edge case.* Hard tasks take more steps, and each extra step costs more than the last. So I measure whole runs from traces on real tasks and give low, typical and high counts. I also set `recursion_limit` so a stuck agent can't loop up a huge bill.\n\n**Likely follow-up**\n\n\"How would you cut that cost?\"\n\nHint: shrink what gets resent. Summarise old tool results, keep only recent messages, and cap the step count. Then name the trade-off: dropping context can make the agent forget something it needs.",
+   "step": "Explain",
+   "fingerprint": "0c6e8fc321b951ea",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The bill beats the estimate.** Your budget said one amount. The real invoice is several times higher. That usually means someone priced one call and multiplied by the number of steps.\n- **Every step looks the same size.** In your numbers, each step's input is the same. In a real agent, each step's input should be bigger than the last, because it carries everything before it.\n- **The estimate is one number.** There is no low, typical and high. Hard tasks take more steps, and each extra step costs more than the one before. So a single number hides the expensive runs.\n- **Long runs surprise you.** Some tasks hit the `recursion_limit` (the cap on how many steps a run may take). Those runs cost far more than your \"typical\" figure.\n\n**The quickest check**\n\nOpen one trace (the step-by-step record of a run) from a real task. Look at the input tokens for each step. They should climb, like 4000, then 5000, then 6000. Add them up. If that total is clearly bigger than your estimate for the run, the estimate skipped the growth.",
+   "step": "Learn",
+   "fingerprint": "868b694f8a33256a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The simple \"resend everything\" sum is a good starting model. Here are three places where real runs behave differently.\n\n**1. Prompt caching.** Some model providers store the start of a prompt they have already seen. They then charge less for those repeated tokens. Your token count still grows each step, but the dollar cost grows more slowly. Check the price list for a separate \"cached input\" price, and read cached tokens from your traces.\n\n**2. Long runs hit the context window.** The context window is the most text a model can read at once. Long agent runs often trim old messages or swap them for a short summary. So the context stops growing in a straight line. Measure real traces instead of trusting the simple sum.\n\n**3. Teams of agents.** In a multi-agent system, each helper agent usually starts with its own fresh, smaller context. That means there is not one single growing thread. Add up each agent's whole run separately, then combine them. This is how a team can reach about 15 times the tokens of a plain chat.",
+   "step": "Learn",
+   "fingerprint": "f738129b9a516ce2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: items 1 and 3 run to four sentences against the two-to-three limit, and the claim that separate agent runs explain the 15x figure is plausible but not stated in the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "What does “agent” mean here?",
+   "a": "An **agent** is a program that uses an AI model to finish a task in several steps, not just one reply.\n\nThink of an assistant handling a request. They think, look something up, read what they found, then decide what to do next. They repeat this until the job is done. The twist: the model remembers nothing between calls. So every time the assistant asks it something, they hand over the whole folder so far.\n\nEach round is one **step**. In a step the model writes something, often a request to use a **tool**. A tool is a helper the agent can call, like a search or a database lookup. The tool's reply then gets added to the folder.\n\nIn the lesson's example, each pair in `steps` is one agent step:\n\n- `out` is what the model wrote in that step.\n- `tool` is what the tool sent back.\n- The last step, `[500, 0]`, is the final answer. No tool is used, so its tool result is `0`.\n\nIn the LangChain snippet, `graph` is the agent itself. `recursion_limit` caps how many steps it may take.",
+   "step": "Learn",
+   "fingerprint": "1d8814442487d55a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that [500, 0] is the final answer with no tool is an inference the lesson never states, but it fits the example."
+   }
+  }
+ },
+ "total_cost": {
+  "check:0:0": {
+   "q": "Why not “A model that is half the price per token”?",
+   "a": "Halving the price per token sounds like a big cut, and it does save money. A **token** is a small chunk of text, and you pay for every token the model reads and writes. So a cheaper model really does lower the model bill.\n\nThe catch is how small that bill is. In the HR assistant, the model costs $900 a month. Half of that is $450 a month. Over 24 months, you save $10,800. That is about 5% of the $214,600 total.\n\nIt also carries a risk. A cheaper model may give weaker answers. Then more answers need a person to check or redo them, and that is the costly line.\n\nChecking costs $3,500 a month, or $84,000 over two years. It is the single biggest item, bigger than the whole build team. Cutting it by half saves $42,000, nearly four times what the cheaper model saves.\n\n**Fewer answers that need a person to check them** is better because it shrinks the biggest item, and the biggest item is where a saving matters most.",
+   "step": "Check",
+   "fingerprint": "35779477b7dc00e4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems: the figures check out ($450 a month, $10,800 saved, about 5% of $214,600; checking $84,000, half is $42,000, about 3.9 times as much), it is about 175 words, and it gives no solution code."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “A cheaper security review before launch”?",
+   "a": "A cheaper security review does save money. It is a real line in the build costs. But it is small, and you only pay it once.\n\nIn the example, the security review costs $5,000 in total. Even if you cut it in half, you save $2,500. That is barely more than 1% of the $214,600 total.\n\nIt also carries a risk. The security review is where someone checks that the assistant won't leak private HR data. Skimping there to save a little money is a poor trade.\n\nNow look at checking. \"Checking\" means people reading the assistant's answers and fixing the wrong ones. It costs $3,500 every month. Over 24 months, that is $84,000. That one line costs more than the whole build team. If fewer answers need checking, say half as many, you save about $42,000.\n\nThis is the lesson's main point. Find the biggest single item first, because that is where a saving matters most.\n\n\"Fewer answers that need a person to check them\" is better because it shrinks the largest cost, and that saving repeats every month for the system's whole life.",
+   "step": "Check",
+   "fingerprint": "762ed69d926a02a8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Tokens for each question”?",
+   "a": "\"Tokens for each question\" is a real cost, and it belongs on your list. It just isn't paid once.\n\nA **token** is a small piece of text, roughly part of a word. The model provider bills you for every token the model reads and writes. Each time someone asks the assistant something, you pay for the answer's tokens. You also pay for embedding the question. An **embedding** turns text into a list of numbers so the system can search for similar documents.\n\nSo this cost comes back every time a question arrives. If 5,000 questions come in this month, you pay for 5,000. Next month you pay again. That makes it a **Run** cost, part of the monthly \"LLM calls\" line. It grows as more people use the assistant.\n\nThe question asks which cost happens only once. Tokens per question repeat for the whole life of the system, so they don't fit.\n\n\"Indexing all the documents at first\" is better because you prepare and embed the full document set a single time at the start, which makes it a one-off cost.",
+   "step": "Check",
+   "fingerprint": "697d6b67544a5a8d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Searching the vector index”?",
+   "a": "\"Searching the vector index\" is an easy one to mix up, because it involves the same index that gets built once.\n\nA **vector index** is where your documents are stored as lists of numbers, so the system can quickly find the chunks that best match a question. Building it and searching it are two different jobs.\n\nSearching happens every time someone asks a question. The assistant turns the question into numbers (an **embedding**), looks up matching chunks, and only then calls the model. More questions mean more searches. On top of that, the search service, such as Azure AI Search or Databricks Vector Search, is billed every month for as long as it runs. So searching is a **run** cost. It keeps coming back.\n\nThe option does get one thing right. The index really is part of your costs. It just lands in the monthly group, not the one-off group.\n\n\"Indexing all the documents at first\" is the better answer because you chunk and embed the whole document collection once at the start. After that, only new documents need embedding.",
+   "step": "Check",
+   "fingerprint": "794799d8327656ae",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Build, paid once”?",
+   "a": "\"Build, paid once\" is a fair first guess. The eval set really does start there. The lesson lists \"building the eval set\" as a build cost. An eval set is your collection of test questions with known good answers, used to check how well the system does. Making it the first time is one-off work, done before launch.\n\nBut the question isn't about making the eval set. It's about rerunning it. That happens each time the model or the prompt changes. A model provider might release a new version. You might tweak a prompt to fix a bad answer. Each change means someone runs the evals again to make sure nothing broke.\n\nThose changes keep coming for as long as the system is live. So the cost isn't paid once. It returns again and again, month after month. If you put it under build, your total would leave out that ongoing effort. It would also look smaller than it really is.\n\n\"Maintain, keeping it working\" is better because rerunning evals is repeated work that keeps the system healthy for its whole life, which is exactly what that group covers.",
+   "step": "Check",
+   "fingerprint": "49b719bcc3d44148",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Run, paid every month”?",
+   "a": "\"Run, paid every month\" gets one thing right. Rerunning evals is a cost that keeps coming back, and it does use tokens and compute. (Evals, short for evaluations, are your set of test questions with known good answers. You use them to check the system still behaves.)\n\nWhat it misses is **why** the cost happens. Run costs come from the system doing its job for users. Each question someone asks burns model tokens, uses hosting, hits the vector search index and may need a person to check the answer. More users means more run cost.\n\nRerunning evals does not serve any user. It happens because something changed, like a new model version or an edited prompt. Then you need to confirm nothing broke. That work tracks how often you change things, not how busy the system is. It sits beside updating prompts and having someone on call.\n\nKeeping the groups separate helps your total cost of ownership. You can see what grows with traffic and what grows with change.\n\n\"Maintain, keeping it working\" is better because rerunning evals is upkeep caused by changes to the system, not the cost of answering users.",
+   "step": "Check",
+   "fingerprint": "6b4d95cb4b10658b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “One-off plus monthly times months” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"People often price an AI system by its token bill. A token is a small chunk of text the model charges for. That bill is often the smallest part. The real cost includes building the system, running it, and keeping it working.\"\n\n*The idea.* \"Total cost of ownership is the one-off build costs, plus every monthly cost times the number of months you plan to run it. For two years, that's 24 months. Then I look at the biggest single item, because that's where a saving matters most.\"\n\n*A trade-off.* \"The biggest item is often people, not the model. In one HR assistant example, staff checking answers cost more over two years than the whole build team. So a pricier model that cuts checking time can still save money.\"\n\n**A likely follow-up**\n\n\"What changes if the system only runs for six months?\"\n\nHint: fewer months means the one-off build costs weigh much more, so a big build may never pay back. Also note that monthly costs can grow over time as more questions and documents arrive.",
+   "step": "Explain",
+   "fingerprint": "18af57acb4560237",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that the cost picture was skipped or done wrong**\n\n- **The bill beats the business case.** The estimate only counted model tokens, but the real cloud invoice is several times higher. Hosting, the vector search index (the store that finds matching document chunks) and monitoring were left out.\n- **People's time is missing.** Staff spend hours each week checking and redoing answers, but no line in the budget covers it. Often this is the biggest cost of all.\n- **Costs creep up every month.** Storage for traces (the saved record of each request) keeps growing, or embeddings for new documents pile up, and nobody planned for it.\n- **One-offs and monthlies are mixed up.** The first indexing run gets counted as a monthly cost, or the monthly lines never get multiplied across the full life of the system.\n- **Savings land in the wrong place.** The team cuts the token spend but leaves the much bigger costs untouched.\n\n**Quickest check**\n\nPut last month's real invoices and timesheets next to the estimate, one line at a time. Find the biggest real item. Then ask whether the estimate included it at all.",
+   "step": "Learn",
+   "fingerprint": "c0527f53b104400b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does \"one-off plus monthly times months\" stop working?**\n\n**1. Usage grows over time.**\nThe simple sum treats every month the same. A RAG app (one that looks up your documents before answering) often gets more questions and more documents each month. That raises token, embedding and search costs. Embeddings are the number lists that capture a text's meaning. Instead, estimate each year separately from the cost drivers, such as queries per month and how much data you index.\n\n**2. A one-off cost comes back.**\nThe first indexing of all documents is a one-off. But if you switch to a new embedding model, every document must be embedded again. Add planned rebuilds like this as extra one-off costs in the year they happen.\n\n**3. Very small use.**\nWith only a few users, hosting, monitoring and on-call cost about the same as with many. So each answer becomes expensive. Divide the total by the expected number of answers. Then compare that with the cost of people doing the work by hand.",
+   "step": "Learn",
+   "fingerprint": "22f07b8375a1f1ad",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": false,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The brief asks for two or three sentences per situation, but items 1 and 3 run to four or five sentences (item 1 includes an embeddings definition), so the format is not followed."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Maintain” mean here?",
+   "a": "**Maintain** means the work of keeping the system working well after it is built. It is not running it. It is looking after it.\n\nThink of a car. Fuel is a running cost, because you pay it just to drive. Servicing is maintenance. You pay a mechanic every so often so the car keeps working as parts wear out or things change.\n\nIn this lesson, Maintain is a monthly cost made of three things:\n\n- **Re-running evals.** An eval is a test set of questions with known good answers. When the model or the prompt (the instructions you give the model) changes, you run the tests again to check nothing broke.\n- **Updating prompts** when answers drift or needs change.\n- **Someone on call**, meaning a person ready to fix problems when they come up.\n\nNow look at the HR assistant example. Its `monthly` lines are `model`, `hosting`, `monitoring` and `checking`. Those are all **Run** costs. Even `checking` is Run, because it is people checking and redoing answers.\n\nSo the example has no Maintain lines. In a real business case you would add them as extra monthly lines. That would push the 24-month total higher.",
+   "step": "Learn",
+   "fingerprint": "fa45e664583adac5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

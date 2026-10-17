@@ -1,0 +1,548 @@
+{
+ "cache_hits": {
+  "check:0:0": {
+   "q": "Why not “The model name that produced the answer”?",
+   "a": "Adding the model name to the key isn't a bad idea. Different models can give different answers to the same prompt. If you switch models, you don't want an old answer from the previous one. So it does make the key more precise.\n\nBut it doesn't fix this bug. Picture two users asking the same model \"What's my account balance?\" The prompt text is the same. The model name is the same. So the key is still the same, and the second user gets the first user's stored answer.\n\nThe real problem is that the right answer depends on *who* is asking, not on *which model* answered. Nothing in the key told the cache that these were two different people. A **key** is the label the cache uses to look up a stored answer. Here, that label was missing the one detail that made the answers different.\n\n\"Who is asking: the user or their permissions\" is the better answer because it puts the person into the key. Then the same question from two different users gets two separate cache entries, and nobody sees someone else's private answer.",
+   "step": "Check",
+   "fingerprint": "dacc797e17a56e55",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems; the closing paragraph uses two sentences where one was requested, but the content is accurate and on point."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The time of day the question was asked”?",
+   "a": "\"The time of day\" is a reasonable thought, but it doesn't fix this problem.\n\n**What it gets right:** time can matter to a cache. Stored answers can go stale, meaning out of date. So many caches throw an entry away after a while. That is called an **expiry**.\n\n**What it misses:** the bug here is about *who* gets the answer, not *when*. Picture two users who both type \"What's my account balance?\" The prompt text is identical, so the key is identical. Adding the time doesn't help. If they ask in the same hour, the keys still match, and one user sees the other's private answer. Meanwhile, the same user asking again later would miss the cache for no good reason.\n\nQuestions like \"my account\" mean the right answer depends on the person. So the person has to be part of the key:\n\n```python\nkey = (user_id, prompt)   # same prompt, different users → different keys\n```\n\n**Why \"Who is asking: the user or their permissions\" is better:** it puts the person into the key, so a user's private answer is never handed to someone else.",
+   "step": "Check",
+   "fingerprint": "4478f919710c91a3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “B, the most recent one”?",
+   "a": "\"B, the most recent one\" gets one thing right. It sees that **recency** (how lately a prompt was used) is what decides. LRU does care about timing.\n\nBut it flips the rule. LRU stands for \"least recently used.\" It removes the prompt used *longest ago*, not the newest one.\n\nThink about why. B was used a minute ago. Recent prompts are the ones most likely to come back soon. If you threw B out, the next repeat of B would be a **miss** (the answer isn't stored). That means paying for another model call, the exact cost the cache exists to avoid.\n\nIn the lesson's list setup, the cache is kept oldest at the front:\n\n```python\ncache = ['A', 'C', 'B']  # A: an hour ago, C: ten minutes, B: a minute\ncache.pop(0)             # removes 'A' from the front\ncache.append('D')        # ['C', 'B', 'D']\n```\n\nB sits at the newest end, so it's the last thing to go.\n\n\"A, unused for the longest\" is better because the prompt nobody has needed in an hour is the least likely to be needed next, so dropping it costs the least.",
+   "step": "Check",
+   "fingerprint": "3b480c37cda2c900",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “C, the one in the middle”?",
+   "a": "\"C, the one in the middle\" gets one thing right. It doesn't pick B, the prompt used a minute ago. Keeping recently used prompts is exactly what an LRU cache wants.\n\nBut LRU has no rule about the middle. LRU means \"least recently used.\" When the cache is full, it removes the prompt that has gone unused for the longest time. Only that one.\n\nLine the three up the way the lesson's list does, oldest use at the front:\n\n```python\ncache = ['A', 'C', 'B']   # A: an hour ago, C: ten minutes ago, B: a minute ago\n```\n\nC sits in the middle here. So \"middle\" can sound like a sensible compromise. It isn't. C was used ten minutes ago, which is fairly recent. It may well be asked for again soon. A has sat untouched for an hour, so it's the least likely to be needed. In the code, that's why `pop(0)` takes the front item and never one from the middle.\n\n\"A, unused for the longest\" is better because LRU always removes the prompt used longest ago, and here that is A.",
+   "step": "Check",
+   "fingerprint": "a6214cae8b4725f1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Better answers to new questions”?",
+   "a": "A cache never makes an answer better. It only stores answers the model already gave and hands them back when the same prompt comes again.\n\nThink about what happens with a **new** question. The cache looks up the prompt (its **key**) and finds nothing. That is called a **miss**. So the request goes to the model as usual. The answer is exactly as good as it would have been without a cache.\n\nNow think about a **repeat**. The cache finds the prompt. That is a **hit**. It returns the stored answer. That answer is the same one the model gave before. It is not improved, just reused.\n\nSo this option gets one thing slightly right: a cache is about answers. But it misses the point twice. New questions gain nothing. Repeated questions get the same answer, not a better one.\n\nThe real gain is skipping the model call. You don't pay for it, and you don't wait for it.\n\n\"Cheaper, faster answers on repeats\" is better because a cache saves money and time by reusing stored answers for the same few questions asked again and again.",
+   "step": "Check",
+   "fingerprint": "d20467a834dbd749",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Longer answers to every question”?",
+   "a": "\"Longer answers to every question\" doesn't describe what a cache does. A cache never changes the answer itself. It stores the model's answer the first time a prompt comes in. When the same prompt shows up again, it hands back that exact stored answer. Same words, same length.\n\nSo there's nothing in this option that a cache gets right. Answer length depends on the model and your prompt, not on whether you cache.\n\nThe option also misses the real point. Your support questions repeat a lot. Each repeat is a **hit**, meaning the prompt is already in the cache. On a hit you skip calling the model. That's where the value is. You don't pay for that call, and you don't wait for the model to think. You just look up the stored answer by its **key**, which here is the prompt text.\n\nIt also doesn't help \"every question.\" A brand-new prompt is a **miss**, meaning it isn't stored yet, so it still goes to the model as usual.\n\n\"Cheaper, faster answers on repeats\" is better because it names exactly what a cache saves (money and time) and exactly when it saves it (on repeated prompts).",
+   "step": "Check",
+   "fingerprint": "d02f8a6e803362b0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “A list kept in order of use” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Many prompts repeat. Calling the model every time costs money and time. A cache stores answers so we can reuse them. But it has a size limit, so we need a rule for what to throw out.\"\n\n*The idea:* \"I keep the prompts in a list, ordered by when they were last used. The oldest sits at the front. On a hit, meaning the prompt is already stored, I take it out and put it back at the end. On a miss with a full cache, I remove the front one with `pop(0)`, then add the new prompt. That rule is called LRU, least recently used: the prompt untouched the longest goes first.\"\n\n*The trade-off:* \"It's simple and easy to check. But finding a prompt means reading the list from the start. That's fine for a few prompts and slow for 10,000.\"\n\n**Likely follow-up:** \"How would you make lookups fast?\"\n\n*Hint:* Mention a dictionary. A dictionary is a lookup table that jumps straight to a key instead of reading from the start. Python's `OrderedDict` also remembers order. Its `move_to_end` method sends a key to the newest end quickly.",
+   "step": "Explain",
+   "fingerprint": "7bd0a0fb2955ee40",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs your cache isn't working**\n\n- **No savings.** You send the same prompt many times, but every request still waits for the model and your bill doesn't drop. Repeats should be **hits**, meaning the answer was found in the cache. If they all show up as **misses**, meaning not found so the model gets called, the cache isn't being used.\n- **Hit count stays at zero** even when you know prompts repeat.\n- **Popular prompts keep missing.** If a prompt you use all the time keeps getting removed, the order is wrong. A hit should move that prompt to the newest end. Then **LRU** (least recently used) removes something older instead.\n- **The cache grows past its limit.** That means nothing is being removed when it's full.\n- **It gets slower as it fills.** Finding a prompt means reading the list from the start. That's fine for a handful of prompts and slow for thousands.\n\n**Quickest check**\n\nSend one prompt twice. The second time should count as a hit and return almost instantly.\n\nThen fill the cache to its limit and add one new prompt. Look at what got removed. It should be the prompt used longest ago, the one at the front.",
+   "step": "Learn",
+   "fingerprint": "67816a3de07e0c58",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problem. The answer is about 200 words, right at the length limit, and the other checks pass."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Caching works well when the same question always deserves the same answer. Here are three places where it needs extra care.\n\n**Prompts that are worded differently.** The key is the exact prompt text, so \"What's our refund policy?\" and \"what is the refund policy\" count as different keys and both miss. A **semantic cache** helps here. It compares meaning rather than exact letters, using embeddings (lists of numbers that capture what a sentence means).\n\n**Answers that go out of date.** A cached answer about today's stock levels or a document that was just edited can turn stale, meaning it is old and now wrong. Give each entry an **expiry time** so it gets thrown out after a while. Also clear the cache when the underlying data changes.\n\n**A much bigger system.** With thousands of prompts, finding one means reading the list from the start every time, which gets slow. A lookup table that jumps straight to the key fixes that. And `InMemoryCache` lives inside one running program, so several servers can't share it. A shared cache service lets them all reuse the same answers.",
+   "step": "Learn",
+   "fingerprint": "d0e71b53110900d4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The third situation runs to four sentences and covers two ideas (slow list lookup and sharing between servers), which is slightly over the two-to-three-sentence limit."
+   }
+  },
+  "learn:term": {
+   "q": "What does “cache” mean here?",
+   "a": "A **cache** is a small store of answers you've already worked out, kept close by so you can reuse them.\n\n**Everyday comparison:** Say a friend keeps asking you the Wi-Fi password. The first time, you go find the router and read the label. That's slow. Then you jot it on a sticky note by the door. Next time, you just glance at the note. The note is your cache.\n\n**In this lesson:** Calling a model costs money and takes time. So when a prompt comes in, you first check the cache. The prompt text is the **key**, the label you look the answer up by.\n\n- **Hit:** the prompt is already stored, so you reuse its answer and skip the model.\n- **Miss:** it's not there, so you call the model and store the new answer.\n\n**In the example:** `cache = ['a', 'b', 'c']` holds three stored prompts. Looking up `'a'` is a hit. Looking up `'d'` is a miss. The cache only has room for three, so the one used longest ago gets dropped to make space.\n\nIn LangChain, `set_llm_cache(InMemoryCache())` turns this on for you.",
+   "step": "Learn",
+   "fingerprint": "84185fffba63f210",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "estimate_vs_actual": {
+  "check:0:0": {
+   "q": "Why not “B, because it spent $200 more than planned”?",
+   "a": "\"B, because it spent $200 more than planned\" gets one thing right. B did overspend by more dollars. $1,200 minus $1,000 is $200. A only went $50 over. If you only care about the size of the hit to the budget, B hurts more.\n\nBut the question asks whose estimate was the worse guess **for its size**. That means comparing each overrun to its own plan, not comparing raw dollars.\n\nA $200 miss on a $1,000 plan is a small slip. A $50 miss on a $100 plan is a big one. Raw dollars hide this, because bigger projects naturally have bigger dollar swings.\n\nThat's why the lesson uses **percent over**: the extra spend divided by the estimate.\n\n- A: 50 ÷ 100 = 0.5, so 50 percent over\n- B: 200 ÷ 1,000 = 0.2, so 20 percent over\n\nWith a 20 percent margin, both get flagged. A comes first because its guess was further off.\n\n\"A, because it spent 50 percent more than planned\" is better because it measures the miss against what was planned, which is what \"worse guess for its size\" means.",
+   "step": "Check",
+   "fingerprint": "4ca4737450f6a12e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: calling a 20 percent miss a 'small slip' sits oddly beside saying it gets flagged, and the flagging and ordering aside is unneeded, but nothing is wrong."
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Neither, both are off by about the same”?",
+   "a": "That option gets one thing right: both projects went over their plan. Neither estimate was perfect.\n\nBut \"about the same\" doesn't hold up under either way of measuring.\n\n- **In dollars:** A is $50 over. B is $200 over. That's not the same. B overspent four times as much money.\n- **In percent over** (the extra spend as a share of the estimate): A is $50 out of $100, which is 50 percent. B is $200 out of $1,000, which is 20 percent. Not the same either.\n\nThe question asks whose guess was worse *for its size*. That's what percent over measures. It lets you compare a small project and a big one fairly. A $50 miss on a $100 plan means the guess was badly off. A $200 miss on a $1,000 plan means the guess was fairly close.\n\nThis is also why the lesson flags projects using a percent margin, such as 20 percent, rather than a dollar amount.\n\n\"A, because it spent 50 percent more than planned\" is better because it compares each overrun to its own estimate, which is exactly what \"for its size\" asks.",
+   "step": "Check",
+   "fingerprint": "23ee6d763b18e940",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The arithmetic is right (50% vs 20%, $50 vs $200). The only soft spot is 'this is also why the lesson flags by percent', which infers a reason the lesson doesn't state."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Yes, $3,000 is a lot of money”?",
+   "a": "\"Yes, $3,000 is a lot of money\" gets one thing right. Three thousand dollars is real spend, and nobody should shrug at it.\n\nBut it misses the rule you set. The check is about **percent over**, not dollars over. Percent over is the extra spend divided by the estimate. Here, $3,000 is 10 percent of the plan, so the plan was $30,000. Being 10 percent off on a $30,000 guess is fairly normal. Every estimate made before launch is a guess, and some wobble is expected.\n\nJudging by dollars also causes a second problem. Big projects would always look scary, even when their plans were close. Small projects could double their budget and never get flagged. A $500 project that cost $1,000 is only $500 over, yet its plan was badly wrong. That is exactly the kind of guess you want to fix.\n\nThe threshold, here 20 percent, is your agreed line between \"normal wobble\" and \"the plan was wrong.\"\n\n\"No, it's only 10 percent over\" is better because it applies the 20 percent rule you chose, which measures how wrong the estimate was, not how big the project is.",
+   "step": "Check",
+   "fingerprint": "5d59f0549bdb82e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Yes, any project over plan”?",
+   "a": "\"Yes, any project over plan\" gets one thing right. Going over plan is worth knowing about, and $3,000 is real money.\n\nBut it ignores the rule you set. You agreed to flag projects more than 20 percent over. This project is 10 percent over, so it doesn't meet that rule. Flagging it anyway means the rule stops meaning anything.\n\nThe rule exists for a reason. Every estimate is a guess, so almost every project lands a little above or below it. If you flag anything over plan, the list fills up with small misses. The projects that are truly off track get buried among them.\n\nAlso notice that the rule is about a *share*, not a dollar amount. $3,000 sounds big, but measured against this project's large plan, it's a normal miss. A small project that's $300 over could be 50 percent over. That one is the real warning sign.\n\n\"No, it's only 10 percent over\" is better because it applies the 20 percent margin you chose, measured against the project's own estimate.",
+   "step": "Check",
+   "fingerprint": "d42cb6e21673130d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. Calling a 10 percent miss 'normal' is a mild extrapolation, but it follows from the lesson's point that estimates are guesses."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A bigger monthly budget”?",
+   "a": "A bigger monthly budget gets one thing right: the bill is high, and more money would cover it for now. But it doesn't answer the question. The problem isn't the size of the budget. The problem is that you can't tell which project sent which requests.\n\nWith a bigger budget, you still can't compare each project's estimate (what the plan said it would cost) to its actual (what it really cost). You can't work out which project is over, or by how much. So you can't look at the biggest overrun first or fix the guess in its plan. The overspending could keep growing month after month, with nobody knowing where it comes from.\n\nA request tag is a small label each app sends with every request, such as its project name. The Unity Gateway usage table records that label next to each request's tokens. You can then add up tokens per project and multiply by each model's prices to get a close guess at each project's actual cost.\n\n\"A request tag on each request\" is better because it shows which project used what, so each project's estimate can be checked.",
+   "step": "Check",
+   "fingerprint": "e3002bde5d896ddc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. Minor: 'tokens' is not explained, and the 'covers it for now' point is the tutor's own inference rather than something the lesson says."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A separate bill for each user”?",
+   "a": "\"A separate bill for each user\" gets one thing right. It sees that the shared bill needs to be split up somehow.\n\nBut it splits along the wrong line. The question is about **projects**, not people. One person might send requests for all three projects. And one project might get requests from many people. So a per-user total still leaves you guessing how much belongs to each project.\n\nIt also misses where the label needs to live. The lesson tracks spend at the level of each **request** (one call to the model service). On Unity Gateway, an app sends its project name in a header, which is extra information attached to the call. That name lands in the `request_tags` column of the `system.ai_gateway.usage` table, right next to that request's tokens. Then you can group the tokens by project, multiply by each model's prices, and set each total next to its estimate.\n\nA request tag is better because it names the project on every single request, so the shared usage splits cleanly by the very thing you're trying to measure.",
+   "step": "Check",
+   "fingerprint": "f101908988c32fe5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Keep the overruns, biggest first” in an interview?",
+   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can overspend for months unnoticed.\"\n\n**The idea.** \"So each month I put the estimate next to the actual. For each project I work out percent over: the extra spend divided by the estimate. I keep only projects past a set margin, like 20 percent, so small noise doesn't raise alarms. I sort the biggest overruns first, with ties in A to Z order by name, so the list always comes out the same. Then I replace the guess in the plan with the measured number.\"\n\n**A trade-off.** \"Percent can mislead. A $50 project that is 60 percent over matters less than a $50,000 project that is 15 percent over. So I'd show the dollar gap too.\"\n\n**A likely follow-up:** \"When several projects share one model service, how do you know what each one actually cost?\"\n\n*Hint for a strong answer:* Each app sends a **request tag** (a label naming its project) with every call. Unity Gateway's usage table records that tag next to each request's tokens. Group by tag, multiply by each model's prices, and you get a close guess. Then confirm against the final Azure bill.",
+   "step": "Explain",
+   "fingerprint": "4179a43576161a5a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear fault. Two small points: 'past a set margin' could read as strictly greater, while the lesson says 'at least' the threshold. The answer is also close to 200 words once the headings are counted."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs this step was skipped or done wrong**\n\n- **The bill surprises people.** Finance asks why spend jumped, and nobody on the team saw it coming. That means estimates were never set next to actuals.\n- **Project totals don't add up to the bill.** Your per-project actuals sum to much less than Azure's invoice. Usually some apps never send the `project` tag, so their requests land with an empty `request_tags` and drop out of your query.\n- **The plan's numbers never change.** Months after launch, the estimate is still the original guess. Nobody replaced it with the measured cost.\n- **The flag list looks odd.** Every project is flagged, or none ever is. Or a project 5 percent over sits at the top while one 80 percent over is buried. This hints at a wrong threshold, a wrong sort, or dividing by the actual instead of the estimate.\n\n**Quickest check**\n\nPick one month. Add up every project's actual cost and compare the total to Azure's bill. Then count the usage rows where the `project` tag is missing. A big gap or many untagged rows tells you the numbers can't be trusted yet.",
+   "step": "Learn",
+   "fingerprint": "60bdf14a5c19d68b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where this method needs extra care.\n\n**A project with no real estimate.** Percent over divides by the estimate. If the estimate is zero, the math breaks. If it is tiny, any spend looks like a huge overrun. Give every project a real estimate before launch, and track brand-new ones by dollars spent until they have one.\n\n**Small projects crowding out big ones.** A $10 project that cost $20 is 100 percent over, but only $10 extra. A $5,000 project at 25 percent over is $1,250 extra. Sorting by percent alone puts the small one first. Add a minimum dollar amount before flagging, or look at dollars over next to the percent.\n\n**Requests with no tag.** The query skips any request without a `project` tag. If an app forgets to send the header, its spend is invisible and no project looks over. Each month, check how much usage has no tag. Make the tag a required step before any app goes live.",
+   "step": "Learn",
+   "fingerprint": "a99661cd5deca698",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “estimate” different from “actual”?",
+   "a": "The **estimate** is the number from the plan. It's what someone guessed a project would cost before it launched. The **actual** is what the project really cost, taken from the real bill after the month is over.\n\nSo the estimate comes first and is a guess. The actual comes later and is a fact.\n\nThink of a grocery trip. Before you go, you figure you'll spend about $40. That's your estimate. At the till, the receipt says $52. That's your actual. The receipt doesn't care what you planned.\n\nThe two only become useful side by side. Each month you set them next to each other and work out **percent over**: the extra spend as a share of the estimate. In the lesson's example, the plan said $400 and the bill said $520. That's $120 extra, and $120 is 30 percent of $400.\n\nThe actual also improves the next estimate. Once you've measured what a project really costs, you replace the old guess in the plan with that number. Your next plan starts from fact instead of hope.",
+   "step": "Learn",
+   "fingerprint": "d14434987ffa03e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "token_cost": {
+  "check:0:0": {
+   "q": "Why not “The model's accuracy on last month's eval set”?",
+   "a": "Accuracy is a fair thing to care about. An **eval set** is a fixed list of test questions you run to check how well a model answers. Watching its score tells you if quality changed. So the instinct to \"check the model\" isn't silly.\n\nBut accuracy doesn't appear anywhere in the bill. You pay for tokens times price. Nothing more. A model can get more accurate or less accurate and cost exactly the same. Also, last month's eval is old news. It can't explain a jump that happened since.\n\nNow look at the clue in the question. Requests stayed the same, yet the bill doubled. So each request must cost more. That means each request is using more tokens. Maybe prompts got longer, or answers did. Output tokens usually cost several times more than input, so longer answers raise the bill fastest.\n\n**\"Tokens per request, especially output tokens\" is better because it looks straight at the thing you are actually billed for, and at the part that costs the most.**",
+   "step": "Check",
+   "fingerprint": "9969100744e79e26",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The API's uptime, in case retries doubled the c…”?",
+   "a": "It's a reasonable instinct. Retries really can raise a bill. A **retry** is when your code sends the same request again because the first try failed. More failures, more retries, more tokens paid for. **Uptime** means how much of the time the API is working, so low uptime could cause more retries.\n\nBut the question gives you a key fact: the number of requests didn't change. If retries had doubled the calls, the request count would have gone up too. It stayed flat, so retries don't explain this bill.\n\nThat leaves the cost of each request. Since the count is the same, each request must cost more on average. Cost per request comes from its input tokens and output tokens, each times its price. Something like a longer prompt, a model that writes longer answers, or a switch to a pricier model would do it.\n\n\"Tokens per request, especially output tokens\" is better because it matches the clue: same number of requests means each one got more expensive, and output tokens cost several times more than input, so they're the likeliest cause.",
+   "step": "Check",
+   "fingerprint": "67d40776ad2c090f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The claim that retries would raise the request count is an assumption the lesson doesn't state, but it fits the question's logic."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It stays the same, inputs didn't change”?",
+   "a": "That option gets one thing right. The questions are the same length, so the **input tokens** (the pieces of text you send to the model) haven't changed. The input part of the bill stays the same.\n\nBut it misses the other half of the bill. Providers charge for **output tokens** too. Those are the pieces of text the model writes back. The answers are now three times longer, so there are about three times as many output tokens.\n\nOutput is also usually priced several times higher than input. So output was often already a big share of the cost. Tripling it pushes the total up a lot, not just a little.\n\nHere is a quick example with made-up numbers. Say a call used to cost 1 cent for input and 4 cents for output, so 5 cents in total. Now output is 12 cents, and the total is 13 cents. That is more than double, even though nothing about the input changed.\n\n\"It rises a lot, output costs more\" is better because it counts both halves of the bill and notices that the half that grew is the expensive one.",
+   "step": "Check",
+   "fingerprint": "2802f720d3b735c9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It drops, long answers need fewer calls”?",
+   "a": "That option isn't silly. In real life, a fuller answer can sometimes save a follow-up question, and fewer calls would mean a smaller bill.\n\nBut the question gives no sign of that. The questions are the same, so you should assume the same number of calls. The option invents a saving the facts don't support.\n\nWhat did change is the size of each answer. Each call now produces three times as many **output tokens** (the tokens the model writes back). Output tokens are usually the expensive kind, often several times the price of **input tokens** (the tokens you send in). The input side stays the same, but the costlier side triples.\n\nA quick example with made-up prices:\n\n- Before: 500 input tokens and 300 output tokens per call.\n- After: still 500 input tokens, but 900 output tokens.\n- Output cost per call is now three times what it was.\n- Because output was already the bigger part of the cost, the total rises a lot.\n\n\"It rises a lot, output costs more\" is better because it focuses on what actually changed: more of the most expensive tokens on every call.",
+   "step": "Check",
+   "fingerprint": "6e378f4483cdffa2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the example says 'made-up prices' but gives none, so 'output was already the bigger part' depends on the lesson's 'several times more' price claim, which is acceptable."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The total is probably counted wrong”?",
+   "a": "\"The total is probably counted wrong\" is a guess. Nothing in the question says the total is miscounted. It only says the bill jumped and you track one number for the whole company.\n\nIt does get one thing right. When a bill surprises you, checking the math is a sensible first step.\n\nBut it misses the real problem. Suppose you recount and get the same total. You still know only *that* spending went up, not *why*. One company-wide number mixes every model, feature and user together. If a new chatbot feature started sending long prompts, or one user ran thousands of calls, a single total hides it.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A \"breakdown\" just means splitting the total into smaller labelled piles. When the bill jumps, you look at the piles and see which one grew.\n\n\"You can't see which feature caused it\" is better because it names the actual gap: with only one total, you can't find what drove the jump.",
+   "step": "Check",
+   "fingerprint": "178ff45142b2a1ea",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Bills often jump for no reason”?",
+   "a": "\"Bills often jump for no reason\" sounds reasonable, but it isn't true. A bill jumps because something changed. Maybe a feature got more users. Maybe a prompt got longer. Maybe someone switched to a pricier model. Maybe a bug started calling the model in a loop.\n\nWhat the option gets right: bills do jump, and it can feel random when you don't know the cause.\n\nWhat it misses: the feeling of \"no reason\" comes from the tracking, not the bill. With one company-wide total, you only see that spending went up. Every call is mixed into one number. You can't tell which part grew.\n\nIf you track cost per model, per feature and per user, the jump shows up in one row of that breakdown. For example, \"the support chatbot doubled its output tokens.\" Now you know where to look. (Output tokens are the words the model writes back, and they usually cost more than input.)\n\n\"You can't see which feature caused it\" is better because it names the real problem: a single total hides the cause, and a breakdown would reveal it.",
+   "step": "Check",
+   "fingerprint": "5ad2bbfe4c14366f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add up cost per model” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"LLM providers bill per token, which is a small chunk of text, about three quarters of a word. Input and output have separate prices, and output usually costs several times more. If you only see one total bill, you can't tell why it jumped.\"\n\n**The idea:** \"So for every call, I work out its cost from its input and output tokens and the model's prices. Then I add it to a running total for that model. I keep the totals in a dictionary, which is a lookup table from model name to a number. A model I haven't seen yet starts at zero.\"\n\n**An edge case:** \"Rounding. Small costs add up. If I round each call, the tiny errors pile up. So I keep full precision and round only once, at the end.\"\n\n**A follow-up an interviewer might ask**\n\n*\"What happens if a call uses a model that isn't in your price list?\"*\n\nHint for a strong answer: don't quietly count it as free. That hides real spend. Say you would flag it clearly, by logging a warning or raising an error, so someone adds the missing price.",
+   "step": "Explain",
+   "fingerprint": "1d7df283e48c4e14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The bill jumps and nobody can say why.** You only have one total. You can't tell which model, feature or user caused it. That means tracking was skipped.\n- **Your numbers are wildly off.** A single call shows thousands of dollars. Or the whole month shows a fraction of a cent. That usually means the divide by one million was skipped or done twice.\n- **Your estimate sits well below the real bill.** Output tokens may be missing, or priced at the cheaper input rate. Output usually costs several times more, so this gap grows fast.\n- **A model's total never grows, or a model is missing.** Each call is replacing the running total instead of adding to it.\n- **Lots of calls show exactly zero.** Each call was rounded too early. Tiny costs became 0 before being added. Round only at the end.\n\n**Quickest check**\n\nPick one day. Get the token counts per model from `system.serving.endpoint_usage`, the Databricks table that logs each request to a served model. Multiply by the prices yourself. Compare that to your tracked totals and to the provider's invoice, which is the actual bill. If they match closely, your tracking is sound.",
+   "step": "Learn",
+   "fingerprint": "31b4d89186698c66",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems; it is close to the 200-word limit and the description of the Databricks table goes slightly beyond the lesson, but neither is serious."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The simple rule (tokens times price, added up per model) works well for basic pay-per-token calls. Here is where it needs extra care.\n\n**Prices that aren't flat.** Some providers charge less for \"cached\" input, meaning text they have seen recently and stored. Reasoning models also bill hidden \"thinking\" tokens as output. Read each kind of token from the provider's usage report and give each its own price.\n\n**Prices that change over time.** Providers cut or raise prices, and you switch models. If you hard-code one price, last month's totals get recalculated wrongly. Store the price that applied with each call, or keep a dated price table.\n\n**Paying by the hour, not by the token.** On Databricks you can reserve \"provisioned throughput\", a dedicated endpoint you pay for per hour whether it is busy or idle. Here, tokens don't set the bill. Use the hourly cost, then split it across features or users by their share of the tokens.",
+   "step": "Learn",
+   "fingerprint": "e23e4a1f18c9ca08",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “token” mean here?",
+   "a": "A **token** is a small chunk of text. It's the unit a model reads and writes.\n\nThink of Lego bricks. The model doesn't see whole sentences. It sees a row of small pieces snapped together. A short, common word like \"cat\" is often one piece. A longer word like \"unbelievable\" may split into two or three. Spaces and punctuation count too. On average, one token is about three quarters of a word. So 100 words is roughly 130 tokens.\n\nProviders bill by the token, a bit like a taxi meter that ticks for each piece of text. The tokens you send in (your prompt) are **input tokens**. The tokens the model writes back are **output tokens**. Each kind has its own price, and output usually costs more.\n\nIn the lesson's example, `input_tokens` and `output_tokens` are simply counts of these pieces for one call. Each count is multiplied by its matching price.\n\nIn the Databricks query, `input_token_count` and `output_token_count` are the same kind of counts. Databricks records them for every request. The query adds them up for each `served_entity_id`, which identifies the model being served.",
+   "step": "Learn",
+   "fingerprint": "f708dd0c65cb9e50",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The one soft spot is that 'served_entity_id identifies the model being served' goes slightly beyond the lesson, which only says tokens are tracked per endpoint."
+   }
+  }
+ }
+}

@@ -1,0 +1,548 @@
+{
+ "burn_rate": {
+  "check:0:0": {
+   "q": "Why not “Yes: page the on-call person right now”?",
+   "a": "\"Yes: page the on-call person right now\" gets one thing right. Errors are above budget. At 0.6% against an allowed 0.5%, you are spending your error budget a bit faster than planned. That is worth noticing.\n\nWhat it misses is *how much* faster. Work out the burn rate: actual failures over allowed failures. That is 0.6 / 0.5 = 1.2. So you are only 1.2 times over budget. If your budget covers 30 days, at this pace it would run out in about 25 days. That is not \"right now\" trouble.\n\nPaging means sending an urgent alert that can wake someone at 3 a.m. If you page for small overruns like this, people get worn down by alerts that don't need action. This is called **alert fatigue**. Then they start ignoring pages, even the real ones.\n\nCompare the lesson's example: a burn rate of 14.4. That would use up the budget in days, so it does deserve a page.\n\n\"No: the burn rate is about 1.2, so watch it\" is better because it measures how fast the budget is draining, and saves pages for when it's draining fast.",
+   "step": "Check",
+   "fingerprint": "e689f023279b47d0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 30-day window and 'in days' for 14.4 are not in the lesson, though the 30-day figure is clearly hypothetical. 'Only 1.2 times over budget' is slightly loose wording for a burn rate of 1.2."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Yes: turn the feature off until errors drop”?",
+   "a": "\"Yes: turn the feature off\" gets one thing right. Errors are above target. 0.6% is more than the 0.5% you allowed, so something is a little off.\n\nWhat it misses is **how much** over you are. Use the lesson's tool, the burn rate: actual failure rate divided by allowed failure rate. Here that is 0.6 / 0.5 = 1.2. You are using your error budget 1.2 times as fast as planned. That is slightly fast, not alarming. Compare the lesson's example of 14.4, where the budget would be gone in a small fraction of the time.\n\nTurning the feature off is also a bigger failure than the one you are fixing. Every user of that feature would then get nothing, instead of 0.6% of them hitting an error. The error budget exists so small overspends like this don't trigger drastic action or wake anyone up.\n\nSo the right move is to keep an eye on it. If the burn rate climbs, then it becomes urgent.\n\n\"No: the burn rate is about 1.2, so watch it\" is better because it measures how fast the budget is being used up and responds in proportion, instead of overreacting to any error above the target.",
+   "step": "Check",
+   "fingerprint": "1bbba8aa57e57bd1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “99 in 100 requests can fail”?",
+   "a": "That answer mixes up the two halves of the target.\n\nThe SLO says 99 in 100 requests should **succeed**. That number is the success target. It is not the number allowed to fail.\n\nThe error budget is what is left over. Out of every 100 requests, 99 must work, so only 1 is allowed to fail. That leftover 1 is your budget: the failures you can \"spend\" before you miss your target.\n\n\"99 in 100 can fail\" turns this upside down. It would mean almost every request is allowed to break. A service like that would be nearly useless, yet it would still count as \"on target.\" So the answer does get one thing right: it uses the number from the SLO. But it attaches that number to the wrong side.\n\nA quick way to check yourself is to ask, \"Is this number about successes or failures?\" The SLO is always about successes. The error budget is always the small slice left for failures.\n\n\"1 in 100 requests can fail\" is better because the error budget is the small share left over after the 99 successes, not the success target itself.",
+   "step": "Check",
+   "fingerprint": "39768aab061129ce",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “No request is allowed to fail”?",
+   "a": "\"No request is allowed to fail\" gets one thing right: failures are bad, and you want as few as possible.\n\nBut it describes a 100% target, not a 99% one. This SLO (service level objective, your reliability target) says 99% of requests must succeed. The other 1% is your error budget: the failures you have agreed are acceptable.\n\nIt also misses that zero failures is not realistic. Networks drop. Services time out. A model call can return junk. Some errors will always happen. If nothing were allowed to fail, every single error would break the target. You would page someone (send an urgent alert to whoever is on call) all the time. Soon people would start ignoring the alerts.\n\nA budget fixes that. You alert on the burn rate, which is how fast you are using up the budget, not on each error. A few failures stay inside the budget. A sudden pile of them burns it too fast, and that is when someone gets paged.\n\n\"1 in 100 requests can fail\" is better because it turns the 99% target into the exact share of failures you are allowed, which is the error budget.",
+   "step": "Check",
+   "fingerprint": "a8b220ec188928e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Page for every error, even faster”?",
+   "a": "\"Page for every error, even faster\" gets one thing right. Errors matter, and when something is truly broken, a quick response is good.\n\nBut it makes the 3 a.m. problem worse, not better. The team was woken up for a single error that barely touched the error budget. Paging faster just wakes them sooner for the same non-problem.\n\nIt also ignores what the SLO (service level objective, your reliability target) means. A 99.5% target says some failures are expected and allowed. That 0.5% is the error budget. One stray error is the system working as planned.\n\nPaging on every error also causes **alert fatigue**. That is when people get so many alerts that they start ignoring them. Then, when a real outage hits, the page that matters can get missed.\n\nThe right answer is \"Alert on burn rate, not single errors.\" The burn rate is how fast you are using up the error budget, so you only page someone when failures are coming in fast enough to threaten the target, like the lesson's 14.4 example.",
+   "step": "Check",
+   "fingerprint": "afbf9a913c7ecb14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Turn off all alerts at night”?",
+   "a": "\"Turn off all alerts at night\" gets one thing right. The 3 a.m. page was noise. One error, with the error budget barely touched, should not wake anyone. Protecting people's sleep is a fair goal.\n\nBut it fixes the wrong thing. The problem was never the time of day. The problem was alerting on single errors.\n\nHere is what it misses:\n\n- **Real outages happen at night too.** Say your agent starts failing on most requests at 2 a.m. Your users still feel it. With alerts off, nobody finds out until morning. By then the whole error budget might be gone.\n- **Daytime stays noisy.** Every single error would still page someone during work hours. People start ignoring alerts that cry wolf. Then they miss the real ones.\n\nSo you lose the alerts that matter and keep the ones that don't.\n\n\"Alert on burn rate, not single errors\" is the better answer. It pages someone only when failures are using up the error budget too fast, at any hour, and stays quiet for a lone error.",
+   "step": "Check",
+   "fingerprint": "fba771420dfbb52b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Actual errors over allowed errors” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"If we page someone on every error, meaning send an urgent alert to whoever is on call, people get woken up for tiny blips. Soon they start ignoring alerts.\"\n\n*The idea.* \"So we set an SLO, a reliability target like 99.5% of requests succeeding. That leaves a 0.5% error budget: the failures we're allowed. The burn rate is actual errors over allowed errors. If 7.2% of requests fail, that's 7.2 divided by 0.5, which is 14.4. We're using up the budget 14 times too fast, so we page.\"\n\n*The trade-off.* \"The time window matters. A short window, like five minutes, reacts fast but can page on a small spike. A long window, like a day, stays calm but notices real trouble late.\"\n\n**Likely follow-up**\n\n\"How would you get the best of both windows?\"\n\nHint: Suggest checking two windows at once, a short one and a long one. Page only when both show a high burn rate. The long window confirms the problem is real. The short window confirms it is still happening. Together they catch real outages quickly and skip brief blips.",
+   "step": "Explain",
+   "fingerprint": "7320a5438f651d9c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that alerting on burn rate was skipped or done wrong:**\n\n- **Pages for every small error.** The on-call person gets woken up over one failed request. Soon people start ignoring alerts. This means you are alerting on raw errors, not on burn rate.\n- **Silence while things quietly break.** Failures creep up all week, and no alert fires until users complain. Your budget ran out with no warning.\n- **Burn rate numbers that look oddly small.** You see something like `0.07` when the error rate is clearly high. That usually means you divided by the success target (`0.995`) instead of the allowed failure share (`0.005`).\n- **Numbers off by a factor of 100.** This comes from mixing percents (`0.5`) with fractions (`0.005`).\n- **The alert breaks or stays silent in quiet hours.** With zero requests, the error rate comes back `NULL` (meaning \"no value\"). The alert rule may not handle that.\n\n**Quickest check:** feed in numbers you already know the answer to. Take 72 failures out of 1000 requests with a 99.5% target. The burn rate should come out as 14.4. If it doesn't, look at the allowed failure share first.",
+   "step": "Learn",
+   "fingerprint": "808eea04c1259bcc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Good question. The burn rate rule is solid, but it needs care in a few places.\n\n**Very little traffic.** If only 5 requests come in during the hour and 1 fails, the failure rate is 20%. That is a burn rate of 40, so someone gets paged over a single error. Set a minimum request count before alerting, or look at a longer window like a day.\n\n**LLM or RAG apps.** A RAG app looks up documents and then asks an LLM to answer. Its worst failures often return success: the reply arrives, but it is wrong or made up. Counting only `status = 'ERROR'` misses these. Add quality checks, like MLflow evaluations or user feedback, and count bad answers as failures too.\n\n**One window only.** A one-hour window can page you for a short spike that fixes itself. It also reacts slowly to a steady leak that drains the budget over days. Use two windows together, a short one and a long one. Page only when both burn fast. Send a lower-priority alert for the slow leak.",
+   "step": "Learn",
+   "fingerprint": "d728a107aa1c2e1a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer passes all five checks. Its 5-requests, 1-failure example works out to 20% / 0.5% = 40, and it stays under 200 words. MLflow is mentioned without explanation, but only in passing."
+   }
+  },
+  "learn:term": {
+   "q": "What does “error budget” mean here?",
+   "a": "An **error budget** is the amount of failure you've agreed is acceptable.\n\nThink of a monthly spending budget. Say you allow yourself $50 for snacks. Spending some of it is fine. That's what it's for. You only worry if you're spending it so fast that it'll be gone by the 5th.\n\nReliability works the same way. Your **SLO** (service level objective, your reliability target) says 99.5% of requests should succeed. That leaves 0.5% that are *allowed* to fail. That 0.5% is your error budget. A few errors aren't an emergency. They're just spending from the budget.\n\nIn the lesson's example:\n\n- **Allowed failure rate:** 0.5%. This is the budget.\n- **Actual failure rate:** 7.2%. This is how fast you're spending it.\n\nThat's 14.4 times faster than the budget allows. At that pace, the budget runs out quickly, so it's worth paging someone (sending an urgent alert to whoever is on call).\n\nThe key shift is this: you don't alert on every error. You alert when the budget is draining too fast.",
+   "step": "Learn",
+   "fingerprint": "23ce28f0c556c4c8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The one loose spot is calling the 7.2% actual failure rate 'how fast you're spending it', when the burn rate is the speed. The answer does then give 14.4 times as the comparison."
+   }
+  }
+ },
+ "circuit_breaker": {
+  "check:0:0": {
+   "q": "Why not “Keep retrying each request until it answers”?",
+   "a": "Retrying isn't a bad instinct. It gets one thing right: some failures are brief blips. A single dropped connection often works on the second try, so a retry or two can be reasonable.\n\nBut this question says the reranker is timing out on *every* call. That's not a blip. The service is down or overloaded.\n\nHere's what \"keep retrying until it answers\" misses:\n\n- **Users wait.** A timeout means waiting the full time limit before giving up. Retrying repeats that wait again and again, so every request gets very slow.\n- **The outage gets worse.** A struggling service is already overloaded. Piling on more calls adds load and makes it harder for it to recover.\n- **There's no backup plan.** If the service stays down for an hour, the app is stuck for an hour.\n\nThe better answer works differently. It notices repeated failures and stops calling for a cooldown. Meanwhile, it returns the documents in their original order. That keeps the app fast and gives the reranker room to recover.",
+   "step": "Check",
+   "fingerprint": "4781ef4dc54a2243",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The closing explanation runs to four sentences instead of the requested one, and it doesn't mention trying again after the cooldown."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Stop the whole app until the endpoint is back”?",
+   "a": "That option gets one thing right. It stops sending calls to an endpoint that keeps timing out, so you are no longer piling extra load onto a service that is already struggling.\n\nBut it throws away far too much. The reranker is a helper step. It only reorders documents your app has already found, putting the most useful ones first. Without it, your app can still answer questions. The answers might just be a little less sharp. Stopping the whole app turns one small broken part into a full outage, and every user gets nothing.\n\nIt also has no plan for coming back. Someone would have to notice the endpoint is healthy again and restart things by hand. A circuit breaker handles that on its own. After the cooldown, it moves to half-open and makes one trial call. If the call works, the breaker closes and normal reranking resumes.\n\nThe right answer is \"Stop calling it for a while and skip reranking.\" It protects the failing service and keeps the app useful, because the documents go back unranked as the fallback.",
+   "step": "Check",
+   "fingerprint": "0fa4c576a962f585",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “All calls go through again”?",
+   "a": "\"All calls go through again\" gets one thing right. When the cooldown ends, the breaker stops blocking every call. It is time to check on the service again.\n\nBut it skips a step. The cooldown ending does not prove the service has recovered. It only means enough time has passed to try. If every waiting call rushes through at once and the service is still down, all of them fail. Users wait on slow timeouts again. A struggling service also gets hit by a sudden flood of requests, which can knock it over just as it starts to recover. That is the very problem the breaker exists to prevent.\n\nSo after the cooldown, the breaker moves to **half-open**. That is a testing state. It lets just one call through. If that call works, the breaker closes and normal traffic resumes. If it fails, the breaker opens again and a new cooldown starts.\n\n\"One trial call decides\" is better because it tests the service with a single cheap request before trusting it with all the traffic.",
+   "step": "Check",
+   "fingerprint": "1272076c32cf177f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It stays open for good”?",
+   "a": "\"It stays open for good\" gets one thing right. While the breaker is open, calls really are blocked. Your code skips the failing service and uses the fallback, such as returning the documents without reranking.\n\nWhat it misses is the point of the cooldown. A cooldown is a waiting period, and it exists because outages usually end. Services get restarted, fixed or scaled back up. If the breaker never let a call through again, your app would use the fallback forever. You would lose the better results from the real reranker, even after it was healthy again.\n\nThink of a fuse box switch that trips. You don't leave the power off for good. After a while, you flip it back and see what happens.\n\nThat \"see what happens\" moment is the **half-open** state. After the cooldown, the breaker allows a single test call. If it works, the breaker closes and normal calls resume. If it fails, the breaker opens again for another cooldown.\n\n\"One trial call decides\" is better because it lets the system recover on its own, while still risking only one call if the service is still down.",
+   "step": "Check",
+   "fingerprint": "6ad283841c3f892e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A long wait while it retries”?",
+   "a": "\"A long wait while it retries\" gets one thing right. Retrying can help when a failure is a brief blip, and the user does want a real answer from the model.\n\nBut it misses what \"open\" means. While the breaker is open, calls are blocked. The code does not retry at all. That is the whole point: the breaker has already seen enough failures in a row to decide the service is down for now.\n\nMaking the user wait would cause two problems:\n\n- **The user is stuck.** They sit there for something that will probably fail anyway.\n- **The outage gets worse.** Retrying keeps sending requests to a service that is already struggling, which is exactly what the breaker exists to stop.\n\nThe cooldown is time for the service to recover, not time for the user to wait. After it ends, the breaker goes half-open and makes one trial call on its own schedule.\n\n\"A fallback, like a cached answer\" is better because the user gets something useful right away, and the failing service is left alone to recover.",
+   "step": "Check",
+   "fingerprint": "3c17c1e9d94b944c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problems. The phrase \"on its own schedule\" for the half-open trial call is slightly vague, and the 'brief blip' point goes beyond the lesson but does not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “An error page every time”?",
+   "a": "\"An error page every time\" gets one thing right. It fails fast. While the breaker is open, you don't call the broken service, so you aren't piling more requests onto something that's already struggling. That part matches the lesson.\n\nWhat it misses is the user. Failing fast protects the service, but an error page leaves the person with nothing. The outage is on your side, yet they pay the full price for it. An open breaker usually lasts only for a short cooldown. During that window you often have something useful to hand back, so throwing it all away is a waste.\n\nLook at the lesson's `rerank` example. When the breaker is open, it doesn't show an error. It returns `docs` unranked. The results are a bit less polished, but the user still gets an answer. This is called \"graceful degradation\": the app gets a little worse instead of breaking completely.\n\nA fallback like a cached answer (a saved copy of an earlier result) is better because it still fails fast and spares the broken service, while giving the user something useful instead of a dead end.",
+   "step": "Check",
+   "fingerprint": "e937ea3741926c89",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Remember failures and when it opened” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"If a dependency like a reranker goes down, calling it on every request makes users wait. The extra traffic can also make the outage worse.\"\n\n*The idea:* \"A circuit breaker remembers two things: how many failures happened in a row, and when it opened. While closed, calls go through. When failures reach a threshold (the limit we set), it opens. Then we skip the call and use a fallback, like returning the docs without reranking. After a cooldown, one trial call decides. Success closes it. Failure re-opens it.\"\n\n*Trade-off:* \"Picking the threshold and cooldown is a balance. Too sensitive, and one brief glitch cuts off a healthy service. Too lenient, and users keep hitting a dead one.\"\n\n**A likely follow-up**\n\n\"What if many requests arrive during half-open?\"\n\n*Hint for a strong answer:* Let only one trial call through. Everyone else keeps using the fallback until that trial settles things. Otherwise a rush of requests can knock a recovering service down again. This matters most when many requests run at the same moment, which is called concurrency.",
+   "step": "Explain",
+   "fingerprint": "91f450db5aa6745d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the breaker is missing.** When the reranker goes down, every request still waits for it to time out. A \"timeout\" is the point where your code gives up waiting. Your latency (time per request) jumps, and your logs show the same error repeated thousands of times. Traces show long, failed reranker calls inside almost every request.\n\n**Signs it never closes again.** The reranker came back hours ago, but your fallback rate stays near 100%. Answers quietly get worse, because reranking is still skipped. Nothing errors, so this is easy to miss.\n\n**Signs it is set up wrong.**\n- **Flapping:** it opens and closes many times a minute. The threshold or cooldown is too small.\n- **Never opening:** the failure count keeps getting reset by mistake, so it never reaches `threshold`.\n- **Cooldown restarting:** blocked calls get counted as failures, so the breaker stays open longer than it should.\n\n**Quickest check.** Make the dependency fail on purpose in a test. Watch three things:\n1. Real calls stop after `threshold` failures.\n2. Blocked calls return the fallback fast.\n3. After the cooldown, one trial call goes through, and a success closes the breaker.",
+   "step": "Learn",
+   "fingerprint": "be6446e328b8bf0c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the simple breaker needs extra care.\n\n**1. Many copies of your app.** In a bigger system, the same app often runs as several copies at once. Each copy keeps its own failure count, so one copy's breaker may open while the others keep hitting the broken service. To fix this, keep the breaker's memory in one shared place that all copies read, or set a lower `threshold` in each copy.\n\n**2. Failures that aren't the service's fault.** Some calls fail because your input was bad, like an empty list of documents. The service is fine, but your breaker counts it and may open for no reason. Only count failures that show the service is unhealthy, such as timeouts (the call took too long and you gave up waiting).\n\n**3. A fallback that quietly hurts quality.** In a RAG app (one that looks up documents before answering), skipping the reranker still returns docs. But the answers may get worse and nobody notices. Record each time the fallback runs, so someone sees it. Also check that the fallback doesn't depend on the same broken service.",
+   "step": "Learn",
+   "fingerprint": "9a41871c67470788",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “circuit breaker” different from “fallback”?",
+   "a": "They solve two different parts of the same problem.\n\n**A circuit breaker decides *whether* to call.** It watches for failures. After too many in a row, it \"opens\" and blocks calls for a cooldown, a waiting period. Then it lets one trial call through to see if the service has recovered.\n\n**A fallback decides *what to do instead*.** It is the backup answer you return when the real service can't help: a cheaper model, a cached result, or simply skipping a step.\n\nThink of a power cut at home. The fuse box switch trips so you stop drawing power from a broken circuit. That's the breaker. Lighting a candle so you can still see is the fallback.\n\nThe lesson's `rerank` function uses both:\n\n- `breaker.is_open()` is the breaker saying \"don't call the reranker right now.\"\n- `return docs` is the fallback. You hand back the documents unranked. The result is less polished, but it arrives quickly.\n\nNotice the fallback also runs inside `except`. A single failed call still needs a backup answer, even before the breaker opens.\n\nThey work as a pair. The breaker stops the wasted calls, and the fallback keeps your app answering.",
+   "step": "Learn",
+   "fingerprint": "af1d70903a65dc4a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "plan_calls": {
+  "check:0:0": {
+   "q": "Why not “Start anyway and hope it finishes in time”?",
+   "a": "With a 3-second budget and 2.8 seconds spent on retrieval, only 0.2 seconds (200 ms) are left. A model call usually takes much longer than that. In the lesson's example, generating took 1,200 ms.\n\n**What \"start anyway\" gets right:** a real model answer is better than a fallback, *if* it arrives in time. Wanting the best answer is a fair instinct.\n\n**What it misses:** it almost certainly won't arrive in time. One of two things happens:\n\n- The timeout cuts the call off. The user waits out the last of the budget, then gets an error instead of an answer.\n- There's no timeout, so the call runs past the deadline. The user is left waiting longer than promised.\n\nEither way, the time spent on the call is wasted. The deadline idea exists to stop exactly this: don't start work you can't finish. You check the time left *before* starting, not after.\n\n**Why \"Skip it and return a fallback answer\" is better:** it gives the user something useful right away, inside the budget, instead of a late answer or an error.",
+   "step": "Check",
+   "fingerprint": "ed1b66be18c9b2bb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Wait for retrieval to run again, faster”?",
+   "a": "**Why \"Wait for retrieval to run again, faster\" isn't the best choice**\n\nDo the maths first. The budget is 3 seconds. Retrieval (fetching the documents the model will read) already used 2.8 seconds. That leaves 0.2 seconds.\n\nThis option does get one thing right. Retrieval matters, and a good answer needs it. Retrying, which means running a failed or slow step again, can be sensible when there is time to spare.\n\nBut here there isn't. The 2.8 seconds are already spent, and a budget never refills. Running retrieval again starts new work with almost no time left. Nothing promises the second run will be faster. Even if it were, the model call would still need time after it. The user would wait past the deadline anyway. That breaks the lesson's rule: no step starts work it can't finish.\n\n**Why the fallback wins**\n\n\"Skip it and return a fallback answer\" is better because it stays inside the 3-second deadline and gives the user a quick, honest reply instead of a late one or none at all.",
+   "step": "Check",
+   "fingerprint": "4e6e27a0be767adb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “They get a quick error”?",
+   "a": "\"They get a quick error\" describes what you *want* to happen. It's what a timeout gives you. But this app has no timeout.\n\nAn error needs something to notice the problem and give up. A crashed service might refuse the connection, and then you would get a fast error. A **hung** service is different. It's still \"there\" but never answers. It doesn't say no. It just goes silent.\n\nWith no timeout, your code waits on `llm.ainvoke(messages)` with no limit. Nothing ever says \"that's long enough, stop.\" So no error is raised, quick or slow. The user stares at a spinner. Meanwhile your server keeps that request open, using up a slot that other users need.\n\nSo the option gets one thing right: a quick error is the better outcome. But a hang doesn't produce one on its own. A timeout is how you turn \"silence forever\" into a clear `TimeoutError` you can handle.\n\n\"They wait, maybe forever\" is better because with no timeout, nothing ever stops the waiting, and a service that never replies never sends an error.",
+   "step": "Check",
+   "fingerprint": "300c1152e091e9b4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “They get a cached answer”?",
+   "a": "A **cache** is a saved copy of an earlier answer, kept so you can reuse it later. Serving a cached answer is a real and useful fallback. A **fallback** is the plan B your app uses when plan A fails. So this option points at a good idea.\n\nBut it describes a different app. The question says nothing about a cache. More importantly, a fallback only runs once your code *decides* plan A has failed. With no timeout, that moment never comes. The line `await llm.ainvoke(messages)` just sits there waiting for a reply. It never raises an error, so no plan B code ever gets a turn.\n\nThat is the lesson's main point. A timeout is what turns \"silent forever\" into a clear `TimeoutError`. Your code can catch that error and *then* serve a cached answer, or a polite apology. The cache needs the timeout first.\n\n\"They wait, maybe forever\" is the better answer because it describes what actually happens when nothing tells the code to stop waiting.",
+   "step": "Check",
+   "fingerprint": "75a3e0389e99614a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Its timeout should be even longer”?",
+   "a": "\"Its timeout should be even longer\" gets one thing right: model calls can be slow, and a timeout that's too tight can cut off an answer that was almost done. That worry is fair.\n\nBut it misses the real problem. The whole request has a **deadline** of 5 seconds. A deadline is a fixed finish time for everything together. Retrieval already used part of that time. Say it took 1 second. Now only 4 seconds are left.\n\nIf the model call still gets a full 5-second timeout, it can run past the deadline by up to 1 second. The user has already given up, but your code keeps waiting. Making the timeout longer makes this worse. The request overruns by even more, and you spend time and money on an answer nobody will see.\n\nA timeout on one call only matters if it fits inside the budget for the whole request.\n\n\"It should get only the time that's left\" is better because it passes the remaining budget down, so the model call stops in time for the request to meet its 5-second deadline.",
+   "step": "Check",
+   "fingerprint": "9416ef117ea1338f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Retrieval should have no timeout”?",
+   "a": "\"Retrieval should have no timeout\" spots that something is wrong with how time is handed out. But it fixes it in the wrong direction.\n\nA **timeout** is a limit on how long one call may wait before it gives up. Taking it away from retrieval means retrieval could wait forever. Then the request can't promise to finish in 5 seconds at all. The lesson's first rule says the opposite: every call that can wait forever eventually will, so every call needs a timeout.\n\nIt also misses the real bug. The trouble isn't retrieval's timeout. It's that the model call gets a fresh, full 5 seconds no matter how long retrieval took. Say retrieval used 2 seconds. The model could then run for 5 more, and the request takes 7 seconds in total. That breaks the 5-second promise.\n\n\"It should get only the time that's left\" is better because it treats 5 seconds as one shared budget: whatever retrieval spends is taken off, so the model call can never push the whole request past its deadline.",
+   "step": "Check",
+   "fingerprint": "4c46ce836306624a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the opening credit that the option 'spots something wrong with how time is handed out' is generous, but it does not contradict the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Spend down a time budget” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Any call to a model or another service can hang. Without a limit, one slow step can stall the whole request, and the user waits forever.\"\n\n*The idea:* \"So I give the whole request a deadline, say 2 seconds. Each step is told how much time is left. A step only starts if it can finish in that time. If it can't, we skip it or use a fallback, like a cached answer or a smaller, faster model.\"\n\n*The trade-off:* \"Skipping steps can lower quality. For example, reranking (re-sorting search results so the most relevant come first) might get dropped. But a fast, decent answer usually beats a late, perfect one.\"\n\n**Likely follow-up**\n\n\"What if a step takes longer than you expected?\"\n\n*Hint:* Time estimates are only guesses. So also put a real timeout on each call, set to the time left, such as `asyncio.timeout(remaining_seconds)`. A call that runs long is then cut off with a `TimeoutError` instead of using up the whole budget. Mention keeping a small safety margin, so there is still time left to send the fallback.",
+   "step": "Explain",
+   "fingerprint": "b71e8746da20906e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The answer never says that each step's time is subtracted from the budget, which is the 'spend down' part. It is also close to the 200-word limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that timeouts or deadlines are missing:**\n\n- **A few requests take forever.** Most answers come back fast, but your slowest 1 in 100 takes minutes. Averages hide this, so look at the slowest ones.\n- **Requests pile up.** Open connections or busy workers keep climbing during an outage and never drop back.\n- **Traces show one stuck step.** A trace is a timeline of each step in a request. If one call fills nearly the whole bar, nothing cut it off.\n- **Work finishes after nobody is waiting.** Logs show an answer generated after the user's request already gave up. That is wasted time and money.\n- **The total blows the budget.** Each step has its own timeout, but together they add up to more than the deadline. That means the time left isn't being passed down.\n- **No `TimeoutError` ever appears in the logs.** That sounds good, but it usually means nothing is being timed.\n\n**Quickest check:** make one dependency slow on purpose, such as a fake model that waits 30 seconds. Send a request. It should return a fallback within your deadline, not hang.",
+   "step": "Learn",
+   "fingerprint": "815fd23f3e37dc76",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer passes every check. The only weak point is the 'no TimeoutError' bullet, which goes a little beyond the lesson, but it is hedged with 'usually'."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule holds well, but these three situations need extra care.\n\n**1. Step times are guesses, not facts.**\nAn LLM (large language model) can take 300 ms one time and 3,000 ms the next, depending on how long its answer is. Plan with the slow-but-common time you have actually measured, not the average. Also cap the answer length, and keep a hard timeout on the call anyway.\n\n**2. Retries quietly eat the budget.**\nIf a call fails and you try again, that retry spends the same time pool. Before each retry, check the time left. If too little remains, skip the retry and go straight to your fallback.\n\n**3. Bigger systems with parallel steps or many services.**\nSteps that run at the same time cost only as much as the slowest one, not their total. When a request passes through several services, send the deadline as a fixed end time (for example, \"finish by 12:00:02\"). A plain \"2 seconds left\" gets out of date while the message travels over the network.",
+   "step": "Learn",
+   "fingerprint": "e4eb4ca4753a065c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: 'ms' is not re-explained, and advising a fixed end time goes slightly beyond the lesson's 'pass the remaining time down', though it does not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “deadline” mean here?",
+   "a": "A **deadline** is a fixed finish time for the *whole* request, not for one step.\n\nThink of catching a train that leaves in 30 minutes. You have errands: buy a coffee, grab a snack, pick up a parcel. Each one eats into the same 30 minutes. Before starting the next errand, you check the clock. If it would make you miss the train, you skip it.\n\nA **timeout** is a little different. It's a limit on a single call, like \"give up on the coffee if it takes over 5 minutes.\" A deadline is the bigger clock that every step shares.\n\nIn the lesson's example, the whole request gets 2,000 ms (two seconds):\n\n- `retrieve` (fetching relevant documents) takes 400 ms. That leaves 1,600 ms.\n- `rerank` (sorting those documents by usefulness) takes 900 ms. That leaves 700 ms.\n- `generate` (the model writing the answer) needs 1,200 ms. Only 700 ms remain, so it won't fit.\n\nSo the system doesn't start `generate`. It switches to a simpler backup plan, called a **fallback**. That's the point of a deadline: no step begins work it can't finish in time.",
+   "step": "Learn",
+   "fingerprint": "c4e060220452c356",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

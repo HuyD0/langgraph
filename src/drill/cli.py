@@ -559,6 +559,38 @@ def tutor_prepared_cmd(
             console.print(f"[dim]judge: {judge['notes']}[/dim]")
 
 
+@tutor_app.command("prepared-eval")
+def tutor_prepared_eval_cmd(
+    profile: str = typer.Option(None, "--profile", "-p", help="Databricks CLI profile for the judge's serving endpoint (costs a little)."),
+    judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: Haiku)."),
+    split: str = typer.Option("dev", "--split", help="dev (tune here), test (before a release) or holdout (big decisions only)."),
+    holdout_ok: bool = typer.Option(False, "--yes-holdout", help="Confirm a holdout run: once you change things because of it, it is no longer a holdout."),
+    workers: int = typer.Option(10, "--workers", help="Answers judged at the same time."),
+) -> None:
+    """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
+    import os
+
+    os.environ["MLFLOW_GENAI_EVAL_MAX_WORKERS"] = str(workers)  # read when the evaluation starts
+
+    from drill import tutor_prepared_eval as tpe
+
+    import mlflow
+
+    if split == "holdout" and not holdout_ok:
+        console.print("[red]The holdout is for big decisions only. Add --yes-holdout if this is one.[/red]")
+        raise typer.Exit(1)
+    console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
+    result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers)
+    n = result["numbers"]
+    console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
+    if result["strata_missing"]:
+        console.print(f"[yellow]Strata missing from a split: {', '.join(result['strata_missing'][:8])}[/yellow]")
+    console.print(f"  Pass rate: {n['passes_rate']:.1%} (95% interval {n['passes_ci_low']:.1%} to {n['passes_ci_high']:.1%})")
+    console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
+    for check in tpe.CHECKS:
+        console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
+
+
 @tutor_app.command("snapshot")
 def tutor_snapshot_cmd(
     out: Path = typer.Option(None, "--out", "-o", help="Where to write it (default ~/Documents/daily-drill/tutor-snapshot.md)."),

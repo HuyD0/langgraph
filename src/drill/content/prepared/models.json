@@ -1,0 +1,566 @@
+{
+ "better_option": {
+  "check:0:0": {
+   "q": "Why not “No: it costs 10 times more per call”?",
+   "a": "The \"No\" answer gets one thing right. The new model really does cost 10 times more per call. That part is true.\n\nWhat it misses is the size of the numbers. \"10 times more\" is a ratio, a comparison of two prices. It tells you nothing about the actual dollars. Ten times a tiny number is still a tiny number.\n\nWork it out for every 100 tickets:\n\n- **Extra cost:** 100 calls × ($0.02 − $0.002) = 100 × $0.018 = $1.80\n- **Extra value:** 25 more resolved tickets × $4 = $100\n\nSo you pay about $1.80 more and earn $100 more. That leaves roughly $98.20 extra net value for every 100 tickets. Net value means what you earn minus what the calls cost.\n\nThe \"No\" answer looks only at the price. It ignores what the better success rate earns. That is exactly the trap this lesson warns about: judging a model by its price alone.\n\n\"Yes: the extra tickets are worth more\" is better because it compares the actual dollars on both sides, and the $100 gained easily outweighs the $1.80 spent.",
+   "step": "Check",
+   "fingerprint": "b1fcc250f70fdc11",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Can't tell without the monthly volume”?",
+   "a": "\"Can't tell without the monthly volume\" sounds careful, and it gets one thing right. Volume decides *how much* money you gain in total. At 10,000 tickets a month the gain is bigger than at 100.\n\nBut volume can't decide *whether* the switch is worth it. Every ticket gets both the extra value and the extra cost. So volume multiplies both sides by the same number, and the winner stays the same.\n\nYou can compare per 100 tickets instead:\n\n- Extra value: 25 more resolved × $4 = $100.\n- Extra cost: 100 calls × ($0.02 − $0.002) = 100 × $0.018 = $1.80.\n- Net gain: about $98 for every 100 tickets.\n\nWhatever the monthly volume is, it just scales that $98 up or down. The gain never flips to a loss. This is the lesson's point: a pricier model can pay for itself many times over.\n\n\"Yes: the extra tickets are worth more\" is better because it compares the extra value with the extra cost for each ticket. That comparison alone settles the decision, whatever the volume.",
+   "step": "Check",
+   "fingerprint": "857ee4a901963614",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “How new each model is”?",
+   "a": "\"How new each model is\" gets one thing right. It senses that price per call isn't the whole story. But it points at the wrong missing piece.\n\nNewness never shows up in the money. The lesson's net monthly value uses four things: volume (how many calls you make), success rate (the share of answers that are good), value per success (what each good answer earns or saves), and cost per call. A model's release date isn't any of those. A brand-new model and an old one are judged the same way: by what their good answers earn, minus what their calls cost.\n\nThe manager's \"cheapest per call\" rule only looks at the cost side. It ignores the earning side. A cheaper model may give fewer good answers. If the earnings it loses are bigger than what it saves on calls, it makes less net money each month.\n\n\"How many good answers each gives\" is the right answer because success rate is exactly the earning half of the formula that the cheapest-per-call rule leaves out.",
+   "step": "Check",
+   "fingerprint": "81c6c4d9634d8388",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The closing line calls success rate \"exactly the earning half\" of the formula, but the lesson's earning side is volume times success rate times value per success, and it warns against choosing by success rate alone; the answer also credits the \"newness\" option with an intent (sensing that price isn'"
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Which one has more users”?",
+   "a": "\"Which one has more users\" points at something real. Volume, meaning how many calls you get each month, is part of the net value formula. More calls multiply both what you earn and what you pay.\n\nBut it doesn't help you choose between models. When you compare two models, they serve the same traffic. Both get the same `volume`, say 10,000 calls a month. So the number of users can't be what separates them.\n\nThe manager's \"cheapest per call\" rule leaves something else out. It looks only at the cost side. It ignores how often each model actually succeeds. A cheap model that gives bad answers earns little, because only good answers bring in `value_per_success`. A pricier model with a higher `success_rate` can earn far more than it costs.\n\n\"How many good answers each gives\" is the better answer because success rate is the missing half of the formula, the earning side that the cheapest-per-call rule ignores.",
+   "step": "Check",
+   "fingerprint": "d03e32471907ccad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the claim that both models serve the same traffic is an inference from the single shared volume in the lesson's formula, not something it states."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Model B: it gets more answers right”?",
+   "a": "That choice is tempting. Model B really is better at the task, and more right answers do earn more money. That part is true.\n\nWhat it misses is the other half of the sum. Net monthly value means what the good answers earn, minus what the calls cost. A higher success rate only tells you about the first half.\n\nHere, compare B to A:\n\n- B's extra good answers earn **$50 more** a month.\n- B's calls cost **$500 more** a month.\n\nSo switching to B changes your net by $50 − $500 = **−$450** a month. You would be paying $500 to get $50 back. Being right more often doesn't help if each extra right answer costs far more than it earns.\n\nThis is the lesson's big idea. Don't pick a model by its success rate alone, or by its price alone. Pick it by the money left over after paying for its calls.\n\n**Model A: B's extra cost is bigger** is the better answer because it weighs the $50 gained against the $500 spent and sees that A leaves you $450 a month better off.",
+   "step": "Check",
+   "fingerprint": "dc362cb57c7c3578",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Neither: they come out the same”?",
+   "a": "\"Neither: they come out the same\" gets one thing right. It knows you have to weigh B's extra earnings against B's extra cost, instead of looking at just one side. That's the core habit of this lesson.\n\nWhat it misses is the actual numbers. The two sides are not equal:\n\n- B's extra good answers earn **$50** more a month.\n- B's calls cost **$500** more a month.\n\nPut together, B's net (what it earns minus what its calls cost) is $50 − $500 = **−$450** compared with A. So B leaves you $450 a month worse off. That's a clear gap, not a tie.\n\nA tie would only happen if the extra earnings exactly matched the extra cost, say $500 and $500. Even then, the lesson's rule doesn't say \"neither.\" It keeps the option listed first, because a new option has to be *strictly* bigger to replace the best one so far.\n\n\"Model A: B's extra cost is bigger\" is better because it does the subtraction and sees that B's $500 extra cost swamps its $50 extra value, so A makes more money each month.",
+   "step": "Check",
+   "fingerprint": "7a371902caf70f15",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Work out the net, keep the best” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"We have several models to choose from. The cheapest one isn't always the best deal. Neither is the one with the highest success rate. A cheap model that fails often can earn less.\"\n\n*The idea.* \"So I score each model by its net monthly value. Net means what's left after costs. It's what good answers earn, minus what the calls cost. I walk through the options once and hold on to the best net so far, like keeping the highest card you've seen.\"\n\n*The edge case.* \"If two models tie, I only replace the best when a new one is strictly bigger. So the one listed first wins. That keeps the result predictable.\"\n\n**A likely follow-up**\n\n\"Where do your success rate and value per success come from?\"\n\n*Hint:* Success rate comes from your evaluation runs. Value per success is a business estimate, such as support time saved per good answer. A strong answer says you'd log both in MLflow, a tool that records each experiment. Then anyone can check the decision later.",
+   "step": "Explain",
+   "fingerprint": "96255cf84be6e5dc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The pick always matches one number.** If the winner is always the cheapest model, or always the one with the highest success rate, only one side of the sum is being counted. The net needs both: what good answers earn and what all calls cost.\n- **The money doesn't show up.** You ship a model with a great success rate, then the monthly bill eats the gains. Or you ship a cheap model and earnings drop because it fails more often.\n- **Runs are missing the business inputs.** Your MLflow runs show `success_rate` and `cost_per_call`, but not `volume`, `value_per_success`, or a `net_monthly_value` metric. Then nobody can see later why a model was chosen.\n- **The pick changes with list order when the nets differ.** That points to a comparison mistake. On an exact tie, though, the option listed first should win, so reordering tied options is expected to change the pick.\n\n**Quickest check**\n\nTake two options. Work out each net by hand with a calculator: volume × success rate × value per success, minus volume × cost per call. Then confirm the bigger one is the model you chose.",
+   "step": "Learn",
+   "fingerprint": "a185019730d321f0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The formula is simple on purpose. Here are three places where it needs extra care.\n\n**1. Very little test data.** If you measured success rate on only 20 questions, a gap like 80% vs 85% could just be luck. Test on more examples before deciding. Treat options whose nets are close as roughly tied, then break the tie on other things like speed.\n\n**2. Things change over time.** Volume grows, providers change prices, and users start asking new kinds of questions. Last month's success rate may not hold this month. Re-measure regularly and log each check as a new MLflow run, so you can compare months side by side.\n\n**3. Failures aren't free.** The formula treats a wrong answer as earning nothing. In real LLM apps, a bad answer can cost money: a refund, a support ticket, or a lost customer. Add a cost per failure, meaning what each wrong answer costs you. Subtract it for every failed call, so a model that fails badly gets penalized.",
+   "step": "Learn",
+   "fingerprint": "4599b29a7999c9a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Without this idea, teams pick models for the wrong reason. Some grab the cheapest one. Others grab the one with the best success rate. Both can lose money.\n\n**A realistic example.** A support bot answers 10,000 questions a month. Each good answer saves about $4 of a human agent's time.\n\n- **Cheap model:** 70% success, $0.01 per call.\n  Earns 10,000 × 0.70 × $4 = $28,000. Costs 10,000 × $0.01 = $100. Net: **$27,900**.\n- **Smart model:** 90% success, $0.20 per call.\n  Earns $36,000. Costs $2,000. Net: **$34,000**.\n\nThe smart model costs 20 times more per call. Yet it makes $6,100 more every month. A team that only looked at price would pick the cheap one and never notice the loss.\n\nThe trap also runs the other way. A model with a slightly higher success rate but a huge price per call can earn less overall.\n\nSo the net is the fair way to compare. Net means earnings minus costs. It turns \"which model is better?\" into one number per option.\n\nLogging that number in MLflow, the tool that records each experiment, means you can later show *why* you chose a model, not just *which* one.",
+   "step": "Learn",
+   "fingerprint": "33a837b63b4fbeea",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "pareto_models": {
+  "check:0:0": {
+   "q": "Why not “Yes, for variety”?",
+   "a": "\"Yes, for variety\" has a sensible instinct behind it. Having more than one option can feel safer, and in real projects you sometimes do want a backup model.\n\nBut variety only helps if each option gives you something the others don't. Here, C gives you nothing. A is cheaper, faster and more accurate on the same eval set. So there is no situation where you would pick C over A. Whatever you care about most, quality, cost or speed, A wins.\n\nThat is exactly what the lesson means by A **dominating** C. A is at least as good on every measure and better on at least one. In this case, it's better on all three.\n\nThe shortlist is meant to hold only **real trade-offs**. Those are models where choosing one means giving something up, like paying more for better quality. Keeping C adds clutter and forces a decision that was never really a decision.\n\n\"No: A beats it on everything\" is better because a model that another model beats on every measure can never be the right choice, so it doesn't belong on the shortlist.",
+   "step": "Check",
+   "fingerprint": "23091d4fdd5ae621",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only if it's newer”?",
+   "a": "\"Only if it's newer\" has a sensible instinct behind it. Newer models often get better over time, and you might expect them to improve. So it feels risky to throw one away.\n\nBut the shortlist isn't built on hopes about a model. It's built on what you measured: quality, cost and p95 latency, all on the same eval set with the same judge. (p95 latency means 95% of answers come back at least this fast.)\n\nOn those three numbers, model C loses to model A every time. It's less accurate, more expensive and slower. Being newer doesn't change any of those results. A newer model that measures worse is still worse for this task, today.\n\nIf you think a newer version might improve, the right move is to re-run the eval when it does. Then let the new numbers decide.\n\n\"No: A beats it on everything\" is the better answer because A dominates C on every measure that matters for the choice, so keeping C gives you no real trade-off to weigh.",
+   "step": "Check",
+   "fingerprint": "1d7c784d8f59c5a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Yes, drop Y: lower quality”?",
+   "a": "It does get one thing right: Y really does have lower quality. If quality were the only thing you measured, dropping Y would make sense.\n\nBut this lesson scores every model on three things at once: quality, cost and p95 latency. (p95 latency means \"95% of answers come back at least this fast.\") A model only gets thrown out when another model **beats** it on all three. That means at least as good on quality, cost and latency, and better on at least one.\n\nCheck X against Y with that rule:\n\n- Quality: X wins.\n- Cost: Y wins.\n- Latency: Y wins.\n\nX loses on two of the three, so X does not beat Y. You have no grounds to drop Y. Y is a real option, for example when you have lots of traffic or a tight budget. Whether X's extra quality is worth the extra cost and wait is your call. The numbers alone can't decide it.\n\n\"No, each one wins on something\" is better because neither model beats the other on all three, so both stay on the short list of real trade-offs, the Pareto front.",
+   "step": "Check",
+   "fingerprint": "69fc9d17afbdbd2a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor looseness: it says a model is dropped when another 'beats it on all three' and then defines beating as 'at least as good on all, better on one'. The conclusion is still right."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Yes, drop X: it costs more”?",
+   "a": "\"Yes, drop X: it costs more\" gets one thing right. Cost matters, and X really does lose on cost. It loses on speed too.\n\nBut losing on one measure is not enough to throw a model out. The rule is stricter. Y would have to **beat** X, which means Y is at least as good on quality, cost and latency (how long a reply takes), and better on at least one.\n\nY fails the first part. It scores lower on quality. So Y does not beat X.\n\nX does not beat Y either, because X is pricier and slower. Neither model beats the other. Both stay on the short list. That short list of models nothing beats is the **Pareto front**.\n\nDropping X because it costs more quietly makes a choice for you: \"cost matters more than quality.\" That might be true for your task, or it might not. The comparison step is not supposed to decide that. You decide it afterwards, based on what extra quality is worth to you.\n\n\"No, each one wins on something\" is better because X wins on quality and Y wins on cost and speed. That makes them a real trade-off, and a trade-off is never thrown out.",
+   "step": "Check",
+   "fingerprint": "a3cadab440434b04",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The closing line 'a trade-off is never thrown out' is slightly loose, since a third model could still beat one of the pair, but it is fine for the two-model case. The answer also runs a little over 200 words."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Nothing, B simply scored higher”?",
+   "a": "\"Nothing, B simply scored higher\" gets one thing right. B's number really is higher. That part is true.\n\nWhat it misses is *why* B's number is higher. B answered easier questions. An easy test makes almost any model look good. So the higher score might come from the questions, not from the model. You can't tell which.\n\nThink of two students. One sits a hard exam and gets 70%. The other sits an easy quiz and gets 90%. You can't say the second student is smarter. They didn't take the same test.\n\nThat's why the lesson says to run every candidate on the **same eval set** (the fixed list of test questions) with the **same judge** (the scorer that grades each answer, like `Correctness()`). Only then is a difference in score caused by the models themselves. It's also why each model gets its own MLflow run with the same `eval_set`. The runs are then fair to put side by side.\n\n\"They weren't tested the same way\" is better because it names the real flaw: a score gap means nothing unless both models faced the same questions and the same grader.",
+   "step": "Check",
+   "fingerprint": "98f9a4e7719d3ea1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A should get a second try”?",
+   "a": "\"A should get a second try\" has a fair instinct behind it. A's lower score might not be A's fault, so A shouldn't be written off yet.\n\nBut a second try only helps if it changes the setup. If A simply runs again on its own harder set, the problem is still there. A is graded on hard questions, and B is graded on easy ones. B's higher score could come from the easier questions, not from being a better model.\n\nThe real issue is the test, not A's luck. The fix is to put both models on the same eval set, with the same judge. An eval set is the fixed list of test questions. The judge is the scorer that grades the answers, like `Correctness()`. You could rerun A on B's set, or run both on one new set. Either works, because the conditions now match. That is why the lesson logs one MLflow run per model on the same `eval_set`.\n\n\"They weren't tested the same way\" is the better answer because it names the actual flaw: different test conditions, so the scores can't be fairly compared.",
+   "step": "Check",
+   "fingerprint": "eff76f6e4fddc918",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Compare every pair” in an interview?",
+   "a": "**30-second answer**\n\n*The problem.* I tested several models on the same eval set with the same judge. Each one has a quality score, a cost, and a p95 latency. P95 latency is the time that 95% of answers come back within. I want to drop the clearly bad choices.\n\n*The idea.* I compare every pair. Model A \"beats\" model B if A is at least as good on all three numbers and better on at least one. Any model that something beats is out. The survivors are the Pareto front. That's a short list of real trade-offs, where more quality costs money or speed.\n\n*The trade-off.* Comparing every pair is simple and fine for a handful of models. With thousands, the number of comparisons grows very fast, so I'd look for a smarter method.\n\n**Likely follow-up**\n\n\"What if two models have exactly the same numbers?\"\n\n*Hint:* Neither one beats the other, because neither is better on anything. So both stay on the front. To pick one, use something the scores don't measure, like vendor support or data-privacy rules. Say you'd write a test for this case.",
+   "step": "Explain",
+   "fingerprint": "94424b0ba9b7ad9f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Runs that don't line up.** In MLflow, one run scored more examples than another, or used a different judge. That model's quality number can't be compared fairly.\n- **Missing numbers.** A run has quality but no `cost_per_1k` or `p95_ms`. Then you're choosing on quality alone.\n- **Fast in tests, slow in use.** You logged average time, not p95. p95 means 95 out of 100 requests finish within that time. Averages hide the slow ones users notice.\n- **A list that isn't short.** A kept model is beaten by another: that one is at least as good on all three numbers and strictly better on at least one. It should have been thrown out. Exact ties are different. If two models match on everything, both stay.\n- **Wrong direction.** Higher cost or latency was treated as better. Good models then vanish from the list.\n\n**Quickest check**\n\nSelect all the runs in the MLflow UI. Open the compare view, which puts runs side by side. Confirm each run used the same eval set and judge, and has all three metrics. Then, for each kept model, ask one question. Does any other model match or beat it on all three, and strictly beat it on one?",
+   "step": "Learn",
+   "fingerprint": "48dc4676eb8a2659",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No substantive problems. The answer is about 203 words, right at the length limit, and it only restates the lesson's definition of 'beats', not the exercise solution."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule needs extra care.\n\n**A tiny eval set.** With only 20 questions, a quality score of 0.80 versus 0.78 may just be luck. One model can \"beat\" another by noise alone. Grow the eval set, or treat small quality gaps as ties before you throw anything out.\n\n**Your traffic changes over time.** A model chosen on last month's questions may slip when users start asking new kinds of things. Prices and latency also change when providers update their models. Refresh the eval set with recent real questions, and rerun the comparison on a schedule, logging each round as new MLflow runs.\n\n**Thousands of candidates.** Comparing every model with every other model means the work grows very fast as the list grows. Sort the models by one measure first, such as cost. Then a single walk through the list can drop most of the losers. You can also narrow the list with cheap checks before running the full eval.",
+   "step": "Learn",
+   "fingerprint": "aefbbd54e7f2aafa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The sort-by-cost 'single walk' is a loose claim with three measures, but it is hedged with 'most' and does not contradict the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "How is “same eval set” different from “same judge”?",
+   "a": "They fix two different things. Both need to stay the same so the only thing that changes is the model.\n\n**Same eval set** means the same questions. An eval set is a fixed list of test inputs, often with the answers you expect. Every model answers exactly these.\n\n**Same judge** means the same grader. A judge is whatever scores each answer. Here it is `Correctness()`, a scorer that checks if an answer is right. Every model's answers get marked by it.\n\nThink of two students sitting an exam. They need the same exam paper (eval set). They also need the same marker (judge). Give one student an easier paper, and the scores mean nothing. Give one a stricter marker, and you have the same problem.\n\nIn the lesson's example, look at what stays fixed inside the loop:\n\n```python\nmlflow.genai.evaluate(data=eval_set, predict_fn=make_app(model), scorers=[Correctness()])\n```\n\n`data=eval_set` keeps the questions the same. `scorers=[Correctness()]` keeps the grader the same. Only `make_app(model)` changes on each pass. So any difference in quality comes from the model alone.",
+   "step": "Learn",
+   "fingerprint": "d56c3d7f12eaeb89",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "percentile": {
+  "check:0:0": {
+   "q": "Why not “Everything feels fast: the average is 900 ms”?",
+   "a": "The 900 ms figure is real. The model's average latency really is 900 ms. But \"everything feels fast\" claims more than an average can tell you.\n\nAn average blends every request into one number. A few very slow requests can hide inside it, as long as many others are quick. So the average alone can't tell you whether every request is fast.\n\nThe p95 shows what the average hides. A p95 of 4 seconds means 95 out of 100 requests finish within 4 seconds. The other 5 out of 100 take longer than that. Four seconds is more than four times the average. So those requests are slow, and the users who send them feel the wait.\n\nThat is why teams compare models and configs (their settings) on p95, not on the average. The p95 points to the slow requests that the average blends away.\n\n\"About 1 in 20 requests feels slow\" is the better answer because 5 out of 100 is 1 in 20, and it describes the slow requests that the p95 reveals and the average hides.",
+   "step": "Check",
+   "fingerprint": "7141614a2148b4a4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Every request takes about 900 ms”?",
+   "a": "\"Every request takes about 900 ms\" gets one thing right. 900 ms really is the **average**: add up all the times and divide by how many requests there were.\n\nBut an average blends fast and slow requests into one number. It hides the spread. Very few requests may actually take 900 ms.\n\nHere is one way those numbers can happen. Take 100 requests:\n\n- 94 finish in about 700 ms.\n- 6 take about 4 seconds.\n\nThe average works out to about 900 ms. Now sort the times, fastest first, and look at the 95th one. That is one of the slow ones, so the **p95** is 4 seconds. (p95 means 95 out of 100 requests finish within that time.)\n\nSo no single request \"feels like\" 900 ms. Most feel quick. A handful feel painfully slow, and users remember those.\n\n\"About 1 in 20 requests feels slow\" is the better answer. A p95 of 4 seconds means the slowest roughly 5 out of 100 requests, about 1 in 20, take around 4 seconds, and that is exactly what the average hides.",
+   "step": "Check",
+   "fingerprint": "246b2cf7c532c471",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The last paragraph says the slowest ~5 in 100 requests 'take around 4 seconds', but p95 only means those requests take 4 seconds or longer, since 95 finish within it; the tail could be much slower. The arithmetic in the example is fine (the average comes to about 898 ms)."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Model B: its average is lower”?",
+   "a": "\"Model B: its average is lower\" gets one thing right. Model B's average really is a little lower, just under 1 second against Model A's 1 second. On paper, that looks like a win.\n\nWhat it misses is that an average blends fast and slow requests into one number. A lot of very quick replies can hide a few painfully slow ones. That is exactly what is happening with Model B.\n\nLook at the p95 numbers. For Model B, 95 out of 100 requests finish within 6 seconds. The slowest of those 95 can take close to 6 seconds, and the last 5 can take even longer.\n\nThink about one user in a chat. They might send 20 messages in a conversation. With Model B, a few of those could take around 6 seconds. People notice and remember those long waits far more than a tiny saving on the average.\n\nThe small gap in averages is barely felt. The gap between 2 and 6 seconds is.\n\n\"Model A: its p95 is much lower\" is better because it shows that almost every user gets a reply within 2 seconds, and that steady speed is what makes a chat app feel fast.",
+   "step": "Check",
+   "fingerprint": "37e796a4111143cb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'a few of those 20 messages' line is slightly loose, since about 1 in 20 would be slow, and the answer is close to the word limit."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Neither: the averages are close”?",
+   "a": "\"Neither: the averages are close\" gets one thing right. The averages really are close: 1 second versus just under 1 second. If you only looked at averages, the two models would seem the same.\n\nWhat it misses is the lesson's big idea: **averages hide slow requests.** An average blends many fast replies with a few slow ones, so the slow ones get smoothed away.\n\nThe p95 numbers show what the averages hide. **p95** is the time that 95 out of 100 requests finish within.\n\n- Model A: 95 out of 100 replies arrive in 2 seconds or less.\n- Model B: you only get that same promise at 6 seconds. So B's slower replies take around three times as long as A's.\n\nIn a chat app, people remember the waits. Staring at a blank reply for about 6 seconds feels broken, even if most other replies were quick. B's slightly better average can't make up for that.\n\n\"Model A: its p95 is much lower\" is better because it judges the models on the slow requests users actually notice, not on an average that hides them.",
+   "step": "Check",
+   "fingerprint": "60eeda832f3d34e5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Only the model call, more often”?",
+   "a": "\"Only the model call, more often\" gets one thing right. Timing many requests is better than timing one. A single timing can be lucky or unlucky. You need lots of timings to work out p95, the time that 95 out of 100 requests finish within.\n\nBut it keeps timing the wrong thing. The model call takes 1 second, and users wait 5 seconds. So about 4 seconds go somewhere else, such as retrieval (looking up documents) or tool calls. Timing the model call more often just gives you more numbers that all leave out those 4 seconds. Your p95 would look fine while users still wait.\n\nInstead, measure end-to-end latency: the whole request, from start to end. In MLflow, a trace is the record of every step one request went through. The trace's total duration gives you that end-to-end time. The individual steps recorded inside the trace then show where the extra 4 seconds went.\n\n\"The whole request, start to end\" is better because it times what users actually wait for, not just one piece of it.",
+   "step": "Check",
+   "fingerprint": "855013d88c4c8238",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Only the slowest model call”?",
+   "a": "\"Only the slowest model call\" gets one thing right. It looks for the slow part, and slow parts are what users notice.\n\nBut it still only looks at model calls. A request does more than call a model. It may do **retrieval** (looking up documents to give the model) and run **tools** (small helper programs, like a search or a database lookup). Each of those takes time too.\n\nLook at the numbers in the question. The model call takes 1 second. Users wait 5 seconds. So about 4 seconds are spent somewhere else. Picking the slowest model call can't show you where. It might even be the same 1-second call you already timed.\n\nThere's a second problem. If a request makes several model calls, the slowest one shows only part of their time, not the total.\n\n\"The whole request, start to end\" is better because it measures exactly what the user waits for, every step included. In MLflow, that is the trace's total duration.",
+   "step": "Check",
+   "fingerprint": "edcef59e19bc1519",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Handle edge cases first” matter?",
+   "a": "Edge cases are the odd inputs at the boundaries: an empty list, a list with one item, or values you didn't expect. Your main logic is usually written with a \"normal\" list in mind. Edge cases are where that picture breaks.\n\nIn real work, these inputs show up more than you'd think. Say a new agent has had no traffic yet, or you filter traces to a quiet hour. `mlflow.search_traces` comes back with nothing, so `durations` is an empty list. There is no p95 of zero requests. If your function doesn't plan for that, it will likely crash with an `IndexError`, which is Python's error for asking for a list position that doesn't exist. Now the dashboard or nightly report that calls it fails too.\n\nA one-item list is worth checking as well. With one request, every percentile should just be that request's time.\n\nSo before writing the main steps, decide what each odd input should do. For an empty list, that might mean returning `None` or raising a clear error. Writing that check first means a quiet hour is handled on purpose instead of breaking whatever depends on your function.",
+   "step": "Explain",
+   "fingerprint": "ca584a3e238a836e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Sort, then pick by position” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* Averages hide slow requests. If most replies take 1 second but a few take 10, the average still looks fine. Users remember the slow ones.\n\n*The idea:* So I track p95, the time that 95 out of 100 requests finish within. I time each request from start to finish, including retrieval, tools and model calls. That's called end-to-end latency. In MLflow, each trace (the record of every step one request went through) gives me that total. I sort the times, fastest first, and pick the one at the 95% position.\n\n*The edge case:* With few requests, p95 depends on just a handful of values. With 20 requests, it's the second-slowest one. So it can swing between runs. I collect hundreds of traces before comparing models or settings.\n\n**A likely follow-up**\n\n\"Why not just use the slowest request?\"\n\nHint: the slowest is often a one-off, like a network blip. p95 shows what a real group of users feels and stays steadier. Mention p99 for rarer slow cases.",
+   "step": "Explain",
+   "fingerprint": "852ceb9bd068213b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs it's going wrong**\n\n- **The dashboard looks calm, but users complain.** The average sits at 2 seconds, yet people say \"it hangs.\" Averages hide slow requests, so a small group of very slow ones can disappear.\n- **Your latency is much lower than the trace totals.** If you only timed the model call, you missed retrieval and tools. Real users wait for the whole request, so use the trace's total time (end-to-end latency).\n- **p95 looks odd.** It always equals your slowest request, or it sits below lots of your traces. Either one hints at a position mistake, often counting places from 1 when Python counts from 0.\n- **A config \"wins\" that feels slower.** If you compared settings on the average, one with rare long stalls (pauses) can still look best.\n\n**Quickest check**\n\nCount your traces slower than your p95. In MLflow, `search_traces` with a filter on `trace.execution_time_ms` does this. With 1,000 traces, about 50 should be slower. That's 5 out of 100. If you get almost none, or far more, your percentile is off.",
+   "step": "Learn",
+   "fingerprint": "b3b26fb32c83c84e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problems. The link between the 'p95 equals the slowest request' sign and a position mistake is loose, and the quick count check would not catch a one-place error. These are minor."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where p95 of end-to-end time needs extra care.\n\n**Very little data.** With only 20 requests, p95 is the second-slowest one. One unlucky request can swing the number a lot. Collect a few hundred traces before you trust it, and report how many requests it came from.\n\n**Things change over time.** If you pull traces from a whole month, old and new behaviour get mixed together. A new model, a config change, or a busy hour can hide inside one big number. Compare p95 over matching time windows, such as per day, and split it by model or config.\n\n**Streaming LLM apps.** Streaming means the answer appears bit by bit as the model writes it. Users feel the wait before the first words more than the total time. So also track time to first token (a token is a small chunk of text, often part of a word), not just the trace's total duration.",
+   "step": "Learn",
+   "fingerprint": "46939c915c7f9feb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Latency” mean here?",
+   "a": "**Latency** is the waiting time. It is how long a request takes to come back after someone sends it.\n\nThink of ordering coffee. Latency is the gap between paying and getting your cup. You don't care which step was slow, the grinding or the milk. You just feel the total wait.\n\nHere it is the same for an AI agent. A user asks a question. The agent might search documents (retrieval), call tools, and call the model. **End-to-end latency** is the full wait across all of those steps together. That's the one users feel.\n\nIt's usually measured in milliseconds (ms). 1,000 ms is one second.\n\nIn the lesson's example, latency shows up in each trace. A trace is MLflow's record of every step one request went through. Its total time is the latency.\n\n- `trace.execution_time_ms > 5000` finds traces where the whole request took over 5,000 ms (5 seconds).\n- `traces[\"execution_duration\"]` gives each trace's total time in milliseconds.\n\nThose numbers are the latencies you'll later sort through to find p95.",
+   "step": "Learn",
+   "fingerprint": "9bc89253a31ba530",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

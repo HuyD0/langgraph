@@ -1,0 +1,1602 @@
+{
+ "checker_loop": {
+  "check:0:1": {
+   "q": "Why not “Let the agent that wrote the answer check it on…”?",
+   "a": "Asking the writer to check its own answer once more does get one thing right: a second look can catch a small slip, like a typo or a missing step.\n\nBut it misses the real problem in this question. The agent that wrote the answer still remembers the whole chat that produced it. It knows what it *meant* to say, so it reads that meaning into the answer. It shares the same blind spots that caused the mistake in the first place. That is why agents grading their own work tend to say \"looks fine.\"\n\nThere is a second issue. The question says the checker already passes almost everything. That points to vague standards, not just to who is checking. Without concrete rules, any checker runs a quick look or two and declares victory. A self-check has no rules either, so it would be just as lenient, or worse.\n\nThe better option is \"Give the checker a written checklist of pass or fail rules.\" It wins because clear rules like \"cites a help article\" or \"no made-up order numbers\" can actually fail, so the checker has to test for them instead of just nodding along.",
+   "step": "Check",
+   "fingerprint": "cf3662077a708ad3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the closing explanation runs to two sentences rather than one, and the claim that a self-check 'has no rules either, so it would be just as lenient, or worse' goes beyond what the lesson states."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Raise the round cap from 3 to 10”?",
+   "a": "Raising the cap sounds like \"check harder,\" but it doesn't change how the checker judges anything.\n\nLook at the problem again. The checker passes almost every answer. That means it reports 0 issues on the very first round. When that happens, the loop stops right away and calls the work clean. Rounds 2 through 10 never run. A bigger cap only matters when the checker keeps finding problems, and here it finds none.\n\nSo the cap isn't the weak spot. The weak spot is that the checker has no concrete rules. Without them, it skims, runs a test or two, and declares victory. That is the same \"looks fine to me\" habit you hoped a fresh checker would avoid.\n\nWhat the option gets right: a round cap is worth tuning. Too low, and fixable work gets sent to a person too early. But that's a different problem from a checker that never fails anything.\n\n\"Give the checker a written checklist of pass or fail rules\" is the right answer because it fixes the cause: clear rules that can really fail make the checker catch the wrong answers in the first place.",
+   "step": "Check",
+   "fingerprint": "fd3e8fa756df9919",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Keep going until the checker passes”?",
+   "a": "\"Keep going until the checker passes\" gets one thing right. The goal really is work with zero issues, and checking again after each fix is the core of the loop.\n\nWhat it misses is that nothing promises the checker will ever pass. Some issues may be ones the fixer can't solve. For example, there may be no help article that fits the question, so \"cites a help article\" can fail every round. Without a cap, the loop could keep going forever. Each round calls a model again, so it also keeps costing time and money.\n\nThat is why the lesson says to cap the rounds and decide in advance what happens at the cap. In the example, the cap is 3. Once round 3 still finds issues, the loop has used up its allowed tries. The next step should already be chosen, not made up on the spot.\n\nSo the right answer is **\"Do what you planned: warn, or ask a person.\"** It is better because it guarantees the loop ends, and the unfixed issues still get flagged instead of being hidden or chased endlessly.",
+   "step": "Check",
+   "fingerprint": "e5393e21afb6ec42",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Quietly return the last try as done”?",
+   "a": "\"Quietly return the last try as done\" gets one thing right. It respects the cap. The loop stops after round 3 instead of running forever, and the user still gets an answer.\n\nWhat it misses is honesty. The checker just found 2 real problems. Calling the work \"done\" hides that. Whoever receives it, a customer or the next step in your system, will trust it as clean. In the help-center example, one of those issues could be a made-up order number. That goes straight to a customer with nothing to warn anyone.\n\nIt also throws away the checker's work. You built a fresh reviewer and a checklist with rules that can really fail. When they do fail, ignoring the result means the checker made no difference at the moment it mattered most.\n\nThe cap is not a sign that things are fine. It is a sign that you ran out of tries. So the outcome should say so.\n\n\"Do what you planned: warn, or ask a person\" is better because the known issues travel with the result, so someone can see them and decide what to do.",
+   "step": "Check",
+   "fingerprint": "92c469a48810c420",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Ask the agent if it is sure”?",
+   "a": "Asking the agent \"are you sure?\" does get one thing right. It adds a second look, and sometimes a second look catches a slip.\n\nBut it misses the main point of the lesson. It is the **same agent**, with the same chat history and the same blind spots. An agent asked to judge its own work tends to say the work is fine. So \"are you sure?\" usually just gets \"yes.\"\n\nIt also keeps the check stuck in words. The checker in the question was fooled by an *explanation*. Asking for more confidence only produces more explanation. A clear, confident paragraph about a query is not proof that the query works. (A **query** is the request sent to a database to fetch data.)\n\nThat is why the right answer is \"Run the query and look at the result.\" The checker gets real **evidence**, meaning something it can observe directly, instead of a claim.\n\nRunning the query is better because the result comes from the database, not from the agent, so it can actually fail when the query is wrong.",
+   "step": "Check",
+   "fingerprint": "90b41b08c7191e3d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Ask for a longer explanation”?",
+   "a": "Asking for a longer explanation feels like a stricter check. It does get one thing right: more detail can sometimes expose a gap in the agent's reasoning that a short answer hid.\n\nBut it misses the main point of the lesson. A longer explanation is still the agent talking about its own work. The checker is still grading words, not results. An agent that wrote a wrong query can just as easily write a long, confident, wrong explanation of it. More words often make a mistake *harder* to spot, because the explanation sounds thorough.\n\nThis is the same trap as letting an agent grade itself. The checker should be fresh and should look at **evidence**. Evidence means something real you can inspect, like the actual output of the query, not a claim about what the output would be.\n\nRunning the query is better because the result either matches what the question asked for or it doesn't, so the check can genuinely fail no matter how convincing the explanation sounds.",
+   "step": "Check",
+   "fingerprint": "2f1d84374ef315bd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Don't let it grade its own homework” matter?",
+   "a": "When an agent checks its own answer, it can still see its own reasoning. That reasoning is its **context**, meaning everything the model can see right now. Reading its own logic again, it finds the logic convincing. So it usually says \"looks good.\" That's not lying. It's like proofreading your own essay: you read what you meant, not what you wrote.\n\nA separate checker starts fresh. It sees only the finished work and a written checklist of pass or fail rules. It has no story about why the answer \"must\" be right. It just tests the work.\n\n**What goes wrong when you skip this:** Say a help-center agent writes a reply that mentions \"order #48213.\" Asked \"Is this correct?\", the same agent remembers deciding that number fit. It says yes. But the number was made up. A customer gets a fake order number and opens a confused support ticket.\n\nA fresh checker with the rule \"no made-up order numbers\" would look the number up for real, perhaps with a tool like `run_query`. It wouldn't find it, so the check fails. That gets the reply fixed before anyone sees it.",
+   "step": "Explain",
+   "fingerprint": "ae9dbf721dcfb122",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “A loop with two ways out” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"If you ask an agent to grade its own work, it usually says the work is fine. So you can't trust it to stop itself.\"\n\n**The idea.** \"I add a separate checker. It sees only the finished work and a pass-or-fail checklist, not the chat that made it. Then I loop: check, fix, check again. The loop has two ways out. It stops early when a check finds zero issues. Or it stops when it hits a round cap, say 3.\"\n\n**The trade-off.** \"The cap protects cost and time, but it means some work stops before it's perfect. So I decide in advance what happens at the cap. Either I return the best attempt with a warning, or I hand it to a person along with the issues still open.\"\n\n**A likely follow-up:** \"How do you stop the checker from just saying everything passes?\"\n\n*Hint at a strong answer:* Write the checklist before any work is checked. Include rules that can really fail. Where possible, make the checker look at real evidence, like running the query, instead of trusting the agent's own explanation.",
+   "step": "Explain",
+   "fingerprint": "6c3f3d145cc4868d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the checker isn't doing its job**\n\n- **Everything passes on round 1.** If almost every answer comes back with 0 issues, the checker is probably rubber-stamping. It may be seeing the chat that made the work, or the checklist may be too vague to ever fail.\n- **Quality drops in real use.** Your logs say \"clean,\" but users still find made-up order numbers or missing help-article links.\n- **Issue counts don't shrink.** In your traces (the step-by-step record of each run), the numbers bounce, like 3, then 3, then 4. That means the fixes aren't landing, or the checker is changing its mind.\n- **Runs that never end, or cost spikes.** This points to no round cap, or a cap that isn't being checked.\n- **Nothing happens at the cap.** A run hits round 3 with issues left, but no warning appears and no person sees it. The work just ships.\n- **The checker never calls its tools.** It reads the agent's explanation instead of gathering real evidence, like running the query.\n\n**Quickest check**\n\nHand the checker an answer you broke on purpose, such as one with a fake order number. It should fail it. If it passes, your checker is the problem.",
+   "step": "Learn",
+   "fingerprint": "01197efa1ccceec4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it is right at the ~200-word limit, so trimming a bullet would be safer."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the check-fix loop needs extra care.\n\n**The checker shares the maker's blind spots.** If both agents use the same model, the checker may miss the same mistakes the maker made. Use a different model for the checker. Better still, have it check real evidence, like running the query or opening the cited article, instead of reading the work and trusting it.\n\n**Fixing makes things worse.** Sometimes round 2 fixes one issue and breaks two others, so the answers swing back and forth. Keep track of the issue count each round. At the cap, return the attempt with the fewest issues, which may not be the latest one.\n\n**The rules are fuzzy or the volume is huge.** For things like \"sounds friendly,\" a checker can't give a clear pass or fail, so its verdicts drift. Send those to a person, or have people rate a sample. At large volume, every round costs extra model calls. Run cheap plain-code checks first, such as a pattern that spots fake order numbers, and save the model checker for what code can't test.",
+   "step": "Learn",
+   "fingerprint": "408319e8f8dcdeaf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the third item merges two situations (fuzzy rules and high volume) and runs about four sentences, slightly over the two-to-three limit; otherwise it fits the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "How is “checker” different from “verifier”?",
+   "a": "In this lesson, they are **the same thing**. \"Checker,\" \"verifier,\" and \"critic\" are three names for one role. The lesson says so: a checker is \"often called a verifier or critic.\" Different teams and papers just pick different words.\n\n**What that one role is.** A second agent that starts fresh. It sees only the finished work and a written checklist of pass-or-fail rules. It does not see the chat that produced the work. That fresh start matters, because an agent grading its own work tends to say it's fine.\n\n**Everyday comparison.** Think of a restaurant. The cook makes the dish. A second person at the pass checks it against a card before it goes out. Whether you call that person the checker or the inspector, the job is the same.\n\n**The lesson's example.** A help-center answer is checked against three rules:\n\n- answers the question\n- cites a help article\n- no made-up order numbers\n\nIt goes through check, fix, check again, for at most 3 rounds. After round 3, one issue is still left, so it goes to a person with that issue noted.",
+   "step": "Learn",
+   "fingerprint": "e373679f828d98a0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The restaurant term 'at the pass' may be unfamiliar to some beginners, and 'teams and papers' goes slightly beyond the lesson, but neither is wrong."
+   }
+  }
+ },
+ "dollars_per_success": {
+  "check:0:0": {
+   "q": "Why not “Pick the team: it passes 2 more tasks than one …”?",
+   "a": "\"Pick the team\" gets one thing right. The team really does pass more tasks: 8 instead of 6. If accuracy were free, that would settle it.\n\nBut accuracy isn't free here. The answer looks only at the pass count and ignores what those extra passes cost.\n\nWork it out. The team costs $7 and one agent costs $1, so the team spends $6 more. It passes 2 more tasks. $6 divided by 2 is $3 for each extra pass. That's the **marginal cost**: the price of one more passed task.\n\nNow compare that with what a pass is worth to you: $2. Picking the team means paying $3 to get something worth $2. You'd lose $1 on every extra pass.\n\nCounting passes alone can't show this. Neither can cost per success alone. You need the extra dollars divided by the extra passes, set next to the value of a pass.\n\n\"Keep one agent: each extra pass costs $3, too much\" is better because it weighs what each extra pass costs ($3) against what it's worth to you ($2), and the cost is higher.",
+   "step": "Check",
+   "fingerprint": "c16cd12a3103315c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Pick the team: its cost per success is still un…”?",
+   "a": "The fact in that option is true. The team spends $7 and passes 8 tasks, so its cost per success is $7 ÷ 8, about $0.88. That is under $1.\n\nBut it answers the wrong question. Cost per success tells you what one passed task costs on average. It does not tell you whether the team's *extra* passes are worth paying for. And \"under $1\" is not even a fair comparison: one agent's cost per success is $1 ÷ 6, about $0.17. So the team is already pricier on that measure too.\n\nThe number that decides it is the cost of each extra pass, also called the marginal cost:\n\n- Extra dollars: $7 minus $1 is $6 more.\n- Extra passes: 8 minus 6 is 2 more.\n- $6 divided by 2 is $3 for each extra pass.\n\nEach extra pass is worth $2 to you, but it costs $3. You would lose $1 on every extra task the team passes.\n\n\"Keep one agent: each extra pass costs $3, too much\" is better because it compares what each extra pass costs with what it is worth to you, and that is the comparison that settles the choice.",
+   "step": "Check",
+   "fingerprint": "afca4d1f85cdfb7f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the figures are right ($7÷8≈$0.88, $1÷6≈$0.17, $6÷2=$3). The only nit is the ÷ symbol and a length near the 200-word limit."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “8, all of the team's passes”?",
+   "a": "Dividing by 8 feels natural, because 8 really is how many tasks the team passed. If you divide the team's *whole* bill by 8, you get cost per success: $5.90 ÷ 8 ≈ $0.74. That's a real, useful number. It just answers a different question.\n\nThe trouble starts when you divide the *extra* dollars by 8. $5.40 ÷ 8 is about $0.68. That spreads the extra cost across all 8 of the team's passes. But 6 of those 8 you'd get from one agent anyway, for just $0.50. The extra $5.40 didn't buy them.\n\nSo the $0.68 makes each extra pass look about four times cheaper than it really is. You might happily pick the team when you shouldn't.\n\nThe question is \"what did the extra money buy?\" The answer is 2 new passes: 8 minus 6. So $5.40 ÷ 2 = $2.70 for each extra pass. That's the **marginal cost**, the price of one more success.\n\n\"2, just the extra passes\" is better because it matches the extra dollars with only the passes those dollars actually bought.",
+   "step": "Check",
+   "fingerprint": "ca8a2f6f590d4b40",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “6, one agent's passes”?",
+   "a": "Dividing by 6 is a natural slip. The number 6 does matter here. You use it once, to subtract from the team's 8. But it's the wrong thing to divide by.\n\nThink about what the extra $5.40 actually buys. One agent already passes 6 tasks for $0.50. You don't need the team for those 6. The extra money only gets you the tasks one agent couldn't pass, and there are 2 of them.\n\nIf you divide $5.40 by 6, you get $0.90. That spreads the extra cost over passes you already had for cheap. So each extra pass looks much cheaper than it really is. You might then pick the team when one agent was the better deal.\n\nDividing by 2 gives $2.70 for each extra pass. That is the real price of what the team adds.\n\n\"2, just the extra passes\" is better because it divides the extra dollars by exactly what those dollars bought, and nothing else.",
+   "step": "Check",
+   "fingerprint": "60d013f06876e2b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: it says the team's extra passes are tasks one agent couldn't pass, which assumes the two sets of passes overlap. The lesson only compares counts, so this is acceptable."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “How many helpers the team uses”?",
+   "a": "\"How many helpers the team uses\" gets one thing right. More helpers usually means more model calls, and more calls usually means a bigger bill. So it hints that the team costs more.\n\nBut it is only a hint. It is a head count, not a price. Two helpers that write long answers can cost more than five helpers that write short ones. What you pay depends on tokens (the small chunks of text a model reads and writes), and the number of helpers doesn't tell you that.\n\nIt also doesn't connect to the 3 extra passes. Say you know the team uses 4 helpers. You still can't tell whether those 3 passes cost $3 or $300. So you can't decide if the team is worth it.\n\nThe question you actually need answered is \"what am I paying for each extra pass?\" A helper count can't answer it.\n\n\"What each extra pass costs in dollars\" is better because it puts a real price on exactly those 3 extra passes, so you can compare it with what one more passed task is worth to you.",
+   "step": "Check",
+   "fingerprint": "fc7b60cec81bc6e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “How long each helper's prompt is”?",
+   "a": "Prompt length isn't a bad thing to notice. Each helper's prompt is turned into tokens (small chunks of text the model reads and bills you for). Longer prompts mean more input tokens on every call, so prompt length does push the bill up.\n\nBut it's only one ingredient of the cost, not the cost itself. It leaves out the model's output tokens. It leaves out how many calls each helper makes, and the runs that failed but still cost money. It isn't in dollars either. So you can't hold it up against \"3 more passes\" and decide anything.\n\nThe question you need answered is: \"Are those 3 extra passes worth what they cost?\" Prompt length can't tell you that. A team with short prompts can still be expensive if its helpers call the model many times.\n\nThe right answer is \"What each extra pass costs in dollars.\" It takes the team's extra spending and divides it by the 3 extra passes. That gives you one price you can compare directly with what a passed task is worth to you.",
+   "step": "Check",
+   "fingerprint": "e4ba1d72dc102517",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Divide by successes, not by runs” matter?",
+   "a": "Every run costs money, even the ones that fail. The model still reads the prompt and writes an answer, and you pay for those tokens. (Tokens are the small chunks of text a model is billed by.) A failed run gives you nothing to show for that spend.\n\nIf you divide the bill by runs, failures look free. A design that fails a lot can then look like the bargain.\n\nHere's a small example. Same 10 tasks:\n\n- Design A costs $0.10 per run and passes 2 of 10.\n- Design B costs $0.30 per run and passes 9 of 10.\n\nBy runs, A looks three times cheaper. Now divide by successes:\n\n- A: $1.00 total ÷ 2 passes = $0.50 per finished task.\n- B: $3.00 total ÷ 9 passes ≈ $0.33 per finished task.\n\nThe \"cheap\" design actually costs more for each job it gets done.\n\nIn real work, this mistake leads you to pick the wrong design. Your budget forecast comes out too low. Failed tasks also need a human to fix them or a rerun, and you pay for those too.",
+   "step": "Explain",
+   "fingerprint": "dff48a0eea8662a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem; the line \"failures look free\" is loose, since a per-run average still counts failed spend but ignores that failures produce nothing."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Extra dollars over extra passes” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"A team of agents often passes a few more tasks than one agent. But it can cost far more to run. In one research system, one agent used about 4 times the tokens of a chat, and a team about 15 times.\"\n\n*The idea.* \"So I compare extra dollars to extra passes. That's the marginal cost, the cost of each extra pass. Say one agent costs $0.50 and passes 6 of 10. The team costs $5.90 and passes 8. That's $5.40 more for 2 more passes, or $2.70 each. If one more pass is worth less than $2.70 to us, I keep one agent.\"\n\n*The trade-off.* \"Cost per success hides this. The team's is only about $0.74, which looks cheap. And 2 extra passes out of 10 tasks could be luck, so I'd test more tasks before deciding.\"\n\n**Likely follow-up**\n\n\"Where do your cost numbers come from?\"\n\nHint: Each run is recorded as an MLflow trace, a log of every step and its token count. Tag each trace with its design, such as `team`. Then add up its tokens and multiply by your price list. Check the totals against the gateway's `system.ai_gateway.usage` table, which logs every model call.",
+   "step": "Explain",
+   "fingerprint": "e48ccc09ad89dfa9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'could be luck, test more tasks' caveat is not in the lesson (it does not contradict it), and the full reply is about 210 words, right at the length limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The comparison only shows pass rate and cost per success.** The team's cost per success can look cheap, like the example's $0.74. That hides what the *extra* passes cost.\n- **The bill grows much faster than the passes.** The team uses many times the tokens of one agent, but passes only one or two more tasks.\n- **The team passes the same or fewer tasks and still costs more.** More spending sometimes buys less accuracy.\n- **A design's token counts are missing.** Searching traces for `tags.design = 'team'` returns nothing or empty `token_usage`. The tag was probably set outside the traced function. The lesson says the tag is lost there.\n\n**Quickest check**\n\nPut both designs side by side on the same tasks. Subtract the costs. Subtract the passes. Divide the extra dollars by the extra passes. Then ask whether one more passed task is worth that much to you.\n\nAlso compare your trace token totals with the `system.ai_gateway.usage` table. That table is a second record of every model call. If the two don't agree, find out why before you trust the cost.",
+   "step": "Learn",
+   "fingerprint": "9ac3795e75a483db",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": false,
+    "standalone": true,
+    "pass": false,
+    "notes": "The 'Quickest check' spells out the exercise's method step by step (subtract costs, subtract passes, divide extra dollars by extra passes), which gives away the `extra_pass_cost` solution."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the rule needs extra care.\n\n**Very few test tasks.** With only 10 tasks, \"2 more passes\" could just be luck. Agents can give different answers each time you run them. Run each design several times, or use a bigger set of tasks, and check that the gap holds up before you trust the cost of each extra pass.\n\n**Tasks that aren't worth the same.** The rule treats every pass as equal. But one extra pass on a high-stakes task, like a refund decision, may be worth far more than ten easy ones. Split your tasks into groups by how much they matter, and work out the cost of each extra pass for each group separately.\n\n**Prices and traffic that change.** Model prices drop, your users ask new kinds of questions, and token use drifts. A team that was too expensive last quarter might be worth it now, or the reverse. Recompute regularly from your traces and the gateway's usage table, rather than deciding once and forgetting it.",
+   "step": "Learn",
+   "fingerprint": "88b18686fc569102",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “cost per success” mean here?",
+   "a": "**Cost per success** is the whole bill divided by the number of runs that passed. Failed runs stay in the bill.\n\n**An everyday comparison**\n\nSay you bake 10 cookies and the ingredients cost $5. Two burn. You only eat 8. So each good cookie really cost you $5 ÷ 8, about 63 cents. The burnt ones still used up flour and sugar, so their cost gets spread over the cookies that came out right.\n\n**In the lesson's example**\n\nBoth designs ran the same 10 tasks.\n\n- **One agent:** spent $0.50 and passed 6. So $0.50 ÷ 6 is about 8 cents per success.\n- **Team:** spent $5.90 and passed 8. So $5.90 ÷ 8 is about $0.74 per success.\n\nHere a \"pass\" or \"success\" means a task the agent got right, judged by your evaluation.\n\n**Why the lesson doesn't stop there**\n\nCost per success tells you what one passed task costs on average. It doesn't tell you what the team's *extra* passes cost. The team's $0.74 looks fairly cheap. But its 2 extra passes cost $2.70 each. That second number is what the rest of the lesson is about.",
+   "step": "Learn",
+   "fingerprint": "5c3507a3eafd8644",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "gather_results": {
+  "check:0:0": {
+   "q": "Why not “After about 2 seconds, with the four results it…”?",
+   "a": "That option gets one thing right. Four of the five results really are ready after about 2 seconds. And carrying on with \"whatever came back in time\" is exactly what the lesson recommends.\n\nBut it misses the key detail in the question: **there are no timeouts**. The gather step does not start when *most* workers finish. It starts when *every* worker sent out by `Send` has finished. Nothing tells it to stop waiting for the fifth one. So it sits idle for the full 40 seconds, even though four results are already waiting.\n\nMoving on with partial results only happens if you give each worker a timeout. That is what the `asyncio.wait_for(..., timeout=10)` line in the lesson does. When a worker runs past its limit, it stops and adds its name to `late`. Then the gather can run without it. Without that limit, one slow worker holds up the whole run.\n\n\"After about 40 seconds, once the slowest worker is done\" is better because the gather always waits for the slowest worker unless a timeout cuts it short.",
+   "step": "Check",
+   "fingerprint": "21ce07548a5330a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “After about 10 seconds, the average time of the…”?",
+   "a": "The math in that option is right. Four workers at 2 seconds and one at 40 seconds average out to 9.6 seconds, which is \"about 10.\" It also notices that the slow worker pulls the number up.\n\nBut an average answers the wrong question. The gather step does not start when a typical worker is done. It starts when **every** worker is done, because its job is to combine all the results.\n\nThe workers run at the same time. So after 2 seconds, four of them are finished and waiting. Their quick times do not speed up the fifth one. The gather sits idle until the 40-second worker comes back.\n\nThere are also no timeouts here. A **timeout** is a limit that stops a worker after a set time. Without one, nothing cuts that slow search short. The whole run waits the full 40 seconds.\n\nThis is why the lesson gives each worker a timeout.\n\n\"After about 40 seconds, once the slowest worker is done\" is better because a gather waits for the slowest worker, not the average one.",
+   "step": "Check",
+   "fingerprint": "8a2e905ed27d7f24",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Only the last write is kept”?",
+   "a": "\"Only the last write is kept\" is a natural guess, and it is half right.\n\n**What it gets right:** a key with no reducer (a rule for combining updates) follows a simple default: each new value replaces the old one. If steps run one after another, the later step's value does win.\n\n**What it misses:** these three workers run at the same time. LangGraph groups work into rounds called \"steps,\" and all three workers finish in the same step. So there is no \"last\" write. Three values arrive together for one slot, and LangGraph has no rule for picking one.\n\nRather than quietly keep one and throw two away, it stops and raises an error. That is a kindness. Silently losing two search results would be a bug you might not notice for weeks.\n\nThis is why the lesson adds `Annotated[list, operator.add]`. That reducer tells LangGraph to join all three lists instead of choosing between them.\n\n**Why \"The run stops with an error\" is better:** parallel workers writing the same key with no reducer have no last write to keep, so LangGraph fails loudly instead of guessing.",
+   "step": "Check",
+   "fingerprint": "ae72e0381bacbd7a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The lists are joined up anyway”?",
+   "a": "**\"The lists are joined up anyway\"** gets one thing right: joining every worker's list is usually what you *want*. That is the whole point of the gather.\n\nBut LangGraph does not join lists on its own. Joining only happens when you attach a **reducer**, the rule for combining updates, such as `operator.add` in `Annotated[list, operator.add]`.\n\nWithout a reducer, a key follows the default rule: **replace** the old value with the new one. That works when one step writes the key. Here, three workers write `results` in the same step. LangGraph cannot pick a winner, and it will not guess that you meant \"join\". So it treats this as a conflict and stops with an error (it raises `InvalidUpdateError`).\n\nThat is also a safety feature. A loud error is better than quietly keeping one worker's results and dropping the other two.\n\n**\"The run stops with an error\"** is better because, with no reducer, LangGraph has no rule for combining three updates to the same key, so it refuses instead of joining them.",
+   "step": "Check",
+   "fingerprint": "bcb242769ad1cc30",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Let the fastest worker write first”?",
+   "a": "\"Let the fastest worker write first\" does notice a real problem. Several workers writing to one shared table at the same time can clash. Putting them in an order seems like a fix.\n\nBut it misses the main issue. Every worker still changes something outside the graph. That causes a few troubles:\n\n- **The order is random.** Which worker finishes first depends on network speed and load. So the table can end up different on each run.\n- **Everyone still writes.** The slow workers write later, but they still write. You still have many writers, just in a different order.\n- **Timeouts leave a mess.** If a worker is stopped at 10 seconds partway through saving, you may get half-written notes.\n- **Retries make copies.** If the run is repeated, every worker saves again, and you get duplicate rows.\n\nThis is why the lesson keeps workers **read-only**. They only search and hand back results. They never touch the table.\n\n\"Workers only search; one later step saves\" is better because a single step, running after the gather has everything, does all the writing once and in one place.",
+   "step": "Check",
+   "fingerprint": "06295c4c38b83301",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The reasons about retries, duplicate rows and half-written notes go beyond what the lesson states, though none of them contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Each worker writes to its own table copy”?",
+   "a": "This option does get one thing right. If every worker has its own copy of the table, no two workers write to the same place at once. So they won't clash or overwrite each other's notes.\n\nBut it misses the lesson's main rule: keep the workers **read-only**. Read-only means a worker only looks things up. It changes nothing outside the graph. With table copies, every worker is still saving data outside the graph. You haven't removed the risky writes. You've just spread them across more tables.\n\nIt also adds work. The copies are separate, so something still has to combine them into one table later.\n\nThe lesson's design avoids all of this. Each worker just returns what it found. A **reducer**, a rule for combining updates, joins those results into one list. Here that rule is `operator.add`. Next comes the **gather**, the step that collects every worker's results in one place. After the gather, a single step does all the saving.\n\n\"Workers only search; one later step saves\" is better because all writing happens once, in one place, after every result has been collected.",
+   "step": "Check",
+   "fingerprint": "8a43149c9f33a375",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The point that the copies would need combining later is not in the lesson, but it doesn't contradict it."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Give a shared key a reducer” matter?",
+   "a": "When you fan out with `Send`, all the workers finish in the same step. Each one hands back an update for the shared state, like `{\"found\": [result]}`.\n\nIf `found` is a plain key, LangGraph sees several workers trying to set the same value at once. It can't tell which one should win. So it stops the whole run with `InvalidUpdateError`, its error for \"conflicting writes to one key.\"\n\nA **reducer** is a rule that tells LangGraph how to combine those writes. With `Annotated[list, operator.add]`, it joins the lists together instead of picking one.\n\nA small example: you search wiki and tickets.\n\n- **Plain key:** both workers write `found` in the same step. The run crashes. You get no results, even though both searches worked.\n- **With the reducer:** `found` becomes `[wiki_result, tickets_result]`, and the gather step sees both.\n\nThis catches people in real work because a test with one source passes. There is only one write, so nothing clashes. Then a real run with five sources fails.\n\n```python\nfound: list                            # plain: crashes on 2+ writes\nfound: Annotated[list, operator.add]   # joins every worker's list\n```",
+   "step": "Explain",
+   "fingerprint": "ddce30822aa8b09c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Wait for the slowest, with a limit” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"When a job splits into independent parts, like searching five sources, I run them at the same time. But the gather step waits for the slowest worker. So one stuck search can hold up the whole run.\"\n\n*The idea:* \"I give each worker its own timeout, a limit on how long it may take. The gather still waits for the slowest worker, but never longer than that limit. Results that came back in time are used. Workers that ran out of time are recorded as late, so nothing goes missing silently.\"\n\n*The trade-off:* \"A short timeout keeps things fast, but it may drop a useful source. I also keep workers read-only, meaning they change nothing outside the graph. That way a stopped worker never leaves a half-finished write behind.\"\n\n**A likely follow-up**\n\n\"Why put the timeout inside each worker instead of on the node?\"\n\n*Hint for a strong answer:* In LangGraph, `timeout=` on `add_node` stops the whole run. A timeout inside the worker, using `asyncio.wait_for`, lets one slow source fail on its own while the others still count.",
+   "step": "Explain",
+   "fingerprint": "388b444baf58aeb6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that fan-out and gather went wrong, grouped by what you would notice.\n\n**The run is as slow as the worst source.** Total run time matches your slowest search, say 30 seconds, every time. That means there is no per-worker timeout. In a trace (a timeline of each step), the `gather` step starts only when the last `search` finishes.\n\n**The run crashes with an error about updating the same key.** Two workers wrote to `found` with no reducer to combine them.\n\n**The whole run stops when one source hangs.** The timeout was put on `add_node` instead of inside each worker. One slow source then kills everything, instead of landing in `late`.\n\n**Results vanish quietly.** You searched five sources but got three results, and `late` is empty. Something is being dropped without being recorded.\n\n**Duplicate side effects.** Two tickets get filed, or two emails get sent. Workers wrote outside the graph instead of leaving writes to one step after the gather.\n\n**Quickest check:** make one source deliberately slow, well past the timeout. The run should finish at about the timeout, with that source listed in `late`.",
+   "step": "Learn",
+   "fingerprint": "0572cefb5fbd08f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the trace sign (gather starts only when the last search finishes) is true even in a correct run, so it only signals a problem when that last search takes far longer than the timeout."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The parts depend on each other.** Fan-out only works when each part can run without the others. If one search needs another's result first, running them at the same time gives wrong or empty answers. Run those steps in order, and fan out only the parts that are truly independent.\n\n**2. A missing result changes the answer.** Carrying on without a late worker is fine when the sources are \"nice to have.\" If billing data is essential, a reply without it can mislead. Retry the late worker, or tell the user plainly that the answer is incomplete.\n\n**3. You fan out to hundreds of workers.** Many calls at once can hit **rate limits** (a service's cap on requests per minute) and run up cost. Limit how many workers run at the same time, for example in batches of ten. Also keep timeouts short so the slowest batch doesn't drag on.\n\nA related trap: if a worker writes something, like sending an email, a timeout won't undo it. That is why the writing belongs in one step after the gather.",
+   "step": "Learn",
+   "fingerprint": "eaedc0d13502c73d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The batches-of-ten tip and the email/timeout remark go slightly beyond the lesson but do not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "How is “fan-out” different from “gather”?",
+   "a": "Fan-out and gather are two halves of one pattern. The LangGraph docs call the whole thing **map-reduce**.\n\n**Fan-out** is the splitting. One job becomes several independent parts, and each part goes to its own worker. In LangGraph, `Send` starts one worker per part. The workers run at the same time.\n\n**Gather** (also called **fan-in**) is the collecting. It is the one place where every worker's result lands. A **reducer** (a rule for combining updates, here `operator.add`) joins each worker's list into one shared list. Without it, two workers writing the same key would make the run fail with an error.\n\nSo fan-out goes from one to many. Gather goes from many back to one.\n\nThink of meeting friends at a restaurant. Fan-out is inviting five friends. Gather is the table where everyone meets. You wait, but only until a set time.\n\nThe lesson's example has three workers and a 10 second timeout. `wiki` takes 2 seconds and `tickets` takes 4. `billing` would take 30, so it is stopped at 10. The gather runs after 10 seconds, not 30. It has `wiki` and `tickets` as results and `billing` as timed out.\n\nThe workers stay read-only. Any writing happens in one step after the gather.",
+   "step": "Learn",
+   "fingerprint": "fc250f098fca4360",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. It runs to about 205 words and uses 'read-only' without explaining it, but both are minor."
+   }
+  }
+ },
+ "handoff_kept": {
+  "check:0:0": {
+   "q": "Why not “Add one more helper that looks up the order num…”?",
+   "a": "**Why \"add one more helper\" is not the best first try**\n\nLook at the clue in the question: the trace already shows the research helper *found* the order number. (A trace is the step-by-step record of what each agent did.) So finding it is not the problem. The number gets lost later, at the hand-off, when the main agent retells the helper's message in its own words.\n\nThe idea does get one thing right. It treats the order number as a fact that must reach the user.\n\nBut it misses where the problem is. A new helper would look up the number again, and then hand it back the same way. Its message also goes through the main agent's retelling, so the number can drop out just as before. You would add more steps, more cost, and more waiting, and the leak would still be there.\n\n**Why the other option is better**\n\n\"Have helpers report every finding, passed on word for word\" fixes the actual leak. The fact goes into the helper's final message, and the main agent passes it along unchanged, so nothing slips out during the retelling.",
+   "step": "Check",
+   "fingerprint": "98d3679d5b10e11a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Give the main agent a bigger model, so it remem…”?",
+   "a": "A bigger model sounds reasonable. A stronger model might reword a little more carefully, so it could help slightly. But it aims at the wrong problem.\n\nThe trace shows the research helper found the order number. (A trace is the step-by-step record of what each agent did.) So nothing went wrong with finding it. The fact went missing during the **hand-off**, the moment the helper passes its work to the main agent.\n\nTwo things cause that loss:\n\n- The main agent sees only the helper's **final message**. If the order number isn't in that message, no model, big or small, can recover it.\n- The main agent retells the message in its own words. Rewording drops details like a game of telephone, and a bigger model still rewords.\n\n\"Remembering more\" doesn't fix either cause. It also costs more money and makes each answer slower.\n\n**\"Have helpers report every finding, passed on word for word\"** is better because it fixes the exact spot where the fact falls out, using only prompt changes. In LangChain's tests, passing answers on unchanged made them nearly 50 percent better.",
+   "step": "Check",
+   "fingerprint": "cbb4d97e3eaf3fc0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real defects. The claims that a bigger model costs more and is slower, and that it still rewords, go beyond the lesson, but they are plausible and do not contradict it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The helpers have to run all over again”?",
+   "a": "\"The helpers have to run all over again\" sounds reasonable, but it doesn't match what's happening.\n\nWhen the main agent retells a report, the helpers have already finished. Their work is done. The main agent is only rewording the **final message** each helper sent back. Nothing about rewording makes a helper start over. So this option describes a problem the setup doesn't create.\n\nIt does point at something real: if you later *notice* a missing fact, you might rerun a helper to get it back. But that's a cleanup step after the damage, not the risk itself.\n\nThe real risk is quieter. Rewording works like a game of telephone. Small details slip out, and the answer still reads smoothly. Nobody sees an error. A good-sounding answer can hide the one fact that mattered, like an order number or a date.\n\nThat's why the lesson suggests a **hand-off check**: list the facts a helper found, then see which ones reach the final answer word for word.\n\n\"A key fact, like a refund date, drops out\" is better because it names the actual danger: silent loss of detail during rewording.",
+   "step": "Check",
+   "fingerprint": "f82259c8176476d9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The rerun-a-helper aside is not in the lesson, but it is hedged and does not contradict it, so no check fails."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The answers become far too long to read”?",
+   "a": "\"The answers become far too long to read\" points the wrong way.\n\nWhen the main agent retells a helper's report in its own words, it usually **shortens** it. Retelling is a kind of summary. Summaries tend to drop things, not pile them on. So the bigger danger is that the answer has too little, not too much.\n\nLength is also something you can see at a glance. If an answer ran long, you'd notice right away. The question even tells you the answers \"read well.\" That rules out a readability problem.\n\nWhat this option gets right: it senses that rewording changes the message. That instinct is good. It just guesses the wrong kind of change.\n\nThe real risk is quiet. Think of the lesson's example. The final answer reads smoothly, but \"card ends 0099\" never made it through. Nothing looks broken, so a quick read won't catch it. That's why the lesson suggests checking the **hand-off**, the moment one agent passes its work to another. You look fact by fact to see what made it into the final answer.\n\n\"A key fact, like a refund date, drops out\" is better because rewording loses details silently, even when the answer still reads well.",
+   "step": "Check",
+   "fingerprint": "3392f45475f328f4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that retelling 'usually shortens' is not in the lesson, and the answer runs right at the ~200-word limit, but nothing contradicts the lesson."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Allow longer final answers”?",
+   "a": "\"Allow longer final answers\" does have a fair point. If facts are going missing, more room seems like it could hold more of them. And sometimes a very short limit does squeeze details out.\n\nBut length isn't the real cause. Facts get lost in the **hand-off**, the moment a helper passes its work to the main agent. The main agent sees only the helper's final message, then retells it in its own words. A longer answer can still be reworded, and the order number can still fall out. It might just add more filler around the gap.\n\nIt also gives you no evidence. Your grader already scores these answers well, so the problem is invisible to it. Making answers longer won't tell you which facts were dropped, or how often. You would be guessing at a fix without knowing if it worked.\n\n\"Check which found facts reach the answer\" is better because it measures the hand-off directly: it shows you the share of facts kept and the exact facts lost, so you can fix the prompts and confirm the fix worked.",
+   "step": "Check",
+   "fingerprint": "6a6a139615bfc230",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only small point is that the 'very short limit squeezes details out' concession comes from outside the lesson, though it does not contradict it."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Grade writing style more strictly”?",
+   "a": "\"Grade writing style more strictly\" aims at the wrong problem.\n\nThe users' complaint is not about how the answers read. It is that small facts the helpers found are missing. The lesson warns that an answer can still read well while the one fact that mattered, like an order number, is gone. A stricter style grader still only looks at how the answer reads. It never compares the answer to what the helpers found, so it cannot see which facts dropped out.\n\nThe real cause is the **hand-off**, the moment a helper passes its work to the main agent. The main agent sees only the helper's final message. If it retells that message in its own words, details can fall out, like a game of telephone. In the lesson's example, \"card ends 0099\" vanished. A style check would not notice that, because the answer still reads fine.\n\n\"Check which found facts reach the answer\" is better because it measures what users are missing: it gives the share of facts kept and a list of exactly which facts were lost.",
+   "step": "Check",
+   "fingerprint": "e49aefcb1605261e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Pass findings on word for word” matter?",
+   "a": "The main agent never sees what a helper actually did. It only sees the helper's final message. That message is the only bridge between them.\n\nWhen the main agent retells it in its own words, it keeps the general idea and drops specifics. Summaries feel complete, so nobody notices. The answer reads well, but the one detail the user needed is gone.\n\nHere is a small example. A helper looks up a refund and reports: \"Order 4412, refund approved, card ends 0099.\" The main agent rewrites it as \"Your refund was approved and is on its way.\" That is friendly and correct. But it is useless if the customer has two orders and two cards. They have to ask again, or someone has to dig through the record of what the agents did.\n\nIn real work, this shows up as answers that pass a quick read but fail the person. It is hard to catch because nothing crashes.\n\nTwo prompt rules fix most of it. First, helpers put every finding in their final message, not just a summary. Second, the main agent copies those findings into its answer unchanged. Then exact text like `4412` survives the trip.",
+   "step": "Explain",
+   "fingerprint": "0b271fed7bf032b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check each fact against the answer” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"In an agent team, the main agent sees only each helper's final message. If it rewords that message, details drop out. The answer still reads well, but a key fact, like an order number, can vanish.\"\n\n*The idea.* \"So I check the hand-off, the moment one agent passes its work to another. I list the facts the helper found. Then I test whether each one appears in the final answer word for word. The share kept shows how much the hand-off loses. The missing list shows exactly what.\"\n\n*The trade-off.* \"Word-for-word matching is strict. If the answer says 'card ending in 0099' instead of 'card ends 0099', it counts as lost, even though the meaning survived. That's a false alarm. But the check is cheap, fast, and easy to trust.\"\n\n**Likely follow-up**\n\n\"Your hand-off score is low. How do you fix it?\"\n\n*Hint:* Point to the prompts. Helpers put every finding in their final message. The main agent passes that message on unchanged. In LangChain's tests, this made answers nearly 50 percent better. Also mention your order: grade the final answer first, then add hand-off checks.",
+   "step": "Explain",
+   "fingerprint": "6f1c2937a92359db",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Answers read well but miss specifics.** Users write back asking for the order number, the date or the amount. The reply sounded complete, yet the one fact they needed is gone.\n- **Your final-answer grade looks fine, but real use disappoints.** A grader that checks tone or overall correctness can pass a smooth answer that dropped a key detail.\n- **In the trace, the helper had it and the final answer doesn't.** A trace is the step-by-step record of one run. The researcher's span (its recorded step) lists the fact, but the main agent's reply doesn't.\n- **The hand-off score looks too perfect.** A steady 1.0 can mean the helper's `facts` list is empty, so there was nothing to lose. Check that the helper actually records its findings.\n- **The lost list keeps naming the same kind of fact,** like card digits or IDs. That points to the main agent rewording them away.\n\n**Quickest check**\n\nOpen five traces. For each one, put the researcher's facts next to the final answer. Look for each fact word for word. If facts keep vanishing, tighten the prompts. Helpers should report everything, and the main agent should pass it on unchanged.",
+   "step": "Learn",
+   "fingerprint": "e160be2f982c94a4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The fact is right but worded differently.**\nThe check looks for the exact text. If the helper says \"card ends 0099\" and the answer says \"card ending in 0099,\" it counts as lost. Store facts as short core values, like `0099`, or use an LLM judge (a second model asked \"does this answer contain this fact?\") to check meaning instead of spelling.\n\n**2. Some facts should not reach the user.**\nA helper may find internal notes or private data that the final answer should leave out. Then a low \"kept\" score is good, not bad. Tag each fact as \"must pass on\" or \"keep internal,\" and score only the must-pass ones.\n\n**3. Many helpers, or helpers that pass to helpers.**\nIn a bigger team, a fact can drop out at any step along the chain. Checking only the first helper against the final answer tells you something was lost, but not where. Add a check at each hand-off, so you can see the exact step where the fact disappeared.",
+   "step": "Learn",
+   "fingerprint": "c1359ee9e3af2076",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “hand-off” mean here?",
+   "a": "A **hand-off** is the moment one agent passes its finished work to another agent.\n\nThink of a nurse finishing a shift. Before leaving, she tells the next nurse what she learned about each patient. The next nurse only knows what was said in that short talk. If she later retells it to a doctor in her own words, a small detail like \"allergic to penicillin\" can slip out. The summary still sounds fine, but the key fact is gone.\n\nAgents work the same way. A **helper** (a smaller agent given one job) does its work. Then it sends a **final message** to the **main agent** (the one in charge of the overall answer). That final message is all the main agent sees.\n\nIn the lesson's example, the researcher is the helper. It found three facts: `order 4412`, `refund approved`, and `card ends 0099`. The hand-off is when those facts go to the main agent. The final answer kept the first two but dropped the card number. So that hand-off kept 2 of 3 facts, about 0.67, and lost one.\n\nThat is why the lesson checks hand-offs: they are where details quietly disappear.",
+   "step": "Learn",
+   "fingerprint": "d6ea0beed7e06f45",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "need_a_team": {
+  "check:0:1": {
+   "q": "Why not “Add a second agent, so each agent owns one of t…”?",
+   "a": "That option does notice something real. The agent is confusing two tools, and splitting them up would mean neither agent sees both. So it targets the right symptom.\n\nBut it skips the cheaper fix and adds new costs:\n\n- **It treats a labelling problem as a design problem.** The model picks tools by reading their names and descriptions. If two names look alike, that text is the thing to fix.\n- **Teams are expensive.** They use several times more tokens, the chunks of text you pay for on every call.\n- **70 percent is already high.** The study's rough hint was that once one agent passes about 45 percent, more agents help little or make things worse.\n- **The work may not split cleanly.** A team fits pieces you could hand to people who never talk. If both tools serve one job, two agents now have to pass work back and forth, which brings new chances to fail.\n\n\"Rename and describe the two tools clearly, then rerun the eval\" is better because it fixes the actual cause in a few minutes. Rerunning the eval (your set of test tasks) shows whether that alone was enough, before you climb the ladder.",
+   "step": "Check",
+   "fingerprint": "44cf1d2addd2bfd8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: \"in a few minutes\" and the claim that two agents would pass work back and forth go beyond the lesson, but they are plausible and hedged, so nothing contradicts it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Move to a bigger model, so it can tell the two …”?",
+   "a": "A bigger model isn't crazy. Larger models often reason better, so it *might* confuse the two tools less often. That part is fair.\n\nBut it misses where the problem comes from. The model only knows a tool by its name and its description (the short text that says what the tool does). If two tools are called `get_order` and `get_orders` with vague descriptions, even a strong model has to guess. The confusing labels are still there. You've just paid for a better guesser.\n\nA bigger model also costs more on every call and is often slower. And you haven't fixed anything you can point to.\n\nThe lesson's rule is to fix the first agent's tool names and descriptions before reaching for something heavier. You already named the problem: two similar tools. So fix exactly that. Then rerun your eval (your fixed set of test tasks with a score) to see whether the misses went away.\n\n\"Rename and describe the two tools clearly, then rerun the eval\" is better because it fixes the actual cause cheaply and then checks the result, instead of spending more money hoping the model guesses better.",
+   "step": "Check",
+   "fingerprint": "3c033eef5e19485a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “One agent with tools”?",
+   "a": "\"One agent with tools\" is a fair guess. An agent could do this job. You would give it three tools, say `read_form`, `check_form` and `file_form`, and it would probably call them in the right order.\n\nBut \"probably\" is the problem. With an agent, the model picks which tool to call and when. That freedom helps when the next step depends on what just happened, like deciding whether a refund is needed. Here nothing needs deciding. The steps are always the same three, in the same order.\n\nSo the agent adds cost and risk for no gain:\n\n- **More tokens.** The model spends a call deciding each next step, even though the answer never changes.\n- **Room for mistakes.** It might skip the check, repeat a step, or file before checking.\n- **Harder to test.** Its path can differ from run to run, so your evals have more to cover.\n\nThe ladder says to climb only for a problem you can name. This task gives you no such problem.\n\nA fixed workflow is better because your code locks in the order once, so every form gets read, checked and filed the same way, every time.",
+   "step": "Check",
+   "fingerprint": "d947a8530c8616d1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The extra-token and harder-to-test points go slightly beyond the lesson but do not contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “A team of agents”?",
+   "a": "\"A team of agents\" gets one thing right: the job really does have three separate steps. It's natural to picture one agent per step.\n\nBut a team fits work that splits into **independent parts**. Those are pieces you could hand to people who never talk to each other. These steps aren't like that. You can't check a form before it's read, and you can't file it before it's checked. Each step needs the one before it.\n\nThe order also never changes. So nobody has to decide what happens next. Agents earn their place when a model needs to choose which tool to call, and when. Here there's no choice to make.\n\nA team would still cost you. It uses several times more tokens (the chunks of text you pay the model to read and write). It also has more moving parts to debug. In the large study the lesson mentions, every team design did worse on step-by-step tasks like this one.\n\n\"A fixed workflow\" is better because your code runs the same three steps in the same order every time, which is exactly what this task needs.",
+   "step": "Check",
+   "fingerprint": "7eb774351f1c4ee3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only extra is the 'more moving parts to debug' claim, which the lesson does not state but does not contradict."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Go back to a single model call”?",
+   "a": "\"Go back to a single model call\" gets one thing right. The lesson does say to pick the lowest step on the ladder that does the job. Preferring simple designs is a good habit.\n\nBut the ladder also says to climb a step when you can name a problem. Here you can name one, and it has two parts:\n\n- The job splits into five **independent parts**. These are pieces you could hand to people who never talk to each other.\n- One agent passes only 30 percent of your eval. That is below the rough 45 percent hint from the study.\n\nThose are exactly the signs the lesson gives for trying a team. Stepping down the ladder doesn't answer them. Nothing in the question suggests the work is simple enough for one call. Going lower just ignores the problem you found.\n\n\"Try a team, and check it on your eval\" is better because it matches the named problem (independent parts and a low pass rate) and still makes you measure whether the team actually helps.",
+   "step": "Check",
+   "fingerprint": "41aa878552c7eba4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Give the one agent a longer prompt”?",
+   "a": "\"Give the one agent a longer prompt\" gets one thing right. The lesson does say to improve the single agent before adding a second one. Trying the cheaper fix first is a good habit.\n\nBut a longer prompt is not the fix the lesson points to. It says to fix the agent's tool names and descriptions, then rerun your evals. (Evals are your test set of tasks with a pass rate.) A longer prompt usually just piles more instructions onto one agent. A prompt stuffed with extra rules and if-then branches is one of the signs that you have outgrown the step you are on.\n\nThis job also shows both signals for a team:\n\n- **Five independent parts.** You could hand each part to a different person who never talks to the others.\n- **A 30 percent pass rate.** That is well under the rough 45 percent hint. Below that line, more agents may still help.\n\nA longer prompt ignores both signals. It keeps all five parts tangled together in one agent's context, meaning the text the model holds in view at once.\n\n\"Try a team, and check it on your eval\" is better because it matches the shape of the work and makes you measure whether the extra token cost actually pays off.",
+   "step": "Check",
+   "fingerprint": "746a83aa1ec98ead",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Use the simplest design that works” matter?",
+   "a": "Every step up the ladder costs something, even when the higher step seems to work.\n\nA fixed workflow runs the same steps in the same order every time. You can test each step on its own. When something breaks, you know where to look.\n\nAn agent picks its own tools while it runs. That freedom helps when the path really changes from job to job. When it doesn't, you pay anyway: more model calls, more tokens (the chunks of text you're billed for), slower replies, and runs that differ for no reason.\n\nA small example. Every support ticket gets tagged, routed, then answered. Someone builds an agent for it. Most days it works. Some days it skips tagging, or routes the ticket twice. Each run costs several extra calls. When a ticket lands with the wrong team, nobody can say why, because the agent chose its own path.\n\nThe same three steps as a `StateGraph` with fixed edges would never skip a step. It would also be easy to test.\n\nSo start low on the ladder. Climb only when you can name the problem the next step solves.",
+   "step": "Explain",
+   "fingerprint": "75a5c4ef70ba38bc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only small risk is that 'StateGraph with fixed edges' and 'the ladder' are not re-explained, but both come from the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Climb the ladder” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Teams of agents are tempting, but they cost several times more tokens. In one large study, every team design did worse on step-by-step tasks. So adding agents by default is risky.\"\n\n**The idea:** \"I picture a ladder. One model call, then a fixed workflow where my code sets the order of steps, then one agent that picks its own tools, then a team. I start at the bottom. I climb only when I can name the problem, like a prompt full of if-then branches.\"\n\n**The trade-off:** \"A team only fits work that splits into independent parts, meaning pieces people could do without ever talking. Even then, I treat the study's hints as hints. I measure on my own eval set, which is my set of test tasks with known good answers.\"\n\n**A likely follow-up**\n\n*\"Your single agent is failing. Why not just add a second one?\"*\n\nHint for a strong answer: fix the cheap things first. Rename the tools and sharpen their descriptions, since that is how the model decides which tool to use. Then rerun your evals. Add an agent only if the work truly splits apart and the numbers still say one agent isn't enough.",
+   "step": "Explain",
+   "fingerprint": "e3a67c13b4fbdff2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that a team was added when it wasn't needed.\n\n**Your token bill jumps.** Tokens are the chunks of text a model reads and writes, and you pay per token. The lesson says teams use several times more. If cost multiplies but your eval score barely moves, that's a red flag. (An eval is your set of test tasks with a pass rate.)\n\n**Step-by-step tasks get worse.** In the study, every team design did worse on tasks where each step depends on the one before. If your agents keep passing half-finished work back and forth, the parts aren't truly **independent**. Those are pieces that people who never talk could each do alone.\n\n**One agent was already doing well.** If one agent passed about 45 percent or more, extra agents tend to help little or hurt.\n\n**Quickest check:** go back to one agent. Fix its tool names and descriptions so the model can tell which tool does what. Rerun your evals. Then compare pass rate and token use with the team's. If the single agent comes close, drop back down the ladder.",
+   "step": "Learn",
+   "fingerprint": "48d7781c8f169e8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The ladder is a strong default, but a few situations need extra care.\n\n**Your eval is very small.** A pass rate (the share of test tasks the agent gets right) from 10 tasks is shaky. One lucky or unlucky task can move it from 40 to 50 percent and flip your choice. Grow your eval set first, then compare one agent against a team on the same tasks.\n\n**Things change over time.** A newer model, better tool descriptions, or new kinds of tasks can lift one agent's score. A team you added last year may now just cost extra tokens. Rerun your evals after any model or tool change, and step back down the ladder if one agent now does the job.\n\n**The parts are not truly independent.** Six vendor reports sound separate. But if each one needs facts from the others, split-up agents repeat work or contradict each other. Test the \"people who never talk\" idea honestly. If the parts depend on each other, keep one agent or use a fixed workflow.",
+   "step": "Learn",
+   "fingerprint": "e1f49cea43c614ce",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems: the claims fit the lesson, the answer gives three concrete cases with what to do instead, and it stays under about 200 words without giving away the exercise solution."
+   }
+  },
+  "learn:term": {
+   "q": "How is “team” different from “multi-agent system”?",
+   "a": "In this lesson they mean the **same thing**. \"Team\" is just the short, friendly name. \"Multi-agent system\" is the formal term you'll see in papers and docs.\n\nBoth describe several agents that split up the work. An **agent** here is a model that can decide which tool to call, and when. A team has more than one of these, and each one handles part of the job.\n\nThe only difference is the setting where you'd use each word. Think of \"car\" and \"motor vehicle.\" Same object. You say \"car\" to a friend. A legal form says \"motor vehicle.\" The lesson says \"team\" to keep things readable and names the formal term once so you'll recognise it later.\n\nTake the lesson's example: researching 6 vendors, each on its own. A team, or a multi-agent system, could give each vendor to a separate helper agent. A main agent would then combine their findings. Whatever you call it, the warning is the same. It uses several times more tokens, so only try it when the work splits into independent parts. Then measure whether it actually helped.",
+   "step": "Learn",
+   "fingerprint": "60a341e2652987f0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that the formal term is what you'll see in papers and docs goes slightly beyond the lesson, but it contradicts nothing."
+   }
+  }
+ },
+ "one_writer": {
+  "check:0:0": {
+   "q": "Why not “Let both write, and keep whichever update lands…”?",
+   "a": "It's a tempting answer, because it does give you a clear rule. At the end, the tags have one definite value and nothing crashes. That part is real.\n\nThe problem is that \"keep whichever lands last\" doesn't stop the wipe-out. It *is* the wipe-out. Say `triage` adds the tag `urgent` and `billing` adds `refund`. Each one reads the old tags, adds its own, and saves. Whichever saves second replaces the whole list, so one tag vanishes. Nobody gets an error or a warning. That silent loss is exactly the **lost update** the lesson warns about.\n\nIt's also unpredictable. When two helpers run side by side, which one finishes last depends on timing. Run the same ticket twice and you might keep different tags each time. That makes bugs very hard to track down.\n\n\"Have both report back, and let one agent write the tags\" is better because the single writer sees both reports and combines them, so neither helper's work is ever thrown away.",
+   "step": "Check",
+   "fingerprint": "9de8c0fdef3fbc7e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Run them one after the other, so they never ove…”?",
+   "a": "That option has a fair point. If the two helpers take turns, they can't both change the tags at the exact same moment. That does remove one kind of clash.\n\nBut it misses two things.\n\nFirst, the question says the helpers **must run side by side**. Making them take turns breaks that rule. You lose the speed you wanted from running them at the same time.\n\nSecond, taking turns doesn't stop the overwrite. Say the first helper saves the tags `[\"refund\"]`. Then the second helper saves its own list, `[\"urgent\"]`. The second save replaces the first, and `\"refund\"` is gone. Nobody notices. This is the **lost update** the lesson warns about. It happens because two agents still own the same thing.\n\nThe fix needs to be about *who* writes, not *when* they write. With two writers, any future change to the timing can bring the bug back.\n\n\"Have both report back, and let one agent write the tags\" is better because one writer sees both reports and saves a single combined result, so nothing gets wiped out, even with the helpers running side by side.",
+   "step": "Check",
+   "fingerprint": "481092c44ecaf848",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The claim that taking turns still loses updates is a mild stretch beyond the lesson, and the 'speed' motive is inferred, but both fit the lesson's single-writer idea."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “By adding a fourth agent to check”?",
+   "a": "Adding a checker sounds sensible. It does notice that something is wrong, and a checker might catch a few mistakes before they ship.\n\nBut it treats the symptom, not the cause. Details go missing because work is split by job title. Each hand-off from planner to coder to tester is a chance to drop something, like a game of telephone. A fourth agent adds one more hand-off, so there are more places to lose details, not fewer.\n\nThe checker also has a blind spot. It only sees what was passed to it. If the planner never told the coder about some detail, the checker never hears about it either. It cannot spot what was never there.\n\nIt also brings more cost and more waiting, since every run now goes through one more agent.\n\n\"By what each agent needs to know\" is better because it gives each agent the full context (the facts it needs for its piece) from the start, so nothing has to survive a long chain of hand-offs.",
+   "step": "Check",
+   "fingerprint": "e2509ed98fd77954",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “By giving each agent more tools”?",
+   "a": "It's a natural guess. If details go missing, giving each agent more power sounds like it should help.\n\nIt does get one thing right. Each helper needs the right tools. A **tool** is a function the agent can call, like `read_invoices`. That's why a good brief names which tools to use.\n\nBut tools aren't the problem here. Details go missing at the **hand-offs**, the moments when one agent passes its work to the next. The planner knows something, and the coder never hears it. A new tool doesn't carry that knowledge across. It's still the same game of telephone, just with busier players.\n\nMore tools can even make things worse. Each agent now has more choices to sort through. Two agents might also end up able to change the same thing. That can cause a **lost update**, where one quietly overwrites the other.\n\nSplitting by what each agent needs to know is better because it draws the lines so each agent already holds the facts its piece depends on, and fewer details have to survive a hand-off.",
+   "step": "Check",
+   "fingerprint": "dadebe16f628437c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that more tools means more choices to sort through is not in the lesson, but it doesn't contradict it, so I let it pass."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A bigger model for each helper”?",
+   "a": "A bigger model sounds like it should help. Bigger models do follow instructions better and reason more carefully. So the guess is not silly.\n\nBut the problem here is not how smart each helper is. It is what each helper was told. Both got the same vague brief: \"look into refunds.\" Neither knows the other exists. Neither knows which part of the job is theirs.\n\nA smarter helper with that brief still does the obvious thing: it searches for refunds. So does the other one. You now have two expensive helpers doing the same work twice. A bigger model only makes the duplicated work cost more.\n\nThink of hiring two brilliant experts and telling each, \"look into refunds.\" They would still both start in the same place. Talent can't make up for missing directions.\n\n\"A clear goal and what's out of scope\" is the right answer. It gives each helper its own piece and tells it what to leave alone. That way the two never cover the same ground, whatever model they use.",
+   "step": "Check",
+   "fingerprint": "ae6d6dd2441463cc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “More tools for each helper”?",
+   "a": "\"More tools for each helper\" is aimed at the wrong problem.\n\nLook at what went wrong. Both helpers ran the same search. So they could already search. A missing tool was not what stopped them. The trouble was that neither helper knew where its own job ended.\n\nThe brief, \"look into refunds,\" never said what the job was or where it stopped. Tools give a helper ways to act. They don't tell it what its piece of the work is, or what belongs to someone else. Adding tools leaves that gap open.\n\nThe lesson says a **brief** (the short set of instructions you give a helper) should cover four things:\n\n- the goal\n- what is out of scope (not this helper's job)\n- what its report should look like\n- which tools to use\n\nTools are only one of those four. The missing pieces here were the goal and the scope. The lesson says vague briefs are what lead helpers to do the same work twice.\n\n\"A clear goal and what's out of scope\" is the better answer because it tells each helper exactly which part of the refund work is theirs, so they don't duplicate each other.",
+   "step": "Check",
+   "fingerprint": "d3d59f6361b7246c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Keep one writer” matter?",
+   "a": "When two helpers save the same thing, they don't combine their work. The last one to save replaces whatever was there. Nothing crashes and no error appears. That's why it's called a **lost update**: work disappears quietly.\n\nHere's a small example. A support ticket arrives. The `triage` helper reads it and saves the tags `[\"urgent\", \"login\"]`. A moment later, the `billing` helper saves its own tags: `[\"refund\"]`. Billing never saw triage's tags, so it wiped them out. Now the ticket looks like a calm refund request. The `reply` helper reads those tags and drafts a routine answer to a customer who is actually locked out.\n\nIn real work, this is hard to track down. Each helper did its own job correctly. The problem only shows up in the final result, and only sometimes, depending on which helper finished last.\n\nThe fix is simple. `billing` reports its findings back instead of saving. Then one agent, such as `triage` or the main agent, merges both findings and saves the tags once. Helpers read and report. One writer saves.",
+   "step": "Explain",
+   "fingerprint": "577c08716e30be6c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count the writers of each thing” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* When agents share work, two of them might change the same thing, like a table or a file. One quietly overwrites the other. That's called a **lost update**. It's hard to spot because nothing crashes.\n\n*The idea:* For each thing that changes, I count how many agents write to it. Reads don't count, since sharing what you read is safe. More than one writer means a clash. I fix it by picking one owner. The other agent becomes a helper that only reads and reports back. The owner does the writing.\n\n*A trade-off:* The single owner can become a **bottleneck**, a slow point that everything waits on. I accept that for shared data, because a correct answer beats a fast wrong one.\n\n**A likely follow-up**\n\n\"What if two agents truly need to change the same thing?\"\n\n*Hint at a strong answer:* There are two options. You can split the thing into separate parts, each with its own writer. Or both agents can send suggested changes to one owner, who combines them. Either way, each thing still has exactly one writer.",
+   "step": "Explain",
+   "fingerprint": "9fcd409bc43d238b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Values that flip or vanish.** A ticket's `tags` are right one moment and different the next. Or a tag a helper clearly added is just gone. That is a lost update: a second writer saved over the first, with no error.\n- **Results depend on timing.** The same ticket gives different `tags` on different runs, depending on which helper finished last. Tests that run one helper at a time look clean. Real traffic, where helpers run side by side, does not.\n- **Traces show two writers.** A trace is the step-by-step record of what each agent did. If you see both `triage` and `billing` calling a save tool on the same thing, that is the clash.\n- **Repeated work.** Two helpers call the same read tool with the same question. That usually means their briefs were too vague.\n- **Lost details.** A helper's report mentions a fact, but the final answer drops it. That is the telephone effect from splitting by job title.\n\n**Quickest check**\n\nList every thing that changes: each table, file, or the final answer. Next to each one, write which agents can change it. Any item with more than one name needs fixing. Pick one writer and have the others report to it.",
+   "step": "Learn",
+   "fingerprint": "999f5fef50be30a6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The timing and 'side by side' claims go slightly beyond the lesson, and the answer is right at the ~200-word limit."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. One writer gets swamped.**\nIf hundreds of updates hit the same thing at once, a single writer becomes a bottleneck, meaning a slow point everything waits on. Split the thing itself instead. For example, give each ticket's tags their own owner. Or let helpers add entries to an append-only log (a list you only add to, never edit), which one agent merges later.\n\n**2. The plan says one writer, but runtime disagrees.**\nCounting `writes` lists only checks what you planned. A retry can run the same task twice at once. A tool can also write somewhere you forgot to list. Add a version check, so a write is refused if the data changed since the agent last read it.\n\n**3. The pieces need each other's context.**\nSome work is too tangled to split cleanly. Two helpers may keep needing details from each other mid-task. Then every hand-off loses something, like the telephone game. Keep that work inside one agent, and only split off parts that truly stand alone.",
+   "step": "Learn",
+   "fingerprint": "9ad32910ce1988fa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “one writer” different from “single-writer”?",
+   "a": "They're the same idea seen from two angles. \"Single-writer\" is the **name of the rule**. \"One writer\" describes **one thing that follows it**.\n\n- **One writer**: a single resource (the final answer, a table, a file) has exactly one agent allowed to change it.\n- **Single-writer rule**: the design habit of making that true for *every* resource in your system.\n\nSo you check the rule by asking, thing by thing, \"does this have one writer?\" If every answer is yes, the rule holds.\n\n**Everyday comparison:** a shared whiteboard in an office. \"Only Sam writes on the whiteboard\" is one writer for that board. \"Every board has exactly one person holding the marker\" is the single-writer rule. Anyone can still read the boards.\n\n**In the lesson's example**, `\"tags\"` breaks the rule. Both `triage` and `billing` write it, so one could quietly overwrite the other. That's a **lost update**: a change that vanishes without any error. The fix is for `billing` to report its findings to `triage`. Then `triage` is the one writer of `\"tags\"`. Reading `\"tags\"`, as `reply` does, is fine.",
+   "step": "Learn",
+   "fingerprint": "1b32c3731f6c42ac",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "team_experiment": {
+  "check:0:0": {
+   "q": "Why not “Twenty questions is too few to compare any two …”?",
+   "a": "\"Twenty questions is too few to compare any two designs\" has some truth in it. With fewer questions, a small gap like 2 passes is easier to get by chance. More questions would help.\n\nBut it misses the main problem in this setup. Each design answered each question only once. Agents give different answers on different tries. So a single try can't show whether a pass was steady or a lucky one-off.\n\nThe lesson's fix is to run each question 3 to 5 times. A question counts as \"passed every time\" only if every try passed. That shows which designs are reliable, not just which got lucky once.\n\nThe lesson's own example also uses 20 questions. With 3 tries each and a decision rule written before any run, that was enough to make a call. So the lesson doesn't point to the number of questions as the problem here. It points to the single try.\n\n\"One run each: agents vary, so 2 more passes may be luck\" is the better answer because it names the real gap: with one try per question, 14 versus 12 could just be chance.",
+   "step": "Check",
+   "fingerprint": "0cf59c5119aa697e",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It claims the lesson's 20-question example 'was enough to make a call', but the lesson never says 20 questions is enough; it only shows an example, so this is an unsupported claim."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The team should have been run on harder questio…”?",
+   "a": "\"Harder questions only\" has a small grain of truth. Hard questions can show a bigger gap between designs, because easy ones get passed by everyone. So the idea of choosing good test questions is fair.\n\nBut it misses the real problem. The issue isn't which questions were asked. It's how many times each design tried them. Agents give different answers on different tries. One run each is like flipping a coin once and calling it unfair. A gap of 2 passes out of 20 could easily flip if you ran it again.\n\nSwitching to hard questions wouldn't fix that. You'd still have one lucky or unlucky try per question. It also tilts the test. Real users ask easy questions too, and on those the team may just add cost for no gain. A fair experiment gives both designs the same everyday mix of questions.\n\nThe fix the lesson teaches is to run each question 3 to 5 times. Count a question as \"passed every time\" only if all its tries pass.\n\n\"One run each: agents vary, so 2 more passes may be luck\" is better because it names the actual flaw: a single try can't tell a real gain from chance.",
+   "step": "Check",
+   "fingerprint": "3efb8a2fff10c9d3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claims about easy and hard questions and about real users go beyond the lesson but do not contradict it, and the length is just under 200 words."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A gain that small is too hard to measure”?",
+   "a": "That option has a grain of truth. Agents give different answers on different tries, so small differences can be noise, meaning random luck rather than a real gain. With only 20 questions, one lucky question shifts the score by 0.05.\n\nBut it doesn't answer what's wrong here. The problem isn't how hard the gain is to measure. The problem is *when* the rule is being changed. You wrote the rule before any run, on purpose. Lowering it now, after you've seen the team fall short, lets the result pick the rule. Then the experiment can't tell you anything.\n\nAlso, noise points the other way. If a small gain is hard to measure, that's a reason to be *more* careful about calling the team a winner. It's not a reason to lower the bar until it wins. The fix for noise is more questions or more tries, decided before the next run.\n\n\"It moves the goalposts after the result\" is better because it names the real mistake: changing the rule once you know the outcome, which lets a lucky or disappointing result decide what \"winning\" means.",
+   "step": "Check",
+   "fingerprint": "db3a954cc8bdff88",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The rule should only be about cost”?",
+   "a": "**Why \"The rule should only be about cost\" isn't the best answer**\n\nIt does get one thing right. Cost matters. That's why the rule already has a cost limit of 50 cents per success.\n\nBut it misses two things.\n\nFirst, it doesn't answer the question. The problem here is *when* the rule changes, not *what* it measures. Dropping the quality part now, after the team fell short, is just another way of rewriting the rule to fit the result. That's the same mistake as lowering the gain.\n\nSecond, a rule about cost alone can't tell you whether the team is *better*. A team could be cheap and still fail more questions than one agent. The quality part, \"pass every time on at least 1 more question in 10,\" is what checks that the team actually does the job better.\n\n**Why \"It moves the goalposts after the result\" is right**\n\nMoving the goalposts means changing what counts as winning after you've seen the score. The rule was written before any run so it stays fixed. Changing it now lets a disappointing result look like a win.",
+   "step": "Check",
+   "fingerprint": "6366f759090d0e2b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the closing explanation runs to three sentences where one was asked for, and 'gain' is used without being explained."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “How many tries each question needs”?",
+   "a": "That option touches something real. Tries do matter in this experiment. Agents give different answers on different tries, so you run each question 3 to 5 times.\n\nBut you choose that number before the experiment starts. It's part of the setup, and it's the same for every design. Adding a third design doesn't tell you anything new about it.\n\nThe third design is an **ablation**. That means taking one part out to see what changes. Here, the part removed is the checker. The two teams are the same in every other way: same questions, same number of tries, same scoring. So comparing them points straight at the checker.\n\nIn the lesson's example, the team passed every time on 15 of 20 questions, and the team without its checker on 12 of 20. That 3-question gap is your best evidence for the checker's value. Some of it could still be luck, since tries vary. That's why you repeat tries and write the decision rule first.\n\n\"What the checker adds to the team\" is better because removing only the checker makes the gap between the two teams a measure of that one part.",
+   "step": "Check",
+   "fingerprint": "cd19eb5788ab4b14",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Whether the team beats one agent”?",
+   "a": "\"Whether the team beats one agent\" is a real question in this experiment. It just isn't the one the third design answers.\n\n**What it gets right:** the experiment does test whether the team beats one agent. That answer comes from comparing the full team against the **baseline** (the one agent, the design you compare against). In the example, the team passed every time on 15 of 20 questions and the one agent on 12. You don't need the third design for that.\n\n**What it misses:** the third design is the team with one part removed, its checker. That is an **ablation**: you take one piece out and see what changes. Its job is to show what that one piece does. So you compare it with the full team, not with the one agent. In the example, the full team passed every time on 15 of 20 and the team without its checker on 12. That gap is the checker's work. It also shows the team without a checker did no better than one agent.\n\n\"What the checker adds to the team\" is better because it names exactly what the third design measures: the difference made by removing one part.",
+   "step": "Check",
+   "fingerprint": "5383e82c6efa0f1a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Run each design several times” matter?",
+   "a": "Agents don't give the same answer every time. The model picks its words with some randomness. So the same question can pass on one try and fail on the next.\n\nThat makes a single run like a single coin flip. If the team passes 2 more questions than the one agent on one run, the gap might be real. Or it might be luck.\n\n**What goes wrong in real work:** say you run each design once on 20 questions. The team passes 14 and the one agent passes 12. You ship the team, even though each success costs about nine times more. A week later, users hit the same failures as before. The team was never better. It just had a good run.\n\nRunning each question 3 to 5 times fixes this. A question counts as \"passed every time\" only if all its tries passed. A lucky pass no longer counts, because one failed try cancels it.\n\nNow the comparison asks \"which design is reliably right?\" instead of \"which design got lucky once?\" With a decision rule written before any run, that makes the test fair.",
+   "step": "Explain",
+   "fingerprint": "1ebbabfcda45ea04",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The 'nine times more' cost remark is a little distracting, since the lesson's rule would accept $0.35 per success, but it does not contradict the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Score both designs, then apply the rule” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* Agents give different answers on different tries. So one lucky run can make a team of agents look better than it really is.\n\n*The idea.* I run both designs on the same questions, 3 to 5 times each. One agent is the baseline, the design I compare against. A question counts only if every try passed. That gives each design a score. Then I apply a decision rule I wrote before any run. For example: the team must pass every time on at least 1 more question in 10, at 50 cents or less per success. Writing the rule first means I can't move the goalposts after I see results.\n\n*The trade-off.* Repeated tries cost time and money. Also, a team might win because of one part. So I test a third design: the team without its checker. That's an ablation, which means removing one part to see what changes.\n\n**A likely follow-up**\n\n\"Why not just average the pass rate across tries?\"\n\nHint: an average hides flaky questions. An agent that works 2 times in 3 still fails real users. Passing every time measures reliability.",
+   "step": "Explain",
+   "fingerprint": "d40b2f959befc7a9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the experiment went wrong**\n\n- **The rule moved.** The gain or cost limit was set after the numbers came in. Watch for a limit that sits just below the team's result.\n- **One try per question.** A team \"wins\" by a little, then the win vanishes on a rerun. Agents vary from try to try, so a single try can be pure luck.\n- **Different questions per design.** One design got easier questions. The scores look far apart, but the comparison isn't fair.\n- **Cost per success looks oddly cheap.** Cost was split over all tries instead of only the passed ones. That hides waste.\n- **No ablation.** The team wins, but you can't say why. In real use, removing the checker to save money quietly drops quality. An ablation means taking one part out to see what changes.\n\n**Quickest check**\n\nOpen the traces for each design. A trace is MLflow's record of one run. Confirm that every question appears the same number of times, 3 to 5, in every design. Then check that the written rule is older than the first run.",
+   "step": "Learn",
+   "fingerprint": "8996a7b1d291bd00",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where this method needs extra care.\n\n**Very few questions.** With only 20 questions, a gain of 3 can come from luck alone, even with 3 tries each. Collect more questions, ideally 100 or more, before trusting a small gain. If you can't, make your written rule demand a bigger gain.\n\n**Things change over time.** Model providers update their models and change their prices, so last month's winner may lose today. Rerun the same experiment on a schedule, with the same rule written down, and compare the new results to the old ones.\n\n**A much bigger system.** With five or six agents, taking out one part at a time (an ablation) means many designs, and each one runs 3 to 5 times. Start by removing the parts you suspect matter most. Set a spending limit for test runs before you begin.",
+   "step": "Learn",
+   "fingerprint": "b401f8ac1e2c129c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the '100 or more' questions figure goes beyond the lesson, but it doesn't contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “baseline” mean here?",
+   "a": "A **baseline** is the starting point you measure a new idea against.\n\nThink of new running shoes. Before you buy them, you time a mile in your old shoes. Say it takes 9 minutes. That 9 minutes is your baseline. When you try the new shoes, you only care whether they beat 9 minutes. Without that number, a fast run tells you nothing.\n\nIn this lesson, the baseline is **one agent**. It's the simple, cheap design you already have. The team is the new idea, so the team has to prove it does better.\n\nLook at the example table. The baseline row is \"one agent: 12 of 20 passed every time, $0.04 per success.\" Every other row is compared to that.\n\n- The team passes 15 of 20. That's 3 more than the baseline. Over 20 questions, that is 1.5 in 10 (0.15). It clears the rule's 0.1 bar, at $0.35, which is under the $0.50 limit.\n- The team without its checker passes 12 of 20. That's no better than the baseline. So the checker is what makes the team worth it.",
+   "step": "Learn",
+   "fingerprint": "92bcdd24d518c2ea",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'every other row is compared to that' skips the lesson's team vs team-without-checker comparison, but nothing is actually wrong."
+   }
+  }
+ },
+ "tokens_by_agent": {
+  "check:0:1": {
+   "q": "Why not “Move every helper to a smaller model, then reru…”?",
+   "a": "That option gets two things right. Smaller models usually do cost less. And rerunning the eval (your test set that checks the answers are still good) is the right safety check after any change.\n\nWhat it misses is that you are guessing. Every span is called `\"agent\"`, so the trace only shows one big total. You can't tell which helper is using most of the 50,000 tokens.\n\nSwapping every helper at once causes three problems:\n\n- **Little gain from some helpers.** Some helpers might use very few tokens, so shrinking them saves almost nothing.\n- **Lost quality where it matters.** Some helpers might really need the bigger model, so the team's answers get worse.\n- **No clue what broke.** If the eval fails, you don't know which swap caused it. You have to undo everything and start over.\n\nNaming each helper's span first (like `\"researcher\"` or `\"writer\"`) splits the total into tokens per helper. Then you can try a smaller model on just the biggest one and test that one change.\n\n**Why the right answer is better:** \"Give each helper's span its own name, then see who uses most\" turns a blind guess into a measured choice, so you fix the costliest helper first and change only one thing at a time.",
+   "step": "Check",
+   "fingerprint": "0f39e58bbdeac919",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Cut the team down to one agent, so it spends fe…”?",
+   "a": "It's a fair instinct. Fewer helpers can mean fewer model calls, and fewer calls often means fewer tokens. So the goal is right: spend less.\n\nThe problem is that it's a guess. Every span is called `\"agent\"`, so the trace only shows one big total of 50,000 tokens. You can't see where those tokens go. (A span is a labelled box in the trace around one piece of work.)\n\nMerging everything into one agent might not help much. Say most of the cost comes from reading long documents. A single agent still has to read those same documents, so the biggest cost stays. You'd also be doing a large rebuild without knowing what's expensive. That risks breaking things your eval (your test of whether the team's answers are still good) depends on, possibly for little saving.\n\nA better first step is to measure. Give each helper its own span name, like `\"researcher\"` or `\"writer\"`. Then the tokens add up per helper, and you can try a small fix, such as a smaller model, on the costliest one.\n\n\"Give each helper's span its own name, then see who uses most\" is better because it shows you where the tokens actually go, so you fix the right helper instead of guessing.",
+   "step": "Check",
+   "fingerprint": "03ebbc6c9e17844e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A smaller model for every helper at once”?",
+   "a": "That option has the right instinct. A smaller model costs less per token, and the researcher would get one too. So the bill would drop.\n\nBut look at the numbers. One run uses 50,000 tokens in total. The researcher alone uses 40,000 of them. The writer and checker together use only 10,000. Shrinking their models saves a little money, but it can still make their answers worse.\n\nThe bigger problem is what happens if quality drops. Your eval is the set of test questions you rerun to check the team still does its job. If you change three helpers at once and the eval fails, you can't tell which change broke it. You would have to undo everything and start over.\n\nThe option also never says to run the eval. Without that check, you don't know if the cheaper team still works.\n\n\"A smaller model for the researcher, then rerun the eval\" is better because it goes after the biggest cost first, changes only one thing, and tests that one change before you keep it.",
+   "step": "Check",
+   "fingerprint": "ee107ffe43760d75",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Remove the checker, since it costs least”?",
+   "a": "That option does one thing right. It uses the per-helper totals from the named spans instead of one big bill. And cutting work can save money.\n\nBut it picks the wrong helper. The whole run uses 50,000 tokens. The checker is only 4,000 of them, about 8%. Even removing it completely saves very little.\n\nIt also throws away a job. The checker is there to catch mistakes. Without it, bad answers could slip through, and the option never reruns the **eval** (your set of test questions that checks the answers are still good). So you'd save a little money and might lose quality without knowing it.\n\nThe lesson's rule is to start with the biggest cost. Here that's the researcher at 40,000 tokens, about 80% of the run. It reads long documents, so it sends lots of input tokens. Making that helper cheaper matters far more than trimming the smallest one.\n\n\"A smaller model for the researcher, then rerun the eval\" is better because it targets the helper that costs the most and keeps the change only if the eval shows quality still holds.",
+   "step": "Check",
+   "fingerprint": "57b74e2306edb29b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The arithmetic (50,000 total, 8% and 80%) is right. The claim that the checker 'catches mistakes' is inferred from its name, not stated in the lesson, but it doesn't contradict the lesson."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The tokens used by the other helpers”?",
+   "a": "That option mixes up two different totals.\n\n**What it gets right:** the other helpers do use tokens, and those tokens count toward the team's bill. Nothing about them is wrong in general.\n\n**What it misses:** the question is about the writer's own total. Tokens per agent means each helper gets its own count, kept in its own named span (a labelled box in the trace). The researcher's tokens belong in the researcher's box, not the writer's. Adding them to the writer would blur the boxes together. Then you can't tell which helper costs the most, and that is the whole point of the lesson.\n\nThe real gap is inside the writer's own calls. Each call has two parts: the input tokens you sent and the output tokens that came back. The script only counts the first part. In the lesson's example, the writer sent 900 and got 300 back. The script reports 900, but the true total is 1200.\n\n**Why \"The tokens the model sent back\" is better:** every model call costs input plus output, so leaving out the output tokens undercounts each helper's own total.",
+   "step": "Check",
+   "fingerprint": "91adeacb12c8bf9d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The tokens in your eval questions”?",
+   "a": "**Why not \"The tokens in your eval questions\"?**\n\nIt sounds reasonable. Evals do send text to the model, and that text costs tokens. So it's true that evals have a cost.\n\nBut it answers a different question. An **eval** is a test you run to check that your agents still give good answers. Its questions are not part of the writer's work in a normal team run. They don't sit inside the writer's named span, so they don't belong in the writer's total.\n\nAlso, if an eval question is ever sent to the writer, it goes in as input. Your script already counts input tokens. So adding it wouldn't fill the gap.\n\nThe real gap is the other direction. Each model call has two parts: tokens you send in, and tokens that come back. In the lesson's example, the writer's call is `900 in, 300 out`. Your script counts only the `900`. The correct total is `1200`.\n\n**Why \"The tokens the model sent back\" is right:** tokens per agent is input plus output, and your script is missing the output half.",
+   "step": "Check",
+   "fingerprint": "0d3088801f7d1924",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Name every helper's span” matter?",
+   "a": "The trace adds tokens up **by span name**. A span is a labelled box in the trace that holds one helper's work. If two helpers share a name, the trace treats them as one helper, and their tokens land in one pile.\n\n**Small example.** Say both helpers open their span with `name=\"agent\"`. The lesson's run would then show:\n\n```\nagent: 7600\n```\n\nThat number is true, but you can't act on it. You know the run is costly. You don't know who to fix. You might move the writer to a smaller model. You'd save very little and risk its quality, while the researcher keeps using 6400 tokens.\n\nName the spans `\"researcher\"` and `\"writer\"`, and the same run shows 6400 and 1200. Now the next step is clear. Try a smaller model for the researcher only, and keep it if your eval still passes.\n\nIt also matters later. Suppose the bill jumps after a change. With one shared name, you can't see which helper caused it.\n\nWith `mlflow.langchain.autolog()`, each LangGraph node's span takes the node's name. So give every node its own name.",
+   "step": "Explain",
+   "fingerprint": "9e0df8b3f83bf0eb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Total per helper, then pick the biggest” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"A multi-agent run has one bill. It's the sum of every helper's model calls. If the trace only shows one total, I can't tell which helper to make cheaper.\"\n\n*The idea:* \"So I give each helper its own named span. That's a labelled box in the trace, like `researcher` or `writer`. Then I add up the input plus output tokens of the calls inside each box. That gives tokens per agent. I start with the biggest one. It's often a helper that reads long documents.\"\n\n*A trade-off:* \"The usual fix is a smaller model for just that helper. Smaller models can give worse answers. So I keep the swap only if my eval still passes. An eval is my automated quality test.\"\n\n**A likely follow-up**\n\n\"A model call's span is often nested a few boxes deep. How do you know which helper it belongs to?\"\n\n*Hint at a strong answer:* Climb through the parent spans until you reach the box right under the root. The root is the top box of the trace. That box is the helper. Don't just take the direct parent. A chain span like `RunnableSequence` often sits in between.",
+   "step": "Explain",
+   "fingerprint": "350b91f7db2e2532",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; every claim matches the lesson, it has the three-part spoken answer plus a follow-up with a hint, and it runs right around 200 words. Calling the smaller model the 'usual fix' is slightly stronger than the lesson's 'try a smaller model', but it is acceptable."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs it went wrong:**\n\n- **One big number, no names.** Your trace shows a single total for the whole run. You can't tell which helper to make cheaper.\n- **Odd names in your totals.** You see `RunnableSequence` or the root name instead of `researcher` or `writer`. That means you stopped at the wrong box. A \"span\" is a labelled box in the trace, and model calls often sit a few boxes deep.\n- **A helper is missing.** A helper that clearly ran has no total. Its span probably wasn't named.\n- **Totals that don't match the bill.** If they come out too low, you may be counting only input tokens and dropping output tokens. If they come out too high, you may be counting the same call twice, for example once at the call and again at a parent box.\n- **A cheaper model that \"worked\" but got worse.** Costs dropped, but you never re-ran your eval, which is your test set. Quality then slips in real use.\n\n**Quickest check:** pick one run. Add up your per-helper totals. They should equal the run's overall token count, and every helper that ran should appear by name.",
+   "step": "Learn",
+   "fingerprint": "c27a2ddf62ef0dec",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"add up tokens per helper, fix the biggest\" needs extra care.\n\n**1. Helpers use different models.** Tokens are not dollars. Each model has its own price per token, and output tokens usually cost more than input tokens. Some providers also charge less for \"cached\" input, meaning text they've seen recently. So multiply each call's tokens by that model's prices before you compare helpers.\n\n**2. Helpers call other helpers.** The method climbs to the box right under the root (the top box of the trace). If a \"planner\" starts a \"researcher\" inside its own box, all the researcher's tokens get counted as the planner's. Give the inner helper its own named span. Then credit each call to the nearest named helper box above it, not the top one.\n\n**3. One run isn't typical.** A single run might have had an unusually long document. Add up totals across many traces (one trace is the record of one run), and check both the average and the worst runs. A helper that's cheap most of the time but spikes now and then may matter more.",
+   "step": "Learn",
+   "fingerprint": "0b0aa30d2c4372bb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “named span” mean here?",
+   "a": "A **trace** is a record of everything that happened during one run. A **span** is one box inside that record. It marks when a piece of work started and stopped, and holds what happened in between. A **named span** is simply a box with a label on it, like \"researcher\" or \"writer\".\n\nThink of a shared restaurant bill. If you only see the total, you can't tell who ordered the expensive dish. If each person's orders are grouped under their name, you spot it right away.\n\nIn the lesson's code, `mlflow.start_span(name=\"researcher\", ...)` creates that labelled box. Every model call the researcher makes lands inside it. If you turn on `mlflow.langchain.autolog()` (automatic recording), each LangGraph node already gets a span named after that node. A node is one step in the graph.\n\nThe example shows the payoff. Each call sits inside a labelled box, so you can total them per helper. The researcher's two calls add up to 3400 plus 3000, which is 6400. The writer's one call is 1200. The labels tell you to look at the researcher first.",
+   "step": "Learn",
+   "fingerprint": "9cdfa50cec0647db",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer opens with a definition before the everyday comparison, which departs slightly from the requested order. It still explains named span correctly, and the arithmetic matches the lesson."
+   }
+  }
+ }
+}
