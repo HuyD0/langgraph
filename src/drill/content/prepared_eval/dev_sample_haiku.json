@@ -1,6 +1,6 @@
 {
- "about": "The tutor's prepared answers, a stratified dev sample judged again by Haiku: recorded from MLflow run da5836ffdc37492d9e72badfbf89d589 on 2026-10-17, so notebook m13 replays it at no cost. `passes` is Haiku's verdict, `reference_pass` Sonnet's from the drafting run, `notes` Haiku's reason.",
- "run_id": "da5836ffdc37492d9e72badfbf89d589",
+ "about": "The tutor's prepared answers, a stratified dev sample judged again by Haiku: recorded from MLflow run da5836ff on 2026-10-17, so notebook m13 replays it at no cost. `passes` is Haiku's verdict, `reference_pass` Sonnet's from the drafting run, `notes` Haiku's reason.",
+ "run_id": "da5836ff",
  "params": {
   "judge_model": "databricks-claude-haiku-5-5",
   "reference_judge": "databricks-claude-sonnet-5-5",

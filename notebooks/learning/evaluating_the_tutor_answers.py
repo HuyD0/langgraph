@@ -1,4 +1,4 @@
-"""Answer key for notebooks/m13_evaluating_the_tutor.ipynb (the same logic as drill.tutor_prepared_eval)."""
+"""Answers for notebooks/learning/evaluating_the_tutor.ipynb. For learning: not run in CI. (Same logic as drill.tutor_prepared_eval.)"""
 
 import math
 
@@ -50,3 +50,38 @@ def mcnemar(b, c):
         return 1.0
     tail = sum(math.comb(n, k) for k in range(0, min(b, c) + 1)) / 2 ** n
     return min(1.0, 2 * tail)
+
+
+def confusion(judge, reference):
+    """The four boxes and three rates, where 'positive' means the answer FAILED (a problem was flagged)."""
+    caught = sum(not j and not r for j, r in zip(judge, reference))
+    false_alarm = sum(not j and r for j, r in zip(judge, reference))
+    missed = sum(j and not r for j, r in zip(judge, reference))
+    let_through = sum(j and r for j, r in zip(judge, reference))
+    share = lambda top, bottom: top / bottom if bottom else None  # noqa: E731
+    return {"caught": caught, "false_alarm": false_alarm, "missed": missed, "let_through": let_through,
+            "recall": share(caught, caught + missed), "precision": share(caught, caught + false_alarm),
+            "specificity": share(let_through, let_through + false_alarm)}
+
+
+def ac1(a, b):
+    """Gwet's AC1 between two judges' pass/fail verdicts."""
+    n = len(a)
+    observed = sum(x == y for x, y in zip(a, b)) / n
+    q = (sum(a) / n + sum(b) / n) / 2
+    chance = 2 * q * (1 - q)
+    if chance >= 1:
+        return None
+    return (observed - chance) / (1 - chance)
+
+
+def holm(pvalues):
+    """Holm-adjusted p-values, in the same order as given."""
+    m = len(pvalues)
+    order = sorted(range(m), key=lambda i: pvalues[i])
+    adjusted = [0.0] * m
+    previous = 0.0
+    for rank, i in enumerate(order):
+        previous = max(previous, min(1.0, (m - rank) * pvalues[i]))
+        adjusted[i] = previous
+    return adjusted
