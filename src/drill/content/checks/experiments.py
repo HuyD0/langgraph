@@ -238,4 +238,50 @@ CHECKS = {
             why="Test fewer ideas, and use a stricter bar for each one. The holdout is only for "
                 "confirming the winner once, at the end."),
     ],
+    "clumpy_margin": [
+        ask("You can add 100 more questions to your eval. Which adds the most information?",
+            ["100 questions about new documents", "100 more about documents you have", "100 rewordings of old questions"],
+            answer=0,
+            clue="Questions about the same document tend to pass or fail together.",
+            why="New documents are new clumps. More questions about the same documents mostly repeat what you already "
+                "know."),
+        ask("Your report says \"92%, give or take 3 points\" from 900 answers about 30 products. What should "
+            "you check first?",
+            ["Whether answers about one product move together", "Whether 900 is a round enough number", "Whether 92% is above last month's"],
+            answer=0,
+            clue="Is 900 the real count of separate examples here?",
+            why="If answers about one product pass or fail together, there are closer to 30 separate units than 900, "
+                "and the margin is much wider than 3 points."),
+    ],
+    "examples_per_group": [
+        ask("Your pass rate is about 70%. You can only get about 340 examples in each group. Which gain "
+            "should you look for?",
+            ["A gain of about 10 points or more", "Any gain at all, even 1 point", "A gain of about 5 points"],
+            answer=0,
+            clue="Look back at what the rule of thumb gave for 5 points and for 10.",
+            why="About 340 examples in each group is enough for a 10-point gain at a 70% pass rate. A 5-point gain "
+                "needs about 1,344."),
+        ask("You want to notice a smaller gain: half the size you planned. Roughly how many more examples "
+            "will you need?",
+            ["About twice as many", "About four times as many", "About the same number"],
+            answer=1,
+            clue="In the rule, the difference is multiplied by itself.",
+            why="The difference is multiplied by itself in the rule, so halving it means four times as many examples."),
+    ],
+    "assign_group": [
+        ask("You roll out a new version to 10% of users, and next week to 50%. With a hash bucket, which "
+            "users who had it keep it?",
+            ["Everyone in buckets 0 to 9", "A fresh random 10%", "Nobody: everyone is reassigned"],
+            answer=0,
+            clue="The bucket depends only on the user's id.",
+            why="Buckets 0 to 9 are below both 10 and 50, so those users stay in B; the rollout only adds buckets 10 "
+                "to 49."),
+        ask("Group B looks 4 points ahead after one day, so the team wants to stop and ship. What is the "
+            "risk?",
+            ["Stopping early on a good day finds lucky wins", "One day is long enough to be sure", "Group A will feel left out"],
+            answer=0,
+            clue="If you check every day, how many chances do you give luck?",
+            why="Checking again and again and stopping when it looks good is like testing many variants: luck "
+                "eventually looks like a win. Decide the users and stop date first."),
+    ],
 }
