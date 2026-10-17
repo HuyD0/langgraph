@@ -46,10 +46,38 @@
 .horizon .ln { fill: none; stroke: var(--hz-ink); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
 .horizon .fl { fill: var(--hz-ink); }
 .horizon .ac { fill: var(--accent); }
-/* the hero: navy jacket, white hair, black blindfold; a technique per phase (data-pose 0..5) */
+/* the hero: glowing outline, a dark figure with a blue rim, white hair; three stages by progress (data-stage 0..2)
+   and a touch per phase (data-pose 0..5) */
 .horizon .cu .coat { fill: color-mix(in srgb, var(--fx-veil) 78%, var(--fx-glow)); stroke: var(--fx-glow); stroke-width: .5; stroke-linejoin: round; }
-.horizon .cu .coatln { fill: none; stroke: var(--fx-veil); stroke-width: .5; }
-.horizon .cu .sleeve { fill: none; stroke: color-mix(in srgb, var(--fx-veil) 78%, var(--fx-glow)); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+.horizon .cu .ol { fill: color-mix(in srgb, var(--fx-veil) 88%, var(--fx-glow)); stroke: var(--fx-glow); stroke-width: .6; stroke-linejoin: round; }
+.horizon .cu .hero .seam { stroke: var(--fx-glow); stroke-width: .3; opacity: .9; }
+.horizon .cu .sleeve { fill: none; stroke: var(--fx-glow); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+.horizon .cu .sleeve.in { stroke: color-mix(in srgb, var(--fx-veil) 88%, var(--fx-glow)); stroke-width: 2.4; }
+:root[data-theme="dusk"] .horizon .cu .hero { filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--fx-glow) 70%, transparent)); }
+.horizon .cu .h-ring { fill: none; stroke: var(--fx-glow); stroke-width: .5; opacity: .55; animation: hz-cu-breathe 3.2s ease-in-out infinite alternate; animation-delay: var(--d, 0s); transform-box: fill-box; transform-origin: center; }
+.horizon .cu .h-dot { fill: var(--fx-core); animation: hz-cu-twinkle 1.8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.horizon .cu .h-dot:nth-child(3n) { animation-delay: -.6s; } .horizon .cu .h-dot:nth-child(3n+1) { animation-delay: -1.2s; }
+.horizon .cu .h-sphere { fill: color-mix(in srgb, var(--fx-veil) 30%, transparent); stroke: var(--fx-glow); stroke-width: .4; opacity: .6; }
+.horizon .cu .hero[data-stage="1"] .swirl { stroke-width: 1.1; stroke-dasharray: .68 .32; animation-duration: 3.2s; }
+.horizon .cu .h-dom { fill: color-mix(in srgb, var(--fx-veil) 35%, transparent); stroke: var(--fx-glow); stroke-width: .6; }
+.horizon .cu .h-dom.v { fill: none; stroke: var(--fx-mix); stroke-width: .6; stroke-dasharray: 5 3; animation: hz-en-flow 3s linear infinite; }
+.horizon .cu .h-gal { fill: none; stroke: var(--fx-core); stroke-width: .4; animation: hz-cu-twinkle 2.6s ease-in-out infinite alternate; animation-delay: var(--d, 0s); transform-box: fill-box; transform-origin: center; }
+.horizon .cu .h-gal ellipse { fill: var(--fx-core); stroke: none; }
+.horizon .cu .h-floor { fill: none; stroke: var(--fx-glow); stroke-width: .7; stroke-dasharray: .5 .2; animation: hz-cu-swirl 2.4s linear infinite; animation-delay: var(--d, 0s); }
+.horizon .cu .h-floor.c { stroke: var(--fx-core); stroke-width: .5; animation-direction: reverse; }
+.horizon .cu .h-floor.v { stroke: var(--fx-mix); stroke-width: .5; }
+.horizon .cu .h-orb.r { fill: var(--fx-red); }
+/* blindfold up (tap the hero): eyes ignite blue, the aura flares and he rises a little */
+.horizon .cu .h-eye-blue { fill: var(--fx-core); animation: hz-en-flick 1.1s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.horizon .cu .h-eye-core { fill: white; }
+:root[data-theme="dusk"] .horizon .cu .h-eye-blue { filter: drop-shadow(0 0 2px var(--fx-core)) drop-shadow(0 0 5px var(--fx-glow)); }
+.horizon .cu .h-aura.mix :is(.swirl, .h-ring, .h-dom, .h-floor, .h-thread, .h-arc, .h-halo) { stroke: var(--fx-core); stroke-width: 1.2; }
+.horizon .cu .h-aura.mix .swirl.r { stroke: var(--fx-red); }
+.horizon .cu .h-aura.mix .h-dom.v { stroke: var(--fx-mix); }
+:root[data-theme="dusk"] .horizon .cu .h-aura.mix { filter: drop-shadow(0 0 3px var(--fx-core)) drop-shadow(0 0 8px var(--fx-glow)); }
+.horizon[data-awakened="true"] .cu .hero.awake { animation: hz-hero-surge 1.8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes hz-hero-surge { from { transform: translateY(0) scale(1); } to { transform: translateY(-3px) scale(1.02); } }
+:root:not([data-theme="dusk"]) .horizon .cu :is(.h-sphere, .h-dom) { fill: color-mix(in srgb, var(--fx-glow) 7%, transparent); }
 .horizon .cu .btn { fill: none; stroke: var(--fx-core); stroke-width: .5; }
 .horizon .cu .skin { fill: color-mix(in srgb, var(--fx-mix) 10%, white); stroke: var(--fx-veil); stroke-width: .3; stroke-linejoin: round; }
 .horizon .cu .hair { fill: color-mix(in srgb, var(--fx-core) 10%, white); stroke: var(--fx-glow); stroke-width: .4; stroke-linejoin: round; }
