@@ -2,7 +2,7 @@
 // A strip of original line art at the top of Home's phase room: a horizon that reshapes for each phase
 // (gate, seals, barrier, curtain, opening, lanterns), a layer of blue-flame energy, and a cursed spirit
 // that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the last
-// lesson exorcises it. A blindfolded sorcerer on the left hill grows stronger as it weakens. The platform
+// lesson exorcises it. A white-haired, blindfolded hero on the left hill grows stronger as it weakens, with a new stance and technique each phase. The platform
 // track gets its own banner in teal (`hzTrackScene`). Decorative only (aria-hidden); tapping it strikes the spirit for fun.
 // Neutral names; every colour is a token.
 const HZ = [
@@ -84,27 +84,69 @@ function hzCurse(i, hp) {
   const [x, y, s] = HZ_AT[i];
   return hzSpirit(x, y, s * (.75 + .25 * hp), hp) + (i === 1 ? `<path class="bind" d="M292 70 L344 84 M294 86 L342 68"/>` : "");
 }
-// The sorcerer: an original figure in a long dark high-collared coat, blindfolded, one hand raised in a
-// sign. The flame at his hand grows with `power` (the share of lessons done); tapping the banner fires it.
-function hzSorcerer(x, g, tx, ty, power) {
-  const S = .9, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1);
-  const hx = +X(16), hy = +Y(-27);
-  const coat = `<path class="coat" d="M${X(-5)},${Y(-30)} L${X(-8)},${Y(-6)} L${X(-11)},${Y(0)} L${X(-2)},${Y(-1)} L${X(0)},${Y(-12)} L${X(2)},${Y(-1)} L${X(10)},${Y(0)} L${X(7)},${Y(-6)} L${X(5)},${Y(-30)} L${X(3)},${Y(-34)} L${X(-3)},${Y(-34)}Z"/>`;
-  const collar = `<path class="coatln" d="M${X(-3)},${Y(-34)} L${X(-3.5)},${Y(-38)} M${X(3)},${Y(-34)} L${X(3.5)},${Y(-38)}"/>`;
-  const head = `<circle class="skin" cx="${X(0)}" cy="${Y(-41)}" r="${(3.6 * S).toFixed(1)}"/>`;
-  const hair = `<path class="hair" d="M${X(-4)},${Y(-41)} q${-1},${-6} ${4 * S},${-7 * S} q${5 * S},${0} ${4.5 * S},${6 * S} l${-1.5 * S},${-1.5 * S} l${-1 * S},${2 * S} l${-1.5 * S},${-2.2 * S} l${-1.5 * S},${2 * S} l${-1.4 * S},${-2.4 * S} l${-1.2 * S},${2.4 * S}z"/>`;
-  const eyes = `<path class="band" d="M${X(-3.4)},${Y(-42.2)} L${X(3.7)},${Y(-41.8)} L${X(3.7)},${Y(-39.6)} L${X(-3.4)},${Y(-40)}Z"/><path class="tails" d="M${X(-3.4)},${Y(-41.4)} q${-3 * S},${-1 * S} ${-6 * S},${1.5 * S} M${X(-3.4)},${Y(-40.6)} q${-2.5 * S},${1.2 * S} ${-5 * S},${3.6 * S}"/>`;
-  const arm = `<path class="coatln" d="M${X(3)},${Y(-31)} L${X(10)},${Y(-29)} L${hx},${hy}"/><path class="coatln" d="M${X(-3)},${Y(-31)} L${X(-7)},${Y(-22)} L${X(-5)},${Y(-17)}"/>`;
-  const sign = `<path class="sign" d="M${hx},${hy} l.4,-3.4 M${hx + .9},${hy} l.6,-3.2"/>`;
-  const orb = `<circle class="orb" cx="${hx + 1}" cy="${hy - 2}" r="${(2 + 7 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
-  const shield = `<circle class="shield" cx="${X(0)}" cy="${Y(-22)}" r="${(26 * S).toFixed(1)}"/>`;
-  const beam = `<path class="beam" d="M${hx + 1},${hy - 2} L${tx},${ty}"/>`;
-  return `<g class="fighter">${shield}${coat}${collar}${arm}${head}${hair}${eyes}${sign}${orb}${beam}</g>`;
+// The hero: an original figure with spiky white hair and a black blindfold, smiling, in a navy
+// high-collared jacket with a round button. His pose and technique follow the phase (`pose`, 0..5):
+//   0 Frame     a hand at the blindfold, a scanning ring reaching out to the spirit
+//   1 Design    a flat palm out, energy running along a line to the spirit
+//   2 Build     two fingers raised in a sign, blue and red rings spiralling into violet
+//   3 Evaluate  a dense violet orb over the sign, measuring arcs falling on the spirit
+//   4 Ship      the hand thrust forward, the spiral released as a beam
+//   5 Monitor   standing easy, a quiet ring of protection round him
+// Everything he gives off grows with `power` (the share of lessons done); tapping the banner fires the flame.
+function hzSorcerer(x, g, tx, ty, power, pose = 2) {
+  const S = .82, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1), Z = v => (v * S).toFixed(1);
+  const P = pts => "M" + pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L") + "Z";
+  const F = [15, 14, 15, 15, 19, 8][pose];
+  const legs = `<path class="coat" d="${P([[-5, -21], [-F + 2, -1], [-F, 0], [-F + 6, 0], [-1, -15], [3, -15], [F - 6, 0], [F, 0], [F - 2, -2], [6, -21]])}"/>`;
+  const coat = `<path class="coat" d="${P([[-4, -40], [-9, -37], [-8, -26], [-7, -18], [7, -18], [8, -26], [9, -37], [4, -40]])}"/>`
+    + `<path class="coatln" d="M${X(.5)},${Y(-38)} V${Y(-19)}"/>`;
+  const collar = `<path class="coat" d="${P([[-3.6, -45], [3.6, -45], [4.2, -39], [-4.2, -39]])}"/><circle class="btn" cx="${X(0)}" cy="${Y(-40.6)}" r="${Z(1.1)}"/>`;
+  const head = `<ellipse class="skin" cx="${X(0)}" cy="${Y(-49.5)}" rx="${Z(3.8)}" ry="${Z(4.4)}"/>`
+    + `<path class="smile" d="M${X(-1.4)},${Y(-46.6)} q${Z(1.4)},${Z(1.1)} ${Z(2.8)},${Z(-.2)}"/>`;
+  const band = `<path class="band" d="${P([[-4.3, -52.6], [4.3, -52.6], [4.1, -48.8], [-4.1, -48.8]])}"/>`;
+  const hair = `<path class="hair" d="${P([[-4.2, -52.4], [-6.8, -54.4], [-4.4, -55], [-7, -58], [-3.4, -57.2], [-3.8, -60.6], [-1, -58.2], [.4, -61.6], [1.6, -58.2], [4.2, -60.4], [3.8, -57], [7.2, -57.8], [4.8, -54.8], [7, -54], [4.2, -52.4]])}"/>`;
+  const arm = pts => `<path class="sleeve" d="M${pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L")}"/>`;
+  const fist = (a, b, r = 1.8) => `<circle class="skin" cx="${X(a)}" cy="${Y(b)}" r="${Z(r)}"/>`;
+  // two fingers up from the wrist at (a, b); `fw` turns them to point at the spirit
+  const sign = (a, b, fw) => fw
+    ? `<path class="skin" d="M${X(a)},${Y(b - .8)} l${Z(7)},${Z(-.6)} l0,${Z(1)} l${Z(-5)},${Z(.2)} l${Z(5.6)},${Z(.6)} l${Z(-.2)},${Z(1)} l${Z(-7.4)},${Z(-.4)}Z"/>`
+    : `<path class="skin" d="M${X(a)},${Y(b)} l${Z(.6)},${Z(-7)} l${Z(1)},0 l${Z(.2)},${Z(5)} l${Z(.6)},${Z(-5.6)} l${Z(1)},${Z(.2)} l${Z(-.4)},${Z(7.4)}Z"/>`;
+  const palm = (a, b) => `<path class="skin" d="M${X(a)},${Y(b + 2.4)} q${Z(-.8)},${Z(-2.4)} 0,${Z(-5.6)} q${Z(1.8)},${Z(-.6)} ${Z(2)},${Z(.4)} l${Z(.2)},${Z(4.6)} q${Z(-.6)},${Z(1)} ${Z(-2.2)},${Z(.6)}Z"/>`;
+  const atCollar = arm([[-7, -36], [-9, -29], [-3, -36]]) + fist(-2.2, -37.2);
+  const atSide = arm([[-7, -36], [-9, -28], [-8.5, -22]]) + fist(-8.5, -21.4, 1.6);
+  const POSE = [
+    [arm([[7, -37], [12, -41], [6, -50]]) + fist(5.6, -51, 1.7) + atSide, [8, -52]],
+    [arm([[7, -37], [13, -38], [19, -39]]) + palm(19.4, -39) + atCollar, [22.6, -39.2]],
+    [arm([[7, -37], [13, -33], [14, -42]]) + sign(12.6, -42) + atCollar, [14.4, -52]],
+    [arm([[7, -37], [13, -33], [14, -42]]) + sign(12.6, -42) + atCollar, [14.4, -56]],
+    [arm([[7, -37], [14, -35.5], [20, -35]]) + sign(20, -35, true) + arm([[-7, -36], [-12, -31], [-15, -34]]) + fist(-15.2, -34.6, 1.6), [28.4, -35.6]],
+    [arm([[7, -37], [9, -28], [8.5, -22]]) + fist(8.5, -21.4, 1.6) + atSide, [11, -58]],
+  ][pose];
+  const hx = +X(POSE[1][0]), hy = +Y(POSE[1][1]);
+  const orb = `<circle class="h-orb${pose === 3 ? " v" : ""}" cx="${hx}" cy="${hy}" r="${(pose === 3 ? 2.2 + 6 * power : pose === 5 ? 1.2 + 2.4 * power : 1.5 + 5 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
+  // the technique for this phase
+  const R = 1 + .25 * power, C = [X(1), Y(-30)];
+  const ring = (rows) => rows.map(([k, c, rx, ry, rot]) =>
+    `<ellipse class="swirl${c}" cx="${C[0]}" cy="${C[1]}" rx="${Z(rx * R)}" ry="${Z(ry * R)}" transform="rotate(${rot} ${C[0]} ${C[1]})" pathLength="1" style="--d:${(-k * .5).toFixed(1)}s"/>`).join("");
+  const line = `M${hx},${hy} Q${((hx + tx) / 2).toFixed(1)},${(Math.min(hy, ty) - 8).toFixed(1)} ${tx},${ty}`;
+  const tech = [
+    `<circle class="h-scan" cx="${X(0)}" cy="${Y(-50)}" r="${Z(10)}"/><circle class="h-scan" cx="${X(0)}" cy="${Y(-50)}" r="${Z(10)}" style="--d:-1.2s"/><path class="h-thread" d="${line}"/>`,
+    `<path class="h-thread on" d="${line}"/><path class="h-thread hi" d="${line}"/>`,
+    ring([[0, "", 18, 30, -24], [1, " r", 15, 27, 32], [2, " b", 21, 24, 74]]),
+    [-14, -4, 6].map((d, k) => `<path class="h-arc" d="M${hx},${hy} Q${((hx + tx) / 2).toFixed(1)},${(Math.min(hy, ty) - 22 + d).toFixed(1)} ${(tx + d * .6).toFixed(1)},${ty}" style="--d:${(-k * .4).toFixed(1)}s"/>`).join("") + ring([[0, " b", 12, 20, 18]]),
+    ring([[0, "", 16, 26, -30], [1, " b", 20, 22, 70]]) + `<path class="h-ray" d="M${hx},${hy} L${tx},${ty}" opacity="${(.2 + .6 * power).toFixed(2)}"/><path class="h-ray hi" d="M${hx},${hy} L${tx},${ty}"/>`,
+    `<ellipse class="h-halo" cx="${X(0)}" cy="${Y(-30)}" rx="${Z(15)}" ry="${Z(34)}"/>`,
+  ][pose];
+  const SP = [[-16, -44], [17, -20], [-12, -8], [20, -46], [-19, -26], [11, -62], [-8, -62], [22, -32], [-21, -14], [15, -6]];
+  const sparks = SP.slice(0, 4 + Math.round(6 * power)).map(([a, b], k) =>
+    `<path class="spark${k % 3 ? "" : " v"}" d="M${X(a)},${Y(b - 1.4)} l${Z(.5)},${Z(1.4)} l${Z(-.5)},${Z(1.4)} l${Z(-.5)},${Z(-1.4)}Z" style="--d:${(k * .29).toFixed(2)}s"/>`).join("");
+  const beam = `<path class="h-beam" d="M${hx},${hy} L${tx},${ty}"/>`;
+  return `<g class="hero" data-pose="${pose}">${orb}<g class="h-aura" opacity="${(.4 + .6 * power).toFixed(2)}">${tech}</g>${legs}${coat}${POSE[0]}${collar}${head}${band}${hair}<g class="h-aura" opacity="${(.5 + .5 * power).toFixed(2)}">${sparks}</g>${beam}</g>`;
 }
 const HZ_HERO_X = 30;
 const hzGround = (i, x) => { const a = HZ[i].a, k = Math.min(7, Math.floor(x / 50)), f = (x - k * 50) / 50; return a[k] + (a[k + 1] - a[k]) * f; };
 const hzTarget = i => [HZ_AT[i][0], HZ_AT[i][1] - 30 * HZ_AT[i][2]];
-const hzHero = (i, hp) => hzSorcerer(HZ_HERO_X, hzGround(i, HZ_HERO_X), ...hzTarget(i), 1 - hp);
+const hzHero = (i, hp) => hzSorcerer(HZ_HERO_X, hzGround(i, HZ_HERO_X), ...hzTarget(i), 1 - hp, i);
 
 // The platform track's banner, in the track's teal: a blueprint ground, a stack of workspaces, a pipeline
 // running right, and an octagon ward (the track's shape) that is drawn a little more with every lesson
