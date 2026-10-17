@@ -94,7 +94,10 @@ function hzCurse(i, hp) {
 //   5 Monitor   standing easy, a quiet ring of protection round him
 // Everything he gives off grows with `power` (the share of lessons done); tapping the banner fires the flame.
 function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
-  const S = .82, X = v => (x + v * S).toFixed(1), Y = v => (g + v * S).toFixed(1), Z = v => (v * S).toFixed(1);
+  // Proportions: lanky. Drawn on a grid where the hip is at -21; M() lengthens the legs (hip to -30) and
+  // keeps the jacket and head compact above it, and W narrows him, so his height is in his legs.
+  const M = v => v >= -21 ? v * 30 / 21 : -30 + (v + 21) * .85, W = .86;
+  const S = .82, X = v => (x + v * S * W).toFixed(1), Y = v => (g + M(v) * S).toFixed(1), Z = v => (v * S * .9).toFixed(1);
   const P = pts => "M" + pts.map(([a, b]) => `${X(a)},${Y(b)}`).join(" L") + "Z";
   const F = [15, 14, 15, 15, 19, 8][pose];
   const legs = `<path class="coat" d="${P([[-5, -21], [-F + 2, -1], [-F, 0], [-F + 6, 0], [-1, -15], [3, -15], [F - 6, 0], [F, 0], [F - 2, -2], [6, -21]])}"/>`;
@@ -125,27 +128,26 @@ function hzSorcerer(x, g, tx, ty, power, pose = 2, unveiled = false) {
     [arm([[7, -37], [14, -35.5], [20, -35]]) + sign(20, -35, true) + arm([[-7, -36], [-12, -31], [-15, -34]]) + fist(-15.2, -34.6, 1.6), [28.4, -35.6]],
     [arm([[7, -37], [9, -28], [8.5, -22]]) + fist(8.5, -21.4, 1.6) + atSide, [11, -58]],
   ][pose];
-  // lanky: the body is drawn narrower and taller about his feet (LX, LY); his hand moves with it
-  const LX = .74, LY = 1.12, hx = +(x + (+X(POSE[1][0]) - x) * LX).toFixed(1), hy = +(g + (+Y(POSE[1][1]) - g) * LY).toFixed(1);
+  const hx = +X(POSE[1][0]), hy = +Y(POSE[1][1]);
   const orb = `<circle class="h-orb${pose === 3 ? " v" : ""}" cx="${hx}" cy="${hy}" r="${(pose === 3 ? 2.2 + 6 * power : pose === 5 ? 1.2 + 2.4 * power : 1.5 + 5 * power).toFixed(1)}" opacity="${(.35 + .6 * power).toFixed(2)}"/>`;
   // the technique for this phase
-  const R = 1 + .25 * power, Yl = v => (g + v * S * LY).toFixed(1), C = [X(1), Yl(-30)];
+  const R = 1 + .25 * power, C = [X(1), Y(-30)];
   const ring = (rows) => rows.map(([k, c, rx, ry, rot]) =>
     `<ellipse class="swirl${c}" cx="${C[0]}" cy="${C[1]}" rx="${Z(rx * R)}" ry="${Z(ry * R)}" transform="rotate(${rot} ${C[0]} ${C[1]})" pathLength="1" style="--d:${(-k * .5).toFixed(1)}s"/>`).join("");
   const line = `M${hx},${hy} Q${((hx + tx) / 2).toFixed(1)},${(Math.min(hy, ty) - 8).toFixed(1)} ${tx},${ty}`;
   const tech = [
-    `<circle class="h-scan" cx="${X(0)}" cy="${Yl(-50)}" r="${Z(10)}"/><circle class="h-scan" cx="${X(0)}" cy="${Yl(-50)}" r="${Z(10)}" style="--d:-1.2s"/><path class="h-thread" d="${line}"/>`,
+    `<circle class="h-scan" cx="${X(0)}" cy="${Y(-50)}" r="${Z(10)}"/><circle class="h-scan" cx="${X(0)}" cy="${Y(-50)}" r="${Z(10)}" style="--d:-1.2s"/><path class="h-thread" d="${line}"/>`,
     `<path class="h-thread on" d="${line}"/><path class="h-thread hi" d="${line}"/>`,
     ring([[0, "", 18, 30, -24], [1, " r", 15, 27, 32], [2, " b", 21, 24, 74]]),
     [-14, -4, 6].map((d, k) => `<path class="h-arc" d="M${hx},${hy} Q${((hx + tx) / 2).toFixed(1)},${(Math.min(hy, ty) - 22 + d).toFixed(1)} ${(tx + d * .6).toFixed(1)},${ty}" style="--d:${(-k * .4).toFixed(1)}s"/>`).join("") + ring([[0, " b", 12, 20, 18]]),
     ring([[0, "", 16, 26, -30], [1, " b", 20, 22, 70]]) + `<path class="h-ray" d="M${hx},${hy} L${tx},${ty}" opacity="${(.2 + .6 * power).toFixed(2)}"/><path class="h-ray hi" d="M${hx},${hy} L${tx},${ty}"/>`,
-    `<ellipse class="h-halo" cx="${X(0)}" cy="${Yl(-30)}" rx="${Z(15)}" ry="${Z(34)}"/>`,
+    `<ellipse class="h-halo" cx="${X(0)}" cy="${Y(-30)}" rx="${Z(15)}" ry="${Z(34)}"/>`,
   ][pose];
   const SP = [[-16, -44], [17, -20], [-12, -8], [20, -46], [-19, -26], [11, -62], [-8, -62], [22, -32], [-21, -14], [15, -6]];
   const sparks = SP.slice(0, 4 + Math.round(6 * power)).map(([a, b], k) =>
-    `<path class="spark${k % 3 ? "" : " v"}" d="M${X(a)},${Yl(b - 1.4)} l${Z(.5)},${Z(1.4)} l${Z(-.5)},${Z(1.4)} l${Z(-.5)},${Z(-1.4)}Z" style="--d:${(k * .29).toFixed(2)}s"/>`).join("");
+    `<path class="spark${k % 3 ? "" : " v"}" d="M${X(a)},${Y(b - 1.4)} l${Z(.5)},${Z(1.4)} l${Z(-.5)},${Z(1.4)} l${Z(-.5)},${Z(-1.4)}Z" style="--d:${(k * .29).toFixed(2)}s"/>`).join("");
   const beam = `<path class="h-beam" d="M${hx},${hy} L${tx},${ty}"/>`;
-  return `<g class="hero" data-pose="${pose}">${orb}<g class="h-aura" opacity="${(.4 + .6 * power).toFixed(2)}">${tech}</g><g transform="matrix(${LX} 0 0 ${LY} ${(x * (1 - LX)).toFixed(2)} ${(g * (1 - LY)).toFixed(2)})">${legs}${coat}${POSE[0]}${collar}${head}${unveiled ? eyesOpen : band}${hair}${unveiled ? bandUp : ""}</g><g class="h-aura" opacity="${(.5 + .5 * power).toFixed(2)}">${sparks}</g>${beam}</g>`;
+  return `<g class="hero" data-pose="${pose}">${orb}<g class="h-aura" opacity="${(.4 + .6 * power).toFixed(2)}">${tech}</g>${legs}${coat}${POSE[0]}${collar}${head}${unveiled ? eyesOpen : band}${hair}${unveiled ? bandUp : ""}<g class="h-aura" opacity="${(.5 + .5 * power).toFixed(2)}">${sparks}</g>${beam}</g>`;
 }
 const HZ_HERO_X = 30;
 const hzGround = (i, x) => { const a = HZ[i].a, k = Math.min(7, Math.floor(x / 50)), f = (x - k * 50) / 50; return a[k] + (a[k + 1] - a[k]) * f; };
