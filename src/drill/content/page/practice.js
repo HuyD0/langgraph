@@ -176,6 +176,7 @@ function qfRender() {
 function qfPick(k) {
   const a = QF.p.practice.asks[QF.i];
   if (QF.solved === QF.i || QF.tried.includes(k)) return;
+  if (!QF.tried.length && !QF.help) askNextTry(k === a.answer);
   if (k === a.answer) { if (!(QF.i in QF.first)) QF.first[QF.i] = !QF.tried.length && QF.help < 2; QF.solved = QF.i; qfNote(x => { x.first = !!QF.first[QF.i]; }); fxOn($("flowBox"), "seal", FX.seal()); }
   else { QF.tried.push(k); QF.first[QF.i] = false; qfNote((x, a) => { x.first = false; x.wrong.push(a.pick ? a.evidence.changes[k].address : String(a.options[k]).replace(/[`*]/g, "")); }); }
   qfRender();
@@ -184,7 +185,7 @@ function qfHelp() {
   const a = QF.p.practice.asks[QF.i];
   QF.help = Math.min(2, QF.help + 1);
   qfNote(x => { x.first = false; if (QF.help === 1) x.clue = true; else x.answer = true; });
-  if (QF.help === 2) { QF.first[QF.i] = false; QF.solved = QF.i; if (a.kind === "fix") { QF.text = a.answer; QF.probs = null; } }
+  if (QF.help === 2) { askGaveUp(); QF.first[QF.i] = false; QF.solved = QF.i; if (a.kind === "fix") { QF.text = a.answer; QF.probs = null; } }
   qfRender();
 }
 function qfCheck() {

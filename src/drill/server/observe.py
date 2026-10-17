@@ -43,6 +43,7 @@ log = logging.getLogger("drill.server")
 TEXT_LIMIT = 50_000  # characters kept per message; the page's prompts are about 4,000
 RETRY_SECONDS = 30.0
 SOURCE_ID = "drill.observe"
+PAGE_SIGNALS = "drill.page.signals"  # what the page saw the learner do after an answer
 
 # What the page and the MCP tools may say about a request, and which of those become tags.
 CONTEXT_KEYS = (
@@ -527,13 +528,15 @@ class MlflowObserver:
 
     # -- people's feedback on an answer ----------------------------------
 
-    def human_feedback(self, request: str, name: str, value: Any, rationale: str | None, user: str) -> bool:
+    def human_feedback(self, request: str, name: str, value: Any, rationale: str | None, user: str, signal: bool = False) -> bool:
         """Attach a person's feedback to the trace the page tagged with ``request``. Queued, as the
-        trace may still be saving; returns False when tracing is off or the id is not one of ours."""
+        trace may still be saving; returns False when tracing is off or the id is not one of ours.
+        ``signal``: something the page noticed the learner do (saved it, asked again...), not what they
+        said, so it is recorded as CODE feedback from the page rather than HUMAN."""
         if not REQUEST_ID.match(request or "") or not self.ready():
             return False
         try:
-            self._feedback.put_nowait(("human", request, name, value, rationale, user))
+            self._feedback.put_nowait(("human", request, name, value, rationale, user, signal))
         except queue.Full:
             return False
         if self._worker is None or not self._worker.is_alive():
@@ -541,7 +544,7 @@ class MlflowObserver:
             self._worker.start()
         return True
 
-    def _log_human(self, request: str, name: str, value: Any, rationale: str | None, user: str) -> None:
+    def _log_human(self, request: str, name: str, value: Any, rationale: str | None, user: str, signal: bool = False) -> None:
         if not REQUEST_ID.fullmatch(request or ""):
             return  # the id goes into a filter string: the sink checks it itself, however it is reached
         import mlflow
@@ -554,7 +557,8 @@ class MlflowObserver:
                     or mlflow.search_traces(filter_string=f"tags.request = '{request}'", max_results=1, return_type="list")  # older traces
                 if found:
                     mlflow.log_feedback(trace_id=found[0].info.trace_id, name=name, value=value, rationale=rationale or None,
-                                        source=AssessmentSource(source_type="HUMAN", source_id=user or "learner"))
+                                        source=AssessmentSource(source_type="CODE", source_id=PAGE_SIGNALS) if signal
+                                        else AssessmentSource(source_type="HUMAN", source_id=user or "learner"))
                     return
             except Exception as exc:
                 if attempt == 19:

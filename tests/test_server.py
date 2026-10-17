@@ -878,6 +878,21 @@ def test_still_stuck_marks_the_answer_unresolved_and_links_the_simpler_one(store
     assert resolved.value is False and resolved.source.source_type == "HUMAN"
     assert client.get("/api/health").json()["app"] is False  # not behind a login: the learner runs it themselves
 
+    # a quiet signal the page noticed (saved it) is CODE feedback, and the command reads it all back
+    client.post("/api/feedback", json={"request": "ask-again02", "name": "saved", "value": True, "source": "code"})
+    client.post("/api/feedback", json={"request": "ask-again02", "name": "resolved", "value": True})
+    observer.drain()
+    [saved] = [a for a in mlflow.get_trace(again.info.trace_id).info.assessments if a.name == "saved"]
+    assert saved.source.source_type == "CODE" and saved.source.source_id == "drill.page.signals"
+    from drill import tutor_feedback
+
+    read = tutor_feedback.read(mlflow.get_experiment_by_name("drill-stuck-test").experiment_id, 1)
+    summary = tutor_feedback.summarise(read)
+    assert summary["first_answer_resolved"] == 0.0 and summary["retry_resolved"] == 1.0 and summary["saved"]["true"] == 1
+    [case] = tutor_feedback.cases(read)
+    assert case["inputs"]["question"] == "Why not B?" and case["expectations"] == {
+        "failed_answer": "Because it says what it does.", "better_answer": "Spanish in, Spanish out: yes."}
+
 
 def test_names_come_from_settings(monkeypatch):
     from drill import mlflow_names

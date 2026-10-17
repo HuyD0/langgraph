@@ -69,6 +69,7 @@ none of it changes in code between workspaces:
 | The terminal tutor's practice runs | `daily-drill-cli` | `DRILL_CLI_MLFLOW_EXPERIMENT` |
 | Prompts | `<prompt_schema>.use_case_review`, `.use_case_challenge`, alias `production` | `DRILL_PROMPT_SCHEMA` / `--prompt-schema` |
 | The review cases | evaluation dataset `<prompt_schema>.review_cases` (a Unity Catalog table) | the same |
+| The tutor's cases | evaluation dataset `<prompt_schema>.tutor_cases`: answers that didn't help (Still stuck, or asked again), with the simpler answer that worked when there was one | `drill tutor feedback --dataset` |
 | Each app version | logged model `daily-drill-<commit>`: description, parameters (model, prompt versions, review, challenge and judge versions, target), linked prompt versions | written by `drill cloud deploy` |
 | Scorers | `answer_rules`, registered on the app's experiment | written by `drill cloud deploy` |
 
@@ -81,7 +82,9 @@ session (each page visit, or one Ask thread), the commit (`mlflow.source.git.com
 the full prompt, the model, timings (time to first word, total), finish reason and fallbacks, and
 a `checks` span the answer rules. Feedback buttons attach HUMAN feedback (who clicked, why). On the
 tutor's answers that is `resolved` (Got it / Still stuck), and a re-explanation after Still stuck
-is tagged `retry_of` with the request id of the answer it follows.
+is tagged `retry_of` with the request id of the answer it follows. What the page sees the learner
+do next is CODE feedback from `drill.page.signals`: `saved`, `asked_again`, `gave_up` (opened the
+answer) and `next_right` (the first try at the next question).
 
 **Scoring.** The answer rules are on every trace as tags and a span. In the app they are not
 written as assessments one by one, because each write to traces kept in Unity Catalog wakes the
@@ -90,6 +93,17 @@ SQL warehouse. Instead, score them in a batch, one evaluation run with a pass ra
 ```bash
 uv run drill traces score --days 7
 ```
+
+**The tutor's feedback.** How often its answers worked, and the eval cases they make:
+
+```bash
+uv run drill tutor feedback --days 7              # this Mac's traces
+uv run drill tutor feedback --target work --dataset   # the app's, and add cases to tutor_cases
+```
+
+It reports the share of first answers that got Got it (re-explanations left out), how often the
+simpler answer then worked, each quiet signal, and the lessons where answers most often didn't help.
+In the app each feedback write lands on a trace kept in Unity Catalog, which wakes the SQL warehouse.
 
 **Evals.** `drill review eval` runs the review prompt over the `review_cases` dataset, linked to the
 dataset, the registered prompt version and the app version, with parameters (model, tier, prompt,

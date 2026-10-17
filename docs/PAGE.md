@@ -324,6 +324,11 @@ idea, ungraded:
   step, recorded as `resolved` (true or false) on that answer's trace. Still stuck asks for a simpler
   explanation, whose trace carries `retry_of` (the first answer's request id), so the pair can become
   an eval case. On claude.ai, where there is no MLflow, the same feedback is kept in `mine.feedback`.
+- **Quiet signals on the tutor's answers** (`askSignal` in `page/ask.js`): with no buttons, the page
+  notes what the learner did next and sends it as CODE feedback on the latest answer, once each,
+  within half an hour on the same lesson: `saved` (to the study list), `asked_again` (nearly the
+  same question, without a Got it), `gave_up` ("Tell me the answer" in Check, Practice or Explain)
+  and `next_right` (the first try at the next question, right or not).
 - **What you did next**: changing your rating, gates or card after a draft is logged as a signal
   on that draft (`changed_rating_after`, `edited_card_after`).
 - **The eval**: `uv run drill review eval` asks the model to review cards with planted gaps (no
