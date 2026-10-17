@@ -250,7 +250,6 @@ def test_phase_tabs_are_one_piece_with_their_room():
 def test_the_phase_banner_follows_progress_and_stays_decorative(tmp_path):
     """The banner over each phase room has a scene per phase, and its spirit weakens as lessons get done:
     whole with nothing done, fewer open eyes and cracks part way, broken up when the phase is finished."""
-    import json
     import shutil
     import subprocess
 
