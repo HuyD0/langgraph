@@ -421,17 +421,21 @@ for ch in "80 in 100":
 lesson(MODULE, 'split_requirements',
     title='Functional and non-functional requirements',
     learn=[
-        'A use case turns into two kinds of requirement. **Functional** requirements say what it must do: answer policy questions, show the source, hand hard questions to a person. **Non-functional** requirements say how well it must do it: how fast, how available, how secure, how much it may cost.',
-        'Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. Common ones for AI: speed (seconds per answer), availability (uptime), cost per finished task, privacy (where personal data may go), security (who can see what), how many users at once, and audit (a record of every answer).',
-        "Microsoft's Well-Architected Framework says every workload needs both kinds, written down and put in order of priority, and the next lesson checks them against its pillars. Give each non-functional requirement a number, like \"under 5 seconds for 95 in 100 answers\", so the pilot can test it.",
+        'A **requirement** is one thing the finished system must meet, and there are two kinds. **Functional** requirements are the jobs it does: things you could watch it do, like "answer policy questions" or "hand hard questions to a person". **Non-functional** requirements are how well it does those jobs: how fast, how safe, how cheap, how many people at once. Engineers also call them **quality attributes**.',
+        'To tell them apart, cross the line out. If a job disappears, the line was functional: cross out "show the source page" and users lose the source. If the system still does every job, only worse (slower, less safe, dearer), the line was non-functional: cross out "reply within 5 seconds" and it still answers, just slowly.',
+        'One sentence often holds both. "Answer policy questions within 5 seconds" is a job (answer policy questions) and a bar on that job (within 5 seconds). Split it into two lines, so each one can be built and tested on its own.',
+        'Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. The usual ones for AI: speed, availability (how much of the time it is up), cost per finished task, privacy (where personal data may go), security (who can see what), how many users at once, and a record of every answer. Each needs a number or a rule you can check, like "under 5 seconds for 95 in 100 answers", or the pilot can\'t say yes or no. The next lesson checks them against the pillars of a well-architected review.',
     ],
-    example=example('The HR assistant, sorted', """# what it must do: functional
-"Answer policy questions from the HR pages"
-"Show the source page for every answer"
-# how well: non-functional
-"Reply within 5 seconds for 95 in 100"
-"Keep personal data inside the EU region"
-"Cost under $1 per finished answer\""""),
+    example=example('The cross-out test on the HR assistant', """# cross it out: is a job gone?
+"Show the source page"
+#  gone   -> functional
+"Reply within 5 seconds"
+#  slower -> non-functional
+
+# one line holding both: split it
+"Answer within 5 seconds"
+#  job: "Answer"
+#  bar: "within 5 seconds"""),
     check=question(
         'Which of these is a non-functional requirement?',
         [
@@ -444,8 +448,8 @@ lesson(MODULE, 'split_requirements',
     ),
     angle=angle(
         pattern='Sort by a list of how-well words',
-        text='The big idea: functional requirements say what a system does and non-functional ones say how well, and a first sort can look for words about speed, uptime, cost, security and scale. Your code makes two empty lists. For each requirement it lowercases the text and checks whether any word from the how-well list appears in it. If one does, the row goes in the non-functional list, otherwise in the functional list. It returns both lists, in their original order. It is like sorting post into bills and letters by looking for a price on the envelope; a person still checks the pile.',
-        say='"I split requirements into what it must [[do|cost|look like::One half is the job itself.]] and how [[well|often|soon::The other half is quality: speed, accuracy, uptime.]] it must do it. Each "how well" gets a [[number|name|owner::"Fast" can\'t be tested; "under 5 seconds" can.]], like under 5 seconds, so the pilot can test it."',
+        text='The big idea: functional requirements are the jobs a system does and non-functional ones are how well it does them; crossing a line out tells you which. A reviewer\'s quick first sort can look for words about speed, uptime, cost, security and scale. Your code makes two empty lists. For each requirement it lowercases the text and checks whether any word from the how-well list appears in it. If one does, the row goes in the non-functional list, otherwise in the functional list. It returns both lists, in their original order. It is like sorting post into bills and letters by looking for a price on the envelope; a person still checks the pile.',
+        say='"I cross each line out. If a [[job|word|page::Something you could watch it do.]] disappears, it was functional. If it\'s still done, just [[worse|later|twice::Slower, less safe or dearer.]], it was non-functional, and it needs a [[number|name|owner::"Fast" can\'t be tested; "under 5 seconds" can.]] the pilot can test."',
         classic=None,
     ),
     exercise=exercise(
@@ -466,8 +470,8 @@ Return `[functional, non_functional]`: two lists of the requirement dicts, each 
         target='one pass over the requirements',
         realworld='Requirement reviews often start with exactly this sort, then a person checks the edge cases. Non-functional requirements map straight onto the Well-Architected pillars.',
         practice=practice(
-            intro='Sort the HR assistant\'s requirements the way a reviewer does: what it must do, and how well it must do it.',
-            explain='The big idea: functional requirements say what a system does and non-functional ones say how well. You put privacy and the audit record in the how-well pile, spotted a list with no how-well lines at all, and turned "always up" into a number a pilot can test.',
+            intro='Sort the HR assistant\'s requirements the way a reviewer does: cross each line out and see whether a job disappears.',
+            explain='The big idea: functional requirements are the jobs a system does and non-functional ones are how well it does them. You crossed out lines to sort them, spotted a list with no how-well lines at all, split a sentence that held both kinds, and turned "always up" into a number a pilot can test.',
             asks=[
                 ask('Which pile does **R4** go in?', ['Functional: something it must do', 'Non-functional: how it must do it'], answer=1,
                     evidence=evidence('code', title='The HR assistant\'s requirements', text="""R1  Answer policy questions from the HR pages
@@ -477,14 +481,19 @@ R4  Keep personal data inside the EU region
 R5  Hand hard questions to a person
 R6  Serve 200 users at once
 R7  Cost under $1 per finished answer"""),
-                    clue='If R4 were ignored, would the assistant still answer questions? Then R4 is not the job itself.',
-                    why='Where personal data may go is privacy: a rule about how the job is done, not the job. Non-functional.',
+                    clue='Cross R4 out. Does the assistant still answer questions?',
+                    why='Crossed out, it still answers every question, only less safely. Where personal data may go is privacy: a rule about how the job is done, not the job. Non-functional.',
                     wrong=['It adds nothing users can ask for. It limits how the job is done.', None]),
                 ask('What is missing from that list?', ['Nothing: those three lines cover the whole job', 'How well it must do it: speed, privacy, cost', 'More features, like summarising each policy'], answer=1,
                     evidence=evidence('claim', who='The product owner said', text='"The requirements are done: it answers policy questions from the HR pages, shows the source page, and hands hard questions to a person."'),
                     clue='All three lines say what it does. Which pile is that?',
                     why='All three are functional. A demo can do every one and still not go live, because it is too slow, too costly or sends personal data where it may not go.',
                     wrong=['That is the whole job, but not how well it must do it.', None, 'It has enough to do. What is missing is how well.']),
+                ask('R10 mixes both kinds. Which part is the non-functional one?', ['Answer leave questions', 'within 5 seconds', 'Neither: it is one requirement'], answer=1,
+                    evidence=evidence('code', title='A new line', text='R10  Answer leave questions within 5 seconds'),
+                    clue='Cross out each half in turn. Which one leaves the job standing?',
+                    why='"Within 5 seconds" is a bar on the job. Split it into its own line, so the pilot can test the job and the speed separately.',
+                    wrong=['Cross that out and the job is gone. That half is functional.', None, 'It holds two: a job and a bar on it. Split them.']),
                 ask('How would you rewrite R8 so the pilot can test it?', ['The assistant should really always be up', '99.9 percent uptime in working hours', 'Run the assistant on a bigger server'], answer=1,
                     evidence=evidence('claim', who='A teammate added', text='"R8: The assistant should always be up."'),
                     clue='"Always" can\'t be measured. What share of the time, and when?',
@@ -492,9 +501,9 @@ R7  Cost under $1 per finished answer"""),
                     wrong=['Stronger words still can\'t be measured.', None, 'That is a way to build it, not how well it must work.']),
                 ask('R9 sounds like something the assistant does. Which pile does it go in?', ['Functional: something it must do', 'Non-functional: how it must do it'], answer=1,
                     evidence=evidence('code', title='One more line', text='R9  Keep an audit log of answers'),
-                    clue='Does a user ever ask for the log, or is it a record kept so someone can check the answers later?',
-                    why='An audit record is there so someone can check every answer later. Like speed, cost and privacy, it is about how well the system behaves, not the job users ask it to do.',
-                    wrong=['Users never ask for it: it is a record for checking later, like the other how-well lines.', None]),
+                    clue='Cross R9 out. Does the assistant still answer every question?',
+                    why='Crossed out, every job still gets done; you only lose the record that lets someone check the answers later. Like speed, cost and privacy, it is about how well the system behaves.',
+                    wrong=['Cross it out and every job is still done. It is a how-well line.', None]),
             ],
         ),
         starter="""def split_requirements(reqs):
@@ -592,6 +601,10 @@ R7  Cost under $1 per finished answer"""),
                 'How-well with no number',
                 '"Fast" and "secure" cannot be tested. Write "under 5 seconds for 95 in 100 answers" or "only HR staff can see answers", so the pilot can say yes or no.',
             ],
+            [
+                'Trusting the word list',
+                'A word list is a first pile, not the answer: "Show the cost of each request" is a job users can see, yet it holds the word cost. Run the cross-out test on every line the list sorts.',
+            ],
         ],
         machine=machine(bins=['functional', 'non_functional'], who=['what it must do', 'how well it must do it'], label_field='id'),
     ),
@@ -602,37 +615,39 @@ lesson(MODULE, 'well_architected',
     checked='2026-10-15',
     sources=[source('Azure Well-Architected Framework workloads', 'https://learn.microsoft.com/azure/well-architected/workloads')],
     learn=[
-        "Before you build, check the design against a **well-architected framework**: a checklist of what good systems need, from the cloud providers. Microsoft's has five **pillars**. **Reliability**: it keeps working when a model or a service fails. **Security**: data and actions are protected. **Cost Optimization**: you know what drives the cost and pay only for what you use. **Operational Excellence**: you can see what it does, test it and release safely. **Performance Efficiency**: it stays fast as use grows.",
-        "Microsoft's guidance for AI workloads applies every pillar to both the functional and the non-functional requirements. For AI that means questions like: what happens when the model endpoint is down or out of quota? Can a **prompt injection** (text in a user's message that tricks the model into ignoring its rules) make it leak data? Do you trace every answer? Can it handle the busiest minute? Databricks adds two pillars of its own, **data and AI governance** (who may use which data and models) and **interoperability and usability**.",
-        'A quick way to start a review is to ask a model to draft it from your use case card. A good **review prompt** gives the whole card, asks each pillar\'s questions in turn, and sets rules: back every finding with a line from the card, write "Unknown" and a question when the card does not say, give each pillar a risk, and leave the decision to a person.',
-        "Then read the draft like a reviewer, not a fan. Check every claim against the card, because a model will fill gaps with confident guesses. The Unknowns are your next questions for the owner. The framework itself says a system only needs to be \"just as reliable\" and \"just as secure\" as it needs to be, so a person decides which risks are fine for a pilot.",
+        "A **well-architected review** checks a design before you build it. Microsoft's **Azure Well-Architected Framework** splits the review into five **pillars**, and each pillar is one question about how the system could let people down. Ask all five of every design.",
+        "**Reliability**: what happens when something it depends on breaks, like the model being down or out of quota? **Security**: who could see or do something they shouldn't, for example through a **prompt injection** (text in a user's message that tricks the model into ignoring its rules)? **Cost Optimization**: what makes the bill grow? **Operational Excellence**: would you notice it going wrong, and can you test and release changes safely? **Performance Efficiency**: does it stay fast at the busiest minute?",
+        'Your non-functional requirements are the pillars\' targets: "reply within 5 seconds" belongs to Performance Efficiency, "keep personal data in the EU" to Security, "cost under $1 per answer" to Cost Optimization. A pillar with no requirement under it is a question nobody has answered yet.',
+        "The pillars pull against each other: a second copy of the app keeps it up when one fails, and doubles the bill. That is why the framework says a workload should be \"just as reliable\" and \"just as secure\" as it needs to be. A person decides which risks are fine for a pilot, and writes down why.",
+        'A model can draft the review from your use case card, if the **review prompt** sets rules: quote the card for every finding, write "Unknown" and a question where the card says nothing, and leave the decision to a person. Then check every claim against the card, because a model fills gaps with confident guesses.',
+        "Databricks publishes its own version for the lakehouse with two more pillars: **data and AI governance** (who may use which data and models) and **interoperability and usability** (open formats, so other tools and people can use the data).",
     ],
-    example=example('The shape of a review prompt', """Review this AI use case against the Well-Architected pillars.
-
-Use case card:
-- user: HR team
-- owner: not written
-
-## Reliability
-- What happens if the model is down?
-
-Rules:
-- Base every finding on the card ...
-- If the card does not say, write Unknown ..."""),
+    example=example('The HR assistant, pillar by pillar', """# pillar: its question
+#   -> what the card says
+Reliability: model down?
+  -> not written: ask
+Security: who sees what?
+  -> R4: data stays in the EU
+Cost: what grows the bill?
+  -> R7: under $1 an answer
+Operations: would we notice?
+  -> R9: every answer kept
+Performance: busiest minute?
+  -> R2: 5 seconds, 95 in 100"""),
     check=question(
-        'A model drafts a review that says "Security: low risk, data is encrypted". The card never mentions encryption. What should you do?',
+        'A second copy of the assistant would keep it up when one copy fails, but it doubles the bill. Which two pillars pull against each other here?',
         [
-            'Accept it: the model knows how these systems are usually built',
-            'Treat it as unknown and ask the owner how data is protected',
-            'Drop the Security pillar from the review',
+            'Reliability and Cost Optimization',
+            'Security and Performance Efficiency',
+            'Operational Excellence and Security',
         ],
-        answer=1,
-        why='The claim is not backed by the card, so it is a guess. A good review prompt asks the model to write Unknown in that case, and the open question goes to the owner.',
+        answer=0,
+        why='Staying up when something fails is Reliability, and the doubled bill is Cost Optimization. A person decides how much uptime the pilot is worth paying for.',
     ),
     angle=angle(
         pattern='Card, then pillars, then rules',
-        text='The big idea: an AI-drafted review is only as good as its prompt, so the prompt gives the whole use case card, asks each pillar\'s questions, and sets rules that stop the model guessing or deciding. Your code builds the prompt as a list of lines. It starts with the task and the card, writing "not written" for any blank field so the gap is visible. Then for each pillar it adds a heading and its questions, and at the end the rules. It joins the lines with new lines. It is like a briefing pack for a reviewer: the facts, the questions to answer, and how to answer them.',
-        say='"I give a model the use case card and each pillar\'s questions, and it marks anything the card doesn\'t cover as a [[question|pass|failure::It must not fill gaps with guesses.]]. I check every claim [[myself|with another model|later::The draft is a starting point, not a verdict.]], and a [[person|model|script::The AI drafts but never decides.]] makes the final call."',
+        text='The big idea: the pillars are five questions to ask of every design, and a model can draft the answers only if its prompt gives the whole use case card, asks each pillar\'s questions, and sets rules that stop it guessing or deciding. Your code builds the prompt as a list of lines. It starts with the task and the card, writing "not written" for any blank field so the gap is visible. Then for each pillar it adds a heading and its questions, and at the end the rules. It joins the lines with new lines. It is like a briefing pack for a reviewer: the facts, the questions to answer, and how to answer them.',
+        say='"I ask five [[pillar|team|test::Reliability, Security, Cost, Operations, Performance.]] questions of every design, and each non-functional requirement is a [[target|owner|price::"Under 5 seconds" belongs to Performance.]] for one of them. A model can draft the review, but a [[person|script|vote::The AI drafts but never decides.]] makes the call."',
         classic=None,
     ),
     exercise=exercise(
@@ -655,9 +670,18 @@ Build a list of lines, then return them joined with `"\\n"`:
         target='one pass over the card, one over the pillars',
         realworld='Teams increasingly draft design reviews with a model and then check them. The quality of the draft comes from the prompt: full context, one question at a time, and rules against guessing.',
         practice=practice(
-            intro='Brief a model to draft a well-architected review, then read its draft the way a reviewer does: every claim checked against the card.',
-            explain='The big idea: an AI-drafted review is only as good as its prompt, so the prompt gives the whole use case card, asks each pillar\'s questions, and sets rules that stop the model guessing or deciding. You made the blank owner visible, put a question under the right pillar, struck the model\'s go-ahead, and trusted a finding only because it quoted a line you could check.',
+            intro='Run a well-architected review of the HR assistant: put each question under its pillar, weigh what a fix costs, then brief a model and check its draft against the card.',
+            explain='The big idea: the pillars are five questions to ask of every design, and they pull against each other. You put the busiest minute under Performance, wrote down what a second copy costs, made the blank owner visible to the model, struck its go-ahead, and trusted a finding only because it quoted a line you could check.',
             asks=[
+                ask('You want to ask "Can it handle the busiest minute?" Which pillar does it go under?', ['Reliability', 'Performance Efficiency', 'Cost Optimization'], answer=1,
+                    clue='One pillar is about staying fast as use grows.',
+                    why='Performance Efficiency is about staying fast as use grows, and the busiest minute is exactly that test.',
+                    wrong=['Reliability is about failures, like the model being down. This is about load.', None, 'Cost is what you pay. This is whether it keeps up.']),
+                ask('What should the review write next to this idea?', ['Nothing: more uptime is always better', 'That it doubles the cost, and who agreed to pay it', 'That it makes the assistant less secure'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"Let\'s run two copies of the assistant, so it never goes down."'),
+                    clue='A win for one pillar usually costs another. What does a second copy cost?',
+                    why='Two copies help Reliability and double the bill, so Cost Optimization pays for it. The review records the trade and the person who chose it, because the framework says a pilot only needs to be as reliable as it needs to be.',
+                    wrong=['Uptime has a price. Who agreed to pay it?', None, 'A second copy changes the bill, not who can see the data.']),
                 ask('The card\'s owner box is blank. What goes on that line of the prompt?', ['Leave the line out', 'not written', 'Head of HR operations, the likely owner'], answer=1,
                     evidence=evidence('prompt', title='Your review prompt', text="""Review this AI use case against the Well-Architected pillars.
 
@@ -680,10 +704,6 @@ Rules:
                     clue='The model should see the gap: no silence, and no guess.',
                     why='Writing "not written" keeps the gap visible, so the model marks it Unknown and asks who owns it, instead of skipping it or making someone up.',
                     wrong=['Leave it out and the model never learns there is a gap.', None, 'A guess in the prompt comes back as a "fact" in the review.']),
-                ask('You want to ask "Can it handle the busiest minute?" Which pillar does it go under?', ['Reliability', 'Performance Efficiency', 'Cost Optimization'], answer=1,
-                    clue='One pillar is about staying fast as use grows.',
-                    why='Performance Efficiency is about staying fast as use grows, and the busiest minute is exactly that test.',
-                    wrong=['Reliability is about failures, like the model being down. This is about load.', None, 'Cost is what you pay. This is whether it keeps up.']),
                 ask('What do you do with the last line of the draft?', ['Keep it: the model found every pillar low risk', 'Strike it: the decision belongs to a person', 'Ask the model to double-check its recommendation'], answer=1,
                     evidence=evidence('code', title='The end of the draft', text="""## Overall
 All five pillars look low risk.
@@ -811,6 +831,10 @@ list(d)   # ["b", "a"]""",
             [
                 'Letting the model decide',
                 'Whether a risk is fine for a pilot is a business call. Ask the model for findings and questions, and leave go or no-go to a person.',
+            ],
+            [
+                'Fixing one pillar and forgetting the rest',
+                'Every fix moves another pillar: a bigger model is faster and dearer, a second copy is more reliable and dearer. Write the trade next to the fix, with who agreed to it.',
             ],
         ],
     ),
