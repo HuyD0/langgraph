@@ -1502,13 +1502,13 @@ function phasePage(i, prefix) {
   return { d, n: ids.length, scenes };
 }
 // Set when the local server says no model is running: everything works except the tutor's replies.
-let aiOff = false;
+let aiOff = false, aiOffApp = false;  // aiOffApp: the hosted app, where the learner can't start a model
 let teamOn = false;  // at work (drill-server in team mode): the learner is told their manager sees their progress
 const TEAM_LINE = "At work, your manager can see your progress, your study list and the questions you ask the tutor.";
 function aiOffNote() {
   let hidden = false; try { hidden = sessionStorage.getItem("drill-aihide") === "1"; } catch {}
   if (!aiOff || hidden) return "";
-  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload.</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
+  return `<div class="callout aioff"><b>The AI tutor is off</b><p>Lessons, checks and tests all work, and the hint button still shows the pattern. Hints, Ask and code review need a model: ${aiOffApp ? "no tutor model is set up for this app, so ask whoever runs it." : "start Ollama on your Mac with <code>ollama serve</code> (or set a hosted model in .env), then reload."}</p><button class="linkbtn" data-aihide>Hide for now</button></div>`;
 }
 // What you practise: the AI path, the platform track, or both taking turns. Asked once on the first
 // visit, changeable in the Notebook; saved with progress so every device agrees. Today follows it.
@@ -1672,11 +1672,11 @@ const FB_REASONS = {
   yes: [["useful_question", "Asked a useful question"], ["caught_a_risk", "Caught a risk I missed"], ["changed_my_mind", "Changed my mind"]],
 };
 let lastDraft = null;  // { feature, request, before }: to notice when a draft changes what you wrote
-function sendFeedback(request, feature, name, value, rationale) {
-  const list = mine().feedback = (mine().feedback || []).slice(-99);
-  list.push({ at: Date.now(), feature, request, name, value, ...(rationale ? { rationale } : {}) });
+function sendFeedback(request, feature, name, value, rationale, source) {  // source "code": a signal the page noticed
+  const list = mine().feedback = (mine().feedback || []).slice(-299);  // the tutor's answers add more: room for a few weeks
+  list.push({ at: Date.now(), feature, request, name, value, ...(rationale ? { rationale } : {}), ...(source ? { source } : {}) });
   saveMine();
-  if (sample && sample.local) fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request, name, value, rationale }) }).catch(() => {});
+  if (sample && sample.feedback) sample.feedback({ request, name, value, rationale, ...(source ? { source } : {}) }).catch(() => {});
 }
 function feedbackBar(feature, request) {
   return `<div class="fbbar" data-fb-request="${request}" data-fb-feature="${feature}"><span>Was this useful?</span>
@@ -2291,6 +2291,7 @@ function checkSolve(id, i, how) {
 function checkPick(k) {
   const id = cur.id, s = lp(id), st = checkState(id), i = st.at, [, , ans] = checkQs(id)[i];
   if (st.solved[i] || (st.tried[i] || []).includes(k)) return;
+  if (!(st.tried[i] || []).length && !st.help[i]) askNextTry(k === ans);
   if (i === 0 && s.checked === null) s.checked = k;
   if (k === ans) checkSolve(id, i, (st.tried[i] || []).length || st.help[i] ? "knot" : "sign");
   else (st.tried[i] = st.tried[i] || []).push(k);
@@ -2302,7 +2303,7 @@ function checkPick(k) {
 function checkHelp() {
   const id = cur.id, st = checkState(id), i = st.at, clue = checkQs(id)[i][4];
   st.help[i] = Math.max(st.help[i] || 0, clue ? 0 : 1) + 1;
-  if (st.help[i] >= 2) { st.help[i] = 2; checkSolve(id, i, "curtain"); }
+  if (st.help[i] >= 2) { st.help[i] = 2; checkSolve(id, i, "curtain"); askGaveUp(); }
   saveProgress(); setStep(1, true);
 }
 function checkNext() {
@@ -2348,6 +2349,7 @@ function clozeHtml(id) {
 function clozePick(w) {
   const id = cur.id, s = lp(id), g = gapsOf(id)[s.filled || 0]; if (!g || CLZ.wrong.includes(w)) return;
   const ex = s.explain || (s.explain = { wrong: 0, clues: 0, answers: 0, done: false });
+  if (!CLZ.wrong.length && !CLZ.help) askNextTry(w === g.answer);
   if (w !== g.answer) { ex.wrong++; saveProgress(); CLZ.wrong.push(w); CLZ.note = `Not "${w}". Try another one${CLZ.help ? "" : ", or ask for a clue"}.`; clozeRender(); return; }
   firstGap(id, CLZ.help === 2 ? "curtain" : CLZ.help || CLZ.wrong.length ? "knot" : "sign");
   s.filled = (s.filled || 0) + 1; if (clozeDone(id)) ex.done = true; saveProgress();
@@ -2904,6 +2906,8 @@ document.addEventListener("click", async e => {
   const aq = t.closest("[data-askq]"); if (aq) { const c = askChipList[+aq.dataset.askq]; if (!aq.disabled && c) askLesson(c.q, c.how); return; }
   if (t.closest("[data-askfill]")) { const box = $("askInput"); if (box && !box.disabled) { box.value = ASK_FILL; box.focus(); box.setSelectionRange(ASK_FILL.length, ASK_FILL.length); } return; }
   const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
+  const agot = t.closest("[data-askgot]"); if (agot) { askGot(+agot.dataset.askgot); return; }
+  const ast = t.closest("[data-askstuck]"); if (ast) { askStuck(+ast.dataset.askstuck); return; }
   const st = t.closest("[data-step]"); if (st) { setStep(+st.dataset.step); return; }
   const gq = t.closest("[data-gotcha]"); if (gq && !gq.disabled) { answerGotcha(+gq.dataset.gotcha); return; }
   const gv = t.closest("[data-gview]"); if (gv) { gotchaView = gv.dataset.gview; renderGotcha(); return; }
@@ -2914,7 +2918,7 @@ document.addEventListener("click", async e => {
   if (t.closest("[data-clz-help]")) {
     CLZ.help = Math.min(2, CLZ.help + 1); CLZ.note = "";
     const ex = lp(cur.id).explain || (lp(cur.id).explain = { wrong: 0, clues: 0, answers: 0, done: false });
-    if (CLZ.help === 1) ex.clues++; else ex.answers++;
+    if (CLZ.help === 1) ex.clues++; else { ex.answers++; askGaveUp(); }
     saveProgress(); clozeRender(); return;
   }
   const op = t.closest("[data-opt]"); if (op && !op.disabled) { checkPick(+op.dataset.opt); return; }
@@ -3001,7 +3005,7 @@ goHome();
   if (backend.local) setInterval(() => { if (cur && !document.hidden) fetch("/api/me", { cache: "no-store" }).catch(() => {}); }, 600000);
   const { s, db, user } = backend;
   sample = s; sampleOff = !sample; document.body.classList.toggle("no-ai", !sample); updateHintBtn(); renderStudy();
-  aiOff = !!(backend.local && !s); if (aiOff && !cur) renderHome();
+  aiOff = !!(backend.local && !s); aiOffApp = !!backend.app; if (aiOff && !cur) renderHome();
   if (backend.team) { teamOn = true; $("teamNote").textContent = TEAM_LINE; $("teamSetting").hidden = false; if (!cur) renderHome(); }
   if (db && user) {
     try {

@@ -55,7 +55,9 @@ async function localBackend() {
   }
   const s = !health.ai ? null : Object.assign(
     (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", trace: opts.trace }, opts.onText),
-    { json: (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", json: true, trace: opts.trace }), local: true });
+    { json: (prompt, opts = {}) => ask({ prompt, tier: opts.modelTier || "default", json: true, trace: opts.trace }), local: true,
+      // feedback on one answer, attached in MLflow to the trace the page tagged with `request`
+      feedback: body => fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }) });
   const call = async (method, path, body) => {
     const res = await fetch("/api/docs/" + path, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     if (!res.ok) await fail(res);
@@ -86,5 +88,5 @@ async function localBackend() {
       }),
     }),
   };
-  return { s, db, user: { id: async () => health.user }, local: true, team: !!health.team };  // team: at work, a manager sees progress
+  return { s, db, user: { id: async () => health.user }, local: true, team: !!health.team, app: !!health.app };  // team: at work, a manager sees progress
 }
