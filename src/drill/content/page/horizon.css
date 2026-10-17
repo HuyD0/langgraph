@@ -1,0 +1,44 @@
+/* the phase banner (page/horizon.js): line art in the path's violet, energy in the blue flame,
+   the spirit in the red-black effect colours. The current phase's landmark is lit in blue. */
+.horizon { position: relative; aspect-ratio: 10 / 3; max-height: 150px; width: 100%; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--room) 6%, transparent); overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.horizon svg.en { pointer-events: none; }
+.phasebox.here .horizon .mk .ln { stroke: var(--accent); }
+:root[data-theme="dusk"] .phasebox.here .horizon .mk { filter: drop-shadow(0 0 3px var(--accent)); }
+.horizon .cu .stain { fill: var(--fx-red); opacity: .3; }
+.horizon svg { display: block; width: 100%; height: 100%; }
+.horizon svg.en { position: absolute; inset: 0; transition: opacity .3s ease; pointer-events: none; }
+.horizon .en .st { fill: none; stroke: var(--fx-glow); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 6 10; animation: hz-en-flow 1.6s linear infinite; }
+.horizon .en .st.hi { stroke: var(--fx-core); stroke-width: 1; stroke-dasharray: 2 14; animation-duration: 1.1s; }
+.horizon .en .em { fill: var(--fx-core); animation: hz-en-rise 2.4s ease-out infinite; animation-delay: var(--d, 0s); transform-box: fill-box; }
+.horizon .en .sw { transform-origin: 200px 100px; animation: hz-en-spin 6s linear infinite; }
+.horizon .en .fl { fill: var(--fx-glow); animation: hz-en-flick 1.3s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+:root[data-theme="dusk"] .horizon .en { filter: drop-shadow(0 0 3px var(--fx-glow)) drop-shadow(0 0 8px color-mix(in srgb, var(--fx-glow) 60%, transparent)); }
+.horizon svg.cu { position: absolute; inset: 0; transition: opacity .3s ease; cursor: pointer; }
+.horizon .cu .body { fill: var(--fx-veil); stroke: var(--fx-red); stroke-width: 1.2; }
+:root:not([data-theme="dusk"]) .horizon .cu .body { fill: color-mix(in srgb, var(--fx-veil) 85%, transparent); }
+.horizon .cu .eye { fill: var(--fx-red); animation: hz-cu-blink 3.2s infinite; animation-delay: var(--d, 0s); transform-box: fill-box; transform-origin: center; }
+.horizon .cu .wob { animation: hz-cu-wob 2.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+.horizon .cu .bind { fill: none; stroke: var(--path); stroke-width: 1.4; }
+.horizon .cu .crack { fill: none; stroke: var(--fx-core); stroke-width: 1.2; stroke-linecap: round; }
+.horizon .cu .limb { fill: none; stroke: var(--fx-red); stroke-width: 1.3; stroke-linecap: round; }
+.horizon .cu .hatch { stroke: var(--fx-red); stroke-width: .7; opacity: .55; }
+.horizon .cu .mouth { fill: var(--fx-veil); stroke: var(--fx-red); stroke-width: 1; }
+.horizon .cu .teeth { fill: none; stroke: color-mix(in srgb, var(--fx-core) 25%, white); stroke-width: .8; stroke-linejoin: miter; }
+.horizon .cu .eyew { fill: color-mix(in srgb, var(--fx-core) 25%, white); stroke: var(--fx-red); stroke-width: .6; }
+.horizon .cu .bit { fill: var(--fx-veil); stroke: var(--fx-red); stroke-width: .8; animation: hz-cu-fly 1.4s ease-out both; animation-delay: var(--d, 0s); transform-box: fill-box; }
+.horizon .cu .hit { opacity: 0; }
+.horizon .cu.struck .hit { animation: hz-cu-hit .45s ease-out; }
+.horizon .cu.struck .wob { animation: hz-cu-recoil .45s ease-out; }
+:root[data-theme="dusk"] .horizon .cu .eye { filter: drop-shadow(0 0 3px var(--fx-red)); }
+@keyframes hz-cu-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes hz-cu-wob { from { transform: scale(1, 1); } to { transform: scale(1.04, .95); } }
+@keyframes hz-cu-fly { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--x, 10px), -18px); } }
+@keyframes hz-cu-hit { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes hz-cu-recoil { 30% { transform: translateX(6px) scale(.94, 1.04); } }
+@keyframes hz-en-flow { to { stroke-dashoffset: -32; } }
+@keyframes hz-en-rise { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
+@keyframes hz-en-spin { to { transform: rotate(360deg); } }
+@keyframes hz-en-flick { from { transform: scaleY(.85); opacity: .75; } to { transform: scaleY(1.1); opacity: 1; } }
+.horizon .ln { fill: none; stroke: var(--path); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.horizon .fl { fill: var(--path); }
+.horizon .ac { fill: var(--accent); }

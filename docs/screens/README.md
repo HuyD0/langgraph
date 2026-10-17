@@ -47,15 +47,23 @@ strip.
 
 ![A phase room on a phone](phase-room-phone-dusk.webp)
 
-**What the learner sees.** The chosen phase as a room: its shape glowing in the title card, what
+**What the learner sees.** The chosen phase as a room. At the top, a banner of line art: a
+horizon for that phase (a gate, seals on a rope, a barrier being drawn, a closed curtain, the
+barrier opening, lanterns at night) with blue-flame energy moving through it, and a cursed spirit
+that gets weaker as you finish the phase's lessons: eyes close, it shrinks and cracks, and the
+last lesson breaks it apart. Changing phase reshapes the hills; tapping the banner strikes the
+spirit. The current phase's landmark is lit in blue. Then its shape glowing in the title card, what
 you come out with, then one scene per module. The scene with the next lesson is open; the
 others fold to a row of small shapes.
 
 **What draws it.** `phasePage()` (scenes, `sticker()`, `minis()`), `.book.room`, `.paperN` (each
-phase has its own paper), `badgeSvg()` for the title shape.
+phase has its own paper), `badgeSvg()` for the title shape. The banner is `horizonHtml()` /
+`horizonDraw()` in `page/horizon.js`, styles in `page/horizon.css`.
 
 **Change it safely.** A new phase is a content change (`LIFECYCLE` in `modules/__init__.py`) plus
-a shape in `phShape` and a paper. The six-phase count is tested.
+a shape in `phShape`, a paper, and a banner scene (one entry each in `HZ`, `HZ_ENERGY`, `HZ_AT`).
+The six-phase count is tested. The banner is decorative: keep it `aria-hidden`, its colours tokens
+(`--path`, `--accent`, `--fx-*`), and its art original line art.
 
 ## The Platform track
 

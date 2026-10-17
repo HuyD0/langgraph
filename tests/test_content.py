@@ -247,6 +247,41 @@ def test_phase_tabs_are_one_piece_with_their_room():
     assert 'class="phasebox' in page and "data-showing=" in page, "the box must not carry data-phase, or any tap inside it would switch phase"
 
 
+def test_the_phase_banner_follows_progress_and_stays_decorative(tmp_path):
+    """The banner over each phase room has a scene per phase, and its spirit weakens as lessons get done:
+    whole with nothing done, fewer open eyes and cracks part way, broken up when the phase is finished."""
+    import json
+    import shutil
+    import subprocess
+
+    from drill.content.build import PAGE_TEMPLATE
+
+    parts = PAGE_TEMPLATE.parent / "page"
+    css = (parts / "horizon.css").read_text()
+    assert not re.search(r"#[0-9a-fA-F]{3,8}\b", css), "the banner's colours are tokens"
+    page = page_source()
+    assert "${horizonHtml(nidx, pg.d, pg.n)}" in page and "horizonDraw(from)" in page
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    probe = (parts / "horizon.js").read_text() + """
+const n = s => (s.match(/class="eye"/g) || []).length;
+console.log(JSON.stringify({
+  phases: [HZ.length, HZ_ENERGY.length, HZ_AT.length],
+  whole: HZ_AT.map((_, i) => n(hzCurse(i, 1))),
+  half: HZ_AT.map((_, i) => [n(hzCurse(i, .4)), hzCurse(i, .4).includes('class="crack"')]),
+  done: HZ_AT.map((_, i) => [n(hzCurse(i, 0)), hzCurse(i, 0).includes('class="bit"')]),
+  html: horizonHtml(2, 3, 4),
+}));"""
+    (tmp_path / "hz.js").write_text(probe)
+    out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, check=True).stdout)
+    assert out["phases"] == [len(modules.LIFECYCLE)] * 3, "one scene, one energy layer and one spirit place per phase"
+    assert all(w == 9 for w in out["whole"])
+    assert all(0 < e < 9 and crack for e, crack in out["half"])
+    assert all(e == 0 and bits for e, bits in out["done"]), "finishing the phase breaks the spirit up"
+    assert 'aria-hidden="true"' in out["html"] and 'data-hp="0.250"' in out["html"]
+
+
 def test_a_practice_lesson_explains_itself_to_someone_who_practised(loaded):
     """Explain must not tell a learner who answered questions about the Python they never wrote."""
     for mod in loaded:
