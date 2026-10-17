@@ -70,10 +70,10 @@
 .pk-scrim { position: fixed; inset: 0; z-index: 43; background: var(--scrim); }
 .pk-scrim[hidden] { display: none; }
 body.pk-on #home { padding-bottom: 96px; }
-.top .brand { white-space: nowrap; }
-@media (max-width: 420px) { body.chip-on .top .week { display: none; } }
+.top .brand { white-space: nowrap; flex: none; }  /* never squeezed under its own name */
+@media (max-width: 560px) { body.chip-on .top .week { display: none; } }
 /* the header chip: glows only when something is due */
-.duechip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 13px var(--body); cursor: pointer; }
+.duechip { display: inline-flex; flex: none; white-space: nowrap; align-items: center; gap: 6px; min-height: 36px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 13px var(--body); cursor: pointer; }
 .duechip[hidden] { display: none; }
 .duechip .ic { width: 15px; height: 15px; }
 .duechip .n { font: 600 12px var(--mono); color: var(--fg); background: var(--sunk); border-radius: 999px; padding: 0 7px; }
