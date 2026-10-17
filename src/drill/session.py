@@ -23,7 +23,9 @@ from drill.tracking import drill_run, log_session_metrics
 class SubmissionSource(Protocol):
     """Anything that can supply a solution when the graph asks for one."""
 
-    def __call__(self, problem: Problem, request: dict) -> str: ...
+    def __call__(self, problem: Problem, request: dict) -> str:
+        """The learner's code, as text."""
+        raise NotImplementedError
 
 
 @dataclass

@@ -1273,7 +1273,7 @@ const L = [
   play: { html: "p9-html", css: "p9-css", js: "p9-js", tab: "js" },
   task: "Make `row()` return a button for one lesson, like the comment shows. Use `esc()` on the title: the third title has tags in it that must show as plain text.",
   check: (r) => { const rows = r.querySelectorAll("button.row[data-open]"); if (rows.length !== 3) return [false, `Found ${rows.length} rows. row() should return one <button class="row" data-open="..."> per lesson.`]; if (r.querySelector("button.row b")) return [false, "The third title turned into real bold text: wrap the title in esc()."]; const last = rows[2]; if (!last.textContent.includes("<b>")) return [false, "The third row should show the characters <b> as text."]; if (rows[0].dataset.open !== "split_by_key") return [false, "The first row's data-open should be the lesson id, split_by_key."]; return [true, "Three rows, and the sneaky title shows its <b> as plain characters. That's esc() doing its job."]; },
-  clue: "Inside the backticks: `<button class=\"row\" data-open=\"${lesson.id}\">${esc(lesson.title)}</button>`.",
+  clue: `Inside the backticks: \`<button class="row" data-open="\${lesson.id}">\${esc(lesson.title)}</button>\`.`,
   answer: { js: "a9-js" },
   quiz: { q: "Why does Daily Drill wrap titles in esc() before using innerHTML?", opts: ["To make them shorter", "So characters like < show as text instead of becoming HTML", "So they load faster"], a: 1, why: "Without it, a title with <script> in it would run as code. esc() keeps text as text." },
 },
@@ -1376,7 +1376,7 @@ const L = [
   ],
   cases: [
     { who: "The change", code: ".chip.new { background: #ff6b00; color: #fff; }", sit: "A new chip style.", opts: ["Looks fine", "Raw colours: ask for a token (and a Dusk value)", "Too short"], a: 1, clue: "Look at the values after background and color.", why: "A raw colour won't change with the look and breaks the tokens-only rule. It needs a token with Light and Dusk values." },
-    { who: "The change", code: "$(\"list\").innerHTML = lessons.map(l => `<b>${l.title}</b>`).join(\"\");", sit: "Draws the lesson list.", opts: ["Fine", "l.title goes into HTML without esc()", "Should use a for loop"], a: 1, clue: "What's inside the ${ } hole, and where does it come from?", why: "A title with < in it would become real HTML. Wrap it: ${esc(l.title)}." },
+    { who: "The change", code: "$(\"list\").innerHTML = lessons.map(l => `<b>${l.title}</b>`).join(\"\");", sit: "Draws the lesson list.", opts: ["Fine", "l.title goes into HTML without esc()", "Should use a for loop"], a: 1, clue: "What's inside the ${ } hole, and where does it come from?", why: `A title with < in it would become real HTML. Wrap it: \${esc(l.title)}.` },
     { who: "The AI said", sit: "\"Renamed the Next button. 14 files changed.\"", opts: ["Thorough, nice", "Ask why each file changed; a label change should touch very few", "Ask it to rename more"], a: 1, clue: "How many layers does a button's words live in?", why: "Big diffs for small asks hide mistakes. Ask for the list of files and the reason for each." },
     { who: "The change", code: "- def test_every_lesson_picture_belongs_to_a_real_lesson():\n-     ...", sit: "\"This test kept failing, so I removed it.\"", opts: ["Fine if everything else passes", "Stop: the test caught something. Ask what it caught and fix that", "Ask it to remove the others too"], a: 1, clue: "What is a failing test telling you?", why: "Tests are the app's memory of what must stay true. Deleting one hides the problem." },
     { who: "The change", code: "document.querySelectorAll(\".row\").forEach(b =>\n  b.addEventListener(\"click\", () => openLesson(b.dataset.open)));", sit: "Makes rows clickable.", opts: ["Fine", "Breaks after the list is redrawn: use a data- label and the one listener", "Too long"], a: 1, clue: "Lesson 10: what happens to these listeners when innerHTML redraws the rows?", why: "Redrawn rows are new elements with no listener. The page's one delegated listener handles them all." },
@@ -1656,9 +1656,12 @@ function markPv() {
 }
 
 // ---------- events: one listener, like Daily Drill ----------
+// a button's data- number, matched against the numbers 0 to n - 1 the page drew, so text read
+// back from the page never goes into the state (and so never back into the HTML)
+const pickIndex = (s, n) => { for (let j = 0; j < n; j++) if (String(j) === s) return j; return 0; };
 document.addEventListener("click", e => {
   const t = e.target;
-  const go = t.closest("[data-go]"); if (go) { S.at = +go.dataset.go; save(); renderOutline(); renderLesson(); try { history.replaceState(null, "", "#" + L[S.at].id); } catch {} window.scrollTo({ top: 0, behavior: "smooth" }); if (window.innerWidth <= 860) { $("outline").classList.remove("open"); $("outToggle").setAttribute("aria-expanded", "false"); } return; }
+  const go = t.closest("[data-go]"); if (go) { S.at = pickIndex(go.dataset.go, L.length); save(); renderOutline(); renderLesson(); try { history.replaceState(null, "", "#" + L[S.at].id); } catch {} window.scrollTo({ top: 0, behavior: "smooth" }); if (window.innerWidth <= 860) { $("outline").classList.remove("open"); $("outToggle").setAttribute("aria-expanded", "false"); } return; }
   const tab = t.closest("[data-tab]"); if (tab) { pg.src[pg.tab] = $("code").value; showTab(tab.dataset.tab); return; }
   if (t.closest("#runBtn")) { pg.src[pg.tab] = $("code").value; saveDraft(); run(); return; }
   if (t.closest("#checkBtn")) { saveDraft(); check(); return; }
@@ -1667,10 +1670,10 @@ document.addEventListener("click", e => {
   if (t.closest("#ansBtn")) { for (const k in pg.x.answer) pg.src[k] = text(pg.x.answer[k]); showTab(Object.keys(pg.x.answer)[0]); saveDraft(); run(); $("verdict").innerHTML = `<div class="verdict clue" role="status"><b>Here's one way</b><p>Read it line by line and compare it with yours, then press Check my work.</p></div>`; return; }
   const w = t.closest("[data-w]"); if (w) { pg.stage.style.width = w.dataset.w ? w.dataset.w + "px" : ""; markPv(); return; }
   const pv = t.closest("[data-pv]"); if (pv) { pg.theme = pv.dataset.pv; if (pg.page) pg.page.setAttribute("data-theme", pg.theme); markPv(); return; }
-  const opt = t.closest("[data-opt]"); if (opt) { S.quiz[L[S.at].id] = +opt.dataset.opt; save(); const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
-  const jp = t.closest("[data-jpick]"); if (jp) { const x = L[S.at], J = S.judge[x.id]; if (J.picks[J.at] == null) { J.picks[J.at] = +jp.dataset.jpick; if (Object.keys(J.picks).length === x.cases.length) { S.done[x.id] = true; renderOutline(); } save(); } const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
+  const opt = t.closest("[data-opt]"); if (opt) { S.quiz[L[S.at].id] = pickIndex(opt.dataset.opt, L[S.at].quiz.opts.length); save(); const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
+  const jp = t.closest("[data-jpick]"); if (jp) { const x = L[S.at], J = S.judge[x.id]; if (J.picks[J.at] == null) { J.picks[J.at] = pickIndex(jp.dataset.jpick, x.cases[J.at].opts.length); if (Object.keys(J.picks).length === x.cases.length) { S.done[x.id] = true; renderOutline(); } save(); } const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
   if (t.closest("[data-jclue]")) { const J = S.judge[L[S.at].id]; J.clue[J.at] = true; save(); const y = window.scrollY; renderLesson(); window.scrollTo(0, y); return; }
-  const jg = t.closest("[data-jgo]"); if (jg) { const J = S.judge[L[S.at].id]; J.at = +jg.dataset.jgo; save(); renderLesson(); document.querySelector(".judge")?.scrollIntoView({ block: "center" }); return; }
+  const jg = t.closest("[data-jgo]"); if (jg) { const J = S.judge[L[S.at].id]; J.at = pickIndex(jg.dataset.jgo, L[S.at].cases.length + 1); save(); renderLesson(); document.querySelector(".judge")?.scrollIntoView({ block: "center" }); return; }
   if (t.closest("[data-jreset]")) { delete S.judge[L[S.at].id]; delete S.done[L[S.at].id]; save(); renderOutline(); renderLesson(); return; }
   if (t.closest("#outToggle")) { const o = $("outline").classList.toggle("open"); $("outToggle").setAttribute("aria-expanded", String(o)); return; }
 });

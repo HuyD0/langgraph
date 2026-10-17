@@ -29,7 +29,7 @@ from typing import Any
 
 from sqlalchemy import delete, insert, select, text
 
-from drill.server.store import DocStore, docs, events, lessons, summaries
+from drill.server.store import DocStore, docs, lessons, summaries
 
 log = logging.getLogger("drill.server")
 
@@ -226,8 +226,6 @@ points, no names."""
 def plain(text: str) -> str:
     """The note as plain sentences: models add headings and bold even when asked not to,
     and the dashboard shows text as it is, marks and all."""
-    import re
-
     lines = []
     for line in text.strip().splitlines():
         line = re.sub(r"^\s*(#+|[-*]|\d+\.)\s+", "", line)  # headings, bullets, numbered points

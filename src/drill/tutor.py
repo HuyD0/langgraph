@@ -105,19 +105,19 @@ def curriculum_map(data: dict | None = None) -> str:
     lines = [
         "# Daily Drill curriculum map",
         "",
-        "Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. "
-        "These are the lessons that exist; anything not listed here has not been built yet.",
+        ("Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. "
+         "These are the lessons that exist; anything not listed here has not been built yet."),
         "",
-        f"The learning path has {total} lessons in {len(data['modules'])} modules, in the order below. "
-        "Each lesson has four steps: Learn (a short reading), Check (up to three multiple-choice questions, one at a time), "
-        "Build (a small Python exercise that runs in the browser, with a starting scaffold that has "
-        f"blanks to fill) and Explain (the pattern used and what to say). {len(cards)} of the "
-        f"{total} lessons also have a \"Spot the gotcha\" card in the Explain step: risky code, pick "
-        "the rule it breaks, then see the fix. The learner saves things to a study list that brings "
-        "them back for review after 3, 10, 30 and 90 days.",
+        (f"The learning path has {total} lessons in {len(data['modules'])} modules, in the order below. "
+         "Each lesson has four steps: Learn (a short reading), Check (up to three multiple-choice questions, one at a time), "
+         "Build (a small Python exercise that runs in the browser, with a starting scaffold that has "
+         f"blanks to fill) and Explain (the pattern used and what to say). {len(cards)} of the "
+         f"{total} lessons also have a \"Spot the gotcha\" card in the Explain step: risky code, pick "
+         "the rule it breaks, then see the fix. The learner saves things to a study list that brings "
+         "them back for review after 3, 10, 30 and 90 days."),
         "",
-        "Each module is tagged with the stage of an AI project it belongs to. The tags are labels, "
-        "not the order:",
+        ("Each module is tagged with the stage of an AI project it belongs to. The tags are labels, "
+         "not the order:"),
         "",
         *[f"- **{st['name']}**: {st['text']}" for st in data["lifecycle"]],
         *[f"- **{tr['name']}** (a separate track beside the path, numbered P1.1 and so on): {tr['text']}"
@@ -174,8 +174,8 @@ def curriculum_map(data: dict | None = None) -> str:
         "",
         "## Notebooks",
         "",
-        "Longer, hands-on milestones in `notebooks/`, each with an answer key in `notebooks/solutions/`. "
-        "Notebooks 1 to 6 build this repository's terminal coding tutor, step by step.",
+        ("Longer, hands-on milestones in `notebooks/`, each with an answer key in `notebooks/solutions/`. "
+         "Notebooks 1 to 6 build this repository's terminal coding tutor, step by step."),
         "",
     ]
     lines += [f"- `{name}`: {title}" for name, title in _notebooks()]

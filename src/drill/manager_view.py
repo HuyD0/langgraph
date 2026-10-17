@@ -171,8 +171,8 @@ def dashboard(catalog: str) -> dict:
           for name, query in sql.items()]
     team = {"name": "team", "displayName": "Team", "pageType": "PAGE_TYPE_CANVAS", "layout": [
         _text("t_team", ["### How everyone is getting on\n",
-                         "One row per learner. Lessons come from their progress; days, Checks, hints and questions from what they did. "
-                         "Check right % counts first answers to each lesson's multiple-choice question."], 0, 0, 4),
+                         ("One row per learner. Lessons come from their progress; days, Checks, hints and questions from what they did. "
+                          "Check right % counts first answers to each lesson's multiple-choice question.")], 0, 0, 4),
         _learner_filter("f_team", ["ds_learners", "ds_weekly"], 4, 0),
         _table("tb_learners", "ds_learners", [
             ("learner", "string", "learner"), ("lessons_done", "integer", "lessons done"), ("lessons_in_path", "integer", "of"),
@@ -209,8 +209,8 @@ def dashboard(catalog: str) -> dict:
                                         ("step", "string", "step"), ("question", "string", "question")], "Questions", "", 0, 2, 6, 8),
     ]}
     notes = {"name": "notes", "displayName": "Weekly notes", "pageType": "PAGE_TYPE_CANVAS", "layout": [
-        _text("t_n", ["### Weekly notes\n", "A few plain sentences per learner, written by the app's model from the week's numbers. "
-                      "Refreshed about once a day while people study."], 0, 0, 4),
+        _text("t_n", ["### Weekly notes\n", ("A few plain sentences per learner, written by the app's model from the week's numbers. "
+                                              "Refreshed about once a day while people study.")], 0, 0, 4),
         _learner_filter("f_n", ["ds_notes"], 4, 0),
         _table("tb_n", "ds_notes", [("learner", "string", "learner"), ("week", "string", "week"), ("note", "string", "note"),
                                     ("written", "datetime", "written")], "Notes", "", 0, 2, 6, 8),

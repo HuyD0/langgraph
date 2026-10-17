@@ -24,9 +24,6 @@ from drill.config import DrillSettings, databricks_user, experiment_path, is_dat
 from drill.problems import Problem
 from drill.state import DrillState
 
-_AUTOLOG_ENABLED = False
-
-
 def setup_tracing(settings: DrillSettings | None = None) -> bool:
     """Turn on MLflow tracing for LangGraph. Returns True if it took effect.
 
@@ -35,7 +32,6 @@ def setup_tracing(settings: DrillSettings | None = None) -> bool:
     deliberately no ``@mlflow.trace`` on the nodes: adding one would produce a
     duplicate span for every node autolog already records.
     """
-    global _AUTOLOG_ENABLED
     settings = settings or DrillSettings.from_env()
 
     try:
@@ -50,10 +46,8 @@ def setup_tracing(settings: DrillSettings | None = None) -> bool:
         mlflow.set_experiment(experiment)
         mlflow.langchain.autolog()
         _patch_graph_lifecycle_hooks()
-        _AUTOLOG_ENABLED = True
         return True
     except Exception:
-        _AUTOLOG_ENABLED = False
         return False
 
 
