@@ -779,9 +779,13 @@ while n > 0:
 
 lesson(MODULE, 'judge_agreement',
     title='Checking your LLM judge',
+    checked='2026-10-18',
+    sources=[source('LLM Evaluators Recognize and Favor Their Own Generations', 'https://arxiv.org/abs/2404.13076'),
+             source('Preference Leakage: A Contamination Problem in LLM-as-a-judge', 'https://arxiv.org/abs/2502.01534')],
     learn=[
         'An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.',
         'Check passes and failures separately: the share of human passes the judge also passed is its **true positive rate** (TPR), and the share of human failures it also failed is its **true negative rate** (TNR). A judge that passes everything looks accurate when most answers are good, and catches nothing.',
+        'There is one more reason to doubt a judge: it tends to go easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its **model family**). Researchers call this habit **self-preference bias**. This app is an example: one Claude model (Opus) writes the answers the tutor keeps ready behind "Ask about this lesson", and another Claude model (Sonnet) grades them, so the grader is a relative of the writer. The fix is the same one: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.',
     ],
     example=example('Agreement on each side', """humans passed 8, failed 2
 judge passed all 10
@@ -901,6 +905,10 @@ not j   # True""",
             [
                 'Re-check after changing the judge',
                 'A new judge prompt or model needs re-checking against the same labels before its scores mean anything.',
+            ],
+            [
+                'Too good is a warning',
+                'If the judge is a relative of the model that wrote the answers, and the scores look too good, check them against human labels before you celebrate. Note which model wrote the answers and which one graded them, so the next person can see when they are relatives.',
             ],
         ],
     ),
@@ -1071,7 +1079,7 @@ lesson(MODULE, 'judge_consistency',
     learn=[
         'An LLM judge can give a **different verdict on the very same answer** when you ask it twice. Before trusting any of its scores, run it twice on the same answers and count how often the verdict changes. This is a **consistency check** (people also call it test-retest).',
         "If a judge changes its mind on 1 answer in 4, a quarter of its verdicts are partly luck. It also can't agree with people more reliably than it agrees with itself. Aim for nearly the same verdict every time. Things that help: clearer instructions, asking the judge to quote the part of the answer it's judging, and judging each answer three times and keeping the **majority**.",
-        "Judges have other known habits that have nothing to do with quality. They tend to prefer **longer** answers, the answer shown **first** when comparing two, and answers written by a model like themselves. Test each habit the same way: change only that one thing, like the order, and see whether the verdict moves.",
+        "Judges have other known habits that have nothing to do with quality. They tend to prefer **longer** answers, the answer shown **first** when comparing two, and answers from their own model family (the self-preference bias you met in Checking your LLM judge). Test each habit the same way: change only that one thing, like the order, and see whether the verdict moves.",
     ],
     example=example('The same six answers, judged twice', """run 1: pass pass fail pass fail pass
 run 2: pass fail fail pass pass pass

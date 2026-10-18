@@ -39,6 +39,10 @@ CALLBACKS = {
                            clue='Which pillar asks what happens when something the app depends on breaks?',
                            why='Retrying keeps the app working when the endpoint is busy for a minute: that is Reliability. It costs some waiting, not more money or less safety.')),
     ],
+    'pick_vector_size': [
+        callback('embedding_cost', phrase='every chunk gets a new embedding', idea='Re-embedding, once',
+                 here='You priced this earlier: a new embedding model means every document again, a one-off as big as the first indexing. A new size is the same full pass, plus a rebuilt index.'),
+    ],
     'agent_scorecard': [
         callback('cost_per_finished_task', phrase='which spreads the cost of failed runs over the successful ones', idea='Cost per finished task',
                  here='A task costs more than its own call: failed runs and redone work are part of the bill. Cost per success puts that whole bill on the runs that worked.'),
@@ -111,6 +115,14 @@ CALLBACKS = {
                            ['Functional: what the system does', 'Non-functional: how well it does it', 'Neither: a design choice'], answer=1,
                            clue='How would you check it: watch it happen, or measure something?',
                            why='You check it by timing many requests, which is measuring, so it is non-functional. p95 gives it a number you can pass or fail.')),
+    ],
+    'batch_leftovers': [
+        callback('batch_items', phrase='many requests in one file', idea='Batching API calls',
+                 here='The batch is a file of many requests. If the deployment will not take it all at once, cut it into parts that each fit, and watch the last part: it is usually smaller and the easiest to lose.',
+                 again=ask('Your batch deployment takes at most 200,000 tokens in its queue at once, and your request file holds 450,000 tokens, so you cut it into parts that each fit. How many parts do you send?',
+                           ['One part', 'Two parts', 'Three parts'], answer=2,
+                           clue='Two full parts hold 400,000 tokens, so what happens to the other 50,000?',
+                           why='Two full parts hold 400,000 tokens, and the other 50,000 need a part of their own. That smaller last part is the easiest to lose, so count it and send it too.')),
     ],
     'pareto_models': [
         callback('best_run', phrase='run each candidate on the **same eval set**, with the **same judge**', idea='Controls held fixed',

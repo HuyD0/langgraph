@@ -160,6 +160,10 @@ if best is None:
                 'Compare like with like',
                 "Runs evaluated on different eval sets or with different judges can't be compared. Log the eval set version as a parameter on every run.",
             ],
+            [
+                'Log a run others can rerun',
+                'If nobody can read a run or repeat it, someone will redo the work from scratch. Name each run by its settings, like `cs512-k5`. In its description (the note MLflow keeps with a run), write the question it answers, what you measured and how, and the command and code version to run it again.',
+            ],
         ],
     ),
 )

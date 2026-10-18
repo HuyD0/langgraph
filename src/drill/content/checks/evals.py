@@ -105,13 +105,14 @@ CHECKS = {
             clue="Look only at the answers people marked as bad.",
             why="It failed only 2 of the 20 answers people failed. That share, its true negative rate, "
                 "is very low: most bad answers get through."),
-        ask("You want an LLM judge to grade 2,000 answers a week. What do you need before you trust "
-            "its scores?",
-            ["Human labels on some of the same answers", "A second judge to grade the first one", "A longer and stricter grading prompt"],
+        ask("Your team's answers come from one model, and the judge is a smaller, cheaper model from the "
+            "same maker, built on the same base. What guards against self-preference bias?",
+            ["A judge from a different model family", "A longer, stricter grading prompt", "Running the same judge a second time"],
             answer=0,
-            clue="The judge is a model too, so it can be wrong. What would you compare it with?",
-            why="Compare the judge with human labels on the same answers, passes and failures "
-                "separately, before trusting its scores."),
+            clue="The grader may go easy on answers that sound like its own, so who else could grade them?",
+            why="A judge goes easier on its own answers, and somewhat on its relatives' answers: that is "
+                "self-preference bias. A judge from another family, or human labels on the same answers, "
+                "shows whether it is being soft."),
     ],
     "cohen_kappa": [
         ask("You check two judges against the same human labels. Judge A has a kappa of 0.75 and "

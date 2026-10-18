@@ -476,6 +476,10 @@ seen.add('q1')
                 'Things change while you wait',
                 'A batch can take hours. Record what each request was built from, like the prompt version or the lesson it asks about, so a late answer is read against the right version.',
             ],
+            [
+                'The queue has a limit',
+                "On Foundry a batch deployment's queue holds only so many tokens at once, counting every job that hasn't finished yet; the portal shows that limit as the deployment's capacity. A job that doesn't fit fails with the error code `token_limit_exceeded`. The limit is a setting on the deployment, and a change can take a while to apply, so split the request file into parts that each fit and send them one after another.",
+            ],
         ],
     ),
 )
