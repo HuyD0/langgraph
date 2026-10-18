@@ -47,3 +47,10 @@ def test_the_two_checklists_parse_their_own_verdicts():
     assert v2["pass"] is True and v2["within_lesson"] is False and v2["concise"] is False   # scored checks don't block
     assert tp._verdict('{"no_contradiction": false, "answers_it": true, "no_giveaway": true, "standalone": true}', version=2)["pass"] is False
     assert "within_lesson" in tp.JUDGE2 and "plain" not in tp.JUDGE2
+
+
+def test_labels_bullets_and_the_questions_own_words_are_not_strangers():
+    text = "**Hint:** start small.\n- Likely cause: the cache key.\n1. Open the trace.\nSay it in a 30-second answer; Ana would."
+    assert aq.unknown_names(text, LESSON) == ["Ana"]                      # Hint, Likely, Open and Say start lines, not names
+    assert aq.unknown_numbers(text, LESSON + "\nGive a 30-second spoken answer") == []
+    assert aq.unknown_numbers(text, LESSON) == ["30"]

@@ -34,14 +34,16 @@ COURSE_NAMES = ("Databricks", "MLflow", "LangGraph", "LangChain", "Azure", "Micr
 PLAIN = {"over_word_limit": "over the word limit", "hard_to_read": "hard to read (long sentences or long words)",
          "repeated": "a sentence is repeated"}
 _GLOSS = re.compile(r"\(|\bthat is\b|\bwhich means\b|\bmeans\b|\bcalled\b|\bin other words\b|: ", re.I)
-_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+_SENTENCE_END = re.compile(r"(?<=[.!?:])\s+|\n+")   # a line break or a label's colon starts a new sentence too
 _WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
 _NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
 
 def sentences(text: str) -> list[str]:
     plain = re.sub(r"```.*?```", " ", text, flags=re.S)      # code blocks are not prose
-    plain = re.sub(r"[*_`#>]+", "", plain)
+    plain = re.sub(r"`[^`]*`", " ", plain)                    # nor inline code
+    plain = re.sub(r"[*_#>]+", "", plain)
+    plain = re.sub(r"(?m)^\s*(?:[-*]|\d+[.)])\s+", "", plain)  # a bullet or a number starts a line, not a name
     return [s.strip() for s in _SENTENCE_END.split(plain) if s.strip()]
 
 
@@ -98,7 +100,8 @@ def _norm_number(n: str) -> str:
 
 
 def unknown_numbers(text: str, lesson_text: str) -> list[str]:
-    """Numbers in the answer that the lesson's text doesn't contain (small counts, 1 to 10, are ignored)."""
+    """Numbers in the answer that the lesson's text doesn't contain (small counts, 1 to 10, are ignored).
+    Pass the question's own wording inside ``lesson_text`` too, so a "30-second answer" isn't a stranger."""
     known = {_norm_number(n) for n in _NUMBER.findall(lesson_text)}
     out = []
     for n in _NUMBER.findall(re.sub(r"```.*?```", " ", text, flags=re.S)):
@@ -120,7 +123,7 @@ def unknown_names(text: str, lesson_text: str, allow: Iterable[str] = ()) -> lis
     for s in sentences(text):
         words = _WORD.findall(s)
         for w in words[1:]:
-            if w[0].isupper() and w.lower() not in known and not w.isupper():
+            if w[0].isupper() and w.lower() not in known and not w.isupper() and "'" not in w:
                 out.add(w)
     return sorted(out)
 

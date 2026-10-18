@@ -300,7 +300,7 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
     for attempt in range(2):
         note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if attempt and verdict.get("notes") else ""
         answer = draft(ask + note).strip()
-        quality = aq.quality_checks(answer, lesson_text, terms, word_limit=200)
+        quality = aq.quality_checks(answer, lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200)
         if quality["blocking"]:
             verdict = {"pass": False, "notes": "The code checks failed: " + aq.why_blocked(quality) + "."}
             continue

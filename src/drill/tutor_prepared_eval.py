@@ -405,7 +405,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         chat = judge_chat["call"]
         reply = chat(judge_text(lid, inputs["key"], outputs))
         verdict, usage = tp._verdict(reply, judge_version), chat.last()
-        quality = aq.quality_checks(outputs, tp._context(data, lid), glossary, word_limit=200, allow_names=allow_names)
+        chip_q = by_key[(lid, inputs["key"])]
+        quality = aq.quality_checks(outputs, tp._context(data, lid) + "\n" + chip_q["q"] + "\n" + chip_q["how"], glossary, word_limit=200, allow_names=allow_names)
         with lock:
             seen.append({"lesson_id": lid, "key": inputs["key"], "phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""),
                          "verdict": verdict, "reference": expectations or {}, "usage": usage,
@@ -421,7 +422,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         """The live tutor's own code checks (word limit, no maths notation, no exercise code), as one pass."""
         checks = answer_checks(outputs, {"exercise_fn": fns.get(inputs["lesson_id"], ""), "word_limit": 200})
         broken = [name for name in ("over_word_limit", "big_o", "solution_leak") if checks.get(name)]
-        q = aq.quality_checks(outputs, tp._context(data, inputs["lesson_id"]), glossary, word_limit=200, allow_names=allow_names)
+        chip_q = by_key[(inputs["lesson_id"], inputs["key"])]
+        q = aq.quality_checks(outputs, tp._context(data, inputs["lesson_id"]) + "\n" + chip_q["q"] + "\n" + chip_q["how"], glossary, word_limit=200, allow_names=allow_names)
         code = AssessmentSource(source_type="CODE", source_id="drill.answer_quality")
         return [Feedback(name="rules", value=not broken, rationale=("broke: " + ", ".join(broken)) if broken else None,
                          source=AssessmentSource(source_type="CODE", source_id="drill.observe.answer_checks"),
