@@ -1,6 +1,7 @@
 """Reliability: Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't."""
 
-from drill.content.model import angle, case, example, exercise, lesson, module, question, stack
+from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, practice, question, rewrite,
+                                 seesaw, sortby, sortrow, stack, steps)
 
 MODULE = module('reliability', 'Reliability', "Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't.")
 
@@ -368,6 +369,184 @@ The error rate (the share of requests that failed) is `errors / total`. The allo
             [
                 'Define failure for AI',
                 'For an AI feature, a reply that loads fine but gives a wrong answer is also a failure. Count answers your automatic grader marks wrong, not just crashes and errors.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'answer_incident',
+    title='When it goes wrong in production',
+    cards=[
+        card('First, stop the harm',
+             'A business-critical assistant starts giving confident wrong answers. Before anyone fixes the cause, stop the harm: in minutes, not at the next release. Have these switches ready before launch.',
+             picture=sortby('How do you stop the harm, fast?',
+                            sortrow('Turn the feature off', 'A switch the platform engineer can flip', 'Minutes', icon='power'),
+                            sortrow('Send hard questions to a person', 'The assistant hands over instead of answering', 'Minutes', icon='people'),
+                            sortrow('Fall back to a safe answer', 'Like "please check the policy page" with a link', 'Minutes', icon='alert')),
+             after='The product manager makes the call; the platform engineer flips the switch.'),
+        card('A fix can break other things',
+             'A prompt change that stops one wrong answer can quietly change hundreds of others. A rushed fix is how one incident becomes two.',
+             picture=seesaw(('The bad answer', 'fixed'), ('Other answers', 'quietly broken'), caption='Check every change against everything that already worked, however urgent.')),
+        card('The fast, safe lane',
+             'Fast and safe at once: every step is quick, and none is skipped.',
+             picture=steps(('pencil', 'Fix, as a new version', 'The AI engineer changes the prompt or retrieval settings, saved as a new version.'),
+                           ('person', 'Check the answer', 'The subject-matter expert confirms the fix is right.'),
+                           ('flask', 'Must-pass and eval', 'Every must-pass case still passes; the eval lists what got better and what got worse.'),
+                           ('activity', 'Canary', 'A small share of traffic gets the fix first, and you compare.'),
+                           ('reset', 'Move the pointer', 'The platform engineer points @production at the new version. Going back is one step.'),
+                           ('eye', 'Watch', 'Traces and alerts for the next days.'))),
+        card('Keep the AI apart from the release',
+             'Prompts, model versions and retrieval settings shouldn\'t be baked into the monthly release. The app loads them by a named version, so the AI part can change in hours while the rest of the app ships monthly.',
+             picture=rewrite(('Prompt baked into the monthly release', 'Prompt versioned on its own, loaded as @production'),
+                             ('The fix waits for next month', 'The fix goes out in hours, through the checks'),
+                             ('Rolling back means redeploying the app', 'Rolling back means moving the pointer back'))),
+        card('Afterwards, close the gap',
+             'When it is over, make sure the same mistake can\'t come back unnoticed.',
+             picture=steps(('flask', 'Add it to the must-pass set', 'The SME writes the failing question and its right answer as a new case.'),
+                           ('pencil', 'Write down what happened', 'What went wrong and why, with no blame, so the team learns.'),
+                           ('activity', 'Catch it sooner next time', 'Would monitoring have spotted it before a customer did? If not, add the check.'))),
+    ],
+    example=example('The release check after a fix', """must-pass:  39 of 40   refund-07 fails
+regressions: refund-07, travel-12
+improved:    leave-03 (the bad answer)
+# a must-pass case fails: hold,
+# fix that too, then check again"""),
+    check=question(
+        'A prompt fix stops the wrong parental-leave answer. What must happen before it goes to everyone?',
+        [
+            'Run the must-pass set and the eval',
+            'Nothing: the bad answer is fixed',
+            'Wait for the next monthly release',
+        ],
+        answer=0,
+        why='The fix may have broken other answers. The must-pass set and the eval show that in minutes, so it can go out the same day, safely. Waiting a month leaves the harm in place.',
+    ),
+    angle=angle(
+        pattern='Hold on a must-pass failure or anything that got worse',
+        text='The big idea: when an AI feature goes wrong, you stop the harm in minutes, then ship the fix through a fast lane that still checks it against everything that already worked. Your code compares each case before and after the fix. A case that passed before and fails after is broken, so it goes on a list. The fix is held if any must-pass case fails after the fix, or if anything broke. Otherwise it ships. It returns the decision and the broken cases in A-to-Z order. It is like a mechanic fixing your brakes: before you drive off, they check the lights and steering still work.',
+        say='"When the assistant goes wrong I first stop the [[harm|team|release::The wrong answers reaching people.]], then fix it as a new version, check the [[must-pass|newest|cheapest::The cases that may never break.]] cases and the eval, and move the pointer, so going back is one [[step|month|release::Point back at the last good version.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Ship or Hold the Fix',
+        topic='reliability',
+        difficulty='easy',
+        fn='release_check',
+        prompt="""Your function gets three things:
+
+- `before`: a dict of case id to `True` (passed) or `False` (failed), before the fix.
+- `after`: the same cases after the fix.
+- `must_pass`: a list of case ids that must never fail.
+
+A case is **broken** if it passed before and fails after.
+
+Return `[decision, broken]`: `decision` is `"hold"` if any must-pass case fails after the fix or anything is broken, otherwise `"ship"`. `broken` is the list of broken case ids, sorted A to Z.""",
+        pattern='Compare before and after, case by case; hold on any must-pass failure or anything broken.',
+        target='one pass over the cases',
+        realworld='Teams that run an AI feature in production check every urgent fix this way before moving the pointer: the must-pass set and the before-and-after eval. It is quick, and it is what stops one incident becoming two.',
+        practice=practice(
+            intro='The HR assistant is giving wrong answers to staff. Handle it the way the team does: stop the harm, fix it safely, and close the gap.',
+            explain='The big idea: when an AI feature goes wrong, stop the harm in minutes, then ship the fix fast through checks that are never skipped. You switched the feature to a safe answer before rewriting anything, held a fix that broke a must-pass case, rolled back by moving the pointer instead of redeploying, and added the failing question to the must-pass set so it can\'t come back unnoticed.',
+            pattern='Stop the harm, then the fast safe lane',
+            realworld='Before an AI feature launches, agree who flips the switch, who confirms answers, and who moves the pointer. When something goes wrong, there is no time to find out who those people are.',
+            gotchas=[
+                ['Fixing before stopping the harm', 'A careful fix takes hours. Switch it off, hand over to a person, or fall back to a safe answer first.'],
+                ['Skipping the checks because it is urgent', 'A rushed prompt fix can break other answers. The must-pass set and the eval take minutes; run them every time.'],
+                ['Baking the prompt into the release', 'If the prompt ships only with the app, a fix waits for the next release and rolling back means redeploying.'],
+            ],
+            asks=[
+                ask('What do you do in the first ten minutes?', ['Stop the harm: a safe answer or a person', 'Start rewriting the whole prompt', 'Wait for more reports to be sure'], answer=0,
+                    evidence=evidence('claim', who='A manager reported', text='"Staff are being told they get 52 weeks of fully paid leave. Some are booking it."'),
+                    clue='What stops more people acting on wrong answers right now?',
+                    why='A fix takes time; the harm is happening now. Switch to a safe answer or hand questions to a person in minutes, then fix the cause properly.',
+                    wrong=[None, 'A rewrite takes hours and needs checking. Stop the harm first.', 'Every minute of waiting, more people act on a wrong answer.']),
+                ask('Do you ship this fix?', ['No: a must-pass case now fails', 'Yes: the quality score went up', 'Yes: the bad answer is fixed'], answer=0,
+                    evidence=evidence('code', title='The eval after the fix', text="""must-pass:   39 of 40
+             refund-07 now fails
+leave-03:    fixed
+quality:     86 to 88 in 100"""),
+                    clue='Which line says something that may never break did break?',
+                    why='A must-pass case means hold, whatever the average says. The fix broke the refund answer, so fix that too and check again.',
+                    wrong=[None, 'A higher average can hide one dangerous break. Read the must-pass line first.', 'Fixing one answer doesn\'t make up for breaking a must-pass one.']),
+                ask('The fix made things worse. What is the fastest safe way back?', ['Point @production at the last good version', 'Rebuild and redeploy the whole app', 'Edit the prompt again by hand, live'], answer=0,
+                    evidence=evidence('code', title='How the app loads its prompt', text='prompt = load("prompts:/hr_answer@production")'),
+                    clue='The app asks for whatever @production points at.',
+                    why='Because the app loads the prompt by its alias, moving @production back to the last good version undoes the fix in one step, with no redeploy.',
+                    wrong=[None, 'A redeploy takes longer and changes more than the prompt.', 'Editing live skips every check and can make it worse again.']),
+                ask('The incident is over. What stops the same mistake coming back unnoticed?', ['Add the question to the must-pass set', 'Remind everyone to be more careful', 'Switch off the monitoring alerts'], answer=0,
+                    alone=True,
+                    clue='Which one is checked automatically on every future change?',
+                    why='A must-pass case runs on every change from now on, so the same wrong answer can never ship again without someone seeing it.',
+                    wrong=[None, 'Care fades; a must-pass case is checked every time.', 'Alerts are how you catch the next one sooner. Keep them.']),
+            ],
+        ),
+        starter="""def release_check(before, after, must_pass):
+    # your code here
+    pass
+""",
+        solution="""def release_check(before, after, must_pass):
+    broken = []
+    for case_id in before:
+        if before[case_id] and not after.get(case_id, False):
+            broken.append(case_id)
+    broken.sort()
+    hold = len(broken) > 0
+    for case_id in must_pass:
+        if not after.get(case_id, False):
+            hold = True
+    if hold:
+        return ["hold", broken]
+    return ["ship", broken]
+""",
+        cases=[
+            case({"leave-03": False, "refund-07": True, "travel-12": True},
+                 {"leave-03": True, "refund-07": False, "travel-12": True},
+                 ["refund-07"], expected=["hold", ["refund-07"]], sample=True),
+            case({"leave-03": False, "refund-07": True}, {"leave-03": True, "refund-07": True}, ["refund-07"], expected=["ship", []]),
+            case({"a": True, "b": True}, {"a": True, "b": False}, [], expected=["hold", ["b"]]),
+            case({"a": True}, {"a": True, "c": False}, ["c"], expected=["hold", []]),
+        ],
+        guided="""def release_check(before, after, must_pass):
+    # Replace every ___ with real code, then run the tests.
+    broken = []
+    for case_id in before:
+        # Step 1: passed before, fails after.
+        if ___:
+            broken.append(case_id)
+    broken.sort()
+    hold = len(broken) > 0
+    # Step 2: any must-pass case failing means hold.
+    for case_id in must_pass:
+        if ___:
+            hold = True
+    if hold:
+        return ["hold", broken]
+    return ["ship", broken]
+""",
+        fills=['before[case_id] and not after.get(case_id, False)', 'not after.get(case_id, False)'],
+        concepts=[
+            [
+                'get with a default',
+                '`after.get(case_id, False)` treats a case missing from `after` as failed, so nothing slips through unchecked.',
+                """after = {"a": True}
+after.get("b", False)   # False""",
+            ],
+            [
+                'and, not',
+                '`before[c] and not after[c]` is True only when it passed before and fails now.',
+                'True and not False   # True',
+            ],
+        ],
+        byhand='leave-03 failed before, so it can\'t break. refund-07 passed before and fails after: broken. travel-12 passed both times. Broken: ["refund-07"]. refund-07 is a must-pass case and fails after the fix, so hold. Return ["hold", ["refund-07"]].',
+        why='Each case is looked at once, then each must-pass case once.',
+        gotchas=[
+            [
+                'Looking only at the fixed answer',
+                'The answer you fixed is one case. Check every case that passed before; that is where the new damage hides.',
+            ],
+            [
+                'Trusting the average',
+                'A better average can hide a broken must-pass case. Check the must-pass list on its own.',
             ],
         ],
     ),
