@@ -180,6 +180,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
     data = json.loads(json.dumps({
         "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids, "planned": m.planned, "setting": m.setting} for m in loaded],
         "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in lifecycle],
+        "aliases": modules.ALIASES,  # old core lesson ids -> current, so saved progress carries over
         "tracks": [{"id": i, "name": n, "text": t, "modules": ms} for i, n, t, ms in tracks],
         "lessons": lessons,
         "bank": list(bank.values()),

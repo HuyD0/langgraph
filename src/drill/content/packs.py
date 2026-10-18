@@ -232,7 +232,7 @@ def _core_ids() -> set[str]:
     if _CORE is None:
         from drill.content import modules as core
 
-        _CORE = {lesson["id"] for m in core.load() for lesson in m.lessons}
+        _CORE = {lesson["id"] for m in core.load() for lesson in m.lessons} | set(core.ALIASES)  # old ids still count
     return _CORE
 
 

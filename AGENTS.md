@@ -125,3 +125,6 @@ The server **caches the page when it starts**: restart it after every `build-pag
   and when moving a section, check the build's fingerprint is unchanged ([docs/FRONTEND.md](docs/FRONTEND.md), "Parts").
 - Other sessions publish the claude.ai artifact too: compare the live page with your build
   before publishing, so you don't undo someone else's work.
+- Lesson ids are frozen: `tests/fixtures/lesson_ids.txt` lists every id ever shipped. A new lesson
+  appends its id; a renamed one adds `old: new` to `modules.ALIASES`; none is ever removed or reused
+  (progress is saved under ids, and packs name them).
