@@ -152,8 +152,8 @@ measured number. The method, with a worked example, is in
    shared space's overall limit, so one runaway test can't block everyone.
    (**A shared space with fair limits**)
 6. **Graduate on evidence.** A workload leaves the shared space only when it has
-   an owner, passes the eval bar and its must-pass set, costs no more per success
-   than the bar allows, fits the capacity at its busiest minute, and has
+   an owner, passes the eval's acceptance criteria and its must-pass set, costs no
+   more per success than they allow, fits the capacity at its busiest minute, and has
    monitoring. (**The graduation gate**)
 7. **Share scarce capacity by tier.** Critical apps come first. Once their
    traffic is steady, they move to reserved capacity (PTU), with spillover to a

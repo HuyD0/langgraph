@@ -1109,9 +1109,9 @@ lesson(MODULE, 'fit_for_purpose',
     title='Is it fit for purpose?',
     cards=[
         card('Good enough, measured',
-             '**Fit for purpose** means good enough for this job, measured on real examples, against **bars** agreed before the trial. A bar is the line a result has to reach to pass, like the pass mark in an exam; the industry term is **acceptance criteria**. Not perfect, and not "it looked good in the demo".'),
-        card('Each bar checks a requirement',
-             'Set four bars when you write the card, and agree each one with the people who own it. Each bar checks one of your requirements.',
+             '**Fit for purpose** means good enough for this job, measured on real examples, against **acceptance criteria** agreed before the trial: the lines a result has to reach to pass, like the pass mark in an exam. Not perfect, and not "it looked good in the demo".'),
+        card('Each criterion checks a requirement',
+             'Set four acceptance criteria when you write the card, and agree each one with the people who own it. Each one checks one of your requirements.',
              picture=sortby('What does it check, and who sets it?',
                             sortrow('Quality: 80 in 100 answers right', 'R1 Answer policy questions. The owner and the users agree it.', 'Functional', icon='check'),
                             sortrow('Must-pass: the dangerous cases it must never get wrong', 'The card\'s wrong-answer box, like showing one person\'s data to another. The owner, privacy and security agree them.', 'Functional', icon='lock'),
@@ -1119,35 +1119,35 @@ lesson(MODULE, 'fit_for_purpose',
                             sortrow('Cost: the cost per finished task must beat today\'s', 'R7 Under $1 an answer: the Cost Optimization pillar. The owner, who pays.', 'Non-functional', look='dashed', icon='coin')),
              after='Speed and cost are non-functional requirements, each resting on a pillar from the review. Quality and must-pass are different: they measure the functional requirement itself, because an AI does its job right only some of the time. With ordinary software you watch a feature work once; with AI, even what it does has to be measured.'),
         card('Go, fix or stop',
-             'After the pilot, the call, often called a go/no-go decision, is one of three. Writing the bars down first stops anyone from moving them to fit the result.',
+             'After the pilot, the call, often called a go/no-go decision, is one of three. Writing the acceptance criteria down first stops anyone from moving them to fit the result.',
              picture=sortby('What is the call?',
-                            sortrow('Every bar met', 'Go: it does the job well enough.', 'Go', icon='check'),
-                            sortrow('One bar just missed, like 5.5 seconds against 5', 'Improve that one, then test again.', 'Fix', look='dashed', icon='reset'),
-                            sortrow('A must-pass case failed, more than one bar was missed, or a miss is far off', 'However good the averages look.', 'Stop', icon='x'))),
-        card('The tools behind each bar',
-             'The next lessons give you the tools behind each bar. Foundations show how to measure quality honestly, Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
+                            sortrow('Every criterion met', 'Go: it does the job well enough.', 'Go', icon='check'),
+                            sortrow('One criterion just missed, like 5.5 seconds against 5', 'Improve that one, then test again.', 'Fix', look='dashed', icon='reset'),
+                            sortrow('A must-pass case failed, more than one criterion was missed, or a miss is far off', 'However good the averages look.', 'Stop', icon='x'))),
+        card('The tools behind each criterion',
+             'The next lessons give you the tools behind each criterion. Foundations show how to measure quality honestly, Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
     ],
-    example=example('Pilot results against the bars', """bars = {"quality": 0.80, "seconds": 5,
-        "cost": 2.00}
-pilot = {"quality": 0.78, "seconds": 4,
-         "cost": 1.20, "must_pass_failures": 0}
+    example=example('Pilot results against the acceptance criteria', """criteria = {"quality": 0.80, "seconds": 5,
+            "cost": 2.00}
+pilot    = {"quality": 0.78, "seconds": 4,
+            "cost": 1.20, "must_pass_failures": 0}
 # cost and speed met; quality 2 points short
-# and within 5 points of the bar: fix it,
+# and within 5 points of its criterion: fix it,
 # then test again"""),
     check=question(
-        'The pilot scores 86 in 100 against a bar of 80, passes every must-pass case and costs less than its bar, but takes 5.5 seconds against a 5-second bar. What is the honest call?',
+        'The pilot scores 86 in 100 against a criterion of 80, passes every must-pass case and costs less than its criterion, but takes 5.5 seconds against a 5-second criterion. What is the honest call?',
         [
             'Go: half a second is close enough',
             'Fix: speed it up, then test again',
-            'Stop: it missed the speed bar',
+            'Stop: it missed the speed criterion',
         ],
         answer=1,
-        why='Only one bar is missed, and only just: half a second over. That is worth improving and testing again. Calling it a go would quietly move the bar after seeing the result.',
+        why='Only one criterion is missed, and only just: half a second over. That is worth improving and testing again. Calling it a go would quietly move the criterion after seeing the result.',
     ),
     angle=angle(
         pattern='Must-pass first, then count the misses',
-        text='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their bars, noting each one missed and whether the miss is close: quality within 0.05 of the bar, speed or cost no more than 1.2 times the bar. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
-        say='"I agree the bars [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all bars met means go, and one near miss means fix it and [[test again|ship it|give up::A near miss gets another try, not a pass.]]."',
+        text='The big idea: decide fit for purpose against acceptance criteria written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their criteria, noting each one missed and whether the miss is close: quality within 0.05 of the criterion, speed or cost no more than 1.2 times the criterion. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
+        say='"I agree the acceptance criteria [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all criteria met means go, and one near miss means fix it and [[test again|ship it|give up::A near miss gets another try, not a pass.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -1158,71 +1158,71 @@ pilot = {"quality": 0.78, "seconds": 4,
         prompt="""Your function gets two dicts:
 
 - `results`: the pilot's numbers, with `"quality"` (share right, like `0.78`), `"seconds"` (time per answer), `"cost"` (dollars per finished task) and `"must_pass_failures"` (how many must-pass cases it got wrong).
-- `bars`: the agreed bars, with `"quality"`, `"seconds"` and `"cost"`.
+- `criteria`: the agreed acceptance criteria, with `"quality"`, `"seconds"` and `"cost"`.
 
 Decide like this:
 
 1. If `"must_pass_failures"` is more than 0, return `"stop"`.
-2. A bar is missed if quality is below its bar, or seconds or cost is above its bar.
-3. A miss is close if quality is at most 0.05 below its bar, or seconds or cost is at most 1.2 times its bar.
-4. No bars missed: return `"go"`. Exactly one bar missed, and that miss is close: return `"fix"`. Otherwise return `"stop"`.""",
+2. Quality misses its criterion if it is below it. Seconds or cost miss theirs if they are above them.
+3. A miss is close if quality is at most 0.05 below its criterion, or seconds or cost are at most 1.2 times theirs.
+4. No criteria missed: return `"go"`. Exactly one criterion missed, and that miss is close: return `"fix"`. Otherwise return `"stop"`.""",
         pattern='Stop on a must-pass failure, then count the misses.',
         target='a few checks, no loops',
-        realworld='Pilots are usually judged go, fix or stop against bars agreed up front. Writing the rule in code keeps the decision the same however the results make people feel.',
+        realworld='Pilots are usually judged go, fix or stop against acceptance criteria agreed up front. Writing the rule in code keeps the decision the same however the results make people feel.',
         practice=practice(
-            intro='Judge four pilots against the bars agreed before they started: go, fix or stop.',
-            explain='The big idea: decide fit for purpose against bars written down before the trial, and a failed must-pass case is an automatic stop. Pilot 1 had great averages and one must-pass failure: stop. Pilot 2 missed only speed, by half a second: fix and retest. Pilot 3 met every bar exactly: go, because meeting a bar is meeting it. Pilot 4 was $1 over the cost bar, and raising the bar to fit it would be deciding after the result.',
-            pattern='Must-pass first, then the agreed bars',
-            realworld='At the end of a pilot you\'ll be in the go, fix or stop meeting. Check the must-pass cases first, then each bar exactly as it was written before the trial, so the call stays the same however the results feel.',
+            intro='Judge four pilots against the acceptance criteria agreed before they started: go, fix or stop.',
+            explain='The big idea: decide fit for purpose against acceptance criteria written down before the trial, and a failed must-pass case is an automatic stop. Pilot 1 had great averages and one must-pass failure: stop. Pilot 2 missed only speed, by half a second: fix and retest. Pilot 3 met every criterion exactly: go, because meeting a criterion is meeting it. Pilot 4 was $1 over the cost criterion, and raising the criterion to fit it would be deciding after the result.',
+            pattern='Must-pass first, then the agreed acceptance criteria',
+            realworld='At the end of a pilot you\'ll be in the go, fix or stop meeting. Check the must-pass cases first, then each criterion exactly as it was written before the trial, so the call stays the same however the results feel.',
             asks=[
                 ask('Pilot 1 looks great on quality, speed and cost. What\'s the call?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=2,
-                    evidence=evidence('code', title='Pilot 1 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
-         "cost": 2.00}
-pilot = {"quality": 0.95, "seconds": 2,
-         "cost": 0.50, "must_pass_failures": 1}"""),
+                    evidence=evidence('code', title='Pilot 1 against the acceptance criteria', text="""criteria = {"quality": 0.80, "seconds": 5,
+            "cost": 2.00}
+pilot    = {"quality": 0.95, "seconds": 2,
+            "cost": 0.50, "must_pass_failures": 1}"""),
                     clue='Read must_pass_failures before you look at the averages.',
                     why='A must-pass case is one it must never get wrong. One failure ends the pilot on its own, however good the averages look.',
-                    wrong=['Great averages can hide one dangerous mistake. Look at must_pass_failures.', 'Fix is for a near miss on a bar. A failed must-pass case is not a near miss.', None]),
+                    wrong=['Great averages can hide one dangerous mistake. Look at must_pass_failures.', 'Fix is for a near miss on a criterion. A failed must-pass case is not a near miss.', None]),
                 ask('What\'s the call for pilot 2?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=1,
-                    evidence=evidence('code', title='Pilot 2 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
-         "cost": 2.00}
-pilot = {"quality": 0.82, "seconds": 5.5,
-         "cost": 1.00, "must_pass_failures": 0}"""),
-                    clue='Only one bar is missed. A miss on speed is close if it is no more than 1.2 times the bar: 6 seconds here.',
+                    evidence=evidence('code', title='Pilot 2 against the acceptance criteria', text="""criteria = {"quality": 0.80, "seconds": 5,
+            "cost": 2.00}
+pilot    = {"quality": 0.82, "seconds": 5.5,
+            "cost": 1.00, "must_pass_failures": 0}"""),
+                    clue='Only one criterion is missed. A miss on speed is close if it is no more than 1.2 times the criterion: 6 seconds here.',
                     why='Speed is the only miss, and 5.5 seconds is within 6, so it is close. Make it faster, then test again.',
-                    wrong=['5.5 seconds is over the 5-second bar, so one bar is missed.', None, 'It is one bar, and only just missed. That is worth another try.']),
+                    wrong=['5.5 seconds is over the 5-second criterion, so one criterion is missed.', None, 'It is one criterion, and only just missed. That is worth another try.']),
                 ask('What\'s the call for pilot 3?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=0,
                     evidence=evidence('claim', who='A teammate said', text='"Pilot 3: quality exactly 0.80, exactly 5 seconds, $1.20 a task, no must-pass failures. That only just scrapes through, so let\'s call it a fix to be safe."'),
-                    clue='A bar is missed only when quality falls under it, or speed or cost is above it. Is any number past its bar?',
-                    why='Meeting a bar exactly is meeting it. Calling it a fix would quietly move the bar after seeing the result, just upwards this time.',
-                    wrong=[None, 'Fix is for a missed bar. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed bars.']),
-                ask('What do you do?', ['Go: raise the bar to $3, still cheaper than by hand', 'Fix: one bar missed, so cut the cost and retest', 'Stop: it is far over the agreed cost bar'], answer=2,
-                    evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 bar, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost bar to $3 and call it a go."'),
-                    clue='A close miss on cost is at most 1.2 times its bar: $2.40 here. And when were the bars agreed?',
-                    why='$3.00 is well past $2.40, so it is not a near miss, and raising the bar after seeing the result is moving it to fit. If the cost case really has changed, agree new bars before the next pilot.',
-                    wrong=['Change the bar once you see the result and the bar meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
+                    clue='A criterion is missed only when quality falls under it, or speed or cost is above it. Is any number past its criterion?',
+                    why='Meeting a criterion exactly is meeting it. Calling it a fix would quietly move the criterion after seeing the result, just upwards this time.',
+                    wrong=[None, 'Fix is for a missed criterion. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed criteria.']),
+                ask('What do you do?', ['Go: raise the cost criterion to $3, still cheaper than by hand', 'Fix: one criterion missed, so cut the cost and retest', 'Stop: it is far over the agreed cost criterion'], answer=2,
+                    evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 cost criterion, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost criterion to $3 and call it a go."'),
+                    clue='A close miss on cost is at most 1.2 times its criterion: $2.40 here. And when were the criteria agreed?',
+                    why='$3.00 is well past $2.40, so it is not a near miss, and raising the criterion after seeing the result is moving it to fit. If the cost case really has changed, agree new acceptance criteria before the next pilot.',
+                    wrong=['Change the criterion once you see the result and the criterion meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
             ],
         ),
-        starter="""def pilot_verdict(results, bars):
+        starter="""def pilot_verdict(results, criteria):
     # your code here
     pass
 """,
-        solution="""def pilot_verdict(results, bars):
+        solution="""def pilot_verdict(results, criteria):
     if results["must_pass_failures"] > 0:
         return "stop"
     missed = []
     close = True
-    if results["quality"] < bars["quality"]:
+    if results["quality"] < criteria["quality"]:
         missed.append("quality")
-        if results["quality"] < bars["quality"] - 0.05:
+        if results["quality"] < criteria["quality"] - 0.05:
             close = False
-    if results["seconds"] > bars["seconds"]:
+    if results["seconds"] > criteria["seconds"]:
         missed.append("seconds")
-        if results["seconds"] > bars["seconds"] * 1.2:
+        if results["seconds"] > criteria["seconds"] * 1.2:
             close = False
-    if results["cost"] > bars["cost"]:
+    if results["cost"] > criteria["cost"]:
         missed.append("cost")
-        if results["cost"] > bars["cost"] * 1.2:
+        if results["cost"] > criteria["cost"] * 1.2:
             close = False
     if len(missed) == 0:
         return "go"
@@ -1239,27 +1239,27 @@ pilot = {"quality": 0.82, "seconds": 5.5,
             case({"quality": 0.78, "seconds": 5.5, "cost": 1.0, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
             case({"quality": 0.9, "seconds": 3, "cost": 3.0, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
         ],
-        guided="""def pilot_verdict(results, bars):
+        guided="""def pilot_verdict(results, criteria):
     # Replace every ___ with real code, then run the tests.
     # Step 1: any must-pass failure stops it.
     if results["must_pass_failures"] > 0:
         return "stop"
     missed = []
     close = True
-    # Step 2: quality below its bar is a miss.
-    if results["quality"] < bars["quality"]:
+    # Step 2: quality below its criterion is a miss.
+    if results["quality"] < criteria["quality"]:
         missed.append("quality")
-        if results["quality"] < bars["quality"] - 0.05:
+        if results["quality"] < criteria["quality"] - 0.05:
             close = False
     # Step 3: too slow is a miss.
-    if results["seconds"] > bars["seconds"]:
+    if results["seconds"] > criteria["seconds"]:
         missed.append("seconds")
-        if results["seconds"] > bars["seconds"] * 1.2:
+        if results["seconds"] > criteria["seconds"] * 1.2:
             close = False
     # Step 4: too costly is a miss.
     if ___:
         missed.append("cost")
-        if results["cost"] > bars["cost"] * 1.2:
+        if results["cost"] > criteria["cost"] * 1.2:
             close = False
     # Step 5: decide.
     if len(missed) == 0:
@@ -1268,7 +1268,7 @@ pilot = {"quality": 0.82, "seconds": 5.5,
         return "fix"
     return "stop"
 """,
-        fills=['results["cost"] > bars["cost"]', 'len(missed) == 1 and close'],
+        fills=['results["cost"] > criteria["cost"]', 'len(missed) == 1 and close'],
         concepts=[
             [
                 'A flag',
@@ -1293,8 +1293,8 @@ len([1]) == 1 and False   # False""",
         why='A handful of comparisons, whatever the numbers.',
         gotchas=[
             [
-                'Moving the bar after the results',
-                'If 78 in 100 suddenly becomes "good enough" once you see it, the bar meant nothing. Write the bars on the card before the pilot starts.',
+                'Moving the criteria after the results',
+                'If 78 in 100 suddenly becomes "good enough" once you see it, the criterion meant nothing. Write the acceptance criteria on the card before the pilot starts.',
             ],
             [
                 'Averaging away a dangerous mistake',

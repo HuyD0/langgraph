@@ -78,17 +78,17 @@ CHECKS = {
     "fit_for_purpose": [
         ask("The pilot gets 92 in 100 right, but fails one must-pass case: it told a customer to "
             "ignore a safety recall. What's the call?",
-            ["Go: 92 is well above the bar", "Fix: change the prompt and ship it", "Stop: a must-pass case failed"],
+            ["Go: 92 is well above its criterion", "Fix: change the prompt and ship it", "Stop: a must-pass case failed"],
             answer=2,
             clue="Must-pass cases are the ones it must never get wrong, whatever the overall score.",
             why="A must-pass failure means stop, even with a high score. Those are the dangerous cases, "
                 "so one miss matters more than the average."),
-        ask("Halfway through the pilot the quality score looks low, so someone wants to lower the bar "
+        ask("Halfway through the pilot the quality score looks low, so someone wants to lower the quality criterion "
             "from 80 to 70. Why is that a bad idea?",
-            ["It changes the test to fit the result", "70 is too hard to measure", "Bars only apply to cost"],
+            ["It changes the test to fit the result", "70 is too hard to measure", "Criteria only apply to cost"],
             answer=0,
-            clue="Think about when the bars were written down, and why.",
-            why="The bars were agreed before the trial so the test stays honest. Moving them to fit "
+            clue="Think about when the acceptance criteria were written down, and why.",
+            why="The acceptance criteria were agreed before the trial so the test stays honest. Moving them to fit "
                 "the result means the trial can't fail, so it tells you nothing."),
     ],
 }

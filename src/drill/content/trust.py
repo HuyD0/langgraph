@@ -36,9 +36,9 @@ NOTES = {
         view='Governance sits across every other pillar: it decides who may use which data and models, and who answers for them.',
         tip='Give access to groups, not to single people, so you can see and change who has it in one place.'),
     'fit_for_purpose': trust(
-        'accountable', phrase='Writing the bars down first stops anyone from moving them to fit the result.', rmf='Manage 1.1',
-        view="NIST calls this the go or no-go decision: does it meet its purpose, and should it go ahead? Bars written first make that decision honest.",
-        tip='Keep the bars, the results and the decision together, with a date and the name of who decided.'),
+        'accountable', phrase='Writing the acceptance criteria down first stops anyone from moving them to fit the result.', rmf='Manage 1.1',
+        view="NIST calls this the go or no-go decision: does it meet its purpose, and should it go ahead? Acceptance criteria written first make that decision honest.",
+        tip='Keep the acceptance criteria, the results and the decision together, with a date and the name of who decided.'),
     'split_by_key': trust(
         'valid', phrase='This is called **leakage**', rmf='Measure 2.5',
         view='An inflated test score is how an AI that doesn\'t work gets approved. Every claim that "it works" starts with an honest split.',

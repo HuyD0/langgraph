@@ -24,7 +24,7 @@ CHECKS = {
             ["The champion stays", "The challenger takes over", "They split the traffic in half"],
             answer=0,
             clue="Is 1 point better a meaningful margin, by your own rule?",
-            why="81 doesn't clear the bar you set, so the champion keeps the alias. A tiny gain is "
+            why="81 doesn't clear the threshold you set, so the champion keeps the alias. A tiny gain is "
                 "often noise, and every swap carries risk."),
         ask("You promoted version 5 to @champion. An hour later it's giving bad answers. "
             "What's the quickest fix?",
@@ -56,7 +56,7 @@ CHECKS = {
             ["Keep testing", "Roll it back", "Promote it"],
             answer=2,
             clue="Check both parts: enough traces, and a big enough gain.",
-            why="200 traces is enough, and 12 points clears the 10-point bar. The rule you wrote "
+            why="200 traces is enough, and 12 points clears the 10-point threshold. The rule you wrote "
                 "down first says promote."),
         ask("Traces from two prompt versions are all mixed together, with no version tag. "
             "What can't you do now?",

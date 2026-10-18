@@ -1,6 +1,6 @@
 ---
 name: vet-ai-use-case
-description: Vets a proposed AI use case before anything is built. Turns a problem into a one-line use case, checks three gates (a fixed rule could do it, no examples to test on, unchecked harm), places it on a value-by-doable map, finds gaps in its use case card, reviews it against the Well-Architected pillars, works out its total cost of ownership with a script, and sets fit-for-purpose bars. Use when someone asks whether an AI idea is worth doing, wants a use case assessed, reviewed or costed, or is preparing a business case or pilot.
+description: Vets a proposed AI use case before anything is built. Turns a problem into a one-line use case, checks three gates (a fixed rule could do it, no examples to test on, unchecked harm), places it on a value-by-doable map, finds gaps in its use case card, reviews it against the Well-Architected pillars, works out its total cost of ownership with a script, and sets fit-for-purpose acceptance criteria. Use when someone asks whether an AI idea is worth doing, wants a use case assessed, reviewed or costed, or is preparing a business case or pilot.
 ---
 
 # Vet an AI use case
@@ -27,7 +27,7 @@ whether to build it; set out the evidence and let a person decide.
    medium, high), findings that quote the card, and Unknowns as questions.
 8. **Cost.** Collect the numbers in [reference/cost-inputs.md](reference/cost-inputs.md) into a
    JSON file and run `python scripts/tco.py inputs.json`. Report its table; do not do the sums yourself.
-9. **Bars.** Propose quality, must-pass, speed and cost bars for the pilot, to agree before it starts.
+9. **Acceptance criteria.** Propose quality, must-pass, speed and cost acceptance criteria for the pilot, to agree before it starts.
 
 ## Output
 
@@ -41,6 +41,6 @@ whether to build it; set out the evidence and let a person decide.
 | Pillar | Risk | Findings (quoting the card) | Unknowns |
 ## Total cost of ownership
 <the table from scripts/tco.py, and its biggest item>
-## Pilot bars
+## Pilot acceptance criteria
 - Quality ... · Must-pass ... · Speed ... · Cost ...
 ```
