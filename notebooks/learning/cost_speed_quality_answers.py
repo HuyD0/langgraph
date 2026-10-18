@@ -46,3 +46,9 @@ def choose(versions, margin, p95_limit):
             kept.append(v)
     best = min(kept, key=lambda v: (v["cost"], v["p95"]))["name"] if kept else None
     return {"choice": best, "kept": [v["name"] for v in kept], "dropped": dropped}
+
+
+def match_by_id(rows, outputs):
+    """Each request's answer by its custom_id, or None if it failed or never came back."""
+    found = {o["custom_id"]: o.get("text") for o in outputs if "text" in o}
+    return {r["custom_id"]: found.get(r["custom_id"]) for r in rows}

@@ -350,7 +350,15 @@ idea, ungraded:
   1,000 answers with the cache counted. Then it applies a rule written first: no worse than the
   baseline by more than 3 points, fast enough, then the cheapest. Measured from the real prompts, a
   lesson's fixed start is often shorter than the minimum a model will cache, so today nothing is
-  cached. The notebook teaches the method free on a labelled practice recording. Its companion,
+  cached. The notebook teaches the method free on a labelled practice recording. Its section 10 runs
+  the same idea on Microsoft Foundry (`drill.foundry_batch`). A few **inline** calls are timed, since
+  only they can measure speed. The rest go as one **batch** job at about half price. A follow-up step
+  then picks the job up from its MLflow run (the batch id is a run tag) in any later session. It
+  matches output lines back to their requests by `custom_id`, logs the finished answers as an
+  evaluation, sends one judge batch, and attaches each verdict to its trace as feedback. Batch on
+  Foundry needs a `GlobalBatch` deployment, and only OpenAI models offer one. The section replays a
+  real recorded run (`content/prepared_eval/foundry_batch_demo.json`) unless `RUN_LIVE` is set. The
+  endpoint and deployment names come from the environment, never the repo. Its companion,
   `notebooks/learning/evaluating_the_tutor.ipynb`, checks whether a cheaper judge can be trusted.
 - **Quiet signals on the tutor's answers** (`askSignal` in `page/ask.js`): with no buttons, the page
   notes what the learner did next and sends it as CODE feedback on the latest answer, once each,
