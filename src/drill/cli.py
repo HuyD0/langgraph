@@ -549,7 +549,7 @@ def tutor_prepare_cmd(
         if traced:
             mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "tutor_prepare", "mlflow.source.git.commit": tpe.git_commit(),
                              "mlflow.note.content": f"Drafting and judging {len(work)} prepared tutor answers."})
-            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "judge_version": judge_version, "answers": len(work),
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "checklist": judge_version, "answers": len(work),
                                "module": module or "all", "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)

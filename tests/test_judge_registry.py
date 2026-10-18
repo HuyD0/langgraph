@@ -21,9 +21,9 @@ def store(tmp_path, monkeypatch):
     mlflow.set_tracking_uri(None)
 
 
-def judge_run(model, provider="foundry", mode="batch"):
+def judge_run(model, provider="foundry", mode="batch", checklist=1):
     with mlflow.start_run() as run:
-        mlflow.log_params({"judge_model": model, "provider": provider, "mode": mode, "deployment": f"{model}-dep"})
+        mlflow.log_params({"judge_model": model, "provider": provider, "mode": mode, "deployment": f"{model}-dep", "checklist": checklist})
     return run.info.run_id
 
 
@@ -73,3 +73,12 @@ def test_summary_compares_only_the_checks_the_reference_has():
     out = tpe.summary(seen, None, tp.CHECKS2)
     assert out["within_lesson_rate"] == 0.0 and "within_lesson_agreement" not in out
     assert out["answers_it_agreement"] == 1.0 and out["passes_agreement"] == 1.0
+
+
+def test_a_checklist_two_run_links_to_a_checklist_two_judge_version(store):
+    tpe.ensure_champion(mlflow)
+    rid = judge_run("gpt-5.6-luna", mode="inline", checklist=2)
+    v = tpe.link_judge(mlflow, rid)
+    assert v.template == tp.JUDGE2 and (v.tags or {}).get("checklist") == "2"
+    assert mlflow.get_run(rid).data.params["judge_version"] == f"{v.name}/{v.version}"   # the link, not the checklist number
+    assert tpe.link_judge(mlflow, rid).version == v.version                               # a second call reads the link back

@@ -211,7 +211,7 @@ def link_judge(mlflow, run_id: str):
     if "judge_version" in p:
         return mlflow.MlflowClient().get_prompt_version(_name(JUDGE_REGISTRY), p["judge_version"].rsplit("/", 1)[1])
     v = register_judge(mlflow, p.get("provider", "databricks"), p["judge_model"], p.get("mode", "inline"), p.get("deployment", ""),
-                       judge_version=int(p.get("judge_version", 1)))
+                       judge_version=int(p.get("checklist", 1)))   # "judge_version" is the tutor_judge/N link; "checklist" the prompt's version
     client = mlflow.MlflowClient()
     client.log_param(run_id, "judge_version", f"{v.name}/{v.version}")
     try:
@@ -472,7 +472,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "price_per_mtok": ("{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?")))
                                if provider == "databricks" else "{}/{} input/output, {} (Azure retail prices)".format(
                                    *[fb.PRICES.get((judge_model, "batch" if mode == "batch" else "standard"), (0, 0, 0, 0))[i] for i in (0, 2)], mode)),
-            "provider": provider, "mode": mode, "deployment": deployment or judge_model, "judge_version": judge_version,
+            "provider": provider, "mode": mode, "deployment": deployment or judge_model, "checklist": judge_version,
             "must_pass": ",".join(tp.JUDGES[judge_version][2]),
             **({"api_version": fb.API_VERSION, "judge_max_tokens": 2000} if provider == "foundry" else {}),
         })
@@ -532,7 +532,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
                          "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
                          "quality": x["quality"], **{c: x["verdict"][c] for c in checks}} for x in seen],
-            "judge_version": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False))
+            "checklist": judge_version, "checks": list(checks), "must_pass": list(tp.JUDGES[judge_version][2])}, indent=1, ensure_ascii=False))
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 
