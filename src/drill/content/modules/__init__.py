@@ -37,7 +37,7 @@ LIFECYCLE = [
      'Score runs on the same eval set; compare quality, cost and latency.',
      ['evals', 'models']),
     ('Ship',
-     'Register, promote and canary with a rule you wrote down first.',
+     'Release it to real users, a few at a time, by a rule you wrote down first.',
      ['shipping']),
     ('Monitor',
      'Watch real traffic in traces and feed failures back into evals.',
