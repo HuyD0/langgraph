@@ -305,6 +305,7 @@ def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
         import openai
 
         t0 = time.monotonic()
+        reply = None
         for attempt in range(8):  # the workspace limits tokens per minute per model: wait and try again
             try:
                 reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": text}], max_tokens=8000)  # room to reason first: the newest models do

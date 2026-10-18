@@ -29,7 +29,7 @@ from typing import Iterator
 
 import pytest
 
-from drill.scrub import DEFAULT_DENYLIST, GENERIC, _company_email, _real_org, _real_workspace, denylist_patterns, denylist_path, find
+from drill.scrub import GENERIC, _company_email, _real_org, _real_workspace, denylist_patterns, denylist_path, find
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE_SUFFIXES = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".pdf"}
