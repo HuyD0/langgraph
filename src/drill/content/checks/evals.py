@@ -225,4 +225,34 @@ CHECKS = {
             why="0 means the two mixes are the same, and 1 means completely different. At 0, the eval "
                 "set still matches what users ask."),
     ],
+    "judge_consistency": [
+        ask("You judge the same 200 answers three times and keep the verdict that comes up at least twice. "
+            "Why does that help?",
+            ["Three runs cost less than one", "One odd verdict gets outvoted", "The judge learns from its own runs"],
+            answer=1,
+            clue="Think about what happens to a verdict that flipped just once.",
+            why="Keeping the majority means a single unlucky flip no longer decides the verdict, so the result is steadier."),
+        ask("You swap which of two answers you show the judge first, and it now prefers the other one. "
+            "What have you found?",
+            ["The judge favours whatever comes first", "The second answer is really better", "The judge is broken and must go"],
+            answer=0,
+            clue="Only the order changed. Did the answers change?",
+            why="The answers were the same; only the order moved, and the verdict moved with it. That is position bias, a "
+                "known habit of judges."),
+    ],
+    "gwet_ac1": [
+        ask("Two judges both fail half the answers, and agree on 9 in 10. Kappa and AC1 come out almost the "
+            "same. Why?",
+            ["AC1 only differs when one verdict is rare", "Kappa and AC1 always give the same number", "Half and half breaks both measures"],
+            answer=0,
+            clue="When does kappa expect a lot of agreement by luck?",
+            why="With passes and fails about equal, both count luck the same way. They only part when one verdict is "
+                "much rarer than the other."),
+        ask("Kappa is 0.2 and AC1 is 0.25 for your judge against people. What is the honest reading?",
+            ["They really disagree; both are low", "AC1 rescues it, so trust the judge", "The rare verdict is causing it"],
+            answer=0,
+            clue="Is one number low and the other high, or are both low?",
+            why="AC1 helps only when kappa is low but AC1 is high. Both low means the judge and the people really do "
+                "disagree."),
+    ],
 }

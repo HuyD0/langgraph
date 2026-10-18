@@ -1258,6 +1258,117 @@ Return `[centre - half, centre + half]`, each rounded to 3 decimal places. These
     ),
 )
 
+lesson(MODULE, 'clumpy_margin',
+    title='Examples that come in clumps',
+    learn=[
+        'The margin rules so far assume every example is separate, like unrelated coin flips. Often they are not. Three questions about the same document, or ten answers from the same user, tend to **pass or fail together**. Examples that come in groups like this are called **clustered**.',
+        'Clumps carry less information than their count suggests. 300 answers about 100 documents are worth somewhere between 100 and 300 separate ones. So the honest margin is wider than the quick rule says. A cautious shortcut: work out the margin twice, once counting examples and once counting groups. The truth sits between the two, nearer the groups when examples in a group behave alike.',
+        'The proper tool is a **bootstrap by group**: build many new samples by picking whole groups at random, work out the score for each one, and see how much it moves. It is the same thinking as the leakage rule, which keeps a whole group in one split: the group, not the single example, is the unit.',
+    ],
+    example=example('300 answers about 100 lessons', """counting answers: about 5.8 points
+counting lessons: 10 points
+so say "about 6 to 10 points",
+not "about 6\""""),
+    check=question(
+        'Your eval has 400 questions: 10 each about 40 documents. Questions about one document usually pass or fail together. Which margin is closest to honest?',
+        [
+            'The one that counts the 400 questions',
+            'Close to the one that counts the 40 documents',
+            'Neither: margins only work for coin flips',
+        ],
+        answer=1,
+        why='When a group\'s examples behave alike, the group is the real unit, so the honest margin is close to the one for 40.',
+    ),
+    angle=angle(
+        pattern='Count the clumps',
+        text="The big idea: examples that come in groups tend to pass or fail together, so they carry less information than their count. Your code works out the margin twice: once from the number of examples, and once from the number of different groups, which a set gives you. The honest margin sits between the two.",
+        say='"If my examples come in [[groups|order|batches of ten::Like several questions about the same document.]], I count the groups, not just the examples. Otherwise my margin of error looks [[smaller|bigger|the same::Narrower than it really is.]] than it is."',
+        classic=None,
+    ),
+    stack=stack('pandas: a bootstrap by group, logged to MLflow', """lessons = df.lesson_id.unique()
+scores = []
+for _ in range(1000):
+    pick = random.choices(lessons, k=len(lessons))
+    sample = pd.concat([df[df.lesson_id == l] for l in pick])
+    scores.append(sample.passed.mean())
+scores.sort()
+mlflow.log_metrics({"pass_rate_low": scores[25], "pass_rate_high": scores[974]})"""),
+    exercise=exercise(
+        title='Clumpy Margin',
+        topic='experiments',
+        difficulty='easy',
+        fn='clumpy_margin',
+        prompt="""Your function gets one list: the group each example belongs to, like `["doc-1", "doc-1", "doc-2"]`. Two examples about the same document share a group.
+
+Work out the margin twice, in points, using the quick rule: 100 divided by the square root of a count.
+
+1. quick: the count is the number of examples.
+2. cautious: the count is the number of **different** groups.
+
+Return a list of the two, `[quick, cautious]`, each rounded to 1 decimal place.""",
+        pattern='Count everything, count the different groups with a set, then apply the same rule twice.',
+        target='one pass to build the set',
+        realworld='Teams evaluating a RAG app often have several questions per document. Reporting both margins, and the bootstrap by document, stops them from sounding more certain than they are.',
+        starter="""def clumpy_margin(group_ids):
+    # your code here
+    pass
+""",
+        solution="""def clumpy_margin(group_ids):
+    count = len(group_ids)
+    groups = len(set(group_ids))
+    quick = round(100 / count ** 0.5, 1)
+    cautious = round(100 / groups ** 0.5, 1)
+    return [quick, cautious]
+""",
+        cases=[
+            case(['d1', 'd1', 'd2', 'd2'], expected=[50.0, 70.7], sample=True),
+            case(['a'] * 4 + ['b'] * 4 + ['c'] * 4 + ['d'] * 4, expected=[25.0, 50.0]),
+            case([f'q{i}' for i in range(25)], expected=[20.0, 20.0]),
+            case(['only'] * 9, expected=[33.3, 100.0]),
+        ],
+        guided="""def clumpy_margin(group_ids):
+    # Replace every ___ with real code, then run the tests.
+    count = len(group_ids)
+
+    # A set keeps one of each, so its length is the
+    # number of different groups.
+    groups = ___
+
+    quick = round(100 / count ** 0.5, 1)
+    # The same rule, counting groups instead.
+    cautious = ___
+
+    return [quick, cautious]
+""",
+        fills=['len(set(group_ids))', 'round(100 / groups ** 0.5, 1)'],
+        concepts=[
+            [
+                'set',
+                'Keeps one of each value, so its length counts the different values.',
+                """len(set(["a", "a", "b"]))   # 2""",
+            ],
+            [
+                'Square root',
+                'Raising a number to the power 0.5 gives its square root, with no import needed.',
+                """100 ** 0.5   # 10.0""",
+            ],
+            ['round', '`round(x, 1)` keeps 1 digit after the dot.', 'round(70.71, 1)   # 70.7'],
+        ],
+        byhand='There are 4 examples, so the quick margin is 100 divided by the square root of 4, which is 2: 50.0. There are 2 different groups, d1 and d2, so the cautious margin is 100 divided by the square root of 2, which is about 1.414: about 70.7. Return [50.0, 70.7].',
+        why='One pass to build the set of groups, then a fixed amount of arithmetic.',
+        gotchas=[
+            [
+                'More from the same groups barely helps',
+                'Adding 10 more questions about documents you already have adds little. Adding new documents is what narrows the margin.',
+            ],
+            [
+                'Keep the group in one split too',
+                'The group that matters for the margin is the one the leakage rule keeps together: the same document, user or lesson.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'clear_winner',
     title='Telling real gains from noise',
     learn=[
@@ -1524,6 +1635,102 @@ if adult and age < 65:
             [
                 'Scores that are not pass/fail',
                 'For scores like 0.7 or 0.9, the paired versions are a **paired bootstrap** or a **permutation test**: on each example, randomly swap the A and B scores, do that many times, and see how often luck alone makes a gap that big.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'examples_per_group',
+    title='Enough to notice a difference',
+    learn=[
+        "Before you run a comparison, ask: if version B really is better, would this test notice? The chance that it does is called the test's **power**. Most teams aim for about 80%. A test with low power often says \"no real difference\" when there was one: the difference was just too small to see with that many examples.",
+        'Small differences need many examples. A common rule of thumb for comparing two pass rates: you need about 16 times the rate times (1 minus the rate), divided by the difference times itself, examples in **each** group. For a pass rate near 70%, noticing a 5-point gain takes about 1,344 examples a group; a 10-point gain takes about 336.',
+        'So decide the smallest difference worth finding **before** you start, work out the examples you need, and if you can\'t get that many, only look for bigger differences. A paired comparison on the same examples, like in "Comparing on the same examples", usually needs fewer, because it counts only the examples where the two versions disagree.',
+    ],
+    example=example('How many examples in each group?', """pass rate about 70%
+to notice a 5-point gain:
+  16 * 0.7 * 0.3 / (0.05 * 0.05)
+  = 1,344 in each group
+a 10-point gain: 336 in each group"""),
+    check=question(
+        'You test a new prompt on 40 examples and see no real difference. Your team wants to drop the idea. What is the honest reading?',
+        [
+            'The new prompt is no better than the old one',
+            '40 examples may be too few to notice a gain',
+            'The old prompt is better and should stay',
+        ],
+        answer=1,
+        why='With few examples, only big differences show up. "No difference" from a small test means "can\'t tell", not "no gain".',
+    ),
+    angle=angle(
+        pattern='Size the test before running it',
+        text="The big idea: a test can only notice differences bigger than its size allows, so you work out the size first. Your code uses the rule of thumb: 16 times the pass rate times one minus the pass rate, divided by the difference times itself. The answer is how many examples each version needs for a fair chance of noticing that difference.",
+        say='"Before I compare two versions, I work out how many [[examples|prompts|models::The questions each version gets tested on.]] I need to notice the smallest gain that matters. A test that is too small just says it [[can\'t tell|is better|is worse::A real gain could hide in it.]]."',
+        classic=None,
+    ),
+    stack=stack('statsmodels: the exact number, logged to MLflow', """from statsmodels.stats.power import NormalIndPower
+from statsmodels.stats.proportion import proportion_effectsize
+
+size = proportion_effectsize(0.75, 0.70)
+n = NormalIndPower().solve_power(size, power=0.8, alpha=0.05)
+mlflow.log_param("examples_per_group", round(n))"""),
+    exercise=exercise(
+        title='Examples Per Group',
+        topic='experiments',
+        difficulty='easy',
+        fn='examples_per_group',
+        prompt="""Your function gets two numbers:
+
+- `rate`: the pass rate you expect, like `0.7` for 70%.
+- `difference`: the smallest gain you want to notice, like `0.05` for 5 points.
+
+Use the rule of thumb: 16 times `rate` times (1 minus `rate`), divided by `difference` times `difference`. Return the answer rounded to a whole number.""",
+        pattern='One line of arithmetic, with brackets in the right places.',
+        target='a fixed amount of arithmetic',
+        realworld='Before an experiment, teams write down the smallest gain worth shipping and the examples needed to see it. If the eval set is too small, they grow it first, or only claim bigger gains.',
+        starter="""def examples_per_group(rate, difference):
+    # your code here
+    pass
+""",
+        solution="""def examples_per_group(rate, difference):
+    spread = rate * (1 - rate)
+    return round(16 * spread / (difference * difference))
+""",
+        cases=[
+            case(0.7, 0.05, expected=1344, sample=True),
+            case(0.7, 0.1, expected=336),
+            case(0.5, 0.05, expected=1600),
+            case(0.9, 0.05, expected=576),
+            case(0.5, 0.2, expected=100),
+        ],
+        guided="""def examples_per_group(rate, difference):
+    # Replace every ___ with real code, then run the tests.
+    # How spread out pass and fail are: rate times (1 - rate).
+    spread = ___
+
+    # 16 times spread, divided by difference times itself,
+    # rounded to a whole number.
+    return round(16 * spread / ___)
+""",
+        fills=['rate * (1 - rate)', '(difference * difference)'],
+        concepts=[
+            [
+                'Brackets first',
+                'Python multiplies and divides before it adds and subtracts. Brackets make the part inside happen first.',
+                """16 * 0.21 / (0.05 * 0.05)   # 1344.0""",
+            ],
+            ['round', '`round(x)` with no second number gives a whole number.', 'round(1344.0)   # 1344'],
+        ],
+        byhand='The rate is 0.7, so 1 minus the rate is 0.3, and 0.7 times 0.3 is 0.21. 16 times 0.21 is 3.36. The difference times itself is 0.05 times 0.05, which is 0.0025. 3.36 divided by 0.0025 is 1344. Return 1344.',
+        why='A fixed amount of arithmetic, whatever the numbers.',
+        gotchas=[
+            [
+                'Decide the difference first',
+                'Pick the smallest gain worth acting on before you look at any results, or the test can be bent to fit them.',
+            ],
+            [
+                'A rough rule',
+                'It assumes about 80% power and the usual 95% standard. For an exact number, use a power calculator like the one in the stack box.',
             ],
         ],
     ),
@@ -2049,6 +2256,134 @@ for i in range(3):
             [
                 'Bonferroni is strict',
                 'It makes real wins harder to detect. The holdout confirmation is often the more practical guard.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'assign_group',
+    title='Testing with real users (A/B tests)',
+    learn=[
+        'An offline eval says whether a change looks better on your test set. An **A/B test** checks whether it helps **real users**. Each user is put in group A (the current version) or group B (the new one), at random, and you compare what happens, like how often answers get a "Got it".',
+        'Three rules keep it fair. Assign by **user**, not by request, so one person always sees the same version. Assign at **random**, so the two groups are alike in every other way. And keep it **fixed**: the same user must land in the same group every time they come back. A hash of their id does all three, just like "Splits that don\'t move".',
+        'Write down before you start: the main number you will compare, a **guardrail** (a number that must not get worse, like errors or cost), how many users you need ("Enough to notice a difference"), and when you will stop. Then don\'t stop early because it looks good: checking again and again is the same trap as "Testing many variants".',
+    ],
+    example=example('Groups by a hash of the user id, B gets buckets 0 to 49', """u-1001   → bucket 13 → B
+u-1002   → bucket 86 → A
+u-1001 tomorrow   → bucket 13
+         → still B"""),
+    check=question(
+        'You randomly pick A or B for every question a user asks. What is wrong with that?',
+        [
+            'Users who ask more questions get B more often',
+            'One person sees both versions, so the groups mix',
+            'Random picks are too slow to work out each time',
+        ],
+        answer=1,
+        why='Assign by user, so each person sees one version. Otherwise one person\'s experience mixes both, and you can\'t tell which version caused what.',
+    ),
+    angle=angle(
+        pattern='Hash the user, not the request',
+        text="The big idea: a fair A/B test puts each user in one group at random and keeps them there. Your code calls `hash_id`, which turns the user's id into a big number, the same number every time. `% 100` keeps the remainder after dividing by 100, a bucket from 0 to 99. Buckets below the share for B go to B; the rest go to A. It is the same trick as stable splits, used on people.",
+        say='"In an A/B test I put each [[user|request|answer::The person, so they always see one version.]] in a group with a hash of their id. The groups are random, and the same person never [[switches|pays|waits::Moves over to the other version later.]] between versions."',
+        classic=None,
+    ),
+    stack=stack('Tag each trace with its group in MLflow', """group = assign_group(user_id, 50)
+mlflow.update_current_trace(tags={"ab_group": group,
+                                  "ab_test": "prepared-vs-live"})
+# later: compare the Got it rate of each group's traces"""),
+    exercise=exercise(
+        title='Assign Group',
+        topic='experiments',
+        difficulty='easy',
+        fn='assign_group',
+        prompt="""Your function gets two things:
+
+- `user_id`: a user's id, like `"u-1001"`.
+- `share_b`: the percent of users who should get the new version, like `50`.
+
+A helper, `hash_id`, is already written for you. It turns an id into a big number, and the same id always gives the same number. You don't need to change it or follow how it works.
+
+- Call `hash_id(user_id)` to get the number.
+- `% 100` gives its bucket, from 0 to 99.
+- Return `"B"` if the bucket is below `share_b`, and `"A"` otherwise.""",
+        pattern='Turn the id into a bucket, then compare it with the share.',
+        target='a fixed amount of work per user',
+        realworld='Product teams roll a new version out to 10% of users this way, then 50%, then everyone, and every user keeps the same version on every visit.',
+        starter="""def hash_id(item_id):
+    # Given, no need to read it: turns an id
+    # into a big number. The same id always
+    # gives the same number.
+    h = 0
+    for ch in item_id:
+        h = (h * 131 + ord(ch)) % 1000003
+    return (h * h) % 1000003
+
+def assign_group(user_id, share_b):
+    # your code here
+    pass
+""",
+        solution="""def hash_id(item_id):
+    h = 0
+    for ch in item_id:
+        h = (h * 131 + ord(ch)) % 1000003
+    return (h * h) % 1000003
+
+def assign_group(user_id, share_b):
+    bucket = hash_id(user_id) % 100
+    if bucket < share_b:
+        return "B"
+    return "A"
+""",
+        cases=[
+            case('u-1001', 50, expected='B', sample=True),
+            case('u-1002', 50, expected='A'),
+            case('u-1003', 50, expected='A'),
+            case('u-1003', 70, expected='B'),
+            case('bob', 20, expected='A'),
+            case('u-2040', 10, expected='B'),
+            case('alice', 0, expected='A'),
+        ],
+        guided="""def hash_id(item_id):
+    # Given, no need to read it.
+    h = 0
+    for ch in item_id:
+        h = (h * 131 + ord(ch)) % 1000003
+    return (h * h) % 1000003
+
+def assign_group(user_id, share_b):
+    # Replace every ___ with real code, then run the tests.
+    # The user's bucket, from 0 to 99.
+    bucket = ___
+
+    # Buckets below the share for B get the new version.
+    if ___:
+        return "B"
+    return "A"
+""",
+        fills=['hash_id(user_id) % 100', 'bucket < share_b'],
+        concepts=[
+            [
+                'The remainder, %',
+                '`%` gives what is left after dividing. `% 100` always lands between 0 and 99, a bucket.',
+                """1234 % 100   # 34""",
+            ],
+            [
+                'Same input, same output',
+                'Because the hash depends only on the id, the same user lands in the same bucket every time.',
+                """hash_id("u-1001") % 100   # 13, every time""",
+            ],
+        ],
+        byhand='hash_id("u-1001") gives a big number whose remainder after dividing by 100 is 13. The bucket is 13. 13 is below the share for B, 50, so return "B".',
+        why='One hash and one comparison per user, whatever the number of users.',
+        gotchas=[
+            [
+                'Not by request',
+                'Picking A or B for each question makes one person see both versions, and their results mix.',
+            ],
+            [
+                "Don't peek and stop early",
+                'Checking every day and stopping the moment B looks ahead finds lucky wins. Decide the number of users and the stop date first.',
             ],
         ],
     ),
