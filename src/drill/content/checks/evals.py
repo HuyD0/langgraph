@@ -316,4 +316,19 @@ CHECKS = {
             why="For a Brier score lower is better, and 0 is perfect. Scoring the same as a 50% guess "
                 "means model B's chances tell you almost nothing."),
     ],
+    "judge_biases": [
+        ask("Your judge scores 300 pairs in one order only, and version B wins 60 percent of them. "
+            "What should you do before believing it?",
+            ["Score them again in the other order", "Nothing: 60 percent is clear", "Add more pairs in the same order"],
+            answer=0,
+            clue="Could the order alone be giving B its wins?",
+            why="With one order, position bias and real quality look the same. Score the other order too, "
+                "count flips as ties, and see whether B still wins."),
+        ask("Your app runs on one model family. Which judge gives the fairest comparison with a rival app?",
+            ["A judge from a third family", "A judge from your app's family", "A judge from the rival's family"],
+            answer=0,
+            clue="Which judge has no family of its own in the race?",
+            why="A judge tends to favour its own family's style. One from neither family, or two judges "
+                "from different families, keeps the comparison fair."),
+    ],
 }
