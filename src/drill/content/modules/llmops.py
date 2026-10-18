@@ -33,12 +33,12 @@ cost = (input_cost + output_cost) / 1000000"""),
         say='"For each call I work out the cost from its [[input and output|total|average::Two kinds of tokens, each with its own price.]] prices, and add it to that model\'s total. I [[round|add|check::Cutting off extra decimal places.]] only at the end, so small errors don\'t pile up."',
         classic='group_anagrams',
     ),
-    stack=stack('Databricks: tokens per endpoint from AI Gateway usage tracking', """SELECT served_entity_id,
-       sum(input_token_count)  AS input_tokens,
-       sum(output_token_count) AS output_tokens
-FROM system.serving.endpoint_usage
-WHERE request_time >= current_date() - INTERVAL 7 DAYS
-GROUP BY served_entity_id"""),
+    stack=stack('Databricks: tokens per model from Unity Gateway usage tracking', """SELECT destination_model,
+       sum(input_tokens)  AS input_tokens,
+       sum(output_tokens) AS output_tokens
+FROM system.ai_gateway.usage
+WHERE event_time >= current_date() - INTERVAL 7 DAYS
+GROUP BY destination_model"""),
     exercise=exercise(
         title='Cost per Model',
         topic='llmops',

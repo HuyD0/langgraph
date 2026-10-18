@@ -532,7 +532,7 @@ for attempt in range(5):
 # This retries EVERY error by default, even a wrong key.
 # Pass retry_if_exception_type=(...) to retry only some.
 # A 429 from a Databricks endpoint is a rate limit: the endpoint's
-# own built-in limit, or one an admin set in AI Gateway (the
+# own built-in limit, or one an admin set in Unity Gateway (the
 # Databricks layer that puts limits on model endpoints)."""),
     exercise=exercise(
         title='Retry Wait Times',

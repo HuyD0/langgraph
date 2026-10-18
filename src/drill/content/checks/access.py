@@ -10,7 +10,7 @@ CHECKS = {
             clue="Give the least that does the job. The top level lets them change everything.",
             why="Cluster levels go CAN_ATTACH_TO, then CAN_RESTART, then CAN_MANAGE. CAN_RESTART is "
                 "the smallest step that lets them restart it."),
-        ask("Your team has `CAN_USE` on a Vector Search endpoint, but queries to one index still "
+        ask("Your team has `CAN_USE` on an AI Search endpoint, but queries to one index still "
             "fail. What else might they need?",
             ["SELECT on the index in Unity Catalog", "CAN_MANAGE on the endpoint", "A bigger cluster for the search"],
             answer=0,
