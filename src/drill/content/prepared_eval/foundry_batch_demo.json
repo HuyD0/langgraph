@@ -1,6 +1,8 @@
 {
- "about": "A real run of section 10 of notebooks/learning/cost_speed_quality.ipynb (GPT-5.4 mini on Microsoft Foundry: 5 inline calls, then 20 questions as one batch, then one GPT-5.4 judge batch over all 25 answers), recorded for replay. Checks are kept where the status changed. Endpoint and resource names are left out on purpose.",
+ "about": "Section 10 of notebooks/learning/cost_speed_quality.ipynb, run live: GPT-5.4 mini on Microsoft Foundry, 5 inline calls, then 20 questions as one batch, then one GPT-5.4 judge batch (fitted to live answers). Written by MLflow runs 80e4084b5273418b83562a9c8f012597 and caa1863b9cb54ac9bf2cf0f8696de730. Endpoint and resource names are left out on purpose.",
  "recorded": "2026-10-18",
+ "inline_run_id": "80e4084b5273418b83562a9c8f012597",
+ "batch_run_id": "caa1863b9cb54ac9bf2cf0f8696de730",
  "inline_model": "gpt-5.4-mini",
  "batch_model": "gpt-5.4-mini",
  "judge_model": "gpt-5.4",
@@ -28,13 +30,13 @@
  ],
  "inline": {
   "sort_changes/check:0:1": {
-   "text": "“The eval set may be too small to trust” gets one thing right: a small test set can make noise look like a real change. But it misses the main clue in this bucket. Here, the articles were the same. That means the retrieval part did its job the same way. So the problem is not mainly the eval set. It is later in the pipeline.\n\n“The generation step, where the answer is written” is better because it matches the evidence. Same `old_docs` and `new_docs`, different final answer. That points to the prompt, the model, or the scorer.",
-   "first_words_s": 1.412,
-   "total_s": 1.702,
+   "text": "“`The eval set, since it may be too small to trust`” gets one thing right: a small eval set can make patterns noisy, so you should be cautious.\n\nBut it misses the main clue in this lesson. If most regressions are in the “same articles, different answer” bucket, the articles were the same and the change happened after retrieval. That points away from the eval set itself and toward `generation` — the step where the model writes the answer. The issue is more likely the prompt, the model, or the scorer.\n\nSo `generation` is better because the traces already show retrieval stayed the same, and the answer still changed.",
+   "first_words_s": 0.757,
+   "total_s": 1.312,
    "usage": {
-    "completion_tokens": 123,
+    "completion_tokens": 137,
     "prompt_tokens": 1003,
-    "total_tokens": 1126,
+    "total_tokens": 1140,
     "completion_tokens_details": {
      "accepted_prediction_tokens": 0,
      "audio_tokens": 0,
@@ -50,16 +52,16 @@
      "text_tokens": null
     }
    },
-   "cost": 0.00130575
+   "cost": 0.00136875
   },
   "claim_gate/check:2:2": {
-   "text": "`Release, since most are supported` gets one part right: it notices that several claims are okay. But it misses the gate rule. A safe gate does not vote by majority. It checks every claim. One **contradicted** claim means the answer says the opposite of its source, so the whole answer is not safe to release.\n\n`Abstain, since one claim is contradicted` is better because it follows the rule for a safe gate: if any claim is contradicted, do not show the answer, even if the other claims are supported.",
-   "first_words_s": 0.775,
+   "text": "“Release, since most are supported” gets one thing right: it notices that some claims are fine. But it misses the safety rule. A safe gate does not vote by majority. One `contradicted` claim means the answer says the opposite of the source, so the whole answer is not safe to show.\n\n`Abstain, since one claim is contradicted` is better because it follows the gate’s rule: if any claim is `contradicted`, do not release anything, even if the other claims are `supported`.",
+   "first_words_s": 0.776,
    "total_s": 1.144,
    "usage": {
-    "completion_tokens": 117,
+    "completion_tokens": 112,
     "prompt_tokens": 1162,
-    "total_tokens": 1279,
+    "total_tokens": 1274,
     "completion_tokens_details": {
      "accepted_prediction_tokens": 0,
      "audio_tokens": 0,
@@ -75,332 +77,16 @@
      "text_tokens": null
     }
    },
-   "cost": 0.001398
+   "cost": 0.0013755
   },
   "field_status/check:2:1": {
-   "text": "`DROPPED` gets one thing right: you have not seen the field used later yet.\n\nBut it misses the key point. In the lesson, `DROPPED` means the field was accepted, then the runbook or module did not pass it on, so it never reaches the provider. Here, you have only checked the `check` step. You have not opened the runbook or module, so you do not know whether it will be used, filled in, changed, or ignored.\n\n`UNKNOWN: not traced all the way yet` is better because it matches what you truly know now.",
-   "first_words_s": 0.785,
-   "total_s": 1.255,
-   "usage": {
-    "completion_tokens": 128,
-    "prompt_tokens": 1380,
-    "total_tokens": 1508,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.001611
-  },
-  "peak_capacity/check:0:2": {
-   "text": "That answer points at a real idea: the morning may have more demand than later in the day. But it misses the lesson’s main point. The problem is usually not that tokens are “more expensive” in the morning. The problem is that more requests arrive then, so the system hits its `tokens per minute` limit.\n\n`Too many requests` means the limit for that minute was crossed. The limit did not shrink. The traffic spiked.\n\nThe better answer is: “It was sized from the daily average, not the busiest minute.” That is better because a daily average hides short rushes. The system must survive the peak, not the average.\n\nDo you want to try explaining why the lesson uses the busiest hour share and the burst factor?",
-   "first_words_s": 0.924,
-   "total_s": 1.465,
+   "text": "`DROPPED: nothing uses it yet` gets one part right. You have not seen the runbook or module use the field yet. So it is fair to say, “I do not see it used so far.”\n\nBut it misses the key point. `DROPPED` means you already know the field was accepted, then not passed on, and then ignored on the way to the provider. Here, you have not traced that far. The field may still be used later. So “dropped” is too certain.\n\n`UNKNOWN: not traced all the way yet` is better because it says the truth: the check accepted it, but you do not yet know whether the runbook, module, or provider will use it.",
+   "first_words_s": 0.875,
+   "total_s": 1.34,
    "usage": {
     "completion_tokens": 155,
-    "prompt_tokens": 1228,
-    "total_tokens": 1383,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.0016185
-  },
-  "wilson_interval/check:0:0": {
-   "text": "“The leak rate is `0%`” gets one thing right: in the sample, `0 of 30` did get through.\n\nBut it misses the key point. `0%` sounds certain, as if the true leak rate is exactly zero. With only 30 tries, that is too strong. The sample is small, so there may still be some leaks that just did not show up yet.\n\nA better answer is: “The leak rate is probably low, but could be as high as about `11%`.” That is better because it is honest about uncertainty. It uses the `Wilson` interval, which gives a range that stays between `0%` and `100%`.\n\nWhy do you think the lesson prefers a range instead of one exact number?",
-   "first_words_s": 0.786,
-   "total_s": 1.303,
-   "usage": {
-    "completion_tokens": 160,
-    "prompt_tokens": 1012,
-    "total_tokens": 1172,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.001479
-  }
- },
- "batch": {
-  "replay_tools/check:0:0": {
-   "text": "`Nothing: B scored higher, so B wins` is not quite right. It notices the score. But it misses the real problem: the two runs did not face the same data. `Monday` and `Tuesday` can give different order states, so the score is not a fair comparison.\n\n`The live orders changed between the runs` is better because it names the cause. It says the tool read a moving world, so the result may reflect changed orders, not a better agent design.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 103,
-    "prompt_tokens": 1057,
-    "total_tokens": 1160,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000628125
-  },
-  "handoff_kept/check:0:1": {
-   "text": "It is partly right. A bigger model may remember more. But that is not the lesson’s point.\n\nWhat it misses is the real problem. The helper already found the order number. The main agent lost it when it rewrote the helper’s message. So the fix is not “make the main agent smarter.” The fix is “do not drop the facts in the hand-off.”\n\n`Have helpers report every finding, passed on word for word` is better because it keeps the exact facts alive from helper to final answer, so there is less chance the important detail gets washed out.\n\n",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 120,
-    "prompt_tokens": 1107,
-    "total_tokens": 1227,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000685125
-  },
-  "failure_counts/check:2:2": {
-   "text": "“It uses more labels than you did” is partly right because the judge should have enough labels to cover the same kinds of failures. But it misses the main check. More labels do not help if the labels mean different things. For example, `repeated step` must mean the same thing to the judge and to you.\n\n`Its labels match yours on the 50` is better because it checks agreement first. That means the judge is naming the same failure modes you named by hand, so later labels are consistent and useful for counting.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 111,
-    "prompt_tokens": 981,
-    "total_tokens": 1092,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000617625
-  },
-  "smoke_set/check:2:2": {
-   "text": "“Ship it and see what users say” gets one thing right: real users can reveal problems that a tiny test set misses. But it misses the key point here. The smoke set already showed this idea is clearly worse, and shipping it would waste time, money, and maybe hurt users.\n\n“Drop it and try the next idea” is better because the smoke set is meant to catch bad ideas fast, not prove an idea is good. A score like `12 to 28` is just a rough signal, so if it loses clearly, the smart move is to stop early and move on.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 124,
-    "prompt_tokens": 944,
-    "total_tokens": 1068,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000633
-  },
-  "replay_tools/check:1:2": {
-   "text": "“Make up a likely answer” gets one thing right: it tries to keep the run going when the tool result is missing. But it misses the main point of the experiment. You are no longer testing the agent in the same world as the other runs. You are guessing, so the test can look better or worse for the wrong reason.\n\n`Mark the call as missing` is better because it tells you the agent left the frozen world, so you can see that the run was not fairly comparable.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 104,
-    "prompt_tokens": 1041,
-    "total_tokens": 1145,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000624375
-  },
-  "apply_order/check:1:0": {
-   "text": "“It creates `A` first, then `B`” gets the order idea right. But it misses the key problem. Here, `A` needs a value from `B`, and `B` needs a value from `A`. So `A` is not ready before `B`, and `B` is not ready before `A`.\n\nThat means Terraform cannot find a safe starting point. It does not just pick one and keep going. It stops because the two resources are waiting on each other in a loop.\n\nSo `It stops with a Cycle error` is better, because it says the real reason planning fails: the dependency graph has a loop, and there is no valid create order.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 144,
-    "prompt_tokens": 989,
-    "total_tokens": 1133,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000694875
-  },
-  "provider_versions/check:2:0": {
-   "text": "“Run `init` again every day” gets one part right: it can make your laptop pick a provider version again. But it misses the real problem. If `terraform init` is run at different times on different machines, it can still pick different provider versions when new releases appear. Then your laptop and Spacelift may plan different changes.\n\n`Commit .terraform.lock.hcl` is better because it records the exact provider version Terraform chose, so every run uses the same one until someone intentionally updates it with `terraform init -upgrade` and reviews the change.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 117,
-    "prompt_tokens": 1061,
-    "total_tokens": 1178,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000661125
-  },
-  "sort_changes/check:0:1": {
-   "text": "That answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 152,
-    "prompt_tokens": 1003,
-    "total_tokens": 1155,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000718125
-  },
-  "fluke_risk/check:2:0": {
-   "text": "“Run all 50 on the holdout set” gets one part right: it is trying to use the holdout set, which is the final set of examples kept aside for a fair check.\n\nBut it misses the main risk. If you try 50 ideas on the same holdout set, you are still comparing many things. One may look best by luck. Then the holdout set is no longer a clean final test. It is being used too early.\n\n“Test fewer, with a stricter bar” is better because it lowers the chance that a lucky variant looks good, and it keeps the holdout set for one final confirmation only.\n\nIn short: limit how many variants you compare first, and only check the winner once on the holdout set.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 157,
-    "prompt_tokens": 961,
-    "total_tokens": 1118,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000713625
-  },
-  "claim_gate/check:2:2": {
-   "text": "“Release, since most are supported” gets one thing right: most of the claims are okay. But it misses the key safety rule in this lesson. A single **contradicted** claim means the answer says the opposite of the source passage. That is too risky to send out.\n\nA safe `claim_gate` does not vote by majority. It checks every claim. If any claim is `contradicted`, it should `abstain`, even if the others are `supported`.\n\nSo the better answer is: **Abstain, since one claim is contradicted**, because one wrong claim can make the whole answer unsafe.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 131,
-    "prompt_tokens": 1162,
-    "total_tokens": 1293,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.0007305
-  },
-  "field_status/check:2:1": {
-   "text": "`DROPPED: nothing uses it yet` gets one part right. It says we have not seen the field used in the runbook or the module yet.\n\nBut it misses the key point. `DROPPED` means the field was accepted and then ignored on the path we traced. Here, we have not traced that far at all. We only know the `check` allowed a new field in `clusters.yml`. We do not yet know whether the `runbook` passes it on, changes it, or fills it in with a default.\n\nSo `UNKNOWN: not traced all the way yet` is better because it says the truth: the field may still matter, but we have not followed it to the `provider` yet.\n\nCan you tell me what word you would use if the `runbook` later reads the field and sends it to the `module` unchanged?",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 184,
     "prompt_tokens": 1380,
-    "total_tokens": 1564,
+    "total_tokens": 1535,
     "completion_tokens_details": {
      "accepted_prediction_tokens": 0,
      "audio_tokens": 0,
@@ -416,135 +102,16 @@
      "text_tokens": null
     }
    },
-   "cost": 0.0009315
-  },
-  "run_tokens/check:0:1": {
-   "text": "`Output tokens cost less than input tokens, per token` is not the best answer here. It gets one small thing right: many APIs do charge different rates for input and output tokens. But the check question is about the *total run*, not the price split. The teammate’s real mistake is that they priced only the first call, then multiplied by 6.\n\nA better answer is: each step sends back everything that earlier steps added, so the input grows step by step. That is why the whole run costs much more than `6 *` the first call.\n\nThink of it like an email thread. Every reply includes the old thread again.\n\nSo the best choice is the one about resend cost growing with each step. If you want, I can help you spot this pattern in another check question.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 165,
-    "prompt_tokens": 936,
-    "total_tokens": 1101,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.00072225
-  },
-  "dedupe_chunks/check:0:2": {
-   "text": "“Use a bigger model” gets one thing right: a stronger model can sometimes understand queries a bit better and rank results more intelligently. But it misses the real problem here. If the top 5 chunks are the same disclaimer, the index is full of repeated text, so the model keeps seeing the same useless chunk over and over. That wastes embedding money and crowds out useful chunks.\n\n`Remove duplicate chunks before indexing` is better because it fixes the source of the problem. It keeps one cleaned copy of each repeated chunk, so the index has more room for real content and search results are more diverse and useful.\n\nCould you explain why `normalize text` matters before checking for duplicates?",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 140,
-    "prompt_tokens": 744,
-    "total_tokens": 884,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000594
-  },
-  "wilson_interval/check:0:0": {
-   "text": "`\"The leak rate is 0%\"` gets one thing right: in your test, you saw no risky prompts get through. But it misses the key point that 30 tries is still a small sample, so the true leak rate could be above 0%.\n\nA better answer is: `The leak rate is probably low, but with only 30 tries it could still be as high as about 11%`. That is better because it is honest about uncertainty. The `Wilson interval` gives a range that stays between 0% and 100%, instead of pretending the rate is exactly zero.\n\nWhat would you say if the test had 0 passes out of only 5 tries?",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 143,
-    "prompt_tokens": 1012,
-    "total_tokens": 1155,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.00070125
-  },
-  "ablation_report/learn:stops": {
-   "text": "Yes. This rule can stop working in a few common cases.\n\nIf your app changes a lot from day to day, the eval score can drift. Then an ablation today may not hold next week. Re-run the eval often, and use recent questions that look like real user traffic.\n\nIf you have very little data, a 1-point drop may be noise. That means the change may be random, not real. Use more test questions if you can, and look for larger gaps before you delete a part.\n\nIf the app is a bigger `RAG` or agent system, parts can depend on each other. `RAG` means the app first retrieves facts, then the model answers with them. In that case, remove one part at a time, but also test key pairs of parts together, because one part may only help when another part is present.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 178,
-    "prompt_tokens": 995,
-    "total_tokens": 1173,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000773625
-  },
-  "dollars_per_success/learn:term": {
-   "text": "`Cost per success` means: how much money you spend for each task that ends up passing.\n\nThink of it like this. If you pay for a service, but only some tries work, you do not just ask “What did I spend overall?” You ask “What did each win cost me?” That is `cost per success`.\n\nIn this lesson’s example, it is the total bill, including failed runs, divided by the number of passed tasks.\n\nSo:\n- `one agent`: `$0.50` for `6` passes means about `$0.08` per success\n- `team`: `$5.90` for `8` passes means about `$0.74` per success\n\nThat is why the lesson says the team looks more expensive per success, even though it passed a few more tasks.\n\nWhat `cost per success` does **not** tell you is whether the extra passes are worth the extra money. For that, the lesson uses the cost of each extra pass.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 205,
-    "prompt_tokens": 1046,
-    "total_tokens": 1251,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.0008535
+   "cost": 0.0017325
   },
   "peak_capacity/check:0:2": {
-   "text": "That answer is partly right only if the morning has a real spike in traffic. A **limit** is a maximum allowed amount. So yes, the bot may hit a limit earlier in the morning if more requests arrive then. But “tokens cost more in the morning” is not the right idea. Tokens do not change price by time of day in this lesson. The problem is **volume**: too many requests arrive in one short burst, so the minute goes over the allowed `tokens per minute`.\n\n`It was sized from the daily average, not the busiest minute` is better because it names the real mistake. The average hides rush hour, but the limit is checked minute by minute.\n\nWhat do you think the busy-hour share and burst factor are trying to protect against?",
-   "finish": "stop",
+   "text": "That guess gets one thing right: it points to a limit problem. But it gets the reason wrong. Tokens do not cost more in the morning. The limit is not usually smaller then. What changes is the load. More users arrive at once, so the minute gets busier and can hit the `TPM` limit, which means tokens per minute.\n\nThe better answer is: “It was sized from the daily average, not the busiest minute.” That matters because a calm average can hide a morning burst.\n\nSo the lesson is about traffic shape, not token price. If you want, I can help you turn that into a one-sentence exam answer.",
+   "first_words_s": 0.856,
+   "total_s": 1.477,
    "usage": {
-    "completion_tokens": 159,
+    "completion_tokens": 136,
     "prompt_tokens": 1228,
-    "total_tokens": 1387,
+    "total_tokens": 1364,
     "completion_tokens_details": {
      "accepted_prediction_tokens": 0,
      "audio_tokens": 0,
@@ -560,62 +127,15 @@
      "text_tokens": null
     }
    },
-   "cost": 0.00081825
+   "cost": 0.001533
   },
-  "callable_tools/check:0:2": {
-   "text": "`SQL` is not the reason by itself. A SQL function can be called by an agent just fine if the permissions are right. The lesson shows both `SQL` and `PYTHON` functions as tools. What matters is access.\n\nWhat that answer gets right is the **deployed agent** part. Once the agent is running in Databricks, it does not use Mai’s notebook access. It uses its own identity.\n\nWhat it misses is the real permission check. The deployed agent runs as a **service principal**. That is an app identity, not a person. If that identity does not have `EXECUTE` on `main.support.lookup_order`, the tool call fails.\n\nSo `The agent's service principal has no EXECUTE on the function` is better because it matches the lesson’s rule: notebook tests can work for a person, while deployment uses the agent’s own permissions.",
-   "finish": "stop",
+  "wilson_interval/check:0:0": {
+   "text": "“The leak rate is 0%” gets one thing right: in the 30 test prompts, none slipped through. But it misses the main point. `0` out of `30` does not prove the true leak rate is exactly `0%`. It just means the sample saw no leaks, and with a small sample there is still uncertainty.\n\nSo, “The leak rate is probably low, but could be as high as about 11%” is better because it is honest about that uncertainty. It says what the data suggests, without pretending the true rate must be zero.\n\nWhat would you say if you had only `3` safe tests instead of `30`?",
+   "first_words_s": 0.756,
+   "total_s": 1.28,
    "usage": {
-    "completion_tokens": 184,
-    "prompt_tokens": 1371,
-    "total_tokens": 1555,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000928125
-  },
-  "guard_destroys/check:1:1": {
-   "text": "“Only if the reviewer turns it on” gets one part right: a reviewer can choose to look at the plan more closely. But it misses the main point. A plan policy is not a manual checklist. It is an automatic rule that Spacelift runs every time, even if `team-sales` is rushed, or someone on the `grp-sales-dev-owners` group is tired on Friday evening.\n\nSo this answer is weaker because it makes the check sound optional and human-led. The lesson is about the policy doing the checking by itself, before any apply.\n\n`Yes, it runs on every run by itself` is better because it matches how plan policies work: automatic, always on, and able to block dangerous changes like destroying a protected `service_principals.yml`-backed identity or other hard-to-rebuild Azure Databricks resources.\n\nWhat resource in your `Foundation` stage would you protect first?",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 189,
-    "prompt_tokens": 917,
-    "total_tokens": 1106,
-    "completion_tokens_details": {
-     "accepted_prediction_tokens": 0,
-     "audio_tokens": 0,
-     "reasoning_tokens": 0,
-     "rejected_prediction_tokens": 0,
-     "text_tokens": null
-    },
-    "prompt_tokens_details": {
-     "audio_tokens": 0,
-     "cache_write_tokens": null,
-     "cached_tokens": 0,
-     "image_tokens": null,
-     "text_tokens": null
-    }
-   },
-   "cost": 0.000769125
-  },
-  "fluke_risk/learn:term": {
-   "text": "`Design` and `Bonferroni` are different, but they work together.\n\n`Design` is the planning step. It means: do not test too many variants. Pick a small number of prompt changes, and be careful about what you compare. This lowers the chance of being fooled by luck.\n\n`Bonferroni` is a stricter rule for the test itself. If you do many comparisons, you divide the usual 5% false-positive limit by the number of comparisons. So if you test 20 variants, the threshold becomes about `0.25%` for each one.\n\nEveryday example: imagine many people racing, and you only want to cheer for a real winner. `Design` says, “Do not invite too many racers.” `Bonferroni` says, “If you do invite many, make the win harder to claim.”\n\nIn the lesson’s example, 20 variants means a lucky winner is likely, about `64%`. So `Design` reduces the problem, and `Bonferroni` adds stricter proof. Then `Evaluate` confirms the best one once on the holdout set.",
-   "finish": "stop",
-   "usage": {
-    "completion_tokens": 236,
-    "prompt_tokens": 916,
+    "completion_tokens": 140,
+    "prompt_tokens": 1012,
     "total_tokens": 1152,
     "completion_tokens_details": {
      "accepted_prediction_tokens": 0,
@@ -632,180 +152,492 @@
      "text_tokens": null
     }
    },
-   "cost": 0.0008745
+   "cost": 0.001389
+  }
+ },
+ "batch": {
+  "claim_gate/check:2:2": {
+   "text": "`Release, since most are supported` gets one part right: the other claims are fine. But it misses the safety rule. A single `contradicted` claim means one statement says the opposite of its source passage, so the answer is not safe to send as-is.\n\nThat is why `Abstain, since one claim is contradicted` is better. A safe gate does not pick the “best average” answer. It stops when any claim is contradicted, because that means the response contains a wrong statement.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 109,
+    "prompt_tokens": 1162,
+    "total_tokens": 1271,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000681
+  },
+  "replay_tools/check:0:0": {
+   "text": "“Nothing: B scored higher, so B wins” gets one thing right. It notices that `B` had the better score.\n\nBut it misses the real problem. The two runs did not see the same world. The tools read live order data, and that data changed between Monday and Tuesday. So the scores are not a fair comparison of the agent designs.\n\n“The live orders changed between the runs” is better because it names the cause of the unfair test. It tells you the difference came from the data, not from the agent.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 111,
+    "prompt_tokens": 1057,
+    "total_tokens": 1168,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000646125
+  },
+  "field_status/check:2:1": {
+   "text": "`DROPPED: nothing uses it yet` gets one idea right. You have not seen the field used by the runbook or the module yet.\n\nBut it misses the key point. `DROPPED` means the field was seen and then not passed on. Here, you have not traced that far. The check only said the field is allowed. After that, you still do not know whether the runbook will keep it, change it, or ignore it. So `DROPPED` jumps too far.\n\n`UNKNOWN: not traced all the way yet` is better because it says the field may still matter, but you have not followed it to the provider yet.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 143,
+    "prompt_tokens": 1380,
+    "total_tokens": 1523,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.00083925
+  },
+  "fluke_risk/check:2:0": {
+   "text": "`Run all 50 on the holdout set` gets one thing right: it uses the holdout set, which is the set kept aside for the final check. But it misses the main risk. If you try 50 ideas on that same set, you are no longer doing a clean final check. You are letting many tries “peek” at the answer key, so one idea may look good by luck.\n\nThat is the multiple comparisons problem. More tries means a higher chance that at least one wins by chance.\n\n`Test fewer, with a stricter bar` is better because it limits how many ideas you compare, and it makes it harder for a lucky result to count as a win. Then you confirm the best one only once on the holdout set.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 158,
+    "prompt_tokens": 961,
+    "total_tokens": 1119,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000715875
+  },
+  "peak_capacity/check:0:2": {
+   "text": "That answer gets one thing right: it notices there is a limit, and that a limit can cause `429` errors. But “tokens cost more in the morning” is not the reason. Tokens do not get more expensive by time of day. The problem is that more users arrive in that morning burst, so the model gets more requests per minute than the average suggests.\n\n“It was sized from the daily average, not the busiest minute” is better because it matches the real mistake in the lesson: the system looked calm on average, but it was overloaded during the peak minute, so it hit the `tokens-per-minute` limit.\n\nWhat makes the busiest minute matter is the short spike, not token price.\n\nDo you want to try explaining why the `gateway` can also return `429`, even if the model quota is high?",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 170,
+    "prompt_tokens": 1228,
+    "total_tokens": 1398,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000843
+  },
+  "dedupe_chunks/check:0:2": {
+   "text": "“Use a bigger model” gets one thing right: a stronger model can sometimes understand messy text better. But it misses the real problem here. The issue is not that the model is too weak. The problem is that the index is full of repeated chunks, so the same disclaimer keeps winning the search.\n\n“Remove duplicate chunks before indexing” is better because it fixes the source of the waste. You store one copy of each cleaned text, so you pay for fewer embeddings and give useful chunks a better chance to show up.\n\nIn this lesson, `dedupe_chunks` should keep the first chunk for each cleaned key and skip later repeats.\n\nA `key` is just a normalised version of the text. That means lowercase, and extra spaces or line breaks squeezed into single spaces.\n\nWant a quick memory trick for this check question?",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 170,
+    "prompt_tokens": 744,
+    "total_tokens": 914,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.0006615
+  },
+  "ablation_report/learn:stops": {
+   "text": "Yes. This lesson can stop being enough in a few common cases.\n\nIf the app changes over time, the old eval can lie. For example, a `reranker` may look useful today, then become less useful after the search data changes. Re-run ablations often, and use fresh test questions.\n\nIf you have very little data, a 1-point drop may just be noise. Then one removed part can look important by chance. Use more questions, or repeat the eval and look for the same drop again.\n\nIf the system is much bigger, parts can help only together. A `rewrite` step may seem useless alone, but help a lot when paired with `memory`. In that case, test combinations too, not just one part at a time.\n\nWhich of your parts feels most uncertain right now?",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 167,
+    "prompt_tokens": 995,
+    "total_tokens": 1162,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000748875
+  },
+  "fluke_risk/learn:term": {
+   "text": "`Design` and `Bonferroni` are different guards.\n\n`Design` is the planning step. It says: do not test too many variants. Test only a few. That lowers the chance of being fooled by luck.\n\n`Bonferroni` is a stricter rule inside `Design`. If you do make several comparisons, it splits the usual 5% false positive limit across them. So with 20 comparisons, the lesson says to use about `0.25%` for each one.\n\nThey work together. `Design` reduces the number of chances for luck to sneak in. `Bonferroni` makes each chance harder to win.\n\nEveryday example: if you taste 20 soups, one may seem best just by accident. `Design` says “taste fewer soups.” `Bonferroni` says “if you taste many, be much more strict about calling one the winner.”\n\nIn the lesson’s example, 20 variants give about a `64%` chance that at least one looks like a winner by luck. `Bonferroni` lowers the per-variant cutoff, and the holdout set confirms the winner once.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 240,
+    "prompt_tokens": 916,
+    "total_tokens": 1156,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.0008835
+  },
+  "run_tokens/check:0:1": {
+   "text": "`Output tokens cost less than input tokens, per token` is not the best answer here. It gets one thing right: model output is often priced lower than input. But that is not the main mistake in the teammate’s estimate.\n\nThe main miss is the **running total**. An agent does not just make 6 separate first calls. It sends back the whole `context` each time, including earlier instructions, answers, and tool results. So later steps are bigger.\n\nSo `Each step resends everything that earlier steps added` is better, because it explains why the cost grows across the whole run, not just why output may be cheaper.\n\nWhat does the lesson say the teammate forgot to include in their estimate: pricing, or the growing `context`?",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 157,
+    "prompt_tokens": 936,
+    "total_tokens": 1093,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.00070425
+  },
+  "smoke_set/check:2:2": {
+   "text": "“Ship it and see what users say” gets one thing right: real users do give real feedback. But it misses the main point here. A score of `12 to 28` on the smoke set means the new idea is clearly worse. The smoke set is a fast filter for bad ideas. It is not the place to hope the result changes in production. Shipping now would waste time, money, and user trust.\n\n“Drop it and try the next idea” is better because it stops a weak idea early and keeps you moving.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 112,
+    "prompt_tokens": 944,
+    "total_tokens": 1056,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000606
+  },
+  "dollars_per_success/learn:term": {
+   "text": "`Cost per success` means: how many dollars you spend for each task that ends up passing.\n\nIn plain words, it asks, “If I want one good result, what does that cost me?”\n\nThis lesson uses it as:\n- total spending, including failed runs\n- divided by the number of passed runs\n\nSo in the example:\n- `one agent` costs `$0.50` and passes `6` tasks\n- `team` costs `$5.90` and passes `8` tasks\n\nTheir cost per success is:\n- `one agent`: about `$0.50 / 6 = $0.08` per pass\n- `team`: about `$5.90 / 8 = $0.74` per pass\n\nSo the team passes more tasks, but each passed task costs much more. That is why the lesson also asks for the cost of each extra pass.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 186,
+    "prompt_tokens": 1046,
+    "total_tokens": 1232,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.00081075
+  },
+  "guard_destroys/check:1:1": {
+   "text": "“Only if the reviewer turns it on” gets one part right: a reviewer can choose to look at a plan policy or skip it.\n\nBut it misses the main point of the lesson. A `plan policy` is not a manual checklist. It runs by itself on every Spacelift run. That means it still checks the Friday evening `plan` even if the reviewer is tired or misses something.\n\nSo the better idea is: `Yes, it runs on every run by itself.`  \nThat matters because it protects the things you cannot easily rebuild, like Azure Databricks workspaces, storage accounts, and metastores, even when people are busy.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 135,
+    "prompt_tokens": 917,
+    "total_tokens": 1052,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000647625
+  },
+  "callable_tools/check:0:2": {
+   "text": "“SQL functions cannot be called once an agent is deployed” is too broad. It gets at the real symptom: the notebook test can work while the deployed agent fails. But the cause is not that the function is SQL. A SQL function can be called by an agent if permissions are set right.\n\nWhat it misses is the permission split between the person testing and the deployed agent. The deployed agent usually runs as a `service principal`, which is an app identity, not Mai’s user account. So the notebook may succeed under Mai’s `EXECUTE` access, while the agent fails because its own identity lacks `EXECUTE`.\n\nSo “The agent’s service principal has no `EXECUTE` on the function” is better because it names the identity that actually runs the call and the missing permission.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 163,
+    "prompt_tokens": 1371,
+    "total_tokens": 1534,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000880875
+  },
+  "handoff_kept/check:0:1": {
+   "text": "That idea gets one part right: a bigger model may remember and rewrite a bit better. But it misses the real bug. The loss happens at the hand-off, when the main agent only sees a helper’s final message and then restates it. More memory does not stop facts from being dropped.\n\nThe better first fix is: make helpers put every finding in their final message, and make the main agent pass that message on word for word. That protects the facts, like the order number, instead of trusting the model to remember them.\n\nOne question: if the helper found `order 4412`, what should you check in the final answer?",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 133,
+    "prompt_tokens": 1107,
+    "total_tokens": 1240,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000714375
+  },
+  "sort_changes/check:0:1": {
+   "text": "`The eval set` is a reasonable concern because a small test set can give noisy results. A few questions can make a pattern look bigger or smaller than it really is. That part is true.\n\nBut it misses the main clue in this lesson. If the traces show the **same articles** went to the answer step, then retrieval is probably not the problem. The issue is later in the pipeline, where the model turns those articles into text.\n\nSo `The generation step, where the answer is written` is better because it matches the evidence from the traces. The articles stayed the same, but the answer changed, so you look at the prompt, the model, or the scorer.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 141,
+    "prompt_tokens": 1003,
+    "total_tokens": 1144,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000693375
+  },
+  "provider_versions/check:2:0": {
+   "text": "“Run `init` again every day” gets one thing right: it can make your laptop fetch a newer provider, so you may match what Spacelift sees that day.\n\nBut it misses the real problem. If your laptop and Spacelift run `init` at different times, they can still pick different provider versions. That means the plan can change again tomorrow. It is not a stable promise.\n\n`Commit .terraform.lock.hcl` is better because it records the exact provider version once, so everyone uses the same one until someone intentionally updates it.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 116,
+    "prompt_tokens": 1061,
+    "total_tokens": 1177,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000658875
+  },
+  "replay_tools/check:1:2": {
+   "text": "“Make up a likely answer” gets one thing right: it tries to keep the run going. But it misses the main goal of a replay test. The point is not to be helpful. The point is to keep the world fixed so every agent design sees the same facts.\n\nIf you invent an answer, you hide a new tool call that was never in the recording. That can make two runs look the same when they are not.\n\nMarking the call as `missing` is better because it tells you the agent left the frozen world. Then you can judge the run fairly and decide whether to record that call too.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 128,
+    "prompt_tokens": 1041,
+    "total_tokens": 1169,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000678375
+  },
+  "wilson_interval/check:0:0": {
+   "text": "“The leak rate is 0%” gets one part right: none of the `30` risky prompts slipped through in this sample. But it misses the main point. A sample of `30` is small, so `0` leaks does not prove the true leak rate is really zero. The Wilson interval says the true rate could still be as high as about `11%`.\n\nSo, “The leak rate is probably low, but could be as high as about `11%`” is better because it is honest about uncertainty. It uses the sample result, but it does not pretend the real rate must be exactly `0%`.\n\nWould you like a quick intuition for why `0` out of `30` still allows room for risk?",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 154,
+    "prompt_tokens": 1012,
+    "total_tokens": 1166,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000726
+  },
+  "failure_counts/check:2:2": {
+   "text": "`“It uses more labels than you did”` gets one thing right: the model can only help if it is producing labels in the same set you use. But it misses the real check. More labels is not enough if the names mean different things. For example, your `repeated step` might be the model’s `looping`, and then the counts will be split or wrong.\n\nWhat matters first is that its labels match yours on the 50 hand-labeled traces. That means the same failure gets the same label, so you can trust the counts and compare runs fairly.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 122,
+    "prompt_tokens": 981,
+    "total_tokens": 1103,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000642375
+  },
+  "apply_order/check:1:0": {
+   "text": "`It creates A first, then B` gets one part right: Terraform does pick an order. But it misses the key point here. If `A` needs a value from `B`, and `B` needs a value from `A`, there is no valid first step. Neither one can be created before the other. That is a loop in the dependency graph, so Terraform cannot plan a safe order.\n\nSo `It stops with a Cycle error` is better because it says the real outcome: the resources wait on each other in a circle, and Terraform reports `Error: Cycle` instead of guessing an order.",
+   "finish": "stop",
+   "usage": {
+    "completion_tokens": 128,
+    "prompt_tokens": 989,
+    "total_tokens": 1117,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": 0,
+     "audio_tokens": 0,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": 0,
+     "text_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": 0,
+     "cache_write_tokens": null,
+     "cached_tokens": 0,
+     "image_tokens": null,
+     "text_tokens": null
+    }
+   },
+   "cost": 0.000658875
   }
  },
  "verdicts": {
-  "smoke_set/check:2:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0014975
-  },
-  "replay_tools/check:1:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0015525
-  },
-  "inline:field_status/check:2:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00196875
-  },
-  "field_status/check:2:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00207625
-  },
-  "run_tokens/check:0:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00153875
-  },
-  "fluke_risk/learn:term": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0016025
-  },
-  "wilson_interval/check:0:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00160625
-  },
-  "apply_order/check:1:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0015375
-  },
-  "inline:wilson_interval/check:0:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0016275
-  },
-  "inline:sort_changes/check:0:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00152875
-  },
-  "guard_destroys/check:1:1": {
-   "correct": false,
-   "answers_it": true,
-   "plain": false,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": false,
-   "notes": "It wrongly treats a service principal identity as a protected resource from service_principals.yml, while the lesson says to start with workspaces, storage accounts, and metastores, and it is a bit too jargony for beginners.",
-   "cost": 0.00185625
-  },
-  "provider_versions/check:2:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00155625
-  },
-  "ablation_report/learn:stops": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00162875
-  },
-  "inline:claim_gate/check:2:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0016825
-  },
-  "dedupe_chunks/check:0:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0012675
-  },
-  "replay_tools/check:0:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00153375
-  },
-  "dollars_per_success/learn:term": {
-   "correct": false,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": false,
-   "notes": "It wrongly says the lesson says the team looks more expensive per success; the lesson says cost per success hides the issue because the team's is only about $0.74.",
-   "cost": 0.00193625
-  },
   "failure_counts/check:2:2": {
    "correct": true,
    "answers_it": true,
@@ -814,27 +646,7 @@
    "standalone": true,
    "pass": true,
    "notes": "",
-   "cost": 0.00144875
-  },
-  "handoff_kept/check:0:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.001655
-  },
-  "inline:peak_capacity/check:0:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00189125
+   "cost": 0.0015
   },
   "fluke_risk/check:2:0": {
    "correct": true,
@@ -844,9 +656,9 @@
    "standalone": true,
    "pass": true,
    "notes": "",
-   "cost": 0.0015225
+   "cost": 0.00156125
   },
-  "callable_tools/check:0:2": {
+  "apply_order/check:1:0": {
    "correct": true,
    "answers_it": true,
    "plain": true,
@@ -854,7 +666,27 @@
    "standalone": true,
    "pass": true,
    "notes": "",
-   "cost": 0.002065
+   "cost": 0.00148
+  },
+  "wilson_interval/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00162
+  },
+  "ablation_report/learn:stops": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.001615
   },
   "sort_changes/check:0:1": {
    "correct": true,
@@ -864,17 +696,147 @@
    "standalone": true,
    "pass": true,
    "notes": "",
-   "cost": 0.0015275
+   "cost": 0.00155125
+  },
+  "field_status/check:2:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.002025
+  },
+  "inline:claim_gate/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00167625
+  },
+  "provider_versions/check:2:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015925
   },
   "claim_gate/check:2:2": {
    "correct": true,
    "answers_it": true,
    "plain": true,
-   "no_giveaway": false,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00171
+  },
+  "inline:sort_changes/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00154625
+  },
+  "smoke_set/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0014825
+  },
+  "replay_tools/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00154375
+  },
+  "inline:peak_capacity/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0018675
+  },
+  "fluke_risk/learn:term": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0016075
+  },
+  "guard_destroys/check:1:1": {
+   "correct": false,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
    "standalone": true,
    "pass": false,
-   "notes": "It gives away the coding exercise logic by explicitly stating the claim_gate rule for any contradicted claim instead of just explaining the check question.",
-   "cost": 0.001895
+   "notes": "It wrongly says a reviewer can choose to look at or skip a plan policy, but the lesson says the policy runs automatically on every run.",
+   "cost": 0.00160125
+  },
+  "callable_tools/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00203875
+  },
+  "inline:wilson_interval/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0016025
+  },
+  "run_tokens/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00152875
+  },
+  "inline:field_status/check:2:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0020025
   },
   "peak_capacity/check:0:2": {
    "correct": true,
@@ -884,7 +846,299 @@
    "standalone": true,
    "pass": true,
    "notes": "",
-   "cost": 0.00189625
+   "cost": 0.00191
+  },
+  "dedupe_chunks/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": false,
+   "standalone": true,
+   "pass": false,
+   "notes": "It gives away the coding exercise by stating that dedupe_chunks should keep the first chunk for each cleaned key and skip later repeats.",
+   "cost": 0.0015
+  },
+  "replay_tools/check:1:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015825
+  },
+  "dollars_per_success/learn:term": {
+   "correct": false,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": false,
+   "notes": "It wrongly says the team’s cost per success is much more, but the lesson says the team’s cost per success is only about $0.74 and that this number can hide the real extra cost.",
+   "cost": 0.00201
+  },
+  "handoff_kept/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00167125
+  }
+ },
+ "verdicts_strict": {
+  "apply_order/check:1:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.001505
+  },
+  "claim_gate/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00166
+  },
+  "sort_changes/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00153875
+  },
+  "fluke_risk/check:2:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00154875
+  },
+  "inline:claim_gate/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00170125
+  },
+  "fluke_risk/learn:term": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.001595
+  },
+  "field_status/check:2:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.000679
+  },
+  "replay_tools/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00153125
+  },
+  "smoke_set/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00147
+  },
+  "replay_tools/check:1:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00157
+  },
+  "inline:field_status/check:2:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00199
+  },
+  "inline:sort_changes/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00153375
+  },
+  "peak_capacity/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It ends with a follow-up question, so it is not fully standalone for a tapped help answer.",
+   "cost": 0.0020475
+  },
+  "wilson_interval/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It ends by asking the learner a follow-up question, so it is not fully standalone.",
+   "cost": 0.0016975
+  },
+  "inline:peak_capacity/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It ends with an unnecessary offer to help ('If you want, I can help...'), so it is not fully standalone.",
+   "cost": 0.0020425
+  },
+  "guard_destroys/check:1:1": {
+   "correct": false,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": false,
+   "notes": "It wrongly says a reviewer can choose to look at or skip a plan policy, but the lesson says a plan policy runs automatically on every run.",
+   "cost": 0.00159625
+  },
+  "ablation_report/learn:stops": {
+   "correct": false,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It adds advice not taught here ('test combinations too') and ends with a follow-up question, so it is not fully grounded in the lesson and not standalone.",
+   "cost": 0.0018425
+  },
+  "inline:wilson_interval/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It ends with a follow-up question, so it is not standalone for a learner who just tapped the hint.",
+   "cost": 0.001755
+  },
+  "callable_tools/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00202625
+  },
+  "provider_versions/check:2:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015425
+  },
+  "failure_counts/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0014875
+  },
+  "dedupe_chunks/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": false,
+   "no_giveaway": false,
+   "standalone": false,
+   "pass": false,
+   "notes": "It adds unnecessary coding-exercise details, ends with a follow-up prompt, and gives away the exercise idea instead of just answering the check question.",
+   "cost": 0.00151
+  },
+  "dollars_per_success/learn:term": {
+   "correct": false,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": false,
+   "notes": "It wrongly says the team's cost per success means each passed task costs much more, but the lesson says cost per success can hide the real tradeoff and gives the team's example as only about $0.74.",
+   "cost": 0.002005
+  },
+  "run_tokens/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It ends with a follow-up question instead of fully standing alone for the learner.",
+   "cost": 0.00163625
+  },
+  "handoff_kept/check:0:1": {
+   "correct": true,
+   "answers_it": false,
+   "plain": false,
+   "no_giveaway": true,
+   "standalone": false,
+   "pass": false,
+   "notes": "It adds an unnecessary follow-up question instead of ending with a standalone answer, so it does not fully answer the prompt as asked.",
+   "cost": 0.00185375
   }
  },
  "jobs": {
@@ -897,402 +1151,61 @@
      "total": 20,
      "completed": 0,
      "failed": 0,
-     "after_s": 0
+     "after_s": 1
     },
     {
      "status": "in_progress",
      "total": 20,
      "completed": 0,
      "failed": 0,
-     "after_s": 61
+     "after_s": 182
     },
     {
      "status": "finalizing",
      "total": 20,
      "completed": 0,
      "failed": 0,
-     "after_s": 406
+     "after_s": 544
     },
     {
      "status": "completed",
      "total": 20,
      "completed": 20,
      "failed": 0,
-     "after_s": 446
+     "after_s": 604
     }
    ],
    "retried": 0,
-   "minutes": 7.5,
-   "first_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "method": "POST",
-    "url": "/chat/completions",
-    "body": {
-     "model": "gpt-5.4-mini-batch",
-     "messages": [
-      {
-       "role": "user",
-       "content": "You are a patient tutor helping with one lesson of an AI engineering course. The learner is new to coding and is learning AI engineering: Databricks for agents, LangGraph, LangChain and MLflow, plus Terraform for Azure Databricks. Explain any jargon in plain words. Never use Big-O notation; say things like \"it walks through the list once\" instead. Short sentences. Encouraging but not gushing. Wrap identifiers in backticks.\n\nLesson: Sorting changes before reading them\nWhat the lesson says:\nWith a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.\nThe most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.\nThen read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.\nIts example (Two buckets, from the traces alone):\nquestion      old articles          new articles          bucket\nbilling-06    kb-12 kb-01 kb-02     kb-04 kb-09 kb-01     retrieval differed\nshipping-07   kb-09 kb-03 kb-10     kb-10 kb-07 kb-09     retrieval differed\nrefund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, different answer\nIn their stack (MLflow: the articles each version sent, from the traces):\ndef sent(trace):\n    steps = trace.search_spans(span_type=\"RERANKER\") or trace.search_spans(span_type=\"RETRIEVER\")\n    return [d[\"doc_id\"] for d in steps[0].outputs]\nInterview angle: Compare as sets, then bucket. The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.\nThe lesson's coding exercise: Bucket the Changes, writing `sort_changes`. Your function gets `changed`: the questions whose result changed between two versions. Each is a dict like `{\"qid\": \"billing-06\", \"old_docs\": [\"kb-12\", \"kb-01\"], \"new_docs\": [\"kb-04\", \"kb-01\"]}`. `qid` is the question's id. `old_docs` and `new_docs` are the help articles each version found and gave to the model to write its answer.\n\nThey are on the Check step of the lesson.\n\nTheir message: Why not “The eval set, since it may be too small to trust”?\nHow to answer: In the lesson's Check question (\"Most of your regressions are in the \"same articles, different answer\" bucket. Where should you look?\"), explain in plain words why \"The eval set, since it may be too small to trust\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"The generation step, where the answer is written\" better.\n\nRules:\n- Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.\n- Never write code for the lesson's coding exercise (`sort_changes`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a ```python block.\n- The Practice step asks questions with one right option each. Never say which option is right: give a clue that points at the evidence, and let them choose.\n- If your last message asked them a question, their message is their answer: say what is right, fix what is not, then ask one more question.\n- If they describe their own situation, answer for that situation, and say which part of the lesson applies and which part changes.\n- Only add a code example if it makes the answer clearer, and make sure it matches what you said.\n- Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.\n- Reply with the answer only."
-      }
-     ],
-     "max_completion_tokens": 4000
-    }
-   },
-   "first_output_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "text": "That answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?",
-    "finish": "stop",
-    "usage": {
-     "completion_tokens": 152,
-     "prompt_tokens": 1003,
-     "total_tokens": 1155,
-     "completion_tokens_details": {
-      "accepted_prediction_tokens": 0,
-      "audio_tokens": 0,
-      "reasoning_tokens": 0,
-      "rejected_prediction_tokens": 0,
-      "text_tokens": null
-     },
-     "prompt_tokens_details": {
-      "audio_tokens": 0,
-      "cache_write_tokens": null,
-      "cached_tokens": 0,
-      "image_tokens": null,
-      "text_tokens": null
-     }
-    }
-   }
+   "minutes": 10.1
   },
   "judge": {
-   "requests": 25,
+   "requests": 50,
    "status": "completed",
    "checks": [
     {
      "status": "validating",
-     "total": 25,
+     "total": 50,
      "completed": 0,
      "failed": 0,
-     "after_s": 0
+     "after_s": 61
     },
     {
      "status": "in_progress",
-     "total": 25,
+     "total": 50,
      "completed": 0,
      "failed": 0,
-     "after_s": 102
-    },
-    {
-     "status": "finalizing",
-     "total": 25,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 426
+     "after_s": 182
     },
     {
      "status": "completed",
-     "total": 25,
-     "completed": 25,
+     "total": 50,
+     "completed": 50,
      "failed": 0,
-     "after_s": 466
+     "after_s": 484
     }
    ],
    "retried": 0,
-   "minutes": 7.9,
-   "first_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "method": "POST",
-    "url": "/chat/completions",
-    "body": {
-     "model": "gpt-5.4-batch",
-     "messages": [
-      {
-       "role": "user",
-       "content": "You check a tutor's answer before it is shown to beginners. Be strict.\n\nLesson: Sorting changes before reading them\nWhat the lesson says:\nWith a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.\nThe most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.\nThen read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.\nIts example (Two buckets, from the traces alone):\nquestion      old articles          new articles          bucket\nbilling-06    kb-12 kb-01 kb-02     kb-04 kb-09 kb-01     retrieval differed\nshipping-07   kb-09 kb-03 kb-10     kb-10 kb-07 kb-09     retrieval differed\nrefund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, different answer\nIn their stack (MLflow: the articles each version sent, from the traces):\ndef sent(trace):\n    steps = trace.search_spans(span_type=\"RERANKER\") or trace.search_spans(span_type=\"RETRIEVER\")\n    return [d[\"doc_id\"] for d in steps[0].outputs]\nInterview angle: Compare as sets, then bucket. The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.\nThe lesson's coding exercise: Bucket the Changes, writing `sort_changes`. Your function gets `changed`: the questions whose result changed between two versions. Each is a dict like `{\"qid\": \"billing-06\", \"old_docs\": [\"kb-12\", \"kb-01\"], \"new_docs\": [\"kb-04\", \"kb-01\"]}`. `qid` is the question's id. `old_docs` and `new_docs` are the help articles each version found and gave to the model to write its answer.\n\nThe question the learner tapped: Why not “The eval set, since it may be too small to trust”?\nHow it should be answered: In the lesson's Check question (\"Most of your regressions are in the \"same articles, different answer\" bucket. Where should you look?\"), explain in plain words why \"The eval set, since it may be too small to trust\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"The generation step, where the answer is written\" better.\n\nThe tutor's answer:\n---\nThat answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?\n---\n\nCheck each, using only the lesson above as the truth:\n1. correct: nothing in it is wrong or contradicts the lesson.\n2. answers_it: it answers the question as asked.\n3. plain: plain words, jargon explained, no Big-O or maths notation, under about 200 words.\n4. no_giveaway: it does not write or list the coding exercise's solution (`sort_changes`).\n5. standalone: it makes sense on its own (no \"as you said\"). Ending with one question back to the learner is fine: the live tutor is meant to.\n\nReply with JSON only: {\"correct\": true|false, \"answers_it\": true|false, \"plain\": true|false, \"no_giveaway\": true|false, \"standalone\": true|false, \"notes\": \"one sentence on the biggest problem, or empty\"}"
-      }
-     ],
-     "max_completion_tokens": 2000
-    }
-   },
-   "first_output_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "text": "{\"correct\":true,\"answers_it\":true,\"plain\":true,\"no_giveaway\":true,\"standalone\":true,\"notes\":\"\"}",
-    "finish": "stop",
-    "usage": {
-     "completion_tokens": 33,
-     "prompt_tokens": 1024,
-     "total_tokens": 1057,
-     "completion_tokens_details": {
-      "accepted_prediction_tokens": 0,
-      "audio_tokens": 0,
-      "reasoning_tokens": 0,
-      "rejected_prediction_tokens": 0,
-      "text_tokens": null
-     },
-     "prompt_tokens_details": {
-      "audio_tokens": 0,
-      "cache_write_tokens": null,
-      "cached_tokens": 0,
-      "image_tokens": null,
-      "text_tokens": null
-     }
-    }
-   }
+   "minutes": 8.1
   }
- },
- "verdicts_strict": {
-  "inline:claim_gate/check:2:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0017075
-  },
-  "field_status/check:2:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It ends with a follow-up question to the learner, so it is not fully standalone.",
-   "cost": 0.00219875
-  },
-  "callable_tools/check:0:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0020525
-  },
-  "inline:field_status/check:2:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00195625
-  },
-  "sort_changes/check:0:1": {
-   "correct": true,
-   "answers_it": false,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It adds a follow-up question instead of ending with a standalone explanation, so it does not fully answer the tapped question by itself.",
-   "cost": 0.0017475
-  },
-  "fluke_risk/learn:term": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00159
-  },
-  "handoff_kept/check:0:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.001605
-  },
-  "apply_order/check:1:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0014875
-  },
-  "inline:peak_capacity/check:0:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It ends with a follow-up question, so it is not fully standalone for a tapped help answer.",
-   "cost": 0.00202875
-  },
-  "ablation_report/learn:stops": {
-   "correct": false,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": false,
-   "notes": "It adds unsupported advice about app score drift and pairwise ablations in larger systems, which is not stated in the lesson and goes beyond using only the lesson as truth.",
-   "cost": 0.00187125
-  },
-  "provider_versions/check:2:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00154375
-  },
-  "run_tokens/check:0:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00148875
-  },
-  "fluke_risk/check:2:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.0015475
-  },
-  "smoke_set/check:2:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.001485
-  },
-  "peak_capacity/check:0:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It ends by asking the learner a follow-up question, so it is not fully standalone.",
-   "cost": 0.00201875
-  },
-  "dollars_per_success/learn:term": {
-   "correct": false,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": false,
-   "notes": "It wrongly says the lesson says the team looks more expensive per success, but the lesson says the team's cost per success is only about $0.74 and that this measure hides the real tradeoff.",
-   "cost": 0.00196875
-  },
-  "replay_tools/check:0:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00152125
-  },
-  "replay_tools/check:1:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00154
-  },
-  "inline:sort_changes/check:0:1": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00151625
-  },
-  "inline:wilson_interval/check:0:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": false,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It is mostly right, but it uses unexplained jargon like 'sample' and 'Wilson interval' and ends with a follow-up question, so it is not fully plain or standalone.",
-   "cost": 0.0018925
-  },
-  "wilson_interval/check:0:0": {
-   "correct": true,
-   "answers_it": true,
-   "plain": false,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It adds jargon ('Wilson interval') and ends with a follow-up question instead of being fully standalone.",
-   "cost": 0.00174375
-  },
-  "claim_gate/check:2:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": false,
-   "standalone": true,
-   "pass": false,
-   "notes": "It gives away the coding exercise logic by explicitly stating the claim_gate rule: if any claim is contradicted, abstain; otherwise supported claims can be kept.",
-   "cost": 0.001965
-  },
-  "guard_destroys/check:1:1": {
-   "correct": false,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": false,
-   "notes": "It wrongly says a protected service principal from service_principals.yml is the kind of hard-to-rebuild resource the lesson highlights; the lesson names workspaces, storage accounts, and metastores.",
-   "cost": 0.00178375
-  },
-  "failure_counts/check:2:2": {
-   "correct": true,
-   "answers_it": true,
-   "plain": true,
-   "no_giveaway": true,
-   "standalone": true,
-   "pass": true,
-   "notes": "",
-   "cost": 0.00147375
-  },
-  "dedupe_chunks/check:0:2": {
-   "correct": true,
-   "answers_it": false,
-   "plain": false,
-   "no_giveaway": true,
-   "standalone": false,
-   "pass": false,
-   "notes": "It mostly explains the idea correctly, but it ends by asking the learner a new question instead of finishing as a standalone answer to the tapped question.",
-   "cost": 0.0014725
-  }
- },
- "judges": {
-  "verdicts": "live-answer judge: may end with one question back (drill.foundry_batch.judge_prompt(live=True))",
-  "verdicts_strict": "the prepared answers' judge, unchanged (judge_prompt(live=False))"
  }
 }
