@@ -43,6 +43,10 @@ CALLBACKS = {
         callback('embedding_cost', phrase='every chunk gets a new embedding', idea='Re-embedding, once',
                  here='You priced this earlier: a new embedding model means every document again, a one-off as big as the first indexing. A new size is the same full pass, plus a rebuilt index.'),
     ],
+    'rescore_candidates': [
+        callback('recall_at_k', phrase='a little recall for a lot of speed', idea='Recall@k',
+                 here='You measured this in Measuring retrieval: of the chunks that should be found, the share that made the top k. An approximate index gives a little of it up; your eval set says how much.'),
+    ],
     'agent_scorecard': [
         callback('cost_per_finished_task', phrase='which spreads the cost of failed runs over the successful ones', idea='Cost per finished task',
                  here='A task costs more than its own call: failed runs and redone work are part of the bill. Cost per success puts that whole bill on the runs that worked.'),
