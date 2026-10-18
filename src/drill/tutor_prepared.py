@@ -264,11 +264,12 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
             "status": "passed" if verdict["pass"] else "failed", "model": draft_model, "judge": {"model": judge_model, **verdict}}
 
 
-# List prices per million tokens (input, output), Anthropic's first-party rates as of 2026-09. Databricks bills
-# Claude in DBUs, so the exact charge can differ: system.billing.usage has it a few hours later.
+# List prices per million tokens (input, output), Anthropic's first-party rates, checked 2026-10-18 on the
+# prompt-caching page's price table (Haiku 5.5: prompts up to 100,000 tokens). Databricks bills Claude in DBUs,
+# so the exact charge can differ: system.billing.usage has it a few hours later.
 PRICES = {"databricks-claude-opus-5-5": (4.0, 20.0), "databricks-claude-sonnet-5-5": (2.0, 10.0),
           "databricks-claude-haiku-4-5": (1.0, 5.0),
-          "databricks-claude-haiku-5-5": (1.0, 5.0)}  # not in the price list yet: Haiku 4.5's rates as a stand-in
+          "databricks-claude-haiku-5-5": (0.10, 0.50)}
 
 
 def cost(model: str, input_tokens: int, output_tokens: int) -> float:

@@ -9,7 +9,11 @@ work nobody is waiting for, like answering or judging an eval set; it can't meas
 model answers a person.
 
 On Foundry, batch needs a deployment of type ``GlobalBatch`` (or ``DataZoneBatch``), and only
-OpenAI models offer it; Claude on Foundry has no batch deployments. Sign in with ``az login``:
+OpenAI models offer it; Claude on Foundry has no batch deployments. A batch deployment's capacity is
+its **enqueued-token** limit, how many tokens may wait in its queue at once (200 means 200,000): a job
+bigger than that is refused with ``token_limit_exceeded``, so split the file (:func:`chunks`) and
+send the parts one after another. Raising the deployment's capacity didn't lift the limit when tried
+on 2026-10-18. Sign in with ``az login``:
 no keys. The endpoint and deployment names come from the environment, never from the repo:
 
     AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com/
@@ -33,23 +37,29 @@ API_VERSION = "2025-04-01-preview"
 SCOPE = "https://cognitiveservices.azure.com/.default"
 DONE = ("completed", "failed", "expired", "cancelled")
 
-# Global deployments in East US, dollars per million tokens (input, cached input, output), from the
-# Azure Retail Prices API on 2026-10-18. Batch is half of standard. Claude on Foundry is billed through
-# the Azure Marketplace, so it isn't in that list: drill.tutor_prepared.PRICES has Anthropic's list prices.
+# Global deployments in East US, dollars per million tokens (input, cached input, output, cache write), from
+# the Azure Retail Prices API on 2026-10-18. Batch is half of standard. Models before GPT-5.6 don't charge to
+# write the cache; GPT-5.6 and later do. Claude on Foundry is billed through the Azure Marketplace, so it isn't
+# in that list: drill.tutor_prepared.PRICES has Anthropic's list prices.
 PRICES = {
-    ("gpt-5.4", "standard"): (2.5, 0.25, 15.0),
-    ("gpt-5.4", "batch"): (1.25, 0.125, 7.5),
-    ("gpt-5.4-mini", "standard"): (0.75, 0.075, 4.5),
-    ("gpt-5.4-mini", "batch"): (0.375, 0.0375, 2.25),
+    ("gpt-5.4", "standard"): (2.5, 0.25, 15.0, 0.0),
+    ("gpt-5.4", "batch"): (1.25, 0.125, 7.5, 0.0),
+    ("gpt-5.4-mini", "standard"): (0.75, 0.075, 4.5, 0.0),
+    ("gpt-5.4-mini", "batch"): (0.375, 0.0375, 2.25, 0.0),
+    ("gpt-5.6-luna", "standard"): (0.2, 0.02, 1.2, 0.25),
+    ("gpt-6.1-sol", "standard"): (2.0, 0.1, 10.0, 2.5),
 }
 
 
 def cost(model: str, mode: str, usage: dict) -> float:
-    """Dollars for one call from its usage block. OpenAI models cache by themselves: cached input is
-    part of ``prompt_tokens`` and is charged at the cached price, with nothing extra to write it."""
-    pin, pcached, pout = PRICES.get((model, mode), (0.0, 0.0, 0.0))
-    cached = (usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0) or 0
-    return ((usage.get("prompt_tokens", 0) - cached) * pin + cached * pcached + usage.get("completion_tokens", 0) * pout) / 1e6
+    """Dollars for one call from its usage block. OpenAI models cache by themselves: cached input and, on
+    GPT-5.6 and later, input written to the cache are parts of ``prompt_tokens``, each at its own price."""
+    pin, pcached, pout, pwrite = PRICES.get((model, mode), (0.0, 0.0, 0.0, 0.0))
+    details = usage.get("prompt_tokens_details") or {}
+    cached = details.get("cached_tokens", 0) or 0
+    written = details.get("cache_write_tokens", 0) or 0
+    return ((usage.get("prompt_tokens", 0) - cached - written) * pin + cached * pcached + written * pwrite
+            + usage.get("completion_tokens", 0) * pout) / 1e6
 
 
 def client(endpoint: str | None = None):
@@ -76,6 +86,21 @@ def lines(requests: Iterable[tuple[str, list[dict]]], deployment: str, max_token
         seen.add(cid)
         out.append({"custom_id": cid, "method": "POST", "url": "/chat/completions",
                     "body": {"model": deployment, "messages": messages, "max_completion_tokens": max_tokens}})
+    return out
+
+
+def chunks(rows: list[dict], limit_tokens: int = 150_000) -> list[list[dict]]:
+    """Split request lines into files that each stay under a deployment's enqueued-token limit
+    (estimated at four characters a token), to send one after another."""
+    out: list[list[dict]] = [[]]
+    used = 0
+    for r in rows:
+        size = len(json.dumps(r["body"]["messages"])) // 4 + 1
+        if out[-1] and used + size > limit_tokens:
+            out.append([])
+            used = 0
+        out[-1].append(r)
+        used += size
     return out
 
 
@@ -162,15 +187,32 @@ def answer_requests(data: dict, questions: list[dict]) -> list[tuple[str, list[d
     return [(cid(q), t.today_messages(data, q["lesson_id"], q["chip"])) for q in questions]
 
 
-def judge_requests(data: dict, questions: list[dict], answers: dict[str, str]) -> list[tuple[str, list[dict]]]:
-    """The prepared answers' judge prompt (``drill.tutor_prepared.JUDGE``) for each answered question."""
+# The prepared answers' judge checks "standalone" strictly: a prepared answer is shown to everyone who taps
+# the question, so it must not ask anything back. The live tutor's rules let it end with one question back
+# to the learner, so judging live answers with that check fails them for doing their job.
+STRICT_STANDALONE = '5. standalone: it makes sense to anyone who taps the question (no "as you said", no request to reply).'
+LIVE_STANDALONE = ('5. standalone: it makes sense on its own (no "as you said"). Ending with one question back to the '
+                   'learner is fine: the live tutor is meant to.')
+
+
+def judge_prompt(live: bool = True) -> str:
+    """The judge's prompt: the prepared answers' own, or the same with the standalone check fitted to live answers."""
     from drill import tutor_prepared as tp
 
+    assert STRICT_STANDALONE in tp.JUDGE, "the prepared answers' judge changed: update the live version too"
+    return tp.JUDGE.replace(STRICT_STANDALONE, LIVE_STANDALONE) if live else tp.JUDGE
+
+
+def judge_requests(data: dict, questions: list[dict], answers: dict[str, str], live: bool = True) -> list[tuple[str, list[dict]]]:
+    """A judge request for each answered question. ``live`` fits the standalone check to the live tutor."""
+    from drill import tutor_prepared as tp
+
+    template = judge_prompt(live)
     out = []
     for q in questions:
         if answers.get(cid(q)):
             fn = next((p.get("fn") for p in data["bank"] if p["id"] == q["lesson_id"]), "") or ""
-            prompt = tp.JUDGE.format(context=tp._context(data, q["lesson_id"]), q=q["chip"]["q"], how=q["chip"]["how"],
+            prompt = template.format(context=tp._context(data, q["lesson_id"]), q=q["chip"]["q"], how=q["chip"]["how"],
                                      answer=answers[cid(q)], giveaway=f" (`{fn}`)" if fn else "")
             out.append((cid(q), [{"role": "user", "content": prompt}]))
     return out

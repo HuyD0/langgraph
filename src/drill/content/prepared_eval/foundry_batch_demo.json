@@ -636,6 +636,410 @@
   }
  },
  "verdicts": {
+  "smoke_set/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0014975
+  },
+  "replay_tools/check:1:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015525
+  },
+  "inline:field_status/check:2:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00196875
+  },
+  "field_status/check:2:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00207625
+  },
+  "run_tokens/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00153875
+  },
+  "fluke_risk/learn:term": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0016025
+  },
+  "wilson_interval/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00160625
+  },
+  "apply_order/check:1:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015375
+  },
+  "inline:wilson_interval/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0016275
+  },
+  "inline:sort_changes/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00152875
+  },
+  "guard_destroys/check:1:1": {
+   "correct": false,
+   "answers_it": true,
+   "plain": false,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": false,
+   "notes": "It wrongly treats a service principal identity as a protected resource from service_principals.yml, while the lesson says to start with workspaces, storage accounts, and metastores, and it is a bit too jargony for beginners.",
+   "cost": 0.00185625
+  },
+  "provider_versions/check:2:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00155625
+  },
+  "ablation_report/learn:stops": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00162875
+  },
+  "inline:claim_gate/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0016825
+  },
+  "dedupe_chunks/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0012675
+  },
+  "replay_tools/check:0:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00153375
+  },
+  "dollars_per_success/learn:term": {
+   "correct": false,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": false,
+   "notes": "It wrongly says the lesson says the team looks more expensive per success; the lesson says cost per success hides the issue because the team's is only about $0.74.",
+   "cost": 0.00193625
+  },
+  "failure_counts/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00144875
+  },
+  "handoff_kept/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.001655
+  },
+  "inline:peak_capacity/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00189125
+  },
+  "fluke_risk/check:2:0": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015225
+  },
+  "callable_tools/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.002065
+  },
+  "sort_changes/check:0:1": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.0015275
+  },
+  "claim_gate/check:2:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": false,
+   "standalone": true,
+   "pass": false,
+   "notes": "It gives away the coding exercise logic by explicitly stating the claim_gate rule for any contradicted claim instead of just explaining the check question.",
+   "cost": 0.001895
+  },
+  "peak_capacity/check:0:2": {
+   "correct": true,
+   "answers_it": true,
+   "plain": true,
+   "no_giveaway": true,
+   "standalone": true,
+   "pass": true,
+   "notes": "",
+   "cost": 0.00189625
+  }
+ },
+ "jobs": {
+  "answer": {
+   "requests": 20,
+   "status": "completed",
+   "checks": [
+    {
+     "status": "validating",
+     "total": 20,
+     "completed": 0,
+     "failed": 0,
+     "after_s": 0
+    },
+    {
+     "status": "in_progress",
+     "total": 20,
+     "completed": 0,
+     "failed": 0,
+     "after_s": 61
+    },
+    {
+     "status": "finalizing",
+     "total": 20,
+     "completed": 0,
+     "failed": 0,
+     "after_s": 406
+    },
+    {
+     "status": "completed",
+     "total": 20,
+     "completed": 20,
+     "failed": 0,
+     "after_s": 446
+    }
+   ],
+   "retried": 0,
+   "minutes": 7.5,
+   "first_line": {
+    "custom_id": "sort_changes/check:0:1",
+    "method": "POST",
+    "url": "/chat/completions",
+    "body": {
+     "model": "gpt-5.4-mini-batch",
+     "messages": [
+      {
+       "role": "user",
+       "content": "You are a patient tutor helping with one lesson of an AI engineering course. The learner is new to coding and is learning AI engineering: Databricks for agents, LangGraph, LangChain and MLflow, plus Terraform for Azure Databricks. Explain any jargon in plain words. Never use Big-O notation; say things like \"it walks through the list once\" instead. Short sentences. Encouraging but not gushing. Wrap identifiers in backticks.\n\nLesson: Sorting changes before reading them\nWhat the lesson says:\nWith a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.\nThe most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.\nThen read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.\nIts example (Two buckets, from the traces alone):\nquestion      old articles          new articles          bucket\nbilling-06    kb-12 kb-01 kb-02     kb-04 kb-09 kb-01     retrieval differed\nshipping-07   kb-09 kb-03 kb-10     kb-10 kb-07 kb-09     retrieval differed\nrefund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, different answer\nIn their stack (MLflow: the articles each version sent, from the traces):\ndef sent(trace):\n    steps = trace.search_spans(span_type=\"RERANKER\") or trace.search_spans(span_type=\"RETRIEVER\")\n    return [d[\"doc_id\"] for d in steps[0].outputs]\nInterview angle: Compare as sets, then bucket. The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.\nThe lesson's coding exercise: Bucket the Changes, writing `sort_changes`. Your function gets `changed`: the questions whose result changed between two versions. Each is a dict like `{\"qid\": \"billing-06\", \"old_docs\": [\"kb-12\", \"kb-01\"], \"new_docs\": [\"kb-04\", \"kb-01\"]}`. `qid` is the question's id. `old_docs` and `new_docs` are the help articles each version found and gave to the model to write its answer.\n\nThey are on the Check step of the lesson.\n\nTheir message: Why not “The eval set, since it may be too small to trust”?\nHow to answer: In the lesson's Check question (\"Most of your regressions are in the \"same articles, different answer\" bucket. Where should you look?\"), explain in plain words why \"The eval set, since it may be too small to trust\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"The generation step, where the answer is written\" better.\n\nRules:\n- Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.\n- Never write code for the lesson's coding exercise (`sort_changes`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a ```python block.\n- The Practice step asks questions with one right option each. Never say which option is right: give a clue that points at the evidence, and let them choose.\n- If your last message asked them a question, their message is their answer: say what is right, fix what is not, then ask one more question.\n- If they describe their own situation, answer for that situation, and say which part of the lesson applies and which part changes.\n- Only add a code example if it makes the answer clearer, and make sure it matches what you said.\n- Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.\n- Reply with the answer only."
+      }
+     ],
+     "max_completion_tokens": 4000
+    }
+   },
+   "first_output_line": {
+    "custom_id": "sort_changes/check:0:1",
+    "text": "That answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?",
+    "finish": "stop",
+    "usage": {
+     "completion_tokens": 152,
+     "prompt_tokens": 1003,
+     "total_tokens": 1155,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "text_tokens": null
+     },
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": null,
+      "cached_tokens": 0,
+      "image_tokens": null,
+      "text_tokens": null
+     }
+    }
+   }
+  },
+  "judge": {
+   "requests": 25,
+   "status": "completed",
+   "checks": [
+    {
+     "status": "validating",
+     "total": 25,
+     "completed": 0,
+     "failed": 0,
+     "after_s": 0
+    },
+    {
+     "status": "in_progress",
+     "total": 25,
+     "completed": 0,
+     "failed": 0,
+     "after_s": 102
+    },
+    {
+     "status": "finalizing",
+     "total": 25,
+     "completed": 0,
+     "failed": 0,
+     "after_s": 426
+    },
+    {
+     "status": "completed",
+     "total": 25,
+     "completed": 25,
+     "failed": 0,
+     "after_s": 466
+    }
+   ],
+   "retried": 0,
+   "minutes": 7.9,
+   "first_line": {
+    "custom_id": "sort_changes/check:0:1",
+    "method": "POST",
+    "url": "/chat/completions",
+    "body": {
+     "model": "gpt-5.4-batch",
+     "messages": [
+      {
+       "role": "user",
+       "content": "You check a tutor's answer before it is shown to beginners. Be strict.\n\nLesson: Sorting changes before reading them\nWhat the lesson says:\nWith a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.\nThe most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.\nThen read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.\nIts example (Two buckets, from the traces alone):\nquestion      old articles          new articles          bucket\nbilling-06    kb-12 kb-01 kb-02     kb-04 kb-09 kb-01     retrieval differed\nshipping-07   kb-09 kb-03 kb-10     kb-10 kb-07 kb-09     retrieval differed\nrefund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, different answer\nIn their stack (MLflow: the articles each version sent, from the traces):\ndef sent(trace):\n    steps = trace.search_spans(span_type=\"RERANKER\") or trace.search_spans(span_type=\"RETRIEVER\")\n    return [d[\"doc_id\"] for d in steps[0].outputs]\nInterview angle: Compare as sets, then bucket. The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.\nThe lesson's coding exercise: Bucket the Changes, writing `sort_changes`. Your function gets `changed`: the questions whose result changed between two versions. Each is a dict like `{\"qid\": \"billing-06\", \"old_docs\": [\"kb-12\", \"kb-01\"], \"new_docs\": [\"kb-04\", \"kb-01\"]}`. `qid` is the question's id. `old_docs` and `new_docs` are the help articles each version found and gave to the model to write its answer.\n\nThe question the learner tapped: Why not “The eval set, since it may be too small to trust”?\nHow it should be answered: In the lesson's Check question (\"Most of your regressions are in the \"same articles, different answer\" bucket. Where should you look?\"), explain in plain words why \"The eval set, since it may be too small to trust\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"The generation step, where the answer is written\" better.\n\nThe tutor's answer:\n---\nThat answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?\n---\n\nCheck each, using only the lesson above as the truth:\n1. correct: nothing in it is wrong or contradicts the lesson.\n2. answers_it: it answers the question as asked.\n3. plain: plain words, jargon explained, no Big-O or maths notation, under about 200 words.\n4. no_giveaway: it does not write or list the coding exercise's solution (`sort_changes`).\n5. standalone: it makes sense on its own (no \"as you said\"). Ending with one question back to the learner is fine: the live tutor is meant to.\n\nReply with JSON only: {\"correct\": true|false, \"answers_it\": true|false, \"plain\": true|false, \"no_giveaway\": true|false, \"standalone\": true|false, \"notes\": \"one sentence on the biggest problem, or empty\"}"
+      }
+     ],
+     "max_completion_tokens": 2000
+    }
+   },
+   "first_output_line": {
+    "custom_id": "sort_changes/check:0:1",
+    "text": "{\"correct\":true,\"answers_it\":true,\"plain\":true,\"no_giveaway\":true,\"standalone\":true,\"notes\":\"\"}",
+    "finish": "stop",
+    "usage": {
+     "completion_tokens": 33,
+     "prompt_tokens": 1024,
+     "total_tokens": 1057,
+     "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "text_tokens": null
+     },
+     "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": null,
+      "cached_tokens": 0,
+      "image_tokens": null,
+      "text_tokens": null
+     }
+    }
+   }
+  }
+ },
+ "verdicts_strict": {
   "inline:claim_gate/check:2:2": {
    "correct": true,
    "answers_it": true,
@@ -887,156 +1291,8 @@
    "cost": 0.0014725
   }
  },
- "jobs": {
-  "answer": {
-   "requests": 20,
-   "status": "completed",
-   "checks": [
-    {
-     "status": "validating",
-     "total": 20,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 0
-    },
-    {
-     "status": "in_progress",
-     "total": 20,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 61
-    },
-    {
-     "status": "finalizing",
-     "total": 20,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 406
-    },
-    {
-     "status": "completed",
-     "total": 20,
-     "completed": 20,
-     "failed": 0,
-     "after_s": 446
-    }
-   ],
-   "retried": 0,
-   "minutes": 7.5,
-   "first_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "method": "POST",
-    "url": "/chat/completions",
-    "body": {
-     "model": "gpt-5.4-mini-batch",
-     "messages": [
-      {
-       "role": "user",
-       "content": "You are a patient tutor helping with one lesson of an AI engineering course. The learner is new to coding and is learning AI engineering: Databricks for agents, LangGraph, LangChain and MLflow, plus Terraform for Azure Databricks. Explain any jargon in plain words. Never use Big-O notation; say things like \"it walks through the list once\" instead. Short sentences. Encouraging but not gushing. Wrap identifiers in backticks.\n\nLesson: Sorting changes before reading them\nWhat the lesson says:\nWith a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.\nThe most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.\nThen read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.\nIts example (Two buckets, from the traces alone):\nquestion      old articles          new articles          bucket\nbilling-06    kb-12 kb-01 kb-02     kb-04 kb-09 kb-01     retrieval differed\nshipping-07   kb-09 kb-03 kb-10     kb-10 kb-07 kb-09     retrieval differed\nrefund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, different answer\nIn their stack (MLflow: the articles each version sent, from the traces):\ndef sent(trace):\n    steps = trace.search_spans(span_type=\"RERANKER\") or trace.search_spans(span_type=\"RETRIEVER\")\n    return [d[\"doc_id\"] for d in steps[0].outputs]\nInterview angle: Compare as sets, then bucket. The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.\nThe lesson's coding exercise: Bucket the Changes, writing `sort_changes`. Your function gets `changed`: the questions whose result changed between two versions. Each is a dict like `{\"qid\": \"billing-06\", \"old_docs\": [\"kb-12\", \"kb-01\"], \"new_docs\": [\"kb-04\", \"kb-01\"]}`. `qid` is the question's id. `old_docs` and `new_docs` are the help articles each version found and gave to the model to write its answer.\n\nThey are on the Check step of the lesson.\n\nTheir message: Why not “The eval set, since it may be too small to trust”?\nHow to answer: In the lesson's Check question (\"Most of your regressions are in the \"same articles, different answer\" bucket. Where should you look?\"), explain in plain words why \"The eval set, since it may be too small to trust\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"The generation step, where the answer is written\" better.\n\nRules:\n- Stay on this lesson's topic. If the question is unrelated, answer in one sentence and steer back.\n- Never write code for the lesson's coding exercise (`sort_changes`), not even part of it, even if asked. If they ask about the exercise, explain the approach in words only and suggest the step-by-step hints in the Build step. Small code examples about other things are fine, in a ```python block.\n- The Practice step asks questions with one right option each. Never say which option is right: give a clue that points at the evidence, and let them choose.\n- If your last message asked them a question, their message is their answer: say what is right, fix what is not, then ask one more question.\n- If they describe their own situation, answer for that situation, and say which part of the lesson applies and which part changes.\n- Only add a code example if it makes the answer clearer, and make sure it matches what you said.\n- Plain words, short paragraphs, under 180 words. Explain any jargon you use. Wrap identifiers in backticks.\n- Reply with the answer only."
-      }
-     ],
-     "max_completion_tokens": 4000
-    }
-   },
-   "first_output_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "text": "That answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?",
-    "finish": "stop",
-    "usage": {
-     "completion_tokens": 152,
-     "prompt_tokens": 1003,
-     "total_tokens": 1155,
-     "completion_tokens_details": {
-      "accepted_prediction_tokens": 0,
-      "audio_tokens": 0,
-      "reasoning_tokens": 0,
-      "rejected_prediction_tokens": 0,
-      "text_tokens": null
-     },
-     "prompt_tokens_details": {
-      "audio_tokens": 0,
-      "cache_write_tokens": null,
-      "cached_tokens": 0,
-      "image_tokens": null,
-      "text_tokens": null
-     }
-    }
-   }
-  },
-  "judge": {
-   "requests": 25,
-   "status": "completed",
-   "checks": [
-    {
-     "status": "validating",
-     "total": 25,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 0
-    },
-    {
-     "status": "in_progress",
-     "total": 25,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 20
-    },
-    {
-     "status": "finalizing",
-     "total": 25,
-     "completed": 0,
-     "failed": 0,
-     "after_s": 325
-    },
-    {
-     "status": "completed",
-     "total": 25,
-     "completed": 25,
-     "failed": 0,
-     "after_s": 365
-    }
-   ],
-   "retried": 0,
-   "minutes": 6.2,
-   "first_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "method": "POST",
-    "url": "/chat/completions",
-    "body": {
-     "model": "gpt-5.4-batch",
-     "messages": [
-      {
-       "role": "user",
-       "content": "You check a tutor's answer before it is shown to beginners. Be strict.\n\nLesson: Sorting changes before reading them\nWhat the lesson says:\nWith a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.\nThe most useful first cut for RAG comes straight from the traces: did the two versions send **different articles** to the **generation** step (where the model writes the answer), or the **same articles** and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.\nThen read a handful from each bucket and label causes as usual. You get the error analysis for a fraction of the reading, and you know which part of the pipeline each cause belongs to.\nIts example (Two buckets, from the traces alone):\nquestion      old articles          new articles          bucket\nbilling-06    kb-12 kb-01 kb-02     kb-04 kb-09 kb-01     retrieval differed\nshipping-07   kb-09 kb-03 kb-10     kb-10 kb-07 kb-09     retrieval differed\nrefund-11     kb-13 kb-16 kb-14     kb-13 kb-14 kb-16     same articles, different answer\nIn their stack (MLflow: the articles each version sent, from the traces):\ndef sent(trace):\n    steps = trace.search_spans(span_type=\"RERANKER\") or trace.search_spans(span_type=\"RETRIEVER\")\n    return [d[\"doc_id\"] for d in steps[0].outputs]\nInterview angle: Compare as sets, then bucket. The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed.\nThe lesson's coding exercise: Bucket the Changes, writing `sort_changes`. Your function gets `changed`: the questions whose result changed between two versions. Each is a dict like `{\"qid\": \"billing-06\", \"old_docs\": [\"kb-12\", \"kb-01\"], \"new_docs\": [\"kb-04\", \"kb-01\"]}`. `qid` is the question's id. `old_docs` and `new_docs` are the help articles each version found and gave to the model to write its answer.\n\nThe question the learner tapped: Why not “The eval set, since it may be too small to trust”?\nHow it should be answered: In the lesson's Check question (\"Most of your regressions are in the \"same articles, different answer\" bucket. Where should you look?\"), explain in plain words why \"The eval set, since it may be too small to trust\" is not the best answer: what it gets right, if anything, and what it misses. Then say in one sentence what makes \"The generation step, where the answer is written\" better.\n\nThe tutor's answer:\n---\nThat answer gets one part right. A small `eval set` can make results shaky, so it is fair to be cautious. But it misses the main clue in this lesson: the traces show the **same articles** reached the model, and the answer still changed.\n\nSo the problem is not mainly that the test set is too small. It is that the issue points to the **generation step**. That is the part where the model writes the answer from the articles and prompt.\n\nIn one sentence: `generation step, where the answer is written` is better because the traces already show retrieval stayed the same, so the change likely came from the prompt, model, or scorer.\n\nWhat in the traces tells you the articles were the same?\n---\n\nCheck each, using only the lesson above as the truth:\n1. correct: nothing in it is wrong or contradicts the lesson.\n2. answers_it: it answers the question as asked.\n3. plain: plain words, jargon explained, no Big-O or maths notation, under about 200 words.\n4. no_giveaway: it does not write or list the coding exercise's solution (`sort_changes`).\n5. standalone: it makes sense to anyone who taps the question (no \"as you said\", no request to reply).\n\nReply with JSON only: {\"correct\": true|false, \"answers_it\": true|false, \"plain\": true|false, \"no_giveaway\": true|false, \"standalone\": true|false, \"notes\": \"one sentence on the biggest problem, or empty\"}"
-      }
-     ],
-     "max_completion_tokens": 2000
-    }
-   },
-   "first_output_line": {
-    "custom_id": "sort_changes/check:0:1",
-    "text": "{\"correct\": true, \"answers_it\": false, \"plain\": true, \"no_giveaway\": true, \"standalone\": false, \"notes\": \"It adds a follow-up question instead of ending with a standalone explanation, so it does not fully answer the tapped question by itself.\"}",
-    "finish": "stop",
-    "usage": {
-     "completion_tokens": 64,
-     "prompt_tokens": 1014,
-     "total_tokens": 1078,
-     "completion_tokens_details": {
-      "accepted_prediction_tokens": 0,
-      "audio_tokens": 0,
-      "reasoning_tokens": 0,
-      "rejected_prediction_tokens": 0,
-      "text_tokens": null
-     },
-     "prompt_tokens_details": {
-      "audio_tokens": 0,
-      "cache_write_tokens": null,
-      "cached_tokens": 0,
-      "image_tokens": null,
-      "text_tokens": null
-     }
-    }
-   }
-  }
+ "judges": {
+  "verdicts": "live-answer judge: may end with one question back (drill.foundry_batch.judge_prompt(live=True))",
+  "verdicts_strict": "the prepared answers' judge, unchanged (judge_prompt(live=False))"
  }
 }

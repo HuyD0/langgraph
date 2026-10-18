@@ -43,7 +43,7 @@ def test_answer_cost_counts_the_cache():
     assert full == pytest.approx((2000 * 2 + 300 * 10) / 1e6)
     assert cached == pytest.approx((200 * 2 + 1800 * 2 * 0.05 + 300 * 10) / 1e6)  # Sonnet 5.5 reads at 0.05x
     assert t.answer_cost("databricks-claude-haiku-5-5", 200, 300, cache_read=1800) == pytest.approx(
-        (200 * 1 + 1800 * 1 * 0.1 + 300 * 5) / 1e6)
+        (200 * 0.1 + 1800 * 0.1 * 0.1 + 300 * 0.5) / 1e6)
     assert t.answer_cost("databricks-claude-sonnet-5-5", 200, 300, cache_write=1800) > full
     assert t.answer_cost("a-local-model", 2000, 300) == 0.0
 

@@ -57,3 +57,22 @@ def test_the_tutor_and_judge_requests():
     assert fb.judge_requests(data, [q], {}) == []
     (jcid, jm), = fb.judge_requests(data, [q], {cid: "An answer."})
     assert jcid == cid and "An answer." in jm[0]["content"] and "Reply with JSON only" in jm[0]["content"]
+
+
+def test_live_answers_may_end_with_a_question():
+    strict, live = fb.judge_prompt(live=False), fb.judge_prompt(live=True)
+    assert fb.STRICT_STANDALONE in strict and fb.STRICT_STANDALONE not in live
+    assert "Ending with one question back to the learner is fine" in live
+    assert strict.replace(fb.STRICT_STANDALONE, "") == live.replace(fb.LIVE_STANDALONE, "")
+
+
+def test_newer_models_charge_to_write_the_cache():
+    usage = {"prompt_tokens": 1000, "completion_tokens": 100, "prompt_tokens_details": {"cached_tokens": 300, "cache_write_tokens": 200}}
+    assert fb.cost("gpt-6.1-sol", "standard", usage) == pytest.approx((500 * 2.0 + 300 * 0.1 + 200 * 2.5 + 100 * 10.0) / 1e6)
+
+
+def test_chunks_stay_under_the_enqueued_limit():
+    rows = fb.lines([(f"q{i}", [{"role": "user", "content": "x" * 400}]) for i in range(10)], "dep")
+    parts = fb.chunks(rows, limit_tokens=300)
+    assert [r["custom_id"] for p in parts for r in p] == [r["custom_id"] for r in rows]
+    assert len(parts) > 1 and all(sum(len(json.dumps(r["body"]["messages"])) // 4 + 1 for r in p) <= 300 for p in parts)
