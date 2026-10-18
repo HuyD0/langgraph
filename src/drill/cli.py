@@ -638,6 +638,40 @@ def tutor_prepared_eval_cmd(
         console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
 
 
+@tutor_app.command("uncertainty")
+def tutor_uncertainty_cmd(
+    deployment: str = typer.Option(..., "--deployment", help="A Microsoft Foundry GlobalBatch deployment that drafts (az login, AZURE_OPENAI_ENDPOINT)."),
+    draft_model: str = typer.Option(..., "--draft-model", help="The model behind it, for prices and the record (for example gpt-5.4-mini)."),
+    judge_deployment: str = typer.Option(..., "--judge-deployment", help="A GlobalBatch deployment that judges every draft."),
+    judge_model: str = typer.Option(..., "--judge-model", help="The judge's model name (for example gpt-5.4)."),
+    sample: int = typer.Option(50, "--sample", help="How many dev questions to draft."),
+    samples: int = typer.Option(3, "--samples", help="How many times each question is drafted (for disagreement)."),
+    seed: int = typer.Option(7, "--seed", help="The sample's random seed, so the run can be repeated on the same questions."),
+    record: Path = typer.Option(None, "--record", help="Also write the run's drafts, signals and verdicts to this file, for a notebook to replay."),
+    purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this is being tried."),
+    provider: str = typer.Option("foundry", "--provider", help="Only foundry today (batch with token log probabilities)."),
+) -> None:
+    """Does the drafter's own uncertainty predict a judge fail? Drafts each question several times with token confidence, judges all, scores each signal."""
+    import mlflow
+
+    from drill import draft_uncertainty as du
+
+    if provider != "foundry":
+        console.print("[red]Only --provider foundry is supported: it needs batch jobs that return token log probabilities.[/red]")
+        raise typer.Exit(1)
+    console.print(f"MLflow: {mlflow.get_tracking_uri()}  {sample} questions x {samples} drafts, judged by {judge_model}. Two batch rounds; allow an hour.")
+    r = du.run(deployment, draft_model, judge_deployment, judge_model, sample=sample, samples=samples, seed=seed, record=record, purpose=purpose)
+    m = r["metrics"]
+    console.print(f"Run {r['run_id']}: {r['drafts']} drafts of {r['questions']} questions, {m['judged']:.0f} judged, pass rate {m['pass_rate']:.1%}.")
+    for s in du.SIGNALS:
+        if f"auc_{s}" in m:
+            console.print(f"  {s:16} AUC {m[f'auc_{s}']:.2f}   (0.5 = no signal, 1 = perfect)")
+    console.print(f"  Questions whose {samples} drafts all got the same verdict: {m['questions_with_unanimous_verdicts']:.0%}")
+    console.print(f"  Cost: drafts ${m['draft_cost_usd']:.2f}, judging ${m['judge_cost_usd']:.2f}")
+    if record:
+        console.print(f"  Recording written to {record}")
+
+
 @tutor_app.command("judge-alias")
 def tutor_judge_alias_cmd(
     alias: str = typer.Argument(..., help="challenger (passed the rule on dev) or champion (the judge in use)."),

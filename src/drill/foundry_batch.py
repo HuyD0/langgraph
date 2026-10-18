@@ -76,16 +76,18 @@ def client(endpoint: str | None = None):
 
 # -- 1. the request file ----------------------------------------------------------------------------
 
-def lines(requests: Iterable[tuple[str, list[dict]]], deployment: str, max_tokens: int = 4000) -> list[dict]:
+def lines(requests: Iterable[tuple[str, list[dict]]], deployment: str, max_tokens: int = 4000,
+          extra: dict | None = None) -> list[dict]:
     """One batch line per ``(custom_id, messages)``. ``custom_id`` must be unique: it's how each
-    output line finds its request again."""
+    output line finds its request again. ``extra`` adds fields to every request body (for example
+    ``{"logprobs": True}`` to get each token's confidence back)."""
     out, seen = [], set()
     for cid, messages in requests:
         if cid in seen:
             raise ValueError(f"custom_id used twice: {cid}")
         seen.add(cid)
         out.append({"custom_id": cid, "method": "POST", "url": "/chat/completions",
-                    "body": {"model": deployment, "messages": messages, "max_completion_tokens": max_tokens}})
+                    "body": {"model": deployment, "messages": messages, "max_completion_tokens": max_tokens, **(extra or {})}})
     return out
 
 
@@ -164,8 +166,12 @@ def parse_line(row: dict, failed: bool = False) -> dict:
         return {"error": err.get("message", str(err)) if isinstance(err, dict) else str(err)}
     body = resp.get("body") or {}
     choice = (body.get("choices") or [{}])[0]
-    return {"text": (choice.get("message") or {}).get("content") or "", "finish": choice.get("finish_reason"),
-            "usage": body.get("usage") or {}}
+    out = {"text": (choice.get("message") or {}).get("content") or "", "finish": choice.get("finish_reason"),
+           "usage": body.get("usage") or {}}
+    tokens = ((choice.get("logprobs") or {}).get("content")) or []
+    if tokens:  # each token's log probability, when the request asked for it
+        out["logprobs"] = [(t.get("token", ""), t.get("logprob", 0.0)) for t in tokens]
+    return out
 
 
 def to_retry(rows: list[dict], results: dict[str, dict]) -> list[dict]:
