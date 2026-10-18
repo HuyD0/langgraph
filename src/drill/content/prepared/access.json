@@ -548,9 +548,9 @@
  "missing_acls": {
   "check:0:0": {
    "q": "Why not “More Unity Catalog grants on the tables”?",
-   "a": "It's a natural guess. Your runs were built from those tables, so table access feels like the key. And it gets one thing right: the teammate does need `SELECT` to read the data behind your runs. They already have it.\n\nBut Unity Catalog grants only cover data objects: catalogs, schemas, tables, volumes, functions and models. An MLflow experiment is not one of those. It is a workspace object, meaning it is managed by the workspace, not by Unity Catalog. It has its own **access control list** (ACL): a list of who may do what to that one experiment.\n\nSo adding more table grants changes nothing. If the experiment sits in your user folder, like `/Users/ana@example.com/churn`, its ACL lists only you. No table grant can open it.\n\nIn the Service stage, the fix is a `databricks_permissions` block on the experiment. It gives a group such as `grp-sales-dev-owners` `CAN_READ` or `CAN_EDIT`. Ideally the experiment also moves to a shared path like `/Shared/churn`.\n\n\"A permission on the experiment itself\" is better because the runs live in the experiment, and only the experiment's own ACL decides who can see them.",
+   "a": "It's a fair guess. Unity Catalog grants are how people get at data. But the teammate already has `SELECT` on every table you used, so the data side is already covered. Adding more grants there changes nothing.\n\nThe trouble is that MLflow runs are not tables. They live inside an experiment, which is a workspace object. Unity Catalog only covers catalogs, schemas, tables, volumes, functions and models. An experiment sits outside that list, so no Unity Catalog grant can reach it, however many you add.\n\nInstead, an experiment has its own access control list (ACL). That is a short list of who may do what to that one object. If the experiment lives in your user folder, like `/Users/ana@example.com/churn`, only you can see it.\n\nThe fix is to move it to a shared folder such as `/Shared/churn`. Then give a group like `grp-sales-dev-owners` `CAN_READ` or `CAN_EDIT`, using a `databricks_permissions` resource in the Service stage.\n\n\"A permission on the experiment itself\" is better because it unlocks the object that is actually locked, not data the teammate can already read.",
    "step": "Check",
-   "fingerprint": "5e617796b6ff320a",
+   "fingerprint": "811dfd471485c8c1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -566,9 +566,9 @@
   },
   "check:0:2": {
    "q": "Why not “A bigger cluster to run the notebook”?",
-   "a": "A bigger cluster changes how much power the notebook has: more memory, more workers, faster runs. That matters when a job is slow or runs out of memory. It has nothing to do with who may see what.\n\nThe teammate's problem is not speed. It is visibility. Your MLflow runs live in an **experiment**, which is a workspace object. Workspace objects are not covered by Unity Catalog grants like `SELECT`. Each one has its own **access control list** (ACL), meaning a list of who may do what to that one object.\n\nSo the teammate can read every table, but the experiment's ACL does not include them. If it sits in your user folder, such as `/Users/ana@example.com/churn`, only you can see it. No cluster size fixes that.\n\nThe option does touch one true idea: clusters also have their own ACL, with levels like `CAN_ATTACH_TO`. But that controls using the cluster, not reading your runs.\n\n\"A permission on the experiment itself\" is better because it names the real gap: the teammate's group, say `grp-sales-dev-owners`, needs `CAN_READ` or `CAN_EDIT` on that experiment, ideally kept in a shared folder.",
+   "a": "A bigger cluster changes how much computing power you have. A cluster is the set of machines that runs your code. More memory or more cores makes a notebook run faster. It does not change who can see what.\n\nThere is one small thing it gets right. Clusters are workspace objects, and they do have their own access control list (ACL), with levels like `CAN_ATTACH_TO`. So \"something outside Unity Catalog is involved\" is on the right track.\n\nBut your teammate does not need to run anything. They only want to look at your runs. Looking at runs does not use a cluster at all. And even if they had `CAN_MANAGE` on the biggest cluster in the workspace, your experiment would still be hidden. It sits in `/Users/ana@example.com/...`, and only Ana can see things in that folder.\n\nTheir `SELECT` grants don't help either. Those cover tables, not experiments.\n\n\"A permission on the experiment itself\" is better because the experiment has its own ACL, and only an entry there lets someone see it. For example, give `grp-sales-dev-owners` `CAN_READ` on `/Shared/churn`.",
    "step": "Check",
-   "fingerprint": "c8fad2b38559abc3",
+   "fingerprint": "bba84874430f5bf3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -584,9 +584,9 @@
   },
   "check:1:0": {
    "q": "Why not “CAN_ATTACH_TO”?",
-   "a": "`CAN_ATTACH_TO` is the level your teammate **already has**. It lets them connect a notebook to the cluster and run code on it. That matches the first half of the question, so it is not a wrong reading of the situation.\n\nBut the question asks for a **step up**. Picking the level they already hold changes nothing. The cluster would still hang, and they still could not restart it.\n\nClusters have their levels in order, weakest first:\n\n`CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`\n\nRestarting sits one place later in that list. So the teammate needs the next level, not the same one.\n\nIn the Service stage, the fix would be a change to the cluster's access control list (ACL), the list of who may do what to that one cluster:\n\n```hcl\naccess_control {\n  group_name       = \"grp-sales-dev-users\"\n  permission_level = \"CAN_RESTART\"\n}\n```\n\n**`CAN_RESTART` is better because it is the very next level after `CAN_ATTACH_TO`, so it adds restarting without also giving the full control that `CAN_MANAGE` brings.**",
+   "a": "`CAN_ATTACH_TO` gets one thing right. It describes what the teammate can already do: attach notebooks to your cluster. So it is a real cluster permission level, and it fits the first half of the story.\n\nBut the question asks for a **step up**. Giving them `CAN_ATTACH_TO` changes nothing. They already have it, and they still cannot restart the cluster when it hangs.\n\nCluster levels sit in order, weakest first:\n\n`CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`\n\nThink of it as a short ladder. The teammate is on the first rung. The question wants the next rung up, not the one they are standing on.\n\nPicture a shared cluster for team-sales. Someone in `grp-sales-dev-owners` can attach to it but is stuck when it freezes. Granting `CAN_ATTACH_TO` again leaves them stuck. Jumping to `CAN_MANAGE` skips a rung, so it is a bigger step than they need.\n\n`CAN_RESTART` is better because it is the very next level after `CAN_ATTACH_TO`, and its name is exactly the ability they are missing.",
    "step": "Check",
-   "fingerprint": "738935dbb6847fec",
+   "fingerprint": "e3d62c611c7e5d73",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -602,9 +602,27 @@
   },
   "check:1:2": {
    "q": "Why not “CAN_MANAGE”?",
-   "a": "`CAN_MANAGE` is not wrong. It does let your teammate restart the cluster. Clusters have three permission levels, in order from weakest to strongest:\n\n`CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`\n\nA level that sits later in that list covers what the earlier ones need. So `CAN_MANAGE` covers restarting.\n\nThe problem is the question asks for the **smallest step up**. Your teammate is at `CAN_ATTACH_TO` today. The next level is `CAN_RESTART`. `CAN_MANAGE` skips past it to the strongest cluster level. That gives them more than the job needs.\n\nPlatform teams usually follow **least privilege**. That means each person or group gets only the level their work requires. Then fewer people hold the strongest level on an object.\n\nIn this platform, that choice would be one `permission_level` line in a team's `databricks_permissions` block. For example, `grp-sales-dev-owners` could get `CAN_RESTART` on a cluster.\n\n`CAN_RESTART` is better because it is the very next level after `CAN_ATTACH_TO`, so it covers the restart and nothing beyond it.",
+   "a": "`CAN_MANAGE` would work. It sits above `CAN_RESTART` in the cluster list (`CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`), and a higher level includes everything below it. So your teammate could restart the hung cluster.\n\nThe problem is what else comes with it. `CAN_MANAGE` also lets them:\n\n- change the cluster's settings, such as its size or runtime version\n- delete the cluster\n- edit the cluster's ACL (the list of who may do what to it), so they could grant access to anyone\n\nThe question asked for the *smallest* step up. Platform teams follow **least privilege**: give each person or group only the access their job needs. Picture this in a `clusters.yml` for team-sales. Giving a member of `grp-sales-dev-users` `CAN_MANAGE` just so they can restart a cluster lets them resize or delete a cluster everyone shares. A policy check in the Spacelift plan might also flag that grant.\n\n`CAN_RESTART` is better because it is the very next level after `CAN_ATTACH_TO`. It adds the one thing they were missing and nothing more.",
    "step": "Check",
-   "fingerprint": "26b52847b7481c18",
+   "fingerprint": "98ca53f8c7895ae0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The list of what CAN_MANAGE allows (change settings, delete, edit the ACL) is not in the lesson, but it is accurate and does not contradict it. The answer is close to the 200-word limit."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “CAN_MANAGE on the endpoint”?",
+   "a": "It's a natural guess. The query fails, so asking for the highest level on the endpoint feels like it should fix things.\n\n**What it gets right:** the endpoint does have its own ACL (access control list, the list of who may do what to that one object). Checking it is a fair first step.\n\n**What it misses:** `CAN_USE` is already enough to send queries through the endpoint. `CAN_MANAGE` only adds power over the endpoint itself, like editing it, deleting it, or changing who has access. Giving that to a group such as `grp-sales-dev-owners` hands out far more than they need. And it still would not fix the failure.\n\nThe reason is that the index is not part of the endpoint's ACL. It lives in Unity Catalog, which guards data. Workspace ACLs and Unity Catalog grants are separate systems. A high level in one never fills a gap in the other.\n\n**Why \"`SELECT` on the index in Unity Catalog\" is right:** querying reads data from the index, and only a Unity Catalog `SELECT` grant on that index allows that.",
+   "step": "Check",
+   "fingerprint": "84e79a3263313592",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -618,29 +636,11 @@
     "notes": ""
    }
   },
-  "check:2:1": {
-   "q": "Why not “CAN_MANAGE on the endpoint”?",
-   "a": "`CAN_MANAGE` sounds like a fix because it is the top level on the endpoint. But it only climbs higher on the wrong list.\n\n**What it gets right:** the endpoint does have its own ACL (access control list, meaning who may do what to that one object). The team needs at least `CAN_USE` there, and they already have it.\n\n**What it misses:** a Vector Search index is data, so it lives in Unity Catalog, inside a catalog and schema. Unity Catalog is a separate gate with its own grants. No level on the endpoint's ACL opens that gate. So `grp-sales-dev-owners` could hold `CAN_MANAGE` on the endpoint and their queries would still fail.\n\nIt also gives away too much. `CAN_MANAGE` lets them change the endpoint, delete it, and change who else has access. In a Spacelift plan for PROD, a policy check or reviewer should rightly question that.\n\n**Why `SELECT` on the index is better:** it opens the one gate that is actually closed, the Unity Catalog grant on the index, and it grants read access only.",
-   "step": "Check",
-   "fingerprint": "c98a484b1f78d769",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "The claims about what CAN_MANAGE allows (delete, change access) go beyond the lesson but do not contradict it."
-   }
-  },
   "check:2:2": {
    "q": "Why not “A bigger cluster for the search”?",
-   "a": "\"A bigger cluster\" treats the failure as a size problem. It does get one thing right: search does run on compute, so slow or overloaded compute can hurt queries. But size makes things faster. It does not unlock anything.\n\nAlso, a Vector Search endpoint is not a cluster you resize. It is compute that Databricks manages for you. `CAN_USE` on that endpoint already covers the compute side, so the team can reach it.\n\nWhat is missing is the data side. The index (the searchable store of embeddings, the number lists that capture meaning) is a Unity Catalog object, like a table. Unity Catalog checks its own grants, separately from the endpoint's access control list. So if `grp-sales-dev-owners` has `CAN_USE` on the endpoint but no `SELECT` on the index, queries to that index get refused. A bigger machine would be refused in the same way.\n\nQuerying needs both parts: `CAN_USE` on the endpoint, plus `SELECT` on the index.\n\n\"SELECT on the index in Unity Catalog\" is better because it fixes the actual cause: a missing data grant, not missing power.",
+   "a": "The question describes queries to one index that fail even though the team has `CAN_USE` on the endpoint. That points to a permission problem, not a size problem. A bigger cluster adds computing power. It does not change who is allowed to read the index.\n\nWhat the option gets slightly right: when something fails, checking resources is a normal first instinct. But nothing in the scenario suggests the search is slow or overloaded. It is refused.\n\nWhat it misses: in this lesson, an AI Search query needs two separate permissions.\n\n- `CAN_USE` on the endpoint. This is a workspace ACL, a list of who may do what to that one object.\n- `SELECT` on the index. This is a Unity Catalog grant, because the index is data that lives in Unity Catalog.\n\nThe team already has the first one. Making a cluster bigger gives them neither. Cluster permissions such as `CAN_ATTACH_TO` belong to a different object entirely.\n\nWhy `SELECT` on the index in Unity Catalog is better: it is the second permission the lesson says a query needs, and it is the one the team is missing.",
    "step": "Check",
-   "fingerprint": "427235bf5935f1b0",
+   "fingerprint": "1b0ceef77d3b079f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -656,45 +656,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Compare positions in an ordered list” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"Product teams request access in YAML. For example, `grp-sales-dev-owners` needs `CAN_EDIT` on a shared experiment. Before Terraform applies anything, I want to know if what they already have is enough.\"\n\n*The idea.* \"Each object type has its permission levels in a fixed order, weakest first. So 'is this enough?' becomes 'does their level sit at the same spot or later in the list?' I look up the position of each level and compare the two numbers. A smaller position means a weaker level.\"\n\n*The edge case.* \"This only works if the list is truly ordered. Jobs also have `IS_OWNER`, which sits outside the normal chain, so I'd handle it on purpose. A typo like `CAN_RAED` isn't in the list at all, so the lookup fails. I'd catch that early in Pydantic, the tool that checks each YAML field, before Spacelift ever plans.\"\n\n**A likely follow-up**\n\n\"What if you check thousands of requests across DEV, UAT and PROD?\"\n\n*Hint:* `list.index` walks through the list each time it's called. A strong answer builds a dictionary (a lookup table) from each level to its position once. Then every check is a single quick lookup. The lists are short, so the bigger win is clearer code.",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* \"Product teams ask for access in YAML. For example, `grp-sales-dev-owners` needs `CAN_RESTART` on a cluster. I have to check whether what that group already holds is high enough.\"\n\n*The idea.* \"Each object type has its permission levels in a list, weakest first. So 'high enough' becomes 'at the same place or later in the list'. I find both positions with `list.index` and compare the two numbers. If the group holds nothing on that object, the need is missing straight away.\"\n\n*An edge case.* \"`list.index` throws an error if a level isn't in the list, such as a typo like `CAN_RESTRAT`. Pydantic should reject that in the YAML before my check runs. Jobs also have `IS_OWNER`, which sits outside the normal ladder. I'd decide on purpose how to rank it.\"\n\n**A likely follow-up**\n\n\"What if you check thousands of needs across DEV, UAT and PROD?\"\n\n*Hint at a strong answer:* `list.index` walks through the list every time you call it. You can instead build a dictionary once, mapping each level to its position. A dictionary is a lookup table that jumps straight to a key. Each check then finds a position directly instead of searching.",
    "step": "Explain",
-   "fingerprint": "4ce38c6544bd0836",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems. It is close to the length limit, and calling IS_OWNER 'outside the normal chain' is a mild interpretation of the lesson's 'plus IS_OWNER'."
-   }
-  },
-  "learn:spot": {
-   "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- A teammate in `grp-sales-dev-owners` opens the Experiments page and sees nothing, or gets \"not found\". Yet you logged runs and traces. The experiment is probably still under `/Users/you@...`, so only you can see it.\n- A job run by `sp-sales-etl-dev` fails with \"permission denied\" (often shown as a 403 error) when it attaches to a cluster or calls a model serving endpoint. The service principal (a non-human identity for automation) was never put on that object's ACL.\n- A Vector Search query fails even though the group has `CAN_USE` on the endpoint. The `SELECT` grant on the index in Unity Catalog is missing.\n- The opposite problem: reviewers can delete runs or restart clusters. Someone gave a level too high on the list.\n- In Spacelift, a plan shows `databricks_permissions` removing entries you didn't expect. That resource sets the full list for the object, so access added by hand gets wiped.\n\n**Quickest check**\n\nOpen the object's **Permissions** panel in the workspace. Compare each group's level with what the team's `team.yml` asks for. Then read the `databricks_permissions` changes in the Spacelift plan before approving it.",
-   "step": "Learn",
-   "fingerprint": "ac2370ece197c43a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problem. The claim that databricks_permissions overwrites hand-added access is not in the lesson, but it does not contradict it. The answer is about 180 words."
-   }
-  },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "The ordered-list rule works when one object type has one ladder of levels. Here are three places it needs extra care.\n\n**1. Registered models.** Models live in Unity Catalog, so they have no ACL ladder at all. A request for team-sales to call a model is a UC grant such as `EXECUTE` for `grp-sales-dev-owners`. Check it against UC grants, not against a list of permission levels.\n\n**2. Vector Search.** `CAN_USE` on the endpoint is only half the story. Querying an index also needs `SELECT` on that index in Unity Catalog. So `sp-sales-etl-dev` may pass the ACL check and still be refused, which means you check both places.\n\n**3. Jobs and `IS_OWNER`.** The lesson lists `IS_OWNER` separately, after the `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE` ladder. If you just add it to the end of the list, you are assuming it outranks everything. Decide on purpose how it counts, and write that decision down so the next reader knows.",
-   "step": "Learn",
-   "fingerprint": "32a9a8859cf41b9d",
+   "fingerprint": "1def680381de43cb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -708,11 +672,11 @@
     "notes": ""
    }
   },
-  "learn:term": {
-   "q": "What does “access control list” mean here?",
-   "a": "An **access control list** (ACL) is a short list attached to one object. Each line names a person or group and how much they may do to that object.\n\n**Everyday comparison:** think of a guest list taped to one meeting room door. It says who may walk in and who may rearrange the furniture. It says nothing about any other room. Every room keeps its own list.\n\nDatabricks works the same way. Each experiment, cluster, job or SQL warehouse has its own list. Unity Catalog grants cover data. ACLs cover everything else in the workspace.\n\n**In the lesson's Terraform example**, the list is the `databricks_permissions` resource. It points at one object through `experiment_id`. Each `access_control` block is one line on the list:\n\n- `ml-team` gets `CAN_EDIT`\n- `ml-reviewers` gets `CAN_READ`\n\nAnyone not on the list gets nothing for that experiment.\n\nThat explains the \"classic miss.\" An experiment in `/Users/ana@example.com/churn` sits in Ana's personal folder. Only Ana is on its list, so teammates can't see her runs.\n\nNames on a list can also be service principals. These are robot accounts for automation, like `sp-sales-etl-dev`.",
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- A teammate in `grp-sales-dev-owners` opens the MLflow UI and sees no runs or traces, while you see them all. The experiment path starts with `/Users/your-name/`. Only you can see it.\n- A job run as `sp-sales-etl-dev` (a service principal, meaning a non-human identity) fails with \"permission denied\". The data grants look fine, but the principal has no ACL entry on the cluster, SQL warehouse or serving endpoint.\n- An AI Search query fails even though the principal has `CAN_USE` on the endpoint. It is missing `SELECT` on the index in Unity Catalog.\n- It works in DEV and breaks in UAT or PROD. Someone clicked permissions into DEV by hand, and Terraform never knew about them.\n\n**Quickest check**\n\nOpen the object's **Permissions** tab in the workspace. Read who is listed and at what level. Then search the Service stage code for a `databricks_permissions` resource pointing at that object. No resource means nobody manages its access as code. In Spacelift's proposed plan, any change to that resource shows exactly who gains or loses access.",
    "step": "Learn",
-   "fingerprint": "2ef3e7bab7a95dea",
+   "fingerprint": "7ca872396a1d73a4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -723,7 +687,43 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The closing line about service principals goes beyond the lesson, but it is true and does not contradict it."
+    "notes": "No hard failures. The DEV-versus-UAT/PROD hand-clicked permissions bullet is not in the lesson, though it does not contradict it. ACL is used without being re-explained."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the \"compare positions in an ordered list\" idea needs extra care.\n\n**1. One list is not always enough.** Querying a Databricks AI Search index needs `CAN_USE` on the endpoint *and* `SELECT` on the index in Unity Catalog. A check that only reads the endpoint's ACL says \"fine\" when the user still can't query. Check both layers whenever an object depends on data.\n\n**2. Some levels sit outside the line.** Jobs have `IS_OWNER`, which isn't just \"one step above\" `CAN_MANAGE`. It marks who owns the job. Registered models skip ACLs entirely and use UC grants like `EXECUTE`. Treat these as special cases, not extra list positions.\n\n**3. Terraform owns the whole list.** `databricks_permissions` is *authoritative*. That means it sets the full ACL for that object. If someone in team-sales adds `grp-sales-dev-owners` by clicking in the UI, the next Spacelift apply removes it. Put every grant in the team's YAML, so the plan shows it and nothing gets silently dropped.",
+   "step": "Learn",
+   "fingerprint": "6f2c7b7a08dc03ba",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear violation. Point 3 (authoritative `databricks_permissions`) and the IS_OWNER framing go beyond what the lesson states, but they do not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “access control list” mean here?",
+   "a": "An **access control list** (ACL) is a list attached to one object. It says who may do what to that object.\n\nThink of a guest list at one door. Each name has a note beside it: \"may come in,\" \"may help run things,\" \"may change the list.\" That list belongs to that one door. Another room has its own list.\n\nIn Databricks, workspace objects like clusters, jobs and MLflow experiments each carry their own list like this. Each line pairs a **principal** (a user, group or service principal from Entra ID, such as `grp-sales-dev-owners` or `sp-sales-etl-dev`) with a permission level, such as `CAN_READ`.\n\nIn the lesson's Terraform, the `databricks_permissions` resource is the ACL for the `/Shared/churn` experiment. Each `access_control` block is one line on the list:\n\n- `ml-team` gets `CAN_EDIT`\n- `ml-reviewers` gets `CAN_READ`\n\nAnyone not on the list gets nothing on that experiment. That's why an experiment in Ana's own user folder stays hidden from her teammates.\n\nACLs are separate from Unity Catalog grants. Those cover data, such as tables and models.",
+   "step": "Learn",
+   "fingerprint": "55134fd5e32ddfb5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
    }
   }
  },

@@ -456,20 +456,20 @@
   },
   "check:2:2": {
    "q": "Why not “A SQL warehouse”?",
-   "a": "\"A SQL warehouse\" gets one thing right. A serverless SQL warehouse also starts fast, and you don't size the machines yourself. So the \"don't want to pick machine sizes\" part fits.\n\nWhat it misses is the kind of work. A SQL warehouse is built to run SQL, like the queries behind a `team-sales` dashboard. A data scientist exploring data in a notebook usually mixes Python, charts and quick tests, not only SQL. The lesson's rules ask \"Is it SQL?\" first. Here the answer is no, so a SQL warehouse is not the match.\n\nThe next question is whether the work needs a GPU (a chip built for training models) or an init script (a script that sets up each machine as it starts). Either one would point to classic compute, the machines you size and manage yourself. This scientist needs neither, so nothing pushes them there.\n\n\"Serverless compute\" is better because it runs notebook work that needs no special setup, starts in seconds and has nothing to size, which is exactly what this data scientist asked for.",
+   "a": "A SQL warehouse gets one thing right. The recommended kind is serverless, so Databricks runs the machines and the data scientist doesn't manage them. That matches \"don't want to pick machine sizes\" fairly well.\n\nBut it misses the main point: what kind of work this is. A SQL warehouse is built to run SQL, dashboards and Genie (asking questions of your data in plain words). Daily notebook exploration usually means more than SQL. Think of someone on `team-sales` loading a table, reshaping it in Python and trying ideas cell by cell. A SQL warehouse is not the compute for that kind of open-ended notebook work.\n\nIn the lesson's ordered rules, \"Is it SQL?\" comes first. This workload is a notebook, not SQL, so that rule doesn't fit. It also needs no GPU (a chip built for training models) and no init script (a script that sets up each machine as it starts). So it falls through to serverless.\n\nServerless compute is better because it is made for notebook work, starts in seconds and needs no sizing, and this workload has none of the special needs that would push it to classic compute.",
    "step": "Check",
    "fingerprint": "ecd01feed9c6689a",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says a serverless SQL warehouse 'starts fast' and you 'don't size the machines', but the lesson says that only of serverless compute, and its own Terraform sets cluster_size = \"Small\" on the warehouse, so the claim is unsupported and arguably contradicted."
+    "pass": true,
+    "notes": "No real problems. The phrase \"made for notebook work\" slightly narrows serverless, which the lesson says works for notebooks, jobs and pipelines, but it does not contradict the lesson."
    }
   },
   "explain:interview": {
@@ -492,20 +492,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The bill is higher than expected.** A likely cause is scheduled jobs running on all-purpose compute. All-purpose costs more per DBU than jobs compute.\n- **A job that needs an init script was put on serverless.** Serverless doesn't take init scripts. So the setup in a file like `/Shared/init/certs.sh` never happens, and the run breaks wherever it relies on that setup.\n- **A GPU notebook landed on serverless.** The model work can't get the GPU it was written for. That usually means classic compute was needed.\n- **A dashboard's SQL went to a cluster.** It should have gone to a SQL warehouse.\n- **The rules ran in the wrong order.** For example, a SQL workload that also has `needs_gpu: True` ends up on classic compute. The SQL rule should have matched first.\n\n**Quickest check**\n\nPick a few workloads from team-sales's `clusters.yml`. Include tricky ones with several flags set. Walk each one through the rules by hand, in order: Is it SQL? Does it need a GPU or an init script? If neither, it goes to serverless. Then compare your answers with what the Spacelift plan proposes for DEV. Any mismatch points you to the rule that's broken.",
+   "a": "**Warning signs**\n\n- **The bill looks wrong.** A nightly job, say for `team-sales`, runs on all-purpose compute. All-purpose costs more per DBU than jobs compute, so the same work costs more. You may also see all-purpose clusters left running overnight with no one using them.\n- **Jobs fail at startup.** A job that needs an init script was placed on serverless. Serverless skips init scripts, so set-up like `/Shared/init/certs.sh` never runs. The logs show errors such as missing certificates or failed connections.\n- **GPU work crawls or errors.** A training notebook landed on serverless. The logs say no GPU was found, or training is far slower than expected.\n- **SQL in the wrong place.** A dashboard query has a GPU or init-script flag and ends up on a classic cluster, not a SQL warehouse. This means the rules were checked in the wrong order.\n\n**Quickest check**\n\nOpen the billing usage table in Databricks (`system.billing.usage`). Group the DBUs by SKU, which is the price label for each kind of compute. Then compare each workload's SKU with what its `clusters.yml` asked for. Any mismatch points straight to the rule that went wrong.",
    "step": "Learn",
    "fingerprint": "d069495b51e8925d",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The content matches the lesson, but the answer runs slightly over 200 words and uses DBU, init script, classic compute and SQL warehouse without explaining them."
+    "pass": true,
+    "notes": "No real problems. The answer relies on a few outside details (the `system.billing.usage` table, clusters left running overnight), but they don't contradict the lesson and are accurate Databricks facts."
    }
   },
   "learn:stops": {
