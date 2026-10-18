@@ -88,7 +88,7 @@ Find a section by searching for its marker, `// ---------- <name> ----------`:
 | `sticker callbacks` | An earlier lesson's sticker after the phrase that uses its idea, and its card (`cbMarkHtml`, `cbPopHtml`, `openCb`); `withTrust` places both. The Look again card after Learn (`againHtml`, `againStep`, saved as `lp(id).again`). Data in `content/callbacks.py` **In `page/callbacks.js`** (styles: `page/callbacks.css`) |
 | `step panes` | `learnPane`, `checkPane` (the Check questions one at a time: `checkQs`, `checkState`, `checkPick`, `checkHelp`), the Explain gaps (`clozeHtml`), `anglePane` |
 | `spot the gotcha` | The gotcha challenge in Explain **In `page/gotcha.js`** (styles: `page/gotcha.css`) |
-| `ask about this lesson` | The tutor chips and answers **In `page/ask.js`** (styles: `page/ask.css`) |
+| `ask about this lesson` | The tutor chips and answers: the hero's portrait beside each answer, Got it / Still stuck (`askGot`, `askStuck`), the quiet signals (`askSignal`), and prepared answers served with no model (`PREP`, `prepFor`; keys from `askChips`, matched by `drill.tutor_prepared.chips`). **In `page/ask.js`** (styles: `page/ask.css`) |
 | `build step` | `loadProblem`, the editor area, running tests |
 | `practice questions` | Build as a decision or reading real evidence: YAML, plans, runs, traces (`QF`, `qfRender`). Options are shuffled in a fixed order per question with the Check step's `checkOrder`; a lesson with practice questions calls the step Practice (`stepNames`). **In `page/practice.js`** (styles: `page/practice.css`) |
 | `tables of rows` | `isRows`, `rowsTable`: an example's list of rows shown as a table, and after a run your result beside the expected rows |

@@ -1,0 +1,1640 @@
+{
+ "chunk_rows": {
+  "check:0:0": {
+   "q": "Why not “Nothing changes: the re-run overwrites the old …”?",
+   "a": "That answer describes what you *want* a re-run to do. It is exactly what happens when ids are deterministic, meaning built only from the inputs, like `\"d1-0\"`. But it misses how `MERGE` decides what to overwrite.\n\n`MERGE` is a write that matches incoming rows to existing rows by id. If an incoming row's id already exists, that row is updated. If not, the row is inserted as new.\n\nWith `uuid4()`, every call makes a fresh random id. So the re-run gives the chunk `\"abc\"` a different id than the first run did. `MERGE` looks for that new id in the table and finds nothing. It treats the chunk as brand new and inserts it.\n\nThe old rows from the failed run stay put. Now the same text appears twice under two different ids. Nothing gets overwritten, because nothing matched.\n\n\"Every chunk gets a new id and is added again\" is better because random ids never match the previous run's ids, so `MERGE` inserts duplicates instead of overwriting.",
+   "step": "Check",
+   "fingerprint": "dc50ac8111429f5e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Spark looks up and reuses the ids from the firs…”?",
+   "a": "That option sounds reassuring, but Spark doesn't work that way.\n\n**What it gets right:** it sees that re-runs are the danger zone. A job that fails and runs again must not create a mess. That instinct is correct.\n\n**What it misses:** Spark has no memory of the ids from the first run. It just runs your function again on each row. `uuid4()` makes a brand-new random id every time it's called, so each chunk gets a different id on the second run. For Spark to \"look up\" old ids, it would need shared state (a value kept outside the function). The lesson says a UDF must not rely on that, because it can run on any machine, more than once.\n\nThen the `MERGE` step compares ids. The new ids match nothing already in the table, so `MERGE` treats every chunk as new and inserts it. You end up with each chunk stored twice.\n\nThe fix is a deterministic id like `\"d1-0\"`, built only from the document's id and the chunk's position.\n\n**Why \"Every chunk gets a new id and is added again\" is better:** it correctly says that fresh random ids defeat `MERGE`'s matching, so re-running duplicates the chunks.",
+   "step": "Check",
+   "fingerprint": "dd3719bf5dfaccf9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Spark can only work on number columns”?",
+   "a": "\"Spark can only work on number columns\" isn't true, so it doesn't explain the problem. Spark handles text, dates, lists and more. The lesson's own example proves it: `split_text` takes a column of text and returns a list of strings for each row.\n\nThe option also points at the wrong thing. The question isn't about what kind of data is in the row. It's about where your function looks for its answer.\n\nHere's what it misses. Spark splits the table into **partitions** (chunks of rows) and sends them to different machines. A machine working on one row may not have \"the row before\" at all, because that row sits in another partition somewhere else. Spark also doesn't promise any row order, and it may re-run your function. So peeking at a neighbour can give a wrong answer, a different answer each run, or no answer.\n\n\"The row before may be on another machine\" is the better answer because it names the real cause: rows are split across machines, so each row's answer must come from that row alone.",
+   "step": "Check",
+   "fingerprint": "990f7b09e64e2973",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the one small stretch is the row-order claim, which the lesson doesn't state but doesn't contradict either."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Spark lets each row be read only once”?",
+   "a": "\"Spark lets each row be read only once\" sounds plausible, but it isn't true. And it doesn't explain the real problem.\n\n**What it gets right:** it senses that Spark controls how your function meets the rows. That instinct is fair. You don't get to wander through the table freely.\n\n**What it misses:** Spark has no \"read once\" rule. In fact, the lesson says the opposite. Spark may run your function **more than once** on the same row. For example, it retries work if a machine fails. So the limit isn't how many times a row is read.\n\nThe real limit is *where* rows live. Spark splits the table into **partitions**, which are chunks of rows. Different machines work on different partitions at the same time. Your function only sees the rows in front of it. The \"row before\" might sit in another partition, on another machine. It might also be processed in a different order, or not yet at all.\n\n\"The row before may be on another machine\" is the better answer. It names the actual cause: partitions spread rows across machines, so a function can only safely use its own row.",
+   "step": "Check",
+   "fingerprint": "5cc11cee3cc45d36",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'retries work if a machine fails' reason and the 'different order' remark go beyond the lesson, though they don't contradict it."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Five rows: the old two plus three new”?",
+   "a": "\"Five rows\" is what you would get if the job simply **appended** the new chunks, adding them to the end of the table without checking what is already there. It does get one thing right: the re-run really does produce three chunk rows for `d1`.\n\nWhat it misses is how MERGE works. MERGE is a write that first looks for a matching row by id. If it finds one, it **updates** that row (overwrites it with the new values). If it finds none, it **inserts** a new row.\n\nThe chunk ids are deterministic. They are built only from the document's id and the chunk's position. So the edited document produces `d1-0` and `d1-1` again, the same ids as before. MERGE finds those two in the table and overwrites them. `d1-2` has no match, so it is added.\n\nNo duplicates appear. That is exactly why the lesson asks for stable ids: re-running a job leaves the table clean instead of piling up copies.\n\n**Why \"Three rows: two updated, one new\" is better:** the repeated ids `d1-0` and `d1-1` make MERGE overwrite those two rows, and only `d1-2` is added.",
+   "step": "Check",
+   "fingerprint": "062240d349955182",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Two rows: the new chunk is skipped”?",
+   "a": "That option gets one thing right. `d1-0` and `d1-1` are not duplicated. Their ids are built only from the document's id and the chunk's position, so the re-run produces the same two ids. MERGE finds them already in the table and overwrites them with the new text.\n\nWhat it misses is the other half of MERGE. MERGE compares each incoming row to the table by id. It then does one of two things:\n\n- **Match found:** update the existing row.\n- **No match found:** insert it as a new row.\n\n`d1-2` is a brand-new id. Nothing in the table matches it, so MERGE adds it. MERGE skips a row only if you set it up that way on purpose, and the usual setup for this job inserts unmatched rows.\n\nSo the table ends up holding `d1-0`, `d1-1` and `d1-2` for `d1`.\n\n\"Three rows: two updated, one new\" is better because it covers both cases: matching ids get overwritten, and the new id gets added.",
+   "step": "Check",
+   "fingerprint": "c71b94031befbbfb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Cut each document on its own” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"We have millions of documents to split into chunks for search. One machine is too slow, so Spark spreads the work across many machines.\"\n\n*The idea:* \"Spark splits the table into partitions, which are slices of rows. It may run my function on any machine, and maybe more than once. So my function cuts each document using only that document's text. It keeps no shared counters and never looks at other rows. Each chunk gets an id like `d1-0`, built from the document id and the chunk's position.\"\n\n*The trade-off:* \"Because the ids come only from the inputs, a re-run makes the same ids. A MERGE updates rows that match and inserts new ones. So a re-run overwrites old chunks instead of duplicating them. One edge case: empty or missing text should give zero chunks, not a crash.\"\n\n**Likely follow-up**\n\n\"What if you need to combine chunks across documents, like removing duplicates?\"\n\n*Hint:* Don't do it inside your function. Ask Spark for a `groupBy` or a `join` afterward. Bringing matching rows together is Spark's job, not your function's.",
+   "step": "Explain",
+   "fingerprint": "e009d5717339e49e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that a row's answer leaked out of its own row, or that the ids aren't stable.\n\n**Row counts creep up after a re-run.** You run the job twice and the target table grows when it shouldn't. That means the ids changed, so the MERGE (an update-or-insert step that matches rows by id) saw \"new\" rows and added copies.\n\n**It works on your laptop but breaks on the cluster.** If the function leaned on shared state, like a counter kept outside it, it can look fine on one machine. Spread across many machines, each one keeps its own copy. You then see repeated ids, gaps in the numbering, or numbers that don't restart at 0 for each document.\n\n**Results shift between identical runs.** Same input, different chunk ids or a different order of chunks. Spark may re-run work, so anything not built purely from the row will wobble.\n\n**Quickest check:** run the job twice on the same input. Compare the total row count with the count of distinct `chunk_id` values. They should match, and both should stay the same across runs. Then spot-check one document: its ids should run `d1-0`, `d1-1` and onward with no gaps.",
+   "step": "Learn",
+   "fingerprint": "0d06b1e08aad9e29",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. One document is spread across many rows.** If each page of a PDF is its own row, no single row has the whole document, so the \"use only your row\" rule can't hold. Let Spark do the gathering first: `groupBy` the `doc_id` to join the pages into one row, then chunk that row.\n\n**2. Documents get edited.** Ids like `d1-0` come from the document id plus a position. If `d1` shrinks from three chunks to two, a MERGE updates `d1-0` and `d1-1`, but the old `d1-2` stays behind as a stale row. For any document that changed, delete all its old chunks before writing the new ones.\n\n**3. The function calls an outside service.** Some row functions call an embedding API, a service that turns text into numbers for search. Spark may run that function more than once, so you can pay twice or hit rate limits (caps on how many calls you may make). Save each result under its deterministic id, and skip any chunk that already has one.",
+   "step": "Learn",
+   "fingerprint": "5e968081de1fb32f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “UDF” different from “shared state”?",
+   "a": "They are different kinds of things. A **UDF** (user-defined function) is a function you write that Spark runs on each row. **Shared state** is a value kept *outside* that function, like a counter or a list that every call reads or changes.\n\nThe rule ties them together: a UDF should not lean on shared state. Spark splits the table into **partitions** (chunks of rows) and runs your UDF on many machines at once, sometimes more than once. Each machine gets its own copy of any outside value. So a shared counter would give different, clashing answers.\n\nThink of exam graders in different rooms. Each grades one paper using only that paper. That works. If they all had to update one tally sheet on a wall, they'd overwrite each other, and a regraded paper would get counted twice.\n\nIn the lesson, `split_text` looks only at each row's own `text`. The ids come from `doc_id` plus the position from `posexplode`, like `d1-0`. Nothing outside the row is used. That's why re-running gives the same ids, and a MERGE overwrites instead of duplicating.",
+   "step": "Learn",
+   "fingerprint": "82a0cf11926fb58b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. Minor: the 'each machine gets its own copy' claim goes beyond the lesson, and it sits a little awkwardly with the single shared tally-sheet analogy."
+   }
+  }
+ },
+ "optimistic_writes": {
+  "check:0:0": {
+   "q": "Why not “Read the ticket, change it in Python, then writ…”?",
+   "a": "\"Read the ticket, change it in Python, then write it back\" is the normal way to update a record. With only one agent, it works fine. Doing the change in Python isn't the problem either.\n\nThe problem is the gap between your read and your write. During that gap, nothing stops the other agent from doing the same thing.\n\nHere is how it goes wrong:\n\n- Agent A reads the ticket.\n- Agent B reads the same ticket.\n- A saves its change.\n- B saves its change, built on the old copy it read.\n\nB's save overwrites A's work. No error appears. A's update is simply gone. This is the **lost update** from the lesson. It is a **race condition**, meaning the result depends on which agent happens to be faster.\n\nSo this option describes the steps that cause the bug. It doesn't prevent it.\n\n\"Write only if the version is still the one you read\" is better because the database rejects any write based on an out-of-date copy, so the slower agent re-reads and retries instead of silently erasing the other's change.",
+   "step": "Check",
+   "fingerprint": "4e1a2bb0cddccf84",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Add a short sleep before each write so they tak…”?",
+   "a": "The sleep idea gets one thing right. It sees that the problem is about timing: two writes overlapping.\n\nBut a sleep doesn't make the agents take turns. Each agent pauses on its own, without knowing what the other is doing. If both sleep for the same amount, they still collide, just a little later.\n\nEven with different sleep times, timing is unpredictable. A slow network or a busy machine can stretch one agent's work. Agent B might still read the ticket before Agent A saves. Then B's save quietly erases A's change.\n\nSo the race isn't removed. It's only shifted, and it becomes rarer and harder to spot. Nothing ever *detects* the conflict, so the lost update stays silent. The sleeps also slow down every write, even when there's no conflict at all.\n\n\"Write only if the version is still the one you read\" is the right answer. The database itself checks whether someone saved first and rejects the out-of-date write, so the losing agent knows to re-read and retry instead of erasing the other agent's change.",
+   "step": "Check",
+   "fingerprint": "0f42a3c18d984a10",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It's accepted and replaces A's”?",
+   "a": "\"It's accepted and replaces A's\" describes what happens **without** optimistic concurrency. That part is accurate. With no version check, the last save simply wins. B's save would overwrite A's, and A's change would vanish with no error. That silent loss is the race condition this lesson is about.\n\nWhat the option misses is the version check. B's save says \"I read version 7.\" But A's save already moved the ticket to version 8. So B's change was built on old data. The rule is to accept a write only if the record is still at the version the writer read. Version 7 is not 8, so B's save is turned away.\n\nIn the SQL example, B's update would include `WHERE ticket_id = 'T2' AND version = 7`. No row matches anymore, so 0 rows are updated. That \"0 rows\" is the signal that B was too late.\n\n\"It's rejected, so B re-reads first\" is better because it keeps A's change safe and makes B start again from the latest version, so neither change is lost.",
+   "step": "Check",
+   "fingerprint": "452d79b6779ceef2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It waits until A's save is undone”?",
+   "a": "This option gets one thing right: B's save can't simply go through. Something has to stop B from overwriting A's change.\n\nBut it misses how optimistic concurrency actually works, in two ways.\n\nFirst, A's save is never undone. A read version 7, the record was still at 7, so A's write was correct and it stays. Undoing it would throw away good work, which is the very problem we're trying to prevent.\n\nSecond, nothing waits. \"Optimistic\" means the system doesn't make anyone queue up or hold a lock (a lock is a \"keep out, I'm using this\" flag). It just checks the version at save time. B said \"I read version 7\", but the record is now at 8. So B's write is turned away right away.\n\nIn the SQL example, B's `UPDATE ... WHERE version = 7` would match 0 rows. That's the signal to re-read the ticket, see A's change, and try again from version 8.\n\n\"It's rejected, so B re-reads first\" is better because it keeps A's valid change and makes B rebuild its update from the current data.",
+   "step": "Check",
+   "fingerprint": "338fd1108513e53e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A rate limit”?",
+   "a": "A **rate limit** is a cap on how many requests a system accepts in a set time. For example, \"no more than 100 calls per minute.\" It protects a service from being flooded.\n\nIt gets one thing right. Both ideas involve several workers sending requests at once. So it is easy to think \"too much traffic\" is the issue.\n\nBut the counter problem has nothing to do with volume. Only two workers are involved here. That is far below any normal limit, and an update is still lost.\n\nThe real trouble is the order of steps. Both workers read `10` before either one saves. So each saves `11`, and the second save quietly overwrites the first.\n\nA rate limit would not fix this. Two requests can still overlap, even if they are spread out a little. What fixes it is checking versions. Each write says which version it read, and it is rejected if the record has changed since then.\n\n\"A race condition\" is the better answer because it names the actual cause: the result depends on the timing of two overlapping read-then-save steps.",
+   "step": "Check",
+   "fingerprint": "7a0119650a49528d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A timeout”?",
+   "a": "\"A timeout\" sounds close because both words are about time. But they describe different problems.\n\nA **timeout** is when something waits too long and gets stopped. For example, a request to a database takes 30 seconds, so your code gives up and reports an error. Something fails, and you can see that it failed.\n\nNothing like that happens in this question. Both workers read 10 quickly. Both save 11 quickly. Every step succeeds and no error appears. The trouble is that the two workers overlapped. Each one changed an old copy of the counter, so the second save wrote over the first. One add vanished without any warning.\n\nSo \"A timeout\" gets one thing right: time matters here. What it misses is that the problem is about the **order** the steps happen in, not about anything taking too long.\n\n**\"A race condition\" is the better answer because it names exactly this: the result depends on which worker's read and save happen first, and the wrong order silently loses an update.**",
+   "step": "Check",
+   "fingerprint": "6b3f0b3e45b48b8c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems; the closing line's 'which worker happens first' is slightly loose, since the loss comes from the two workers overlapping, not from which one goes first."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Accept only up-to-date writes” in an interview?",
+   "a": "Here's a 30-second answer in three parts.\n\n**The problem.** \"Two workers read the same record, say a ticket at version 7. Both change it and both save. The second save silently erases the first. That's a lost update. It's a kind of race condition, where the result depends on timing.\"\n\n**The idea.** \"So every write says which version it read. The database accepts it only if the record is still at that version, then raises the version by 1. A stale write, meaning one based on old data, is rejected. The loser re-reads and tries again.\"\n\n**The trade-off.** \"It's called optimistic because it assumes clashes are rare, so nothing gets locked. If many writers hit the same record, they keep retrying and waste work. Then a lock, which makes others wait their turn, can work better.\"\n\n**Likely follow-up:** \"How does your code know its write was rejected?\"\n\nHint: in SQL, an `UPDATE` with `WHERE version = 7` reports 0 rows updated. Treat that as \"someone got there first.\" Then re-read and retry, with a limit on how many retries you allow.",
+   "step": "Explain",
+   "fingerprint": "ca2373aee9a853b7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "The tricky part is that a race condition rarely crashes anything. Data just quietly goes missing.\n\n**Warning signs:**\n\n- **Totals come up short.** You ran 1,000 increments, but the counter says 987. Nothing errored.\n- **Changes vanish.** A user closes ticket `T2`, and later it shows as open again. Someone else's save wrote over theirs.\n- **It only breaks under load.** Everything works when you test alone. It fails when many workers (separate processes doing jobs at the same time) run at once. You can't make it happen on demand.\n- **Logs show two saves from the same version.** If two writes both say \"I read version 7\" and both succeeded, one was lost.\n- **Zero rejected writes, ever.** With busy workers, some conflicts are normal. If you never see a \"0 rows updated\" retry, the version check may not be running.\n- **Retries that never stop.** This is the opposite failure. The loser keeps re-sending old data instead of re-reading first.\n\n**Quickest check:** run several workers that all increment the same record many times. Then compare the final count to the number of increments. If they don't match, updates are being lost.",
+   "step": "Learn",
+   "fingerprint": "235fc4a2f8f8e523",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Optimistic concurrency works well when clashes are rare. Here are three places where it needs extra care.\n\n**1. Many writers on one record at once.**\nIf dozens of workers update the same record every second, most writes get rejected and retried. That is a lot of wasted work, and some writers may keep losing. Instead, use a lock (one writer holds the record until done) or send all changes through a queue (a line that handles them one at a time).\n\n**2. One change that touches several records.**\nThe version check protects one record only. If an agent closes a ticket and also updates a customer record, one save can succeed while the other is rejected. Group them in a transaction: a bundle of changes that either all succeed or all fail.\n\n**3. Retries that redo expensive or risky work.**\nIn an agent app, a retry might call the LLM again. That costs money and may give a different answer. It might also repeat a side effect, like sending an email twice. Set a retry limit. Re-check whether the change still makes sense, and do side effects only after the save succeeds.",
+   "step": "Learn",
+   "fingerprint": "c1f16bc108fb7ad9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor only: the third point runs to five sentences instead of two or three, and 'LLM' and 'side effect' are not fully explained. Nothing contradicts the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "What does “race condition” mean here?",
+   "a": "A **race condition** is a bug where the result depends on timing. Two workers act at nearly the same moment, and the outcome changes based on who happens to go first. They are \"racing,\" and nobody controls the order.\n\n**An everyday comparison.** Two roommates share a shopping list on the fridge. Both see \"milk: 1.\" Each decides one more is needed. Each wipes the line and writes \"milk: 2.\" You wanted 3, but you got 2. Neither roommate did anything wrong alone. The problem is that both acted on the same old view of the list.\n\n**In the lesson's example.** Worker A and worker B both read `count = 10`. Each adds 1 and saves 11. The second save simply overwrites the first. One increment disappears, and nothing warns you. This is called a **lost update**.\n\n**Why \"timing\"?** If B had read after A saved, B would see 11 and save 12. It is the same code, but different timing gives a different result.\n\nThat's why the lesson adds a version number. It lets a write notice that the record changed since it was read.",
+   "step": "Learn",
+   "fingerprint": "47ddceefa4b5bc57",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "process_new": {
+  "check:0:0": {
+   "q": "Why not “A bigger cluster, so the full run finishes soon…”?",
+   "a": "A bigger cluster does get one thing right. A cluster is the group of computers that runs your job. Add more computers, and the full run can finish sooner tonight.\n\nBut it misses the real problem. The job still re-embeds all 10 million documents every night, even though almost all of them haven't changed. You're paying for more machines to repeat yesterday's work.\n\nIt also doesn't last. The table keeps growing. Next month it's 12 million, then 15 million. The run slows down again, so you buy an even bigger cluster. The cost keeps rising with the size of the table, not with how much is actually new.\n\nSpeed was never the issue. Redoing finished work was.\n\n\"Checkpoint where it got to and process only what is new\" is the right answer. A checkpoint is a saved note of the last item the job finished, so each run handles only the new documents. That keeps the job small and cheap no matter how big the table grows.",
+   "step": "Check",
+   "fingerprint": "ac68f46312787803",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: \"Speed was never the issue\" slightly overstates things, since the lesson itself calls full reprocessing slow and expensive. It is still acceptable as a rhetorical point."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Run it weekly instead of nightly to cut the cost”?",
+   "a": "Running weekly does get one thing right. Fewer runs means fewer bills, so the total cost goes down.\n\nBut it doesn't fix the real problem. Each run still re-embeds all 10 million documents. (Embedding means turning text into a list of numbers a model can compare.) Most of those documents haven't changed since last time, so that work is wasted. And the table keeps growing. A weekly run will get slower and pricier over time, just like the nightly one.\n\nIt also makes things worse in another way. New documents could wait up to a week before they're embedded. So your agent searches stale data, meaning data that is out of date.\n\nThe cost comes from redoing old work. How often you run the job doesn't change that.\n\nThe better answer is \"Checkpoint where it got to and process only what is new.\" A checkpoint is a saved bookmark. It records the offset, meaning the position of the last item handled. Each run then embeds only the new documents, so it stays fast and cheap however big the table gets.",
+   "step": "Check",
+   "fingerprint": "df467546884ce23f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the 'your agent searches stale data' point goes slightly beyond the lesson but doesn't contradict it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “All events from 1 to 520”?",
+   "a": "\"All events from 1 to 520\" does get one thing right. It includes the new events, 501 to 520, so nothing new gets missed.\n\nThe problem is everything else it includes. Events 1 to 500 were already handled last night. Reading them again is wasted work. That is exactly the slow, expensive full reprocess that incremental jobs are meant to avoid. It also gets worse every night as the log grows. Next month you might reread thousands of old events just to handle twenty new ones.\n\nThere is a second risk. If the job writes results each time, rereading old events can count them twice. Then you get duplicate rows or inflated totals.\n\nThe saved **offset** of 500 is the job's bookmark. It is the number of the last event it finished, stored in a **checkpoint**. A checkpoint is just a saved note of progress. The whole point of keeping it is to start reading right after it.\n\n\"Only 501 to 520\" is better because it uses the bookmark to handle just the new events, once each, with no repeated work.",
+   "step": "Check",
+   "fingerprint": "157a7e5e2f1fd9cc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The double-counting point goes beyond the lesson but doesn't contradict it, and the answer is about 180 words."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Only event 520”?",
+   "a": "\"Only event 520\" gets one thing right. Event 520 is new, and tonight's run should handle it. It sits past the saved offset, so it hasn't been read yet.\n\nThe problem is what it leaves out. The saved offset is like a bookmark. Offset 500 means \"I have read everything up to and including event 500.\" It says nothing about where tonight's log ends. Events 501 through 519 arrived since last night too. Nobody has read them yet.\n\nIf tonight's run only took event 520, those 19 events would be skipped. Worse, the job would then save 520 as its new offset. Tomorrow's run would start after 520, so events 501 to 519 would never be processed at all. That's silent data loss.\n\nThink of a book. Your bookmark is on page 500. Tonight you don't jump straight to the last page. You read every page from 501 onward.\n\n\"Only 501 to 520\" is better because it handles everything after the bookmark up to the newest event, so nothing is skipped and nothing is read twice.",
+   "step": "Check",
+   "fingerprint": "6f27a5a70aa7b2dc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It's counted like the others”?",
+   "a": "\"It's counted like the others\" has one thing right. The event really did arrive, and the job does read it. The job even moves its offset (its bookmark) past it, so the next run won't read it again.\n\nWhat it misses is the watermark. A watermark is a cutoff time. Anything stamped before it is treated as too late to count. Here the cutoff is 9 am.\n\nThe key detail is which time gets checked. It's the event's own timestamp, 8:50, not when it showed up, 9:30. 8:50 is before 9 am, so the event fails the check. Arriving at 9:30 doesn't save it.\n\nWhy have a cutoff at all? Without one, the job would have to keep every old time window open forever, just in case a straggler turns up. The watermark lets it close old windows and forget them. That keeps each run small and cheap.\n\n\"It's skipped as too late\" is better because the watermark judges the event by its 8:50 timestamp, which falls before the 9 am cutoff.",
+   "step": "Check",
+   "fingerprint": "a192caf998026261",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the point about closing old windows goes slightly beyond the lesson text but does not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The whole job stops”?",
+   "a": "\"The whole job stops\" gets one thing right: the late event doesn't just slip through and count as normal. Something does happen to it. But stopping the whole job is far too drastic.\n\nLate events are normal. Phones lose signal, networks lag, systems retry. If one late event halted everything, the job would break all the time. Every on-time event would be stuck waiting too.\n\nA **watermark** is a cutoff time. It tells the job, \"events stamped before this time no longer count.\" What matters is the event's own timestamp, not when it shows up. This event is stamped 8:50, which is before the 9 am cutoff. That is why it's too late. Arriving at 9:30 is just when we happen to see it.\n\nSo the job drops that one event and keeps going. In the lesson's Spark example, `withWatermark(\"event_time\", \"1 hour\")` sets this cutoff using each event's `event_time`.\n\n\"It's skipped as too late\" is better because a watermark filters out single events by their timestamp while the job carries on processing everything else.",
+   "step": "Check",
+   "fingerprint": "ec58548d7d35c84a",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The Spark example is presented as setting the cutoff that drops the late event, but the lesson's own comment says that watermark lets Spark forget old ids so late duplicate copies are dropped, which is a different job."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Skip what you have already read” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"If a job reprocesses the whole table every night, it gets slower and more expensive as the table grows. Most of that work repeats what it already did yesterday.\"\n\n*The idea:* \"An incremental job remembers where it stopped. It saves an **offset**, the number of the last event it read, in a **checkpoint**, which is a small saved record of progress. Each run starts after that offset and handles only new events. It's like a bookmark in a book.\"\n\n*The trade-off:* \"Events can arrive late. A **watermark** sets how late is too late to count. If it's short, you might drop real late events. If it's long, Spark has to remember more old ids for longer.\"\n\n**A likely follow-up**\n\n*\"How do you pick the watermark length?\"*\n\nHint at a strong answer: tie it to how late your events really arrive. In the lesson's code, `\"1 hour\"` means Spark can forget ids older than an hour, so `dropDuplicates` drops late copies past that point. A longer window keeps more data but costs more memory.",
+   "step": "Explain",
+   "fingerprint": "43e4b557e3f7ccdb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the memory-cost remark is an inference from the lesson's 'forget ids older than an hour' comment, not stated outright."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Here are the signs that incremental processing is broken.\n\n**Runs keep getting slower.** If each nightly run takes longer as the table grows, the job is probably rereading everything. A healthy incremental run takes about the same time on a quiet night, however big the table is.\n\n**Duplicate rows.** The output table holds the same `event_id` more than once. This often means the **checkpoint** (the saved bookmark) was deleted, moved, or never set. The job then starts from the beginning and copies old events again.\n\n**Missing rows.** The output has fewer events than the source, beyond the late ones you expected to lose. The **offset** (the \"last event read\" number) may have jumped too far ahead. Or the **watermark** (the cut-off for \"too late\") may be too strict, so real events get dropped.\n\n**Memory keeps climbing.** Without a watermark, Spark has to remember every id it has ever seen, forever.\n\n**Quickest check:** run the job twice in a row with no new data. The second run should read zero events and leave the output unchanged. Then compare the count of distinct `event_id`s in the source with the count in the output.",
+   "step": "Learn",
+   "fingerprint": "cdfe73ef7dfcf327",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems: the answer matches the lesson, stays under about 200 words, and gives no code or exercise solution."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Incremental processing works well for steady, append-only events. Here are three places it needs extra care.\n\n**Old rows get changed or deleted.** The offset (your bookmark) only moves forward, so edits to events you already read are missed. If the source table can change, read its change feed instead. That is a log of every insert, update and delete, so you see edits too.\n\n**You change the job's logic.** The checkpoint (the saved record of where the job stopped) remembers progress for the old logic. New rules won't be applied to events it already passed. When the logic changes, start a fresh checkpoint and rebuild the output table from the beginning, once.\n\n**Late events really matter.** A watermark (the cutoff for \"too late\") silently drops anything older than it. That is fine for dashboards. It is risky for money or audits. Use a wider watermark there, or keep late events in a separate table so a nightly correction job can add them back.",
+   "step": "Learn",
+   "fingerprint": "dc20ebbe2cc1e5d7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The three cases (edited rows, changed logic, late events) fit the lesson, jargon is explained, it is under 200 words, and it gives no solution code."
+   }
+  },
+  "learn:term": {
+   "q": "How is “offset” different from “checkpoint”?",
+   "a": "An **offset** is a position. It's the number of the last event the job read.\n\nA **checkpoint** is the saved spot where the job keeps that offset, so it isn't lost between runs. In the lesson's code, `checkpointLocation` points to that spot: a folder path.\n\nEveryday comparison: the offset is the page number you stopped on. The checkpoint is the bookmark that holds that page number in the book. You can close the book and come back later.\n\nHow they work together, using the lesson's example:\n\n1. The job opens the checkpoint and finds saved offset `1`.\n2. It reads only the events past that: 2, 3 and 4.\n3. Event 3 has time 90. That's before the watermark of 100, so it's too late and doesn't count. Events 2 and 4 count.\n4. The offset still moves past all three, including event 3. That way the next run won't read them again.\n5. The new offset is saved back into the checkpoint.\n\nShort version: the offset says *where* you stopped. The checkpoint is *where that is kept*. Without a checkpoint, the job would forget its offset and start from the beginning every time.",
+   "step": "Learn",
+   "fingerprint": "0a25905a8d094fd9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "retry_wait": {
+  "check:0:0": {
+   "q": "Why not “They all succeed, since the limit has reset”?",
+   "a": "That option gets one thing right. Rate limits do reset. A rate limit is a cap, like \"no more than 10 requests per second.\" After a short wait, the counter clears and requests can get through again. So waiting is a good idea.\n\nWhat it misses is that the reset only clears the counter. It does not raise the cap. The limit was hit because 50 workers called at the same moment. If all 50 wait exactly 2 seconds, they all come back at the same moment too. That is the same burst as before, so the server rejects most of them again with a `429` (the \"too many requests\" error).\n\nThen they all wait exactly 4 seconds, and collide again. Then 8. The pattern repeats on every attempt. This is why the lesson adds **jitter**, a random wait inside the window. Jitter spreads the workers out so only a few arrive at any one time.\n\n\"They all hit the limit again together\" is better because the workers retry in lockstep, so the retry is just a copy of the original overload.",
+   "step": "Check",
+   "fingerprint": "f491fd0cd31838fe",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only the first one to retry gets through”?",
+   "a": "\"Only the first one to retry gets through\" has a grain of truth. When fifty requests arrive in one burst, the server may still let a few through before the limit kicks in. So some calls might succeed.\n\nBut that answer misses the real problem. The workers don't take turns. They all waited exactly 2 seconds, so they come back as one crowd at the same moment. That crowd is about as big as the one that caused the rate limit in the first place. So most of them hit the limit again.\n\nAnd it doesn't stop there. With no **jitter** (a random amount of waiting), they wait exactly 4 seconds next, then exactly 8. Each time they arrive together, and each time most get rejected. Waiting longer alone doesn't fix this, because the crowd stays bunched up.\n\nThat's why jitter matters. Each worker waits a random time inside the window, so their retries spread out instead of landing together.\n\n\"They all hit the limit again together\" is the better answer because it names the actual failure: identical waits keep the retries clumped, so the rate limit is triggered again and again.",
+   "step": "Check",
+   "fingerprint": "2423566c0ece2757",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The 'grain of truth' rests on a claim the lesson never makes (the server lets a few through before the limit kicks in), and the answer says 'most' are rejected each time, which is softer than the lesson's 'repeated collisions' and the Check answer 'they all hit the limit again together'."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “2 seconds, as your backoff says”?",
+   "a": "\"2 seconds, as your backoff says\" gets one thing right. A 429 means \"too many requests, slow down,\" and that is an error worth retrying. So deciding to retry, and having a backoff plan ready, are both good instincts.\n\nWhat it misses is the order of the rules. Backoff is your fallback. It is the guess you make when nobody has told you how long to wait. Here, the server *did* tell you. Its reply says `Retry-After: 30`, which means \"please wait 30 seconds before trying again.\"\n\nIf you wait only 2 seconds, you come back well before the time the server asked for. That retry is likely to fail the same way. It also uses up one of your few attempts, because good retry code always stops after a small number of tries. Spend those tries early, and you may hit the limit before the 30 seconds are even up.\n\nThe lesson's rule is simple: check `Retry-After` first, and only use backoff with jitter when it's missing.\n\n\"30 seconds, as the server asked\" is better because it follows the wait the server gave, instead of replacing it with your own guess.",
+   "step": "Check",
+   "fingerprint": "6c4da6fdd580a07f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Somewhere between 2 and 30”?",
+   "a": "\"Somewhere between 2 and 30\" sounds like a fair middle ground. It does get one thing right: it notices that both numbers matter, and it has the spirit of jitter, which means picking a random wait so clients don't all retry together.\n\nBut it misses the key rule. A `Retry-After` value is the server telling you directly when it will be ready. It knows its own state. Your backoff, which means waiting longer after each failure, is only a guess for when the server stays silent.\n\nIf you pick a random time below 30 seconds, you will often retry too early. The server is still busy, so you likely get another 429 (the \"too many requests\" error). That wastes one of your few allowed attempts. It also adds load to a server that already asked you to back off.\n\nRandomness belongs in your own backoff. It is not a way to blend the server's answer with your guess. When the server gives a number, the server wins.\n\n\"30 seconds, as the server asked\" is better because it follows the server's direct instruction instead of overriding it with your own guess.",
+   "step": "Check",
+   "fingerprint": "f01cbdf8a85dbdf9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “It should wait longer between tries”?",
+   "a": "\"It should wait longer between tries\" sounds reasonable, because waiting longer is good advice for some errors. With a 429 (rate limit) or a 503 (server overloaded), the problem goes away over time. So backing off and waiting longer gives the call a real chance to succeed.\n\nA wrong API key is different. The server replies with an error like 401 or 403, which means \"you're not allowed in.\" That answer will be the same in 1 second, 8 seconds, or an hour. The key is still wrong. Waiting longer only makes the failure slower. You still burn every attempt, and the person who needs to fix the key finds out later than they should.\n\nThe real problem is *which* errors get retried, not *how long* you wait. Errors that can't fix themselves should not be retried at all. The code should fail fast: stop right away and report the error so someone can fix it.\n\n\"A wrong key won't fix itself later\" is the better answer because it names the real issue: retries only help when the error can succeed on a later try, and this one never will.",
+   "step": "Check",
+   "fingerprint": "4c1aef4d3246bda4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It needs more jitter on each try”?",
+   "a": "Jitter is a real part of good retries. It adds a random wait so many clients don't all retry at the same moment. So the option isn't wrong about jitter in general.\n\nBut jitter only changes *when* a retry happens. It doesn't change *whether* the retry can work.\n\nA wrong API key (the secret password your code sends to prove who it is) usually comes back as a `401` or `403` error. That means \"you're not allowed.\" The server will say the same thing on every attempt. Waiting 1 second or 30 seconds, randomly or not, won't fix the key.\n\nSo adding more jitter just makes the code fail more slowly. It wastes time and API calls. It can also hide the real problem behind a pile of retries.\n\nThe real fix is to sort errors first. Retry only the ones that can succeed later, like `429` (rate limit), `503` (server overloaded), and timeouts. Fail fast on the rest.\n\n\"A wrong key won't fix itself later\" is better because it spots the real mistake: this error should never be retried at all, however well you space the retries.",
+   "step": "Check",
+   "fingerprint": "e63e989df6ebf325",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Retry-After first, else backoff with jitter” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** Some errors are temporary. A 429 means \"slow down, you hit a rate limit.\" A 503 means the server is overloaded. Retrying these can work. Retrying a broken request, like a 400, never will.\n\n**The idea.** If the server sends a `Retry-After` value, I wait exactly that long, because the server knows its own load best. If it doesn't, I use exponential backoff: the wait window doubles each time, 1, 2, 4, 8 seconds. I add jitter, which means picking a random wait inside that window. That way many clients don't all retry at the same instant and overload the server again.\n\n**The trade-off.** Long waits make users wait. So I set a maximum wait, say 30 seconds, and stop after a few attempts.\n\n**Likely follow-up:** \"Why not just retry every second?\"\n\nHint: mention the \"thundering herd.\" That's when many clients retry in sync and keep colliding. Backoff gives the server time to recover. Jitter breaks up the sync.",
+   "step": "Explain",
+   "fingerprint": "e1520931f9ed16c0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "Warning signs show up in your logs and dashboards.\n\n**Retry times line up.** Many calls retry at exactly 2, 4, then 8 seconds. That means jitter is missing. Jitter means each client waits a random time inside the window, so retries spread out.\n\n**Errors come in waves.** You see a burst of 429 errors (the server saying \"too many requests\"), a pause, then another burst. Clients are colliding again and again.\n\n**The server's wait is ignored.** Retry-After is a value the server sends meaning \"wait this many seconds.\" If retries happen sooner, they get rejected again.\n\n**Retries never stop.** One request shows ten or twenty attempts. Cost and response times climb.\n\n**The wrong errors get retried.** A 400 (bad request) or 401 (bad login) is retried. Those fail every time.\n\n**Quickest check:** pull the retry timestamps for one busy minute. Ask three things. Do they bunch up on the same seconds? Do they wait at least the Retry-After time? Does any request go past your attempt limit?",
+   "step": "Learn",
+   "fingerprint": "485739d993556bb4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "This rule holds up well, but here are three places it needs extra care.\n\n**Actions with side effects.** Some agent tools send an email, charge a card, or write a database row. If the call timed out after the action actually happened, a retry does it twice. Only retry these if they are *idempotent* (safe to run twice with the same result). One way is to send a unique ID the server can use to spot duplicates.\n\n**Retries stacked in layers.** LangChain clients, SDKs, and your own `tenacity` decorator may each retry on their own. Five tries inside five tries becomes 25 calls, which makes an overloaded server worse. Pick one layer to own retries and turn the others off.\n\n**Long outages or a waiting user.** Backoff can add up to a minute or more, which is too long for a chat reply. Cap the *total* wait time, not just the number of attempts. Then fail fast with a clear message or switch to a backup model. For repeated failures, use a *circuit breaker*: stop calling a failing service for a while instead of retrying every request.",
+   "step": "Learn",
+   "fingerprint": "fc38acbdc7b49e28",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'minute or more' of backoff is a stretch for the lesson's 5 attempts, which wait at most about 15 seconds, but 'can' hedges it and it could include long Retry-After values. 'SDKs' is unexplained, but that is minor."
+   }
+  },
+  "learn:term": {
+   "q": "How is “exponential backoff” different from “jitter”?",
+   "a": "They solve two different problems, and they work as a pair.\n\n**Exponential backoff** decides *how big the waiting window is*. After each failed try, the window doubles: 1, 2, 4, 8 seconds. \"Exponential\" just means it multiplies each time instead of adding a fixed amount. A struggling server gets more breathing room the longer it struggles.\n\n**Jitter** decides *where inside that window you actually wait*. Instead of waiting exactly 4 seconds, you pick a random time up to 4 seconds. \"Jitter\" just means adding a bit of randomness.\n\nWhy use both? Backoff alone still lines everyone up. In the lesson's example, 50 workers with no jitter all retry at exactly 2 s, then 4 s, then 8 s. They collide every single time. With full jitter, each worker picks its own random moment inside the window, so the retries spread out.\n\nHere's an everyday comparison. A crowd is stuck at a jammed café door. Backoff is everyone agreeing to come back later, and a bit later each time. Jitter is each person picking their own random minute, so they don't all rush the door together.\n\nIn tenacity, `wait_random_exponential` does both at once.",
+   "step": "Learn",
+   "fingerprint": "91cdef242f4e6801",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "run_with_limit": {
+  "check:0:0": {
+   "q": "Why not “Fastest possible run”?",
+   "a": "\"Fastest possible run\" gets one thing right. Calling a model is mostly waiting, so starting many calls together does save time. In a perfect world, 1,000 two-second calls started at once would all finish in about 2 seconds.\n\nThat perfect world doesn't exist. Model providers set a **rate limit**: a cap on how many requests they accept from you in a short window, such as per minute. Send 1,000 at the same moment and you blow straight past it. The provider then rejects many calls with a \"too many requests\" error instead of an answer.\n\nThe calls that do get through can pile up and slow the service down. Some wait so long they hit a **timeout**, meaning your code stops waiting and treats the call as failed. Now you have to retry all those failed calls. That often takes longer than a steady, capped pace would have.\n\nSo \"fastest\" assumes nothing pushes back. Something always does.\n\n\"A flood of rate-limit errors and timeouts\" is better because it describes what really happens when a service with real limits receives 1,000 calls at once.",
+   "step": "Check",
+   "fingerprint": "a256e00b81f26125",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that retrying failed calls often takes longer than a capped pace goes slightly beyond the lesson, but it does not contradict it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Python runs them one at a time”?",
+   "a": "That option has a grain of truth, but it misses what `asyncio` actually does.\n\n**What it gets right:** `asyncio` runs on a single thread, which is one line of work. So at any instant, only one bit of your Python code is executing.\n\n**What it misses:** an LLM call is mostly waiting for the server to reply. When one call starts waiting, `asyncio` switches to the next call and sends that request too. It doesn't wait for the first answer before starting the second. So `asyncio.gather` with no limit fires off all 1,000 requests almost at once. They are all \"in flight\" together, even though only one line of Python runs at a time.\n\nThat flood is the problem. The model provider has a **rate limit**, a cap on how many requests it accepts per minute. Go over it and it refuses calls. Calls stuck in a long queue can also hit a **timeout**, meaning they give up after waiting too long.\n\n\"A flood of rate-limit errors and timeouts\" is better because it correctly sees that nothing holds the 1,000 calls back, so they all hit the service at the same moment.",
+   "step": "Check",
+   "fingerprint": "7033c0d3e9627e32",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Start all 100 at the same time”?",
+   "a": "\"Start all 100 at the same time\" gets one thing right. Most of a model call is waiting for the reply. So running calls side by side instead of one after another is the right instinct. On paper, 100 calls of 2 seconds each would all finish in about 2 seconds.\n\nWhat it misses is the second half of the question: \"without a flood of 429 errors.\" A 429 is the error a service sends back when it means \"too many requests, slow down.\" Model providers set a **rate limit**, a cap on how many requests you can send in a short time. Firing all 100 at once blows straight past that cap. Many calls get rejected, and you have to retry them. The service may also slow down for everyone. So the batch can end up slower and messier, not faster.\n\n\"Let up to 10 run at once\" is the better answer. It keeps most of the speed gain, cutting 200 seconds down to about 20, while staying under the rate limit, so calls succeed the first time.",
+   "step": "Check",
+   "fingerprint": "3f2dc426b50f08f7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Add a pause after every call”?",
+   "a": "A pause does get one thing right. It slows down how often you send requests. That can help avoid 429 errors. (A 429 is the service saying \"too many requests, slow down.\")\n\nBut look at the actual problem. The batch is slow because calls run one at a time. Each call spends about 2 seconds just waiting for the model to reply. Nothing else happens during that wait.\n\nAdding a pause doesn't change that. Calls still run one after another. Now each one also has extra idle time tacked on. So 100 calls that took over 3 minutes would take even longer. You'd be fixing a flood that isn't happening while making the real problem worse.\n\nThe fix needs to overlap the waiting. That means more calls in flight together, but not so many that the service pushes back.\n\n\"Let up to 10 run at once\" is better because it overlaps the waiting, cutting 200 seconds to about 20, while the cap of 10 keeps the request rate low enough to avoid a flood of 429s.",
+   "step": "Check",
+   "fingerprint": "5b05393947ffc80b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “When all three have finished”?",
+   "a": "\"When all three have finished\" gets one thing right. It never lets more than 3 calls run at once, so you stay under the limit.\n\nBut it treats the calls like a group that must leave together. A semaphore doesn't work that way. Each call holds one place (one \"slot\"). When that call finishes, it gives its place back straight away. The next waiting call grabs it and starts.\n\nWaiting for all three wastes time. Say one call takes 1 second and another takes 5. The finished call's place would sit empty for 4 seconds while work is still waiting. Over a big batch, those idle gaps add up. You end up much slower than the limit allows.\n\nThink of the shop with 3 tills. When one till frees up, the next customer walks over. Nobody waits for all three tills to clear.\n\nIn the lesson's code, `async with sem:` takes a place when a call starts and returns it the moment that call ends.\n\n\"Right away, in the free place\" is better because the limit caps how many run at once, and a freed place should never sit idle.",
+   "step": "Check",
+   "fingerprint": "11f55e8355865f4c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “After a short fixed pause”?",
+   "a": "\"After a short fixed pause\" gets one thing right. The fourth call does have to wait. With a limit of 3, it can't start while all three places are taken.\n\nWhat it misses is *what* the fourth call is waiting for. It isn't waiting for a clock. It's waiting for a free place. A semaphore (a counter of free places) tracks exactly that. When a running call finishes, it hands its place back. The waiting call takes it at that same moment.\n\nA fixed pause would hurt in two ways:\n\n- **It wastes time.** The place sits empty during the pause, doing nothing. Over 100 calls, those small gaps add up.\n- **It isn't tied to anything real.** A pause of, say, half a second doesn't know when a call actually finished. It's just a guess.\n\nThink of the shop with a few tills. When a till frees up, the next customer walks straight to it. Nobody stands there counting to five first.\n\n\"Right away, in the free place\" is better because the next call starts the instant a place opens, so no place is ever left idle.",
+   "step": "Check",
+   "fingerprint": "9feeebb566cadbe0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The closing claim that 'no place is ever left idle' is slightly loose, since places can sit idle when no calls are waiting, but in context it is acceptable."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Give each call the first free slot” in an interview?",
+   "a": "**The problem.** Calling a model is mostly waiting. One call at a time is slow. Firing every call at once trips rate limits, which are the provider's caps on how many requests you can send. It can also overload the service.\n\n**The idea.** Allow only a fixed number of calls in flight, say 8. Picture a shop with 8 tills. Each new customer goes to the till that frees up first. I track when each slot becomes free. The moment one opens, the next call takes it. The batch is done when the busiest slot finishes its last call.\n\n**Trade-off.** A higher cap finishes sooner, but only until the service pushes back. Past that point you get errors and retries, which can end up slower. One edge case: if the cap is bigger than the number of calls, everything starts at once. Then the finish time is just the longest single call.\n\n**Likely follow-up:** \"How would you choose the cap?\"\n\n*Hint for a strong answer:* Start from the provider's published rate limit and leave some headroom. Then measure real timings. Mention backing off when you see rate-limit errors. Backing off means waiting a little longer before each retry.",
+   "step": "Explain",
+   "fingerprint": "312cd606027b4249",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs you skipped concurrency.** A batch takes about as long as every call added together. Your traces (the timelines that show each call) look like a staircase, with each call starting only when the last one ends.\n\n**Signs there is no cap.** It works fine on 10 test questions, then falls over on 1,000. You see \"429\" errors in your logs, which is the service saying \"too many requests, slow down.\" You also see timeouts and retries piling up. The total time gets worse, not better.\n\n**Signs the cap is broken.** You set a limit of 8, but traces show 50 calls starting at the same moment. A common cause is making a new `Semaphore` inside each call, so every call gets its own counter instead of sharing one.\n\n**Quickest check.** Time one batch. It should take about the number of rounds of calls times the time per call. A round is one group as big as your limit. Then look at a trace or log the start times. Count how many calls are running at once. It should never go above your limit.",
+   "step": "Learn",
+   "fingerprint": "2fdb54b2a48df327",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "This method needs extra care in three common situations.\n\n**1. Limits counted in tokens, not calls.** Many services cap how much text you send per minute, measured in tokens (small chunks of text, about one short word each). Eight calls with very long prompts can still break that limit. Lower the cap for long prompts, and when the service says \"slow down\", wait a little longer before each retry.\n\n**2. Calls that depend on each other.** If step two needs the answer from step one, running them at once cannot help. Run dependent steps in order. Only run the independent ones side by side.\n\n**3. Many copies of your program.** A semaphore only counts calls inside one running program. If ten copies each allow 8, the service sees 80 calls at once. Split your total budget across the copies, or let one shared limit that all copies check do the counting.",
+   "step": "Learn",
+   "fingerprint": "dd221d39f0a0436e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “concurrency limit” different from “semaphore”?",
+   "a": "A **concurrency limit** is the rule. A **semaphore** is one tool that enforces it.\n\n**Concurrency limit** is just a number you choose: \"at most 8 calls in flight at once.\" \"In flight\" means started but not finished yet. It says *what* you want, not *how* to get it.\n\n**Semaphore** is the mechanism. It is a counter of free places. Before a call starts, it must take a place. When the call finishes, it gives the place back. If no places are free, the next call waits.\n\nThink of a car park with 8 spaces. \"No more than 8 cars\" is the limit. The barrier with a counter at the entrance is the semaphore. When a car leaves, the barrier lets the next one in.\n\nIn the lesson's code, `asyncio.Semaphore(8)` creates that counter with 8 places. `async with sem:` takes a place before `llm.ainvoke` runs and returns it afterwards.\n\nThe limit can be enforced in other ways too. `llm.batch(questions, config={\"max_concurrency\": 8})` sets the same limit without you writing a semaphore yourself.",
+   "step": "Learn",
+   "fingerprint": "b48596c017072f86",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "skew_report": {
+  "check:0:0": {
+   "q": "Why not “Not enough memory everywhere”?",
+   "a": "\"Not enough memory everywhere\" sounds reasonable, but it doesn't fit what you see.\n\n**What it gets partly right:** memory can play a role. A task with a huge pile of rows may not fit them all in memory. It then **spills**, which means it writes the overflow to disk and reads it back later. That makes it even slower.\n\n**What it misses:** the word \"everywhere.\" If every worker were short of memory, every task would struggle. You'd see most tasks running slowly, not 199 finishing in a minute. Those 199 fast tasks show the workers have enough memory for a normal share of the work.\n\nThe real clue is the gap. One task is far slower than all the others. That points to one task having a much bigger share of the rows. Any memory trouble in that task is a side effect of the extra rows, not the root cause.\n\n**Why \"One key with far more rows than the others\" is better:** it explains why exactly one task is slow while the rest finish quickly, because Spark sends all rows for a key to the same task.",
+   "step": "Check",
+   "fingerprint": "14160f2b1501fada",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “A slow network”?",
+   "a": "A slow network is a fair guess. Spark does move data between machines, and a slow link can make a job drag. That part is real.\n\nBut look at the pattern. 199 tasks finish in a minute. They all used the same network. If the network were slow, most tasks would be slow, not just one. A network problem tends to spread across the whole job.\n\nThe odd one out is the clue. When one task takes 60 times longer than its neighbours, it usually has far more work than they do. Spark sends all rows with the same key to the same partition (one chunk of the data). So if one key, like `acme`, has most of the rows, the task holding that partition grinds away alone while the other 199 sit idle.\n\nYou can confirm this in the Spark UI. Compare that slow task's input size with the others. A huge gap points to a hot key, not the network.\n\n\"One key with far more rows than the others\" is the better answer because it explains why only one task is slow while the rest are fast.",
+   "step": "Check",
+   "fingerprint": "8b018b4a30a4d673",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Sort the rows before grouping”?",
+   "a": "Sorting sounds helpful because it puts rows with the same key next to each other. It feels like tidying up. But it doesn't change how many rows each key has.\n\nGrouping already gathers every row for a key into one partition (a chunk of data that one task works on). So after sorting, all the `\"unknown\"` rows still end up together, and one task still does most of the work while the others sit idle.\n\nSorting can even make things a bit worse. To sort across the whole cluster, Spark has to shuffle (move rows between workers so matching ones meet). Rows with the same key land in the same place, so the hot key piles up on one worker anyway. You pay for extra work and the slow task stays slow.\n\nThe real problem is one key being far bigger than the rest. Any fix has to split that key up or take it out of the main job. Sorting does neither.\n\n**Why \"Handle the unknown rows separately\" is better:** it pulls the hot key out of the main job, so its rows no longer jam a single task and the other keys finish evenly.",
+   "step": "Check",
+   "fingerprint": "a1cb04561fe2f2ce",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The point about sorting causing an extra shuffle goes beyond the lesson, but it is accurate and does not contradict it. At about 190 words, the answer is close to the length limit."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Run the job less often”?",
+   "a": "Running the job less often doesn't change what happens inside each run. That's the key problem with this option.\n\nIt does get one thing right: it notices the job is slow and painful. But it treats the slowness as a \"how often\" problem. The slowness actually comes from how the work is split.\n\nHere's what still happens in every run. Spark puts all rows with the same key in the same partition. So all the `\"unknown\"` rows land together, and one task (one worker's share of the job) has to process them. The other tasks finish quickly and sit idle, waiting for that one busy task. That's skew, and it's there every single time the job runs, however rarely you run it.\n\nSo this option never touches the cause: one hot key holding most of the rows.\n\n\"Handle the unknown rows separately\" is better because it goes straight at the hot key. It takes those rows out of the normal grouping, so no single task is stuck with most of the work.",
+   "step": "Check",
+   "fingerprint": "e1f08aa1bd530809",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the 'gets one thing right' credit is a stretch, and 'partition' is not explained, but neither contradicts the lesson."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Yes: twice the machines, half the time”?",
+   "a": "\"Twice the machines, half the time\" works when the work is spread evenly. If every worker has a similar share, doubling the workers roughly halves the wait. That part is right.\n\nSkew breaks it. A task is one worker's share of the job. Spark sends all rows with the same key to one task. In the lesson's example, `acme` has 9,000 of the 10,000 rows. Those rows stay on one task, however many machines you add.\n\nMore machines can't speed up a single task. The job ends when its slowest task ends. So the new machines mostly sit idle while one task works through `acme`. The total time barely moves, and you pay double.\n\nThe real fix is to spread the hot key. Keep AQE on (it lets Spark split a skewed join while it runs). Or handle `acme` separately. Or salt it: add a random ending, like `acme_1` and `acme_2`, so its rows split across several tasks.\n\n\"Not much: one task still has most rows\" is better because it names the real bottleneck: one overloaded task that extra machines can't share.",
+   "step": "Check",
+   "fingerprint": "07cc05efbacf3d4b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes: every task gets more room”?",
+   "a": "\"Yes: every task gets more room\" sounds sensible. A bigger cluster does add more workers and memory. If the work were spread evenly, that would speed things up.\n\nBut here the work is not even. Spark puts all rows with the same key in one partition (one chunk of the data), and one task handles each partition. If `acme` has 9,000 rows and the other keys have about 300 each, one task still gets all 9,000 `acme` rows. Doubling the cluster does not split that pile. The extra workers finish their small shares fast, then sit idle. You pay for twice the machines, and the job still waits for that one slow task.\n\nThe real fixes split the hot key's rows. Check that Adaptive Query Execution is on. It lets Spark re-plan the job while it runs and break up a skewed join. Or salt the hot key: add a random ending so its rows spread over several partitions.\n\n\"Not much: one task still has most rows\" is better because it names the real cause: that one task's pile stays the same size however many workers you add.",
+   "step": "Check",
+   "fingerprint": "8d35611f25b767f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Compare each key with the average” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Spark sends all rows with the same key to one task. If one key has far more rows than the others, that task runs long while the rest sit idle. That's skew.\"\n\n*The idea:* \"I go through the keys twice. First I add up all the rows and divide by the number of keys to get the average. Then I flag any key whose count is more than `factor` times that average. I need the full total before I can judge any key. Say acme has 9,000 rows and three small keys share 1,000. The average is 2,500, so acme is 3.6 times the average.\"\n\n*The edge case:* \"The hot key also pulls the average up. With only two keys, a huge one can still miss a high `factor`. And with no keys at all, I must not divide by zero.\"\n\n**Likely follow-up**\n\n\"You've found a hot key. Now what?\"\n\n*Hint:* First check that Adaptive Query Execution (AQE) hasn't been turned off. AQE lets Spark re-plan the job while it runs, and it can split a skewed join. If that isn't enough, handle the hot key separately. Or salt it: add a random ending so its rows spread across several partitions.",
+   "step": "Explain",
+   "fingerprint": "d49fdb09cdd9bb44",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs of skew**\n\n- **The progress bar stalls near the end.** A stage shows 199 of 200 tasks done, then sits there for minutes. One task is still chewing through the hot key.\n- **The cluster looks idle while the job is still running.** Most workers have finished, so overall CPU use drops, yet the job isn't done.\n- **One task reads far more data.** In the Spark UI, one task's shuffle read (the data it received when Spark regrouped rows by key) is much bigger than the others'.\n- **Spill or memory errors on one worker.** Spill means a worker ran out of memory and wrote data to disk, which is slow. Seeing this on just one task, not all of them, points to skew.\n- **Adding more machines barely helps.** The one overloaded task stays just as slow.\n\n**Quickest check**\n\nOpen the slow stage in the Spark UI and look at the task summary table. Compare the max row with the median row for duration and shuffle read size. If the max is many times bigger, you have skew.\n\nTo confirm which key causes it, count rows per key and compare the biggest count with the average.",
+   "step": "Learn",
+   "fingerprint": "5d54fe165f57c393",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The hot key changes over time.** Today `acme` is hot, but next month a different customer might be. If you hard-code salting for one key name, it quietly stops helping. Rely on AQE where you can, and re-check the Spark UI or your key counts on a schedule, not just once.\n\n**2. Very little data or very few keys.** With only three keys, one key at twice the average may just be normal. With a small table, the whole job finishes in seconds, so uneven tasks don't matter. Skip the fixes here. Skew is only worth handling when one task is clearly holding up a large job.\n\n**3. The skew isn't in a join.** AQE's skew handling splits skewed *joins*. A join combines two tables on a matching key. AQE won't fix a slow group-and-count or a window function on a hot key. A window function is a calculation over related rows, like a running total per customer. For a group-and-count, salt the key, count each salted piece, then add those counts together by the original key.",
+   "step": "Learn",
+   "fingerprint": "40bd41f44c8e77e7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “hot key” mean here?",
+   "a": "A **hot key** is one key that has far more rows than any other key.\n\nPicture a school handing out exam papers at four tables, sorted by surname. If almost every student's surname starts with \"S\", the \"S\" table has a huge queue. The other three tables finish quickly and sit idle. Everyone waits for the \"S\" table. That \"S\" is the hot key.\n\nSpark works the same way. It sends all rows with the same key to the same partition (a chunk of the data). One task (one worker's share of the job) handles that partition. A hot key means one task gets a huge pile while the others get a little.\n\nIn the lesson's example, the keys are company names:\n\n- `acme`: 9,000 rows\n- `bolt`: 300 rows\n- `cora`: 350 rows\n- `dyna`: 350 rows\n\nThat's 10,000 rows over 4 keys, so the average is 2,500 rows per key. `acme` has 9,000, which is about 3.6 times that average. So `acme` is the hot key. Its task does most of the work and slows down the whole job.",
+   "step": "Learn",
+   "fingerprint": "bba11b72fbcfb0c5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only small stretch is calling the keys 'company names', which the lesson never says (it only mentions 'customer name' as an example)."
+   }
+  }
+ },
+ "token_bucket": {
+  "check:0:0": {
+   "q": "Why not “Retry the 150 straight away, before the limit r…”?",
+   "a": "That option gets one thing right: those 150 requests still need to go through, and retrying is a normal response to a 429 (\"too many requests\") error.\n\nThe problem is the timing. A rate limit counts how many requests you send in a window of time, such as one minute. If you retry before that window resets, the server still sees you as over the limit. So most of the 150 retries will just get 429 again.\n\nThat makes things worse in three ways:\n\n- **Wasted calls.** Each failed retry is a request that did nothing useful.\n- **More delay.** You end up waiting for the reset anyway, after burning time on failures.\n- **Load on others.** A shared endpoint spends effort rejecting you, which can slow it down for everyone using it.\n\nRetrying also only reacts after the errors happen. It doesn't stop the next batch from hitting the same wall.\n\n\"Pace the requests on your side to stay under the limit\" is better because it prevents the 429s from happening at all. A token bucket, like LangChain's `InMemoryRateLimiter`, sends requests at a steady rate the endpoint will accept.",
+   "step": "Check",
+   "fingerprint": "c613087eddc813e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Run the job on a bigger cluster so it sends fas…”?",
+   "a": "The bigger-cluster idea has one thing right: more computing power does help when your own machines are the slow part. A **cluster** is just the group of computers that runs your job, so a bigger one can do more work at once.\n\nBut that isn't the problem here. Your job already sends 200 requests at once. The 150 errors are **429s**, which mean \"too many requests.\" The model endpoint is saying you went over its limit per minute. That limit lives on the server's side. Your cluster size doesn't change it.\n\nSo a bigger cluster just fires the same requests even faster. You'd hit the limit sooner and likely get the same number of 429s, or more. Each failed call is wasted, and retrying them adds delay for you and for everyone else sharing the endpoint.\n\nThe real bottleneck is the endpoint's limit, not your speed.\n\nPacing the requests on your side, for example with a token bucket like `InMemoryRateLimiter`, is better because it keeps you under the limit from the start, so the 429s never happen.",
+   "step": "Check",
+   "fingerprint": "7a40396fccfbdab2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor: 'the 429s never happen' slightly overstates the lesson's 'avoid 429 errors', and 'token bucket' is not re-explained."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “All 8 go straight away”?",
+   "a": "\"All 8 go straight away\" gets one thing right. A full bucket does let a burst through. Requests can go at once, with no waiting, as long as there are tokens to spend.\n\nWhat it misses is the size of the bucket. It holds only 5 tokens. Each request spends one token, so after 5 requests the bucket is empty. Requests 6, 7 and 8 find no token left. They have to wait for the bucket to refill.\n\nThat limit is the whole point. If all 8 could go at once, the bucket would not be capping anything. You would be back to sending too much and getting 429 errors (\"too many requests\") from the server.\n\nHow long do the others wait? It depends on the refill rate. At 2 tokens per second, a new token arrives about every half second. So the 6th waits about 0.5 s, the 7th about 1 s, and the 8th about 1.5 s.\n\n\"The first 5 go, the rest wait\" is better because it shows both parts of the bucket: the burst room (5) and the steady refill rate.",
+   "step": "Check",
+   "fingerprint": "4383bfaf7bd30595",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “All 8 wait for the bucket to refill”?",
+   "a": "\"All 8 wait for the bucket to refill\" gets one thing right. Some requests really do have to wait, because 8 is more than the 5 tokens in the bucket. And the bucket does refill over time.\n\nWhat it misses is that the bucket is already **full**. Those 5 tokens are sitting there, ready to use right now. Each request only needs one token (one permit to send). So the first 5 requests each take a token and go straight away. There is no reason to hold them back.\n\nOnly requests 6, 7 and 8 find the bucket empty. They wait while tokens drip back in. At a rate of 2 per second, that is about half a second per token, so they go out one after another.\n\nMaking all 8 wait would throw away the burst room. That room is the whole point of the bucket size: a full bucket lets a short rush through without delay.\n\n**\"The first 5 go, the rest wait\" is better because it spends the tokens that are already there and only delays the requests that have no token left.**",
+   "step": "Check",
+   "fingerprint": "28ef01ff1adadf83",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A word or piece of the prompt”?",
+   "a": "It's an easy mix-up. In most AI work, \"token\" really does mean a piece of text, like a word or part of a word. Model endpoints even limit text tokens per minute, as the lesson mentions. So the instinct comes from a real place.\n\nBut \"token bucket\" is an older idea from networking. There, a token is just a permit, like a ticket from a jar. It has nothing to do with the words inside your prompt.\n\nHere is what the text-token reading misses. In this bucket, every request spends exactly one token. A one-word prompt and a thousand-word prompt cost the same: one ticket. The bucket is counting how many requests you send, not how long they are. That's why the settings are `requests_per_second=2` and `max_bucket_size=5`. Those are request counts, not word counts.\n\nIf you read the tokens as words, you'd expect long prompts to drain the bucket faster. This limiter doesn't do that.\n\n\"A permit to send one request\" is the better answer because each request uses up one token, no matter how much text it carries.",
+   "step": "Check",
+   "fingerprint": "29143a28aa1b97df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'older idea from networking' line is not in the lesson, but it is true and does not contradict anything."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A password for the endpoint”?",
+   "a": "That guess makes sense, because \"token\" has more than one meaning in tech. On Databricks you often use an **access token**: a secret string, like a password, that proves who you are to the endpoint. So linking \"token\" to \"password\" is a fair instinct.\n\nBut that is a different kind of token. An access token answers \"are you allowed in?\" You send the same one with every request, and it never gets used up.\n\nA token in a token bucket answers a different question: \"may you send a request *right now*?\" It lives only in your own code. The endpoint never sees it. Each request spends one, and the bucket refills at a steady rate, for example 2 per second. When the bucket is empty, the next request waits. That waiting is what keeps you under the limit, so the server never has to answer with a 429 (\"too many requests\").\n\nSo a password controls *who* can call the endpoint, while a bucket token controls *how often* you call it.\n\n\"A permit to send one request\" is better because it captures the key idea: each token is used up by one request and comes back over time.",
+   "step": "Check",
+   "fingerprint": "b71b3b930fa0cbef",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The access-token point goes beyond the lesson, but it is accurate and does not contradict it, and the answer stays just under the length limit."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Top up, then spend one” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* \"Model endpoints cap how many requests you can send per minute. Go over, and the server answers with a 429 error, 'too many requests.' Retrying works, but it wastes calls and adds delay.\"\n\n*The idea:* \"A token bucket keeps us under the limit on our side. Picture a jar of tickets. It refills at a steady rate, up to a maximum. When a request arrives, I first top up the jar for the time that has passed. Then, if there's a ticket, I spend one and send. If not, the request waits.\"\n\n*The trade-off:* \"The jar's size controls bursts. A bigger jar lets a quick flurry through, but the endpoint sees spikes. A smaller jar is smoother but slower when work piles up.\"\n\n**A likely follow-up**\n\n\"What happens if you run four copies of your agent?\"\n\nHint: an in-memory limiter, one that lives inside a single running program, only counts its own requests. Four copies means four jars, so together you could send four times the rate. A strong answer is to split the rate between the copies, or use one shared limiter they all draw from.",
+   "step": "Explain",
+   "fingerprint": "879cec7c01453a64",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The word count is about 193, just under the limit. The four-copies hint goes slightly beyond the lesson, but it follows from the 'in-memory' and 'client-side' wording."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the limiter is missing or set wrong**\n\n- **429 errors in your logs.** These are the server saying \"too many requests.\" With a working limiter on your side, they should be rare or absent.\n- **Retries piling up.** A retry is your code sending the same request again after a failure. Lots of them means calls are being wasted.\n- **Jumpy timing in your traces.** A trace is the step-by-step record of a run, for example in MLflow. Watch for some calls that are instant and others that stall for seconds while they wait to retry.\n- **Fine in small tests, failing at scale.** A few requests pass. A big batch hits the limit.\n- **Too slow, but no 429s.** If `requests_per_second` is set far below what the endpoint allows, you are throttling yourself for no reason.\n\nOne thing that is *not* a bug: LangChain's bucket starts empty. A short wait on the first request is expected.\n\n**Quickest check**\n\nRun a batch of requests. Count the 429s in the logs. Then compare how many requests per second you actually sent with the endpoint's limit. You want zero 429s, at a rate close to the limit but not over it.",
+   "step": "Learn",
+   "fingerprint": "498f1eb004c53633",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "A token bucket only knows what your own code is doing. That is where it starts to slip.\n\n**1. Many copies of your app share one endpoint.**\nIf you run several workers (separate copies of your program), each has its own `InMemoryRateLimiter`. Each one thinks it has the full budget, so together they blow past the limit. Split the rate between workers (say, 4 workers at a quarter each), or use one shared limiter that all of them check.\n\n**2. The limit counts text tokens, not requests.**\nMany endpoints also cap tokens per minute, meaning pieces of text. One huge prompt can cost as much as fifty small ones, but a request-counting bucket treats them the same. Set the request rate lower to leave headroom, or charge bigger requests more than one permit.\n\n**3. Someone else uses the same endpoint.**\nOther teams or apps eat into the shared limit, and you can't see them. Your bucket can't prevent every 429. So keep a retry with backoff as a safety net. Backoff means waiting a bit longer after each failed try.",
+   "step": "Learn",
+   "fingerprint": "a8d6a2eeac371124",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “token bucket” mean here?",
+   "a": "Picture a jar of tickets at a fairground ride. Each ride costs one ticket. A worker drops a new ticket into the jar at a steady pace. The jar only holds so many. If the jar is full, a small group can rush in at once. Once it's empty, the next person waits for a fresh ticket.\n\nThat jar is the token bucket. \"Token\" here just means a permit to send one request. It has nothing to do with the text tokens a model reads.\n\nIn the lesson's example, the rate is 2 per second and the bucket holds 5. Five requests arrive together. All five go, and the bucket is now empty. The sixth finds no token. A new one drips in every half second, so a real limiter waits about half a second before sending it.\n\nWhy bother? It keeps you under the endpoint's limit on your own side. The server never has to answer with error 429 (\"too many requests\").\n\nOne difference: LangChain's `InMemoryRateLimiter` starts with an empty bucket. So even the first request waits briefly, and bursts only happen once the bucket has filled.",
+   "step": "Learn",
+   "fingerprint": "cefae3ec656e5a6e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "upsert_rows": {
+  "check:0:0": {
+   "q": "Why not “Run it less often”?",
+   "a": "\"Run it less often\" sounds sensible, but it doesn't touch the real problem.\n\nIt gets one small thing right. Fewer runs means fewer chances for something to go wrong. So duplicates might show up a little less.\n\nBut look at what caused them. The job crashed halfway, and someone re-ran it. That can happen whether the job runs nightly or monthly. Clusters still die. Schedulers still fire twice. People still hit \"run\" again. A single retry is enough to create duplicates if the job appends rows (adds them to the end without checking).\n\nRunning less often also has a cost. Your eval results get older between runs, so you see problems later.\n\nThe fix has to make a retry harmless, not rare. That's what **idempotent** means: running the job twice leaves the same result as running it once.\n\n\"Write with MERGE on a stable key\" is the right answer. `MERGE INTO` matches each row by a key that never changes, like `run_id` plus `example_id`. So a re-run updates the rows already there instead of adding copies, no matter how often the job runs.",
+   "step": "Check",
+   "fingerprint": "5e3547a841f4dc4e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the closing MERGE explanation runs to two sentences instead of one, and the 'results get older' cost is not in the lesson, but neither contradicts it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Delete the table before each run”?",
+   "a": "\"Delete the table before each run\" gets one thing right. If the table starts empty, a re-run can't stack a second copy of rows on top of the first. So it does stop this particular duplicate.\n\nBut it costs too much.\n\n- **It wipes history.** The table `main.support.eval_results` holds results from many runs, each with its own `run_id`. Deleting it throws away every past night's results just to redo tonight's.\n- **It opens a gap.** If the job crashes after the delete but before the writes finish, the table is empty or half full. Anyone reading it then (a dashboard, another job) sees missing data.\n- **It's a blunt tool.** It fixes duplicates by destroying everything, rather than writing each row correctly.\n\nSo the right answer is \"Write with MERGE on a stable key.\" A *stable key* is a field that names a row and never changes, like `run_id` plus `example_id`.\n\nMERGE is better because it replaces only the rows that match the key and adds only the new ones, so a re-run fixes tonight's rows and leaves everything else untouched.",
+   "step": "Check",
+   "fingerprint": "f0a437828cd03d0d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that the table holds many past runs is inferred from run_id being in the MERGE key rather than stated in the lesson, but it is reasonable and does not contradict it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The time the row was saved”?",
+   "a": "It's a fair guess. The save time is on every row, and it's usually different for each row. So it looks like it could tell rows apart.\n\nThe problem is that it changes every time the job runs. Picture a retry. Run 1 saves ticket 42 at 9:00. The job crashes. Run 2 saves ticket 42 again at 9:05.\n\n`MERGE INTO` looks for a row whose key matches. The new row's key is 9:05. No existing row has that key. So the merge decides it's a new row and inserts it. Now ticket 42 is in the table twice. That's exactly the duplicate an upsert is meant to prevent.\n\nA good key has to name the row itself, not the moment it was written. The save time describes an event, the act of saving. It doesn't describe the ticket. That makes it useful as an extra column, but not for matching.\n\n\"The ticket id\" is better because it stays the same on every retry. So the second run finds the existing row and replaces it instead of adding a copy.",
+   "step": "Check",
+   "fingerprint": "1bc2eadbdd9a06b5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The row's place in the table”?",
+   "a": "It's a fair guess. A row's place in the table does point to exactly one row at any given moment. And the lesson's own trick uses positions: the dict maps each key to the spot where that row sits.\n\nBut notice the direction. In that dict, the position is what you *look up*. The key is what you look up *by*. The key has to come from the row itself.\n\nA row's place is not stable. Rows get deleted, sorted, or loaded in a different order. Ticket `T-42` might sit at spot 3 today and spot 7 tomorrow. A retried job might send the same tickets in a new order.\n\nIf you match on position, a retry could replace the wrong ticket's data. Or it could miss the match and add `T-42` a second time. That's the duplicate problem upserts are meant to stop.\n\nPosition tells you *where* a row is, not *which* ticket it is.\n\nThe ticket id is better because it names the ticket and never changes, so every run finds the same row for the same ticket.",
+   "step": "Check",
+   "fingerprint": "568c82ed08c91f92",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Two T1 rows: open and closed”?",
+   "a": "\"Two T1 rows: open and closed\" is what you'd get from an **append**, which just adds every new row to the end of the table. It does get one thing right: the second run really does carry new information, and the status really did change. It also fits a habit worth having, which is keeping history when you need it.\n\nBut this question uses an **upsert**. That means \"save by key.\" The key here is the ticket id, `T1`. It names the row and never changes. Before saving, the upsert asks: is there already a row with key `T1`? There is. So it replaces that row in place instead of adding a second one.\n\nThat replacement is the whole point. If retries added rows, a job that ran twice would leave duplicates. Then nobody could say which `T1` is the real one. In Delta, `MERGE INTO` does this with its `WHEN MATCHED THEN UPDATE` branch.\n\n\"One T1 row, now closed\" is better because an upsert keeps exactly one row per key and updates it to the latest values.",
+   "step": "Check",
+   "fingerprint": "166f622822d1a560",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “One T1 row, still open”?",
+   "a": "\"One T1 row, still open\" gets half of it right. There is only one T1 row. An upsert never adds a second row for a key that's already there, so no duplicate appears.\n\nWhat it misses is the \"update\" part of upsert. When the key `T1` is already in the table, the upsert doesn't just leave that row alone. It replaces it with the new version. The new version says `\"closed\"`, so the old `\"open\"` is overwritten.\n\n\"Still open\" describes a different rule: \"insert only if the key is missing, otherwise skip.\" That rule also avoids duplicates. But it throws away newer information. If a ticket really did get closed, your table would keep saying it's open forever.\n\nIn Delta's `MERGE INTO`, this is the `WHEN MATCHED THEN UPDATE SET *` line. When a row with the same key is found (\"matched\"), every column is set to the incoming values.\n\n\"One T1 row, now closed\" is better because an upsert both prevents duplicates and replaces the existing row with the latest data for that key.",
+   "step": "Check",
+   "fingerprint": "73b13606e3cb9ae0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Remember where each row is” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Jobs get retried. If a job just appends rows, a retry adds them again, and you get duplicates.\"\n\n**The idea:** \"So I save rows by a stable key, like a ticket id, which names the row and never changes. I keep a lookup table, a dict, from each key to where that row sits. For each incoming row, I check the dict. If the key is there, I replace the row in that spot. If not, I add it to the end. Like a book's index, I jump straight to the right row instead of reading every row. Running it twice gives the same result as running it once. In Delta, `MERGE INTO` does this for me.\"\n\n**A trade-off:** \"The dict costs extra memory, one entry per row. That's usually worth it, because without it I'd scan the whole table for every update.\"\n\n**A likely follow-up**\n\n*\"What if the same key shows up twice in one batch?\"*\n\nHint: Say you need a rule, such as \"last one wins.\" Also mention that Delta's `MERGE INTO` raises an error if two source rows match the same target row. So you remove duplicates from the batch first.",
+   "step": "Explain",
+   "fingerprint": "eb3a3c0150f2bab3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The Delta `MERGE INTO` duplicate-match error is not in the lesson, but it is accurate and does not contradict it. The answer is about 200 words, which is borderline but acceptable."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that writes aren't idempotent:**\n\n- **Row counts jump after a retry.** A job crashed and re-ran, and the table now has double the rows. Exactly 2x or 3x is a big clue.\n- **Totals and averages drift on re-runs.** Nothing changed in your data, yet the eval score moves. Duplicated rows give some examples extra weight, so an average can look better or worse than it really is.\n- **The same `example_id` shows up twice for one `run_id`.** Dashboards may show repeated lines.\n- **`MERGE INTO` fails with a \"multiple source rows matched\" error.** This means your incoming batch already has duplicate keys.\n\n**Signs the key itself is wrong:**\n\n- **The key isn't stable.** Say it includes a timestamp. Every retry then looks \"new\", so merge quietly behaves like append.\n- **The key is too loose.** Say it's only `run_id`. Different rows then overwrite each other, and the count shrinks.\n\n**Quickest check:**\n\nCompare two numbers. The first is the total row count. The second is the count of distinct keys (unique `run_id` + `example_id` pairs). If they differ, you have duplicates.\n\nThen re-run the job once on purpose. Recount. The number should not change.",
+   "step": "Learn",
+   "fingerprint": "7c81cc90c110693a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The 'multiple source rows matched' MERGE error isn't in the lesson, though it doesn't contradict it. The answer also uses 'idempotent' in its heading without re-explaining it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Upserts make retries safe only when certain things hold. Here are three places to take care.\n\n**1. The key changes on retry.** Say each run makes a fresh `run_id` from the clock or a random number. A retry then brings new keys, so nothing matches and every row is inserted again. Build keys from things that stay the same on a retry, like the ticket id, or reuse the same `run_id` when you retry.\n\n**2. The new batch repeats a key.** If two incoming rows share a key and that key isn't in the table yet, `MERGE INTO` inserts both. You get a duplicate with no error. If the key is already in the table, Delta raises an error instead, because two rows would try to update the same row. Remove duplicate keys from the batch before merging.\n\n**3. The job does more than write rows.** A merge protects only the table. If the job also sends emails or makes paid LLM calls, a retry repeats those actions. Check the key before doing anything that can't be undone.",
+   "step": "Learn",
+   "fingerprint": "3e7ba4ef2c061e75",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems: the answer is accurate, about 170 words, and gives no solution. The duplicate-key behaviour in point 2 goes beyond the lesson but matches how Delta MERGE works."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Idempotent” mean here?",
+   "a": "**Idempotent** means doing something twice leaves the same result as doing it once.\n\nThink of an elevator call button. Press it once and the elevator is on its way. Press it five more times and nothing changes. There's still just one elevator coming. Compare that with dropping coins in a jar: each extra drop adds more.\n\nHere's why this matters in data work. Jobs get retried. A cluster (the group of machines running your code) can crash halfway through. Someone can re-run a notebook. A scheduler can fire twice. You want a retry to be harmless.\n\nIn the lesson's example:\n\n- **Append** is like the coin jar. Run 1 adds 3 rows, crashes, and run 2 adds the same 3 again. Now you have 6 rows, with duplicates.\n- **Merge** is like the elevator button. Run 2 saves the same 3 rows again, and you still have 3.\n\nThe merge works because of the `ON t.run_id = s.run_id AND t.example_id = s.example_id` line. Those two fields together form a stable key. On a retry, each row finds its match and gets replaced instead of copied.",
+   "step": "Learn",
+   "fingerprint": "9023a1b1ef04b22a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "validate_rows": {
+  "check:0:0": {
+   "q": "Why not “Fail the whole load until someone fixes the row”?",
+   "a": "\"Fail the whole load\" gets one thing right. Bad data never slips through quietly. The job stops, so someone has to look at it. That instinct to protect data quality is a good one.\n\nBut the cost is far too high. One broken row in a million blocks the other 999,999 good rows. Everything that depends on that table, like reports, dashboards, or an agent reading support tickets, now works with stale data, meaning yesterday's or older. Because this is a nightly load, nobody may notice until morning. Then the fix might take hours more. One small problem has become an outage, which means a stretch of time when a system isn't doing its job.\n\nIt also mixes up two separate needs. You want the bad row caught, and you want the good rows delivered. Failing the whole load gives you the first by giving up the second.\n\n\"Quarantine bad rows, load the rest, and alert\" is better because it delivers the good data on time. The bad row is still set aside safely, and someone is told about it, so nothing is hidden.",
+   "step": "Check",
+   "fingerprint": "1f52c47d89609ba0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the closing explanation runs to two sentences instead of the requested one, and the downstream examples (dashboards, agents) go beyond the lesson without contradicting it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Drop the bad row quietly and load the rest”?",
+   "a": "\"Drop the bad row quietly and load the rest\" gets one big thing right. One broken row no longer stops the whole nightly load. The other 999,999 rows still arrive on time.\n\nWhat it misses is everything about that bad row.\n\n- **The row is gone.** You can't look at it, fix it, or load it again later. That's lost data.\n- **Nobody finds out.** \"Quietly\" means no warning goes to a person. In the lesson's example, `DROP ROW` only adds to a count in the event log (the pipeline's running record of what happened). Someone has to go looking for that count.\n- **Problems can grow unseen.** Say the source system starts sending `minutes` as text, like `\"twelve\"`. Now thousands of rows get dropped every night. Your tables look fine but are quietly shrinking. Reports built on them become wrong, and no one knows why.\n\n\"Quarantine bad rows, load the rest, and alert\" is better because it keeps the load running, saves each bad row in a separate table (like `tickets_quarantine`) so it can be checked and fixed, and tells a person right away that something changed.",
+   "step": "Check",
+   "fingerprint": "1cd84f256f274ea2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It goes to quarantine”?",
+   "a": "\"It goes to quarantine\" has a sensible instinct behind it. Something about the row is new, and new things can feel risky. Quarantine is the right place for rows that **break** the contract.\n\nBut this row doesn't break it. The contract is the agreed list of columns and the kind of value each one holds. This row has every one of those columns, and each value is the right kind. So it passes every check.\n\nThe extra column, `channel`, isn't in the contract at all. Whether extra columns are allowed is a separate choice called **schema evolution**, meaning letting the table's shape grow over time. The question says you allow extra columns. So `channel` is fine by your own rule.\n\nSending this row to quarantine would set aside perfectly good data. Someone would then have to look at it for no reason. That's like putting a correctly addressed letter in the check-later pile just because it has an extra sticker on it.\n\n\"It's good and gets loaded\" is better because the row meets every rule in the contract, and you've chosen on purpose to let new columns in.",
+   "step": "Check",
+   "fingerprint": "b8fb1160aa160339",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The load stops with an error”?",
+   "a": "\"The load stops with an error\" gets one thing right. Changes in data shape really do break pipelines, and a new column like `channel` is exactly that kind of change. Some teams do choose a strict setup that rejects anything unexpected.\n\nBut it misses two points from this lesson.\n\nFirst, this row passes the contract. Every required column is there, and each value is the right kind. The contract only lists what a row *must* have. It says nothing against extra columns.\n\nSecond, you decided on purpose to allow extra columns. That decision is called **schema evolution**: letting the table's shape grow when new columns show up. So `channel` is welcome, not a problem.\n\nAlso, even a truly bad row wouldn't stop the load. It would go to quarantine, the set-aside pile you review later. That way, one row never halts the whole job.\n\n\"It's good and gets loaded\" is better because the row meets every rule in the contract, and you chose to allow extra columns.",
+   "step": "Check",
+   "fingerprint": "c2dcf9546a5b8451",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Loaded, with minutes left blank”?",
+   "a": "\"Loaded, with `minutes` left blank\" gets one thing right. It doesn't stop the whole load over one row, and it keeps the row instead of throwing it away. That's the same instinct behind quarantine.\n\nThe problem is that it quietly breaks the contract. The contract says every row must have `minutes`. A missing column isn't a normal value. It's a sign that something upstream changed shape. That could be a renamed field or a broken export.\n\nIf you load the row with a blank (an empty value, often called `NULL`), it sits in the clean table looking like real data. Later steps might count it, average it, or feed it to an agent as if it were fine. Totals come out wrong, and nobody gets a signal that the source broke. The mistake is hidden instead of caught.\n\nQuarantine keeps the row too, but in a separate pile marked \"check later.\" Someone can see it, find the cause, and fix it.\n\n\"To quarantine, to check later\" is better because it keeps the load running and the row safe, without letting broken data pass as good data.",
+   "step": "Check",
+   "fingerprint": "27fbdc404616d536",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Loaded, since only one is missing”?",
+   "a": "That answer has a good instinct. Most of the row is fine, and you don't want to throw away useful data or stop the whole load over one row.\n\nBut a contract doesn't work on \"mostly.\" It is the agreed list of columns every row must have. If even one column is missing, the row breaks the contract. There is no \"close enough.\"\n\nLoading it anyway puts a broken row into your clean table. Anything that reads `minutes` later, like an average handling time or a report, now gets an empty value it wasn't expecting. That can cause errors, or worse, quietly wrong numbers that nobody notices.\n\nThere's also a practical problem. Once the row is mixed in with the good ones, it's hard to find and fix. Nobody knows it was ever wrong.\n\nQuarantine solves both worries. The row isn't lost, and the load keeps going. It just waits in a separate pile until someone looks at it.\n\n**Why \"To quarantine, to check later\" is better:** it keeps the clean table trustworthy while still saving the row, so nothing is lost and nothing broken slips through.",
+   "step": "Check",
+   "fingerprint": "6fb416dfb37043c1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Check every column, then sort the row” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* Pipelines break when data changes shape. A number shows up as text, or a column goes missing. If one bad row fails the whole load, all the good data waits too.\n\n*The idea:* I check each row against the contract. That's the agreed list of columns and the kind of value each one holds. A row passes only if every column is there and holds the right kind. Then I sort it. Good rows move on. Bad rows go to quarantine, a separate place to review later. One bad row never stops the job.\n\n*The trade-off:* Quarantine can hide problems. If nobody watches it, bad rows pile up quietly. So I'd count what lands there and alert on spikes. Extra columns also pass by default. I'd decide on purpose whether to allow that. Letting new columns in is called schema evolution.\n\n**Likely follow-up**\n\n\"What happens to quarantined rows?\"\n\n*Hint:* Say you keep each row whole, with the reason it failed. Someone fixes the source or updates the contract. Then you replay those rows, meaning you run them through the pipeline again.",
+   "step": "Explain",
+   "fingerprint": "1ec6a561292a9bdb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the contract was skipped or done wrong**\n\n- **One bad row stops everything.** The whole load fails on a single odd value, like `\"twelve\"` in `minutes`. That means bad rows aren't being set aside.\n- **Rows quietly vanish.** `ON VIOLATION DROP ROW` throws rows away and only counts them in the event log (the pipeline's record of what happened). Nobody reads that log. So reports look clean but are missing data.\n- **Quarantine is always empty.** Real data is never perfect. An empty quarantine table usually means the checks aren't really running.\n- **Quarantine suddenly fills up.** Something upstream changed shape. For example, a column was renamed or a number now arrives as text.\n- **Numbers drift for no clear reason.** Totals or averages of `minutes` shift, or a new column like `channel` shows up downstream when nobody decided to allow it.\n\n**Quickest check**\n\nCount the rows. The raw table should equal the clean rows plus the quarantined rows. If the sum comes up short, rows are being dropped silently. If it comes up too high, some rows landed in both tables. This often happens when the quarantine filter doesn't exactly mirror the expectations. Then open five quarantined rows and confirm each one really breaks a rule.",
+   "step": "Learn",
+   "fingerprint": "14d7d6c5a753e4e9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. It runs about 205 words, right at the length limit, and uses \"upstream\", \"downstream\" and \"expectations\" without explaining them."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the simple \"check, then sort\" rule needs extra care.\n\n**1. Most rows suddenly fail.**\nQuarantine is built for a few odd rows. If an upstream system changes and half the rows land in quarantine, the load still \"succeeds,\" and nobody notices. Set a limit, such as \"fail the job and alert someone if more than 5% of rows are quarantined.\"\n\n**2. A column gets renamed.**\nIf `minutes` becomes `duration`, the contract sees a missing column plus a new one. Every row is marked bad, and the new column slips in unnoticed. Treat new columns as something a person reviews (on purpose **schema evolution**), not something silently allowed forever.\n\n**3. The kind is right but the meaning is wrong.**\nA type check only asks \"is this a number?\" It won't catch `minutes: 90000` or an LLM (large language model) answer that is valid text but nonsense. Add value checks, like the lesson's `minutes >= 0` expectation, plus sensible ranges. Also plan how quarantined rows get fixed and reloaded, so they don't pile up forever.",
+   "step": "Learn",
+   "fingerprint": "bcf1ed7fb522d1d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “contract” different from “data type”?",
+   "a": "A **data type** is the kind of value one column holds. For example, \"number\" or \"text.\" It is a rule about a single box.\n\nA **contract** is the whole agreement about a row. It lists every column the row must have, and the data type for each one. So data types are pieces inside the contract.\n\nThink of a passport form. The contract is the full form: name, birth date, height. The data type is the small note under one box: \"height: numbers only.\"\n\nThey work together. To check a row, you go through the contract one column at a time. You ask two questions: is the column there, and is its value the right kind?\n\nThe lesson's example:\n\n- `A1 {minutes: 12}` has `minutes`, and `12` is a number. It passes.\n- `A2 {minutes: \"twelve\"}` has the column, but `\"twelve\"` is text. The data type is wrong, so the row breaks the contract and goes to quarantine.\n- `A3` adds `channel`. The contract only lists the columns a row must have, so an extra one doesn't break it. Whether to accept new columns is a separate choice, called **schema evolution**.",
+   "step": "Learn",
+   "fingerprint": "b23bcfea251340f4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

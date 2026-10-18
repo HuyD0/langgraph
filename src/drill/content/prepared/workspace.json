@@ -1,0 +1,1458 @@
+{
+ "cost_by_tag": {
+  "check:0:0": {
+   "q": "Why not “The query: list prices are the real bill”?",
+   "a": "\"The query: list prices are the real bill\" gets one thing right. The query's math is sound. It takes each usage row, multiplies the DBUs (Databricks Units, the unit Databricks bills compute in) by the price for that SKU (the kind of compute), and adds it up under the `team` tag. If the tags are right, $4,000 is a fair picture of what team-ml used.\n\nWhat it misses is what `system.billing.list_prices` actually holds. It is the **list price**: the public price per DBU. It knows nothing about the deal your company signed. Many companies agree a discount, for example by promising to spend a set amount over a year. The invoice uses that discounted price, so it comes out lower. Finance is not wrong. They are reading a different number.\n\nSo the $4,000 is a guide. It is good for comparing teams like team-ml and team-sales, or spotting a cluster that suddenly costs more. It is not the bill.\n\n\"Both: list price leaves out your discount\" is better because it explains why the two numbers differ and why each one is correct for its own purpose.",
+   "step": "Check",
+   "fingerprint": "e284a24b87008f92",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The example of a discount for a yearly spend commitment goes slightly beyond the lesson, but it is hedged with 'for example' and does not contradict it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Finance: the system tables are often wrong”?",
+   "a": "That option gets one thing right. Finance's number is the one you actually pay, so their lower figure is real.\n\nWhat it gets wrong is the reason. The system tables aren't broken. `system.billing.usage` records how many DBUs (Databricks Units, the unit compute is measured in) each team really used. For the `ml` team, those counts are accurate.\n\nThe gap comes from the price side. `system.billing.list_prices` holds the **list price**, the public price per DBU for each `sku_name`. It doesn't know about any discount your company agreed with Databricks or Microsoft. So the query multiplies correct DBUs by a price that's higher than yours. That gives a fair guide, but not the invoice.\n\nBlaming the tables also leads you the wrong way. You might stop trusting tag-based reports. Yet they are still the best way to see who spent what, like `team-ml` versus `team-sales`, and how teams compare.\n\n\"Both: list price leaves out your discount\" is better because it keeps the usage data and Finance's invoice both correct and names the real cause of the gap.",
+   "step": "Check",
+   "fingerprint": "47e6e66a8ddbf29d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the claim that tag reports are 'the best way' to see who spent what goes slightly beyond the lesson but does not contradict it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Nothing: one DBU costs one dollar”?",
+   "a": "It gets one thing right. `usage_quantity` really is the amount you want to add up. It counts DBUs, short for Databricks Units, a measure of how much compute a job or cluster used.\n\nWhat it misses is that a DBU has no single price. The price depends on the `sku_name`, which says what kind of compute was used. Jobs compute, all-purpose clusters and SQL warehouses each cost a different amount per DBU. Prices can also change over time, which is why the query matches on `price_start_time` and `price_end_time`.\n\nHere is an example with made-up prices. Say `team-sales` burns 100 DBUs on `PREMIUM_JOBS_COMPUTE` at 0.30 a DBU. That is 30 dollars. Say `team-finance` burns 100 DBUs on an all-purpose cluster at 0.55 a DBU. That is 55 dollars. If you count one DBU as one dollar, both teams show 100 dollars. That is wrong for both, and it hides that finance spent almost twice as much.\n\n\"DBUs need multiplying by the SKU price\" is the right answer. Only DBUs times the list price for that SKU turns usage into dollars you can compare between teams.",
+   "step": "Check",
+   "fingerprint": "bb4ce69ffcf51dd0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It should group by usage_date”?",
+   "a": "Grouping by `usage_date` would change the shape of the answer, not fix it. You would get a total per team per day instead of per team. That can be useful, for example to spot the day `team-sales` had a sudden jump. But each of those daily totals would still be DBUs, not dollars.\n\nThe real problem is the unit. `usage_quantity` counts DBUs (Databricks Units, a measure of how much compute was used). A DBU has no fixed dollar value. Its price depends on the `sku_name`, which says what kind of compute it was. So 40 DBUs of jobs compute and 40 DBUs of all-purpose compute can cost quite different amounts.\n\nIf you just add DBUs and call the result dollars, a team running cheaper compute looks as costly as one running pricier compute. Splitting by day does not change that. You would get the same wrong numbers, just cut into smaller pieces.\n\n\"DBUs need multiplying by the SKU price\" is the better answer because it fixes the actual mistake: it turns usage into dollars before adding anything up.",
+   "step": "Check",
+   "fingerprint": "ef40ce775b0740da",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A tag on every cluster”?",
+   "a": "A tag on every cluster is a good habit, but it does not answer the question.\n\n**What it gets right.** A tag is a label, like `team = team-sales`, set on each cluster in `clusters.yml`. Databricks copies it into `custom_tags` on every row of `system.billing.usage`. That is how you know the spend is the sales team's and not someone else's. Without it, the money lands in \"untagged\" and nobody owns it.\n\n**What it misses.** A tag only labels spend. It does not watch the total. It does not know about 2,000 dollars. It never sends an email. Your manager could tag every cluster perfectly and still get no alert when the team passes the limit.\n\nSo the tag is a helpful first step. It is not the thing that does the job.\n\n**Why \"A budget in the account console\" is right:** a budget watches spend against the 2,000 dollar threshold you choose, filtered to a tag like `team = team-sales`, and emails your manager when spend passes it.",
+   "step": "Check",
+   "fingerprint": "af17548d82f92540",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claims that cluster tags flow into custom_tags and that a budget can filter by tag go slightly beyond the lesson text, but they do not contradict it."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A daily query you read by hand”?",
+   "a": "A daily query is not a bad idea. The SQL from this lesson really can show what `team-sales` spent this month. It joins `system.billing.usage` to `system.billing.list_prices` and adds up DBUs times price for that team's tag. So the numbers would be there.\n\nWhat it misses is the actual ask. Your manager wants an **email** when spend passes 2,000 dollars. A query you read by hand sends nothing. It only works if someone remembers to run it and look every single day. People forget, go on holiday or skip a busy Friday. If spend jumps on Saturday, nobody knows until Monday.\n\nIt also puts the \"is this over 2,000?\" check in a person's head. That is the step most likely to slip.\n\nA **budget** is a spend limit you set in the account console. The account console is the Databricks admin site that sits above all your workspaces, like DEV, UAT and PROD. The **threshold** is the dollar amount that triggers the alert.\n\nA budget in the account console is better because it checks the 2,000-dollar threshold for you and sends the email automatically, with no one needing to remember.",
+   "step": "Check",
+   "fingerprint": "4a0b36baf5d21e33",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the lesson's SQL covers the last 30 days at list price, not strictly 'this month', but this does not contradict the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Group and add up” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"Our platform team runs Azure Databricks for many product teams. The bill shows up as one big number. Nobody can act on it until we can say whose spend it is.\"\n\n*The idea.* \"Each usage row has DBUs and a SKU. DBUs are Databricks Units, the billing unit. The SKU is the kind of compute, and it sets the price. I look up the list price for that SKU, multiply, and add the dollars to a running total for that row's `team` tag. It walks through the rows once.\"\n\n*The edge case.* \"Some rows have no `team` tag. I count them under 'untagged' instead of dropping them, so the totals still add up to the full spend. A big untagged pile is a warning sign. It means our Terraform defaults should put a `team` tag on every cluster, taken from team.yml.\"\n\n**A likely follow-up**\n\n\"Will these numbers match the invoice?\"\n\n*Hint for a strong answer:* Say no. List price ignores any discount you have agreed, so treat it as a guide. Also mention that prices change over time. That is why the join picks the price that was valid when the usage started.",
+   "step": "Explain",
+   "fingerprint": "45a09a811a365d70",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A big \"untagged\" bucket.** If `untagged` is near the top, many clusters or jobs never got a `team` tag. Often the Service stage skipped adding the tag from `team.yml` to `clusters.yml` resources.\n- **One team split in two.** You see `team-sales` and `Team-Sales` as separate rows. Tags match exactly, so casing or typos create extra groups.\n- **Totals that look too high.** If a SKU's price changed during the month, a join without the time window matches each usage row to *both* prices. That row is counted twice.\n- **A huge gap from the invoice.** Some gap is normal, because list price ignores discounts. A gap of several times is not.\n\n**Quickest check**\n\nAdd up all DBUs for the last 30 days with no join. Then add them up again after the join. If the second number is bigger, rows are being duplicated.\n\nNext, sum `list_dollars` across every team. Compare it with one total for all usage. The two should match.\n\nLast, look at the share in `untagged`. In a healthy platform it stays small. It should shrink after each PROD apply that adds tags.",
+   "step": "Learn",
+   "fingerprint": "9ae149212e282ae2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The claim that a gap of several times from the invoice is abnormal goes beyond what the lesson says, but it is a reasonable rule of thumb."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"join, multiply, group by tag\" needs extra care.\n\n**1. Tags are missing or inconsistent.** If `sp-sales-etl-dev` runs a job on a cluster with no `team` tag, that spend lands in \"untagged.\" If one cluster says `team-sales` and another says `sales`, they count as two teams. The fix is to make Terraform add the `team` tag by default from each `team.yml`, and have Pydantic reject bad values before the Spacelift plan runs.\n\n**2. You need the real bill, not a guide.** List price ignores any discount you have agreed. On classic compute, the Azure virtual machines are billed by Azure, not counted in DBUs (Databricks Units, the unit it bills compute in). For finance, compare against Azure Cost Management, which shows the full invoice.\n\n**3. Many teams share one compute resource.** A shared SQL warehouse carries one set of tags, so all its spend goes to one team. Either give each team its own compute in `clusters.yml`, or split shared spend by who ran it, using the identity fields in `system.billing.usage`.",
+   "step": "Learn",
+   "fingerprint": "252c769a6dd04c6c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the Azure VM billing and 'identity fields' points go beyond the lesson's text but are accurate and do not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “list price” mean here?",
+   "a": "\"List price\" means the published price, before any deal.\n\nThink of the sticker price on a car. Everyone sees the same number. But a company buying fifty cars might agree a lower price. The sticker is a fair guide, not what was actually paid.\n\nDatabricks works the same way. Each SKU has a public price per DBU. A SKU is a product code for one kind of compute, like `PREMIUM_JOBS_COMPUTE`. A DBU, or Databricks Unit, measures how much compute you used. Your organisation may have agreed a discount with Databricks or Microsoft, so the real invoice can be lower.\n\nIn the lesson's example, 0.30 a DBU is the list price. If `team-sales` ran 40 DBUs of jobs compute, the result shows 12.00 dollars. That means \"what it would cost at the public rate.\"\n\nIn the SQL, the price comes from `p.pricing.default` in `system.billing.list_prices`. The query names its column `list_dollars` as a reminder of this.\n\nUse these numbers to compare teams and spot fast growth. For the exact bill, check the invoice.",
+   "step": "Learn",
+   "fingerprint": "d14c867f76efaba4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "idle_cost": {
+  "check:0:0": {
+   "q": "Why not “About $11”?",
+   "a": "\"About $11\" gets most of the maths right. It just stops one step too early.\n\nHere is the working. A DBU (Databricks Unit) is the unit Databricks uses to measure compute use. You pay a price per DBU.\n\n- 4 DBUs an hour at $0.55 each is $2.20 an hour.\n- 5 idle hours a day at $2.20 is $11.\n\nSo $11 is the right cost for **one day** of idle time. The DBU rate and the idle hours are both used correctly.\n\nWhat it misses is the time span. The question asks about 30 days. With `autotermination_minutes` set to 0, the cluster never stops by itself. So those 5 idle hours come back every day, and so does the $11. That gives $11 × 30 = $330.\n\nThis is the \"quiet bill\" the lesson warns about. One day looks small. A month is where the waste shows up. Picture a `team-sales` cluster left with auto-termination off in DEV. It could cost this much without anyone noticing.\n\n\"About $330\" is better because it multiplies the daily idle cost by all 30 days, which is the period the question asks about.",
+   "step": "Check",
+   "fingerprint": "29b39d0ea32545f1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing, idle clusters are free”?",
+   "a": "\"Nothing, idle clusters are free\" gets one thing right: an idle cluster does no useful work. No job is running on it.\n\nBut it misses how billing works. A classic cluster bills for every minute it is running, busy or not. \"Idle\" just means running with nothing to do, so the meter keeps going. With auto-termination off (`autotermination_minutes = 0`), nothing stops it. All 5 idle hours each day get billed.\n\nPicture team-sales asking for a cluster in their `clusters.yml` with `autotermination_minutes` set to 0. The lesson's `idle-limits` policy would block that, because it only allows 10 to 60. Without such a policy, every quiet evening costs money.\n\nHere is the cost in words. Five idle hours a day for 30 days is 150 hours. At 4 DBUs an hour, that is 600 DBUs. A DBU (Databricks Unit) is how Databricks measures compute use. At $0.55 each, 600 DBUs comes to $330.\n\n\"About $330\" is better because it treats idle minutes as billed minutes, which is exactly the quiet bill auto-termination exists to cap.",
+   "step": "Check",
+   "fingerprint": "c2ff49bd6d15ef36",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Straight away, because it's idle”?",
+   "a": "\"Straight away, because it's idle\" gets one thing right. Nobody is using the cluster, so it is doing no useful work. It would be nice if it stopped.\n\nBut a classic cluster does not stop just because it is idle. It keeps running, and billing, for every minute until something stops it. That \"something\" is normally **auto-termination**: a timer that shuts the cluster down after it has sat idle for `autotermination_minutes`.\n\nSetting `autotermination_minutes` to `0` switches that timer off. So nothing will stop it automatically. Picture a `team-sales` cluster in `clusters.yml` with `0`. It could bill all weekend until someone in `grp-sales-dev-owners` stops it on Monday.\n\nThe \"stops on its own quickly\" idea fits serverless compute, not a classic cluster with `0`. This is also why the platform team uses a compute policy. A policy is a set of rules that limits what values people can choose. With a `minValue` of 10, nobody can pick `0` at all.\n\n\"Not until someone stops it\" is better because `0` means auto-termination is off, so only a person (or a manual action) ends the billing.",
+   "step": "Check",
+   "fingerprint": "22a67eb0ec2d439c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “After 60 minutes of idle time”?",
+   "a": "\"After 60 minutes of idle time\" gets one thing right. Auto-termination does stop a cluster after a stretch of idle time. Idle means running but doing no work. And 60 is a familiar number: it is the `maxValue` in the lesson's `idle-limits` policy.\n\nBut the question says `autotermination_minutes` is 0. For this setting, 0 is not a very short wait. **0 means \"never auto-terminate.\"** Databricks does not quietly swap in a default like 60. The cluster keeps running, and billing, all weekend, until a person or a script stops it.\n\nPicture team-sales asking for a cluster in `clusters.yml` with `autotermination_minutes: 0`. It is idle from Friday evening to Monday morning. That is about 60 hours of paid time doing nothing.\n\nA policy could cap the value at 60. It does this by blocking 0, so nobody can choose 0 in the first place. It does not change what 0 means. The answer \"after 60 minutes\" would only be true if the cluster were set to 60.\n\n\"Not until someone stops it\" is better because 0 turns auto-termination off, so nothing stops the cluster except a manual or scripted stop.",
+   "step": "Check",
+   "fingerprint": "b2ff6cdbbcec42fe",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Send a reminder email each month”?",
+   "a": "A reminder email gets one thing right. It tells people why `autotermination_minutes = 0` is costly. Awareness helps.\n\nBut it misses the real problem. An email only asks. It can't stop anyone. Someone on team-sales writes a new cluster in `clusters.yml`, forgets the email, and sets `0` anyway. Spacelift plans and applies it. The cluster runs idle all night, and you pay for every minute. You only find out when the bill arrives. Then you send another email, and the cycle repeats. Reminders also fade. People skim them, and new team members never got last month's.\n\n\"For good\" means the mistake can't happen, not just that it happens less often.\n\nA compute policy is a set of rules attached to clusters. Databricks checks the rules whenever someone creates or edits a cluster. The lesson's `idle-limits` policy only allows `autotermination_minutes` between `10` and `60`. A cluster that uses the policy can't be set to `0`. Databricks rejects it.\n\nForcing a maximum in a compute policy is better because the platform enforces the limit on every cluster automatically, so nobody has to remember anything.",
+   "step": "Check",
+   "fingerprint": "cb459e55daf04e81",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Switch everything off each night”?",
+   "a": "\"Switch everything off each night\" gets one thing right. A stopped cluster bills nothing, so a nightly shutdown does save some idle minutes.\n\nBut it misses the actual problem. The question is about people setting `autotermination_minutes` to 0. A nightly switch-off does not change that setting. During the day, a cluster set to 0 still sits idle and bills until the shutdown runs. And the next new cluster gets created with 0 again. You are cleaning up after the habit, not stopping it.\n\nIt also adds work. Someone has to build and look after that nightly job, which is a script on a timer. If it fails one night, those idle clusters keep billing and nothing catches them.\n\nA compute policy is a set of rules that limits what a cluster's settings may be. In the lesson's `idle-limits` policy, `autotermination_minutes` has a `range` of 10 to 60. So a cluster created under that policy cannot be given 0.\n\nForcing a maximum in a compute policy is better because it blocks the bad setting when each cluster under that policy is created, so nobody has to clean up afterwards.",
+   "step": "Check",
+   "fingerprint": "96b0c22e06cc568e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Cap each value, work out the cost, sort” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* \"Teams like team-sales ask for clusters in `clusters.yml`. A classic cluster bills every minute it runs, even when nobody uses it. I want to know which clusters waste the most money sitting idle.\"\n\n*The idea.* \"For each cluster, I cap the idle time that gets billed. If `autotermination_minutes` is 0, the cluster never stops, so every idle minute counts. Otherwise it stops at its limit, so the bill can't go past that. Then I turn those minutes into money. I use DBUs, which are Databricks' unit for billing compute, and the price per DBU. Last, I sort with the most expensive first, so the worst cluster is easy to spot.\"\n\n*The edge case.* \"Zero looks like 'no idle time', but it means 'never stop'. Treat it like a small number and you hide the biggest bill.\"\n\n**Likely follow-up**\n\n\"How would you stop a team setting 0 at all?\"\n\n*Hint:* Name two layers. First, a Pydantic rule in the config repo rejects 0 when the YAML is reviewed. Second, a `databricks_cluster_policy` with a range, such as 10 to 60, blocks 0 inside the workspace. That second layer also catches clusters created outside Terraform.",
+   "step": "Explain",
+   "fingerprint": "0bf165b98dfdd6df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Flat spend at quiet times.** A team's cost, say `team-sales` in DEV, stays steady overnight and on weekends, when no jobs run. Busy compute goes up and down. Idle compute just stays flat.\n- **No idle stops in the event log.** Each cluster has an event log, a timeline of what happened to it. A healthy one often shows \"terminated due to inactivity.\" If a cluster ran for days with no such entry, nothing is stopping it.\n- **DEV costs close to PROD.** DEV sees light use, so its bill should be much smaller. If it isn't, idle clusters are a likely cause.\n- **Suspicious settings in the Spacelift plan.** The plan shows `autotermination_minutes = 0`, or a very high value like 600. It also passes the policy checks. That usually means no compute policy is attached to that cluster.\n- **A large `auto_stop_mins`** on a SQL warehouse.\n\n**Quickest check**\n\nList every cluster's `autotermination_minutes` from the Terraform plan or the workspace compute page. Treat any 0 as suspect, and look hard at any value over 60. Then confirm the cluster uses the `idle-limits` policy, which caps the value between 10 and 60.",
+   "step": "Learn",
+   "fingerprint": "4d54c665d353e41f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The event-log 'terminated due to inactivity' point is not in the lesson, but it does not contradict it. The answer is about 190 words, close to the limit."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When the simple idle rule needs extra care**\n\n**1. Idle time comes in many short gaps.**\nThe rule assumes one long idle stretch a day. Real use is often bursty. Say `team-sales` runs a notebook every 20 minutes on a cluster set to 30. It never stops, so every gap is billed in full. Look at real usage in the Databricks billing system tables instead of guessing one idle block.\n\n**2. DBUs are not the whole bill.**\nA DBU (Databricks Unit) is Databricks' own billing unit. On classic clusters, Azure also bills separately for the virtual machines underneath. So DBUs times price undercounts the real cost. Add the Azure VM cost for each `node_type_id`, or use serverless, where that cost is folded into the DBU price.\n\n**3. The limit is set too low.**\nA tiny `autotermination_minutes` saves idle cost. But each restart takes several minutes, and those minutes bill too. Analysts in `grp-sales-dev-owners` may restart all day. For short, frequent work, consider serverless compute or instance pools (ready-to-use spare machines that make startup faster). Keep your policy range sensible.",
+   "step": "Learn",
+   "fingerprint": "32c407ff8f563af5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “auto-termination” mean here?",
+   "a": "**Auto-termination** is an idle timer. It switches a cluster off when nobody has used it for a set time.\n\nThink of a motion-sensor light in an office corridor. If no one walks past for a while, it turns itself off. Without the sensor, the light burns all night, and you pay for it.\n\nA classic cluster is like that light. It bills for every minute it runs, busy or idle. `autotermination_minutes` is the timer: how many idle minutes to wait before stopping. Setting it to `0` removes the timer, so the cluster runs until a person stops it.\n\nIn the lesson's example:\n- 300 idle minutes, `autotermination_minutes = 0`: the cluster never stops, so all 300 minutes are billed.\n- 240 idle minutes, `autotermination_minutes = 30`: it stops after 30 idle minutes, so only 30 are billed.\n\nIn the Terraform, the `shared-analytics` cluster sets `autotermination_minutes = 30`. The `idle-limits` policy is a set of rules that forces a value between 10 and 60. So team-sales can't request `0` in their `clusters.yml`. SQL warehouses use the same idea, called `auto_stop_mins`.",
+   "step": "Learn",
+   "fingerprint": "a47b1a0c94dd7493",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The only stretch is that it assumes team-sales uses the idle-limits policy, which the lesson never says."
+   }
+  }
+ },
+ "pick_compute": {
+  "check:0:0": {
+   "q": "Why not “Serverless compute”?",
+   "a": "\"Serverless compute\" gets one thing right. A nightly job is the kind of work serverless often handles well. It starts in seconds, and nobody has to pick machine sizes.\n\nBut this job has a special need. It needs an **init script**: a small script that runs on each machine as it starts, here to install a company certificate. Serverless doesn't accept init scripts or any other custom machine setup. Databricks runs those machines for you, so you can't change how they boot. The certificate would never get installed, and the job would likely fail when it tries to connect to anything that needs it.\n\nThe special need decides the compute, not just the fact that it's a job. That is why the `nightly_load` job in the platform team's Terraform uses a `new_cluster` with an `init_scripts` block pointing at `/Shared/init/certs.sh`.\n\n**Jobs compute** is better because it is classic compute that does run init scripts. It is also created just for each run and shut down afterwards, at a lower price per DBU than all-purpose compute.",
+   "step": "Check",
+   "fingerprint": "d687002a2b14e70a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: the 'job would likely fail' consequence goes slightly beyond the lesson, and the Jobs compute part runs two sentences where one was asked."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “A SQL warehouse”?",
+   "a": "A SQL warehouse is a real Databricks compute choice. It is also the recommended home for SQL work, especially in its serverless form. So the instinct to pick a managed, ready-made option is reasonable.\n\nThe miss is the kind of work. The lesson's rules ask one question first: is it SQL? A SQL warehouse runs SQL, dashboards and Genie (plain-word questions about your data). A nightly job, such as one `team-sales` asks for to load data, is a job, not SQL work. So the SQL warehouse rule never applies here.\n\nThe next rule is the one that fits. The job needs an init script, which is a script that sets up each machine as it starts, here to install a company certificate. Work with an init script goes to classic compute, meaning machines in your own cloud account that you size yourself. For a job, that means jobs compute. You can see this in the lesson's `nightly_load` example: the `init_scripts` block sits inside its `new_cluster`.\n\nJobs compute is better because it is classic compute built for one job run, so it takes the init script, shuts down when the run ends, and costs less per DBU than all-purpose.",
+   "step": "Check",
+   "fingerprint": "cc4334d0c59cb998",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor: it calls `nightly_load` \"the lesson's\" example when it is from the learner's Terraform stack, and \"per DBU\" is not re-explained."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “All-purpose compute”?",
+   "a": "All-purpose compute isn't wrong in spirit. It's a real cluster, and it's built for people working by hand, the way an analyst does. So the instinct to pick something interactive makes sense.\n\nBut it misses two things.\n\n**First, it isn't the tool made for this work.** In the lesson, the compute that runs SQL, dashboards and Genie is a SQL warehouse. All-purpose compute is for working in notebooks. A sales dashboard plus Genie questions is exactly the work a SQL warehouse is for.\n\n**Second, it's classic compute.** That means the platform team has to size the machines and manage them. Picture an analyst on `team-sales`. With all-purpose compute, someone has to pick machine types and worker counts for them. Nothing here needs that control. There's no GPU and no init script, the setup script that runs as each machine starts.\n\nThe rule order says the same thing. Is it SQL? Then a SQL warehouse, whatever else it needs.\n\nA serverless SQL warehouse is better because it's built for dashboards and Genie, and Databricks runs the machines for you, so it starts in seconds with nothing to size.",
+   "step": "Check",
+   "fingerprint": "70da7bee68380e91",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Jobs compute”?",
+   "a": "\"Jobs compute\" gets one thing right: it is cheaper per DBU (Databricks Unit, the unit of processing time you pay for) than all-purpose compute. Cost matters, so that instinct is a good one.\n\nBut jobs compute is built for a different shape of work. It is a cluster created for one job run, like `nightly_load`, and shut down when the run ends. Nobody sits in front of it. It does the work and disappears.\n\nAn analyst on `team-sales` working with a dashboard and Genie is doing the opposite. They open the dashboard when they like. They type questions in plain words and expect quick answers. That needs compute that is ready whenever they ask. Dashboards and Genie run on a SQL warehouse, not on job clusters.\n\nThe lesson's rule order says the same thing. The first question is \"Is it SQL?\" Dashboards and Genie are SQL work, so the SQL warehouse rule fits first and decides.\n\nA serverless SQL warehouse is better because it is made for dashboards and Genie, starts in seconds, and stops itself when idle, as `auto_stop_mins = 10` does in the lesson's Terraform.",
+   "step": "Check",
+   "fingerprint": "8b525908991befaa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Jobs compute”?",
+   "a": "\"Jobs compute\" gets one thing right: it costs less per DBU than all-purpose compute. A DBU is the unit Databricks bills processing time in. So it looks cheap, and the data scientist would like that.\n\nBut it misses two things in the question.\n\nFirst, jobs compute is made for one job run. It starts when the run starts and shuts down when the run ends. A data scientist exploring in a notebook is not doing a job run. They are working by hand, trying things, running a cell, looking, and running another. Jobs compute is not there to sit and work in like that.\n\nSecond, jobs compute is classic compute. You size the machines yourself. In the lesson's Terraform, the `nightly_load` job sets `node_type_id` (which machine type) and `num_workers` (how many machines). The data scientist said they don't want to pick machine sizes, so this is exactly what they want to avoid.\n\nServerless compute fits better because it works for notebooks, starts in seconds and needs no sizing or special setup.",
+   "step": "Check",
+   "fingerprint": "849a0d0cecfb1e41",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A SQL warehouse”?",
+   "a": "**What it gets right:** A SQL warehouse can be serverless. Then Databricks runs the machines for you, just as the data scientist wants. That part fits.\n\n**What it misses:** A SQL warehouse is built for one kind of work: running SQL, dashboards and Genie (asking questions of your data in plain words). The question describes general notebook work. It never says the work is SQL only. Exploring data in a notebook often means Python too, like loading files, cleaning data or making charts. A SQL warehouse only runs SQL, so it covers just part of that work.\n\nThink of how a platform team would place it. A request from `team-sales` for daily notebook exploration is not a dashboard request. So it would not go to a warehouse like `bi-serverless`.\n\n**Why serverless compute is better:** Serverless compute is made for notebooks, starts in seconds, has nothing to size, and runs whatever the notebook needs, so it fits this daily exploration with no special setup.",
+   "step": "Check",
+   "fingerprint": "ecd01feed9c6689a",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The closing claim that serverless \"runs whatever the notebook needs\" contradicts the lesson, which says serverless takes no init scripts or custom machine setup and usually can't do GPU work; \"made for notebooks\" also narrows the lesson's \"notebooks, jobs and pipelines\"."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Rules in order, first match wins” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* \"Product teams like `team-sales` ask for work in YAML. One workload can fit more than one rule. A job might need an init script, and plain jobs would otherwise go to serverless. We need one clear answer every time.\"\n\n*The idea.* \"So we check rules in a fixed order. We walk through the workloads once. For each one we ask the same questions, top to bottom. The first rule that fits decides, and we stop asking. Special needs come before the default (the choice used when nothing special applies), so serverless is what's left at the end.\"\n\n*The edge case.* \"Order is now part of the logic. Swap two rules and the same YAML lands on different compute. SQL work goes to a SQL warehouse even if it also asks for an init script, because the SQL rule comes first.\"\n\n**A likely follow-up**\n\n\"How would you stop someone breaking the order by accident?\"\n\n*Hint:* Keep the rules in one place, written in order. Add tests for workloads that match two rules, such as a job that needs an init script. Run those tests before the Spacelift plan, so a reordered rule fails before anything reaches DEV.",
+   "step": "Explain",
+   "fingerprint": "5a9b88b1fe2ec460",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The bill looks high for simple work.** A scheduled job sits on all-purpose compute. All-purpose costs more per DBU (Databricks Unit, a unit of processing time) than jobs compute. So the same nightly run costs more than it should.\n- **Classic clusters for plain work.** Plain Python jobs or notebook exploration get sized and managed by hand. Serverless would start in seconds with nothing to size.\n- **Setup missing.** A job like `nightly_load` needs `certs.sh` as an init script (a script that sets up each machine as it starts). If it lands on serverless, that setup can't run there.\n- **GPU work on the wrong compute.** A notebook that trains a model is placed on serverless. GPU work usually means classic compute.\n- **SQL off the warehouse.** A dashboard query for `team-sales` lands on a cluster instead of a SQL warehouse. Often the cause is the wrong rule order: a later rule fired before the \"is it SQL?\" rule.\n\n**Quickest check**\n\nOpen the Spacelift plan for the Service stage in DEV. Take each workload from `clusters.yml`. Ask the questions in the lesson's order. Does the compute in the plan match your answer each time?",
+   "step": "Learn",
+   "fingerprint": "d069495b51e8925d",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The answer uses \"GPU\" and \"SQL warehouse\" without explaining them, though the lesson defines both. It also says to \"ask the questions in the lesson's order\" without stating them, which is vague."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"first match wins\" needs extra care.\n\n**Two needs that clash.** Say `team-sales` lists SQL work in `clusters.yml` that also sets `init_script: True`. The SQL rule matches first, so it lands on a SQL warehouse. The init script never runs, because serverless takes no custom machine setup. Better: have Pydantic reject that mix so the team fixes the request before Spacelift plans anything.\n\n**AI work that doesn't need a GPU.** An agent built with LangGraph usually calls a hosted model. Hosted means Databricks or another service runs the model for you. Your own code needs no GPU. If a team ticks `needs_gpu` just because it's \"AI\", it gets pushed onto classic compute it doesn't need. Better: ask whether the code itself trains or runs a model on the machine.\n\n**New kinds of work.** As more teams join `env.yml`, someone may ask for a kind your rules never mention, like a pipeline. Since \"anything left goes to serverless\", it slips through quietly. Better: list the allowed kinds and make anything else fail validation.",
+   "step": "Learn",
+   "fingerprint": "214e7fbbdf770ae2",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The 'pipeline' example is misleading: the lesson says serverless works for pipelines, so sending one there is correct, not a failure. The LangGraph claim also comes from outside the lesson. LangGraph is never explained, and the answer runs slightly over 200 words."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Compute” mean here?",
+   "a": "**Compute** means the machines that actually run your code. A notebook, a job or a SQL query is just instructions. Something has to do the work, and that something is compute.\n\nThink of a kitchen. Your code is the recipe. The stoves and ovens are the compute. You can:\n- rent a shared kitchen that stays open all day (all-purpose compute),\n- book one kitchen for a single meal, closed right after (jobs compute),\n- or let a caterer run the kitchen for you (serverless).\n\nDatabricks bills compute in DBUs, a unit of processing time. The price per DBU depends on the kind you pick. That is why the choice matters.\n\nIn the lesson's Terraform, two resources are compute:\n- `databricks_sql_endpoint` `\"bi\"` is a serverless SQL warehouse for SQL and dashboards. It shuts itself off after 10 idle minutes (`auto_stop_mins`).\n- In `databricks_job` `\"nightly_load\"`, the `new_cluster` block is compute: two worker machines of type `Standard_D4ds_v5`. They are built for each run and removed when it ends.\n\nSo when team-sales asks for a nightly load, compute is the machines that load runs on.",
+   "step": "Learn",
+   "fingerprint": "52c67828ceae53f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The only small stretch is that the `auto_stop_mins` explanation (shuts off after 10 idle minutes) is not stated in the lesson, but it follows from the code and doesn't contradict it."
+   }
+  }
+ },
+ "policy_violations": {
+  "check:0:0": {
+   "q": "Why not “Yes: 0 means never stop, which is more than 60”?",
+   "a": "That answer gets one thing right. In Databricks, setting `autotermination_minutes` to 0 really does mean \"never shut down.\" So the worry behind it is fair. A cluster that never stops keeps costing money.\n\nWhat it misses is how a `range` rule decides. It does not know what 0 *means*. It only compares numbers. The rule here has a `maxValue` of 60 (the highest number allowed) and no `minValue` (the lowest number allowed). So it asks one question: is the value above 60? 0 is not above 60, so it passes. With no `minValue` given, there is no lower limit to check.\n\nThis is why the platform team's Terraform policy for `data-team-small` adds `minValue = 10`. With that limit set, 0 is below 10 and gets blocked. Without it, someone on team-sales could create an always-on cluster and the policy would allow it.\n\n\"No: with no minValue, 0 is inside the range\" is better because it follows what the rule actually checks: only the limits that are given, compared as plain numbers.",
+   "step": "Check",
+   "fingerprint": "27d36bcdb8dc2606",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Yes: a range never allows 0”?",
+   "a": "\"Yes: a range never allows 0\" has a good instinct behind it. In Databricks, `autotermination_minutes = 0` means the cluster never shuts itself down. That is exactly the costly case a platform team wants to block.\n\nBut a range has no built-in floor. It only checks the limits you actually write. This rule gives a `maxValue` of 60 and no `minValue`. So the only test is \"is it 60 or less?\" Zero is 60 or less, so it passes.\n\nThat's why the Terraform version for `data-team-small` adds a floor:\n\n```hcl\n\"autotermination_minutes\" = {\n  type = \"range\", minValue = 10, maxValue = 60\n}\n```\n\nWith `minValue = 10`, a request in `clusters.yml` for 0 would be rejected when someone creates compute with that policy. Without it, 0 slips through.\n\nSo the option's mistake is treating \"range\" as if it carried a hidden rule. It doesn't. Missing limits are simply not checked.\n\n\"No: with no minValue, 0 is inside the range\" is better because it follows the actual rule: only the given limits are checked, and 0 is not above 60.",
+   "step": "Check",
+   "fingerprint": "ffe74cfaa63011a9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It's allowed: tags are free text”?",
+   "a": "**Why \"It's allowed: tags are free text\" is not the best answer**\n\nIt gets one thing right. Tags are free text by default. A tag is a label (a key and a value) stuck on a cluster. Without a policy, a team like `team-sales` could write any value it likes in its `clusters.yml`.\n\nWhat it misses is that the policy changes that. A compute policy is a set of rules, one per setting. This one has a rule for `custom_tags.team` with type `fixed` and value `data`. A fixed rule has one simple test: the cluster's value must equal the rule's value. So `ml` does not equal `data`, and the rule is broken.\n\nThat is the whole point of fixing a tag. The platform team wants every cluster under this policy to carry `team = data`. Then cost reports group spend correctly, and nobody has to check tags by hand. If anyone could type anything, the rule would protect nothing.\n\n**Why the other option is better:** \"It breaks the rule: it must be data\" is better because it applies the fixed rule's test, \"must equal\", to the actual value `ml`.",
+   "step": "Check",
+   "fingerprint": "e6e97a83ac5ccc56",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It's allowed if they have CAN_USE”?",
+   "a": "That answer mixes up two separate checks.\n\n`CAN_USE` is a permission. A permission is a yes-or-no on who may do something. Here it decides who may pick the policy at all when creating compute. So the answer gets one thing right: without `CAN_USE`, you can't create compute with that policy.\n\nBut `CAN_USE` does not switch the rules off. It lets you in the door. The rules still apply to every setting you choose. Think of a group like `grp-sales-dev-owners` that holds `CAN_USE` on `data-team-small`. They may use the policy. They still can't pick a machine size outside the allowlist, or set `autotermination_minutes` above 60.\n\nThe same goes for tags. The rule on `custom_tags.team` has type `fixed`. \"Fixed\" means the value must equal exactly what the policy says, which is `data`. A cluster asking for `team = ml` breaks that rule, whoever asks.\n\n\"It breaks the rule: it must be data\" is better because it applies the right test for a `fixed` rule, comparing the value to `data`, instead of only checking permission.",
+   "step": "Check",
+   "fingerprint": "9814d4b17c6f2209",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “SELECT on the team's tables”?",
+   "a": "`SELECT` is a data permission. In Unity Catalog (Databricks' system for governing data), it lets someone read rows from a table. So the option is right that the teammate is missing *a* permission. They may well need `SELECT` later, once their compute is running and they want to query the team's tables.\n\nBut that is a different problem. The question is about *creating compute*, not reading data. A compute policy is its own object in the workspace, with its own permission list. Grants on tables don't touch it. A teammate could have `SELECT` on every table in the sales catalog and still be blocked when they try to pick the `data-team-small` policy.\n\nThink of it as two separate doors. `SELECT` opens the door to the data. The policy permission opens the door to building compute. The teammate is stuck at the second door.\n\nIn the lesson's Terraform, that second door is the `databricks_permissions` resource. It gives the `data-engineers` group `CAN_USE` on the policy. Adding the teammate to that group would fix it.\n\n\"The CAN_USE permission\" is better because it is the exact grant on the policy itself that allows creating compute with it.",
+   "step": "Check",
+   "fingerprint": "7826185a185efd47",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “CAN_MANAGE on the workspace”?",
+   "a": "**Why not \"CAN_MANAGE on the workspace\"?**\n\nThis option gets one thing right. The teammate's problem is about permissions, not about a broken setting or a missing tag.\n\nIt misses where the permission goes. The question asks what they need **on that policy**. A workspace is a different thing. It is the whole Databricks environment a team works in. The policy is a separate object with its own permissions. The lesson's rule is direct: users need a permission **on a policy** to create compute with it. Granting something on the workspace doesn't attach anything to the policy.\n\nYou can see this in the stack's Terraform:\n\n```hcl\nresource \"databricks_permissions\" \"data_team_policy\" {\n  cluster_policy_id = databricks_cluster_policy.data_team.id\n  access_control {\n    group_name       = \"data-engineers\"\n    permission_level = \"CAN_USE\"\n  }\n}\n```\n\n`cluster_policy_id` points the grant at the policy itself, not at the workspace. The name \"manage\" also suggests more power than the job needs. The teammate only has to use the policy.\n\n**Why \"The CAN_USE permission\" is better:** it is exactly the permission the lesson names, granted on the policy itself.",
+   "step": "Check",
+   "fingerprint": "b8c7b2659f0d2ad0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Look up each rule, check by its type” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* Product teams like team-sales ask for clusters in `clusters.yml`. Before Spacelift applies anything, we want to catch settings that break the compute policy. Nobody should have to read every file by hand.\n\n*The idea.* A policy is a set of rules, one per setting. I go through the rules once, in order. For each rule, I look up that setting in the requested cluster. If the setting is missing, that breaks the rule. Otherwise I check by the rule's type. `fixed` means the values are equal. `allowlist` means the value is in the list. `range` means it stays within `minValue` and `maxValue`.\n\n*Edge case.* A range might give only one limit. I check only the limits that are given, so a range with no `minValue` doesn't fail every cluster.\n\n**A likely follow-up**\n\n\"How would you add a new rule type?\"\n\nHint: each type is its own small test. Keep those tests separate. For example, keep a table that pairs each type name with its test. Then a new type means adding one test, not rewriting the loop. Also say what happens with an unknown type: report it clearly rather than quietly letting it pass.",
+   "step": "Explain",
+   "fingerprint": "3cc3b2b6e9dbe652",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "## Warning signs\n\n**In the cost numbers.** Azure Cost Management shows spend with no `team` tag. It lands in an \"untagged\" bucket that nobody owns. That usually means compute was created without the policy, so `custom_tags.team` was never fixed.\n\n**In the compute list.** Clusters in DEV stay up all night. Their `autotermination_minutes` (the idle timer before shutdown) is blank or very high. You might also see large machine sizes that were never on the allowlist (the approved list of values).\n\n**In user complaints.** Someone in `grp-sales-dev-owners` says they can't pick the policy at all. That points to a missing CAN_USE grant on the policy.\n\n**The sneaky one.** Things look fine because people skip the policy. Some users have unrestricted cluster creation, so the policy limits nobody.\n\n## Quickest check\n\nOpen the workspace's compute page and look at a few running clusters. Check two things on each:\n\n- Which policy it was created with.\n- What tags it carries.\n\nThen look at the Spacelift plan for the Service stage. Confirm the `databricks_permissions` resource exists for the policy and grants CAN_USE to the right group.",
+   "step": "Learn",
+   "fingerprint": "89806f678643ae4a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The 'unrestricted cluster creation' point goes beyond what the lesson says but does not contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Someone can skip the policy.** A policy only limits people who must use it. Workspace admins, or anyone with the \"unrestricted cluster creation\" right, can still create compute with no policy at all. In the Service stage, remove that right from groups like `grp-sales-dev-owners`. Then give access only through `CAN_USE` on chosen policies.\n\n**2. You change a policy, but old compute stays the same.** Editing a rule does not fix clusters that already exist. Say you lower the `maxValue` for `autotermination_minutes`. Clusters built under the old rule keep their old settings until someone edits them. Roll the change through DEV, UAT and PROD. Then list which existing clusters now break the rule.\n\n**3. A bad request is only caught late.** If `clusters.yml` asks for a `node_type_id` that isn't on the allowlist, Databricks rejects it during the apply. The apply is the last step, after approval. Add the same limits to the Pydantic checks, so a bad request fails when the YAML is first read. Keep one source for the allowed values, so the YAML checks and the policy can't drift apart.",
+   "step": "Learn",
+   "fingerprint": "70cec98a0c480a7c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The admin bypass and the existing-clusters point go beyond the lesson but don't contradict it, and each item runs a sentence or two over the 'two or three sentences' guide."
+   }
+  },
+  "learn:term": {
+   "q": "How is “fix” different from “allowlist”?",
+   "a": "Both rules limit one setting. The difference is how much choice they leave.\n\nA **fixed** rule allows exactly one value. In the lesson, `custom_tags.team` is fixed to `\"data\"`. Every cluster made with this policy carries that tag, and nobody can change it.\n\nAn **allowlist** rule gives a short menu. `node_type_id` (the machine size) may be `Standard_D4ds_v5` or `Standard_D8ds_v5`. The user picks one. Any other size is refused.\n\nEveryday comparison: a fixed rule is a set lunch, with one dish and no choice. An allowlist is a small menu. You choose, but only from what's printed.\n\nA fixed rule is like an allowlist with one item, but the intent differs. Fixed says \"this must always be true.\" That suits tags used in cost reports. Allowlist says \"choose, within safe limits.\" That suits machine sizes.\n\nThe two work together in one policy. Say team-sales asks for a cluster in `clusters.yml`. They can pick either allowed size, but the team tag is locked. Cost stays within bounds, and every bill is labeled correctly.",
+   "step": "Learn",
+   "fingerprint": "7aaf72f8dcf67dd8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. A minor quibble is that the closing example puts team-sales under a policy that fixes the tag to \"data\", yet says the bill is \"labeled correctly\"."
+   }
+  }
+ },
+ "resolve_variables": {
+  "check:0:0": {
+   "q": "Why not “dev_sales”?",
+   "a": "`dev_sales` is a fair guess. It gets one thing right: `catalog` really does have a default, and that default is `dev_sales`. A **default** is the fallback value. It's used when nothing more specific is given.\n\nWhat it misses is the order of the lookup. When you run `databricks bundle deploy -t prod`, the bundle first checks the chosen **target** (the place you're deploying to, here `prod`). Only if that target says nothing about `catalog` does it fall back to the default.\n\nThe `prod` target does say something. Under its `variables:` block it sets `catalog: prod_sales`. So the lookup stops there, and the default is never reached.\n\nThis is the whole point of the layering. The team-sales bundle is one set of files. Each target fills in its own values. Without that, a prod deploy would quietly write into the dev catalog. That is exactly the mix-up the platform team wants to prevent across DEV, UAT and PROD.\n\n`prod_sales` is better because a value set by the target always wins over the default.",
+   "step": "Check",
+   "fingerprint": "1b459c89a1d1dbe5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “An error, it is set twice”?",
+   "a": "It's a fair instinct. You spotted that `catalog` has two values, and in many systems two values for one name would be a clash.\n\nBut in a bundle, those two values aren't equals. They sit in layers. The default (`dev_sales`) is a fallback. It only gets used when nothing more specific is given. The value under the `prod` target (`prod_sales`) is the specific choice for that place.\n\nSo when you run `deploy -t prod`, the bundle asks in order: does the `prod` target set `catalog`? Yes, so it uses `prod_sales` and stops looking. The default is never in play.\n\nThis layering is the whole point. The platform team can write one `databricks.yml` for `team-sales` and deploy it to DEV, UAT and PROD. Each target fills in only the values that differ. If overriding a default caused an error, you couldn't reuse the same files across environments at all.\n\n\"prod_sales\" is better because a value set by the target always wins over the default, by design.",
+   "step": "Check",
+   "fingerprint": "03e4685412317845",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Nothing: dev didn't set it”?",
+   "a": "\"Nothing: dev didn't set it\" gets one thing right. The dev target really doesn't set `warehouse`. So the first place the bundle looks comes up empty.\n\nBut that isn't the last place it looks. Bundles use a layered lookup, which means checking places in order until one has a value. First: does the target set it? Here, no. Next: does the variable have a default? Here, yes, `small`. So the bundle uses `small` and moves on.\n\nA variable only ends up with nothing when both layers are empty: no target value and no default. In that case `databricks bundle validate` or `deploy` reports it as missing. It doesn't quietly leave a blank.\n\n```yaml\nvariables:\n  warehouse:\n    default: small   # used when a target doesn't set it\n\ntargets:\n  dev:\n    mode: development   # no warehouse here, so dev gets \"small\"\n```\n\nThis is what lets a team like `team-sales` keep one `databricks.yml`. Each target sets only what differs, and the defaults cover the rest.\n\n\"small, from the default\" is better because a target that skips a variable falls back to its default, and only a variable with no value anywhere is missing.",
+   "step": "Check",
+   "fingerprint": "b5133a171cc678d7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The only extra is the claim that validate or deploy reports a missing variable. The lesson doesn't say this, but it fits the lesson's 'then it's missing' and the answer's length is borderline but under about 200 words."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Whatever the prod target uses”?",
+   "a": "That option gets one thing right. It knows that targets can set their own values, and that a target's value wins over the default.\n\nWhat it misses is that targets never borrow from each other. When you run `databricks bundle deploy -t dev`, the lookup only asks two questions. Does the `dev` target set `warehouse`? No. Is there a default? Yes, `small`. The `prod` target is not part of that lookup at all.\n\nThat separation is on purpose. Think of the sales bundle. If dev quietly picked up prod's values, a dev deploy might point at the `prod_sales` catalog or a large prod warehouse. That is exactly the mix-up that separate DEV, UAT and PROD stages are meant to prevent.\n\n```yaml\nvariables:\n  warehouse:\n    default: small\ntargets:\n  dev:\n    mode: development   # no warehouse here, so dev gets \"small\"\n  prod:\n    variables:\n      warehouse: large  # only used by deploy -t prod\n```\n\n\"small, from the default\" is better because it follows the real order: first the chosen target's own value, then the default, and never another target's value.",
+   "step": "Check",
+   "fingerprint": "7b4bb9a5405d59da",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Dev allows one deploy at a time”?",
+   "a": "That option touches a real worry: two deploys landing at the same moment could clash. Taking turns sounds like a fix.\n\nBut taking turns doesn't stop the overwrite. It only changes the order. Suppose Ana deploys `nightly_sales` for team-sales, then Ben deploys after her. If both jobs had the same name, Ben's deploy would update the job Ana just made. Her version would be gone, even though nobody deployed \"at the same time.\"\n\nThe real problem is that both people point at the same resource. A resource here means a job, pipeline or other thing the bundle creates in the workspace. Queuing deploys doesn't give them separate ones.\n\n`mode: development` does. It puts the deployer's name in front of each resource name, so each person gets their own copy:\n\n```\n[dev ana] nightly_sales\n[dev ben] nightly_sales\n```\n\nAna and Ben can deploy as often as they like. Neither touches the other's job.\n\nThat's why \"`mode: development` adds their name\" is the better answer. It gives each person their own separate resources, so there is nothing shared left to overwrite.",
+   "step": "Check",
+   "fingerprint": "7dca4aa768217e47",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “run_as gives each their own copy”?",
+   "a": "`run_as` sounds like it might be about \"who owns this copy,\" but it does something else. It sets **which identity the job runs as** when it starts. An identity is the account whose permissions the job uses, like a person or a service principal such as `sp-sales-etl-dev`. A service principal is a non-human account for automation, here coming from Microsoft Entra ID.\n\nWhat it gets right: `run_as` is tied to \"who.\" That is close to the idea.\n\nWhat it misses: `run_as` does not change the job's name or make a separate copy. If two people deploy `nightly_sales` to dev, both deploys would update the same job, whoever it runs as. The lesson also uses `run_as` mainly in **prod**, so jobs there don't run as a person.\n\nWhat actually keeps them apart is the name. In dev, `nightly_sales` deployed by Ana might show up as `[dev ana] nightly_sales`, and a teammate's as `[dev ben] nightly_sales`. Two different names means two different jobs.\n\n\"`mode: development` adds their name\" is better because it gives each person's deploy a different resource name, so their jobs never collide.",
+   "step": "Check",
+   "fingerprint": "f3a6cdb6d66ec9e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Layered lookup: specific value, then default” in an interview?",
+   "a": "**30-second answer**\n\n*The problem.* Our platform team deploys the same bundle for `team-sales` to DEV, UAT and PROD. Each place needs its own values, like the catalog or the SQL warehouse. Keeping a copy of the files for each environment means the copies slowly drift apart.\n\n*The idea.* Keep one set of files. Each target (a place you deploy to) fills in its own values. For every declared variable, ask in order. Does this target set it? Use that. Is there a default? Use that. If neither, it's missing. So `catalog` is `dev_sales` by default, but the prod target sets `prod_sales`, and that wins.\n\n*Edge case.* `warehouse_id` has no default. Say someone adds a UAT target and forgets to set it. Then it's missing. We list all missing names together and sort them. That way the error message is the same on every run, so it's easy to compare runs.\n\n**Follow-up an interviewer might ask:** \"Why not give every variable a default?\"\n\n*Hint:* Some values should be chosen on purpose for each place. A default warehouse ID could quietly point UAT at the dev warehouse. A missing value is safer than a wrong one.",
+   "step": "Explain",
+   "fingerprint": "d886798b03c698e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Prod tables land in `dev_sales`.** `catalog` has a default of `dev_sales`. If the `prod` target forgets to set `catalog: prod_sales`, prod quietly falls back to that default. Nothing errors. You just find prod data in the dev catalog.\n- **A \"missing variable\" error.** `warehouse_id` has no default. If a target forgets it, the deploy stops and names it as missing. That's the safe failure.\n- **Dev runs touch the wrong data.** A leftover `BUNDLE_VAR_catalog` in your shell, or a stray `--var`, wins over the target's value. Your dev deploy then writes somewhere you didn't expect.\n- **Colleagues overwrite each other.** Without `mode: development`, dev job names have no name prefix. Two people deploy, and one job replaces the other.\n- **Prod jobs run as a person.** Without `run_as`, the job's run history shows a person, not a service principal like `sp-sales-etl-prod`. A service principal is a non-human identity from Entra ID. Jobs break when that person leaves.\n\n**Quickest check**\n\nRun `databricks bundle validate -t prod`, then `-t dev`. Read the values it shows for each target. Check the catalog, the warehouse and the run-as identity before you deploy.",
+   "step": "Learn",
+   "fingerprint": "bf4fa8a57c7d249f",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It claims a leftover BUNDLE_VAR_catalog or --var overrides the target's value, and that `bundle validate` shows the resolved values; the lesson says neither (it only says the target beats the default and that validate checks the files). It also runs slightly over about 200 words."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"one source, many targets\" needs extra care.\n\n**1. A new target with a gap.** Say the team adds a `uat` target and forgets `warehouse_id`. That variable has no default, so it ends up missing. Run `databricks bundle validate -t uat` in the Spacelift plan stage, before any apply, so the gap shows up early.\n\n**2. Secrets in variables.** A warehouse ID is fine in `databricks.yml`. A password or token is not. Anyone who can read the config repo would see it. Keep secrets in a Databricks secret scope (a locked store for sensitive values), backed by Azure Key Vault. Let the job read them when it runs.\n\n**3. A leftover environment variable.** An environment variable is a setting your terminal holds, and `export` keeps it for the whole session. If you set `BUNDLE_VAR_catalog=sandbox_ana` for a test, later deploys can quietly use `sandbox_ana` too. Run `unset BUNDLE_VAR_catalog` when you're done. In Spacelift, set values in the target instead, so every run behaves the same way.",
+   "step": "Learn",
+   "fingerprint": "95ba591b910a3dca",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear failure. Two minor points: the Spacelift plan-stage `bundle validate` step and the Key Vault-backed secret scope go beyond the lesson text, and the answer includes inline commands despite the 'no code' rule."
+   }
+  },
+  "learn:term": {
+   "q": "What does “target” mean here?",
+   "a": "A **target** is a place your bundle gets deployed to.\n\nThink of one set of furniture assembly instructions used in two different houses. The instructions stay the same. Each house has its own room sizes and colours.\n\nIn a bundle, the instructions are your `databricks.yml` files. The houses are the targets, usually `dev` and `prod`. Each one is often a different Databricks workspace. A workspace is one separate Databricks environment with its own jobs and data.\n\nIn the lesson's example, look under `targets:`. There are two.\n\n- `dev` has `mode: development` and `default: true`. So it's used when you don't name a target. It sets its own `warehouse_id`. It doesn't set `catalog`, so it gets the default, `dev_sales`.\n- `prod` has `mode: production`. It sets its own `catalog` (`prod_sales`) and its own `warehouse_id`. It also has `run_as` with a service principal. That's a non-human identity from Microsoft Entra ID, like `sp-sales-etl-prod`.\n\nYou pick a target with `-t`. For example, `databricks bundle deploy -t dev` deploys to dev.",
+   "step": "Learn",
+   "fingerprint": "e43001c58e42d3b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the lesson never says what `default: true` does or that targets are often separate workspaces. Both claims are true in practice but go beyond the lesson, though they don't contradict it."
+   }
+  }
+ },
+ "skipped_tasks": {
+  "check:0:0": {
+   "q": "Why not “Reruns every task from the start”?",
+   "a": "\"Reruns every task from the start\" describes a brand-new run of the whole job. That is not what a **repair run** is.\n\n**What it gets right:** after you fix the bug, a full fresh run would also finish every task. So the end result would look complete.\n\n**What it misses:** in this run, `ingest` and `audit` already succeeded. A repair run keeps those results and does not repeat them. It reruns only two kinds of tasks:\n\n- the task that failed: `clean`\n- the tasks skipped because of it, marked \"upstream failed\": `features` and `report`\n\nStarting over would redo `ingest` and `audit` for no reason. Their work was already done.\n\nPicture team-sales's nightly job after the fix:\n\n```\ningest   succeeded       -> kept, not rerun\naudit    succeeded       -> kept, not rerun\nclean    failed          -> rerun\nfeatures upstream failed -> rerun\nreport   upstream failed -> rerun\n```\n\n\"Reruns `clean`, `features` and `report`\" is better because a repair run picks up exactly where the failure stopped things. It redoes only the failed task and the tasks skipped because of it.",
+   "step": "Check",
+   "fingerprint": "ed2afeacde9c8abf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Reruns clean on its own”?",
+   "a": "\"Reruns `clean` on its own\" gets one thing right. A repair run does rerun the task that failed, and `clean` is that task. It also correctly leaves out `ingest`, which already succeeded and doesn't need to run again.\n\nWhat it misses is the skipped tasks. When `clean` failed, `features` and `report` never ran. The run marked them \"upstream failed\", meaning they were stopped because something they depend on broke. They have no results yet.\n\nIf only `clean` reran, your fixed data would be ready, but nothing would turn it into features or a report. In a job like team-sales' nightly run, the report the team expects would still be missing.\n\nA repair run handles this for you. It reruns the failed task plus every task that was skipped because of it. It doesn't rerun tasks that already succeeded, like `ingest` or `audit`. That saves time and compute compared to rerunning the whole job.\n\n\"Reruns `clean`, `features` and `report`\" is better because it covers both parts of a repair: the failed task and every task downstream that was skipped because of it.",
+   "step": "Check",
+   "fingerprint": "e40886a726990852",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It runs on yesterday's data”?",
+   "a": "\"It runs on yesterday's data\" gets one thing right. Yesterday's output may still be sitting in the tables. If `report` did run, it might read that old data.\n\nBut `report` never starts. Each task has a **Run if** condition, and the default is \"all succeeded\". That means a task runs only if every task it depends on finished without errors.\n\nHere, `ingest` fails. So `clean` doesn't meet its condition and is skipped. Then `report` depends on `clean`, which didn't succeed, so `report` is skipped too. The job never falls back to older data on its own.\n\nThe run also labels both tasks **upstream failed**. \"Upstream\" means earlier in the chain. The label says the problem started before them, not in their own code. That helps the platform team see that the fix belongs in `ingest`, not in `report`.\n\nWhen a later **repair run** succeeds, `report` gets fresh data. A repair run reruns only the failed task and the tasks skipped because of it.\n\n\"It doesn't run: marked upstream failed\" is better because it follows the default rule: the failure in `ingest` spreads downstream as skips, so `clean` and `report` never run on stale data.",
+   "step": "Check",
+   "fingerprint": "e0d0b9fe15b13766",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The stale-data point and the 'fix belongs in ingest' remark are small inferences beyond the lesson, but they do not contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It fails with its own error”?",
+   "a": "That option gets one thing right: `report` does not succeed, and the run as a whole is not a success.\n\nWhat it misses is that `report` never starts. Its **Run if** condition is the default, \"all succeeded\". That means \"start only if every task I depend on succeeded.\" `clean` never succeeded, because it never ran after `ingest` failed. So `report` is not allowed to begin. Code that never runs can't hit an error of its own.\n\nInstead, the run marks `report` as **upstream failed**. \"Upstream\" means a task earlier in the chain. The label says \"I was stopped by something before me.\"\n\nThis matters when you debug. Say the `nightly_sales` job, running as `sp-sales-etl-dev`, fails overnight. Only `ingest` has a real error to read. If `report` showed its own error, you might waste time digging into `report.py`, which did nothing wrong. A **repair run** (a rerun of just the failed and skipped tasks) then reruns `ingest`, `clean` and `report`, and nothing else.\n\n\"It doesn't run: marked upstream failed\" is better because it matches what happens: `report` is skipped, and the real error stays with `ingest`.",
+   "step": "Check",
+   "fingerprint": "7e5ff4d1429acc75",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It's skipped: a task in the job failed”?",
+   "a": "That answer gets one thing right. A task in the job did fail, and failures can cause skips.\n\nBut a failure does not stop the whole job. It only stops the tasks **downstream** of it. Downstream means tasks that depend on the failed task, directly or through other tasks. Tasks on other branches are not affected.\n\nLook at how this job is shaped:\n\n```\nload -> check_sales   (fails)\n     \\-> check_stock\n```\n\n`check_stock` lists only `load` in its `depends_on`. Its **Run if** condition is the default, \"all succeeded\". So it asks one question: did every task I depend on succeed? `load` succeeded, so the answer is yes, and `check_stock` runs.\n\n`check_sales` is a sibling of `check_stock`, not something it waits for. Its failure never reaches `check_stock`. It is like the lesson's example, where `audit` still runs after `clean` fails because `audit` only needs `ingest`.\n\n\"It runs: it only waits for load\" is better because skipping follows the `depends_on` links, and `check_stock`'s only link is to `load`, which succeeded.",
+   "step": "Check",
+   "fingerprint": "1bc40360b060681b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “It waits until check_sales is fixed”?",
+   "a": "That answer gets one thing right: a failed task does hold other tasks back. But it only holds back tasks **downstream** of it, meaning tasks that depend on it, directly or through other tasks.\n\n`check_stock` is not downstream of `check_sales`. They are siblings. Each one lists only `load` in its `depends_on`:\n\n```yaml\n- task_key: check_sales\n  depends_on: [{task_key: load}]\n- task_key: check_stock\n  depends_on: [{task_key: load}]\n```\n\nA task's **Run if** condition looks only at its own `depends_on` list. The default is \"all succeeded\". For `check_stock`, that list holds just `load`, and `load` succeeded. So `check_stock` runs. What happens to `check_sales` doesn't matter to it.\n\nThe answer also misses a second point. Jobs never pause and wait for a fix. Tasks that do depend on a failed task are marked \"upstream failed\" (skipped) right away. Fixing comes later, through a **repair run**. That reruns only `check_sales` and anything skipped because of it.\n\n\"It runs: it only waits for load\" is better because it checks `check_stock`'s own `depends_on` list, and that list is the only thing that decides whether it runs.",
+   "step": "Check",
+   "fingerprint": "31264192f4c4f6b3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor: 'Jobs never pause' and 'right away' go slightly beyond the lesson, but they match its repair-run and upstream-failed behaviour."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Spread through a list in order” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* \"In a Lakeflow Job like `nightly-sales`, if `clean` fails, every task downstream of it is skipped and marked upstream failed. Downstream means it depends on `clean`, directly or through other tasks. I need to find all of those.\"\n\n*The idea:* \"I keep a list of stopped tasks, starting with just the failed one. The tasks come in an order where each one appears after the tasks it depends on. So I walk through the list once. If a task depends on anything stopped, it's skipped. I add it to the stopped list too, so tasks further down see it.\"\n\n*Edge case:* \"The single pass only works if that order holds. If `report` came before `clean`, I'd miss it. So I'd check the order first, or sort the tasks by their dependencies before walking.\"\n\n**A likely follow-up**\n\n\"What about `page_on_call`, which has `run_if: AT_LEAST_ONE_FAILED`?\"\n\n*Hint:* Say the simple rule assumes the default Run if, \"all succeeded.\" A task with a different condition reacts to failure differently, so a strong answer checks each task's condition, not just its dependencies.",
+   "step": "Explain",
+   "fingerprint": "f8034f5d9a753063",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems: it keeps to the lesson's idea, has the three requested parts plus one follow-up with a hint, stays under 200 words, and gives no code or answer to a Check question."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A run that looks green but isn't.** In `nightly-sales`, `clean` fails, yet `report` shows as succeeded. That means `report` is missing its `depends_on` on `clean`. It ran anyway, on stale or half-cleaned data.\n- **An alert that never fires.** `clean` failed last night, but nobody was paged. Check `page_on_call`. If its `run_if` was left at the default, \"all succeeded\", it only runs when everything worked. That is the opposite of what an alert needs.\n- **Repairs that redo too much.** After a fix, someone reruns the whole job instead of doing a repair run. A repair run reruns only the failed tasks and the ones skipped because of them.\n- **A job that breaks when someone leaves.** The job runs as a person, not as a service principal like `sp-sales-etl-dev`. A service principal is an identity for software, so it doesn't disappear when someone's account is removed.\n\n**Quickest check**\n\nOpen one failed run of `nightly-sales` in Lakeflow Jobs and look at its task graph.\n\nIf `clean` failed, three things should be true:\n\n- `report` shows \"upstream failed\", not \"succeeded\".\n- `page_on_call` ran.\n- `ingest` kept its own result.\n\nIf any of these is off, the dependencies or the `run_if` setting are wrong.",
+   "step": "Learn",
+   "fingerprint": "be6c9f8e9480f6b7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where \"a failure stops everything downstream\" needs extra care.\n\n**1. A task uses a different Run if condition.**\nIf a task sets `run_if: ALL_DONE` or `AT_LEAST_ONE_FAILED`, it runs even when something upstream failed. The `page_on_call` task in `nightly_sales` is built for exactly that. So the spread stops at that task. Check each task's condition before marking it skipped.\n\n**2. The task list is not in dependency order.**\nOne pass works only when every task appears after the tasks it depends on. Suppose someone in team-sales writes the YAML with `report` listed above `clean`. Then a single walk through the list can miss a skip. Sort the tasks first, so each one comes after everything it needs. Then do the pass.\n\n**3. Tasks have retries.**\nA task can be set to retry, meaning it tries again automatically after a failure. A task that fails once and then succeeds is not a failure. Count a task as failed only after its last retry. A later repair run can also turn earlier skips into successes, so treat each run on its own.",
+   "step": "Learn",
+   "fingerprint": "da1c0b4a15221b97",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Lakeflow Jobs” mean here?",
+   "a": "**Lakeflow Jobs** is the Databricks feature that runs your work for you, on a schedule. It used to be called Databricks Workflows. Same thing, new name.\n\nThink of a kitchen's opening checklist. Some steps must wait for others: you can't plate food before it's cooked. And the checklist runs every morning without anyone asking.\n\nA job is that checklist. Each step is a **task**, such as running one notebook (a file of code). `depends_on` says which tasks must finish first.\n\nIn the lesson's example, `nightly_sales` is one job. Its tasks are `ingest`, `clean`, `report` and `page_on_call`. `clean` waits for `ingest`. `report` waits for `clean`. So the job runs them in that order.\n\nThe `run_if: AT_LEAST_ONE_FAILED` line changes the usual rule. By default, a task runs only if everything it depends on succeeded. `page_on_call` does the opposite. It runs when something upstream failed, so someone gets alerted.\n\nIn production, the job should run as a **service principal**, such as `sp-sales-etl-prod`. That is an identity for software, not a person, so the job keeps working when someone leaves.",
+   "step": "Learn",
+   "fingerprint": "0658f0b142d64693",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "tag_coverage": {
+  "check:0:0": {
+   "q": "Why not “They are updated to team = ml”?",
+   "a": "It's an easy guess, because the cluster really does have `team = ml` now. That part is right: from today, every new usage row for that cluster will carry the tag.\n\nWhat it misses is how `system.billing.usage` works. Each row is written when the usage happens. It copies the tags the cluster had at that moment. Think of it like a receipt: once it's printed, adding a label to the cluster later doesn't reprint old receipts.\n\nSo say team-sales adds `team = ml` to `custom_tags` in their `clusters.yml`, and the Spacelift stack applies it today. Last month's rows for that cluster still have no `team` key. The coverage query from this lesson would still count them as `untagged_dbus`.\n\nThat's why teams tag at creation time, often enforced by Pydantic checks or policy checks in the plan step. Any spend before the tag exists stays unowned for good.\n\n\"They stay untagged. Tags only apply from now on\" is better because tags are copied onto usage rows as the usage happens, and Databricks never goes back to rewrite old rows.",
+   "step": "Check",
+   "fingerprint": "1ccc57c08e9714a8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The line about Pydantic and policy checks enforcing tagging goes beyond the lesson text, but it fits the setting and doesn't contradict anything."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “They are deleted”?",
+   "a": "**Why not \"They are deleted\"?**\n\nHonestly, this option gets nothing right about what happens to the rows. Adding a tag never removes anything. The only fair instinct behind it is noticing that last month's rows won't carry `team = ml`. But that is because they are left alone, not because they are gone.\n\n`system.billing.usage` is a record of past spend. Each row is written when the usage happens. It holds the tags the cluster had *at that moment*. Setting a tag later does not go back and edit those rows, and it does not delete them.\n\nSo, say team-ml adds `team = ml` to their cluster in `clusters.yml`. Spacelift applies it in DEV today. Then:\n\n- **Last month's rows**: still there, still with no `team` tag. They count as untagged spend.\n- **Rows from today on**: carry `team = ml`.\n\nThat is why tagging early matters. Spend you didn't tag at the time stays unowned in the billing data.\n\n**Why the right answer is better:** \"They stay untagged. Tags only apply from now on\" matches what really happens. The old rows are kept exactly as they were, and only new usage gets the tag.",
+   "step": "Check",
+   "fingerprint": "49b1d3fcdb80e281",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The ClusterId tag”?",
+   "a": "`ClusterId` is a default tag. Databricks adds it to every cluster on its own, along with `Vendor`, `Creator` and `ClusterName`. You don't choose its value.\n\n**What it gets right:** it tells you *which* cluster you are looking at. That is useful. Before deleting anything, you want to be sure you have the right one.\n\n**What it misses:** it is just a label for the cluster itself. It says nothing about a person or a group. Knowing a cluster's ID doesn't tell you who depends on it or who to ask before removing it. You would still be stuck.\n\nThe question is \"who do I ask?\" That is a question about people, not about the machine.\n\nIn the lesson's example, the cluster `forecast-dev` carries this tag:\n\n```hcl\ncustom_tags = {\n  owner = \"data-platform\"\n}\n```\n\nThat points straight at the group responsible for it.\n\n**Why `owner` is better:** an `owner` tag exists for exactly this job. It names who to ask before something is deleted.",
+   "step": "Check",
+   "fingerprint": "57bdf0fc6cb3ffad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The Vendor tag”?",
+   "a": "It's a fair guess. `Vendor` is a real tag, and you don't have to set it. Databricks adds it for you, along with `Creator`, `ClusterName` and `ClusterId`. So it will be on that old cluster.\n\nThe problem is what it says. `Vendor` always holds the same value: `Databricks`. Every cluster in every workspace gets it, from DEV through PROD. It tells you which company's software made the cluster. It can't tell `team-sales`' clusters apart from anyone else's. So it gives you no one to ask.\n\nEven `Creator` falls short. It names the person or service principal (an identity that a program runs as, like `sp-sales-etl-dev`) that made the cluster. That person may have moved teams or left. A creator is not always an owner.\n\nAn `owner` tag is set on purpose. In this platform it would come from the team's `team.yml`, with a value like `grp-sales-dev-owners`. That's a group from Microsoft Entra ID, so it still points to the right people when one person leaves.\n\n**An `owner` tag is better because it names the people responsible for the cluster today, which is exactly who you need to ask before deleting it.**",
+   "step": "Check",
+   "fingerprint": "9512f0ebdec87476",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Nothing contradicts the lesson. The claims that Vendor is always 'Databricks' and that Creator holds the creating identity go beyond the lesson but are accurate. It is about 196 words, just under the limit."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “No: tags stay inside Databricks”?",
+   "a": "**Why \"No: tags stay inside Databricks\" isn't the best answer**\n\nIt gets one thing right. Tags do show up inside Databricks. A cluster's `custom_tags` are copied into `system.billing.usage.custom_tags`, so you can split spend there with SQL. Some tags also really do stay inside Databricks, like governed tags on tables and columns, which drive access rules.\n\nWhat it misses is where a classic cluster actually runs. \"Classic\" compute means clusters built from Azure virtual machines (VMs) in your own Azure subscription. When Databricks creates those VMs, it copies the cluster's `custom_tags` onto them. Azure Cost Management reads tags on Azure resources, so finance can group the VM costs by `team`.\n\nSo if `team-sales` asks for a cluster in `clusters.yml` and your Service stage sets `team = \"sales\"` in `custom_tags`, finance can filter on `team = sales` in Azure Cost Management. That works only for usage after the tag was set. Tags never apply backwards.\n\n**Why \"Yes: the tags reach its virtual machines\" is better:** it names the real path, cluster tag to VM tag to Azure Cost Management.",
+   "step": "Check",
+   "fingerprint": "5693c356adf7c109",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Two small details go beyond the lesson but don't contradict it: VMs being 'in your own Azure subscription', and governed tags 'staying inside Databricks'."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Only if the cluster is serverless”?",
+   "a": "\"Only if the cluster is serverless\" gets one thing right. Serverless spend can carry tags too. Its tags come from serverless budget policies (newer docs call them serverless usage policies), and they land in `system.billing.usage.custom_tags` inside Databricks.\n\nBut it misses two things.\n\nFirst, the question is about a **classic** cluster. That is a cluster you define yourself, like `forecast-dev` with its `custom_tags`. The answer \"only if serverless\" would mean a classic cluster's tags never show up for Finance. The lesson says the opposite.\n\nSecond, the lesson's point about Azure Cost Management is about classic compute. Azure Cost Management is Azure's own bill viewer. A classic cluster runs on virtual machines, which are the Azure computers that do the work. Databricks copies the cluster's tags onto those machines. So when Finance groups costs by `team`, they can see `team = data`.\n\n\"Yes: the tags reach its virtual machines\" is better because it names exactly how a classic cluster's `team` tag travels from Databricks into Azure's bill, where Finance looks.",
+   "step": "Check",
+   "fingerprint": "0e26a4851747fc8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Two running totals, then a share” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* Our platform team tags clusters from each team's YAML, like `team = team-sales`. But tags only help split cost if most of the spend carries them. So we need one number that shows how much is covered.\n\n*The idea.* Walk through the usage rows once. Keep two running totals, which are sums you add to as you go. One is for tagged cost and one is for untagged cost. For each row, ask one question: does `custom_tags` have a `team` key? Add that row's cost to the matching total. At the end, the share is tagged divided by the total, times 100.\n\n*The edge case.* If there was no usage at all, the total is 0. Return 0 percent instead of dividing by zero.\n\n**A likely follow-up**\n\n\"Coverage is low. Does that mean people forgot their tags?\"\n\n*Hint:* Not always. Tags only apply to usage after they're set, never backwards. A cluster tagged mid-month still leaves its earlier spend untagged. A strong answer also offers a fix. Add a Spacelift policy check, a rule that runs on the proposed plan before apply, that blocks any cluster missing a `team` tag.",
+   "step": "Explain",
+   "fingerprint": "b1dc151ddf394f48",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A big \"no team\" bucket.** Split last month's spend in `system.billing.usage` by the `team` tag. Much of it lands under no team at all. That is spend nobody owns.\n- **Only default tags show.** Rows carry `ClusterName` or `Creator`, but no `team` or `project`. You can see which cluster ran, not which team pays.\n- **Serverless gaps.** Classic clusters from `clusters.yml` look tagged, but serverless usage comes through untagged. That often means no budget policy is attached.\n- **Clean-up stalls.** An idle cluster has no `owner` tag, so nobody knows who to ask before deleting it.\n\nOne thing that is *not* a fault: a team tagged last week shows no tagged spend before then. Tags never apply backwards.\n\n**Quickest check**\n\nRun the lesson's coverage query on the last 30 days of DBU usage. A DBU (Databricks Unit) is the unit Databricks bills compute in. Compare tagged against untagged. If the untagged share is large, read the `ClusterName` and `ClusterId` on those rows. Then find each cluster in the team's YAML or Terraform and add the missing tags.",
+   "step": "Learn",
+   "fingerprint": "06028605db869a37",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where \"tag it, then measure coverage\" needs extra care.\n\n**Spend from before the tag existed.** Tags never apply backwards, so usage from before a Spacelift apply added `team` stays untagged forever. Start your coverage window on the date tagging went live. Otherwise old spend drags the number down and nothing can fix it.\n\n**Serverless compute.** Cluster `custom_tags` don't reach serverless jobs or notebooks. That spend gets its tags from a serverless budget policy (a set of tags attached to whoever runs the work), for example `sp-sales-etl-dev`. If teams move to serverless without one, coverage drops even though every `clusters.yml` looks fine.\n\n**Tags present but wrong.** Coverage only asks \"is the key there?\" A value like `Sales` instead of `team-sales` still counts as tagged, but it won't group with the right team. Have Pydantic or a Spacelift policy check reject unknown values. Then measure coverage against the list of real teams in `env.yml`.",
+   "step": "Learn",
+   "fingerprint": "7ac509eab6d15eaf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The serverless point goes slightly beyond the lesson, but the lesson's split between compute tags and budget policies supports it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Access.” mean here?",
+   "a": "**\"Access.\"** is the second of the four jobs tags do. It's about who is allowed to see which data.\n\nThink of a colored sticker on a paper folder. A red sticker means \"managers only.\" The rule follows the sticker, not the drawer. Move the folder anywhere and the rule still applies.\n\nOn Databricks, the sticker is a **governed tag**. \"Governed\" means admins control which tag keys and values are allowed. You put it on a catalog, schema, table or column. Catalogs and schemas are like folders that group tables. An **ABAC policy** then reads the tag. ABAC means attribute-based access control: rules based on labels, not on named tables. The policy can apply a **column mask**, which hides or blurs values, or a **row filter**, which hides some rows.\n\nFor example, a column tagged `pii = email` (`pii` means personal information) could be masked for everyone outside `grp-sales-dev-owners`.\n\nThe lesson's cluster example doesn't show this job. Its `custom_tags` sit on compute, not data. There, `team` and `project` serve the cost job. `owner` serves the ownership and clean-up job.",
+   "step": "Learn",
+   "fingerprint": "ac51dd6d315eeae0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'governed means admins control allowed keys and values' line goes beyond the lesson but is accurate and does not contradict it."
+   }
+  }
+ },
+ "unsupported_runtimes": {
+  "check:0:0": {
+   "q": "Why not “Nothing, LTS versions are supported forever”?",
+   "a": "That option gets one thing right. `13.3.x-scala2.12` is an LTS runtime, and LTS is the right kind of runtime for scheduled jobs like a nightly ETL (extract, transform, load) run for `team-sales`.\n\nBut \"long-term\" does not mean \"forever.\" LTS means long-term support: Databricks keeps shipping fixes for about three years, and then it stops. 13.3 LTS reached its end of support in August 2026. By October 2026 it no longer gets security patches or bug fixes. Its runtime number is also too low for newer features. For example, tables protected by ABAC (access rules driven by tags) need 16.4 or later on classic compute.\n\nSo \"do nothing\" leaves the cluster on a runtime that is no longer patched and falls further behind each month.\n\nIn this platform, the fix is small. Point the cluster's `spark_version` at a supported LTS. The `databricks_spark_version` data source with `long_term_support = true` picks the latest one for you. Then let Spacelift plan and apply it through DEV, UAT and PROD.\n\n\"Move it to a supported LTS, such as 15.4 or 16.4\" is better because it keeps the stability of LTS while putting the cluster back on a runtime that still gets fixes.",
+   "step": "Check",
+   "fingerprint": "56a23b0bbdf68f92",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Switch the cluster off and on again to pick up …”?",
+   "a": "Restarting sounds reasonable. It does care about getting fixes, and that instinct is right. But it misses the key fact from the lesson.\n\nThe runtime is set by the `spark_version` string, here `13.3.x-scala2.12`. Switching the cluster off and on again does not change that string. The cluster comes back on 13.3, the same software image (the bundle of Spark, Python and libraries) it had before.\n\nAnd 13.3 LTS is the problem. LTS means long-term support: a version that gets fixes for about three years. For 13.3, that support ended in August 2026. By October 2026, no new fixes are coming for it, so a restart has nothing new to pick up.\n\nIn this platform, the fix is a change to the cluster's `spark_version` in Terraform. Spacelift would then show it as a proposed plan, run policy checks and wait for an approved apply.\n\nMoving it to a supported LTS, such as 15.4 or 16.4, is better because it puts the cluster on a version that still gets fixes.",
+   "step": "Check",
+   "fingerprint": "04a8bb5666373e5c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The newest version that isn't LTS”?",
+   "a": "\"The newest version that isn't LTS\" gets one thing right. Newer runtimes can unlock features. The lesson's example: tables protected by ABAC (access rules driven by tags) need 16.4 or later on classic compute.\n\nBut it misses what matters most for this job. The job runs every night for a year. The lesson says LTS (long-term support) versions get fixes for about three years. That is why it says to pick LTS for anything that runs on a schedule. A version that isn't LTS comes with no such promise. So you could end up running a nightly job on a runtime that isn't covered by that long window.\n\nThe right answer is \"A recent LTS version.\" In this platform, the Terraform already does that for you. It looks up the latest LTS with:\n\n```hcl\ndata \"databricks_spark_version\" \"lts\" {\n  long_term_support = true\n}\n```\n\nThat is how a nightly cluster for, say, `team-sales` gets a supported runtime. No one has to type a version string by hand.\n\n**Why \"A recent LTS version\" is better:** it gives you current features plus about three years of fixes, which easily covers a job that runs for a year.",
+   "step": "Check",
+   "fingerprint": "67721eee38994608",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the ABAC example is a slightly weak fit because 16.4 is itself an LTS, and the length is close to the 200-word limit."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Whatever the last job used”?",
+   "a": "Copying the last job's runtime does get one thing right. You'd be using a version your team already knows works with its code and libraries. That's a fair instinct.\n\nThe problem is that you don't know *which* version that is, or how long it will stay supported. \"Supported\" means Databricks still ships fixes for it.\n\nSay the last job runs on 13.3 LTS. Its support ended in August 2026, so your new job would start on a version that already gets no fixes. Or say it's on 14.3 LTS. Support ends in February 2027, months before your year of nightly runs is over. It might not even be an LTS version. The lesson says scheduled work should run on LTS.\n\nSo the answer depends on whatever happened before, not on what this job needs.\n\n**A recent LTS version** is better because it gets about three years of fixes from release, which comfortably covers a job that must run every night for the next year.",
+   "step": "Check",
+   "fingerprint": "8c7f6fa0a62bf92b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Nothing: 15.4 LTS is still supported”?",
+   "a": "That answer gets one thing right. 15.4 LTS is still supported. It gets fixes until August 2027, so the cluster isn't running an outdated runtime.\n\nBut \"supported\" answers a different question. Support means the version still gets bug and security fixes. It says nothing about which features the version has.\n\nThe team's need here is ABAC. That stands for attribute-based access control: access rules driven by tags on tables. On classic compute (clusters you create and size yourself), reading ABAC-protected tables needs runtime 16.4 or later. 15.4 is below that line. So a cluster on `15.4.x-scala2.12` can't use those tables, even though it's fully supported.\n\nSo there are two separate checks:\n- Is the runtime still supported?\n- Is it new enough for the feature this team needs?\n\n15.4 passes the first and fails the second.\n\nFor example, if team-sales asks for ABAC in their `clusters.yml`, their cluster's `spark_version` would need to be at least `\"16.4.x-scala2.13\"`.\n\n\"15.4 is too old: ABAC needs 16.4 or later\" is better because it checks the runtime against the feature's minimum version, not just against the support dates.",
+   "step": "Check",
+   "fingerprint": "3edd6907889b1c29",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “ABAC only works on SQL warehouses”?",
+   "a": "**Why \"ABAC only works on SQL warehouses\" isn't the best answer**\n\nABAC means access rules driven by tags. A tag is a label on a table or column.\n\nThis option gets one thing right. The team's cluster really can't use those tables as it is set up now.\n\nBut it blames the wrong thing. The lesson says ABAC works on classic compute, as long as the runtime is 16.4 or later. So the type of compute isn't the problem. The version is.\n\nYou can see the version in the cluster's `spark_version` string, `15.4.x-scala2.12`. The version is the part before `.x`, which is 15.4. That is lower than 16.4.\n\nThe fix is to move the cluster to a newer runtime, not to a different kind of compute. In their stack, nobody types the string by hand. The cluster takes `data.databricks_spark_version.lts.id`, which always gives the latest LTS (long-term support) version. LTS versions get fixes for about three years.\n\n**Why the other option is better:** \"15.4 is too old: ABAC needs 16.4 or later\" names the real cause, the runtime version, and points straight at the fix.",
+   "step": "Check",
+   "fingerprint": "b7bcc7468502c4e7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. It is close to the length limit, and the Terraform and LTS detour is slightly padded but does not contradict the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Cut out the key, then check membership” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"Our platform team runs many clusters across DEV, UAT and PROD. Runtimes go out of support. For example, 13.3 LTS ended in August 2026. We need to find clusters still on an old one.\"\n\n*The idea.* \"Each cluster names its runtime in one `spark_version` string, like `\"15.4.x-scala2.12\"`. First I cut out the key, which is the part before `\".x\"`. That gives `15.4`. Then I check membership: is that key in our supported list? If not, I report the cluster's name, say `etl-shared`.\"\n\n*Edge case.* \"The cut works the same for ML and GPU strings, like `\"14.3.x-gpu-ml-scala2.12\"`, because the version always comes first. If a string has no `\".x\"`, the whole text stays as the key. It won't match, so it gets flagged. That's a safe way to fail.\"\n\n**Likely follow-up**\n\n\"What if a workspace has thousands of clusters?\"\n\nHint: say you'd turn the supported list into a set first. A set is a collection built for fast lookups. Each check then becomes quick, instead of walking the whole list every time. You still go through the clusters once.",
+   "step": "Explain",
+   "fingerprint": "6036f7400cb5765d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that runtime choice went wrong**\n\n- **Old versions hiding in PROD.** A `clusters.yml` for team-sales still pins `\"13.3.x-scala2.12\"`. It keeps working, so nobody notices. But 13.3 LTS stopped getting fixes in August 2026. \"Fixes\" means security patches and bug repairs.\n- **Access errors on protected tables.** A job run by `sp-sales-etl-dev` fails when reading a table guarded by ABAC (access rules driven by tags). The cluster is on 15.4, and classic compute needs 16.4 or later for these tables.\n- **Missing libraries.** A notebook fails with \"module not found\" for an ML library. The cluster uses a standard runtime. Its `spark_version` has no `-ml-` in it.\n- **Surprise changes in a Spacelift plan.** You use the \"latest LTS\" data source. A new LTS comes out, and the proposed plan suddenly changes `spark_version` on every cluster. That is expected, but it should be reviewed before apply, not waved through.\n\n**Quickest check**\n\nList every cluster's `spark_version`. Keep the part before `\".x\"`. Compare each one against the support table in the Databricks docs. Any version not on the supported list needs an upgrade.",
+   "step": "Learn",
+   "fingerprint": "9c59ff87f8a0f23f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer matches the lesson's dates, the 16.4 ABAC rule and the spark_version naming. It is about 180 words with no code. The quickest-check steps echo the exercise idea in prose but are not a solution."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the lesson's rules need extra care.\n\n**1. The supported list goes out of date.**\nSupport dates pass. For example, 14.3 LTS stops getting fixes in February 2027. A list typed in once will quietly start approving old runtimes. Keep the list in the config repo with an end date for each version, and compare those dates against today.\n\n**2. \"Always pick the latest LTS\" moves under you.**\nWhen Databricks releases a new LTS, the `databricks_spark_version` data source returns a new `id`. The next Spacelift plan then changes every cluster that uses it. A cluster restart or a library change could break `team-sales` jobs in PROD. For scheduled work, pin the version in `clusters.yml`. Then upgrade it on purpose, moving it through DEV, UAT and PROD.\n\n**3. Not every cluster has a normal `spark_version`.**\nServerless compute has no version string, because Databricks picks and upgrades its runtime itself. Custom images or unusual strings may have no `\".x\"` in them. Handle these cases separately, so they are not wrongly flagged as old.",
+   "step": "Learn",
+   "fingerprint": "ef162a51e642c811",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Databricks Runtime” mean here?",
+   "a": "Think of a **Databricks Runtime** like a laptop that arrives with a set operating system and apps already installed. Every app is at a fixed version. You don't install them yourself, and they won't change under you.\n\nOn Databricks, the \"laptop\" is your compute: a cluster, meaning a group of cloud machines doing the work. The Runtime is the software image loaded onto those machines. It holds Spark (the engine that splits data work across machines), Python, and a bundle of libraries, all at fixed versions.\n\nIn the lesson, the runtime appears as the `spark_version` string. In `\"15.4.x-scala2.12\"`, the part before `.x` is the version, `15.4`. The rest describes the build. For example, `scala2.12` is the version of Scala, the language Spark is written in.\n\nIn the Terraform example, `data \"databricks_spark_version\" \"lts\"` looks up the newest LTS (long-term support) runtime. The `etl-shared` cluster then uses it through `spark_version = data.databricks_spark_version.lts.id`. So a team like `team-sales` gets a supported runtime without anyone typing the version by hand.",
+   "step": "Learn",
+   "fingerprint": "a1b378b1f27adc87",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The only claim not in the lesson is that Scala is the language Spark is written in, which is true and harmless."
+   }
+  }
+ }
+}

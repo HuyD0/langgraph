@@ -1,0 +1,2240 @@
+{
+ "abstention_rates": {
+  "check:0:0": {
+   "q": "Why not “Yes: it always helps”?",
+   "a": "\"Yes: it always helps\" gets one thing right. An app that never declines will never over-refuse. Every answerable question gets an answer, and that is genuinely good for users.\n\nBut it misses the other half. Retrieval, the step that searches your documents, always finds *something*, even when the documents don't contain the answer. So when a question falls outside your documents, an app that never declines still answers, often confidently, from weak or unrelated chunks. That isn't help. It's a made-up answer that looks like a real one.\n\nIn the lesson's terms, \"never declines\" means the over-refusal rate is 0%. It also means the missed-refusal rate on unanswerable questions would be 100%, and that's the dangerous mistake. You'd only notice this if your eval set includes unanswerable questions on purpose. If every test question can be answered, the problem stays hidden.\n\n\"Only if no question is ever outside your documents. Otherwise it's making answers up\" is better. It sees that never declining is fine only when every question is answerable, and that in real use, it means the app is making up answers to the questions it can't answer.",
+   "step": "Check",
+   "fingerprint": "4a5750a6b12f8196",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It doesn't matter as long as its answers match …”?",
+   "a": "That option gets one thing right. Answers should stick to the retrieved chunks, meaning the pieces of your documents that search pulled back. An app that stays close to its sources is better than one that drifts.\n\nBut it misses the real problem. Retrieval always finds *something*, even when your documents don't hold the answer. For a question outside your documents, the chunks will be on a nearby topic. They won't actually answer the question. A model handed those weak chunks will often answer anyway, confidently. It borrows words and facts from the chunks, so the answer can look like it matches them. But it isn't really supported by them.\n\nSo \"matches the chunks\" can't tell you whether the chunks contained the answer at all. An app that never declines is likely making missed refusals: answering unanswerable questions. You'd only see that by putting unanswerable questions in your eval set on purpose.\n\nThe better option wins because it names the one case where never declining is fine, and says plainly what's happening in every other case: the app is making answers up.",
+   "step": "Check",
+   "fingerprint": "db6941e936b7bb3f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'borrows words and facts from the chunks' mechanism and the 'stick to sources is better' point go slightly beyond the lesson but don't contradict it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “\"What's the weather on Mars?\"”?",
+   "a": "\"What's the weather on Mars?\" does get one thing right. The bot's documents really can't answer it, so it is a genuine unanswerable question.\n\nWhat it misses is the lesson's advice to write questions on **nearby topics**. Mars has nothing to do with payroll. Real users of a payroll bot won't ask it. So even if the bot declines, you've learned little about the case that actually worries you.\n\nThe worry is a question that *sounds* like it belongs. Retrieval (the step that fetches chunks of your documents) always returns something. For a question close to your documents' topic, those chunks can look relevant without holding the answer. That is when a model is most tempted to answer anyway. That mistake is a **missed refusal**: answering when it should have said \"I don't know.\" Far-off questions don't test that pressure well.\n\n\"How do I change my pension?\" is better because it sits right next to what the documents cover, is something real users would ask, and isn't actually answered there.",
+   "step": "Check",
+   "fingerprint": "4d35e10aed820242",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claims that a model is 'most tempted' on nearby questions and that real users 'won't ask' about Mars go slightly beyond the lesson, but neither contradicts it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “\"Where do I see my payslip?\"”?",
+   "a": "\"Where do I see my payslip?\" is a perfectly good question. It's just in the wrong group.\n\nThe bot's documents cover payslips. So the answer is really there. That makes it an **answerable** question, not an unanswerable one. If you labelled it unanswerable, your eval would mark the bot wrong for giving a correct answer. Your numbers would be off.\n\nIt does have a use. In the answerable group, it helps measure **over-refusals**: how often the bot declines when it shouldn't. But the task here is to test the other mistake, **missed refusals**: answering when the documents don't actually cover the question.\n\nA good unanswerable question sits close to what the documents cover, but just outside it. Retrieval will still pull up something that looks related, like chunks about pay deductions. That's exactly when a model is tempted to bluff.\n\n\"How do I change my pension?\" is better because it's a realistic question for a payroll bot, close to pay topics, yet the documents truly don't cover pensions. So it checks whether the bot knows to say \"I don't know.\"",
+   "step": "Check",
+   "fingerprint": "d52c875c3bd73d64",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the closing explanation of the pension question runs to two sentences instead of one, and the answer is close to the 200-word limit."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Nothing: the risky rate is fixed now”?",
+   "a": "\"Nothing\" gets one thing right. Missed refusals were the dangerous rate, and they really did drop. That's a real improvement, and it's worth noticing.\n\nBut it treats one number as the whole story. The lesson's key point is that the two rates pull against each other. You made the app decline *more often*. That change doesn't only touch the unanswerable questions. The app also gets more cautious on questions your documents *can* answer. So some good questions now get \"I don't know\" too.\n\nHere's how that might look. Before tuning, maybe 2 of 40 answerable questions were declined, so over-refusals were 5%. After tuning, it could be 8 of 40, which is 20%. For a help-desk app, that means many users with easy questions walk away with no help. If you stop watching after the first win, you'd never see this new problem.\n\n\"Over-refusals, which tend to go up\" is better because it points straight at the rate your change is most likely to have made worse.",
+   "step": "Check",
+   "fingerprint": "265bb29d9f37a691",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Recall@5 of the retriever”?",
+   "a": "**Recall@5** is a retriever score. It asks: of the chunks that hold the answer, how many showed up in the top 5 results the retriever pulled back? It's a useful number. Good retrieval does matter for a RAG app, so tracking it in general is fine.\n\nBut it doesn't fit this situation. You changed *when the app declines*. That's a change to the answering step, not the retriever. The retriever still fetches the same chunks for the same questions. So **Recall@5** would likely stay the same, and it would tell you nothing about what your tuning broke.\n\nWhat your tuning *can* break is the other side of the trade-off. The lesson says the two rates pull against each other. Make the app quicker to say \"I don't know,\" and it will start saying that to questions your documents really do answer. That's an **over-refusal**: of the answerable questions, how often the app declined.\n\n\"Over-refusals, which tend to go up\" is the better answer because it watches the exact mistake your change is most likely to cause.",
+   "step": "Check",
+   "fingerprint": "40009db59248b435",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor overreach: it asserts the tuning only touched the answering step and that over-refusals 'will' rise, where the lesson says only that the rates 'usually' pull against each other. Otherwise fine."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Two groups, each with its own count” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* \"Retrieval always returns something. So a RAG app, one that looks up documents and then answers, can answer confidently even when the documents don't hold the answer. If every eval question is answerable, you never see that mistake.\"\n\n*The idea.* \"So I split the eval set into two groups. Answerable questions, which the documents cover. And unanswerable ones on nearby topics, written on purpose. Each group gets its own rate. Unanswerable: how often it answered anyway. Those are missed refusals. Answerable: how often it declined. Those are over-refusals.\"\n\n*The trade-off.* \"The two rates pull against each other. A more cautious app misses fewer refusals but over-refuses more. So I decide which mistake costs more for this app before tuning.\"\n\n**Likely follow-up**\n\n\"Why not report one overall accuracy number?\"\n\nHint: the groups differ in size. Say there are 40 answerable and 10 unanswerable questions. The app could answer every one of the 50, never declining once. It would still look 80% right. Separate rates stop the big group from hiding the small, dangerous one.",
+   "step": "Explain",
+   "fingerprint": "3f5567abf9076586",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs it was skipped or done wrong**\n\n- **Your eval looks great, then real users find problems.** Accuracy is high in testing. But in real use, people get confident answers on topics your documents never cover. That usually means every eval question was answerable, so missed refusals were never measured.\n- **Traces show weak context but a firm answer.** A trace is the step-by-step record of one request. If the retrieved chunks are only loosely related to the question, yet the response sounds certain, the app isn't abstaining.\n- **One blended score.** If you report a single rate across all questions, a good number on the 40 answerable ones can hide a bad one on the 10 unanswerable ones.\n- **Lots of \"I don't know.\"** If users complain the app refuses questions your documents clearly answer, you pushed too hard toward declining. That is over-refusal.\n\n**Quickest check**\n\nCount the unanswerable questions in your eval set. If there are none, you have your answer. If there are some, look at the two rates side by side. Then read a few results where the app answered an unanswerable question.",
+   "step": "Learn",
+   "fingerprint": "853ab00509ee3288",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where this method needs extra care.\n\n**Your documents change.** A question that was unanswerable last month may become answerable once someone adds a new document. The reverse happens too. Then the `answerable` labels are wrong, and both rates mislead you. Re-check the labels whenever the document set changes. Note which version of the documents each eval set was written against.\n\n**You have very few unanswerable questions.** With only 10, one question changing moves missed refusals by 10 points. That swing is mostly noise, meaning random wobble rather than real change. Write more unanswerable questions. Report the raw counts next to the rates, like \"3 of 10\", so readers see how thin the evidence is.\n\n**\"Declined\" isn't clear-cut.** Some answers are partly covered by the documents. Some responses hedge, giving a guess with a warning attached. A simple yes/no `declined` flag misses that middle ground. An LLM judge, meaning a model that grades another model's answers, can also misread a hedge. Read a sample of the judge's verdicts yourself, and agree on what counts as declining before you start counting.",
+   "step": "Learn",
+   "fingerprint": "3dae4a7a49f22619",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “abstention” mean here?",
+   "a": "**Abstention** means choosing, on purpose, not to answer. In this lesson, it's when your app says \"I don't know\" because its documents don't contain the answer.\n\nThink of a pharmacist asked about a medicine they've never stocked. A good one says \"I'm not sure, let me check\" instead of guessing. A confident wrong guess is the real danger.\n\nYour app faces the same choice. Retrieval (the step that fetches chunks of your documents) always returns *something*, even when nothing relevant exists. So the model may answer anyway, sounding sure.\n\nIn the lesson's example, abstention shows up in two ways:\n\n- **Unanswerable questions (10):** the app *should* abstain. It answered 3 anyway. That's a 30% missed-refusal rate, the dangerous mistake.\n- **Answerable questions (40):** the app *should not* abstain. It declined 2. That's a 5% over-refusal rate, the annoying mistake.\n\nIn the exercise's data, abstention is the `declined` field. `declined: True` means the app abstained on that question.",
+   "step": "Learn",
+   "fingerprint": "0517a46c60341e29",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The definition comes before the everyday comparison, which is a minor ordering issue, but none of the five checks fails."
+   }
+  }
+ },
+ "chunk_text": {
+  "check:0:0": {
+   "q": "Why not “So each chunk stays under the size limit for th…”?",
+   "a": "That option mixes up two different ideas.\n\n**What it gets right:** Keeping chunks small really does matter. A prompt (the text you send to the model) can only hold so much. Small chunks are also easier to search. But that is the reason we **chunk** at all, not the reason we **overlap**.\n\n**What it misses:** Overlap does nothing to keep chunks small. The `size` setting does that. Every chunk is at most `size` characters, with or without overlap. Overlap actually adds work. Some characters get stored twice, so you end up with more total text, not less.\n\nThe real problem overlap solves is a cut in a bad place. Without overlap, a sentence might start at the end of one chunk and finish at the start of the next. Neither chunk holds the full sentence, so a search might miss it. In the lesson's example, `'abcd'` and `'defg'` both contain `d`. The edge is shared, like roof tiles.\n\n\"So text cut at a boundary still appears whole in one chunk\" is better because it names the actual problem overlap fixes: meaning getting split across a chunk edge.",
+   "step": "Check",
+   "fingerprint": "7aeccb914182850f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “So the model sees every sentence twice and weig…”?",
+   "a": "That option notices something true: the overlapping bit does show up in two chunks. In the lesson's example, `d` is in both `abcd` and `defg`.\n\nBut it gets the purpose wrong, in two ways.\n\nFirst, only the small overlap repeats, not every sentence. In that example, `b` and `e` appear just once. Most text is stored only one time.\n\nSecond, the repeat isn't there to make the model \"weigh\" anything more. When a question comes in, the search picks a few chunks that best match it. The model may only ever see one of the two chunks that share the overlap. So the overlap gives the model no extra emphasis.\n\nThe repetition is really a small cost you accept: a bit more storage and a few more chunks to search. You pay it so that a sentence never gets sliced in half with no complete copy anywhere. A half-sentence is hard to match to a question and confusing to read.\n\n\"So text cut at a boundary still appears whole in one chunk\" is better because it names the real goal: protecting sentences that fall on a cut.",
+   "step": "Check",
+   "fingerprint": "f56c696ebda91b77",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Retrieve fewer chunks each time”?",
+   "a": "\"Retrieve fewer chunks each time\" doesn't fix the real problem. The real problem is how the manual was cut.\n\nHere is what went wrong. The warranty sentence was split across a chunk boundary. Its first half sits at the end of one chunk, and its second half starts the next. So no single chunk holds the whole sentence. When the search looks for \"warranty,\" neither half may match well. And if one half is found, the model only sees part of the answer.\n\nRetrieving fewer chunks means sending fewer pieces of text to the model. That can cut down on clutter in the prompt, which is sometimes useful. But here it makes things worse. You are now *less* likely to pull in both halves of the broken sentence. The split is still there either way.\n\nOverlap fixes the cause. Each new chunk repeats the last few characters of the one before, like roof tiles. A sentence on a boundary then appears whole in at least one chunk.\n\n**\"Let chunks overlap a little\" is better because it makes sure the full warranty sentence lives inside one chunk that the search can find.**",
+   "step": "Check",
+   "fingerprint": "2467df0ccb39f30b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Use a different answering model”?",
+   "a": "\"Use a different answering model\" sounds reasonable. Some models are better at reading and reasoning, so swapping one in can help with other problems.\n\nBut it misses where this failure starts. The warranty sentence was cut in half at a chunk boundary. So no single chunk holds the whole sentence. When the search looks for chunks that match the question, each half may look only loosely related. It might not be picked at all. Even if one half is picked, the model sees only part of the sentence.\n\nA new model gets those same broken pieces. It can't read words that never reach its prompt. (The prompt is the text sent to the model, including the retrieved chunks.) At best it guesses, and a guess about a warranty is risky.\n\nThe real problem is in how the text was cut, before any model is involved. Fixing the chunks fixes what both the search and the model receive.\n\n\"Let chunks overlap a little\" is better because each chunk repeats the end of the one before it. That way a sentence on a boundary appears whole in at least one chunk, and the search can find it.",
+   "step": "Check",
+   "fingerprint": "3a7ff3016abe9f40",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The index only accepts short text”?",
+   "a": "That option has a grain of truth, but it blames the wrong thing.\n\n**What it gets right:** there are real size limits. The index turns each chunk's `text` into an **embedding**, which is a list of numbers that captures the text's meaning. The embedding model, like `databricks-gte-large-en`, only reads a limited amount of text at once. Anything past that limit may be cut off and ignored.\n\n**What it misses:** limits are not the real reason we chunk. Even if the index stored all 200 pages happily, two problems remain:\n\n- **Search gets blurry.** One embedding for a whole manual mixes hundreds of topics together. A question about resetting a password can't find the right page. It can only find \"the manual.\"\n- **It won't fit the prompt.** The **prompt** is the text sent to the language model. A 200-page result is far too long to paste in. Even if it fit, the useful part would be buried.\n\n**Why \"Too big to search well or fit a prompt\" is better:** it names the two jobs chunks must do, being found precisely and fitting into the prompt, and a whole manual fails both.",
+   "step": "Check",
+   "fingerprint": "67caf928d0d76bd2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Search would only match its title”?",
+   "a": "That option has a grain of truth. A whole manual stored as one piece *does* search badly. But the reason it gives is wrong.\n\nSearch doesn't look only at the title. In the lesson's setup, `embedding_source_column=\"text\"` means the index reads the chunk's whole text. It turns that text into an **embedding**: a list of numbers that captures what the text means. So the full manual would be read, not just its title.\n\nThe real trouble is that 200 pages get squeezed into one embedding. Hundreds of topics blur together, so no single question matches it sharply. A small chunk about one topic would match far better.\n\nThe option also misses a second problem. Even when search finds the manual, you can't paste 200 pages into the prompt. A **prompt** is the text you send the model, and it has a size limit. Chunks are small enough to fit.\n\n\"Too big to search well or fit a prompt\" is better because it names both real problems: blurry search and a prompt that's too large.",
+   "step": "Check",
+   "fingerprint": "2545dc5cc5e429fb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Name things for what they hold” matter?",
+   "a": "Code is read far more often than it is written. Usually the reader is a teammate, or you a few weeks later. A good name tells them what is inside without making them hunt for it.\n\nWhen names are vague, real problems follow:\n\n- **Slow reading.** Someone has to trace back through the code to learn what `d` or `tmp` holds.\n- **Quiet bugs.** If two values have look-alike names, it is easy to pass the wrong one. Nothing crashes, but the answers come out wrong.\n- **Risky changes.** People avoid touching code they don't understand, so mistakes stay in.\n\nHere is a small example from this lesson's stack. Say your chunk table had a column named `c` instead of `text`:\n\n```python\nembedding_source_column=\"c\",\n```\n\nA reader can't tell what `c` holds. It could be a count, a category, or the chunk itself. With `\"text\"`, it is clear that this column holds the words being turned into numbers for search. That conversion is called \"embedding.\"\n\nSingle letters are still fine for short loop counters like `i`. Everyone knows `i` just counts.",
+   "step": "Explain",
+   "fingerprint": "1d160d0f06f932bc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Sliding window with overlap” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"In RAG, which stands for retrieval-augmented generation, we answer questions from our own documents. Whole documents are too big to search well or to fit in a prompt. So we cut them into chunks.\"\n\n**The idea.** \"I use a sliding window. Start at character 0 and take `size` characters. Then step forward by `size - overlap`, not by `size`. Each chunk repeats the end of the one before, like roof tiles. So a sentence that crosses a boundary still appears whole in at least one chunk.\"\n\n**The trade-off.** \"More overlap means fewer broken sentences. But it also means more repeated text to store and search. I also stop once a chunk reaches the end, so no tiny extra chunk is made.\"\n\n**A follow-up an interviewer might ask:** \"What goes wrong if `overlap` is equal to or bigger than `size`?\"\n\n**Hint:** The step `size - overlap` becomes zero or negative. The window never moves forward, so the loop runs forever. A strong answer says you'd check the inputs first and reject that case with a clear error.",
+   "step": "Explain",
+   "fingerprint": "0275e85c1d115c62",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs in results.** The answer exists in your documents, but the bot says \"I don't know\" or gives half an answer. This often happens when the key sentence sits right on a chunk boundary. With no overlap, that sentence is split and neither half matches the question well.\n\n**Warning signs in your numbers.** The chunk count looks wrong. Far more chunks than expected means the step forward is too small, so the same text is repeated many times and the index grows. A tiny extra last chunk means the loop kept going after a chunk had already reached the end.\n\n**Warning signs in traces.** A trace is the step-by-step record of one request. Look at the chunks it retrieved. If they are huge, search gets vague and prompts may be cut off. If they are very short, each one lacks context.\n\n**Quickest check.** Chunk one short, known text and print the chunks. Each one should begin with the last `overlap` characters of the chunk before it. The final chunk should end exactly at the end of the text. Then compare the count with what you worked out by hand.",
+   "step": "Learn",
+   "fingerprint": "f6d42c3af99b1c89",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The simple sliding window works well for plain text. Here are three situations where it needs extra care.\n\n**1. Text with structure.** Cutting by character count can split a word, a table row, or a code block in half. Split on natural breaks like headings, paragraphs, or sentences, and only fall back to fixed sizes for very long sections.\n\n**2. Size limits of the embedding model.** An embedding model turns each chunk into a list of numbers for searching, and it reads text in **tokens** (word pieces, not characters). If a chunk has more tokens than the model allows, the extra text is quietly dropped, so measure chunk size in tokens to match the model.\n\n**3. Documents that change.** When a document is edited, its old chunks in the index go out of date. Re-chunk the changed document, replace its rows in the chunks table, and run a sync, because a `TRIGGERED` pipeline only updates when you ask it to.",
+   "step": "Learn",
+   "fingerprint": "4bb01237b33d2717",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “index” mean here?",
+   "a": "Think of the index at the back of a textbook. You don't read every page to find \"photosynthesis.\" You look it up in the index, and it points you straight to the right pages. An index is something built ahead of time so that finding things later is fast.\n\nIn this lesson, the index plays the same role for your chunks. After you cut documents into chunks, you store them in a search index. When a question comes in, the system looks there to find the most relevant chunks quickly, without reading every document from scratch.\n\nIn the lesson's example, `create_delta_sync_index` builds that index:\n\n- `source_table_name=\"main.support.doc_chunks\"` is the table holding your chunks.\n- `index_name=\"main.support.docs_index\"` is the name of the new index made from that table.\n- `embedding_source_column=\"text\"` says which column to make searchable. Each chunk's text is turned into an **embedding**: a list of numbers that captures its meaning. This lets the index find chunks by meaning, not just exact words.\n\nSo: chunks go into a table, and the index makes that table fast to search.",
+   "step": "Learn",
+   "fingerprint": "0c1724d97e2f42b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "claim_gate": {
+  "check:0:0": {
+   "q": "Why not “The gate is broken: it should have failed every…”?",
+   "a": "That option gets one thing right: something did go wrong. The customer asked about refunds and got an answer about shipping. That answer shouldn't count as a good one.\n\nBut the gate isn't broken. It did exactly its job. A claim gate asks one question per claim: \"Does the cited passage say this?\" Here, every passage really did say it, so `\"supported\"` was the correct label for each claim. If the gate had failed them, it would have been giving wrong verdicts. That would make it a worse gate, not a better one.\n\nWhat the option misses is where the problem comes from. The gate never compares a claim to the user's question. So it can't notice an off-topic answer. The real fault is earlier. Maybe retrieval (the step that finds source passages) pulled up shipping pages. Or the model answered the wrong question. You'd catch that with a separate relevance check or with evals, not by blaming the gate.\n\n\"Supported is not the same as relevant to the question\" is better because it names the gate's real limit: it checks that claims match their sources, not that they answer what was asked.",
+   "step": "Check",
+   "fingerprint": "dc4166a245f4ed3e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The answer is fine: every claim passed the gate”?",
+   "a": "\"The answer is fine: every claim passed the gate\" gets one thing right. The gate did its job. Each claim matched its cited passage, so every verdict was `supported`, and the gate would release the answer.\n\nWhat it misses is what the gate actually checks. The verifier only asks one question: \"Does this passage back up this claim?\" It never asks: \"Does this claim answer what the user asked?\" So a claim can be true and well cited, and still be off topic.\n\nHere the customer asked about refunds. The answer talks about shipping times. Every statement is backed by a source, but none of them helps. Passing the gate means the answer is grounded (backed by its sources), not that it is useful.\n\nThis is one of the limits the lesson warns about. A claim gate catches made-up or contradicted statements. It does not catch an answer that is correct about the wrong thing. You still need a separate relevance check, like an eval (a quality test on a fixed set of questions) or an LLM judge for relevance.\n\n\"Supported is not the same as relevant to the question\" is better because it names exactly what the gate can't see: whether the claims answer the question at all.",
+   "step": "Check",
+   "fingerprint": "37917d312e7e5fdb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. It runs about 205 words, just over the limit, and the advice to add a separate relevance check (an eval or an LLM judge) goes slightly beyond the lesson without contradicting it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Release all 4 claims”?",
+   "a": "\"Release all 4 claims\" gets one thing right: nothing here calls for abstaining. No claim is contradicted, and three claims are supported. So the answer is mostly solid and worth sending.\n\nWhat it misses is the rule for releasing. The gate releases only when **every** claim is supported. Here one claim is unsupported. That means the passage it cites doesn't say it.\n\nThe claim might still be true. Maybe another source backs it, or it cites the wrong passage. But the gate can't confirm it from what the app found. Releasing it would show the user a statement nobody checked, which is the kind of slip a groundedness check exists to stop.\n\nThink of the lesson's example. \"You can also get store credit instead\" cited passage [3], and [3] didn't back it. Releasing it could promise the user something the sources don't confirm.\n\n\"Revise: drop the unsupported one\" is the better answer because it keeps the three verified claims and removes only the one the gate couldn't confirm.",
+   "step": "Check",
+   "fingerprint": "6f6859497ee7712d",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It says releasing the unsupported claim would show 'a statement nobody checked', but the verifier did check it and found the passage doesn't say it; the problem is that it failed the check, not that it was never checked."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Abstain from answering”?",
+   "a": "\"Abstain\" gets one thing right. It takes the unsupported claim seriously. That claim isn't backed by its passage, so it shouldn't reach the user. Being cautious there is the correct instinct.\n\nBut abstaining throws away far more than it needs to. Abstain means replying \"I couldn't verify an answer\" and showing nothing else. The gate saves that for two cases:\n\n- **Nothing is supported.** There is no good material left to show.\n- **Any claim is contradicted.** The answer says the opposite of its own source, so the whole thing is suspect.\n\nNeither case applies here. Three claims are supported, which means their passages back them up. None are contradicted. The one bad claim is just missing support. It isn't a sign the rest are wrong.\n\nSo abstaining would hide three good, backed claims and leave the user with no help at all. The problem is one claim, so the fix should remove one claim.\n\n\"Revise: drop the unsupported one\" is better because it removes only the claim that failed and still releases the three supported claims with their citations.",
+   "step": "Check",
+   "fingerprint": "f4a288b17cd59e02",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Revise and drop just that claim”?",
+   "a": "\"Revise and drop just that claim\" gets one thing right. The \"5 days\" claim should never reach the user. Dropping it does stop that one wrong statement.\n\nWhat it misses is the kind of problem this is. The claim isn't just unsupported, where the passage is silent. It's **contradicted**: the passage says 30 days, and the answer says the opposite. That tells you something went wrong while the model was writing. Maybe it misread the source or mixed up two passages. If it got that fact backwards, you can't fully trust the claims around it, even if each one passed its own check.\n\nDropping also changes the answer. The user asked about refunds, and the refund time may be the main thing they wanted. The revised answer quietly leaves it out. It still looks complete and confident.\n\nSo a safe gate treats any contradiction as a stop sign, not a small edit.\n\n\"Abstain, since one claim is contradicted\" is better because a contradiction means the answer went against its own source, so the safe move is to release nothing rather than patch a draft you've already caught being wrong.",
+   "step": "Check",
+   "fingerprint": "8ae65823e403e47a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the point that a contradiction makes the neighbouring claims untrustworthy goes slightly beyond the lesson but is hedged and consistent with it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Release, since most are supported”?",
+   "a": "It's a fair instinct. Most of the claims really are supported, and most of the answer would be correct.\n\nBut a claim gate doesn't vote. It checks every claim on its own. **Release** is only for when *every* claim is supported. One bad claim is enough to block it.\n\nAnd this claim isn't just missing support. It's **contradicted**: the passage says 30 days, and the answer says 5. That's the opposite of the source. If you release it, the user reads a wrong refund time printed next to a citation. The citation makes the error look trustworthy. Someone waiting on money will plan around that number.\n\nA contradiction is also a warning sign about the whole answer. The model misread its own source at least once, so the other claims deserve less trust too.\n\nSo the share of supported claims doesn't matter here. One contradicted claim is enough to stop the answer.\n\n**\"Abstain, since one claim is contradicted\" is better because a safe gate treats any contradiction as a reason to stop, so the user never sees an answer that clashes with its own evidence.**",
+   "step": "Check",
+   "fingerprint": "15869cabbb7f209d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the 'other claims deserve less trust' point goes slightly beyond the lesson but does not contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Keep supported claims, then decide” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* Evals check quality before release, on a fixed set of questions. They can't catch a bad answer to a real user's question. A model can still state things its sources never said.\n\n*The idea.* So I add a claim gate that runs at request time, before the user sees the answer. The model writes its answer as short claims, each citing a source passage. A verifier, often an LLM judge, labels each claim supported, unsupported, or contradicted. I keep the supported claims, then decide. Release if all pass. Revise by dropping the rest. Abstain if nothing passes or anything contradicts its source.\n\n*The trade-off.* Dropping claims isn't free. Removing one can change the meaning, like losing a \"do not.\" And a true claim with the wrong citation gets dropped anyway.\n\n**A likely follow-up**\n\n\"How do you know the gate itself is working?\"\n\nHint: the verifier is a judge too, so compare its labels with human labels. Then track how often answers get revised or abstained (that is, \"I couldn't verify an answer\"). A sudden jump points to a problem with search results or the model.",
+   "step": "Explain",
+   "fingerprint": "94f841ee15ae0528",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that a jump in revise/abstain rates points to search or model problems goes slightly beyond the lesson but doesn't contradict it."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the gate was skipped or is too lenient**\n\n- Your traces show `gate_action` as \"release\" on almost every answer, yet users still report claims their sources never said. Either the gate isn't running, or the verifier marks nearly everything supported.\n- An answer with a contradicted claim shows \"revise\" instead of \"abstain\". A safe gate abstains on any contradiction.\n\n**Signs of the known limits**\n\n- A revised answer now means something different. For example, dropping a claim removed a \"do not\".\n- A true claim was dropped because it cited the wrong passage.\n- Every claim is supported, but the answer doesn't address the question. Supported is not the same as relevant.\n\n**Watch the trend**\n\nThe share of answers revised or abstained is your monitoring signal. If it changes sharply, read some traces to find out why.\n\n**Quickest check**\n\nFilter your MLflow traces by the `gate_action` tag. Pull a small sample of each action. Have a person label each claim, then compare those labels with the verifier's. The verifier is a judge too, so its verdicts need checking like any judge's. Big disagreement means the gate can't be trusted yet.",
+   "step": "Learn",
+   "fingerprint": "3872af6330acfe88",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "A claim gate works well for short, factual answers. Here are three places where it needs extra care.\n\n**A claim needs two passages at once.** Say passage [1] gives the price and passage [4] gives the discount, and the claim states the final cost. Checked against one passage, it looks unsupported and gets dropped. Let a claim cite several passages, and have the verifier read them all together.\n\n**The sources go out of date.** The gate only asks \"does the passage say this?\" It never asks \"is this still true?\" If your documents change and the search index (the stored copy the app searches) isn't refreshed, stale claims pass as supported. Rebuild the index on a schedule, store a date with each passage, and watch for old ones being cited.\n\n**Traffic grows large.** An LLM judge on every claim of every answer adds delay and cost. Switch to a small NLI model, which is faster and cheaper. Check claims side by side instead of one after another. Keep the LLM judge for a sample of answers, and compare its labels with human labels.",
+   "step": "Learn",
+   "fingerprint": "495f3d5ca2771851",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “groundedness check” mean here?",
+   "a": "A **groundedness check** asks one question about each part of an answer: is it backed by the source passages the app found? \"Grounded\" just means backed up by those passages. This lesson calls the check a **claim gate**.\n\nThink of a fact-checker at a newspaper. Before a story prints, they hold each sentence next to the notes it came from. If the notes say it, the sentence stays. If they don't, it gets cut. If nothing checks out, the story doesn't run.\n\nHow is this different from evals? Evals test quality before release, on a fixed set of questions. A groundedness check runs on every real answer, while the app is live, before the user sees it.\n\nIn the lesson's example, the answer is split into three claims, and each claim cites a passage:\n\n- \"Refunds go to your original payment method\" matches passage `[2]`, so it is **supported**.\n- \"They arrive within 5 to 7 business days\" also matches passage `[2]`, so it is **supported**.\n- \"You can also get store credit instead\" isn't backed by passage `[3]`, so it is **unsupported**.\n\nThe gate then **revises**. It drops the third claim and releases the first two with their citations.",
+   "step": "Learn",
+   "fingerprint": "2cf7b293c2ecd395",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No substantive problems. The definition comes before the everyday comparison, which is a minor ordering slip, and the answer runs close to the 200-word limit."
+   }
+  }
+ },
+ "dedupe_chunks": {
+  "check:0:0": {
+   "q": "Why not “Retrieve 50 chunks instead”?",
+   "a": "Retrieving 50 chunks does get one thing right. With more results, the useful chunks that were pushed down might finally show up. So it can hide the problem for a while.\n\nBut it treats the symptom, not the cause. The five copies of the disclaimer are still in your index. You still paid to embed every one of them. An embedding is the list of numbers used for search, and each one costs money.\n\nIt also makes things worse further along. Those 50 chunks usually get passed to the language model as context, meaning the text it reads before answering. Now that context is padded with repeats. That means more tokens to pay for, which are the small pieces of text the model is billed by. It also adds more noise for the model to wade through.\n\nAnd it doesn't scale. If the disclaimer appears on 60 pages, even 50 results could be all disclaimer.\n\n\"Remove duplicate chunks before indexing\" is the best fix because it removes the repeats once, at the source, so every search and every answer benefits for free.",
+   "step": "Check",
+   "fingerprint": "682e5f69d8a4d3ca",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Use a bigger model”?",
+   "a": "A bigger model sounds like a fix, and it isn't a silly idea. A larger language model can write a smoother answer from whatever it's given. That part is real.\n\nBut the problem here happens earlier. Before the model writes anything, the search step picks the top 5 chunks. All 5 slots are the same disclaimer. So the useful chunks never reach the model at all.\n\nA bigger model can't use text it never sees. It would just read the same disclaimer five times, a bit more cleverly. You'd also pay more for every question, and the waste would still be there.\n\nThe duplicates also cost you at indexing time. Each copy gets its own embedding (the list of numbers used for search), and you pay for each one. A bigger model doesn't touch that cost.\n\n\"Remove duplicate chunks before indexing\" is the better fix because it removes the cause: once each disclaimer is stored only once, those 5 slots open up for chunks that actually help answer the question.",
+   "step": "Check",
+   "fingerprint": "e9183f593bdf27f7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The second copy is dropped”?",
+   "a": "\"The second copy is dropped\" describes what you *want* a dedupe to do. It would be right if the code cleaned the text into a key first. But the question says the code compares chunks **exactly as written**, and that changes the result.\n\nWhen text is compared exactly, every character counts. A capital `A` and a lowercase `a` are different characters. Two spaces are not the same as one space. So the computer sees two different strings, even though a person sees the same footer.\n\n```python\n\"All rights reserved.\" == \"ALL RIGHTS  reserved.\"\n# False\n```\n\nBecause they don't match, neither one is treated as a repeat. Both get kept and both get embedded. You pay twice, and the extra copy can push a useful chunk out of the top results.\n\nThat is the whole reason for the lesson's step: lowercase the text and squeeze extra spaces and line breaks into single spaces to make a **key**. Then compare keys, not raw text.\n\n\"Both are kept, so a copy slips in\" is better because it shows what exact comparison really does with case and spacing differences, which is the gap the normalised key fixes.",
+   "step": "Check",
+   "fingerprint": "5aeef2d90a1d46fd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Both copies are dropped”?",
+   "a": "\"Both copies are dropped\" gets one thing right: this dedupe does go wrong. But it picks the wrong mistake.\n\nA dedupe (short for \"de-duplicate\", meaning removing repeats) only skips a chunk when it matches one it has already seen. This one compares text exactly as written. To an exact comparison, `\"All Rights Reserved.\"` and `\"all  rights reserved.\"` are different. The capital letters and the extra space don't match.\n\nSo the first footer looks new, and it is kept. The second footer also looks new, so it is kept too. Nothing is dropped. An exact comparison never throws away a chunk that looks different. It can only go wrong by keeping too much.\n\nThat is why the lesson first makes a cleaned-up version of each chunk. It is lowercased, and runs of spaces and line breaks are squeezed to one space. When you compare those cleaned versions, the two footers match.\n\n\"Both are kept, so a copy slips in\" is better because it names what really happens: the repeat gets through, and you pay to turn it into search numbers you didn't need.",
+   "step": "Check",
+   "fingerprint": "1bf9678fa3c801a4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Nothing, search skips repeated text”?",
+   "a": "It's a natural guess. It feels like a smart search tool should notice repeats and ignore them. But it doesn't, and the cost starts before any search happens.\n\n**Cost before search.** Each chunk is turned into an embedding (a list of numbers that captures its meaning). You pay for every embedding you make. A footer copied onto every page means hundreds of identical embeddings, each one billed, none adding anything new.\n\n**Cost during search.** Search compares the question to each stored chunk on its own. It has no idea two chunks say the same thing. Identical text gets identical scores. So if the footer matches a question even a little, all its copies score the same and can crowd the top results. Search only returns a few results, often called the \"top k\". Those slots get used up by the same legal text, and the chunks that actually answer the question get pushed out.\n\n\"Money for embeddings and room in results\" is better because it names both real costs: you pay to embed every copy, and the copies take slots that useful chunks should have.",
+   "step": "Check",
+   "fingerprint": "74dd91017f43d137",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Only a little extra disk space”?",
+   "a": "\"Only a little extra disk space\" is not wrong. Copies do take up storage. But storage is cheap, so that is the smallest cost. The answer misses the two costs that actually hurt.\n\n**1. You pay to embed every copy.** Each chunk is sent to an embedding model, which turns text into a list of numbers used for search. You are billed per chunk. If the same footer appears on every page, you pay to embed identical text again and again. That gives you no new information.\n\n**2. Copies crowd the search results.** When someone asks a question, search returns only the top few closest chunks, often called the \"top k\". If the footer matches the question even a little, several identical copies can fill those slots. Useful chunks get pushed out. The answer then gets built from legal boilerplate instead of real content.\n\nSo the real damage is wasted money and worse answers, not wasted disk.\n\n\"Money for embeddings and room in results\" is the better answer because it names both real costs: paying repeatedly for the same text, and losing search slots that useful chunks should have filled.",
+   "step": "Check",
+   "fingerprint": "2c3055c6d1c9afc5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that storage is cheap and the smallest cost comes from outside the lesson, but it does not contradict the lesson, so I let it pass."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Don't change the input” matter?",
+   "a": "In Python, passing a list to a function does not copy it. The function and the caller both point at the same list. So if the function changes that list \"in place\" (edits the original rather than a copy), the caller's list changes too, often without them noticing.\n\nThat causes real bugs. The caller may still need the original list. They might want to log how many chunks came in, compare before and after, or line chunks up with page numbers by position. If items silently vanish, every position after the first removal shifts. Chunk 5 is now chunk 4, so it gets linked to the wrong page.\n\nHere is a different small function that makes the mistake:\n\n```python\ndef drop_blanks(items):\n    items.remove(\"\")   # edits the caller's list\n    return items\n\npages = [\"Intro\", \"\", \"Pricing\"]\nclean = drop_blanks(pages)\nprint(pages)  # ['Intro', 'Pricing'], the original is gone\n```\n\nThe safe habit is to build a new list and return it. The caller's list stays exactly as they gave it, and they can decide what to do with each version.",
+   "step": "Explain",
+   "fingerprint": "35b2e47b65e93577",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Clean key, keep the first” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"Real document sets repeat themselves: footers, disclaimers, copied pages. Every chunk becomes an embedding, and each one costs money. Duplicates waste that spend. They also crowd useful chunks out of the top search results.\"\n\n**The idea.** \"I make a clean key for each chunk. It's lowercase, with runs of spaces and line breaks squeezed into single spaces. I keep the first chunk for each key and drop any later ones. The kept chunk stays exactly as written. The key is only used for comparing.\"\n\n**The trade-off.** \"This only catches chunks that match exactly after cleaning. A footer with a different date or page number slips through. If I clean too hard, say by stripping numbers, I might merge chunks that really are different.\"\n\n**Likely follow-up:** \"How would you catch near-duplicates?\"\n\nHint: say you'd compare chunks by how similar they are, not by exact match. For example, compare their embeddings. Treat any pair above a cut-off score as a repeat. Then add that this takes more work, so you'd run the cheap exact-key check first.",
+   "step": "Explain",
+   "fingerprint": "55a7ac24ed58dc47",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Search results repeat themselves.** You ask a question and the top five results include the same disclaimer or footer three times. Those copies are taking spots that useful chunks should have.\n- **Answers get vaguer.** The agent quotes \"All rights reserved\" or legal boilerplate (standard text pasted onto every page) instead of the content that actually answers the question.\n- **Embedding costs look too high.** The number of embeddings you paid for is much bigger than the number of truly different passages you expected.\n- **The cleaned table is nearly the same size as the original.** Real documents almost always contain some repeats. If almost nothing was removed, the key probably isn't being cleaned. For example, case or line breaks might still make copies look different.\n- **Kept text looks changed.** If stored chunks are all lowercase with squashed spacing, the key was saved in place of the original text.\n\n**Quickest check**\n\nCount two things: the total number of chunks, and the number of different cleaned keys. If the counts differ, duplicates are still there. Then search for a common footer phrase. It should appear only once.",
+   "step": "Learn",
+   "fingerprint": "a5d29860198e9a4e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "This rule works well for exact repeats. Here are three places where it needs extra care.\n\n**Near-duplicates.** Two footers that differ only by a page number or a typo get different keys, so both are kept. If that matters, add fuzzy matching. That means treating chunks as copies when they are *very similar*, for example when most of their words overlap or their embeddings are close.\n\n**Documents that change over time.** An updated policy has different text, so it gets a new key. Nothing is dropped, and the old and new versions both stay in the index. Search may then return outdated answers. Removing duplicates can't fix this. Instead, record which source document each chunk came from. When a document is updated, delete its old chunks before adding the new ones.\n\n**Very large or ongoing data.** The set of seen keys lives in memory, so it can grow too big. It is also lost between runs when new chunks arrive in batches. Store the keys in a table, perhaps as a hash (a short fingerprint of the text). Then check new chunks against that table. The Databricks SQL version handles this kind of scale.",
+   "step": "Learn",
+   "fingerprint": "d26a208ff638e3f4",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The closing claim that the Databricks SQL version 'handles this kind of scale' is not in the lesson and is misleading, because that query rebuilds the table in one pass and does not remember keys between batches."
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Imagine a company's support site with 400 help pages. Every page ends with the same legal footer. And the \"Reset your password\" guide was copied into three different manuals.\n\nWithout cleaning, two things go wrong.\n\n**You pay for repeats.** Each chunk gets turned into an embedding, a list of numbers used for search. That footer gets embedded 400 times. You pay 400 times for one sentence that answers nothing.\n\n**Useful chunks get crowded out.** Search usually returns only the top few matches, say five. A user asks, \"I reset my password but I'm still locked out.\" The three identical copies of the reset guide take three of those five slots. The chunk that explains lockouts never makes it in. The AI then gives a weaker answer.\n\nWhy build a **key** instead of comparing the raw text? Copies are rarely perfectly identical. One might say `ALL RIGHTS RESERVED.` and another `All rights\\nreserved.` A key is a cleaned-up version: lowercase, with extra spaces and line breaks squeezed down. It lets you spot those as the same thing. You keep the first one and skip the rest.",
+   "step": "Learn",
+   "fingerprint": "8ae9396f08a95b11",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "ndcg_at_k": {
+  "check:0:0": {
+   "q": "Why not “Recall@5”?",
+   "a": "`Recall@5` is a fair first thought. It does check something useful: did the best document make it into the top 5 at all? For both rerankers, the answer is yes. That's exactly the problem.\n\n`Recall@5` only asks \"in or out?\" It doesn't care where inside the top 5 a document sits. Position 1 and position 4 look the same to it. So reranker A and reranker B get the same score, even though B is clearly better. Since the question asks which metric *shows the difference*, `Recall@5` can't be the answer. By design, it can't see one.\n\nIt also treats every relevant document as equally good. A document that fully answers the question counts the same as one that's only loosely related.\n\nHere is how nDCG sees it. Say the best document has grade 3. At position 1 it counts in full: 3.00 points. At position 4 it counts about 43%: roughly 1.29 points. That gap is the difference you're looking for.\n\n**The right answer is `nDCG@5`, because it gives each document a grade and counts it less the lower it appears, so putting the best document first scores higher.**",
+   "step": "Check",
+   "fingerprint": "1bfff8d49734c3fb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Neither, they are equally good”?",
+   "a": "\"Neither, they are equally good\" gets one thing right. By recall@5, they really are tied. Recall@5 only asks whether the right documents made the top 5. Both rerankers (models that reorder search results) got the best document into the top 5, so they score the same.\n\nWhat it misses is order. Recall@5 can't see where a document sits inside the top 5. A tie on one metric doesn't mean the two are equally good. Someone reading from the top sees B's best document first. With A, they have to dig down to fourth place.\n\nnDCG@5 catches this. It gives each document a relevance grade, meaning a score for how useful it is. Then it counts that grade less the lower the document sits. Say the best document has grade 3. At position 1 it counts in full: 3.00 points. At position 4 it counts about 43%: roughly 1.29 points. So B gets a higher nDCG@5 than A, even with identical recall@5.\n\nnDCG@5 is the better answer because it checks both whether good documents appear and how high they rank, so it shows that B orders results better.",
+   "step": "Check",
+   "fingerprint": "e2fafca8821a499a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Use recall@5 in place of grades”?",
+   "a": "It's a fair instinct. Recall@5 is a real metric, and it's simpler than nDCG. But it doesn't fit this job, for three reasons.\n\n**It can't see order.** A reranker is a model that takes search results and shuffles them into a better order. Two rerankers often work on the same candidates, so they may put the very same 5 documents in their top 5, just arranged differently. Recall@5 would give both the same score. That's exactly the difference you wanted to measure.\n\n**It treats every relevant document as equally good.** A document that fully answers the question counts the same as one that's only loosely related. nDCG rewards putting the best ones first.\n\n**It still needs labels.** Recall@5 has to know which documents are relevant. So you'd be doing labeling work anyway, just with less detail than grades.\n\nSo \"Use recall@5 in place of grades\" is not the right answer. The right one is \"Have people or an LLM judge grade a sample.\" It's better because it gives you the graded relevance that nDCG@5 needs, at a manageable cost, so order differences between the rerankers actually show up.",
+   "step": "Check",
+   "fingerprint": "8902f4d332e0e802",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Give every document a grade of 3”?",
+   "a": "Giving every document a grade of 3 does one thing right: it fills in the missing grades, so the nDCG math runs without errors.\n\nThe trouble is what happens next. nDCG rewards putting better documents higher. If every document has the same grade, no order is better than any other. Your list's DCG always equals the ideal DCG, which is the score of the best possible order. So nDCG@5 comes out as 1.0 for every question, no matter how the documents are arranged.\n\nThat means both rerankers score a perfect 1.0. You learn nothing about which one orders results better. The metric only works when grades differ, so some documents should rank above others.\n\nThere's a second problem too. A grade is supposed to say how well a document answers the question. Writing 3 everywhere is a made-up label that says nothing about the real documents.\n\n**Having people or an LLM judge grade a sample is better because it gives each document an honest, varied grade, so nDCG can actually tell a good order from a bad one.**",
+   "step": "Check",
+   "fingerprint": "87e420f15c506aff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “MRR, as it looks at the first hit”?",
+   "a": "\"MRR, as it looks at the first hit\" is half right. MRR does care about order. It finds the first relevant document and scores it as 1 divided by its position. First place gives 1, second place gives 0.5, third gives about 0.33. Then it averages that over all your questions. That's the \"mean\" in mean reciprocal rank.\n\nThat works well when users stop at the first good result, like a search box where people click once and leave.\n\nBut in this question, users read the whole top 5. MRR misses two things there:\n\n- **Everything after the first hit.** Picture two rankings that both put a relevant document at position 1. One has junk in positions 2 to 5. The other has four helpful documents there. MRR gives both the same score.\n- **How good each document is.** MRR only sees \"relevant or not.\" It can't tell a document that answers the question (grade 3) from one that's merely related (grade 1).\n\nnDCG fits better because it counts every graded document in the top 5, weighting each by its grade and by how high it sits.",
+   "step": "Check",
+   "fingerprint": "bff025e98098d013",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Either, they measure the same thing”?",
+   "a": "That option gets one thing right. MRR and nDCG are both **ranking metrics**: they care about order and reward putting good documents near the top. Recall@k does not.\n\nBut they don't measure the same thing. MRR (mean reciprocal rank) looks only at where the **first** relevant document sits. If it's at position 1, the question scores 1. At position 2, it scores 1/2, and so on. Everything after that first hit is ignored.\n\nHere's why that matters when users read the whole top 5. Imagine two result lists that both put a relevant document first:\n\n- List A: the next four are helpful.\n- List B: the next four are useless.\n\nMRR gives both lists the same perfect score. Your users would clearly prefer List A, but MRR can't see the difference.\n\nMRR also treats relevance as yes or no. nDCG uses grades, so it can tell \"related\" (grade 1) apart from \"answers it\" (grade 3).\n\n\"nDCG, as it counts every graded doc\" is better because it scores every position in the top 5 by how good each document is, which matches how your users actually read.",
+   "step": "Check",
+   "fingerprint": "276068294a8a677a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Compare to the best order” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Recall@k only checks whether the right documents made the top k. It ignores their order. That's a problem when comparing rerankers, which are models that reorder search results, because order is the whole point.\"\n\n*The idea:* \"nDCG gives each document a relevance grade, like 0 to 3. A grade counts less the lower it appears. Adding those up gives DCG. Then I compare to the best order: I divide by the DCG you'd get if the best documents came first. So 1.0 means perfectly ordered.\"\n\n*A trade-off:* \"It needs graded labels from people or an LLM judge. That costs time, so you usually grade a sample of questions, not all of them.\"\n\n**A follow-up an interviewer might ask**\n\n\"Why divide by the ideal DCG at all? Why not just report DCG?\"\n\n*Hint at a strong answer:* Raw DCG depends on the question. A question with many highly graded documents can score higher just because it has more good material, even if the ranking is worse. Dividing by the best possible score puts every question on the same 0-to-1 scale. That makes it fair to average across questions and to compare rerankers.",
+   "step": "Explain",
+   "fingerprint": "3eea448de07c1295",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that nDCG was skipped or done wrong**\n\n- **Rerankers all look the same.** If you only track recall@k, two rerankers can score identically. Yet users clearly prefer one, because it puts the best answer first. Recall can't see order, so it hides the difference.\n- **A score above 1.0.** nDCG can never go past 1. If it does, the \"best possible\" list was built wrong, so you're dividing by too small a number.\n- **Everything scores 1.0 or very close.** This often means every document got the same grade. Then any order looks perfect. It can also mean the best list was built from your own results instead of from all the graded documents.\n- **Numbers that jump around randomly.** With `ndcg_score`, the true grades and the retriever's scores must be in the same document order. If they're misaligned, the metric measures noise.\n- **Good offline, poor in use.** You graded only a handful of questions, so the average isn't trustworthy.\n\n**Quickest check**\n\nPick one question and work it out by hand, like the lesson's table. Compare that with what your code reports. Then reverse the order of the results. A wrong order should score lower. If the score doesn't change, order isn't being counted.",
+   "step": "Learn",
+   "fingerprint": "30cc4cd86d53eaec",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes, with minor quibbles: the answer runs to about 200 words, the 'handful of questions' sign goes beyond the lesson, and the reverse-the-order check only works if the original order was good."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. New documents with no grade.** Any document nobody graded counts as 0. So a new retriever that finds good, ungraded documents looks worse than it really is. Before comparing two systems, grade the top `k` results from both.\n\n**2. Questions with nothing relevant.** If every grade is 0, the ideal DCG (the score of the best possible order) is 0, and the score falls back to 0.0. Averaging those zeros pulls everything down, yet no ordering could have done better. Count these questions separately, or leave them out of the average and say so.\n\n**3. Grades that drift or go stale.** An LLM judge (a model asked to grade documents) can be inconsistent or biased. Also, as your documents change over time, old grades stop matching reality. Check the judge against human grades on a small sample. Re-grade when the content changes a lot.\n\nA related point: in a RAG app, the language model often reads all top `k` documents at once. Then order matters less, so also track recall@k.",
+   "step": "Learn",
+   "fingerprint": "db7450deba667aaf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: the third point runs to four sentences (the brief says two or three), and 'RAG' is not explained."
+   }
+  },
+  "learn:term": {
+   "q": "What does “nDCG@k” mean here?",
+   "a": "**nDCG@k** is a score for how well a search put the best documents near the top. It only looks at the first `k` results.\n\n**An everyday comparison.** A friend gives you a list of five restaurants. You read from the top and might stop after two. If their best pick sits at number 4, the list isn't very useful, even though it's in there. nDCG rewards lists that put the best picks first.\n\n**What the name means:**\n- **DCG** (discounted cumulative gain): add up each document's grade. Lower positions count for less.\n- **n** (normalized): divide by the best possible score, so the result lands between 0 and 1.\n- **@k**: only the top `k` results count.\n\n**In the lesson's example** (`k` = 3), the most useful document, `d1` (grade 3), sits at position 2. So it only counts 63%, giving 1.89 points. A grade-1 document, `d3`, holds the top spot. The total DCG is 2.89.\n\nThe ideal order would put the 3 first, then the 1, then the 0. That scores 3.63. So 2.89 divided by 3.63 is about 0.80.\n\nThe right documents were found, but not in the best order.",
+   "step": "Learn",
+   "fingerprint": "c4c71b8705e67b4f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "pick_config": {
+  "check:0:0": {
+   "q": "Why not “The best-quality config anyway”?",
+   "a": "It's a fair instinct. Higher quality really is better, and 0.85 beats every other row in the example. If speed didn't matter, it would be the right pick.\n\nBut speed does matter here. The product needs answers in under 1.5 seconds. That limit is the **latency budget**: the slowest response the product can accept.\n\nA p95 of 2.6 seconds means 5 out of every 100 requests take 2.6 seconds or longer. That's well past the limit. Users will feel it as lag, and the product requirement is simply not met. A slightly better answer doesn't help if it arrives too late.\n\nThere's also a process point. You wrote the rule down *before* the runs: best quality within the budget. Shipping the fastest-failing winner anyway means ignoring your own rule after seeing the results. That makes experiments easy to bend toward whatever looks nicest.\n\n\"The best config within 1.5 seconds\" is better because it gives you the highest quality that the product can actually use. In the example, that's chunk size 512 with `k` = 5.",
+   "step": "Check",
+   "fingerprint": "5c0028272ad565cd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: \"fastest-failing winner\" is a confusing phrase, and \"wrote the rule down before the runs\" goes slightly beyond what the lesson states."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The fastest config”?",
+   "a": "\"The fastest config\" gets one thing right. It takes the speed limit seriously. You can't ship the 2.6-second config when the product needs under 1.5 seconds.\n\nBut it misses the point of the budget. The 1.5-second limit is the slowest you can accept. It is not a goal to beat by as much as possible. Any config under it is fast enough, so among those, quality should decide.\n\nLook at the lesson's example. The fastest row is `512, 3` at 1200 ms, with quality 0.78. But `512, 5` runs at 1400 ms, still inside the budget, and scores 0.82. Choosing \"fastest\" throws away better answers for speed nobody asked for.\n\nAlso, being fastest doesn't mean being fast enough. The fastest config could still take longer than 1.5 seconds. Then nothing fits, and the honest result is \"no config works yet,\" not \"ship the fastest one.\"\n\n\"The best config within 1.5 seconds\" is better because it first drops every config that breaks the limit, then picks the highest answer quality from what's left.",
+   "step": "Check",
+   "fingerprint": "0628f5c5d851b196",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Whether quality went up at all”?",
+   "a": "\"Whether quality went up at all\" is the one thing you *can* tell. The question already says quality went up. You ran the eval, the score rose, and you saw it. So that part is not in doubt.\n\nThe problem is the cause. You changed two settings at once: the chunk size and the embedding model (the model that turns text into numbers so similar text can be found). Now the gain is tangled together. Maybe the new chunk size did all the work. Maybe the new embedding model did. Maybe one helped and the other actually hurt, but the good one hid it. One run can't pull these apart.\n\nThat's why the lesson says to change one or two settings while holding everything else fixed. If you vary two, try every combination (a grid search) so each change gets its own runs to compare.\n\n\"Which of the two changes helped\" is the better answer because it names exactly what a single run with two changes hides: which change caused the improvement.",
+   "step": "Check",
+   "fingerprint": "16250ea7173a3291",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “How long the run took”?",
+   "a": "\"How long the run took\" is something you *can* tell. You timed the run. Latency is one of the numbers the lesson asks you to log for every run. So that information isn't lost.\n\nWhat changing two things together hides is the cause. Quality went up, but you changed the chunk size (how big each piece of text is) and the embedding model (the model that turns text into numbers for searching) in the same run. Either one could have helped. Or one helped a lot and the other hurt a little. One run can't separate them. The same blur would hit the timing too: even though you know how long the run took, you couldn't say which change made it faster or slower.\n\nThat's why the lesson says to vary just one or two settings. If you vary two, you try every combination, which is called a grid search. Then you can compare runs and see what each setting did on its own.\n\n\"Which of the two changes helped\" is the better answer because it names exactly what this one run can't show you: which change caused the gain.",
+   "step": "Check",
+   "fingerprint": "c70760dfe4bbc1a2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Yes, a newer judge is fairer”?",
+   "a": "\"Yes, a newer judge is fairer\" sounds reasonable. It even gets one thing right. A newer judge might really be better. The judge is the model that reads each answer and gives it a score, so a smarter judge could give more accurate scores.\n\nBut the question isn't whether the judge is good. It's whether you can **compare** run A with run B. Between those runs, two things changed: the RAG settings and the judge. So when B scores higher, you can't tell why. Maybe the new settings helped. Maybe the new judge is just more generous. Maybe both.\n\nThink of two teachers grading two essays. One is a tough grader and one is easy. A higher grade then tells you little about which essay is better.\n\nThat's why the lesson says to hold the eval set, the judge and the answering model fixed. Change only the settings you're testing.\n\n\"No, the judge must stay fixed\" is better because when only one thing changes between runs, any change in score can be traced back to that one thing.",
+   "step": "Check",
+   "fingerprint": "071b7746031dd481",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes, if the eval set is the same”?",
+   "a": "\"Yes, if the eval set is the same\" gets one thing right. A fixed eval set (the same list of test questions) is needed for a fair comparison. If the questions changed, the scores would mean different things.\n\nBut it misses the judge. The judge is the model that reads each answer and gives it a score. Swap the judge and you have changed the ruler, not just the thing being measured. A new judge might simply be more generous. It might care about different things.\n\nSo between run A and run B, two things changed at once: your RAG settings and the judge. Run B scores higher, but you can't tell why. Maybe the new chunk size helped. Maybe the new judge is just kinder. The two effects are tangled together.\n\nThat's why the lesson says to hold the eval set, the judge *and* the answering model fixed. Change only the settings you're testing, so any difference in score comes from them.\n\nIf you want to rescue the comparison, rescore both runs with the same judge.\n\n\"No, the judge must stay fixed\" is better because a fair comparison needs the same eval set *and* the same judge, so any score change comes only from your settings.",
+   "step": "Check",
+   "fingerprint": "2b7461e6b9cb975d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it runs slightly long at about 200 words, and the rescoring tip goes beyond the lesson without contradicting it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Skip the slow ones, keep the best” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* \"I ran a grid search over chunk size and `k`, trying every combination. Now I have many configs, and I need to pick one fairly, not by gut feel.\"\n\n*The idea:* \"Before I look at results, I write down a rule: best answer quality within the latency budget. Then I go through the results once. Any config slower than the budget is out. Of the rest, I keep the one with the highest quality. It's like holding the tallest card you've seen and swapping when a taller one shows up.\"\n\n*A trade-off:* \"Small quality gaps can be noise, meaning random wobble between runs. If two configs are nearly tied, I'd lean toward the cheaper or faster one. Or I'd rerun them to check the gap is real.\"\n\n**A likely follow-up**\n\n\"What if nothing fits the budget?\"\n\n*Hint:* Say you'd report that plainly instead of quietly picking a slow config. Then offer next steps. You could agree on a looser budget with the product owner. Or you could try settings that cut latency, like a smaller `k` or no reranker. A reranker is an extra step that re-sorts the retrieved chunks, and it adds time.",
+   "step": "Explain",
+   "fingerprint": "a182c138d658e21a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The reranker-adds-time remark goes slightly beyond the lesson but is accurate, and the length is right at about 200 words."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs:**\n\n- Two runs differ in more settings than you meant to change. You can't tell which change moved the score.\n- Runs with the same settings get different scores. Often the eval set (your fixed list of test questions), the judge or the answering model changed.\n- The winner scores well in testing but feels slow in real use. Someone picked top quality and ignored the latency budget. Check its p95 latency: 95 out of 100 requests finish faster than this number.\n- Some runs have no latency or cost logged, so your rule can't be applied to them.\n- The grid has gaps, such as `chunk_size` 1024 with `k` 3 but never `k` 5. You can't see what each setting did.\n\n**Quickest check:** open the runs side by side in MLflow. Look at their params (the settings each run logged, like `chunk_size` and `k`). Only your chosen settings should differ. Then apply your rule by hand. Cross out every run over budget. Confirm the chosen config (one combination of settings) is the best of what's left.",
+   "step": "Learn",
+   "fingerprint": "d25d3bde5f1257c3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Too many settings to try every combination.**\nTwo settings with three values each is 9 runs. Five settings with three values each is 243 runs, which costs a lot of time and money. Fix the settings you trust, tune the one or two that matter most, then tune the next pair starting from the winner.\n\n**2. A small eval set.**\nWith only 20 questions, a gap like 0.82 versus 0.83 may just be noise, meaning random wobble from which questions happened to be included. Add more questions or repeat each run a few times. Treat close scores as ties and pick the faster or cheaper config.\n\n**3. Your documents or users change over time.**\nThe best chunk size depends on your documents. If new kinds of files arrive, or people start asking different questions, last month's winner may slip. Refresh the eval set with recent real questions and rerun the experiment on a schedule. Also check the p95 latency in production, because real traffic is often slower than your test runs.",
+   "step": "Learn",
+   "fingerprint": "09a2baf2de4c81e5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The third point runs to four sentences against the 'two or three' limit, and the claim that real traffic is slower than test runs goes beyond the lesson, though it is generally true."
+   }
+  },
+  "learn:term": {
+   "q": "How is “chunk size” different from “overlap”?",
+   "a": "Both settings control how a document gets cut into pieces, called chunks, before it goes into the search index.\n\n**Chunk size** is how big each piece is. It is usually counted in tokens, the small word pieces a model reads. A chunk size of `512` means each chunk holds about 512 tokens.\n\n**Overlap** is how much each chunk repeats from the end of the one before it. With size `512` and overlap `50`, the last 50 tokens of chunk 1 are also the first 50 tokens of chunk 2.\n\nThink of copying a long recipe onto index cards. Chunk size is how much text fits on each card. Overlap is repeating the last line or two of one card at the top of the next. A step that lands on a cut is then less likely to be split in half. It can still happen, though.\n\nThey work together. Chunk size sets how much context each piece carries. Overlap softens the edges between pieces, but it adds more chunks to store and search.\n\nThe lesson's example table varies chunk size (`512` vs `1024`) along with `k`. Overlap is a separate setting you could test the same way.",
+   "step": "Learn",
+   "fingerprint": "6992416c99377b99",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "pick_search_service": {
+  "check:0:0": {
+   "q": "Why not “Databricks Vector Search”?",
+   "a": "`Databricks Vector Search` isn't a wrong answer. It can search by keyword, by meaning, or both, so it could find answers in these documents. It just isn't the natural fit here.\n\nIt shines when two things are true: the data already sits in tables inside Databricks, and the agent runs on Databricks too. Neither is true in this question.\n\nThe documents live in SharePoint. To use `Databricks Vector Search`, you would first copy them into a Databricks table. You would also cut them into chunks and keep that copy up to date yourself. That's extra work to build and maintain.\n\nThe app runs in Azure AI Foundry, outside Databricks. So Databricks' built-in access rules and its record of which table fed which index don't help this app much. Every search would also have to cross from one platform to the other.\n\n`Azure AI Search` fits better. Its indexers are jobs that pull files in on a schedule. They can read straight from SharePoint, chunk the files and make the embeddings (number lists that capture meaning) for you. And it plugs directly into Azure AI Foundry apps.",
+   "step": "Check",
+   "fingerprint": "25fe7311089a785e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. The claims that Databricks needs a manual copy and chunking step, and that searches would cross platforms, are inferences the lesson never states, but they fit its framing."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Neither can do this”?",
+   "a": "\"Neither can do this\" gets one small thing right. The lesson says neither service is \"the right one\" in general. So it is fair to be wary of calling one tool the winner.\n\nBut this option misses two things.\n\nFirst, the question isn't asking whether the job is possible. Both services can do vector, keyword and hybrid search, so either one *could* handle these policy documents. The question asks which one fits **more naturally**.\n\nSecond, \"neither\" ignores the clues in the question. The lesson says the choice follows **where the data lives** and **where the app runs**. Here both clues point the same way:\n\n- The documents sit in SharePoint, which is a Microsoft source.\n- The chat app runs in Azure AI Foundry, which is outside Databricks.\n\nNeither clue is about Delta tables in Unity Catalog or an agent on Databricks. So Databricks Vector Search gets no points here.\n\n**Why \"Azure AI Search\" is better:** its indexers (tools that pull files in on a schedule, chunk them and make embeddings) can read from SharePoint, and it plugs straight into an Azure AI Foundry app.",
+   "step": "Check",
+   "fingerprint": "3df6f13c7fd00ed8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Minor nits: 'Delta tables in Unity Catalog' and 'embeddings' go unexplained, and 'gets no points' borrows the exercise's scoring idea, though it gives no solution."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A Delta Sync index”?",
+   "a": "A Delta Sync index is a Databricks Vector Search index that keeps itself up to date from a Delta table. That part is good. It syncs on its own, and Databricks can even make the embeddings for you from a text column. (An embedding is a list of numbers that captures what a piece of text means.)\n\nThe catch is where it starts. A Delta Sync index reads from a Delta table in Unity Catalog, not from raw files. Your files sit in Azure Blob Storage. So before the index can help, someone has to read those files, pull out the text, and cut it into chunks (small pieces of text). Then they have to write those chunks into a Delta table. That is exactly the chunking code the question says you don't want to write.\n\nSo the Delta Sync index solves the second half of the job but leaves the first half to you.\n\nAzure AI Search indexers are better here because they pull the files straight from Blob Storage on a schedule, then chunk and embed them for you, with no glue code in between.",
+   "step": "Check",
+   "fingerprint": "c71daa90cc05ab63",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only minor point is that the claim about Databricks making embeddings from a text column goes beyond the lesson, though it does not contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The semantic ranker”?",
+   "a": "The semantic ranker is a real Azure AI Search feature, so the pick is not random. It is just aimed at a different moment.\n\n**What it gets right:** it can make results better. After a search runs, it takes the top results and re-scores them by meaning. The most relevant chunks move to the top.\n\n**What it misses:** it only works on content that is already in the index. It never touches your files in Azure Blob Storage. It does not read them, cut them into chunks, or make embeddings (the lists of numbers that capture a text's meaning). So you would still have to write all that code yourself, which is exactly what the question says you want to avoid.\n\nThink of it as an order of steps:\n\n1. Get the files in, chunk them, embed them. This is the indexer's job.\n2. Search the index.\n3. Re-sort the top results. This is the semantic ranker's job.\n\nThe question is about step 1.\n\nAzure AI Search indexers are better because they pull files from Blob Storage on a schedule and do the chunking and embedding for you. Microsoft calls this integrated vectorization.",
+   "step": "Check",
+   "fingerprint": "372cf35a9514f82c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Ask users which one they like”?",
+   "a": "Asking users isn't wrong, but it's not a fair comparison.\n\n**What it gets right:** user feedback matters. In the end, people have to find the answers useful. It can catch problems a test might miss, like answers that are correct but confusing.\n\n**What it misses:**\n- Users ask different questions of each service. Someone searching product data and someone searching SharePoint policies aren't doing the same task. So you'd be comparing apples to oranges.\n- \"Which one do you like?\" is a feeling, not a number. It can be swayed by how fast the app is or how nice it looks, not by how well it finds things.\n- You can't repeat it. Change a setting next week, and you'd have to survey everyone again.\n\nAn **eval set** (evaluation set) is a fixed list of questions, each paired with the documents that should come back. You then measure something like `recall@k`: of the right documents, how many showed up in the top `k` results.\n\n**Why \"Use one eval set for both\" is better:** both services answer the exact same questions, scored the same way, so the numbers show which one actually retrieves better.",
+   "step": "Check",
+   "fingerprint": "a975f308daff1f36",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Compare their monthly bills”?",
+   "a": "Cost is a fair thing to care about. If two services found answers equally well, the cheaper one would be a sensible pick. So the bill is not useless. It just answers a different question.\n\nThe Check question asks how to compare the two **fairly**. A monthly bill tells you what you paid. It does not tell you whether the search found the right passages.\n\nThe bills are also hard to compare side by side:\n\n- **Different data.** One service holds product tables. The other holds SharePoint files. Each bill reflects its own amount of content and traffic, not quality.\n- **Extras change the total.** Azure AI Search is paid in **search units** (blocks of capacity). The semantic ranker and agentic retrieval are billed on top. Turning one on changes the bill, but that says nothing about how well it searches.\n\nA cheap service that misses the answer is not a bargain.\n\n\"Use one eval set for both\" is better because it asks both services the same questions and scores them the same way. One common score is **recall@k**: how often the right document shows up in the top `k` results. That measures retrieval quality directly.",
+   "step": "Check",
+   "fingerprint": "d4ce1d4fd341997e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems. Minor: it names the semantic ranker and agentic retrieval without explaining them, and it runs close to the 200-word limit."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count the points for each side, then compare” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Many teams have both Databricks Vector Search and Azure AI Search. Asking which is 'better' goes nowhere. Both do vector, keyword and hybrid search.\"\n\n*The idea:* \"So I list the facts about the project: where the data lives, where the app runs, and how access is controlled. A fact that favours one service gives it a point. A fact that favours neither is ignored. More points wins.\"\n\n*The trade-off:* \"A tie is an honest outcome, and so is running both. Then I test each service on the same evaluation set and compare recall@k.\" (Recall@k means: of the right documents, how many show up in the top k results.)\n\n**A likely follow-up**\n\n\"What if one fact matters far more than the others, like a rule that traffic must stay on private endpoints?\"\n\n*Hint at a strong answer:* Admit that a plain count treats every fact as equal. You could give some facts more weight. Or you could treat a hard rule as a must-have that rules a service out before you count. Add that you'd keep the scoring simple enough to explain to the team.",
+   "step": "Explain",
+   "fingerprint": "287bfe6751e599e9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. It stays near 190 words, and the term 'private endpoints' appears in the follow-up question without a definition, which is a minor point."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the choice went wrong**\n\n- **Extra copy jobs.** You export SharePoint files into Delta tables (the table format Databricks stores data in) just to use Databricks Vector Search. Or you copy curated tables out to Azure. Each copy is one more thing to keep in sync.\n- **Stale answers.** The agent quotes an old policy because the copy didn't refresh.\n- **Missing controls.** The index has no Unity Catalog grants or lineage because the data was moved. Or security asks for Entra ID roles (Microsoft's sign-in service) or private endpoints (a private network address) and your setup can't give them.\n- **Numbers you can't compare.** Each service was tested on its own questions. Or a score looked great in testing and then dropped with real users.\n\n**Quickest check**\n\nFor each source, write two things: where the data lives and where the app runs. If any arrow copies data from one platform to the other, look again.\n\nThen run your one shared eval set on both services. Compare recall@k: the share of questions where the right document shows up in the top k results.",
+   "step": "Learn",
+   "fingerprint": "8d29aa8bf92f8eae",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"follow where the data lives and where the app runs\" is a good default. Here are three places where it needs extra care.\n\n**1. One hard rule beats many small points.** Say security requires private endpoints or Microsoft Entra ID roles on every document. That single fact can outweigh several points for the other side. Treat must-have rules as a filter first: drop any service that can't meet them. Then count points among the services that are left.\n\n**2. One question needs both sources.** Sometimes an answer needs a curated table and a SharePoint file together. Picking one service leaves half the data out. Search both services and merge the results, or copy one source into the other. Then check the merged results on your shared eval set.\n\n**3. Data changes fast, or volume gets big.** Indexes refresh on a sync or an indexer schedule, so they can lag behind the real data. Costs also grow with search units (blocks of capacity) and with add-ons like the semantic ranker. Measure how stale results get and what you'll pay at full size. Also avoid relying on preview features, since they can still change.",
+   "step": "Learn",
+   "fingerprint": "42880df9b22ac2ad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “Agentic retrieval” different from “knowledge bases”?",
+   "a": "**Agentic retrieval** is a *way of searching*. You ask a hard question. It splits that question into smaller searches, runs them, and merges the results into one answer set.\n\nA **knowledge base** is the *thing it searches through*. It is a resource you set up in Azure AI Search. It says which content to search, such as an index built from your SharePoint files.\n\nSo one is the action, and the other is the setup the action uses.\n\n**Everyday comparison:** think of a librarian and a library. The knowledge base is the library: the shelves and the catalog. Agentic retrieval is the librarian. They hear \"What's our leave policy for part-timers who moved countries?\" and look up three topics, not one. Then they hand you the useful pages together.\n\n**In the lesson's example:** policy documents in SharePoint go through an Azure AI Search indexer. A knowledge base points at that content. Your Azure AI Foundry app then uses agentic retrieval to answer tricky policy questions.\n\nOne detail to remember: knowledge bases are generally available (ready for production) in REST API version `2026-04-01`. The query planning step, the \"splitting\" part, is still in preview.",
+   "step": "Learn",
+   "fingerprint": "87ebcd2dfe0d8dd4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the lesson never defines a knowledge base or puts one in its example, so the 'knowledge base points at that content' framing is inferred. It fits the lesson and does not contradict it."
+   }
+  }
+ },
+ "recall_at_k": {
+  "check:0:0": {
+   "q": "Why not “The prompt”?",
+   "a": "\"The prompt\" isn't a silly guess. The prompt is the instructions you give the model. It does matter, because a RAG answer can fail in the second place too: the model might not use a good document well. Better instructions can help with that.\n\nBut look at the number first. A Recall@5 of 0.3 means only 30% of the right documents made it into the top 5. So about 70% of what the model needed never reached it.\n\nNo prompt can fix that. The model can only work with the documents it's handed. If the right ones aren't there, it has to guess or say it doesn't know. Rewording the instructions is like giving a cook a better recipe when most of the ingredients are missing from the basket.\n\nThere's also a measuring problem. While retrieval is this weak, you can't tell whether the prompt is good or bad. Poor answers would come out either way.\n\n\"Retrieval\" is better because the low recall shows the right documents aren't being found, and fixing that comes before anything the model does with them.",
+   "step": "Check",
+   "fingerprint": "d0f9782049a183df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “A bigger LLM”?",
+   "a": "A bigger LLM (large language model, the part that writes the answer) is a fair thing to think about. The lesson says a RAG answer can fail in two places, and one of them is the model not using the documents well. A stronger model can help with that second kind of failure.\n\nBut look at the number first. Recall@5 is 0.3. That means only 30% of the right documents made it into the top 5 results. The other 70% never reached the model at all.\n\nA bigger model can't read documents it was never given. It would still be working from mostly the wrong material. At best it writes smoother answers on a weak base. At worst it fills the gaps by guessing, which can sound confident and still be wrong. It also costs more to run, and it leaves the real problem untouched.\n\nThis is why the lesson says to measure the two parts separately. The measurement points at where the problem is.\n\n\"Retrieval\" is the better answer because the low recall shows the right documents aren't being found, so fixing the search is what gives the model something good to work with.",
+   "step": "Check",
+   "fingerprint": "be943bb14733cb5b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The point about cost goes slightly beyond the lesson, but it doesn't contradict it, and the answer is close to the 200-word limit."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The chunk size and the k”?",
+   "a": "It's a fair guess, because chunk size and `k` are real settings worth tuning. A chunk is a piece of a document that gets stored and searched. `k` is how many of the top results you keep. Both shape what retrieval brings back.\n\nThe catch is that both are **retrieval** settings. Recall@5 is high, so the right documents nearly always land in the top 5. Retrieval is already doing its job. Changing chunk size or `k` would mean fixing the part your measurement says is working.\n\nRemember the lesson's two failure points: retrieval didn't find the right document, or the model didn't use it well. High recall rules out the first. So the problem must be the second. Maybe the model ignores the chunks, mixes them up, or the prompt doesn't tell it clearly to answer from them.\n\nThis is exactly why you measure the two parts separately. The number points you to the right place.\n\n\"How the model uses the chunks\" is better because high recall shows the right documents are arriving, so the weak step must come after retrieval.",
+   "step": "Check",
+   "fingerprint": "30074e30a414d0c9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The embedding model”?",
+   "a": "It's a reasonable guess, because the embedding model really does matter in RAG. An embedding model turns text into lists of numbers so that texts with similar meaning end up close together. Retrieval uses those numbers to pick which documents to fetch.\n\nBut that's exactly why it isn't the place to look here. The embedding model's job is retrieval. A high recall@5 tells you retrieval is working: the right documents nearly always land in the top 5. So the embedding model is already doing its part well. Swapping or tuning it would be fixing the half that isn't broken.\n\nRemember the lesson's two failure points. Either retrieval didn't find the right document, or the model didn't use it well. High recall rules out the first one. That leaves the second.\n\n\"How the model uses the chunks\" is the better answer. The right chunks are already reaching the model, so the problem must be in how it reads, weighs or ignores them when writing the answer.",
+   "step": "Check",
+   "fingerprint": "9ebdfa44c2be61f9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A bigger k, like 50 instead of 5”?",
+   "a": "A bigger k changes how many results you look at. It does nothing about the real problem: nobody has said which documents are right.\n\nRecall@k is a share. The bottom of that share is \"how many right documents exist for this question.\" The top is \"how many of those showed up in the top k.\" Both numbers depend on knowing which documents are right. Without that, there is nothing to count against, whether you check 5 results or 50.\n\nThere is one thing this option gets right. A bigger k usually does raise recall, because a longer list has more chances to include the right documents. But that only matters once you can measure recall at all. It also answers a different question. Recall@50 tells you how well retrieval does when the model gets 50 documents, not 5.\n\nThink of the shopping-list picture. Looking in a bigger basket doesn't help if you never wrote the list.\n\n\"Questions with their right docs marked\" is better because those hand-marked answers are exactly what recall compares against, so they have to come first.",
+   "step": "Check",
+   "fingerprint": "71ce9b1314e4cd1e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “An LLM judge to grade the answers”?",
+   "a": "An LLM judge is a second model that reads an answer and gives it a score. It's a real tool, and it's useful for checking whether the final answer is good.\n\nBut it doesn't fit this question, for two reasons.\n\n**It grades the wrong thing.** The lesson says a RAG answer can fail in two places: retrieval missed the right document, or the model used it badly. A judge looks at the final answer, so it mixes both together. A bad score won't tell you which part broke.\n\n**It doesn't give recall what it needs.** Recall@5 asks, \"Of the right documents, what share made it into the top 5?\" You can't answer that without knowing which documents are right. In the scorer, that's `expectations[\"relevant_ids\"]`. It's the number you divide by. A judge's score doesn't fill that in.\n\nSo \"Questions with their right docs marked\" is better because it gives you the list of right documents that recall@5 counts against.",
+   "step": "Check",
+   "fingerprint": "260e27c1fa2ebef0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor imprecision: it calls `expectations[\"relevant_ids\"]` \"the number you divide by\", but that is a list and only its length is the divisor. Otherwise the answer fits the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count what the top k found” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"A RAG system, where the model looks up documents before answering, can fail in two places. Retrieval might miss the right document, or the model might use it badly. If I only grade the final answer, I can't tell which part broke.\"\n\n**The idea.** \"So I measure retrieval on its own with Recall@k. I hand-label a small set of questions with their correct documents. Then I check what share of those made it into the top k results. One found out of two relevant gives 0.5.\"\n\n**The trade-off.** \"Recall ignores order and ignores junk. If only one document is relevant, a top 5 with that one plus four wrong ones still scores a perfect 1.0. Also, if a question has no labeled documents, I return 0 instead of dividing by zero.\"\n\n**Likely follow-up:** \"How do you choose k?\"\n\n*Hint:* Match k to how many chunks you actually pass to the model. A bigger k makes recall easier to hit but fills the prompt with noise. Mention pairing recall with precision, which is the share of the top k that is actually relevant.",
+   "step": "Explain",
+   "fingerprint": "52bf17ac0a06baa2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs retrieval wasn't measured on its own**\n\nYou only have one end-to-end score, such as \"answer quality.\" When an answer is wrong, you can't tell whether search missed the document or the model ignored it. So you end up tweaking prompts when the real problem is search, or the other way round.\n\n**Signs Recall@k is measured wrong**\n\n- **It looks too good.** Recall sits near 1.0, then real users still get bad answers. Common causes: dividing by how many were *found* instead of how many were *relevant*, or forgetting to cut the list to the top k.\n- **It is suspiciously 0.** Usually the ids don't match in format, like `d2` versus `D2`, or a number versus a string.\n- **The average is dragged down.** Questions with no marked relevant documents score 0 and pull the mean lower.\n\n**Quickest check**\n\nPick one question. Work out its recall by hand, like the lesson's `d7 d2 d9` example. Compare that to what your scorer reports. Then open the trace (the step-by-step log of one run) for a failed answer. Was the right document in the top k?",
+   "step": "Learn",
+   "fingerprint": "fa9775797653dedb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Recall@k is a good starting point, but it needs extra care in a few situations.\n\n**Your documents keep changing.** Your hand-marked answers point to specific ids. If documents get edited, split into new chunks (smaller pieces of text), or renamed, those ids go stale. Recall then drops even though retrieval is fine. Re-check your labels whenever the document set changes, and use ids that stay stable.\n\n**A question has more right documents than k.** If eight documents are relevant and k is 5, even perfect retrieval scores at most 5 out of 8. Pair recall with precision@k, which asks what share of the top k were actually relevant. You can also divide by whichever is smaller, k or the number of relevant documents.\n\n**Some questions have no right answer in your documents.** The lesson's scorer returns 0 for these. That pulls your average down even though there was nothing to find. Measure these questions separately. For them, check whether the model correctly said \"I don't know.\"",
+   "step": "Learn",
+   "fingerprint": "bcb6984dd27f79b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Recall@k” mean here?",
+   "a": "**Recall@k** asks one question: of the documents that *should* have been found, what share showed up in the top k results?\n\nThink of a shopping list. You needed milk and eggs. You grab only the first 3 items your hand reaches. If milk is in those 3 but eggs aren't, you got 1 of the 2 things you needed. That's half.\n\nHere's what the parts of the name mean:\n\n- **Recall** means \"how much of what I needed did I actually get?\"\n- **@k** means \"only count the top k results.\" Here k is a number you pick, like 3 or 5.\n- **Retrieval** is the search step that finds documents before the model writes an answer.\n\nIn the lesson's example, k is 3:\n\n- The search returned `d7`, `d2`, `d9` as its top 3.\n- The documents marked by hand as relevant (the right ones) are `d2` and `d4`.\n- `d2` made it into the top 3. `d4` did not.\n- So Recall@3 = 1 found ÷ 2 relevant = 0.5.\n\nA score of 1.0 would mean every right document made the top k. A score of 0 means none did.\n\nThis number checks the search step on its own. It says nothing about how well the model used the documents afterwards.",
+   "step": "Learn",
+   "fingerprint": "2d6305dcdff2e98a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "rerank_check": {
+  "check:0:0": {
+   "q": "Why not “Yes: a better reranker brings in documents retr…”?",
+   "a": "That option gets one thing right. A better reranker can lift the right document higher, so it reaches the model. But that only works if the document is already in the pile.\n\nHere's the catch. A reranker never searches. It only gets the candidates the retriever hands it, here the top 20, and puts them in a new order. In the lesson's example, `d40` for `gift-card` never came back from retrieval. No reranker, however smart, can move a document it was never given.\n\nSo these misses are **out of reach**. That means the right document never came back from retrieval. The fix belongs earlier:\n\n- **Chunking**: how documents are split into pieces.\n- **Embeddings**: the numbers that capture each chunk's meaning.\n- **Hybrid search**: matching on keywords as well as meaning.\n\nThis is why the lesson checks `gold not in candidates` first. If half your misses are out of reach, a better reranker can only help with the other half.\n\n\"No: a reranker only reorders the candidates it's given\" is better because it names the real limit and points you to retrieval as the place to fix these misses.",
+   "step": "Check",
+   "fingerprint": "f8cde74975be59da",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only if you rerank the top 3 instead of the top…”?",
+   "a": "That option points the wrong way.\n\nIt does get one thing right: the size of the candidate pool matters. The reranker can only work with what it is handed. But \"top 3 instead of top 20\" makes the pool smaller, not bigger.\n\nThink about what these misses are. The right document isn't anywhere in the top 20. The top 3 are part of the top 20, so it isn't in those either. Reranking 3 documents instead of 20 just gives the reranker fewer chances. It can never reach a document that retrieval didn't return.\n\nThese questions are **out of reach**. That means retrieval missed the right document, so the fix belongs in retrieval. You could improve chunking, which is how you split documents into pieces. You could improve embeddings, the number lists used to match meaning. You could try hybrid search, which mixes keyword matching with meaning matching. Or you could ask retrieval for more results, like a top 50.\n\n\"No: a reranker only reorders the candidates it's given\" is better because it names the real limit: reordering can't add a document that was never retrieved.",
+   "step": "Check",
+   "fingerprint": "41a804ac07a91e45",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The suggestion to ask retrieval for a top 50 isn't in the lesson's list of retrieval fixes (chunking, embeddings, hybrid search), but it doesn't contradict the lesson. Otherwise the answer is accurate, covers what the option gets right and what it misses, and stays just under the word limit."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Helped”?",
+   "a": "\"Helped\" means the right document was *outside* the top `k` before reranking and moved *inside* it after. Here the opposite happened.\n\nWalk through it with `k = 5`. That means only the top 5 results reach the model.\n\n- **Before:** the right document was 3rd. That's inside the top 5, so the model would have seen it.\n- **After:** it's 8th. That's outside the top 5, so the model no longer sees it.\n\nThe reranker did change the order, and the document is still among the candidates, so this isn't \"out of reach.\" But \"Helped\" misses the direction of the move. The document went from visible to hidden. For this question, the reranker made the answer worse.\n\nOne tip: only ask \"was it in the top `k`?\" before and after. The exact rank doesn't matter on its own. Moving from 3rd to 4th would still be \"no change,\" because both are inside the top 5.\n\n\"Hurt\" is the better answer because the right document started inside the top 5 and the reranker pushed it out.",
+   "step": "Check",
+   "fingerprint": "89e6ce7fa04856c4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Out of reach”?",
+   "a": "\"Out of reach\" gets one thing right. After reranking, the right document sits 8th, outside the top 5. So the model won't see it, and the answer may suffer. That part does look like a miss.\n\nBut \"out of reach\" means something narrower. It means retrieval never found the right document at all. It wasn't among the candidates, the list of documents retrieval sent to the reranker. In that case no reranker could have saved it, and the fix belongs in retrieval: chunking, embeddings, or hybrid search.\n\nHere, retrieval did its job. The document was among the candidates, and it was 3rd before reranking. That puts it inside the top 5. The reranker then pushed it down to 8th. So the problem came from the reranker, not from retrieval.\n\nLabeling this \"out of reach\" would send you to fix the wrong part of the system. You'd spend effort on retrieval, which worked fine, and the reranker's mistake would go unnoticed.\n\n\"Hurt\" is the better answer because the document was in the top 5 before reranking and the reranker pushed it out.",
+   "step": "Check",
+   "fingerprint": "e7f77f58ffe5154f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The reranker needs at least 50 candidates”?",
+   "a": "\"The reranker needs at least 50 candidates\" points at the wrong problem.\n\nThere's a grain of truth in it. A wider candidate list gives the right document more chances to show up, so fewer questions end up out of reach. But the lesson sets no magic number. Its example uses 20, and nothing says that's too few.\n\nMore importantly, the teammate's mistake isn't about how many candidates there are. It's that \"before\" and \"after\" were built from **different** candidate lists. A candidate list is the set of documents retrieval handed over for the reranker to reorder.\n\nIf the lists differ, a change in the top 5 could come from two places. The reranker might have reordered things. Or retrieval might simply have returned different documents. You can't tell which. Even 50 or 500 candidates wouldn't fix that, because the comparison is still mixing two causes.\n\nThe fair test keeps everything the same except the reranker. Same question, same candidates, one ordered before and one after.\n\n\"It no longer shows what the reranker did\" is better because it names the real flaw: changing the candidates means you can't credit or blame the reranker for any difference.",
+   "step": "Check",
+   "fingerprint": "fb61b19cf51ffc6d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Nothing, as long as k stays at 5”?",
+   "a": "Keeping `k` at 5 does get one thing right. Both sides are judged on the same number of slots, so you're not comparing a top 5 against a top 10. That part is fair.\n\nBut it misses the bigger problem. A reranker only reorders the list it is given. If \"before\" and \"after\" start from different candidate lists, two things changed at once: the candidates *and* the order. Now when the top 5 looks different, you can't tell why.\n\nSay the right document shows up in the \"after\" top 5. Maybe the reranker lifted it. Or maybe it simply wasn't in the \"before\" candidates, so retrieval found it this time and the reranker did nothing. The same goes for a document that drops out.\n\nThis is also why the lesson checks out-of-reach questions first. That check only means something when both sides share one candidate list.\n\nSo matching `k` is necessary, but it isn't enough. The input has to match too.\n\n\"It no longer shows what the reranker did\" is better because it names the real flaw: with different candidate lists, any change in the top 5 can't be credited to the reranker alone.",
+   "step": "Check",
+   "fingerprint": "8a3983dce23f9c3a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Sort each question into four piles” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* \"A reranker reorders the retriever's candidates, say the top 20, so the most useful few reach the model. It adds time to every request, so I want proof it earns that cost.\"\n\n*The idea.* \"I sort each test question into four piles. **Helped**: the right document moved into the top k, the few we actually pass to the model. **Hurt**: it got pushed out. **No change**. And **out of reach**: retrieval never found it, so no reranker could fix it.\"\n\n*The edge case.* \"Out of reach matters most. If that pile is big, the fix belongs in retrieval, like chunking or embeddings, not a fancier reranker. I also compare before and after on the same candidate lists, so the reranker is the only thing that changed.\"\n\n**A likely follow-up**\n\n\"What if helped and hurt come out roughly equal?\"\n\nHint for a strong answer: the net gain is close to zero, so the reranker may not be worth its latency, meaning the extra wait on every request. Then say you'd read the hurt cases one by one to see why the right document got pushed down.",
+   "step": "Explain",
+   "fingerprint": "268cfee558ab02af",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The claim that out of reach 'matters most' is a mild overstatement of the lesson's 'if most misses are out of reach', and it sits close to the 200-word limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **You added a reranker and answers barely improved.** Requests got slower, but users still get wrong answers. Often the right document was never retrieved, so the reranker had nothing to lift.\n- **A big jump in your score that fades later.** This happens when \"before\" and \"after\" used different candidate lists, for example when you changed chunking or embeddings at the same time. The gain came from retrieval, not the reranker.\n- **Only the wins get counted.** If nobody tracks \"hurt\", a question that used to work can quietly break. Your net score looks fine while some users get worse answers.\n- **Your logged `out_of_reach` metric is high, but effort keeps going into reranking.** That metric says the fix belongs in retrieval.\n\n**Quickest check**\n\nTake 20 to 30 questions where you know the right document. For each one, look at the 20 candidates and ask: is the right document there at all? Then, on those same candidates, compare the top `k` before and after. Sort each question into helped, hurt, no change, or out of reach. If out of reach is the biggest pile, a better reranker won't help.",
+   "step": "Learn",
+   "fingerprint": "3487e22bdd68b582",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'biggest pile' loosely paraphrases the lesson's 'most misses are out of reach', and 'chunking' and 'embeddings' are left unexplained, but nothing is clearly wrong."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. A question needs more than one document.** Some answers are spread across two or three chunks. Then \"the right document\" is really a set, and one question could be helped and hurt at once. Track how many of the needed chunks land in the top `k`, before and after.\n\n**2. You have very few test questions.** With ten questions, one flip from \"helped\" to \"hurt\" swings the result a lot. Gather a few dozen real questions with known right documents before deciding. If an LLM labels the right documents for you, spot-check its labels by hand.\n\n**3. Your documents change over time.** When you re-chunk or add files, document ids shift. Your saved \"right doc\" labels can point at chunks that no longer exist, so questions look out of reach when they aren't. Re-check the labels after each index rebuild, then rerun the comparison.\n\nOne more trade-off: pulling more candidates, say 50 instead of 20, shrinks the out-of-reach pile. But it makes reranking slower on every request, so measure both.",
+   "step": "Learn",
+   "fingerprint": "da3b5494544dc137",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “out of reach” different from “helped”?",
+   "a": "Both are outcomes for one question, but they point at different parts of the system.\n\n**Retrieval** is the search step. It pulls, say, 20 likely documents, called the candidates. The **top k** is the first few of those (here, 3) that actually reach the model.\n\n**Helped** means the right document was among the 20 but outside the top 3, and the reranker moved it in. Take `return-label`: `d12` wasn't in the top 3 before, and it's first after. The reranker did its job.\n\n**Out of reach** means the right document never made the 20. In `gift-card`, `d40` isn't there, so the reranker had nothing to move.\n\nThink of a shopping basket. Rearranging it can put the best item on top. That's helped. But if you never picked up the item, no rearranging produces it. That's out of reach.\n\nThey work together. Check out of reach first, then judge helped. Many out-of-reach misses mean you should fix retrieval:\n\n- **Chunking:** how documents are cut into pieces.\n- **Embeddings:** lists of numbers that capture meaning, used to match questions to pieces.\n- **Hybrid search:** meaning-based search combined with keyword search.",
+   "step": "Learn",
+   "fingerprint": "2763d77b41119056",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "retrieve": {
+  "check:0:0": {
+   "q": "Why not “So the highest-scoring document is always retur…”?",
+   "a": "That option isn't wrong about everything. It just misses the main reason.\n\n**What it gets right:** sorting by score already puts the highest score first, with or without a tie rule. But when two or more documents tie for the top score, something has to decide which one comes first. That decision also affects which of them make it into the top **k** (the number of chunks you keep).\n\n**What it misses:** the question asks *why* you decide how ties are broken. The answer isn't \"so a top document appears.\" It's \"so the same one appears every time.\" Without a fixed rule, tied documents could come out in a different order on different runs. One run might keep document 2, the next might keep document 5. A test that checks for an exact result would then pass sometimes and fail other times. Testers call that a \"flaky\" test.\n\n**Why the other option is better:** \"So results don't change between runs and tests stay stable\" names the real goal. A fixed tie rule makes the output predictable, so the same question always gets the same chunks.",
+   "step": "Check",
+   "fingerprint": "7139bb6014b47241",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “So documents with a score of 0 are dropped”?",
+   "a": "That option mixes up two different jobs: **ranking** and **filtering**.\n\nTie-breaking is about order. When two documents have the same score, something has to decide which one comes first. Tie-breaking is that rule. In this lesson, the earlier document wins.\n\nDropping documents with a score of 0 would be a **filter**, which means removing items that fail a test. That is a separate choice, and tie-breaking does not do it. If only two documents match any words and `k` is 3, a zero-score document can still make the top 3.\n\nThe option does notice something real. Zero-score documents usually sink to the bottom. But that happens because of sorting by score, not because of how ties are broken.\n\nThe tie rule matters most when several documents share a score right at the cut-off point. Without a fixed rule, which ones make the top `k` could change from run to run.\n\n\"So results don't change between runs and tests stay stable\" is better because it names the real purpose: equal scores get the same order every time, so your output is predictable and your tests can rely on it.",
+   "step": "Check",
+   "fingerprint": "c881f83fc4ada222",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The best 3, just more slowly”?",
+   "a": "\"The best 3, just more slowly\" sounds reasonable, but both halves of it are off.\n\n**What it gets right:** the retriever does still score every chunk. That work happens, so the scores exist.\n\n**What it misses:** a score on its own doesn't move anything. Scoring just attaches a number to each chunk. The chunks stay in the order they were in to begin with. Sorting is the step that rearranges them so the highest scores come first.\n\nSo when you take the first 3 without sorting, you get whatever happened to be at the front of the original list. Those could be the worst matches. The scores were calculated and then ignored.\n\nThe \"more slowly\" part is also backwards. Skipping the sort means less work, not more. The program would actually run a little faster. It would just give you the wrong chunks.\n\n\"The first 3 in the list, not the best\" is the better answer because, without a sort, slicing (taking the first few items) only picks by position, never by score.",
+   "step": "Check",
+   "fingerprint": "b2f9f9de695f2fa1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “An error, because k needs sorting”?",
+   "a": "That option gets one thing right: something has gone wrong. But it misses how it goes wrong.\n\nFirst, `k` is just a number, like 3. A number has nothing to sort. It only says how many items to keep.\n\nSecond, Python does not need a list to be sorted before you take a slice. A slice means \"give me a piece of the list,\" and `[:3]` means \"the first 3 items.\" Python will slice any list, in whatever order it happens to be.\n\n```python\ndocs = [\"a\", \"b\", \"c\", \"d\"]\ndocs[:3]  # [\"a\", \"b\", \"c\"], no error\n```\n\nSo the code runs without complaint. You just get the first 3 chunks in their original order, whatever their scores were. The scoring work is wasted.\n\nThis kind of bug is called a silent bug. Nothing crashes, so nothing warns you. Your agent simply answers from the wrong chunks. That is why tests that check which chunks come back are worth writing.\n\n\"The first 3 in the list, not the best\" is better because it describes what really happens: the code runs fine and quietly returns the wrong chunks.",
+   "step": "Check",
+   "fingerprint": "c13b20ba5da7700a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “They match exact words faster”?",
+   "a": "\"They match exact words faster\" mixes up two different tools.\n\nMatching exact words is what keyword search does. Embeddings don't match words at all. They turn text into lists of numbers that capture meaning. So this option describes the wrong tool.\n\nIt also points at the wrong problem. Keyword search didn't fail because it was slow. It failed because \"how do I get my money back?\" and \"refund policy\" share no words. The score was zero. Running a zero-score search faster still gives you nothing.\n\nSpeed isn't the selling point of embeddings anyway. Turning text into numbers and comparing them is often *more* work than checking for shared words. Real systems accept that cost because of what they gain.\n\nThat gain is the right answer, \"Similar meanings land close together.\" The embedding for \"get my money back\" sits near the embedding for \"refund,\" so that chunk scores high even with zero shared words. Then the usual steps apply: sort, keep the top k, break ties the same way each time.",
+   "step": "Check",
+   "fingerprint": "13107d309801ced6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that embeddings cost more work than keyword matching goes beyond the lesson, but it is true and does not contradict it."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “They always return more chunks”?",
+   "a": "\"They always return more chunks\" sounds reasonable, but it points at the wrong part of the problem.\n\n**What it gets right:** sending more chunks to the prompt can sometimes help. A wider net catches more.\n\n**What it misses:** embeddings don't change how many chunks come back. You still choose that number yourself. In the lesson's example it is `num_results=5`, which is the top **k**. The real problem is the *score*. \"How do I get my money back?\" and \"refund policy\" share no words. Keyword search gives the right chunk a score of zero. It looks just as useless as every unrelated chunk. Asking for more results would only pull in more chunks that also scored zero. The right one could still be left out.\n\nEmbeddings fix the scoring step. An embedding turns text into a list of numbers. Texts with similar meanings get similar numbers. So \"money back\" and \"refund\" score as close, even with no shared words.\n\n**Why \"Similar meanings land close together\" is better:** it names the real fix. The right chunk now gets a high score for its meaning, so it rises into the top k.",
+   "step": "Check",
+   "fingerprint": "567a59c805831611",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “One function, one job” matter?",
+   "a": "\"One function, one job\" means each function does a single thing. Pair it with a one-line docstring (a short note under the function name saying what it does) and type hints (labels saying what kind of data goes in and comes out, like `list[str]`).\n\n**What goes wrong when it's ignored**\n\nPicture one big function that loads documents, scores them, sorts them, picks the top k, and builds the prompt, all at once.\n\nOne day a user says the answers got worse. Is the scoring off? Is the tie-breaking unstable? Did the prompt formatting cut something? You can't tell, because everything is tangled together. To test any one step, you have to run all of them.\n\n**The fix**\n\nSplit the work. One function scores. Another sorts and keeps the top k. Another builds the prompt. Now you can check each piece on its own. For example, you can confirm that two tied documents always come back in the same order.\n\nIt also helps in interviews. You can explain each small function in one sentence, and that shows clear thinking.",
+   "step": "Explain",
+   "fingerprint": "df8aeafe6579f451",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the example covers only the single-job part and does not show what goes wrong without docstrings or type hints, but it still answers the question."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Score, sort, keep the top k” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"A model can only read so much text at once. So before it answers, we need to pick the few chunks of our documents most likely to help.\"\n\n*The idea.* \"We give every chunk a score for how well it matches the question. Then we sort from best to worst and keep the top k, where k is simply how many chunks we want. In real systems the score usually comes from embeddings. Those are lists of numbers where similar meanings land close together. They are often mixed with keyword search, which is called hybrid search.\"\n\n*The edge case.* \"Two chunks can get the same score. I always break ties the same way, for example by keeping the earlier one. Then the same question gives the same results every run, and tests stay stable.\"\n\n**A likely follow-up**\n\n\"How would you choose k?\"\n\n*Hint:* Talk about the trade-off. If k is too small, you might miss the chunk that holds the answer. If k is too large, you add noise, cost more, and slow replies down. Say you would test a few values on real questions and pick the one that works best.",
+   "step": "Explain",
+   "fingerprint": "babb8f9f7ef74a92",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that retrieval is off**\n\n- **Results change between runs.** The same question returns the same chunks in a different order, or a different chunk at the edge of the top k. Tests pass, then fail, with no code change. That usually means ties are not broken the same way every time.\n- **Answers miss facts you know are in the docs.** The model says \"I don't know,\" but the right chunk exists. In your traces (the logged record of each step), that chunk never appears in the prompt.\n- **The worst matches come first.** The sort runs the wrong direction, so the lowest-scoring chunks fill the top k.\n- **Every chunk scores the same.** Often all zeros. A common cause is the question and the chunks being prepared differently, such as uppercase versus lowercase words.\n- **It looks fine in a demo but drops in real use.** A few easy questions hid weak scoring.\n\n**Quickest check**\n\nPick three questions where you already know which chunk should win. Run retrieval twice for each. The right chunk should appear in the top k both times. The order should be identical across the two runs. If either fails, start with the scoring and the tie-breaking.",
+   "step": "Learn",
+   "fingerprint": "afa4f4b8f281425c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it runs right at the ~200-word limit and uses 'top k' and 'ties' without defining them, but both are covered in the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The words don't match, but the meaning does.** Counting shared words fails when a user asks about \"getting my money back\" and the document says \"refund.\" Use embeddings, or hybrid search that mixes embeddings with keyword search, so similar meanings still score high.\n\n**2. The collection gets very big.** Scoring every chunk one by one is fine for hundreds of chunks. It is too slow for millions. Use a vector index, a structure built to find close matches without checking every chunk, like Databricks Vector Search. These are often approximate, so spot-check that good chunks still show up.\n\n**3. The documents change over time.** New chunks get added and old ones get edited or deleted. If the index isn't kept in sync, retrieval returns stale or missing text. Set the index to sync from its source table. Pin a fixed test set so your tests stay stable while the real data moves.\n\nA related catch: a fixed `k` always returns `k` chunks, even weak ones. Adding a minimum score helps keep junk out of the prompt.",
+   "step": "Learn",
+   "fingerprint": "de9a40aa7ac55f21",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: sections 2 and 3 run four sentences against the requested two or three, and 'embeddings' is not re-explained. Nothing contradicts the lesson, so this is not a failure."
+   }
+  },
+  "learn:term": {
+   "q": "What does “embeddings” mean here?",
+   "a": "**Embeddings** are a way to turn text into a list of numbers, so a computer can tell when two pieces of text mean similar things.\n\n**An everyday comparison:** think of a map. Every city gets coordinates, like two numbers for its location. Cities that are near each other have similar numbers. An embedding does the same for meaning. \"Reset my password\" and \"I forgot my login\" get number lists that sit close together, even though they share almost no words. \"Banana bread recipe\" lands far away.\n\n**Where it shows up in the lesson:** in the simple example, `score` is whatever measures how well a chunk matches the question. In a real system, that score is often how close the chunk's embedding is to the question's embedding.\n\nIn the Databricks example, `similarity_search` does this for you. The index already stores an embedding for every chunk. Setting `query_type=\"hybrid\"` means it mixes two signals:\n\n- **Embedding closeness**, which catches the same meaning in different words.\n- **Keyword search**, which catches exact matching words.\n\nThen it keeps the top `num_results=5`. It is the same idea as before: score, sort, keep the top k.",
+   "step": "Learn",
+   "fingerprint": "37de888db49f5ca4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that the index already stores an embedding for every chunk goes slightly beyond the lesson text, but it does not contradict it."
+   }
+  }
+ },
+ "rrf": {
+  "check:0:0": {
+   "q": "Why not “A bigger embedding model for the same index”?",
+   "a": "A bigger embedding model is a reasonable instinct. Bigger models often understand meaning better, so general questions like \"why did my payment fail?\" might improve a little.\n\nBut the problem here isn't meaning. It's an exact string. An **embedding** turns text into a list of numbers that captures what the text is *about*. A code like `E-4021` carries almost no meaning on its own. To any embedding model, big or small, it looks a lot like `E-4012` or `E-4210`. So the search may return chunks about *some* checkout error, just not this one. Making the model bigger doesn't change how embeddings work. It's still matching by meaning, not by exact characters.\n\nThere's a practical cost too. A new model means re-embedding every chunk, because the stored vectors come from the old model. That's more compute and more time, for a fix that likely won't solve the miss.\n\n**Hybrid search is better** because keyword matching finds the exact text `E-4021` directly, while vector search keeps handling meaning, and rank fusion merges both lists.",
+   "step": "Check",
+   "fingerprint": "1c3bd0fdcd4e4885",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Returning more results from vector search”?",
+   "a": "It's a fair instinct. If the right chunk is ranked 40th, asking for 50 results might catch it. So it can help a little, by luck.\n\nBut it doesn't fix the real problem. Vector search compares **embeddings**, which are lists of numbers that capture a text's general meaning. To an embedding, \"E-4021\" looks a lot like \"E-4012\" or any other error message. The exact code gets blurred. So the right chunk might not be in the list at all, or it might sit below dozens of chunks that are about errors in general.\n\nPulling more results also brings more noise. The agent then gets a pile of loosely related chunks, which costs time and can confuse the answer. And there's still no guarantee the right one is in there.\n\nKeyword search works differently. It looks for the exact text \"E-4021\", so it finds that chunk directly. That is why the code example uses `query_type=\"hybrid\"`.\n\n**Why hybrid is better:** it adds keyword matching, which catches exact terms like error codes, while vector search still handles meaning, and rank fusion merges the two lists.",
+   "step": "Check",
+   "fingerprint": "c4ad2fb14ece9de1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. Minor: 'agent' and 'chunk' are not explained, and the claim that embeddings blur exact codes goes slightly beyond the lesson but is consistent with it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Sorting that many scores takes too long”?",
+   "a": "It's a fair worry, but speed isn't the problem here.\n\n**What it gets right:** sorting does take some work. A computer has to compare items to put them in order.\n\n**What it misses:** hybrid search sorts too. Reciprocal rank fusion still adds up points and then sorts the totals from highest to lowest. So sorting can't be the thing it avoids. Also, each search usually returns a short list, like `num_results=10`. Sorting a few dozen items is nearly instant.\n\nThe real trouble is the numbers themselves. A keyword score like 12 comes from counting how well the words match. It has no fixed upper limit. A vector score like 0.83 measures how close two meanings are, usually on a scale from 0 to 1. If you sort them together, keyword results would almost always win just because their numbers are bigger. That says nothing about which document is more useful.\n\n**Why \"The two kinds of score can't be compared\" is better:** it names the real issue. The scores are on different scales, so merging by place in each list is the fair way to combine them.",
+   "step": "Check",
+   "fingerprint": "f506e2ef204ac86b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the closing part is two sentences where one was asked for, and the claims about score ranges (keyword has no upper limit, vector is roughly 0 to 1) go beyond what the lesson states."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Vector scores are always more accurate”?",
+   "a": "\"Vector scores are always more accurate\" sounds reasonable, but it misses the real problem.\n\n**What it gets right:** vector search (matching by embeddings, which are lists of numbers that capture meaning) is very good at finding text that *means* the same thing, even with different words.\n\n**What it misses:** \"more accurate\" isn't the issue, and it isn't even true. Keyword search often wins on exact terms. A query like \"error E-4021\" needs that exact code. Vector search might return a chunk about some other checkout error instead.\n\nThe bigger issue is the numbers themselves. A keyword score of `12` and a vector score of `0.83` come from different formulas on different scales. A `12` isn't \"better\" than `0.83`, just as 12 inches isn't more than 0.83 kilograms. If you sort them together, the keyword results win just because their numbers are bigger.\n\nTrusting only vector scores would also throw away the keyword list. Then it's no longer hybrid search.\n\n**Why \"The two kinds of score can't be compared\" is better:** it names the real problem, which is why hybrid search merges results by place in each list instead of by raw score.",
+   "step": "Check",
+   "fingerprint": "1104557d0e616342",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Doc B, because 1st place wins”?",
+   "a": "\"Doc B, because 1st place wins\" gets one thing right. Doc B's 1st place in vector search does earn the most points any single place can earn. Higher places are worth more.\n\nWhat it misses is that rank fusion doesn't crown a winner from one list. It adds up points from every list. Doc B only appears in one list, so it collects points once. Doc A appears in both, so it collects points twice: once for 1st in keyword search, once for 2nd in vector search.\n\nThe fixed number added to every place matters here. It keeps 1st from counting far more than 2nd. So Doc A's 2nd place is worth only a little less than Doc B's 1st. Add Doc A's keyword points on top, and Doc A pulls ahead.\n\nThis doesn't mean a one-list document always loses. A document near the bottom of both lists can still be beaten by one that sits at the top of a single list. It depends on the totals.\n\n\"Doc A, as both lists give it points\" is better because fusion rewards strong agreement across searches, and Doc A's two good places add up to more than Doc B's one.",
+   "step": "Check",
+   "fingerprint": "63219001f356e919",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “They tie, as both reach 1st place”?",
+   "a": "It's a fair guess. It gets one thing right: each document does reach 1st place in one of the lists. Rank fusion does care about place, and 1st place earns the most points.\n\nBut rank fusion doesn't just look at a document's best place. It gives points from **every** list and **adds them up**.\n\n- Doc A gets points twice: once for 1st in keyword search and once for 2nd in vector search.\n- Doc B gets points only once, for 1st in vector search. It is missing from the keyword list, so that list gives it nothing.\n\nYou might worry that 1st place is worth far more than 2nd. It isn't. The method adds a fixed number to every place before working out the points. So 1st and 2nd earn almost the same amount. That leaves Doc A with roughly double Doc B's total.\n\nThat is the whole point of fusion. Documents that both searches agree on rise to the top.\n\n\"Doc A, as both lists give it points\" is better because fusion adds up points from every list, and Doc A collects from two lists while Doc B collects from only one.",
+   "step": "Check",
+   "fingerprint": "485fbc801880a982",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only soft spot is that 'roughly double' assumes a fairly large fixed number, which the lesson doesn't specify, but it fits the lesson's idea."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add up points by place, then sort” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Hybrid search runs keyword search and vector search together. Keyword search catches exact terms like `E-4021`. Vector search catches meaning. But their scores sit on different scales, so I can't simply add them.\"\n\n*The idea:* \"So I ignore the scores and use each document's place in each list. Reciprocal rank fusion gives points for every place, more for a higher place, and adds them up. A document near the top of both lists rises. One found by only one search still gets some points.\"\n\n*A trade-off:* \"A fixed number is added to every place before it becomes points. That keeps first place from counting far more than second. The cost is that we lose how confident each search actually was.\"\n\n**Likely follow-up:** \"Why not just normalize the scores?\" Normalizing means rescaling them to a shared range, like 0 to 1.\n\n*Hint at a strong answer:* Rescaled scores still don't mean the same thing. Also, one odd score can stretch the range and squash the rest. Ranks are simple, steady, and need very little tuning.",
+   "step": "Explain",
+   "fingerprint": "d2f5f0fafafd4f74",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs to watch for**\n\n- **Exact codes go missing.** A query like \"E-4021\" returns chunks about checkout in general, but not the one with that code. That suggests only vector search is really counting.\n- **Paraphrases go missing.** \"payment page won't load\" finds nothing useful because no words match exactly. That suggests only keyword search is counting.\n- **The fused list copies one list.** If the merged results look exactly like the keyword list or the vector list, raw scores were probably mixed instead of places. One score scale (its range of numbers) is drowning out the other.\n- **Single-list finds vanish.** A document that only one search found never appears, even when it's relevant.\n- **Tests look fine, then real users complain.** Your test questions may lean towards one style, so the weak side never got tested.\n\n**Quickest check**\n\nPick a few test questions. Include some with exact codes and some with loose wording. For each, look at the keyword list, the vector list and the fused list side by side. A document placed high in both should sit near the top. A strong find from just one list should still show up somewhere.",
+   "step": "Learn",
+   "fingerprint": "63e7f87d7840bc17",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where rank fusion needs extra care.\n\n**One search is much better than the other.** Rank fusion trusts both lists equally. If your users mostly type exact error codes, the vector list may add loosely related noise. Test on a set of real sample questions, then give the stronger list more weight, or use only that search.\n\n**You need the very best answer at the top.** Fusion only knows each document's place, not how closely it actually matches. Two documents can tie even when one is clearly better. Add a reranker: a second model that reads the question and each top result, then scores them directly.\n\n**Your documents change often.** Hybrid search relies on two separate lookups, one for words and one for embeddings (number lists that capture meaning). If only one gets updated after new documents arrive, the two lists disagree and the fused order gets strange. Make sure both are refreshed together whenever the data changes.",
+   "step": "Learn",
+   "fingerprint": "db1d26951a1f34ac",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Hybrid search” mean here?",
+   "a": "Picture asking two friends to find a book in a library. One scans the spines for the exact title. The other knows what the book is about and grabs ones on that subject. Asking both gives you better odds than asking just one.\n\nHybrid search works the same way. It runs two searches on the same question:\n\n- **Keyword search** looks for the exact words. It shines with things like the error code `E-4021`.\n- **Vector search** matches by meaning. It uses embeddings, which are lists of numbers that capture what a piece of text means. So \"checkout failed\" can match \"payment page broke.\"\n\nThen it merges the two result lists into one.\n\nIn the lesson's example, keyword search returned `d3, d1, d7` and vector search returned `d1, d9, d3`. Hybrid search combines them into `d1, d3, d9, d7`. `d1` and `d3` appear in both lists, so they rise to the top.\n\nIn the Databricks code, `query_type=\"hybrid\"` turns this on. The query \"error E-4021 on checkout\" fits well. The error code needs exact matching, while \"checkout\" benefits from matching by meaning.",
+   "step": "Learn",
+   "fingerprint": "2ee94eeec9bb84b3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "vector_index_setup": {
+  "check:0:1": {
+   "q": "Why not “The table has no embeddings column yet”?",
+   "a": "It is a fair guess. Every index does need **embeddings**, the lists of numbers that capture meaning. So the option points at something real.\n\nBut a missing embeddings column does not stop a Delta Sync index. You can use **managed embeddings**. You name an embedding model endpoint, such as `databricks-gte-large-en`, and point `embedding_source_column` at your text column. Databricks then makes the embeddings for you. The lesson's own example does exactly this: `doc_chunks` has no embeddings yet, and the plan still works. A table with no embeddings column is a normal starting point, not an error.\n\nWhat does fail straight away is a missing setting on the table. On a Standard endpoint, a Delta Sync index needs **Change Data Feed**. That setting keeps a log of which rows changed, so the index only updates those rows. Without it, the index has no way to follow the table, so creation stops at once. (Tables with row tracking already have it.)\n\n\"Change Data Feed is not turned on for the source table\" is better because it is a hard requirement for Delta Sync on Standard, while missing embeddings has a built-in fix.",
+   "step": "Check",
+   "fingerprint": "2332f831b7f987e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The table has too few rows to index”?",
+   "a": "It's a fair guess, because it looks in the right place: the source table. When a Delta Sync index fails, the table it follows is often where the problem is.\n\nBut the lesson never mentions a minimum number of rows. Nothing says a table must be \"big enough\" to index. A small table can be indexed just like a large one. Size only comes up when choosing an endpoint type, and even then it is about cost. Around 10 million vectors, storage-optimized becomes cheaper. Size is never a reason for failure.\n\nNotice the clue \"fails straight away.\" A failure that quick usually means a setup check failed before any data was read. Row count isn't that kind of check.\n\nThe lesson does name one such check. On a Standard endpoint, a Delta Sync index needs **Change Data Feed** on its source table. That setting keeps a log of which rows changed, so the index can update only those rows.\n\n\"Change Data Feed is not turned on for the source table\" is better because it is a stated requirement for exactly this setup, and missing it makes creation fail immediately.",
+   "step": "Check",
+   "fingerprint": "d855512644fa20be",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Some claims go slightly beyond the lesson (e.g. 'size is never a reason for failure', 'a quick failure usually means a setup check failed'), but none contradict it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Continuous, always streaming”?",
+   "a": "\"Continuous, always streaming\" would work. Your index would never be more than moments behind the table, so answers would always be fresh. That part is right.\n\nThe problem is cost. Continuous mode keeps a **streaming job** running all the time. A streaming job is a process that never stops. It watches the table and pushes each change into the index as soon as it lands. You pay for that job every hour, even when nothing changes.\n\nYour help-desk documents change only a few times a day. And the question says answers can be a day behind. So most of the time, that always-on job would sit there waiting and billing you. It would also make the index fresher than anyone needs.\n\nA good rule of thumb: choose Continuous only when data must be fresh within minutes. Here, a day is fine.\n\n\"Triggered, synced once a day\" is better because it updates only when you call `sync()`, which is the cheapest option, and one daily sync already meets the \"a day behind is fine\" requirement.",
+   "step": "Check",
+   "fingerprint": "01e34c3a3305657f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Either, they cost the same”?",
+   "a": "This option gets one thing right. Both sync modes would work here. Either one would keep your index fresh enough for help-desk answers that can be a day old.\n\nThe mistake is the cost part. The two modes do not cost the same.\n\n- **Continuous** runs a streaming job all the time. A streaming job is a process that never stops watching the table for changes. You pay for it every hour, even when nothing has changed.\n- **Triggered** only does work when you call `index.sync()`. Between syncs, it uses no extra compute for updating.\n\nYour documents change only a few times a day. Continuous would mostly sit there, billing you while it waits. That buys freshness within moments that nobody needs.\n\nSo the real question is not \"which one works?\" Both do. The question is \"which one meets the need for the least money?\"\n\n**Triggered, synced once a day** is better because it fully meets the \"a day behind is fine\" rule while paying only for one short update each day.",
+   "step": "Check",
+   "fingerprint": "609c44e565c74d7b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Change Data Feed on the table”?",
+   "a": "\"Change Data Feed on the table\" mixes up two different jobs.\n\nIt does get one thing right. Change Data Feed is a real requirement in this lesson. On a Standard endpoint, a Delta Sync index needs it turned on for its source table. It keeps a log of which rows changed, so the index only updates those rows.\n\nBut that setting is about **keeping the index up to date**. It is not about **who may search**. If it were missing, you would hit the problem when creating or syncing the index. It would not cause one person's search to be refused. It also lives on the table, and Ana is searching the index, not reading the table.\n\nAna's problem is access. Access has two locks. She has opened the first one: the Unity Catalog permissions `USE CATALOG`, `USE SCHEMA` and `SELECT` on the index. The second lock is on the endpoint, the machines that actually answer searches.\n\n\"Her permission on the endpoint\" is better because she still needs `CAN_USE` (or `CAN_MANAGE`) on the endpoint, and without it the search is refused even though her catalog permissions are complete.",
+   "step": "Check",
+   "fingerprint": "a5cb44b49fa8b328",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The claim that a missing Change Data Feed would show up at create or sync time is an inference the lesson does not state, but it is reasonable and does not contradict the lesson."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A Storage-optimized endpoint”?",
+   "a": "\"A Storage-optimized endpoint\" points at the right *place*: the endpoint. But it picks the wrong *thing* about it.\n\nAn endpoint's type is about speed and cost. Standard answers in tens of milliseconds. Storage-optimized is slower, but cheaper per vector once you have around 10 million or more. Neither type changes who is allowed to search. Switching Ana to a Storage-optimized endpoint would leave her just as blocked.\n\nRemember the two locks. The first is in Unity Catalog, Databricks' catalog of data and who may use it. There she needs `USE CATALOG`, `USE SCHEMA` and `SELECT` on the index. Ana has all three, so that lock is open.\n\nThe second lock is on the endpoint itself, the machines that answer searches. It has its own permission, `CAN_USE` or `CAN_MANAGE`. Every endpoint has this lock, whatever its type.\n\n\"Her permission on the endpoint\" is better because it names the one lock Ana has not opened yet: she needs `CAN_USE` or `CAN_MANAGE` on the endpoint her index sits on.",
+   "step": "Check",
+   "fingerprint": "0dafa044a33a838d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Rules checked in a fixed order” in an interview?",
+   "a": "**A 30-second answer you could say out loud:**\n\n**The problem.** Setting up Vector Search means four choices: index type, embeddings, endpoint type and sync mode. If you pick each one on its own, you can end up with a combination that isn't allowed.\n\n**The idea.** Each choice follows from a plain fact about your data. So I check those facts in a fixed order, and each answer narrows what's left. For example, if there's no source Delta table, the index must be Direct Vector Access. That one answer settles two later questions. Embeddings must be self-managed, and there's no sync mode at all.\n\n**The edge case.** The order is what keeps it safe. Say I picked Continuous sync first. Then a huge vector count pushes me to a storage-optimized endpoint. That endpoint only supports Triggered, so my earlier pick breaks.\n\n**A likely follow-up:** \"When would you pay for Continuous sync?\"\n\n**Hint for a strong answer:** Talk about freshness against cost. Continuous runs a streaming job all the time, so it costs more. Use it only when the data must be fresh within minutes, and only on a Standard endpoint. Otherwise, Triggered is cheaper and good enough.",
+   "step": "Explain",
+   "fingerprint": "2d7081ffdfde539f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Old answers.** You add new chunks to the table, but searches never return them. Your index likely uses **Triggered** sync, which means it only updates when you call `index.sync()`, and nobody called it.\n- **Index won't build on a Standard endpoint.** A **Delta Sync** index follows a Delta table (a Databricks table). On Standard, that table needs Change Data Feed, a log of changed rows. Without it, setup stops.\n- **Searches feel slow.** Answers take a few hundred milliseconds, not tens. You may be on a storage-optimized endpoint when you needed Standard.\n- **A high bill with few searches.** An endpoint charges for every hour it is up. **Continuous** sync costs more too, because it keeps a streaming job (a process that never stops) running.\n- **Permission errors.** Unity Catalog is the Databricks catalog that controls who may use data. You need USE CATALOG, USE SCHEMA and SELECT on the index. You also need CAN_USE on the endpoint.\n\n**Quickest check**\n\nAdd one chunk with an unusual phrase, then search for it. If it is missing, run `index.sync()` and search again.",
+   "step": "Learn",
+   "fingerprint": "3ad9c6f021910df3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only slip is that it says you need CAN_USE on the endpoint, where the lesson says CAN_USE or CAN_MANAGE."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The setup in this lesson fits one common case: a Delta table, a few hundred thousand chunks, and data that can be an hour old. Here is where that changes.\n\n**Your data grows to around 10 million vectors or more.** A Standard endpoint gets costly at that size. Move to a storage-optimized endpoint, which costs much less per vector. Expect searches to take a few hundred milliseconds instead of tens, and only Triggered sync is available there.\n\n**Answers must reflect changes within minutes.** Triggered sync only updates when you call `sync()`, so results can go stale. Switch to Continuous mode, which keeps a streaming job (a process that never stops) running. It costs more. It also needs a Standard endpoint, since storage-optimized does not offer it.\n\n**Your vectors don't come from a Delta table.** Delta Sync has nothing to follow, and Change Data Feed does not apply. Use a Direct Vector Access index and write the vectors yourself through the SDK or API. You must bring your own embeddings, and there is no sync mode to pick.",
+   "step": "Learn",
+   "fingerprint": "97345f2150a93615",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. All three situations match the lesson; the only minor weakness is that SDK and Change Data Feed are used without a short explanation."
+   }
+  },
+  "learn:term": {
+   "q": "What does “index” mean here?",
+   "a": "Think of the index at the back of a textbook. The book holds the content. The index is a separate, organized list that lets you jump straight to what you need, without reading every page.\n\nHere, your chunks live in a Delta table (a Databricks table). The index is a searchable copy of those chunks, plus their embeddings: lists of numbers that capture meaning. A search compares your question's numbers with those, so it finds chunks that mean something similar, even when the words differ.\n\nThe index needs somewhere to run. That is the endpoint: machines kept running to answer searches. The index sits on it.\n\nIn the example, `vsc.create_delta_sync_index(...)` creates the index. Two of its arguments name the index and its source table:\n\n```python\nindex_name=\"main.support.docs_index\",\nsource_table_name=\"main.support.doc_chunks\",\n```\n\nThe index lives in Unity Catalog, Databricks' catalog of data and who may use it. That is why its name has three parts, read left to right like nested folders. First comes the catalog, `main`. Then the schema (a group of tables), `support`. Last is the index itself, `docs_index`.\n\nLater, `index.sync()` pulls the latest table changes into the index.",
+   "step": "Learn",
+   "fingerprint": "be84a417c551e623",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}

@@ -1,0 +1,1148 @@
+{
+ "backoff_delays": {
+  "check:0:0": {
+   "q": "Why not “401 Unauthorized”?",
+   "a": "\"401 Unauthorized\" means the server does not accept your credentials. Credentials are the proof of who you are, like an API key (a secret string your code sends with each request). In plain words: \"I don't know you, so I won't answer.\"\n\nIt gets one thing right. A 401 is a real failure, and your code should notice it and react.\n\nWhat it misses is the lesson's key rule: only retry errors that can fix themselves. A wrong key is still wrong one second later, and one minute later. Every retry fails the same way. You just wait longer before seeing the same error. The fix is to correct the key, not to try again.\n\nThis matters in the lesson's LangChain example. `with_retry` retries every error by default. With `stop_after_attempt=4`, a wrong key would be sent four times in total, which is the first try plus three retries. Passing `retry_if_exception_type=(...)` limits retries to the errors worth retrying.\n\n\"429 Too Many Requests\" is better because a rate limit is temporary: once you wait a bit, the limit resets, so a later try can succeed.",
+   "step": "Check",
+   "fingerprint": "d30e39765d17150e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “400 Bad Request”?",
+   "a": "\"400 Bad Request\" is a fair guess at first. It is a real error, and the call did fail. But it is the wrong kind of error to retry.\n\nA 400 is a status code (a number the server sends back to say how a request went). It means \"your request itself is broken.\" Maybe a field is missing, or the input has the wrong shape. The problem is in what you sent, not in the server's mood.\n\nSo if you send the same request again, it breaks the same way. Waiting 1 second, then 2, then 4 changes nothing. You just burn time and extra requests before failing anyway. The fix is to change the request, not to repeat it.\n\nThis is the lesson's key rule. Only retry errors that can fix themselves. A wrong key or a bad request fails the same way every time.\n\n\"429 Too Many Requests\" is better because it means you hit a rate limit (a cap on requests per minute), and that limit resets if you simply wait. That is exactly what backoff is built for.",
+   "step": "Check",
+   "fingerprint": "d15b89c544cdc3c5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Five retries is not enough for a 401”?",
+   "a": "That option notices something real: the five retries all failed. But it draws the wrong lesson from that. It suggests the fix is *more* retries, as if attempt six or ten might finally work.\n\nA `401 Unauthorized` means the server checked your API key (the secret password your code sends to prove who it is) and rejected it. The key is still wrong on the next try, and the one after that. Retrying can't change it. Fifty retries would fail just like five, only slower, and each one wastes a request.\n\nRetries with backoff are for temporary problems that can clear up while you wait. Examples are a `429` rate limit, a timeout, or an overloaded server. A wrong key is a permanent problem. The fix is to correct the key, not to keep knocking.\n\nThis is why the LangChain note matters. `with_retry` retries every error by default. Passing `retry_if_exception_type` lets you limit retries to the temporary kinds.\n\n\"A wrong key fails the same way each time\" is better because it names the real problem: this error can never fix itself, so it shouldn't be retried at all.",
+   "step": "Check",
+   "fingerprint": "536a91b5718f794b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The waits between tries are too short”?",
+   "a": "\"The waits are too short\" assumes waiting could help. For some errors, it can. A 429 (rate limit) means \"slow down.\" Wait long enough and the next try may work. So this option is thinking about backoff correctly in general.\n\nBut a 401 Unauthorized is different. It means the server checked your key and rejected it. The key is wrong, and it stays wrong. Waiting 1 second or 1 hour changes nothing. Every retry sends the same bad key and gets the same 401.\n\nSo longer waits would just make the failure slower. You'd wait through 5 rounds of backoff before finding out what you could have known on the first try. The real fix is to not retry at all, and to show the error so someone can fix the key.\n\nThis is why the lesson says to retry only errors that can fix themselves. In LangChain, `with_retry` retries every error by default. Passing `retry_if_exception_type=(...)` lets you limit it to temporary ones.\n\n\"A wrong key fails the same way each time\" is better because it names the real problem: this error isn't temporary, so no amount of retrying or waiting will fix it.",
+   "step": "Check",
+   "fingerprint": "53ed2a0db75a0417",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A shorter first wait”?",
+   "a": "Starting with a shorter wait changes where the waits begin. It does not change where they end up.\n\nTry it. Start at 0.5 seconds instead of 1. You get 0.5, 1, 2, 4, 8, 16, 32, 64, and so on. Each wait still doubles. After a few more tries, you are waiting minutes, then hours. The real problem in the question is that the waits keep growing with no limit.\n\nTo be fair, a shorter first wait is not a bad idea. Many temporary errors clear up fast. A quick first retry can get you an answer sooner. But it is a small tune-up, not a fix.\n\nA **cap** is a maximum wait. Once the doubled wait would go past it, you use the cap instead. With a cap of 5, the waits become 1, 2, 4, 5, 5. They stop growing, so the user never sits stuck for an hour.\n\n\"A cap so waits stop growing\" is better because it fixes the actual flaw: it puts a ceiling on the waits, however many retries happen.",
+   "step": "Check",
+   "fingerprint": "f2fbbc9333ce92fc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Waits that stay the same”?",
+   "a": "**Why not \"Waits that stay the same\"?**\n\nIt does fix one thing. If every wait were, say, 2 seconds, the waits could never balloon to 64 seconds and beyond. So it stops the runaway growth.\n\nBut it throws away the useful part. Doubling exists for a reason. If a server is overloaded or rate limiting you (capping how many requests you may send per minute), the first short wait may not be enough. Each longer wait gives the server more time to recover. With fixed waits, your code keeps knocking at the same quick pace. That can keep the server busy and make the problem last longer.\n\nThe retries in the question are already doing the right thing early on: 1, 2, 4. The only flaw is that nothing stops the growth. You don't need to replace doubling. You just need to limit it.\n\n**Why \"A cap so waits stop growing\" is better:** it keeps the doubling that helps a struggling server recover, and it uses `min` to hold each wait at a sensible maximum (like 1, 2, 4, 5, 5 with a cap of 5).",
+   "step": "Check",
+   "fingerprint": "d0702e7a52198f71",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claim that fixed fast retries can keep a server busy goes slightly beyond the lesson, but it doesn't contradict it. The `min` mention and the 1, 2, 4, 5, 5 sequence come straight from the lesson's own example."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Retry only errors that can fix themselves” matter?",
+   "a": "A retry only helps if the next try could turn out differently. Some errors fix themselves. A rate limit (a cap on requests per minute) lifts after a short wait. A timeout may pass once the server is less busy.\n\nOther errors never fix themselves. A wrong API key is just as wrong one second later. A badly formed request is still badly formed. Retrying these goes wrong in a few ways:\n\n- **You wait for nothing.** Each failed try adds a longer pause before the same failure.\n- **The real error is hidden.** The useful message, like \"invalid key,\" shows up late or gets buried in retry noise.\n- **You waste requests.** Extra calls can eat into your rate limit and slow down other work.\n\n**Example:** your agent uses `ChatDatabricks(...).with_retry(stop_after_attempt=4, wait_exponential_jitter=True)`, and the key is wrong. By default, LangChain retries every error, so it tries four times with growing waits. You wait several seconds and still get the same \"unauthorized\" error you could have seen right away.\n\nThe fix is to pass `retry_if_exception_type=(...)` so only temporary errors, like a 429 rate limit, get retried.",
+   "step": "Explain",
+   "fingerprint": "71411f4925db6a5d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'hidden error' and 'eats your rate limit' points go slightly beyond the lesson, though they do not contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Double each wait, with a cap” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* Model APIs often fail for temporary reasons. Think of a rate limit (a cap on how many requests you may send per minute), a timeout, or an overloaded server. Retrying straight away usually fails again and adds even more load.\n\n*The idea.* So I retry with exponential backoff. Each wait is double the one before. That gives the service time to recover. I also set a cap, a longest allowed wait, so the waits stop growing once they reach it.\n\n*A trade-off.* I only retry errors that can fix themselves, like a 429 rate limit. A wrong key or a bad request fails the same way every time, so retrying just wastes time. In LangChain, `with_retry` retries every error by default. I'd narrow it with `retry_if_exception_type`.\n\n**A likely follow-up**\n\n\"What if many clients fail at the same moment?\"\n\nHint: they would all retry in lockstep and hit the server together again. Mention jitter. That means adding a small random amount to each wait so the clients spread out. That's what `wait_exponential_jitter=True` turns on.",
+   "step": "Explain",
+   "fingerprint": "0e626c9235b506e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs it's going wrong**\n\n- **No retries at all.** Runs crash now and then with a `429` (the \"too many requests\" error) or a timeout. A batch job dies halfway through, even though the same call works when you rerun it.\n- **Retries with no growing wait.** Your logs show several attempts only milliseconds apart, all failing with `429`. Retrying instantly just hits the rate limit again.\n- **No cap.** One request suddenly takes minutes. The gaps between attempts keep doubling: 32 seconds, 64, 128.\n- **Retrying errors that can't fix themselves.** A wrong key gives `401` or `403`, and a bad request gives `400`. If you see the same one of these repeated four times, your code is retrying things that will never work. It fails anyway, just slower. This is the default with `with_retry` unless you set `retry_if_exception_type`.\n\n**Quickest check**\n\nPick one failed request in your logs, or in an MLflow trace (the step-by-step record of a single call). Look at two things:\n\n1. **The timestamps of each attempt.** The gaps should roughly double, then level off at your cap.\n2. **The error type.** It should be a temporary one, like `429` or a timeout, and not a `400`, `401` or `403`.",
+   "step": "Learn",
+   "fingerprint": "83b1f37f46bca83b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer passes all checks. It is right at the edge of the length limit (about 200 words), and the 400/401/403 codes go slightly beyond the lesson without contradicting it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where simple doubling-with-a-cap needs extra care.\n\n**1. Many clients failing at the same moment.** In a bigger system, hundreds of callers might hit a rate limit together. If they all double their waits in step, they all knock again at the same instant and overload the endpoint again. Add **jitter**, a small random extra wait for each caller, so their retries spread out.\n\n**2. Errors that will never fix themselves.** A wrong key or a badly formed request fails the same way every time, so retrying just wastes time and your request allowance. LangChain's retry helper retries every error by default. Tell it to retry only temporary failures, such as a 429 (rate limit) or a timeout.\n\n**3. Agent steps that change things.** In an agent, a retried tool call might send an email or write a row of data twice. Only retry steps that are safe to repeat, or first check whether the earlier attempt already did the work.",
+   "step": "Learn",
+   "fingerprint": "9a73d78381081f3f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “retry” different from “exponential backoff”?",
+   "a": "They answer two different questions.\n\n**Retry** answers \"should I try again?\" When a call fails for a temporary reason, like a rate limit or a timeout, you send the same request again. That's all retry means. It says nothing about timing.\n\n**Exponential backoff** answers \"how long should I wait before trying again?\" Each wait is double the one before. A **cap** stops the waits from growing forever.\n\nThey work as a team. Retry is the decision to try again. Backoff is the waiting plan between tries. Retrying with no waits can hammer a busy server and keep it overloaded. Backoff gives it room to recover.\n\nThink of knocking on a door. Knocking again is the retry. Waiting a bit longer each time before you knock is the backoff.\n\nIn the lesson's example, the wait starts at 1 second and doubles, with a cap of 5. So the waits are 1, 2, 4, 5, 5. The cap kicks in once doubling would pass 5.\n\nOne more thing: only retry errors that can fix themselves. A wrong key fails the same way every time, so no amount of waiting will help.",
+   "step": "Learn",
+   "fingerprint": "faa260be53526393",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Minor: 'rate limit' is mentioned without the lesson's definition, and the 1-second unit is an assumption, though sleep implies seconds."
+   }
+  }
+ },
+ "batch_items": {
+  "check:0:0": {
+   "q": "Why not “10”?",
+   "a": "\"10\" is a very natural guess. You divide 1,001 by 100, get 10.01, and drop the part after the decimal point. That math is half right: 10 requests of 100 texts each do cover 1,000 texts.\n\nWhat it misses is the leftover. 1,000 texts are sent, but text number 1,001 is still sitting there. It needs a request of its own. That request carries just one text, but it still counts.\n\nThis is exactly the bug the lesson warns about. The last batch is smaller than the rest, so it is easy to forget. Nothing crashes. You just end up with one document quietly missing, which is hard to notice later.\n\nA helpful habit: when the division does not come out even, round **up**, not down. Any leftover, even a single item, means one more request.\n\nIt is like the loaf of bread again. Ten thick slices, plus one thin heel at the end. You still keep the heel.\n\n\"11\" is better because it counts that final one-text batch, so every text gets sent.",
+   "step": "Check",
+   "fingerprint": "0bc2f94fb75805bc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “100”?",
+   "a": "\"100\" is the size of each batch, not the number of batches. It answers \"how many texts go in one request?\" The question asks \"how many requests do you send?\"\n\nThe answer does get one thing right: 100 matters here. It is the most you can send at once. But it is the wrong quantity to count.\n\nHere is the actual count. Each request carries up to 100 texts:\n\n- 10 full requests cover 1,000 texts.\n- That leaves 1 text over.\n- That 1 text still needs its own request.\n\nSo the total is 10 + 1 = 11.\n\nThat leftover text is the \"smaller last batch\" the lesson warns about. If you stopped at 10 requests, one text would be silently dropped. That is the classic bug: a thousand texts sent, one missing.\n\nIf you actually sent 100 requests, each would hold only about 10 texts. You would pay the fixed delay (the overhead) 100 times instead of 11. That throws away the whole point of batching.\n\n\"11\" is better because it divides by the batch size and rounds up, so every text is sent, including the last one.",
+   "step": "Check",
+   "fingerprint": "d5e99bfc7ca40a80",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The batch size of 100 is too big”?",
+   "a": "It's a fair guess, because APIs really do limit how much you can send in one request. If a batch were too big, though, the API would usually reject it with an error.\n\nLook at the numbers. 250 documents in batches of 100 gives three batches: 100, 100, and 50. The index holds 200. That is exactly the two full batches. The missing 50 are exactly the leftover batch.\n\nIf 100 were too big, every batch of 100 would fail. You'd expect 0 documents in the index, or 50 if only the small batch fit. Getting precisely 200 points somewhere else.\n\nThe usual cause is code that only counts full batches. Here is an example of that bug:\n\n```python\nnum_batches = 250 // 100   # whole-number division gives 2, not 3\n```\n\nHere `//` divides and throws away the remainder. So the loop runs twice and never sends the last 50. Nothing crashes, so the loss is silent.\n\n\"The last, smaller batch was lost\" is better because it explains exactly the 50 missing documents, while a size problem doesn't fit those numbers.",
+   "step": "Check",
+   "fingerprint": "c14db15e0b5ba7b1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The API rejected 50 at random”?",
+   "a": "\"The API rejected 50 at random\" gets one thing right: 50 documents really are missing. But it doesn't explain why the number is exactly 50.\n\nDo the math on the batches. 250 documents in batches of 100 gives three batches: 100, 100, and 50. The missing amount matches the size of that last, smaller batch exactly. That's a strong clue. Random rejections would rarely line up so neatly.\n\nAlso, APIs don't usually throw items away silently. When they refuse something, they tend to send back an error, which is a message saying what failed. A silent gap points to a problem in your own code, not the API.\n\nThe usual cause is batching logic that only sends \"full\" batches. For example, a loop might stop once fewer than 100 items are left. The leftover 50 never get sent, and nothing complains.\n\n\"The last, smaller batch was lost\" is better because it explains the exact size of the gap and points straight to the bug you can fix in your code.",
+   "step": "Check",
+   "fingerprint": "58001f7ad52aee2e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claims that APIs rarely drop items silently and that a silent gap points to your own code go beyond the lesson, but they are reasonable and consistent with it."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The model reads batches more carefully”?",
+   "a": "\"The model reads batches more carefully\" sounds reasonable, but it misses where the speed comes from.\n\nThe slowness here is not about the model's care. It is about **overhead**: a fixed delay that every request carries before any work starts. Think of it as a toll you pay each time you send something, whether the request holds one text or a hundred.\n\nWith 5,000 texts sent one at a time, you pay that toll 5,000 times. With batches of 100, you send only 50 requests, so you pay it just 50 times. Most of the waiting disappears.\n\nSo the option points at the wrong thing. Speed from batching comes from sending fewer requests, not from the model paying closer attention. Nothing in the lesson says batching changes how carefully the model reads.\n\n\"Fewer requests, so less fixed delay\" is the better answer because it names the real cause: each request's fixed delay is paid fewer times when you group items together.",
+   "step": "Check",
+   "fingerprint": "ab715e28a222bf06",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Batches don't count toward the limit”?",
+   "a": "\"Batches don't count toward the limit\" sounds tempting, but it isn't true. The lesson says APIs limit how much you can send per request. A batch is still a request, so it still has to fit inside that limit. That is why you pick a sensible size like 100 rather than sending all 5,000 at once.\n\nThe bigger problem is that it misses why batching is faster. The speed-up has nothing to do with dodging a limit. It comes from **overhead**: the fixed delay every request carries before any work starts, such as connecting and waiting for a reply.\n\nSend 5,000 texts one by one and you pay that delay 5,000 times. Send batches of 100 and you pay it only 50 times. The work on each text stays the same either way. You just stop waiting so often.\n\n\"Fewer requests, so less fixed delay\" is the better answer because it names the real cause: each request costs a fixed wait, and batching cuts the number of waits from 5,000 to 50.",
+   "step": "Check",
+   "fingerprint": "cc6979758e8f24a6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Step through in jumps” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* APIs limit how much you can send in one request. Every request also has overhead, a fixed delay before any work starts. Sending items one at a time pays that delay over and over.\n\n*The idea:* I step through the list in jumps the size of one batch, say 0, 3, 6 for a batch size of 3. At each jump I take the next chunk of items and send it as one request. Fewer requests means less waiting, and often a lower bill.\n\n*The edge case:* The last batch is usually smaller. A classic bug is losing it, so a thousand documents go in and one is silently missing. A slice that runs past the end just stops at the end, so that short batch is kept. It's like slicing a loaf: the last slice may be thin, but you keep it.\n\n**A likely follow-up**\n\n\"How would you choose the batch size?\"\n\n*Hint:* Name the trade-off. Bigger batches save more overhead. But they can hit the API's size limit. They also lose more work if one request fails. Say you'd respect the documented limits and test a few sizes.",
+   "step": "Explain",
+   "fingerprint": "f13c410535fccf46",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "There are two ways this goes wrong: not batching at all, or batching but losing the last batch.\n\n**Signs you are not batching**\n- Your logs show one request per item. A thousand documents means a thousand requests.\n- Total run time is roughly the number of items times one request's fixed delay. Doubling the items doubles the waiting, even though each item is tiny.\n\n**Signs your batches are too big**\n- The API rejects requests with errors like \"payload too large\" (payload means the data you sent). The lesson notes APIs limit how much you can send per request.\n\n**Signs the last batch was dropped**\n- Output count is a little short of input count. For example, 1,000 documents in, 999 embeddings out.\n- The missing items are always the final few.\n- Nothing errors, so it feels fine until someone searches for a document that isn't there.\n\n**Quickest check**\n\nCompare the number of items going in with the number of results coming out. Then test with a count that doesn't divide evenly, like 7 items in batches of 3. You should get three batches, and the last one should hold the single leftover item.",
+   "step": "Learn",
+   "fingerprint": "bc8c2b5015b02bde",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only small point is that 'embeddings' is not explained in this answer, though the lesson defines it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Batching is a strong default, but here are three places it needs extra care.\n\n**Items vary a lot in size.** Counting items per batch assumes they are all similar. With an LLM (large language model), the real limit is often **tokens**, the word pieces the model reads. Ten long documents can break a limit that a hundred short ones fit under. Build batches by total tokens, not by item count.\n\n**One bad item in a batch.** If one item is malformed, some APIs reject the whole batch. You lose the good items along with the bad one. Retry the failed batch in smaller pieces, or one item at a time, so you find the bad item and keep the rest.\n\n**Someone is waiting.** In a chat or RAG app (an app that looks up documents before answering), a user wants a reply now. Waiting to fill a batch adds delay they can feel. Send live requests right away. Save batching for background jobs, like embedding every ticket overnight with `ai_query`.",
+   "step": "Learn",
+   "fingerprint": "f86949a734ffab53",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the item-size and live-chat sections run to four sentences, over the two-or-three limit, but this is minor."
+   }
+  },
+  "learn:term": {
+   "q": "What does “overhead” mean here?",
+   "a": "**Overhead** is the fixed cost you pay every time you start something, no matter how much work you do.\n\nThink of a trip to the shop. The drive there and back takes 20 minutes, whether you buy one apple or a full cart. That drive is the overhead. If you buy everything in one trip, you skip many drives.\n\nAn API request (a message asking another service to do some work) works the same way. Before any real work starts, there is a fixed delay. The request has to connect, prove who you are, and travel across the network. That delay is the same for one item or many.\n\nIn the lesson's example, `items` holds seven items. Sent one at a time, that is seven requests, so you pay the fixed delay seven times. Grouped in threes, you get `[[0, 1, 2], [3, 4, 5], [6]]`. That is only three requests, so you pay the delay three times.\n\nEach item still gets processed. You just stop paying for the drive to the shop over and over.",
+   "step": "Learn",
+   "fingerprint": "975049dd76544183",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer is sound. It adds some detail the lesson does not state (connecting, authenticating, network travel), but this does not contradict the lesson."
+   }
+  }
+ },
+ "extract_code_block": {
+  "check:0:0": {
+   "q": "Why not “Fail when there's no fence, so you notice”?",
+   "a": "\"Fail when there's no fence, so you notice\" gets one thing right. You do want to notice when a reply is broken. Quietly passing bad data along causes confusing bugs later.\n\nBut a missing fence doesn't mean the reply is broken. The question says the model *sometimes* sends plain JSON. Plain JSON is a perfectly good answer. It just isn't wrapped. If your code fails every time there's no fence, it throws away good replies and crashes for no real reason.\n\nThe fence is only packaging. What you actually care about is the JSON inside. So the right place to \"notice\" a problem is after you've pulled the text out. For example, `json.loads` (Python's tool for turning JSON text into data) raises an error if the text isn't valid JSON. That catches real problems without punishing harmless ones.\n\n\"Use the fence if there is one, else the whole reply\" is better because it accepts both normal shapes of a good answer. It still leaves room to catch truly bad replies afterward.",
+   "step": "Check",
+   "fingerprint": "084fcf1bdd36417d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Ask the model again until it uses a fence”?",
+   "a": "It's a fair instinct. You want an answer your code can read, and asking again *is* a real tool. Some apps retry when a reply truly can't be used.\n\nBut this option misses two things.\n\n**First, a plain reply is already fine.** If the model sends `{\"a\": 1}` with no fence, there is nothing wrong with it. Rejecting it means throwing away a good answer just because it isn't wrapped the way you expected.\n\n**Second, retrying has a cost.** Each new request to the model takes time and usually costs money. The model may also keep replying without a fence, so \"until it uses a fence\" could loop for a long time, or forever. Your users would be stuck waiting.\n\nThe lesson's idea is to parse defensively. That means your code adapts to what comes back, instead of demanding one exact shape.\n\n\"Use the fence if there is one, else the whole reply\" is better because it handles both shapes in a single pass, with no extra requests.",
+   "step": "Check",
+   "fingerprint": "e7167d64ce8c718c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “The reply is too long to parse”?",
+   "a": "It's a fair guess. Something about the reply does change from day to day, and that is what makes the crash come and go. But length isn't the thing that changes in a way that matters.\n\nA JSON parser (the tool that turns JSON text into data your code can use) doesn't have a size limit you'd hit with a normal model reply. It reads through the text once, and a long reply of clean JSON parses fine. What it can't handle is text that isn't JSON at all. One stray word or symbol is enough to make it stop with an error.\n\nThat's what happens on the bad days. The model sometimes answers with something like `Sure!`, then the JSON inside a code fence, then `Hope that helps`. The parser hits `Sure!` and fails right away, even though the reply is short. On good days the model sends only the JSON, so it works.\n\n\"Sometimes the model adds chatter\" is the better answer because it names the real cause: extra non-JSON text that shows up only some of the time.",
+   "step": "Check",
+   "fingerprint": "6713d1338a1f0c34",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The parser is slower on busy days”?",
+   "a": "It's a fair guess. \"Works some days, crashes others\" does sound like something that changes with load. But it points at the wrong thing.\n\nThe JSON parser is the code that turns text into data, like `json.loads`. It runs on your own machine. It doesn't care how busy the model's servers are. Given the same text, it gives the same result every time.\n\nSpeed also isn't what makes a parser crash. A slow parser just finishes later. A parser crashes (stops with an error) when the text isn't valid JSON. Something like `Sure!` before the curly brace is enough to do it.\n\nThe part this option gets right is that something changes from day to day. What changes is the reply itself. Models don't answer the same way every time. Some replies are clean JSON. Others come wrapped in friendly chatter or a code fence (three backticks above and below).\n\n\"Sometimes the model adds chatter\" is better because it names the real thing that varies, the text the parser is given, and that is exactly what makes a parser crash.",
+   "step": "Check",
+   "fingerprint": "7186e720ddb5ca98",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Yes, the setting promises it”?",
+   "a": "\"Yes, the setting promises it\" gets one thing right. Structured output really does help. With it turned on, the reply comes back in your JSON shape far more often than with a plain \"JSON only\" request.\n\nBut \"far more often\" is not \"always.\" Here is what that answer misses:\n\n- **Support varies.** Not every model or endpoint (the model hosted on Databricks that your code sends requests to) handles the setting equally well. If you swap models later, the behaviour can change.\n- **Calls can still go wrong.** A reply can get cut off, come back empty, or be a refusal. Then `with_structured_output(Ticket)` may raise an error (stop your program with a problem report) instead of handing you a `Ticket`.\n- **Right shape, wrong content.** The setting checks the form, not the meaning. `category` might be a made-up label. `urgent` is a real `True` or `False`, but it could be the wrong one for that ticket.\n\nCode that trusts the reply blindly breaks in exactly these moments, and they happen in real use.\n\n\"No, still check the reply\" is better because the setting lowers the odds of a bad reply, but only your own check catches the ones that still slip through.",
+   "step": "Check",
+   "fingerprint": "e55ec14702048b43",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem; it adds failure modes the lesson doesn't mention (cut-off replies, refusals), though none contradict it, and it sits right around the 200-word limit."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes, but only for short replies”?",
+   "a": "\"Yes, but only for short replies\" has one fair instinct. Long replies do give the model more room to drift, so it feels like short ones are safe.\n\nBut length isn't what makes a reply safe. A short reply can still break your code. For example:\n\n- A field could be missing, like no `urgent` at all.\n- A value could be the wrong type, like `\"yes\"` (text) where you expected `true` (a yes/no value).\n- The reply could be cut off partway, or be an error message instead of JSON.\n- The endpoint could ignore the setting. An endpoint is the hosted model your code talks to.\n\nStructured output makes these problems rarer. It doesn't make them impossible. And a short reply can fail in all the same ways a long one can. So skipping the check for short replies just means some bad replies slip through unchecked.\n\nA check is cheap. Your code looks at what came back and has a fallback, a backup plan, if the reply isn't what you expected.\n\n\"No, still check the reply\" is better because structured output lowers the risk but never guarantees the shape, whatever the reply's length.",
+   "step": "Check",
+   "fingerprint": "8370edcc4ef07831",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Never assume the model's output format” matter?",
+   "a": "Your code usually does something with the reply. If the reply isn't in the shape your code expects, that step breaks.\n\nSay you ask for \"JSON only\" and pass the reply straight to `json.loads`. That is Python's tool for turning JSON text into data. The model answers:\n\n```python\nreply = 'Sure!\\n```json\\n{\"a\": 1}\\n```'\njson.loads(reply)  # error: \"Sure!\" is not JSON\n```\n\nIn real work, that error might stop a support system from sorting tickets. Sometimes it's worse. A `try/except` block catches errors so the program keeps running. If it hides this one, tickets go unsorted and nobody notices.\n\nThe tricky part is that it works most of the time. You test ten replies and all are clean. Then the model gets a small update, and one reply in fifty comes back with chatter. Bugs that only show up sometimes are the hardest to track down.\n\nSo protect yourself twice. Use structured output when the API offers it, so the model is held to your shape. Then still check what comes back, and have a fallback for when the shape is wrong.",
+   "step": "Explain",
+   "fingerprint": "712cd5f06a80cd9b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Find the fences, then cut” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* Even when you ask for \"JSON only\", models often add chatter, like \"Sure!\", or wrap the answer in a code fence. JSON is a common text format for data. A code fence is a line of three backticks above and below the text. Your program expects clean data, so the extras break it.\n\n*The idea.* Don't trust the reply's shape. Look for the fence. If it's there, cut out only the part inside. If it isn't, fall back to the whole reply, trimmed of spaces and line breaks.\n\n*Trade-off.* This is simple, but it's a guess. Two fences, or a missing closing fence, can trip it up. So you still check the result before using it.\n\n**A likely follow-up**\n\n\"Why not just turn on structured output?\"\n\n*Hint:* Structured output is a setting that makes the model reply in the exact JSON shape you ask for. Use it when the API supports it. The API is the set of rules your code uses to talk to the model. Even then, check what comes back. Not every model supports the setting, and it can still fail.",
+   "step": "Explain",
+   "fingerprint": "4ea4192e6657c312",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Errors that come and go.** Your JSON parsing (turning the text into data your code can use) works on some replies and crashes on others with a message like \"Expecting value\". The same prompt can get chatter one time and none the next.\n- **Fine in testing, broken in real use.** Your test replies happened to be clean. Real replies arrive with \"Sure!\" or a code fence.\n- **Leftovers in the result.** The text you extracted still contains backticks, the word `json`, or a friendly sentence.\n- **Quiet gaps.** With structured output, a field is missing or has the wrong type, and nothing complains because nobody checked.\n\nA clean JSON reply going straight to the fallback is not a problem. That is the right path when there is no fence. The problem is when the fallback's output still fails to parse.\n\n**Quickest check**\n\nSave a handful of raw replies next to what your code pulled out of each. Compare them by eye. Include at least one clean reply, one wrapped in chatter and a fence, and one where the closing fence is missing. If any result still has extra text, or crashes, the parsing isn't defensive enough yet.",
+   "step": "Learn",
+   "fingerprint": "ecced9b68f9c2f31",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems found. The answer is close to the word limit, and the missing-closing-fence test case goes slightly beyond the lesson but does not contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Fence-finding works well for simple replies. Here are three places where it needs extra care.\n\n**The reply has more than one code block.** A model might show a \"before\" and an \"after\" version. Grabbing the first fence may give you the wrong one. Ask the model for exactly one block, or use structured output so there is only one answer to read.\n\n**The code itself contains three backticks.** Say the model writes a markdown file, which uses fences inside it. Your search finds that inner fence and cuts too early. Here, structured output is safer. You can also ask for a different marker, like `<answer>` and `</answer>` tags.\n\n**The reply gets cut off.** Models stop when they hit their length limit, which is the maximum amount of text they may send back. Then there may be no closing fence, or the JSON may be half-finished. After cutting, check that the result really parses, meaning it turns into data without an error. If it doesn't, retry or raise the limit.\n\nEven with `with_structured_output`, keep a fallback. Validation can still fail, and your code should handle that calmly.",
+   "step": "Learn",
+   "fingerprint": "ba48e8fc7b486adb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Your code expects clean JSON. The model doesn't always give it. That gap breaks real programs.\n\n**A realistic example.** You build an agent that sorts support tickets. It asks the model for `{\"category\": ..., \"urgent\": ...}` and passes the reply to `json.loads`. That's Python's tool for turning JSON text into a dictionary, a set of labelled values.\n\nIn testing, the model replies with clean JSON. It works. Then one day it replies:\n\n```python\nreply = 'Sure!\\n```json\\n{\"category\": \"billing\", \"urgent\": true}\\n```'\njson.loads(reply)  # error: \"Sure!\" isn't JSON\n```\n\n`json.loads` raises an error and the agent stops. That urgent billing ticket never reaches anyone. Nothing about your code changed. The model just chose different wording that time.\n\n**Why defensive parsing helps.** If your code looks for the part it expects, it can still find the JSON inside the chatter. If no JSON is there at all, a fallback lets it retry or flag the reply instead of crashing.\n\n**Why still check structured output?** Using `with_structured_output` makes bad replies much rarer. But a field can still be missing or hold a nonsense value. Checking catches that before it causes trouble further along.",
+   "step": "Learn",
+   "fingerprint": "220aced826241d4c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "fill_template": {
+  "check:0:0": {
+   "q": "Why not “template.format(question=q)”?",
+   "a": "`template.format(question=q)` gets one thing right. It does know how to swap `{question}` for the user's question. That part would work.\n\nThe problem is that `str.format` treats **every** pair of curly braces as a placeholder, not just the ones you meant. So when it reaches the example `{\"answer\": \"...\"}`, it thinks that's a placeholder too. It looks for a value named `\"answer\"`, can't find one, and stops with a `KeyError`. That's Python's error for \"I looked up a name and it wasn't there.\"\n\n```python\nt = 'Example: {\"answer\": \"...\"} Question: {question}'\nt.format(question=\"hi\")   # KeyError: '\"answer\"'\n```\n\nYou could dodge this by doubling the JSON braces, like `{{\"answer\": \"...\"}}`. But then you have to remember to edit every example by hand, and one slip breaks the prompt.\n\n\"Replace exactly `{question}` and nothing else\" is the right answer. It touches only the placeholder you own and leaves every other brace in the prompt exactly as written.",
+   "step": "Check",
+   "fingerprint": "55844d2692ca576b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Remove all braces first”?",
+   "a": "\"Remove all braces first\" spots the real problem: braces are what confuse a filler like `str.format`. But stripping them causes two new problems.\n\n**It breaks your example.** The braces in `{\"answer\": \"...\"}` are part of the JSON. JSON is a text format for data, and its curly braces mark where an object starts and ends. Without them, the model sees `\"answer\": \"...\"`. That is no longer valid JSON. Your prompt now shows the model the wrong shape to copy, so its replies may come back in the wrong format too.\n\n**It erases your placeholder.** `{question}` loses its braces and becomes the plain word `question`. Nothing marks that spot as \"fill me in\" anymore. Your filler can't tell it apart from the word \"question\" anywhere else in the prompt. So you either can't fill it, or you risk replacing words you never meant to touch.\n\nIn short, it fixes the error by damaging the prompt.\n\n\"Replace exactly `{question}` and nothing else\" is better because it fills only the spot you marked and leaves every other character, including the JSON braces, exactly as you wrote it.",
+   "step": "Check",
+   "fingerprint": "43e9e5ed55f0e904",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The JSON example is too long”?",
+   "a": "\"The JSON example is too long\" gets one thing right. It links the crash to the day the JSON example was added. That timing is a real clue.\n\nBut it blames the wrong thing. Length has nothing to do with it. The lesson's example, `{\"ok\": true}`, is tiny, and it still crashes.\n\nThe real trouble is the curly braces. `str.format` treats every pair of braces as a placeholder, meaning a spot to fill in. When it sees `{\"ok\": true}`, it thinks `\"ok\"` is a placeholder name. Nobody gave it a value for that name, so it raises a `KeyError`. That is Python's error for \"I looked up a name, and it isn't there.\"\n\nSo a short JSON example breaks the prompt. A very long prompt with no extra braces works fine. Length is not the cause.\n\n\"It fills the prompt with `str.format`\" is better because it names the actual cause: `str.format` mistakes the JSON's own braces for placeholders.",
+   "step": "Check",
+   "fingerprint": "bd585f9d9acf6ec9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The model can't read JSON”?",
+   "a": "\"The model can't read JSON\" gets one thing right. The trouble did start when JSON was added to the prompt.\n\nBut it blames the wrong part of the system. A `KeyError` is a Python error. It means the code looked up a name it was never given. That happens on your own computer, while the prompt is still being built. The model has not seen the prompt yet, so it has had no chance to fail at reading anything.\n\nAlso, models read JSON fine. Asking a model to reply in JSON is a very common pattern.\n\nSo the real question is what in the prompt-building code reacts badly to curly braces. That is where `str.format` comes in. It treats every `{...}` as a placeholder. When it sees `{\"ok\": true}`, it looks for a value named `\"ok\"`. There is none, so it raises `KeyError: '\"ok\"'`.\n\n\"It fills the prompt with `str.format`\" is better because it names the actual cause: the filler mistakes the JSON's braces for placeholders and crashes before the model is ever called.",
+   "step": "Check",
+   "fingerprint": "b93fb7c5c3e0469c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “No curly braces anywhere”?",
+   "a": "\"No curly braces anywhere\" gets one thing right. Your own placeholders, `{question}` and `{docs}`, should be gone after filling. Their braces are replaced by the real question and the real documents.\n\nBut it goes too far. Not every pair of braces in a prompt is a placeholder. The `{\"ok\": true}` part is JSON, a text format for data that uses curly braces. It is there to show the model exactly what shape of reply you want. If those braces disappear, the example is broken, and the model loses its guide.\n\nSo the result should look something like this:\n\n```\nAnswer What is MLflow? using <the docs text>. Reply like {\"ok\": true}.\n```\n\nThe placeholders are filled. The JSON example is still there, braces and all.\n\nThink of the form letter again. You write in the blanks, but you don't erase the rest of the letter just because it has some unusual marks in it.\n\n\"The `{\"ok\": true}` example, untouched\" is the right answer because it shows you replace only the placeholders you chose and leave every other brace exactly as written.",
+   "step": "Check",
+   "fingerprint": "2cac24cfc0a8fc11",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Both placeholders and the example”?",
+   "a": "\"Both placeholders and the example\" gets one thing right. The `{\"ok\": true}` example should still be there after filling. Those braces are part of the JSON (a text format for data). They are not a placeholder, so nothing should touch them.\n\nWhat it misses is the whole point of filling. You were given values for `question` and `docs`. Filling means each placeholder, like `{question}`, gets swapped out for its value. Once that happens, the placeholder text is gone. If `{question}` or `{docs}` still showed up in the result, the filling would have failed.\n\nThink of the form letter again. After you write in the name, the blank line that said \"name here\" is gone. The rest of the letter stays as it was.\n\nFor example, filling `question` with `What is MLflow?` and `docs` with `the docs` gives:\n\n```\nAnswer What is MLflow? using the docs. Reply like {\"ok\": true}.\n```\n\nNo `{question}` or `{docs}` is left, but the JSON example is still there.\n\n\"The `{\"ok\": true}` example, untouched\" is better because it says both things at once: your placeholders are replaced, and every other brace is left alone.",
+   "step": "Check",
+   "fingerprint": "777c663eefc60f72",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Follow PEP 8 for shape” matter?",
+   "a": "PEP 8 is Python's official style guide. It is a shared agreement on how code should look.\n\nNaming style doesn't change what Python does. But teams guess names from the convention, so mixed styles cause real bugs.\n\nSay you write this:\n\n```python\ndef buildPrompt(question):\n    return \"Question: \" + question\n\nbuild_prompt(\"hi\")   # NameError\n```\n\nA teammate expects snake_case, so they type `build_prompt`. Python stops with a `NameError`, which means \"I can't find anything with that name.\" Slips like this waste time in a big codebase.\n\nIndentation is different, because Python does care about it. The spaces at the start of a line decide which lines belong together. Mixing tabs and spaces can make code that looks fine refuse to run. Using 4 spaces every time avoids that.\n\nCapWords for classes, like `ChatPromptTemplate`, tells readers at a glance \"this is a class,\" a blueprint you create objects from. Lowercase names with underscores tell them \"this is a function or variable.\"\n\nLangChain and MLflow follow PEP 8 too. Matching it makes your code read like theirs.",
+   "step": "Explain",
+   "fingerprint": "4df3a388aab6aee0",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The claim that \"LangChain and MLflow follow PEP 8 too\" is not in the lesson, which never mentions MLflow or says LangChain follows PEP 8. The tabs-and-spaces claim is also outside the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Replace only your own placeholders” in an interview?",
+   "a": "**A 30-second answer you could say out loud:**\n\n**The problem.** \"Real prompts often contain JSON or code. Both use curly braces. Python's built-in `str.format` treats every pair of braces as a placeholder. So a prompt with `{\"ok\": true}` in it crashes with a `KeyError`.\"\n\n**The idea.** \"I only swap the placeholders I own. If I'm filling in `{question}`, I replace exactly that text and leave every other brace untouched. It's like a form letter: you fill in the blanks, and the rest stays as written. In LangChain, you get the same result by doubling braces you want to keep, like `{{` and `}}`.\"\n\n**A trade-off.** \"Plain replacing is simple, but it won't warn you about a typo. If the template says `{questoin}`, that blank just stays unfilled. So I'd check for leftover placeholders before sending the prompt.\"\n\n**A likely follow-up:** \"What if the user's question itself contains text like `{context}`?\"\n\n*Hint for a strong answer:* User text should never be treated as a placeholder. Explain how the order you fill things in could let user text get replaced by accident. Then say how you'd prevent that, for example by filling in user input last.",
+   "step": "Explain",
+   "fingerprint": "16037bf9314d58d0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A crash before the model is even called.** You see an error like `KeyError: '\"ok\"'`. A `KeyError` means Python looked for a name it was never given. Here it mistook the JSON example for a placeholder.\n- **A complaint about a missing input.** LangChain says a variable is missing, but the \"variable\" is really a word from your JSON example.\n- **Doubled braces reaching the model.** The prompt shows `{{\"ok\": true}}`. The model may copy that, and your JSON reader rejects its replies.\n- **Placeholders left unfilled.** The model receives the literal text `{question}`. Its answers are vague or about nothing, even though no error appeared.\n- **A test that passes, then fails in real use.** Your test prompt had no braces in it. Real prompts with JSON or code examples then break.\n\n**Quickest check**\n\nPrint one fully filled prompt and read it. Look for leftover placeholder names, such as `{question}`. Any of them still showing means a value was never swapped in.\n\nDo not just search for any `{`. A correct JSON example keeps its single braces, so that search would flag good prompts. Instead, confirm the example still reads `{\"ok\": true}` exactly as you wrote it.",
+   "step": "Learn",
+   "fingerprint": "6ae9bac1e1a2dfb9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the doubled-braces and LangChain 'missing variable' signs go slightly beyond the lesson, and the answer is close to the 200-word limit, but nothing contradicts the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where simple find-and-replace needs extra care.\n\n**1. The filled-in value contains a placeholder.** Say a user types `{context}` in their question. If you fill `{question}` first and `{context}` second, your code also swaps the user's text. This can let users sneak in content, a trick called \"prompt injection.\" Fill all placeholders in a single pass, or fill user text last.\n\n**2. Your placeholder name appears in the prompt by accident.** A prompt might show example code that really contains `{question}` and is meant to stay as written. Find-and-replace can't tell the two apart, so it swaps both. Pick distinctive placeholder names, or use a tool like LangChain where you double the braces you want to keep.\n\n**3. A value is missing.** If nobody supplies a value for `{docs}`, the raw `{docs}` stays in the prompt. The LLM (the AI model) just sees odd braces and gives a worse answer, with no error. After filling, check that none of your own placeholders remain, and raise an error if any do.",
+   "step": "Learn",
+   "fingerprint": "075c020c48822085",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Real prompts are rarely plain sentences. They often include a sample of the output you want, and that sample is usually JSON, which is full of curly braces.\n\nHere is a realistic case. You build a support agent. Its prompt says: \"Reply as JSON like `{\"answer\": \"...\", \"confidence\": 0.9}`. Question: `{question}`.\" Your code reads the model's reply as JSON, so the format matters.\n\nYou fill the prompt with `str.format`. It treats every pair of braces as a placeholder, so it sees the JSON sample as one too. It looks for a value named `\"answer\"`, finds none, and stops with a `KeyError` (Python's error for \"I can't find that name\"). Every request fails.\n\nThe fix that seems quick is worse. Someone deletes the JSON sample to stop the crash. Now the model has no format to copy and replies in loose sentences. Your code can't read them, and the agent breaks again, but now with no clear error.\n\nFilling in only your own placeholders avoids both problems. Your names get swapped in, and the JSON sample stays exactly as written.",
+   "step": "Learn",
+   "fingerprint": "fdb5546272340ebb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "parse_labels": {
+  "check:0:0": {
+   "q": "Why not “Retry each failing test a few times”?",
+   "a": "Retrying gets one thing right. It notices that the failures are random, not caused by a real bug, so running the test again often turns it green.\n\nBut it treats the symptom, not the cause. The cause is that your tests depend on the real model, which gives different answers each time. Retrying leaves that in place. So you still have these problems:\n\n- **Slower tests.** Each retry is another slow model call.\n- **More cost.** Each retry is another paid call.\n- **Hidden bugs.** If your parsing code really breaks on certain replies, a retry might get a luckier reply and pass. The bug stays in your code, unnoticed.\n- **Still flaky.** A test that passes \"after three tries\" can still fail on a bad day.\n\nAlso, unit tests are meant to check *your* logic, like cleaning and routing replies. Judging the model's answers is the job of evals: example inputs with expected answers, plus a way to score them.\n\n\"Use a fake model with scripted replies\" is better because the replies never change, so each test gives the same result every run, quickly and for free.",
+   "step": "Check",
+   "fingerprint": "dc698bb0385978eb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Minor: 'notices' is a loose way to describe retrying, and 'flaky', 'unit tests' and 'parsing' are not re-explained, though the answer stays under 200 words."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Delete the tests and rely on evals”?",
+   "a": "\"Delete the tests and rely on evals\" gets one thing right. Evals matter. They are your way to measure the model's quality: example inputs, expected answers, and a score. You do want them.\n\nBut deleting the unit tests throws away the wrong thing. The tests weren't the problem. The real model call inside them was. That call is slow, costs money, and gives a different reply each run, so the tests became **flaky** (passing one run, failing the next).\n\nEvals can't replace unit tests, for two reasons:\n\n- **They check different things.** Evals ask \"is the model good?\" Unit tests ask \"does my code handle each reply correctly?\" Think of trimming spaces, matching labels, or falling back to `\"unknown\"`. Evals give a quality score, so a bug in your cleanup logic can hide inside a so-so number.\n- **Evals still call the real model.** So they stay slow and costly. You won't run them every time you change a line.\n\nThe right option is \"Use a fake model with scripted replies.\" It keeps fast, free checks of your logic that give the same result every run, and evals stay focused on model quality.",
+   "step": "Check",
+   "fingerprint": "93bf0465381240db",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claims that evals still call the real model and won't be run on every change are inferences rather than lesson text, but they follow from it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The real model, asked a billing question”?",
+   "a": "Asking the real model a billing question isn't a silly idea. It does run your whole setup, start to finish. But it doesn't test what this question asks about.\n\nThe test has one job: check that your code turns `\" Billing. \"` into `billing`. With the real model, you can't choose the reply. It might say \"Billing\", or \"This is about billing\", or something new tomorrow. So the test could pass one run and fail the next. That's called **flaky**. It's also slow, and each run costs money.\n\nAnd if it fails, you can't tell why. Was your cleanup code wrong, or did the model just answer differently?\n\nChecking the real model's answers still matters. That belongs in **evals**: example questions with expected answers, scored. A **unit test** is different. It's a small automatic check of one piece of your code, and it should give the same result every time.\n\nA fake model that returns exactly `\" Billing. \"` is better because its reply never changes, so the test checks only your cleanup logic, quickly and for free.",
+   "step": "Check",
+   "fingerprint": "26fa8d41b4fc1cf0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “An eval set scored by a judge”?",
+   "a": "An eval set scored by a judge is a real tool. It's just the wrong one for this job.\n\n**What it gets right:** evals are how you check the model's *quality*. You give it example inputs with expected answers and score the results. A \"judge\" here usually means another model that grades each answer. That's useful when you want to know whether the model picks the right category.\n\n**What it misses:** this test isn't about the model. It's about *your code*: does it turn `\" Billing. \"` into `\"billing\"`? An eval calls the real model, which is slow and costs money. Worse, the real model might never reply with exactly `\" Billing. \"`, so you can't be sure your cleanup step even gets tested. The judge is a model too, so its grading can change from run to run. That makes the test flaky, meaning it passes one time and fails the next for no code reason.\n\n**Why the fake model wins:** it hands your code exactly `\" Billing. \"` every single time, so the test checks only your cleanup logic, quickly, for free, with the same result every run.",
+   "step": "Check",
+   "fingerprint": "6c4525e9c32287b7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The explanation of a 'judge' as another model goes slightly beyond the lesson, which only says evals need 'a way to score them', and the answer is close to 200 words, but nothing contradicts the lesson."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “More unit tests with fake replies”?",
+   "a": "\"More unit tests with fake replies\" sounds sensible, because unit tests are good. But they answer a different question.\n\n**What it gets right:** fake replies are great for testing *your* code. They never change, cost nothing and run fast. So they reliably show that your cleanup and routing work. For example, they confirm that `\" refund \"` becomes `\"refund\"` and that odd replies go to `\"unknown\"`.\n\n**What it misses:** a fake reply is something *you* wrote. The real model never runs. So no matter how many fake tests you add, you only learn how your code handles answers you invented. You learn nothing about what the model actually says. Your manager asked whether the model's answers are any good. Fake replies can't tell you that, because the model is never asked anything.\n\n**Why evals are better:** an eval (a set of example inputs with known correct answers, plus a way to score them) sends real questions to the real model. Then it measures how often the model gets them right. That is exactly the quality question your manager asked.",
+   "step": "Check",
+   "fingerprint": "b630fe2ede112dcc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The same unit tests, run more often”?",
+   "a": "\"The same unit tests, run more often\" gets one thing right: running unit tests often is a good habit. It catches the moment someone breaks your cleaning or routing code.\n\nBut it can't answer the manager's question. Your unit tests use fake replies, a stand-in for the model that always returns the same text. The real model is never called. So the tests check your code around the model, not the model itself.\n\nRunning them ten times or a hundred times changes nothing. They feed in the same fixed replies and get the same result every time. You learn nothing new about whether the real model gives good answers.\n\nTo judge the model, you have to call the real model with real questions and score what comes back. Unit tests with fakes are built to avoid exactly that, because real calls are slow, cost money and vary from run to run.\n\nSo the right answer is \"Evals: examples with expected answers\". Evals send real example inputs to the actual model and score its replies against the expected answers, which measures how good its answers really are.",
+   "step": "Check",
+   "fingerprint": "f5b01839245407da",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Clean each reply, then check it” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* \"Model replies are messy. The same answer can come back as `Billing.`, ` billing ` or `BILLING`. If my code compares the raw text, tiny differences break it.\"\n\n*The idea.* \"So I clean each reply first, then check it against a fixed list of allowed labels. Anything not on the list goes to `unknown`. This logic sits apart from the model call. That lets me test it with fake replies that never change, so the tests aren't flaky (passing one run, failing the next).\"\n\n*The trade-off.* \"Strict matching is safe but blunt. A reply like `I think it's billing` lands in `unknown`, even though a person can see the answer. I'd rather put it in a 'don't know' pile than guess wrong.\"\n\n**A likely follow-up**\n\n\"Why not just search for the word `billing` anywhere in the reply?\"\n\nHint for a strong answer: loose searching can mislabel replies like \"this isn't billing\", or ones that mention two labels. Better fixes are a clearer prompt or structured output (asking the model to answer in a fixed format). Then use evals (example inputs with expected answers, plus a score) to measure how often `unknown` happens.",
+   "step": "Explain",
+   "fingerprint": "45bcdccd6cf4b18a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the model call isn't kept separate:**\n\n- **Flaky tests.** A test passes, then fails, with no code change. That usually means a real model is answering, and its reply changed.\n- **Slow or costly test runs.** Your tests take ages, or your model bill rises every time you run them.\n- **Tests that need the internet or an API key** (the secret password your code uses to reach the model).\n\n**Signs the cleanup logic is weak or untested:**\n\n- In your logs, a known label shows up as `\"unknown\"` when the reply was really `\"Billing.\"` or `\" refund \"`. A stray space or full stop broke the match.\n- Odd labels leak through, like a whole sentence instead of one word.\n\n**Signs evals are missing or too small:**\n\n- A quality score looks great on a handful of examples, then drops once real users arrive.\n\n**Quickest check:** turn off your internet, or remove the API key, then run your unit tests three times. Good unit tests still pass, finish quickly and give the same result every run. If any of them fail or hang, those tests are still calling the real model.",
+   "step": "Learn",
+   "fingerprint": "6dfdffafa371c980",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. Minor: 'evals' and 'unit tests' are used without a short explanation, but the answer stays under 200 words and is otherwise plain."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The real replies get messier.** Your fake replies only cover the cases you thought of. Real models may wrap the label in a full sentence, which turns many good answers into `\"unknown\"`. Save odd replies from real runs and add them as new fake replies in your tests.\n\n**2. The app takes several steps.** An agent is a program where the model picks the next action, such as calling a tool (a function your code lets it run, like a database lookup). One fake reply is no longer enough, so give the fake model a list of replies in the order each step needs them. Then check that the right tools were called in the right order.\n\n**3. The model or prompt changes.** Unit tests with fake replies still pass, because they never touch the real model. So they can't tell you if a new model or a reworded prompt gives worse answers. Rerun your evals after every such change, and log the scores in MLflow (a tool that records and compares results) to spot drops.",
+   "step": "Learn",
+   "fingerprint": "202bad3d8c3113a7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “fake” different from “mock”?",
+   "a": "In this lesson, \"fake\", \"mock\" and \"stub\" all mean the same thing: **a stand-in for the real model** that gives replies you chose ahead of time. So for this lesson, you can treat them as one idea.\n\nOutside this lesson, testers sometimes split the words more finely:\n\n- A **fake** (or **stub**) just answers. You set its replies, and it hands them back.\n- A **mock** answers *and* keeps notes on how it was used. Afterwards, your test can check those notes. For example: \"Was the model called exactly once?\"\n\n**An everyday comparison:** a fake is a stand-in actor who reads the lines you gave them. A mock is a stand-in actor who reads the lines *and* writes down every question you asked them.\n\n**In the lesson's example,** `GenericFakeChatModel` plays the fake role. It replies `\"Billing.\"`, and the test checks that `classify` cleans that reply into `\"billing\"`. A mock-style test would also check *how* the model was called, such as how many times.\n\n**How they work together:** one stand-in can do both jobs. The reply tests your logic. The notes test how your code used the model. Either way, nothing slow, costly or changing is involved, so your tests stop being flaky.",
+   "step": "Learn",
+   "fingerprint": "dbf7d3ddf237e16a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. It correctly says the lesson treats fake, mock and stub as one idea. The finer fake/mock split comes from outside the lesson, but it is labelled as such and does not contradict the lesson."
+   }
+  }
+ },
+ "resolve_prompt": {
+  "check:0:0": {
+   "q": "Why not “Edit version 3 back to the old wording”?",
+   "a": "The instinct is right: you want the old wording back in production. But this option misses how the registry works.\n\n**Versions never change.** Once version 3 is saved, its text is locked. There is no \"edit\" button. That is on purpose. Anyone who asks for version 3 always gets exactly the same text.\n\n**The closest you could do is save the old wording again.** That makes a new version 4, and version 3 stays as it was. It would work, but it's the slow road:\n\n- You copy text by hand, and one stray word could change every answer again.\n- You still have to point `production` at version 4 afterward, so it's an extra step, not a shortcut.\n- You end up with two versions holding the same text, which makes the list harder to read.\n\nMeanwhile, version 2 already holds the exact wording that worked. Nothing needs to be rewritten.\n\n**Pointing the `production` alias back at version 2 is better because it's one quick move to text you already trust, with no code change and no redeploy.**",
+   "step": "Check",
+   "fingerprint": "914523a849e746b7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Paste the old prompt into the code and redeploy”?",
+   "a": "Pasting the old prompt into the code and redeploying does get one thing right: version 2 worked well, and this brings its words back. Eventually, users would get good answers again.\n\nBut it misses the point of the registry, in three ways.\n\n- **It's slow.** A code change has to be edited, reviewed, and redeployed. Redeploying means building and shipping a new copy of your app. Meanwhile, bad answers keep going out.\n- **It's risky.** Copying text by hand invites mistakes. You might grab the wrong version or drop a word. You might also mix up the braces: MLflow uses `{{question}}`, and LangChain uses `{question}`.\n- **It breaks the system.** The prompt now lives in your code instead of the registry. Moving the `production` alias later won't change anything, because the app no longer loads it. You also lose the clear record of which version is live.\n\nSo \"Point the `production` alias back at version 2\" is the right answer. Version 2 is stored unchanged in the registry, so moving the nickname back fixes production in seconds, with no code change and no redeploy.",
+   "step": "Check",
+   "fingerprint": "ff4a93e52b590ddf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Edit version 4 to match version 5”?",
+   "a": "**Why not \"Edit version 4 to match version 5\"?**\n\nIt has one good instinct. The app already loads version 4, so changing what version 4 says would get the new text out without touching the code.\n\nBut the registry doesn't allow it. Versions never change. Once a version is saved, its text is frozen. That rule is the whole point: `v4` always means the same words, today and next month.\n\nIf you could edit it, you'd lose a lot:\n\n- **History.** You could no longer see what the app actually said before. If answers got worse, you couldn't compare.\n- **Rollback.** \"Rollback\" means going back to the old prompt. The old text would be gone, so there'd be nothing to go back to.\n- **Other users.** Another app or test might also load `v4`. Its answers would change without warning.\n\n\"Change the code to 5 and redeploy\" is better because it ships the new prompt while keeping `v4` intact, so you can always point back to it.\n\n(Longer term, loading an alias like `production` saves you even that redeploy.)",
+   "step": "Check",
+   "fingerprint": "2e3a039b44613e5c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Nothing: the app picks up the newest”?",
+   "a": "That option gets one thing right. Saving does create something new: version 5 now exists in the registry.\n\nBut it misses how your app finds its prompt. The app asks for version 4 by its number. Each version is fixed. Once saved, it never changes. So saving version 5 leaves version 4 exactly as it was, and your app keeps loading version 4.\n\nNothing in the setup says \"give me the newest.\" The app named one specific version, so that is the version it gets. Version 5 just sits in the registry, unused.\n\n\"Change the code to 5 and redeploy\" is better because the app is pinned to a number, so editing that number and shipping the new code is what actually points it at version 5.\n\nThis is also the pain the lesson's alias idea removes. An alias is a nickname like `production` that points at one version. If the app loaded `@production` instead of a number, you could ship version 5 by moving the alias, with no code change and no redeploy.",
+   "step": "Check",
+   "fingerprint": "b24ae2c2e17cf87d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The question is filled in twice”?",
+   "a": "\"Filled in twice\" makes sense as a guess. You see two pairs of braces and wonder if that means two slots. It does get one thing right: the doubled braces are where the problem is.\n\nBut it misreads what doubled braces mean to LangChain. In LangChain, a single pair like `{question}` is a placeholder, a slot that gets your value. A doubled pair like `{{question}}` is an \"escape.\" That means \"this is not a slot. Just print one set of braces as plain text.\"\n\nSo LangChain finds zero slots, not two. Your question never goes in. The model sees the literal words `{question}` instead.\n\n```text\nMLflow template:   Answer {{question}}\nLangChain reads:   Answer {question}   ← plain text, no slot\n```\n\nThat is why `prompt.to_single_brace_format()` exists. It turns `{{question}}` into `{question}` so LangChain sees a real slot.\n\n\"The placeholder is never filled in\" is better because LangChain treats doubled braces as plain text, so it finds no slot at all and your question is never inserted.",
+   "step": "Check",
+   "fingerprint": "4710982536ecf9b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that LangChain prints a single-brace `{question}` goes slightly beyond the lesson's 'kept as plain text', but it is accurate and does not contradict the lesson."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “MLflow deletes the braces first”?",
+   "a": "\"MLflow deletes the braces first\" points at the right spot, since the braces really are the problem. But it gets the cause wrong.\n\nMLflow doesn't touch your text. A saved version never changes. When you load `Answer {{question}}`, you get exactly `Answer {{question}}`, with both pairs of braces still there. MLflow only changes them if you ask it to, by calling `prompt.to_single_brace_format()`. Even then it doesn't delete them. It swaps each double pair for a single pair, giving `Answer {question}`.\n\nThe real trouble happens on the LangChain side. LangChain treats single braces as a placeholder (a slot to fill with a value). It treats doubled braces as \"keep this as plain text.\" So it sees `{{question}}` as ordinary words, not a slot. Your question never goes in, and the model gets the literal text `Answer {question}`. Often there's no error message at all, so the mistake is easy to miss.\n\n\"The placeholder is never filled in\" is better because it names what actually breaks: LangChain reads the doubled braces as plain text, so your value never reaches the prompt.",
+   "step": "Check",
+   "fingerprint": "e82857cbc88c44d2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Nothing contradicts the lesson. The claims that the model sees literal `Answer {question}` and that there is often no error go beyond the lesson, but they are accurate and consistent with it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Split the address, then look up” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Changing one word in a prompt can change every answer. So prompts need versions, like code. The app also needs a safe way to pick which version to use.\"\n\n*The idea:* \"The app asks for an address like `prompts:/main.support.answer@production`. First I split it into two parts: the prompt's name and its alias. An alias is a nickname that points at one version, like a bookmark on a page. Then I look things up in order. I go from name to prompt, then from alias to version number, then from version to text. To ship a new prompt, you just move the bookmark. No code change, no redeploy.\"\n\n*The edge case:* \"If the name or alias doesn't exist, I return `None`. I don't crash, and I don't guess. The caller then decides what to do, such as falling back or raising an error.\"\n\n**Likely follow-up**\n\n\"How would you roll back a bad prompt?\"\n\n*Hint for a strong answer:* Point the alias back at the older version. Versions never change, so the old text is still there, exactly as it was. Rolling back is one pointer move, and it is instant.",
+   "step": "Explain",
+   "fingerprint": "de4f937182ea604c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Answers shift and nobody knows why.** Quality scores rise or drop overnight, but no code changed. Someone edited a prompt that was pasted into the code, so there is no version history to compare.\n- **You can't say which prompt made an answer.** Your logs or traces (step-by-step records of each run) show the output but no prompt name or version number.\n- **Rolling back needs a redeploy.** If undoing a bad prompt means changing code and shipping the app again, the app is loading a fixed version number or a hard-coded string instead of an alias like `production`.\n- **The model sees placeholder text.** If an MLflow prompt goes into LangChain without `to_single_brace_format()`, LangChain treats the doubled braces as plain text. The prompt sent to the model still shows the raw placeholder instead of the real question and context. So answers ignore what the user actually asked.\n\n**Quickest check**\n\nOpen one recent trace. Look at the exact prompt text that was sent. Then look in the registry at which version `production` points to. The two should match, with real values filled in where the placeholders were.",
+   "step": "Learn",
+   "fingerprint": "4a26492185362076",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The first bullet contradicts itself: it says 'no code changed' but blames an edit to a prompt pasted into the code, and editing a pasted prompt is a code change."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where \"just move the alias\" needs extra care.\n\n**1. The new version needs different inputs.** Say v3 adds a new placeholder like `{{tone}}`. Your code still only fills in `context` and `question`, so the prompt breaks or sends a blank. Moving the alias is only \"no code change\" when the placeholders stay the same. If they change, ship the code update and the alias move together.\n\n**2. Your app caches the prompt.** Caching means keeping a saved copy so you don't fetch it every time. If the app loads the prompt once at startup, moving the alias does nothing until it restarts. Decide how often to re-fetch, and check which version is actually live after a rollback.\n\n**3. The prompt contains literal braces.** Prompts that show example JSON, like `{\"answer\": ...}`, have braces that are meant as plain text. After `to_single_brace_format()`, LangChain may read those as placeholders and fail. Test the converted template before moving `production` to it.",
+   "step": "Learn",
+   "fingerprint": "40ee418e5f588fbf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the first situation runs to four sentences, over the two-or-three limit. Otherwise no problems found."
+   }
+  },
+  "learn:term": {
+   "q": "How is “MLflow Prompt Registry” different from “version”?",
+   "a": "The **MLflow Prompt Registry** is the place. A **version** is one item stored in that place.\n\nPicture the registry as a shared filing cabinet for prompts. Each prompt gets its own folder, named like `main.support.answer`. Every time you save a change, the registry adds a new numbered sheet: v1, v2, v3. Each sheet is a version. Once filed, a sheet never changes. A new idea means a new sheet.\n\nSo the registry does the storing, numbering and access rules. On Databricks, it uses Unity Catalog's permissions. A version is a frozen snapshot of the prompt text at one moment.\n\nIn the lesson's example, the folder `main.support.answer` holds three versions. v1 asks only the question. v2 adds `{{context}}`. v3 also asks for sources. The alias `production` is a bookmark on v2. Loading `@production` gives you v2's text.\n\nThey work together. Versions give you a history that never changes. The registry keeps that history in one shared spot. Moving the bookmark to another version ships a prompt or rolls one back, with no code change.",
+   "step": "Learn",
+   "fingerprint": "fc9e5eae97e043af",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor: Unity Catalog and the {{context}} placeholder are mentioned without explanation."
+   }
+  }
+ }
+}

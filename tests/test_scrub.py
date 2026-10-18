@@ -50,8 +50,10 @@ def _real_workspace(m: re.Match) -> bool:
 
 def _company_email(m: re.Match) -> bool:
     domain = m.group(1).lower()
+    # in JSON, a code example's escaped line break followed by a decorator (backslash, n, at-sign) is not an address
+    escaped_break = m.string[max(0, m.start() - 1):m.start() + 1] in ("\\n", "\\t", "\\r") and "@" == m.string[m.start() + 1]
     # container@account.dfs.core.windows.net is a storage path, not a person
-    return domain not in PLACEHOLDER_DOMAINS and not domain.endswith(".windows.net")
+    return domain not in PLACEHOLDER_DOMAINS and not domain.endswith(".windows.net") and not escaped_break
 
 
 GENERIC: list[tuple[str, re.Pattern, Callable[[re.Match], bool]]] = [
@@ -132,6 +134,7 @@ def test_the_lessons_made_up_names_are_still_allowed():
     real_host = "adb-" + "8364920175938201" + ".3." + "azuredatabricks.net"
     assert [m.group(1) for m in workspace.finditer(real_host) if _real_workspace(m)] == ["8364920175938201"]
     assert not any(_company_email(m) for m in email.finditer("sam@example.com ana@corp.com Sam@Example.com raw@lakefict.dfs.core.windows.net"))
+    assert not any(_company_email(m) for m in email.finditer('"code": "x = 1\\n@mlflow.trace\\ndef f():"')), "an escaped line break before a decorator"
     assert not list(email.finditer("https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js")), "a package version is not an address"
     real_email = "someone@" + "a-real-company.co.uk"
     assert [m.group(1) for m in email.finditer(real_email) if _company_email(m)] == ["a-real-company.co.uk"]

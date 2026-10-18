@@ -489,6 +489,159 @@ def tutor_feedback_cmd(
             console.print(f"Added {len(records)} cases to {mlflow_names.dataset_name('tutor_cases')}.")
 
 
+@tutor_app.command("prepare")
+def tutor_prepare_cmd(
+    profile: str = typer.Option(None, "--profile", "-p", help="Databricks CLI profile whose serving endpoints draft and judge (costs money)."),
+    module: str = typer.Option("", "--module", "-m", help="Only this module (for example use-case)."),
+    lesson: str = typer.Option("", "--lesson", help="Only this lesson."),
+    limit: int = typer.Option(0, "--limit", help="At most this many answers (0: all that are missing or out of date)."),
+    redo: bool = typer.Option(False, "--redo", help="Draft again even answers that are ready (or rejected)."),
+    draft_model: str = typer.Option("", "--draft-model", help="Serving endpoint that drafts (default: the strongest Claude)."),
+    judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
+    workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
+) -> None:
+    """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks."""
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    data = build_data()
+    answers = tp.load()
+    work = tp.todo(data, answers, module or None, lesson or None, redo)
+    if limit:
+        work = work[:limit]
+    if not work:
+        console.print("Nothing to prepare: every answer is ready. `drill tutor prepared` shows the counts.")
+        return
+    draft_model, judge_model = draft_model or tp.DRAFT_MODEL, judge_model or tp.JUDGE_MODEL
+    console.print(f"Preparing {len(work)} answers: drafted by {draft_model}, judged by {judge_model}.")
+    passed = failed = 0
+
+    def done(lid, chip, rec):
+        nonlocal passed, failed
+        passed += rec["status"] == "passed"
+        failed += rec["status"] != "passed"
+        if rec["status"] != "passed":
+            console.print(f"  [yellow]failed[/yellow] {lid} {chip['key']}: {rec.get('judge', {}).get('notes', '')}")
+        if (passed + failed) % 25 == 0:
+            console.print(f"  {passed + failed} of {len(work)} done ({passed} passed)")
+
+    # One MLflow run for the batch (in the app's experiment), one trace per answer, the model calls inside.
+    import contextlib
+    import time
+
+    import mlflow
+
+    from drill import mlflow_names, tutor_prepared_eval as tpe
+    from drill.server.observe import app_version
+
+    run_ctx = contextlib.nullcontext()
+    try:
+        mlflow.set_experiment(mlflow_names.experiment())
+        mlflow.openai.autolog()
+        prompts = tpe.register_prompts(mlflow)
+        run_ctx = mlflow.start_run(run_name=f"tutor-prepare-{time.strftime('%Y-%m-%d')}-{tpe.git_commit()[:7]}")
+        traced = True
+    except Exception as exc:  # noqa: BLE001 - no MLflow: prepare anyway, untraced
+        console.print(f"[yellow]MLflow unavailable ({str(exc)[:80]}): preparing without traces.[/yellow]")
+        prompts, traced = {}, False
+    with run_ctx:
+        if traced:
+            mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "tutor_prepare", "mlflow.source.git.commit": tpe.git_commit(),
+                             "mlflow.note.content": f"Drafting and judging {len(work)} prepared tutor answers."})
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "answers": len(work), "module": module or "all",
+                               "lesson": lesson or "all", "redo": redo, "workers": workers,
+                               **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
+        drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
+        tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced,
+               draft_model=draft_model, judge_model=judge_model)
+        spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
+        total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
+        console.print(f"Cost at list price: ${total:.2f} (${total / max(1, len(work)):.4f} an answer). The DBU charge is in system.billing.usage.")
+        if traced:
+            mlflow.log_metrics({"passed": passed, "failed": failed, "pass_rate": passed / max(1, passed + failed), **spend,
+                                "cost_usd": total, "cost_per_answer_usd": total / max(1, len(work))})
+    console.print(f"Done: {passed} passed, {failed} failed. Saved in src/drill/content/prepared/. Rebuild the page to serve them.")
+
+
+@tutor_app.command("prepared")
+def tutor_prepared_cmd(
+    sample: int = typer.Option(0, "--sample", help="Show every failed answer and this many passed ones, for a spot check."),
+    check: list[str] = typer.Option([], "--check", help="Mark lesson_id/key as checked by you (repeatable)."),
+    reject: list[str] = typer.Option([], "--reject", help="Mark lesson_id/key as rejected: never served (repeatable)."),
+) -> None:
+    """How many prepared answers are ready, failed or out of date; a spot-check sample; your verdicts."""
+    from drill import tutor_prepared as tp
+    from drill.content.build import build_data
+
+    data, answers = build_data(), tp.load()
+    for verdict, items in (("checked", check), ("rejected", reject)):
+        for item in items:
+            lid, _, key = item.partition("/")
+            if key not in answers.get(lid, {}):
+                console.print(f"[red]No prepared answer {item}[/red]")
+                raise typer.Exit(1)
+            tp.mark(answers, lid, key, verdict)
+    if check or reject:
+        tp.save(data, answers)
+    counts = tp.status(data, answers)
+    console.print(", ".join(f"{k}: {v}" for k, v in counts.items()))
+    for lid, key, rec in tp.sample(answers, sample) if sample else []:
+        judge = rec.get("judge", {})
+        console.print(f"\n[bold]{lid}/{key}[/bold] [{rec.get('status')}] {rec['q']}\n{rec['a']}")
+        if judge.get("notes"):
+            console.print(f"[dim]judge: {judge['notes']}[/dim]")
+
+
+@tutor_app.command("prepared-eval")
+def tutor_prepared_eval_cmd(
+    profile: str = typer.Option(None, "--profile", "-p", help="Databricks CLI profile for the judge's serving endpoint (costs a little)."),
+    judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: Haiku)."),
+    split: str = typer.Option("dev", "--split", help="dev (tune here), test (before a release) or holdout (big decisions only)."),
+    holdout_ok: bool = typer.Option(False, "--yes-holdout", help="Confirm a holdout run: once you change things because of it, it is no longer a holdout."),
+    workers: int = typer.Option(4, "--workers", help="Answers judged at the same time (the workspace limits tokens per minute)."),
+    sample: int = typer.Option(0, "--sample", help="A stratified sample of this many (every reference failure, the rest spread by phase and kind); 0: the whole split."),
+) -> None:
+    """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
+    import os
+
+    os.environ["MLFLOW_GENAI_EVAL_MAX_WORKERS"] = str(workers)  # read when the evaluation starts
+
+    from drill import tutor_prepared_eval as tpe
+
+    import mlflow
+
+    if split == "holdout" and not holdout_ok:
+        console.print("[red]The holdout is for big decisions only. Add --yes-holdout if this is one.[/red]")
+        raise typer.Exit(1)
+    console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
+    result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample)
+    n = result["numbers"]
+    console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
+    if result["strata_missing"]:
+        console.print(f"[yellow]Strata missing from a split: {', '.join(result['strata_missing'][:8])}[/yellow]")
+    console.print(f"  Catches the reference's failures: {n['catch_rate']:.1%} of {n['catch_n']:.0f} ({n['catch_ci_low']:.0%} to {n['catch_ci_high']:.0%})")
+    console.print(f"  Keeps the reference's passes: {n['keep_rate']:.1%} of {n['keep_n']:.0f} ({n['keep_ci_low']:.0%} to {n['keep_ci_high']:.0%})")
+    if "weighted_agreement" in n:
+        console.print(f"  Agreement re-weighted to the split's real mix: {n['weighted_agreement']:.1%}")
+    console.print(f"  Pass rate in this sample: {n['passes_rate']:.1%} (95% interval {n['passes_ci_low']:.1%} to {n['passes_ci_high']:.1%})")
+    console.print(f"  Cost: ${n['judge_cost_usd']:.2f} at list price ({n['judge_calls']:.0f} calls, {n['judge_rate_limited']:.0f} rate-limited)")
+    console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
+    for check in tpe.CHECKS:
+        console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
+
+
+@tutor_app.command("prepared-compare")
+def tutor_prepared_compare_cmd(run_a: str = typer.Argument(..., help="The first eval run id."),
+                               run_b: str = typer.Argument(..., help="The second eval run id.")) -> None:
+    """Compare two judge runs on the same answers with McNemar's test: only the disagreements count."""
+    from drill import tutor_prepared_eval as tpe
+
+    r = tpe.compare(run_a, run_b)
+    console.print(f"{r['answers']} answers in both runs. Agreement with the reference: A {r['agreement_a']:.1%}, B {r['agreement_b']:.1%}.")
+    console.print(f"Only A agreed on {r['only_a_agrees']}, only B on {r['only_b_agrees']}. McNemar p = {r['p_value']:.3f}"
+                  + (" (a real difference)" if r["p_value"] < 0.05 else " (could be luck)"))
+
+
 @tutor_app.command("snapshot")
 def tutor_snapshot_cmd(
     out: Path = typer.Option(None, "--out", "-o", help="Where to write it (default ~/Documents/daily-drill/tutor-snapshot.md)."),

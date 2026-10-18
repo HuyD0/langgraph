@@ -1502,7 +1502,7 @@ function phasePage(i, prefix) {
   return { d, n: ids.length, scenes };
 }
 // Set when the local server says no model is running: everything works except the tutor's replies.
-let aiOff = false, aiOffApp = false;  // aiOffApp: the hosted app, where the learner can't start a model
+let aiOff = false, aiOffApp = false, feedbackTo = null, servedTo = null;  // feedbackTo/servedTo: the server's, when there is one  // aiOffApp: the hosted app, where the learner can't start a model
 let teamOn = false;  // at work (drill-server in team mode): the learner is told their manager sees their progress
 const TEAM_LINE = "At work, your manager can see your progress, your study list and the questions you ask the tutor.";
 function aiOffNote() {
@@ -1676,7 +1676,7 @@ function sendFeedback(request, feature, name, value, rationale, source) {  // so
   const list = mine().feedback = (mine().feedback || []).slice(-299);  // the tutor's answers add more: room for a few weeks
   list.push({ at: Date.now(), feature, request, name, value, ...(rationale ? { rationale } : {}), ...(source ? { source } : {}) });
   saveMine();
-  if (sample && sample.feedback) sample.feedback({ request, name, value, rationale, ...(source ? { source } : {}) }).catch(() => {});
+  if (feedbackTo) feedbackTo({ request, name, value, rationale, ...(source ? { source } : {}) }).catch(() => {});
 }
 function feedbackBar(feature, request) {
   return `<div class="fbbar" data-fb-request="${request}" data-fb-feature="${feature}"><span>Was this useful?</span>
@@ -2903,7 +2903,7 @@ document.addEventListener("click", async e => {
   const bld = t.closest("[data-build]"); if (bld) { openLesson(knownLesson(bld.dataset.build), 2); return; }
   const pr = t.closest("[data-practice]"); if (pr) { openPractice(knownProblem(pr.dataset.practice), null); return; }
   const cl = t.closest("[data-classic]"); if (cl) { openPractice(knownProblem(cl.dataset.classic), cur.id); return; }
-  const aq = t.closest("[data-askq]"); if (aq) { const c = askChipList[+aq.dataset.askq]; if (!aq.disabled && c) askLesson(c.q, c.how); return; }
+  const aq = t.closest("[data-askq]"); if (aq) { const c = askChipList[+aq.dataset.askq]; if (!aq.disabled && c) askLesson(c.q, c.how, undefined, c.key); return; }
   if (t.closest("[data-askfill]")) { const box = $("askInput"); if (box && !box.disabled) { box.value = ASK_FILL; box.focus(); box.setSelectionRange(ASK_FILL.length, ASK_FILL.length); } return; }
   const asv = t.closest("[data-asksave]"); if (asv) { saveAsk(+asv.dataset.asksave); return; }
   const agot = t.closest("[data-askgot]"); if (agot) { askGot(+agot.dataset.askgot); return; }
@@ -3005,7 +3005,7 @@ goHome();
   if (backend.local) setInterval(() => { if (cur && !document.hidden) fetch("/api/me", { cache: "no-store" }).catch(() => {}); }, 600000);
   const { s, db, user } = backend;
   sample = s; sampleOff = !sample; document.body.classList.toggle("no-ai", !sample); updateHintBtn(); renderStudy();
-  aiOff = !!(backend.local && !s); aiOffApp = !!backend.app; if (aiOff && !cur) renderHome();
+  aiOff = !!(backend.local && !s); aiOffApp = !!backend.app; feedbackTo = backend.feedback || null; servedTo = backend.served || null; if (aiOff && !cur) renderHome();
   if (backend.team) { teamOn = true; $("teamNote").textContent = TEAM_LINE; $("teamSetting").hidden = false; if (!cur) renderHome(); }
   if (db && user) {
     try {

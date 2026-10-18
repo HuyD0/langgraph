@@ -1,0 +1,2178 @@
+{
+ "about": "The tutor's prepared answers, a stratified dev sample judged again by Haiku: recorded from MLflow run da5836ff on 2026-10-17, so notebook m13 replays it at no cost. `passes` is Haiku's verdict, `reference_pass` Sonnet's from the drafting run, `notes` Haiku's reason.",
+ "run_id": "da5836ff",
+ "params": {
+  "judge_model": "databricks-claude-haiku-5-5",
+  "reference_judge": "databricks-claude-sonnet-5-5",
+  "judge_prompt": "tutor_prepared_judge/1",
+  "draft_prompt": "tutor_prepared_draft/1",
+  "dataset": "tutor_prepared_dev_sample",
+  "dataset_digest": "03ae240e",
+  "split": "dev",
+  "records": "301",
+  "sample": "300",
+  "git_commit": "a7fbc8c9fe564f7ed65fcd851d051cbc3fff7116",
+  "kappa_gate": "0.6",
+  "price_per_mtok": "1.0/5.0 (list price; Databricks bills in DBUs)"
+ },
+ "metrics": {
+  "answers": 301.0,
+  "answers_it_agreement": 0.9767,
+  "answers_it_ci_high": 0.9887,
+  "answers_it_ci_low": 0.9528,
+  "answers_it_kappa": 0.2141,
+  "answers_it_rate": 0.9767,
+  "catch_ci_high": 0.9385,
+  "catch_ci_low": 0.6647,
+  "catch_n": 26.0,
+  "catch_rate": 0.8462,
+  "correct_agreement": 0.8505,
+  "correct_ci_high": 0.8805,
+  "correct_ci_low": 0.7985,
+  "correct_kappa": 0.2422,
+  "correct_rate": 0.8439,
+  "judge_calls": 301.0,
+  "judge_cost_per_answer_usd": 0.0095,
+  "judge_cost_usd": 2.8705,
+  "judge_gate_passed": 0.0,
+  "judge_input_tokens": 492467.0,
+  "judge_output_tokens": 475614.0,
+  "judge_rate_limited": 199.0,
+  "judge_seconds": 5391.37,
+  "keep_ci_high": 0.4183,
+  "keep_ci_low": 0.3056,
+  "keep_n": 275.0,
+  "keep_rate": 0.36,
+  "no_giveaway_agreement": 0.9834,
+  "no_giveaway_ci_high": 0.9994,
+  "no_giveaway_ci_low": 0.9814,
+  "no_giveaway_kappa": -0.0053,
+  "no_giveaway_rate": 0.9967,
+  "passes_agreement": 0.402,
+  "passes_ci_high": 0.3975,
+  "passes_ci_low": 0.2909,
+  "passes_kappa": 0.0516,
+  "passes_rate": 0.3422,
+  "plain_agreement": 0.4518,
+  "plain_ci_high": 0.5017,
+  "plain_ci_low": 0.3901,
+  "plain_kappa": 0.0094,
+  "plain_rate": 0.4452,
+  "population_failed_share": 0.0254,
+  "standalone_agreement": 0.9801,
+  "standalone_ci_high": 0.9908,
+  "standalone_ci_low": 0.9572,
+  "standalone_kappa": 0.0,
+  "standalone_rate": 0.9801,
+  "weighted_agreement": 0.3723
+ },
+ "answers": [
+  {
+   "lesson_id": "checker_score",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that 'a broken checker breaks every score it gives' overstates the lesson, which only says a checker that misses mistakes can look like one that works, not that every one of its scores is wrong."
+  },
+  {
+   "lesson_id": "chunk_rows",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon 'MERGE' and 'deterministic' without explaining them, and 'UDF' appears in the lesson-derived explanation without a plain-words gloss, which breaks the plain-words requirement for beginners."
+  },
+  {
+   "lesson_id": "sort_changes",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It says retrieval did its job \"identically\" when the lesson only says the sets of articles match (order may differ), and it uses \"retrieval\" and \"pipeline\" without explaining them."
+  },
+  {
+   "lesson_id": "backoff_delays",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Beginners meet unexplained jargon and codes: `with_retry`, `retry_if_exception_type`, and the meanings of 400, 401 and 403 are never explained, and the answer runs to about 205 words, slightly over the limit."
+  },
+  {
+   "lesson_id": "first_bad_version",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "\"LLM\" is never explained, though beginners may not know it (the lesson never uses it), so the plain-words check fails; the answer's advice to average repeated runs and bisect each stretch also goes beyond what the lesson covers, though it doesn't contradict it."
+  },
+  {
+   "lesson_id": "paired_verdict",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer never states the 200-question total, so the '180 questions' figure is unexplained for a reader who sees only the answer, and 'This option' refers to a choice the reader can't see."
+  },
+  {
+   "lesson_id": "apply_order",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The lesson never says the A-to-Z re-scan is slower on big graphs, so that claim is unsupported, and 'VNet' and 'provider' are used without explanation."
+  },
+  {
+   "lesson_id": "managed_mcp_urls",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the term \"MCP\" many times without explaining it, and it says \"This is on purpose,\" which the lesson never states."
+  },
+  {
+   "lesson_id": "runs_after",
+   "key": "check:0:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "managed_mcp_urls",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the terms \"Unity Gateway\" and \"Unity Catalog permissions\" without explaining them, so it is not plain words for a beginner."
+  },
+  {
+   "lesson_id": "claim_gate",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "abstention_rates",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon \"eval set\" without explaining it, and at roughly 200 words it sits right at the length limit."
+  },
+  {
+   "lesson_id": "is_safe_sql",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon without explaining it: 'grants' in the quickest check and 'the whole catalog' in the robot-account bullet are unexplained for a beginner."
+  },
+  {
+   "lesson_id": "token_cost",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer asserts that bills 'isn't true' to jump for no reason and that 'a bill jumps because something changed,' which the lesson never says; the lesson only says the breakdown 'tells you why' when the bill jumps."
+  },
+  {
+   "lesson_id": "use_case_card",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The hint's claim that the gap costs far less on day one than in 'week six' is an invented figure the lesson does not support, though it does not contradict the lesson."
+  },
+  {
+   "lesson_id": "cost_by_tag",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It states facts the lesson never gives (Azure VMs billed outside DBUs, identity fields in system.billing.usage, Azure Cost Management showing the invoice), and it uses unexplained terms like Terraform, Pydantic, Spacelift and classic compute."
+  },
+  {
+   "lesson_id": "summary_recall",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"compacts its context\", \"probe questions\" and \"share kept\" are used without explanation, which fails the plain-words check for beginners."
+  },
+  {
+   "lesson_id": "plan_policy",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "ai_unstuck",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: 'Entra ID' and 'service principal' are never defined, and Spacelift is only loosely described, while the answer runs to roughly 210 to 225 words, past the about-200 limit."
+  },
+  {
+   "lesson_id": "resolve_variables",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses 'target', 'bundle' and 'deploy' without saying what they mean (the lesson defines a target as a place to deploy to), so a beginner may not follow the layering explanation."
+  },
+  {
+   "lesson_id": "validate_rows",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer runs about 280 words, over the 200-word limit, and uses unexplained jargon such as 'upstream', 'downstream', 'expectations', and 'quarantine filter'."
+  },
+  {
+   "lesson_id": "better_option",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses code names (`volume`, `value_per_success`, `success_rate`) and the term 'success rate' without plainly explaining what they mean for a beginner."
+  },
+  {
+   "lesson_id": "location_for_path",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: 'Unity Catalog', 'grant' and the privilege name 'READ FILES' are never defined for a beginner, so the answer is not plain for its audience."
+  },
+  {
+   "lesson_id": "wilson_interval",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer is accurate and well structured, but it uses unexplained jargon for a beginner (\"Wilson\", \"the quick margin rule\", \"proportion_confint\", \"statsmodels\") and runs to roughly 200 to 210 words including the follow-up."
+  },
+  {
+   "lesson_id": "tag_coverage",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Several terms are left unexplained for beginners (governed tags, Azure subscription, Service stage, and SQL), and the answer runs close to the 200-word limit."
+  },
+  {
+   "lesson_id": "cost_per_finished_task",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It says slipped-through mistakes 'appear inside the cost per task', but the lesson keeps that cost apart and only the payback step takes it off the saving, so the claim contradicts the lesson; 'usually a small slice' also generalises beyond the lesson, and 'token' is never explained."
+  },
+  {
+   "lesson_id": "burn_rate",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The time-window trade-off and the two-window hint go beyond the lesson, which does not cover windows, though nothing in them contradicts it."
+  },
+  {
+   "lesson_id": "examples_needed",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the jargon \"eval set\" and the tool name \"MLflow\" (plus the code name \"margin_points\") without explaining them, which breaks the plain-words requirement; the closing paragraph could be rewritten without them."
+  },
+  {
+   "lesson_id": "redact_pii",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The answer states, without support from the lesson, that Databricks' ai_mask 'reads the whole sentence' and 'uses this kind of approach' (NER), and the first section runs to four sentences, over the two-to-three limit."
+  },
+  {
+   "lesson_id": "pick_config",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon \"RAG settings\" and \"eval set\" without explaining either, so it fails the plain-words check."
+  },
+  {
+   "lesson_id": "chunk_rows",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the jargon 'MERGE' without explaining it, so a beginner would not know what it means."
+  },
+  {
+   "lesson_id": "dedupe_chunks",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon, 'strings' and 'embedded', which a beginner may not know, so it needs a plain-words gloss for each."
+  },
+  {
+   "lesson_id": "sweep_memory",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The hint's suggestion to log unknown kinds goes beyond the lesson, though it does not contradict it."
+  },
+  {
+   "lesson_id": "callable_tools",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that the model never sees the function's code, and the remark that a rewrite adds bugs, go beyond what the lesson states, though neither contradicts it."
+  },
+  {
+   "lesson_id": "review_queue",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "calibration_table",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer wrongly treats the Brier score as measuring ranking ('the people it ranks high are the ones who leave' and 'little about which customers will really cancel'), but the lesson says it measures calibration, and a model with a 0.25 score could still rank customers well; it also uses 'Brier sc"
+  },
+  {
+   "lesson_id": "apply_order",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Situation 1 runs to five sentences, not two or three, and uses unexplained terms like depends_on, data source and grant, while its fix of having Terraform create the group conflicts with the lesson's setting that identities come from Entra ID."
+  },
+  {
+   "lesson_id": "grants_to_people",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the unexplained jargon 'Terraform' and 'run_as block' (and 'smell') with no plain-word explanation, and it sits close to the 200-word limit."
+  },
+  {
+   "lesson_id": "token_cost",
+   "key": "check:0:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "guard_destroys",
+   "key": "learn:spot",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "gather_results",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "chunk_text",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It brings in facts the lesson never states, such as the embedding model's input limit and how one embedding blurs a whole manual, so a learner cannot check them against the lesson."
+  },
+  {
+   "lesson_id": "compare_designs",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "must_pass_gate",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses unexplained jargon for beginners, such as \"prompt\" and \"model\" in \"change the prompt, swap the model\" and \"ships\" in \"before it ships\"."
+  },
+  {
+   "lesson_id": "policy_violations",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: \"Terraform\", \"resource\" and \"grants\" are never defined for a beginner, so the answer is not plain."
+  },
+  {
+   "lesson_id": "can_read_table",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The answer runs to roughly 215 words, over the 200-word limit, and never explains the jargon 'Spacelift' or 'UAT' for a beginner."
+  },
+  {
+   "lesson_id": "must_pass_gate",
+   "key": "learn:spot",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "process_new",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The term \"append-only\" is jargon that is never explained, so a beginner may not follow the opening sentence."
+  },
+  {
+   "lesson_id": "pareto_models",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Unexplained jargon: \"eval set\" and \"judge\" are never defined, and \"Pareto front\" is only loosely described as \"the survivors,\" so a beginner would need those terms explained."
+  },
+  {
+   "lesson_id": "location_for_path",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon a beginner may not know without explanation, such as \"managed identity\" and the role name \"Storage Blob Data Contributor\", so it fails the plain-words rule."
+  },
+  {
+   "lesson_id": "lock_info",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon ('apply' and 'blob' are never defined for a beginner), and the blob-history sign goes beyond what the lesson says about the state storage."
+  },
+  {
+   "lesson_id": "claim_gate",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It uses the jargon 'groundedness check' and 'passage' without explaining them, so a beginner may not follow why an unsupported claim is a problem."
+  },
+  {
+   "lesson_id": "field_status",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon a beginner won't know without explanation, such as 'locals' (a Terraform term) and 'autotermination_minutes', and it doesn't explain 'provider' or 'UAT'/'PROD'."
+  },
+  {
+   "lesson_id": "retry_wait",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It uses \"rate limit\" and \"window\" without explaining them, and at roughly 200 words it sits at or just over the length limit."
+  },
+  {
+   "lesson_id": "backoff_delays",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the code term `min` without explaining it, which breaks the plain-words rule for beginners; it should say something like 'the smaller of the two numbers' instead."
+  },
+  {
+   "lesson_id": "one_writer",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The phrase 'the telephone effect from splitting by job title' points back to a lesson concept without explaining it, and the answer runs to about 205 words, at the edge of the limit."
+  },
+  {
+   "lesson_id": "cost_by_tag",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Some claims go beyond the lesson, such as the DBU counts being 'accurate' and tag reports being 'the best way' to see spend, but nothing contradicts it."
+  },
+  {
+   "lesson_id": "choose_brick",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon it never explains: 'AI Functions' and `ai_query` are named without saying what they are, and 'the rule order rules it out' assumes the reader knows the lesson's if/elif ordering idea."
+  },
+  {
+   "lesson_id": "burn_rate",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses \"page\" and \"paging\" without explaining them, and refers to \"the lesson's 14.4 example\" without saying what 14.4 means, so a beginner could be lost; the final conclusion is also two sentences rather than one."
+  },
+  {
+   "lesson_id": "prompt_rollout",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer sits right at the roughly 200-word limit and uses 'pass rate' without defining it, but both are minor and don't break any criterion."
+  },
+  {
+   "lesson_id": "checker_loop",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The cap advice tells learners to return the fewest-issues attempt without the warning the lesson requires, which could lead them to trust a flawed answer, and the third situation runs to four sentences while covering two situations."
+  },
+  {
+   "lesson_id": "pareto_models",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The p95 definition is backwards: 95% of answers come back within that time (no slower than it), not 'at least this fast', and 'eval set' and 'judge' are used without explanation."
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The question asks what \"They get dealt out again\" gets right, if anything, and the answer skips this entirely; it never says that re-dealing is fine for a fixed set, as the lesson states."
+  },
+  {
+   "lesson_id": "checker_loop",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon without explaining it (\"agent\" and \"round cap\" are never defined in plain words), and it runs to about 200 words, right at the limit."
+  },
+  {
+   "lesson_id": "tool_pairs",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like ToolNode, tool_calls, and tool_call_id are used without any plain-language explanation, so a beginner could not follow them."
+  },
+  {
+   "lesson_id": "failure_counts",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It asserts that the judge is fast and that hand-labelling 500 traces would take days, and it suggests fixing the judge's instructions, none of which the lesson states, though nothing it says contradicts the lesson."
+  },
+  {
+   "lesson_id": "judge_agreement",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer is at the edge of the roughly 200-word limit (about 195 words plus headers), and the unsourced claim that failures are 'often rare' goes beyond what the lesson states."
+  },
+  {
+   "lesson_id": "idle_cost",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"classic cluster\" and \"auto-termination\" are used without a plain-words explanation, and the \"clusters.yml\" and \"autotermination_minutes\" references add jargon a beginner may not know."
+  },
+  {
+   "lesson_id": "token_cost",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The example says output 'was already the bigger part of the cost' without stating prices, so that claim is only supported by the lesson's 'several times more' remark and could be made explicit."
+  },
+  {
+   "lesson_id": "summary_recall",
+   "key": "check:2:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "chunk_text",
+   "key": "check:2:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It relies on ideas the lesson never states (embeddings, blurry matching, a prompt size limit) and invents the figure 'hundreds of topics', though none of these contradicts the lesson."
+  },
+  {
+   "lesson_id": "fluke_risk",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The closing explanation of why the holdout set helps runs to two sentences where the question asked for one, and the 'about one in two' figure for 15 variants (about 54%) is not in the lesson's table."
+  },
+  {
+   "lesson_id": "use_case_score",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer runs about 215 words, slightly over the roughly 200-word limit, and uses 'agent' and 'vet' without explaining them to a beginner."
+  },
+  {
+   "lesson_id": "apply_order",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"provider\", \"plan\" and \"apply\" are used without explanation, which a beginner may not follow."
+  },
+  {
+   "lesson_id": "best_threshold",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon it never explains ('validation set', 'test set', 'MLflow', 'runs', 'parameter'), and at roughly 210 words it is at or slightly over the 200-word limit."
+  },
+  {
+   "lesson_id": "one_writer",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "grants_to_people",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses 'Terraform', 'grants' and the code block without explaining them, and the code block adds unexplained syntax for beginners, so it fails the plain-words test."
+  },
+  {
+   "lesson_id": "param_grid",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the unexplained jargon 'eval and judge calls' (the cost sentence), which a beginner won't understand, so it fails the plain-words check."
+  },
+  {
+   "lesson_id": "use_case_score",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The RAG section tells learners not to shelve an idea with no past examples, which contradicts the lesson's rule that failing any gate means it is shelved; it also uses the unexplained term 'LLM'."
+  },
+  {
+   "lesson_id": "dedupe_chunks",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The word 'index' is used ('still in your index') without being explained, though the answer otherwise defines its jargon, so a beginner may not know what it refers to."
+  },
+  {
+   "lesson_id": "review_queue",
+   "key": "learn:spot",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The rubber-stamping idea and the 'quickest check' with a fresh expert write-up go beyond what the lesson says, though they do not contradict it."
+  },
+  {
+   "lesson_id": "replay_tools",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The sandbox and separate live-check advice goes beyond the lesson, which only says to freeze the world, so it is unsourced even though it does not contradict the lesson."
+  },
+  {
+   "lesson_id": "gather_results",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"read-only\", \"map-reduce\" and \"same key\" are used without explanation, and the answer runs to about 200 words, which is at the limit for a beginner."
+  },
+  {
+   "lesson_id": "idle_cost",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The hint claims the cluster policy also catches clusters created outside Terraform, which the lesson does not say, so it is an unsupported claim presented as fact."
+  },
+  {
+   "lesson_id": "fluke_risk",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses 'holdout set' repeatedly and never explains it (it defines 'dev set' but not 'holdout'), and it also uses MLflow tag jargon ('tagged split = holdout') without explanation."
+  },
+  {
+   "lesson_id": "replay_tools",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The jargon 'debug' and 'the model' are used without explanation, which breaks the plain-words requirement for beginners."
+  },
+  {
+   "lesson_id": "skipped_tasks",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer runs about 240 words, over the roughly 200-word limit, and its closing 'one sentence' is actually two sentences."
+  },
+  {
+   "lesson_id": "managed_mcp_urls",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It runs about 215 words, over the 200-word limit, and uses the unexplained term 'securable' (and 'Unity Catalog') in plain-language text."
+  },
+  {
+   "lesson_id": "resolve_variables",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The quickest check claims `databricks bundle validate` shows the resolved values for each target, but the lesson says validate only checks the files, and the answer also asserts that CLI and environment overrides beat target values, which the lesson never states."
+  },
+  {
+   "lesson_id": "skipped_tasks",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The opening says every downstream task is skipped without first stating the default 'all succeeded' Run if, so it only becomes accurate once the follow-up hint brings in page_on_call's different condition."
+  },
+  {
+   "lesson_id": "peak_capacity",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "location_for_path",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer spells out the exercise's full logic (check equality or prefix-plus-slash, walk the list, stop at the first match, no match means not covered), and it uses unexplained jargon such as Pydantic and credential."
+  },
+  {
+   "lesson_id": "managed_mcp_urls",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The lesson never says Genie One writes its own SQL, runs SQL behind the scenes, or might pick a different filter or join, so these mechanics are unsupported claims presented as fact, and 'join' is jargon left unexplained."
+  },
+  {
+   "lesson_id": "field_status",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses unexplained jargon, such as \"stack code\" and the Terraform `file(\"${path.module}/...\")` line, which a beginner would not understand."
+  },
+  {
+   "lesson_id": "plan_calls",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"timeout,\" \"fallback,\" \"retrieval,\" and \"model call\" are used without plain-word explanations, which breaks the plain-words requirement for beginners."
+  },
+  {
+   "lesson_id": "guard_destroys",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses terms a beginner may not know, such as \"Azure resource locks\" and \"named approver\", without explaining them, and the Terraform `moved` block and Azure locks come from outside the lesson."
+  },
+  {
+   "lesson_id": "run_tokens",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It brings in claims the lesson never makes (prompt caching, context trimming, helper agents starting with fresh contexts) and presents the fresh-context idea as the reason for the 15x figure, which the lesson does not say."
+  },
+  {
+   "lesson_id": "prompt_rollout",
+   "key": "learn:spot",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer is accurate and complete, but its length (about 200 words) sits right at the limit."
+  },
+  {
+   "lesson_id": "next_action",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It says a last line starting with PermissionError or ModuleNotFoundError 'sends the run to ask_human', but in the lesson's route() the round-limit check runs first, so at round 3 the run stops instead, and the answer never mentions this order. It also uses unexplained jargon ('tuple', 'startswith') "
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the term \"leakage rule\" without explaining it (that one customer or conversation must not sit in two splits), so a beginner may not follow the second warning sign."
+  },
+  {
+   "lesson_id": "checker_loop",
+   "key": "explain:gotcha",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The tool name run_query is used without explaining what it is, which a beginner may not follow."
+  },
+  {
+   "lesson_id": "resolve_prompt",
+   "key": "check:2:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that there is often no error message is not in the lesson, though it doesn't contradict it, so it should be removed or flagged as an extra."
+  },
+  {
+   "lesson_id": "grants_to_revoke",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It runs to about 205 words, just over the limit, and uses unexplained terms such as Entra ID, Catalog Explorer, Spacelift, PROD and policy check."
+  },
+  {
+   "lesson_id": "review_queue",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The final sentence says a must-pass draft is where a wrong label 'costs the most' and 'protects the most with the least expert time', which goes beyond the lesson; the lesson only ranks must-pass drafts highest and says a wrong label there is 'costly'."
+  },
+  {
+   "lesson_id": "resolve_prompt",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Unexplained programming terms (\"None\", \"raising an error\", \"crash\") and the undefined word \"address\" break the plain-words rule, and at roughly 205 words the answer sits at the length limit."
+  },
+  {
+   "lesson_id": "chunk_rows",
+   "key": "check:0:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "sweep_memory",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that privacy laws care about what you store is not in the lesson, though it does not contradict it, so the learner should be told it comes from general privacy practice."
+  },
+  {
+   "lesson_id": "calibration_table",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The closing explanation of why the overconfident option is better runs to two sentences, though the question asked for one."
+  },
+  {
+   "lesson_id": "mix_shift",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It uses 'eval set' without a plain definition, though the question itself introduces the term, so this is minor."
+  },
+  {
+   "lesson_id": "ablation_report",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The terms \"paired check\" and \"ablation\" are used without explanation, and MLflow appears although the lesson never mentions it, so a beginner would be stuck at the key step."
+  },
+  {
+   "lesson_id": "process_new",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It uses unexplained jargon and code (Spark, withWatermark, event_time, timestamp) that beginners would not understand, so it is not plain."
+  },
+  {
+   "lesson_id": "validate_rows",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"upstream,\" \"agent,\" and \"contract\" are used without explanation, which breaks the plain-words rule for beginners."
+  },
+  {
+   "lesson_id": "guard_destroys",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon goes unexplained: 'Terraform', 'Azure resource locks', and 'stack' are never defined, though the lesson says jargon must be explained for beginners."
+  },
+  {
+   "lesson_id": "slowest_chain",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses 'span', 'root', 'parent' and 'children' without ever explaining them, so a beginner who taps the question may not follow it."
+  },
+  {
+   "lesson_id": "next_action",
+   "key": "check:2:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The duplicate-rows example and the term 'side effect' go beyond the lesson, though they don't contradict it, so the answer relies on ideas a learner hasn't been taught."
+  },
+  {
+   "lesson_id": "dollars_per_success",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "Terms like tokens, traces, token_usage and the system.ai_gateway.usage table are never explained, and the answer leans on 'the lesson' and 'the example' as if the reader has seen them."
+  },
+  {
+   "lesson_id": "location_for_path",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms such as \"managed identity\", \"Unity Catalog\" and \"azurerm_role_assignment\" are used without plain-word explanations, which beginners will not understand."
+  },
+  {
+   "lesson_id": "lock_info",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses 'apply' and 'state file' without explaining them, which a beginner may not know, and 'stale' is only implied by context. Also, telling the learner to check the stack's runs in Spacelift borrows the lesson's advice for Spacelift-managed state, which this azurerm-backed stack is not, though it"
+  },
+  {
+   "lesson_id": "handoff_kept",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It asserts that retelling usually shortens a report and that the question 'rules out a readability problem,' neither of which the lesson says, and it uses 'agent' and 'main agent' without ever explaining them, while running close to the 200-word limit."
+  },
+  {
+   "lesson_id": "precision_recall",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The hint uses 'MLflow' without explaining what it is, which breaks the plain-words requirement for a learner who may not know the tool."
+  },
+  {
+   "lesson_id": "choose_brick",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that no template needs a supervisor set up first, and that each one stands on its own, is not in the lesson and goes beyond what the lesson supports."
+  },
+  {
+   "lesson_id": "next_action",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "gather_results",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The closing 'related trap' paragraph is a fourth point beyond the 2 or 3 situations the question asks for, and 'retry the late worker' goes beyond the lesson's carry-on-with-what-came-back rule, though it doesn't contradict it."
+  },
+  {
+   "lesson_id": "grants_to_revoke",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer claims Unity Catalog keeps one list 'across every workspace' and that each apply resets 'the live list', which the lesson never says; the lesson only says databricks_grants makes that resource's grants match the code, and terms like Terraform, Spacelift, workspace and authoritative are us"
+  },
+  {
+   "lesson_id": "is_safe_sql",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"DROP TABLE\", \"DELETE\", \"filter\" and \"query\" are used without any plain-words explanation, which breaks the plain-language requirement."
+  },
+  {
+   "lesson_id": "skipped_tasks",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon \"downstream\" without explaining it, and at roughly 200 to 210 words with a long final sentence it is at or slightly over the length limit."
+  },
+  {
+   "lesson_id": "count_shift",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "run_tokens",
+   "key": "learn:spot",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "is_safe_sql",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained (SQL, query, TRUNCATE, ALTER, data breach), and the claim that running a query takes far longer than the check is not in the lesson."
+  },
+  {
+   "lesson_id": "wilson_interval",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Minor: 'could easily go 30 tries without a slip' overstates a chance of roughly 1 in 5 (0.95^30 is about 0.21), though it does not contradict the lesson."
+  },
+  {
+   "lesson_id": "callable_tools",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": false,
+   "notes": "Minor: 'EXECUTE' is used without a plain-words definition, though the surrounding sentence ('who is allowed to run a function') implies it."
+  },
+  {
+   "lesson_id": "failure_counts",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It runs about 210 words, slightly over the 200-word limit, and it uses 'MLflow' and the code filter without explaining what MLflow is."
+  },
+  {
+   "lesson_id": "lookup_failed",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that Foundation only registers SPs declared at the moment it runs is a reasonable inference from the lesson's 'Foundation never picked it up' point, but the lesson never states it outright."
+  },
+  {
+   "lesson_id": "slowest_chain",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The third case runs to four sentences, over the requested two or three per case, so the 'many traces' point should be merged into one shorter sentence."
+  },
+  {
+   "lesson_id": "use_case_score",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses lesson terms that are never explained in plain words: 'feasibility' and 'axis' appear without a definition, and 'gates' is used before the reader is told what it means."
+  },
+  {
+   "lesson_id": "pick_config",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses 'eval' and 'chunk size' without explaining them, and a beginner may not know either term."
+  },
+  {
+   "lesson_id": "tool_pairs",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The provider example (tool_result blocks with tool_use_id) and the advice to match parallel results by id are outside the lesson, and the provider section runs four sentences against the requested two or three."
+  },
+  {
+   "lesson_id": "pass_rates",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the notation pass@3 and pass^3 and the tool name MLflow without explaining them in the answer itself, and it uses the word 'flaky' without explanation, which breaks the plain-words requirement for beginners."
+  },
+  {
+   "lesson_id": "chunk_rows",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer states MERGE's match/insert behaviour and says 'the usual setup for this job inserts unmatched rows', which the lesson never says, so it presents unsupported claims as fact."
+  },
+  {
+   "lesson_id": "cost_by_tag",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer says budgets can be filtered to a tag and that cluster tags are copied into custom_tags, but the lesson states neither, so the claims are unsupported by the lesson."
+  },
+  {
+   "lesson_id": "use_case_score",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the term 'gate' (from the lesson) without explaining it, so a beginner may not know what 'past examples gate' or 'earlier gate' means."
+  },
+  {
+   "lesson_id": "backoff_delays",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Minor: the answer says the wait is '1 second', a unit the lesson never states (its code only calls sleep(1)), and it adds a claim about retries overloading servers that the lesson doesn't make."
+  },
+  {
+   "lesson_id": "paired_verdict",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The run-to-run wobble point is not in the lesson, though it doesn't contradict it, so it should be checked against the source before showing beginners."
+  },
+  {
+   "lesson_id": "ablation_report",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon: 'LLM' in point 3 and 'paired check' in point 2 are never defined for a beginner, so the answer fails the plain-words test."
+  },
+  {
+   "lesson_id": "checker_score",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "replay_tools",
+   "key": "check:0:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer adds a fix paragraph (freezing the data, repeated runs) that the question did not ask for, and it sits close to the 200-word limit, so it could be trimmed."
+  },
+  {
+   "lesson_id": "provider_versions",
+   "key": "explain:gotcha",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that 'Spacelift starts each run fresh, so it downloads version 4' is not in the lesson, which only says unpinned providers can upgrade under you."
+  },
+  {
+   "lesson_id": "chunk_text",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The retrieval details (search picks a few best-matching chunks, and the model may see only one of two overlapping chunks) go beyond what the lesson states, though they don't contradict it."
+  },
+  {
+   "lesson_id": "backoff_delays",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Situation 3 uses unexplained jargon ('agent', 'tool call') and the lesson never mentions agents, so beginners may not follow it; 'endpoint' in situation 1 is also unexplained."
+  },
+  {
+   "lesson_id": "decide_release",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The reply is close to the 200-word limit, and 'latency' is used without a plain-words explanation, though the p95 sentence makes the meaning clear."
+  },
+  {
+   "lesson_id": "best_threshold",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer adds that scores are numbers between 0 and 1 and that they show confidence, which the lesson never states, though nothing contradicts it."
+  },
+  {
+   "lesson_id": "claim_gate",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon 'evals' and 'verdicts' without explaining them, and it runs close to the 200-word limit, so a beginner could get stuck."
+  },
+  {
+   "lesson_id": "ablation_report",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": false,
+   "notes": "The example says the reranker's 7-question gap 'is real' without showing the lesson's check (7 times 7 is 49, at least 4 times 9 is 36), and it omits the rewrite result (1 point, within noise)."
+  },
+  {
+   "lesson_id": "process_new",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the jargon word \"watermark\" (\"the watermark of 100\") without ever explaining it, and it runs to roughly 200-210 words, at or slightly over the limit."
+  },
+  {
+   "lesson_id": "route_request",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The coal-miner history is not in the lesson, though it is accurate and does not contradict it, and the answer stays within the length limit."
+  },
+  {
+   "lesson_id": "circuit_breaker",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claims that a flood of requests can knock the service over and that the trial call is 'cheap' are not in the lesson, though they do not contradict it."
+  },
+  {
+   "lesson_id": "route_request",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The answer uses the lesson's jargon 'traces' and 'eval results' without explaining them, and 'a handful' overstates how few traces 10% of a few hundred requests gives."
+  },
+  {
+   "lesson_id": "one_writer",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Minor: the claim that more tools give agents more choices to sort through is not in the lesson, though it does not contradict it."
+  },
+  {
+   "lesson_id": "precision_recall",
+   "key": "check:0:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "resolve_prompt",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The first warning sign contradicts itself: it says 'no code changed' but then describes a prompt pasted into the code being edited, and it leaves jargon such as 'hard-coded' and 'alias' unexplained."
+  },
+  {
+   "lesson_id": "validate_rows",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "calibration_table",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the jargon \"reliability table\" without explaining it, and it never says what the Brier score measures beyond \"a single number\" and \"lower is better.\""
+  },
+  {
+   "lesson_id": "prompt_rollout",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "lock_info",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon ('apply', 'stack', 'lock', 'state file') that a beginner may not know, and it adds claims the lesson never makes, such as 'Terraform has no such rule' and half-written files, while sitting near the 200-word limit."
+  },
+  {
+   "lesson_id": "grants_to_people",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer runs well over the 200-word limit and uses unexplained jargon such as 'Entra ID', 'service principals' and 'principal'."
+  },
+  {
+   "lesson_id": "chunk_text",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "dedupe_chunks",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The closing claim that 'the Databricks SQL version handles this kind of scale' is not supported by the lesson, whose SQL is a single whole-table query and does not cover ongoing batches, so it should be removed or reworded."
+  },
+  {
+   "lesson_id": "ai_unstuck",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It says the lesson forbids pasting whole logs and that pasting one leaks secrets, but the lesson only forbids whole logs that contain credentials, so the safety point is overstated."
+  },
+  {
+   "lesson_id": "checker_score",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The terms 'end state' and 'judge' are used without a plain-words explanation, though the rest is clear."
+  },
+  {
+   "lesson_id": "callable_tools",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that the return type is 'a single line inside that function' is imprecise: in the lesson, RETURNS STRING sits in the function header with the parameters, not between the $$ marks where the code goes, so a beginner could wrongly think it is part of the Python code."
+  },
+  {
+   "lesson_id": "vector_index_setup",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The permission names (USE CATALOG, USE SCHEMA, SELECT, CAN_USE, CAN_MANAGE) are used without saying what each one allows, so a beginner still does not know what the endpoint permission is."
+  },
+  {
+   "lesson_id": "ndcg_at_k",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It refers to 'reranker A' and 'reranker B' and 'the question asks' without introducing them, so a learner who only sees 'Why not Recall@5?' would be confused about what the comparison is."
+  },
+  {
+   "lesson_id": "next_action",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It claims 'One small edit should make the next run pass,' which the lesson never promises; the lesson says to check the real result, since agents often report success that never happened."
+  },
+  {
+   "lesson_id": "circuit_breaker",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: 'cached result', 'reranker' and 'unranked' are never defined for beginners, and the length is right at the 200-word limit."
+  },
+  {
+   "lesson_id": "biggest_swing",
+   "key": "check:0:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that fixed costs are \"usually well known already, because they come from contracts and quotes\" is not in the lesson, and it conflicts with the lesson's framing that every input in a business case is a guess, fixed costs included."
+  },
+  {
+   "lesson_id": "sweep_memory",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "Jargon is not explained: \"debugging traces\" and \"the write-time guard from the last lesson\" would confuse a beginner, and the chat-log and trace copies are not covered by the lesson's snapshot-and-backup deletion rule."
+  },
+  {
+   "lesson_id": "ndcg_at_k",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon: nDCG, recall@5 and 'LLM judge' are never explained in plain words, and the 'relevance' and 'labels' points assume the reader already knows the terms."
+  },
+  {
+   "lesson_id": "recall_at_k",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The suggestion to divide by whichever is smaller, k or the number of relevant documents, contradicts the lesson's rule that recall is found divided by the number of relevant documents, and the answer presents it as a fix without flagging it as a different metric."
+  },
+  {
+   "lesson_id": "biggest_swing",
+   "key": "check:1:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "fluke_risk",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Minor overreach: 'Test one prompt and its dev score is a fair estimate' goes beyond the lesson, which only says a fluke is unlikely when testing one variant."
+  },
+  {
+   "lesson_id": "one_writer",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The bottleneck trade-off and the 'split the thing into separate parts' hint go beyond the lesson, so they are unsourced, though not contradicted by it."
+  },
+  {
+   "lesson_id": "first_bad_version",
+   "key": "check:0:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The word \"evals\" is used twice without being explained, so a beginner may not know it means a test run of a prompt version."
+  },
+  {
+   "lesson_id": "examples_needed",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The jargon terms \"eval set\" and \"pass rate\" are used without any explanation, so a beginner may not follow them."
+  },
+  {
+   "lesson_id": "sort_changes",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It asserts things the lesson never says, such as that the comparison lists questions in random order and that same-cause cases end up scattered, and it leaves 'pipeline' unexplained."
+  },
+  {
+   "lesson_id": "decide_release",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It says wins must beat losses 'by a clear margin' without giving the lesson's actual test (wins minus losses at least twice the square root of wins plus losses), and it leaves out that 'too close to call' can also be settled on cost."
+  },
+  {
+   "lesson_id": "chunk_text",
+   "key": "explain:gotcha",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The explanation of \"embedding\" as turning words into numbers for search is not in the lesson, though it does not contradict it."
+  },
+  {
+   "lesson_id": "process_new",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "compare_designs",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer is sound; the only borderline point is that the spoken steps (group, sum, divide, report no value on zero wins) closely follow the exercise's logic, though they stay conceptual with no code."
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses the term 'hash function' (and 'holdout') without explaining them, so a beginner may not follow item 1."
+  },
+  {
+   "lesson_id": "biggest_swing",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon 'sensitivity analysis' and 'swing' without explaining them, and the final answer runs to three sentences where the question asked for one."
+  },
+  {
+   "lesson_id": "tool_pairs",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claims that one turn can contain several calls and that the service matches by id rather than name go beyond what the lesson states, though they don't contradict it."
+  },
+  {
+   "lesson_id": "use_case_card",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that the success number, test plan, and owner all depend on the send-or-approve choice goes slightly beyond the lesson, which does not say this, though it does not contradict it."
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The jargon 'bucket' and 'holdout' is used without explanation, and the 'only about 30 dates' and 'busy day' points go beyond what the lesson says, though they don't contradict it."
+  },
+  {
+   "lesson_id": "tool_pairs",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer uses 'id' and 'dangling tool call' without defining them up front, so a beginner has to infer them from context."
+  },
+  {
+   "lesson_id": "cost_by_tag",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer presents 0.30 a DBU as the real list price, but the lesson labels that figure \"made up\", and it adds Microsoft as a possible discount source, which the lesson does not mention."
+  },
+  {
+   "lesson_id": "choose_brick",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Points 1 and 2 each run to four sentences, over the requested two or three, and 'drift' and 'AI Function' are used without explanation."
+  },
+  {
+   "lesson_id": "resolve_variables",
+   "key": "check:2:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer is about 200 words, right at the limit, so it could be trimmed slightly to be safely under it."
+  },
+  {
+   "lesson_id": "judge_agreement",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer is about 200 words, right at the 'about 200' limit, so it is only borderline on length."
+  },
+  {
+   "lesson_id": "burn_rate",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The term \"error budget\" is used without a plain definition (the failures you are allowed), and the \"0.6 / 0.5 = 1.2\" slash notation is more maths notation than a beginner-level answer should use."
+  },
+  {
+   "lesson_id": "fill_template",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "\"Think of the form letter again\" assumes the learner already saw the analogy, so it is a back-reference like \"as you said\"; it should introduce the analogy itself, e.g. \"Think of filling in a form letter.\""
+  },
+  {
+   "lesson_id": "tool_schema",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is not explained: 'UCFunctionToolkit', 'Unity Catalog function', 'tool schema' and 'parameters' appear without plain-language definitions, which the plain criterion requires."
+  },
+  {
+   "lesson_id": "ai_unstuck",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Beginners meet the jargon 'Pydantic check' and 'provider' without any explanation, which breaks the plain-words rule (the answer is otherwise under 200 words)."
+  },
+  {
+   "lesson_id": "chunk_rows",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It never says what the option gets right, which the question asks for ('if anything'), and the claim that Spark doesn't promise row order goes beyond what the lesson states, though it doesn't contradict it."
+  },
+  {
+   "lesson_id": "calibration_table",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The LLM section asserts that chatbots answer 80% or 90% almost every time and suggests a self-agreement check, neither of which appears in the lesson, and it also uses 'Brier score' and 'MLflow' without explaining them."
+  },
+  {
+   "lesson_id": "run_tokens",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The terms \"AI model\" and \"LangChain\" are used without explanation, and the lesson never says what LangChain is, so beginners will hit unexplained jargon."
+  },
+  {
+   "lesson_id": "skipped_tasks",
+   "key": "check:2:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "can_read_table",
+   "key": "learn:stops",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The three situations (workspace-bound catalogs, row filters and column masks, and Terraform's authoritative grants) go beyond what the lesson covers, so the lesson cannot confirm them, though nothing in them contradicts it."
+  },
+  {
+   "lesson_id": "pareto_models",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The lesson never says eval sets usually include expected answers, and it describes the judge only as the scorer in the example, so these details go beyond the lesson without contradicting it."
+  },
+  {
+   "lesson_id": "process_new",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim 'Speed was never the issue' contradicts the lesson, which says reprocessing a growing table 'gets slow and expensive', and the answer also uses the unexplained term 'embed'."
+  },
+  {
+   "lesson_id": "count_shift",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "vector_index_setup",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like endpoint, USE CATALOG, CAN_USE and Triggered are used without plain explanation, and the endpoint permission line says only CAN_USE works when the lesson lists CAN_USE or CAN_MANAGE."
+  },
+  {
+   "lesson_id": "pick_config",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The jargon \"eval set\" and \"p95 latency\" are used without explanation, so beginners may not follow them, and the third situation has four sentences, over the two-to-three limit."
+  },
+  {
+   "lesson_id": "field_status",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "pass_rates",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The phrase \"Two tries is also a small sample\" uses the statistics term \"sample\" without explaining it, which a beginner may not follow."
+  },
+  {
+   "lesson_id": "precision_recall",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The closing sentence describes what the 0.8/0.2 pair shows but does not state directly that reporting both numbers exposes a miss that a single figure hides."
+  },
+  {
+   "lesson_id": "peak_capacity",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the terms deployment, quota, gateway, rate limits and go-live without explaining them, so beginners may not follow the capacity-planning steps."
+  },
+  {
+   "lesson_id": "abstention_rates",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: \"chunks\" is never defined, and \"over-refusal rate\" and \"missed-refusal rate\" are used as labels without saying in plain words what they measure."
+  },
+  {
+   "lesson_id": "decide_release",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the terms 'gates' and 'paired check' without explaining them in plain words, and the total length is at or slightly over the roughly 200-word limit."
+  },
+  {
+   "lesson_id": "prompt_rollout",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The jargon \"production alias\" is used without explanation, so a beginner may not know what it means or why it matters; the answer should say it is the label that marks the prompt version live users get."
+  },
+  {
+   "lesson_id": "smoke_set",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It asserts things the lesson never says: that hard questions are good at exposing weak ideas, that hard questions bunch up in a few groups, and that must-pass questions are 'not especially hard'."
+  },
+  {
+   "lesson_id": "ablation_report",
+   "key": "check:2:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer is close to the 200-word limit (about 195 words), and 'ablation' and 'paired check' are used without a plain-language definition, though the surrounding sentences describe both."
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": false,
+   "notes": ""
+  },
+  {
+   "lesson_id": "peak_capacity",
+   "key": "explain:gotcha",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses 'burst factor', 'tokens', 'deployment' and 'gateway' without defining them, so beginners cannot follow the fix and the gateway advice."
+  },
+  {
+   "lesson_id": "decide_release",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the term \"p95 latency\" without explaining it (the 95th-percentile response time), which breaks the plain-words requirement."
+  },
+  {
+   "lesson_id": "run_tokens",
+   "key": "check:0:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It asserts that output tokens cost more than input tokens, which the lesson never states, and it uses 'tokens,' 'context,' and 'tool result' without explaining them to beginners."
+  },
+  {
+   "lesson_id": "gather_results",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The follow-up hint uses unexplained jargon (\"node\", \"graph\", and the code name asyncio.wait_for) that a beginner would not understand, and \"graph\" also appears in the trade-off paragraph without explanation."
+  },
+  {
+   "lesson_id": "provider_versions",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: 'Spacelift stack' and 'repo' are never defined, and 'lock file' is only implied by the description of what the file records."
+  },
+  {
+   "lesson_id": "use_case_card",
+   "key": "check:0:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "It calls the example line 'the right answer', but the lesson offers it only as one example of a testable success line."
+  },
+  {
+   "lesson_id": "tool_call_scores",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "callable_tools",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The quickest-check list says USE SCHEMA must be granted on the schema, but the lesson's rule allows USE SCHEMA on the catalog or the schema, so the list is narrower than the lesson."
+  },
+  {
+   "lesson_id": "ablation_report",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer says 'use the rule from the lesson' and then multiplies numbers, but never states the rule (the gap times the gap must exceed four times the number of disagreements), so a beginner cannot follow why 361 vs 84 settles the question."
+  },
+  {
+   "lesson_id": "optimistic_writes",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "checker_score",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The follow-up hint (report recall as unknown when 0 mistakes are planted) goes beyond the lesson, which never covers that case, and 'ids' is never explained."
+  },
+  {
+   "lesson_id": "handoff_kept",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon \"agent\" and \"grader\" without explaining them, which breaks the plain-words rule for beginners."
+  },
+  {
+   "lesson_id": "fill_template",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It names LangChain without explaining it, which is jargon for a beginner, and at roughly 200 words it sits at the length limit."
+  },
+  {
+   "lesson_id": "dollars_per_success",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The added definition of a pass as a task the agent got right, judged by your evaluation, goes slightly beyond the lesson's wording, though it is consistent with it."
+  },
+  {
+   "lesson_id": "must_pass_gate",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses stage names like \"Evaluate\" and terms like \"edge case\" and \"release gate\" without explaining them to a beginner, and \"Ship\" is only partly explained in the question itself."
+  },
+  {
+   "lesson_id": "runs_after",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer states that a running stack must wait for every stack it waits for, dropping the lesson's condition 'if that stack is running too', which is what keeps non-running waits from blocking a run."
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The word \"hash\" is used several times but never explained in plain words, and \"leak\" is used without a definition, so a beginner may not follow the reasoning."
+  },
+  {
+   "lesson_id": "pass_rates",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The closing sentence, \"it takes 9 in 10 of the remaining chance at each of the five tries\", is muddled and hard for a beginner to follow, so the 'why 6 in 10 is better' part is not stated plainly; it could say simply that the 9-in-10 chance multiplies at each try."
+  },
+  {
+   "lesson_id": "apply_order",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It uses 'Terraform' and 'Spacelift' without explaining them to beginners, and at roughly 200 words it is at the length limit."
+  },
+  {
+   "lesson_id": "fill_template",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Items 1 and 3 run to four sentences each, breaking the required two-or-three, and LangChain is named without being explained."
+  },
+  {
+   "lesson_id": "lock_info",
+   "key": "explain:interview",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that a missing heading gives an empty result, and the advice not to guess, are inferred from the flag design rather than stated in the lesson, though they contradict nothing."
+  },
+  {
+   "lesson_id": "plan_policy",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained: 'apply', 'stack', and 'Spacelift run' appear without plain-word definitions, and the length sits right at the limit of about 200 words."
+  },
+  {
+   "lesson_id": "better_option",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It calls success rate \"exactly the earning half\" of the formula, but earnings are volume times success rate times value per success, so success rate is only one factor, and the claim that the newness answer \"senses\" that price isn't the whole story is not supported by the lesson."
+  },
+  {
+   "lesson_id": "claim_gate",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that the other claims can't be trusted after one contradiction goes beyond what the lesson says, though it doesn't contradict it."
+  },
+  {
+   "lesson_id": "retry_wait",
+   "key": "check:2:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Minor: 'API key' and the 401/403 codes are not defined for beginners, though the 'you're not allowed in' gloss partly covers them, and the text is close to the 200-word limit."
+  },
+  {
+   "lesson_id": "first_bad_version",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the term \"eval runs\" twice without explaining it (it means running the evaluation on a version), which breaks the plain-words, jargon-explained requirement for beginners."
+  },
+  {
+   "lesson_id": "pick_securable",
+   "key": "check:0:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer leaves jargon unexplained (ACCESS privilege, USE CONNECTION, access connector, secret scope, Unity Catalog object), runs about 207 words, and refers to 'the ticketing API' without introducing the scenario from the Check question."
+  },
+  {
+   "lesson_id": "route_request",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer relies on the lesson's Check scenario (\"the first hour\", \"a doubled error rate\", \"its traffic\") without restating it, so a learner who taps the question alone may not know what the new version's problem was."
+  },
+  {
+   "lesson_id": "failure_counts",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Each of the three cases runs four or five sentences where the question asks for two or three, and the multi-label suggestion departs from the lesson's one-label rule without flagging that it is a change."
+  },
+  {
+   "lesson_id": "managed_mcp_urls",
+   "key": "check:2:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the term MCP and the code name client.list_tools() without explaining either in plain words, and it states that servers add, rename or drop tools, which the lesson does not say."
+  },
+  {
+   "lesson_id": "tag_coverage",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Serverless and budget policy are used without explanation, though beginners need them defined, and the DBU explanation shows the author meant to define jargon."
+  },
+  {
+   "lesson_id": "lock_info",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms like \"apply,\" \"azurerm backend,\" and \"live writer\" are used without plain explanations, so a beginner could not follow them."
+  },
+  {
+   "lesson_id": "upsert_rows",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The closing reference to the \"WHEN MATCHED THEN UPDATE branch\" of MERGE INTO is unexplained jargon that a beginner won't follow, so it should say in plain words that the row with the matching key gets updated."
+  },
+  {
+   "lesson_id": "circuit_breaker",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "choose_brick",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The lesson doesn't say whether Information Extraction can point back to source text, so the claim that 'a table of fields does neither' goes beyond the lesson, though it doesn't contradict it."
+  },
+  {
+   "lesson_id": "stable_split",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The example is wrong: after re-dealing, only old holdout positions 161-180 move into dev, while 181-200 move into test, so 'old test and old holdout questions slide into dev' is inaccurate."
+  },
+  {
+   "lesson_id": "summary_recall",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "At roughly 210 words it runs past the 200-word limit, and terms like 'tool', 'probe question' and 'summary prompt' are used without explanation."
+  },
+  {
+   "lesson_id": "grants_to_people",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Situation 1 contradicts the lesson, which says groups have plain names and do not contain '@', and 'tenant' is unexplained jargon."
+  },
+  {
+   "lesson_id": "best_threshold",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The question asks for one sentence on why 'Precision goes up, recall goes down' is better, but the final paragraph uses two sentences, and the second one ('Those are usually more accurate...') repeats the point."
+  },
+  {
+   "lesson_id": "tool_schema",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Each situation runs four to five sentences instead of the required two or three, and the first section adds claims the lesson never makes, such as schemas being sent with every request and the 'dozens of tools' threshold."
+  },
+  {
+   "lesson_id": "checker_score",
+   "key": "learn:term",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "fact_history",
+   "key": "check:2:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that 'many privacy laws give people that right' goes beyond the lesson, which is the only allowed source, though it does not contradict it."
+  },
+  {
+   "lesson_id": "lookup_failed",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The answer runs to roughly 210 words, over the 200-word limit, and uses jargon without explanation: 'Terraform' and 'SP' are never defined for a beginner."
+  },
+  {
+   "lesson_id": "retry_wait",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The term Retry-After is used without explaining that it is a header the server sends to say how long to wait, and the 429/503 status codes are not named as such, so a beginner may not follow the first part."
+  },
+  {
+   "lesson_id": "find_replacements",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The term \"apply\" is used throughout without being explained, and the \"~\" mark is used without saying what it means, which breaks the plain-words rule for beginners."
+  },
+  {
+   "lesson_id": "gather_results",
+   "key": "check:1:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer names the exception InvalidUpdateError and describes a default 'replace' rule, neither of which appears in the lesson, so the learner cannot verify them from the lesson alone."
+  },
+  {
+   "lesson_id": "token_cost",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses \"tokens\" (in the final sentence and \"input tokens and output tokens\") and \"prompt\" without explaining them, so a beginner may not know what they mean, even though the lesson defines tokens."
+  },
+  {
+   "lesson_id": "summary_recall",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon it never explains: 'planted facts', 'tool results', and 'SummarizationMiddleware'/'LangChain' are dropped in without definition, which breaks the plain-words rule for beginners."
+  },
+  {
+   "lesson_id": "idle_cost",
+   "key": "learn:term",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that team-sales can't request 0 in their clusters.yml because of the idle-limits policy is not in the lesson: the lesson never says team-sales uses that policy or that clusters.yml is where its cluster settings are checked against it."
+  },
+  {
+   "lesson_id": "provider_versions",
+   "key": "learn:spot",
+   "passes": true,
+   "reference_pass": false,
+   "notes": "The lock-file bullet loosely says a plain `terraform init` shows the file changed because 'someone upgraded without review', but a plain init keeps the committed versions, so the cause is really a missing commit or an edited constraint; the length is also right at the ~200-word limit."
+  },
+  {
+   "lesson_id": "backoff_delays",
+   "key": "check:1:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Jargon is left unexplained for beginners: '429 rate limit', 'timeout', 'overloaded server', 'LangChain', and the code names 'with_retry' and 'retry_if_exception_type' are never defined, and 'backoff' is used without a reminder of what it means."
+  },
+  {
+   "lesson_id": "ndcg_at_k",
+   "key": "check:0:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The answer never expands the name nDCG or explains that 'normalized' means dividing by the best possible score, so a beginner may not know what the metric is called or what it measures beyond the position discount."
+  },
+  {
+   "lesson_id": "runs_after",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon it never explains, such as 'Unity Catalog', 'fresh plan' and 'applies', so a beginner could get lost."
+  },
+  {
+   "lesson_id": "biggest_swing",
+   "key": "check:0:0",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "choose_brick",
+   "key": "check:1:2",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claim that a Knowledge Assistant under a supervisor would 'still come out right' and the point about extra cost are not stated in the lesson, though nothing in them contradicts it."
+  },
+  {
+   "lesson_id": "summary_recall",
+   "key": "learn:stops",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "Points 1 and 2 each run to four sentences, breaking the required limit of two or three per situation."
+  },
+  {
+   "lesson_id": "replay_tools",
+   "key": "check:2:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that fewer steps usually means a cheaper, faster agent is not in the lesson, which only lists steps and cost per success as separate outcomes to track, so it should be removed or flagged as outside the lesson."
+  },
+  {
+   "lesson_id": "trajectory_match",
+   "key": "check:0:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": ""
+  },
+  {
+   "lesson_id": "fill_template",
+   "key": "explain:gotcha",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "It uses unexplained jargon and names (\"codebase\", \"objects\", \"MLflow\", \"CapWords\") and makes an unsupported claim that LangChain and MLflow follow PEP 8, which the lesson never says."
+  },
+  {
+   "lesson_id": "handoff_kept",
+   "key": "check:0:1",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The claim that a bigger model 'costs more money and makes each answer slower' is not in the lesson, so it cannot be verified against the lesson as the only source of truth."
+  },
+  {
+   "lesson_id": "pick_securable",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "At about 204 words it runs slightly over the roughly 200-word limit, and terms like Unity Catalog, abfss:// and storage credential are used without plain-language explanation."
+  },
+  {
+   "lesson_id": "gather_results",
+   "key": "explain:gotcha",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "The claims that a one-source test passes and that you get no results are reasonable inferences rather than things the lesson states, so they go slightly beyond the source, though nothing contradicts it."
+  },
+  {
+   "lesson_id": "apply_order",
+   "key": "check:2:1",
+   "passes": true,
+   "reference_pass": true,
+   "notes": "Minor: the claim that one apply builds both is not stated in the lesson (though it doesn't contradict it), and 'resource' is never explained for beginners."
+  },
+  {
+   "lesson_id": "backoff_delays",
+   "key": "check:0:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The last sentence uses the term \"backoff\" without explaining it (for example, as waiting longer between each retry), so a beginner may not understand it."
+  },
+  {
+   "lesson_id": "plan_calls",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Code terms like `await`, `llm.ainvoke`, and `TimeoutError` are used without plain-language explanation, which breaks the 'jargon explained' requirement."
+  },
+  {
+   "lesson_id": "apply_order",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": false,
+   "notes": "The claim that 'a plan shows the final values, so it can't tell you which one was used' is wrong: a Terraform plan shows '(known after apply)' for values that come from references, and the lesson says nothing like this, so the advice to check the code rather than the plan is misleading."
+  },
+  {
+   "lesson_id": "fill_template",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses jargon without explaining it, such as `str.format` (never described as Python's built-in filler) and \"placeholder\", and it adds an unsupported claim that models read JSON fine."
+  },
+  {
+   "lesson_id": "wilson_interval",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the unexplained jargon \"eval set\" and the name \"Wilson\" without saying what they are, which a beginner would not know."
+  },
+  {
+   "lesson_id": "provider_versions",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It says `~>` allows newer versions and that the 'or newer' half of the rule is met by 5.0.0, which contradicts the lesson's statement that `~> 4.40` means 4.40 or newer but not 5.0, since `~>` only allows newer versions within the same major version."
+  },
+  {
+   "lesson_id": "tool_pairs",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The hint uses unexplained jargon (LangGraph, ToolNode, handle_tool_errors) and the answer runs about 205 words, slightly over the roughly 200-word limit."
+  },
+  {
+   "lesson_id": "tool_schema",
+   "key": "check:1:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon ('UCFunctionToolkit', 'governed') and refers to the lesson's 'three teams' scenario and 'the question' without restating them, so a beginner tapping the question may not follow."
+  },
+  {
+   "lesson_id": "rerank_check",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The jargon 'chunking' and 'embeddings' is never explained, and 'retriever' and 'top k' are only loosely explained, so the answer fails the plain-words requirement."
+  },
+  {
+   "lesson_id": "token_bucket",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses unexplained jargon ('endpoint' and 'token bucket' are never defined), and the closing comparison runs to two sentences where the question asked for one."
+  },
+  {
+   "lesson_id": "param_grid",
+   "key": "check:2:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The term \"eval calls\" is never explained (only \"judge\" is), so the answer breaks the plain-words rule, and at roughly 195 words it sits right at the length limit."
+  },
+  {
+   "lesson_id": "handoff_kept",
+   "key": "learn:spot",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "At roughly 230 words it exceeds the about-200-word limit, so it should be trimmed, for example by shortening the five warning-sign bullets."
+  },
+  {
+   "lesson_id": "can_read_table",
+   "key": "check:0:0",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses 'schema' (and 'catalog' and 'main.sales') without ever explaining them, though a beginner may not know them; a brief gloss such as 'a folder inside a catalog' would fix it."
+  },
+  {
+   "lesson_id": "ndcg_at_k",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "It uses the jargon 'DCG', 'ideal DCG' and 'nDCG@5' without ever explaining what they mean in plain words, and at roughly 200 words it is at the limit of the length rule."
+  },
+  {
+   "lesson_id": "count_shift",
+   "key": "check:1:2",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "Terms such as 'plan', 'apply', 'policy check' and 'prevent_destroy' are used without explanation, which a beginner may not follow."
+  },
+  {
+   "lesson_id": "redact_pii",
+   "key": "explain:interview",
+   "passes": false,
+   "reference_pass": true,
+   "notes": "The answer uses \"traces\" and \"boundary\" without explaining them, and names the Databricks function \"ai_mask\" with no context, so a beginner would not follow every term."
+  }
+ ]
+}

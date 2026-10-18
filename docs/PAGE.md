@@ -327,6 +327,18 @@ idea, ungraded:
   step, recorded as `resolved` (true or false) on that answer's trace. Still stuck asks for a simpler
   explanation, whose trace carries `retry_of` (the first answer's request id), so the pair can become
   an eval case. On claude.ai, where there is no MLflow, the same feedback is kept in `mine.feedback`.
+- **Prepared answers, so Ask is always on** (`drill.tutor_prepared`, `PREP` in `page/ask.js`): the
+  standard questions (what a term means, when it stops working, how to spot it going wrong, why
+  not each wrong Check option, the interview answer, the gotcha) have answers drafted ahead by a strong
+  model on Databricks and passed by a second model as judge (correct to the lesson, answers it, plain
+  words, no exercise answer, makes sense to anyone). The page shows one at once, labelled "written
+  ahead and checked", when the chip's words match it exactly; each keeps a fingerprint of its lesson
+  and stops being served when the lesson changes. With no live tutor, Ask keeps just these questions
+  and says typed ones need the live tutor. On a server the page reports a prepared answer to
+  `/api/served`, which traces it (`route = prepared`), so its feedback counts like any answer's.
+  `uv run drill tutor prepare --profile <name>` drafts what is missing (costs money);
+  `uv run drill tutor prepared --sample 50` shows a spot-check sample, and `--check` / `--reject
+  lesson_id/key` record your verdict.
 - **Quiet signals on the tutor's answers** (`askSignal` in `page/ask.js`): with no buttons, the page
   notes what the learner did next and sends it as CODE feedback on the latest answer, once each,
   within half an hour on the same lesson: `saved` (to the study list), `asked_again` (nearly the

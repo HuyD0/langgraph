@@ -45,6 +45,14 @@ RETRY_SECONDS = 30.0
 SOURCE_ID = "drill.observe"
 PAGE_SIGNALS = "drill.page.signals"  # what the page saw the learner do after an answer
 
+
+def signals_every() -> float:
+    """Minutes to hold the page's quiet signals before writing them in one go; 0 writes them at once."""
+    try:
+        return max(0.0, float(os.getenv("DRILL_SIGNALS_EVERY_MINUTES", "0") or 0))
+    except ValueError:
+        return 0.0
+
 # What the page and the MCP tools may say about a request, and which of those become tags.
 CONTEXT_KEYS = (
     "feature", "door", "lesson_id", "step", "hint_level", "question", "session", "user",
@@ -211,6 +219,13 @@ class MlflowObserver:
         self._worker: threading.Thread | None = None
         self._prompts: dict = {}  # feature -> the registered prompt version its traces are linked to
         self._reconnect: threading.Thread | None = None
+        # The page's quiet signals (saved, asked again...) can wait: with DRILL_SIGNALS_EVERY_MINUTES
+        # set (the app: 60), they are held and written in one burst, so a busy day wakes the SQL
+        # warehouse that keeps Unity Catalog traces once an hour, not once per signal. The learner's
+        # own feedback (Got it / Still stuck) is always written straight away.
+        self._held: list[tuple] = []
+        self._held_lock = threading.Lock()
+        self._held_timer: threading.Thread | None = None
         self.ready(wait=True)  # at start-up, connect before the first request
 
     # -- connecting --------------------------------------------------------
@@ -457,6 +472,38 @@ class MlflowObserver:
         except Exception as exc:
             self._off(exc)
 
+    def served(self, context: dict | None, answer: str, model: str) -> bool:
+        """A prepared answer the page showed without asking a model: a trace like any other answer's,
+        tagged ``route = prepared``, so Got it / Still stuck and the quiet signals land on it too."""
+        ctx = clean_context(context)
+        if not ctx.get("feature") or not self.ready():
+            return False
+        try:
+            import mlflow
+            from mlflow.tracing.constant import TraceMetadataKey
+            from mlflow.tracing.trace_manager import InMemoryTraceManager
+
+            from drill import mlflow_names
+
+            version = app_version()
+            tags = {**{k: ctx[k] for k in TAG_KEYS if k in ctx}, **mlflow_names.context_tags(version),
+                    "route": "prepared", "model": model[:100], "cached": "false"}
+            metadata = mlflow_names.context_metadata(version)
+            if "session" in ctx:
+                metadata[TraceMetadataKey.TRACE_SESSION] = ctx["session"]
+            metadata[TraceMetadataKey.TRACE_USER] = ctx.get("user", "local")
+            inputs = {"question": ctx.get("question", ""), **{k: ctx[k] for k in ("lesson_id", "step") if k in ctx}}
+            root = mlflow.start_span_no_context(ctx["feature"], span_type="CHAIN", inputs=inputs, tags=tags, metadata=metadata)
+            if ctx.get("request"):
+                with InMemoryTraceManager.get_instance().get_trace(root.trace_id) as trace:
+                    if trace is not None:
+                        trace.info.client_request_id = ctx["request"]
+            root.end(outputs={"answer": answer[:TEXT_LIMIT]})
+            return True
+        except Exception as exc:  # noqa: BLE001
+            self._off(exc)
+            return False
+
     def _link_prompt(self, trace_id: str, feature: str) -> None:
         """Link a review or challenge trace to the registered prompt version it was built from."""
         pv = self._prompts.get(feature)
@@ -535,14 +582,45 @@ class MlflowObserver:
         said, so it is recorded as CODE feedback from the page rather than HUMAN."""
         if not REQUEST_ID.match(request or "") or not self.ready():
             return False
+        item = ("human", request, name, value, rationale, user, signal)
+        if signal and signals_every() > 0:
+            with self._held_lock:
+                if len(self._held) >= 2000:
+                    return False
+                self._held.append(item)
+            if self._held_timer is None or not self._held_timer.is_alive():
+                self._held_timer = threading.Thread(target=self._release_held, name="drill-signals", daemon=True)
+                self._held_timer.start()
+            return True
         try:
-            self._feedback.put_nowait(("human", request, name, value, rationale, user, signal))
+            self._feedback.put_nowait(item)
         except queue.Full:
             return False
         if self._worker is None or not self._worker.is_alive():
             self._worker = threading.Thread(target=self._log_feedback, name="drill-feedback", daemon=True)
             self._worker.start()
         return True
+
+    def flush_signals(self) -> int:
+        """Write the held signals now (every hour, and when the app stops). Returns how many."""
+        with self._held_lock:
+            held, self._held = self._held, []
+        for item in held:
+            try:
+                self._feedback.put(item, timeout=5)
+            except queue.Full:
+                log.info("feedback queue full: dropped %s signals", len(held))
+                break
+        if held and (self._worker is None or not self._worker.is_alive()):
+            self._worker = threading.Thread(target=self._log_feedback, name="drill-feedback", daemon=True)
+            self._worker.start()
+        return len(held)
+
+    def _release_held(self) -> None:
+        while True:
+            time.sleep(signals_every() * 60)
+            if not self.flush_signals():
+                return  # nothing came in for a whole round: the next signal starts the clock again
 
     def _log_human(self, request: str, name: str, value: Any, rationale: str | None, user: str, signal: bool = False) -> None:
         if not REQUEST_ID.fullmatch(request or ""):

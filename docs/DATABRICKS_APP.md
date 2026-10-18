@@ -103,7 +103,9 @@ uv run drill tutor feedback --target work --dataset   # the app's, and add cases
 
 It reports the share of first answers that got Got it (re-explanations left out), how often the
 simpler answer then worked, each quiet signal, and the lessons where answers most often didn't help.
-In the app each feedback write lands on a trace kept in Unity Catalog, which wakes the SQL warehouse.
+In the app each feedback write lands on a trace kept in Unity Catalog, which wakes the SQL warehouse,
+so Got it / Still stuck is written straight away and the quiet signals are held and written once an
+hour (`DRILL_SIGNALS_EVERY_MINUTES=60` in `app.yaml`).
 
 **Evals.** `drill review eval` runs the review prompt over the `review_cases` dataset, linked to the
 dataset, the registered prompt version and the app version, with parameters (model, tier, prompt,

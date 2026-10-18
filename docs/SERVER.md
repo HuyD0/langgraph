@@ -249,6 +249,9 @@ ask_lesson                 the learner's question, lesson and step in; the answe
   question), `guard` (`solution_request` when the page turned a request for the solution
   into a hint) and `retry_of` (on a Still stuck re-explanation: the request id of the answer
   that didn't help, which carries `resolved = false` as human feedback).
+- **Prepared answers.** `POST /api/served` (`answer`, `trace`) records an answer the page showed
+  without asking a model as an `ask_lesson` trace tagged `route = prepared`, and logs the question
+  like any other (`prepared: true`) for the manager's view.
 - **Feedback.** `POST /api/feedback` (`request`, `name`, `value`, `rationale`, `source`) attaches
   feedback to the trace with that request id: HUMAN from the learner, or CODE (`source: "code"`,
   from `drill.page.signals`) for what the page saw them do. `uv run drill tutor feedback` reads it back. Search them in the UI, for example `tags.lesson_id = 'claim_gate'`.
@@ -371,6 +374,7 @@ warehouse with a short auto-stop, so reading traces costs cents, not dollars.
 | `DRILL_TEAM_SUMMARIES` | *(on with a shared database, off with SQLite)* | `1` or `0` forces the managers' weekly notes on or off |
 | `DRILL_IDLE_STOP_MINUTES` | `0` | In a Databricks App only: stop the app after this many minutes with no requests (`30` in `app.yaml`); `0` keeps it running |
 | `DRILL_MLFLOW_EXPERIMENT_ID` | *(unset)* | The experiment by id instead of name: how a Databricks App names the experiment resource attached to it; wins over `DRILL_MLFLOW_EXPERIMENT` |
+| `DRILL_SIGNALS_EVERY_MINUTES` | `0` | Hold the page's quiet signals on tutor answers (`saved`, `asked_again`, `gave_up`, `next_right`) and write them in one burst this often; `0` writes each at once. The app uses `60`, so the warehouse that keeps Unity Catalog traces wakes once an hour for them. Got it / Still stuck is always written at once, and held signals are written when the server stops |
 | `DRILL_CHECKS_AS_FEEDBACK` | `1` | Write each answer's checks to its trace as feedback, one by one; `0` (the app) keeps them as tags and a span, and `drill traces score` adds them in a batch |
 
 Not the server's, but read from the same `.env`: the terminal tutor's `DRILL_TEMPERATURE`,

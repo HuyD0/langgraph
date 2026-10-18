@@ -1,0 +1,1748 @@
+{
+ "apply_order": {
+  "check:0:0": {
+   "q": "Why not “It's faster”?",
+   "a": "\"It's faster\" misses the real problem. On the first deploy, a single stack doesn't run slowly. It can't plan at all.\n\nHere's why. The `databricks` provider (the plugin Terraform uses to talk to Databricks) needs the workspace URL before it can do anything. Say a Service stage creates the workspace and also adds team-sales clusters from `clusters.yml`. On a brand-new environment, that URL doesn't exist yet. So the provider can't connect, and the plan fails before anything is built.\n\nIs there any truth in \"faster\"? A little. Smaller stacks can plan and apply more quickly. But that's a side effect, not the reason for the split. On the first deploy, the two stacks run one after the other, so you don't save time overall.\n\nThe split works because of the **stack dependency**, which is a rule that one Spacelift stack runs only after another finishes. The first stack creates the workspace. The contents stack, with clusters and things like `sp-sales-etl-dev`, plans afterwards.\n\n\"The workspace URL exists by the time the second stack plans\" is better because it names the actual blocker, and it explains why the contents stack can plan once the workspace stack has finished.",
+   "step": "Check",
+   "fingerprint": "e6e45999139ad512",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The lesson never says smaller stacks plan or apply faster, or that two stacks give no overall time saving, so the 'a little truth in faster' paragraph adds claims the lesson does not support."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Spacelift requires one stack per provider”?",
+   "a": "That option sounds plausible, but it isn't true. Spacelift has no rule like that. One stack can use several **providers** (plugins that let Terraform talk to a service). The Foundation stage, for example, could use both `azurerm` and `databricks` in the same code.\n\nIt does get one thing half right. In our split, the workspace stack is mostly `azurerm`, and the contents stack is mostly `databricks`. So the line between stacks happens to follow the providers.\n\nBut it misses *why* we split. The `databricks` provider needs the workspace URL to connect. On the very first deploy, that workspace doesn't exist yet. So a single stack can't even make its plan, because the provider has nowhere to connect. The problem is timing, not a Spacelift rule.\n\nWith two stacks and a **stack dependency** (a rule that one stack runs only after another finishes), the first stack creates the workspace. Then the second stack plans against a real workspace.\n\n\"The workspace URL exists by the time the second stack plans\" is the better answer because it names the real cause: the provider needs a live workspace before it can plan.",
+   "step": "Check",
+   "fingerprint": "0bbde89f803124c7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The claim that Spacelift has no one-stack-per-provider rule, and the remark that the stack split follows the providers, go slightly beyond the lesson but do not contradict it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It creates A first, then B”?",
+   "a": "\"It creates A first, then B\" gets one thing right. Terraform does create resources in order, each one after the things it needs.\n\nBut that order only works when something can go first. Here, A uses a value from B. So A can't be created until B exists. B uses a value from A. So B can't be created until A exists. Neither one can start.\n\nThink of it like a Spacelift run where `azurerm_databricks_workspace.this` needed an ID from `databricks_metastore_assignment.this`, while the assignment also needed the workspace's `workspace_id`. Each is waiting on the other. There is no \"first.\"\n\nTerraform also doesn't guess or pick one at random. It builds its dependency graph during plan, before creating anything. A dependency graph is its map of which resource needs which one first. When that map has a loop, Terraform stops right there. Nothing gets created, so nothing is half-built in DEV.\n\n\"It stops with a Cycle error\" is better because it matches what really happens: Terraform finds the loop at plan time and refuses to go on, rather than creating anything.",
+   "step": "Check",
+   "fingerprint": "8caced30998ee393",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The reverse dependency (workspace needing something from the metastore assignment) is invented, but it is clearly framed as a hypothetical. The answer is about 180 words."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It creates both at the same time”?",
+   "a": "That option gets one thing right. Terraform *does* create resources at the same time when they don't need each other. Two clusters for `team-sales` with no links between them can be built side by side.\n\nBut here, A uses a value from B, and B uses a value from A. A value like an ID only exists after a resource is created. So A can't start until B is finished, and B can't start until A is finished. Building them \"at the same time\" doesn't help, because neither has the value it needs at the start.\n\nPicture a `databricks_cluster` that needs the ID of `sp-sales-etl-dev`, while that service principal also needs the cluster's ID. There's no first step. It's like being told to put on shoes before socks *and* socks before shoes.\n\nTerraform spots this loop in its dependency graph while planning. That is its map of what needs what first. It stops before creating anything, so you never get a half-built stack in Spacelift.\n\n\"It stops with a Cycle error\" is better because it names what really happens: Terraform finds the loop at plan time, reports `Error: Cycle`, and builds nothing.",
+   "step": "Check",
+   "fingerprint": "a8ce14932bd597e8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the parallel-creation point and the 'never a half-built stack in Spacelift' claim go slightly beyond the lesson, but neither contradicts it."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The container first, then the account”?",
+   "a": "This option gets one thing right. It sees that the two resources are linked, so Terraform can't create them in just any order.\n\nBut it gets the direction backwards. The container *uses* the account's name. That reference is how Terraform builds its dependency graph, the map of what needs what first. A reference points at something that must already exist. You can't write the account's name into the container before the account has been created.\n\nThink socks before shoes. The shoes go on over the socks, so the socks come first. The container sits inside the account, so the account comes first.\n\nHere is a setup a platform team might use for Unity Catalog storage in DEV:\n\n```hcl\nresource \"azurerm_storage_account\" \"uc\" {\n  name = \"stsalesucdev\"\n  # ...\n}\n\nresource \"azurerm_storage_container\" \"uc\" {\n  name                 = \"sales-catalog\"\n  storage_account_name = azurerm_storage_account.uc.name\n}\n```\n\nThe container points at `azurerm_storage_account.uc`. So Terraform waits for the account before it creates the container.\n\n\"The account first, then the container\" is better because the thing being referred to must always exist before the thing that refers to it.",
+   "step": "Check",
+   "fingerprint": "238a371680e96dd3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Both at once, the order doesn't matter”?",
+   "a": "\"Both at once\" gets one thing right. A single `terraform apply` (the step that actually builds things) does create both. You don't need two separate runs.\n\nWhat it misses is the **reference**. The container's code points at the account, like this:\n\n```hcl\nresource \"azurerm_storage_container\" \"sales\" {\n  name                 = \"sales-dev\"\n  storage_account_name = azurerm_storage_account.sales.name\n}\n```\n\nThat line `azurerm_storage_account.sales.name` is a link from one resource to another. Terraform reads links like this and draws its **dependency graph**, a map of which resource needs which other one first. Here the map says the container needs the account.\n\nIt doesn't matter that the name is a plain value already set in the code. The reference alone is enough to set the order. Terraform always creates a resource after the ones it refers to. So the order does matter, and Terraform decides it for you.\n\n\"The account first, then the container\" is better because it follows the link the container's reference creates in the dependency graph.",
+   "step": "Check",
+   "fingerprint": "ec9ae82b7d610496",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The answer says what 'both at once' gets right, explains the reference and dependency graph, and ends with a single-sentence reason the account-first answer is better."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Point the Databricks provider at the workspace …” matter?",
+   "a": "The Databricks provider is the plug-in Terraform uses to talk to one workspace. It needs that workspace's URL, called its `host`.\n\nIf you paste the URL in by hand, two things go wrong. If the workspace is ever recreated, Azure gives it a new URL. Your code still points at the old one, so every cluster and grant fails. And when you add UAT or PROD, you must remember to change the URL. Forget once, and team-sales' DEV clusters land in the wrong workspace.\n\nSo take the URL from the workspace resource instead:\n\n```hcl\nprovider \"databricks\" {\n  host = azurerm_databricks_workspace.this.workspace_url\n}\n```\n\nNow the URL always follows the real workspace.\n\nThere is one catch. In a brand-new environment the workspace doesn't exist yet. Its URL is unknown at plan time, so the provider can't plan. So the workspace goes in one Spacelift stack and its contents in another. The workspace stack outputs (shares) the URL. A stack dependency runs the contents stack only after that apply and passes the URL along.",
+   "step": "Explain",
+   "fingerprint": "56547f623570df58",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add whatever is ready next” in an interview?",
+   "a": "**The problem (about 10 seconds)**\n\"In our workspace stack, `azurerm_databricks_workspace.this` needs its resource group and VNet first. The `databricks_metastore_assignment` needs the workspace's `workspace_id`. Terraform has to pick a safe order. It reads these references and builds a **dependency graph**, a map of what needs what first.\"\n\n**The idea (about 10 seconds)**\n\"Add whatever is ready next. A resource is ready when everything it needs is already placed. Repeat until all are placed. It's like getting dressed: socks before shoes.\"\n\n**Edge case (about 10 seconds)**\n\"If a round finds nothing ready, the leftovers are waiting on each other. That's a loop, and Terraform stops with `Error: Cycle`. Picking names A to Z each round keeps the order predictable. But it re-scans the list every round, so it's slower on big graphs.\"\n\n**Likely follow-up:** \"Why not put the workspace and its clusters and service principals in one stack?\"\n\n*Hint:* The Databricks provider needs a real workspace URL to plan. Before the workspace exists, it can't. So split them into two Spacelift stacks. Add a **stack dependency**, a rule that the contents stack runs only after the workspace stack applies.",
+   "step": "Explain",
+   "fingerprint": "eacc4126e3a94cc5",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The edge-case part says the method \"re-scans the list every round, so it's slower on big graphs\", which the lesson never says, and it presents the exercise's A-to-Z picking as if it were what Terraform does; the claim that the workspace needs a resource group and VNet is also not in the lesson."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Apply fails halfway with \"not found\" errors.** For example, `databricks_metastore_assignment` runs before the workspace exists. This usually means an ID was typed in as plain text instead of referring to the other resource. Terraform only waits for things it can see a reference to.\n- **A rerun \"fixes\" it.** The first apply fails and the second succeeds. That points to an order Terraform never knew about.\n- **`Error: Cycle` at plan time.** Two or more resources point at each other, so neither can go first. Look for references that run both ways between them.\n- **The Service stack can't plan.** The Databricks provider (the plugin that talks to Databricks) has no workspace to connect to. This happens when the workspace and its contents sit in one stack, or when no stack dependency makes Service wait for the workspace stack.\n\n**Quickest check**\n\nOpen the code for the failing resource. Is `workspace_id` written as a reference like `azurerm_databricks_workspace.this.workspace_id`, or as a typed-in value? Check the code, not the plan. A plan shows the final values, so it can't tell you which one was used.\n\nThen, in Spacelift, confirm that the Service stack depends on the stack that creates the workspace.",
+   "step": "Learn",
+   "fingerprint": "a07f886b89ae9bd9",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The claim that a plan can't show whether workspace_id was a reference or a typed value is wrong and not in the lesson. A plan marks a reference to a not-yet-created resource as \"known after apply\", so the plan can reveal it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does \"Terraform works out the order\" stop working?**\n\n**1. The dependency lives outside Terraform.**\nSay a grant to `grp-sales-dev-owners` needs that group in Databricks. A separate sync process outside Terraform copies it in from Entra ID. Terraform can't see that process, so it can't wait for it, and `depends_on` only waits for resources Terraform manages. A `data` source (a read-only lookup of something that already exists) makes the plan stop with a clear error if the group isn't there yet. To truly fix the order, have Terraform create the group itself, or run the stack only after the sync has finished.\n\n**2. A provider needs something that doesn't exist yet.**\nThe `databricks` provider needs a workspace URL to plan. On a first run in DEV, that workspace hasn't been created. Put the workspace in one Spacelift stack and its contents in another, linked by a stack dependency.\n\n**3. Two resources point at each other.**\nSuppose a cluster's settings refer to a policy, and the policy refers back to the cluster. Terraform reports `Error: Cycle`. Break the loop by moving one link into its own resource, such as a separate permissions resource.",
+   "step": "Learn",
+   "fingerprint": "ca2eb1aac29b9f41",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. Minor: `depends_on` and 'provider' are not explained, and 'depends_on only waits for resources Terraform manages' is slightly loose, but it does not contradict the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "How is “stacks” different from “stack dependency”?",
+   "a": "A **stack** is one set of Terraform code with its own state. State is the file where Terraform records what it has built. Spacelift plans and applies each stack on its own. In this platform, the workspace for DEV could be one stack, and the things inside it (clusters, `sp-sales-etl-dev`, grants) another.\n\nA **stack dependency** is not code. It is a rule between two stacks: \"run this one only after that one has applied.\"\n\n**Why you need both:** the Databricks provider must connect to a real workspace. If the workspace and its contents share one stack, the plan fails, because the workspace doesn't exist yet. So you split them into two stacks. Then the stack dependency makes the contents stack wait for the workspace stack.\n\n**Everyday comparison:** stacks are two separate jobs, like building a house and then furnishing it. The dependency is the rule that the movers only come after the builders finish.\n\n**The lesson's example:** inside one stack, `databricks_metastore_assignment.this` refers to `azurerm_databricks_workspace.this.workspace_id`, so Terraform orders those two resources itself. A stack dependency does the same job one level up, between whole stacks.",
+   "step": "Learn",
+   "fingerprint": "cf8a020c39d73d33",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that a stack dependency 'is not code' goes slightly beyond the lesson but does not contradict it."
+   }
+  }
+ },
+ "count_shift": {
+  "check:0:0": {
+   "q": "Why not “Deletes bronze and leaves the other two alone”?",
+   "a": "\"Deletes bronze and leaves the other two alone\" describes what you *meant*. It is not what Terraform does with `count`.\n\nIt gets one thing right. The bronze container does go away.\n\nWhat it misses is how `count` names things. It names copies by position, not by what they are. Here is how the slots line up before and after you remove \"bronze\":\n\n- `lake[0]`: was bronze, now silver. **Replace.**\n- `lake[1]`: was silver, now gold. **Replace.**\n- `lake[2]`: was gold, now nothing. **Delete.**\n\n\"Replace\" means Terraform destroys the old container and creates a new, empty one. So the plan has two replaces and one delete.\n\nLook at what that does to your data. The original silver and gold containers are destroyed. New silver and gold containers are created, but they start empty. In a team-sales data lake, that loses real data. If Spacelift showed you this plan and you approved the apply, the data would be gone.\n\n\"Replaces silver and gold, drops the last slot\" is the better answer because it describes what Terraform actually plans: every later name shifts down one position, and the last slot is left with nothing.",
+   "step": "Check",
+   "fingerprint": "6b8d2da26365771f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing: the other two keep their names”?",
+   "a": "\"Nothing\" gets one thing right. You only meant to drop `bronze`, so you expect `silver` and `gold` to be left alone. That instinct is good.\n\nIt misses two things.\n\nFirst, removing `bronze` is itself a change. The plan always deletes something, so \"Nothing\" can't be right under either approach.\n\nSecond, `count` doesn't know containers by their names. It knows them by position. Here is the list before and after:\n\n- `[0]`: `bronze` becomes `silver`\n- `[1]`: `silver` becomes `gold`\n- `[2]`: `gold` becomes nothing\n\nTerraform compares slot by slot. `[0]` and `[1]` now hold different names, so it plans to replace them. Replace means destroy the container and create a new, empty one. `[2]` has no item left, so it is deleted. In a Spacelift plan for `team-sales`, that means the data in all three containers is lost.\n\nWith `for_each`, each container is known by its key, like `[\"silver\"]`. The plan would delete only `bronze` and leave `silver` and `gold` untouched.\n\n\"Replaces silver and gold, drops the last slot\" is better because it follows how `count` matches by position, not by name.",
+   "step": "Check",
+   "fingerprint": "d911473179249d83",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The first 'miss' (removing bronze is itself a change) is weak, but it is not wrong."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It creates the containers faster”?",
+   "a": "\"It creates the containers faster\" sounds reasonable, but speed isn't the difference. Terraform builds independent resources at the same time either way. Ten containers made with `count` take about as long as ten made with `for_each`. So this option doesn't get anything right.\n\nWhat it misses is the real risk: names. Terraform tracks each copy by an address, meaning the label it uses to remember which real container is which. With `count`, that label is a position, like `lake[0]` or `lake[1]`. Suppose team-sales asks to drop the first container from their YAML list. Every later container shifts down one position. Terraform sees new labels and plans to replace them. For storage containers, replace means delete and recreate, so the data is lost. In Spacelift, that would show up in the proposed plan as a string of destroys you never asked for.\n\nWith `for_each`, each container is labelled by a key, like `lake[\"silver\"]`. Removing `bronze` leaves `silver` untouched.\n\n\"Each keeps its name when another is removed\" is better because it names the actual reason: stable keys mean removing one container never forces Terraform to replace the others.",
+   "step": "Check",
+   "fingerprint": "7532bedead4b7cdd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that Terraform builds independent resources at the same time goes beyond the lesson, though it is true and does not contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It stops anyone deleting a container”?",
+   "a": "That option sounds close, but it promises too much.\n\n**What it gets right:** with `for_each`, removing one container doesn't put the others at risk. Say the list is `bronze`, `silver`, `gold`, and you drop `bronze`. With `count`, `silver` moves from `[1]` to `[0]` and `gold` from `[2]` to `[1]`. Terraform sees new names and replaces both, which wipes their data. With `for_each`, `silver` and `gold` keep their names, so they stay untouched.\n\n**What it misses:** `for_each` doesn't stop deletion. If someone removes `bronze` from the YAML in the config repo, the Spacelift plan will still say \"delete `azurerm_storage_container.lake[\"bronze\"]`\", and an approved apply will delete it. Stopping deletions is a different job. Terraform's `prevent_destroy` setting can do it; that setting makes Terraform refuse any plan that would destroy the resource. A Spacelift policy check can also block it.\n\n**Why the other answer is better:** \"Each keeps its name when another is removed\" names the real benefit. Containers are tracked by key, not position, so one removal never ripples into replacing the rest.",
+   "step": "Check",
+   "fingerprint": "7d9eeeea1374586b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor only: the closing part runs to two sentences instead of one, and the prevent_destroy and Spacelift-policy remarks go beyond the lesson, though they are accurate and don't contradict it."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “from lake[\"gold\"] to lake[2]”?",
+   "a": "That option pairs the right two names. Gold really was `lake[2]`, and it really should become `lake[\"gold\"]`. But the direction is backwards.\n\nA `moved` block reads like a change of address. `from` is the **old** name, the one Terraform's state file already knows. The state file is Terraform's record of what it built. `to` is the **new** name your code now uses.\n\nUnder `count`, the state file holds gold as `lake[2]`. Nothing called `lake[\"gold\"]` exists there yet. So `from = lake[\"gold\"]` points at nothing, and Terraform has nothing to move.\n\nThe plan in your Spacelift stack would then show two actions. It would delete `lake[2]`, because your `for_each` code no longer has that name. It would create a new, empty `lake[\"gold\"]`. The gold container's data would be gone.\n\nThe right block:\n\n```hcl\nmoved {\n  from = azurerm_storage_container.lake[2]\n  to   = azurerm_storage_container.lake[\"gold\"]\n}\n```\n\n\"From `lake[2]` to `lake[\"gold\"]`\" is better because it starts from the name Terraform already has. Terraform renames gold in place, so the container and its data are kept.",
+   "step": "Check",
+   "fingerprint": "6a9c3c607df139bf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “from lake[0] to lake[\"gold\"]”?",
+   "a": "The `to` side is right. `lake[\"gold\"]` is the new name gold should have under `for_each`. The block shape is right too: old address in `from`, new address in `to`. (An \"address\" is the name Terraform uses to track one real container.)\n\nThe problem is the `from` side. Under `count`, `lake[0]` was the first item in the list, which was bronze, not gold. A `moved` block tells Terraform \"this real container now goes by a new name.\" So this block would hand the bronze container to the name `\"gold\"`. Bronze and its data would be filed under the wrong key.\n\nMeanwhile the real gold container, `lake[2]`, gets no `moved` block. The `for_each` code no longer creates anything called `lake[2]`, so Terraform plans to destroy it, and its data goes with it. You would spot that in the Spacelift proposed plan as a destroy on the gold container.\n\nThe better answer, from `lake[2]` to `lake[\"gold\"]`, points the old position that actually held gold at its new key, so gold keeps its container and its data.",
+   "step": "Check",
+   "fingerprint": "df0c7b92da4c2357",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Key repeated resources with for_each” matter?",
+   "a": "It matters because a small YAML edit can wipe out real data.\n\nSay team-sales has three storage containers in its lake, made with `count`. `bronze` sits at `[0]`, `silver` at `[1]` and `gold` at `[2]`. The team no longer needs `bronze`, so they delete that line from their YAML.\n\nNow `silver` moves to `[0]` and `gold` moves to `[1]`. Terraform matches copies by position. It sees that `[0]` changed from bronze to silver and `[1]` changed from silver to gold. It also sees that `[2]` is gone. So its plan replaces `[0]` and `[1]` and deletes `[2]`. \"Replace\" means destroy the old container and create a new, empty one. Every file in silver and gold would be lost.\n\nIn Spacelift, the proposed plan would show several replacements, not one simple removal. If a reviewer skims the plan and approves it in PROD, that lake data is gone.\n\nWith `for_each`, each container is known by its key, like `[\"silver\"]`. Removing `bronze` deletes only `[\"bronze\"]`. The others keep their names, so Terraform leaves them alone.",
+   "step": "Explain",
+   "fingerprint": "0f5dd2370887f0cb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Compare names position by position” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Say `team-sales` asks for storage containers `bronze`, `silver` and `gold`, built with `count`. Terraform knows them only by position: `[0]`, `[1]`, `[2]`. If `bronze` is removed from the YAML, `silver` slides into slot `[0]`. Terraform sees a different container in that slot and plans a replace. A replace deletes the container, and its data goes with it.\"\n\n**The idea:** \"To predict the damage, I line up the old list and the new list. Then I compare them slot by slot. If a slot holds the same name, nothing changes. If the name differs, Terraform replaces it.\"\n\n**The edge case:** \"Removing the *last* item is safe. Nothing shifts, so only that one container goes. Removing the *first* item shifts every container after it.\"\n\n**A likely follow-up**\n\n*\"How would you switch an existing `count` resource to `for_each` without losing data?\"*\n\nHint: Mention `moved` blocks. Each one tells Terraform that the old slot, like `[1]`, is now the key `[\"silver\"]`. Then check the Spacelift proposed plan in DEV. It should show no replacements before anyone approves the apply.",
+   "step": "Explain",
+   "fingerprint": "e73118c475f6dd36",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "The clearest warning sign shows up in the Spacelift proposed plan, before anything is applied. A plan is Terraform's preview of what it is about to do.\n\n**What you would see**\n\n- You remove one item from a YAML list, say the `bronze` container. You expect one delete.\n- Instead, the plan lists several containers as \"must be replaced\". Replaced means destroy and then create again.\n- The plan summary looks out of proportion, such as \"2 to add, 3 to destroy\" for a one-line edit.\n- Resource addresses end in numbers, like `azurerm_storage_container.lake[1]`. An address is the name Terraform tracks a resource by.\n\n**If it slips through**\n\n- After the apply, the `silver` and `gold` containers exist but are empty.\n- Databricks jobs for team-sales start failing with \"path not found\" errors on data that was there yesterday.\n- It often passes in DEV, where data is throwaway, and only hurts in UAT or PROD.\n\n**Quickest check**\n\nRead the plan. Compare how many changes it lists against how many lines you changed. Then look at the addresses. Numbered addresses next to a removed item mean shifting. Named keys like `[\"silver\"]` should stay steady.",
+   "step": "Learn",
+   "fingerprint": "f30549996ff12e1c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The 2-add/3-destroy example matches removing the first of three count items, and the answer stays just under 200 words."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the rule needs extra care.\n\n**1. The keys themselves change.** `for_each` is only safe while keys stay put. If `team-sales` is renamed to `team-sales-emea` in `env.yml`, its key changes, and Terraform replaces everything under it. Build keys from names that never change. When a rename is unavoidable, add a `moved` block in the same pull request.\n\n**2. Keys aren't known until apply.** `for_each` keys must be known when the plan is made. Apply is the later step that actually builds things. So you can't key on something Terraform only learns during apply, like the ID of `sp-sales-etl-dev` created in the same run. Key on plain strings from the YAML instead.\n\n**3. Moving between stacks.** A `moved` block only works inside one state file. A state file is Terraform's record of what it built, and each Spacelift stack has its own. Shifting a container from Foundation to Service needs a `removed` block in one stack and an `import` block in the other.\n\n`count` still suits a simple on/off switch, like \"create only in PROD.\"",
+   "step": "Learn",
+   "fingerprint": "374abffa7f8e7a20",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Picture the sales team's data lake in DEV. `team-sales` lists three storage containers in its YAML: `bronze`, `silver` and `gold`. A storage container is a folder-like bucket in Azure that holds files. The Terraform code creates them with `count`, so they are known as `lake[0]`, `lake[1]` and `lake[2]`.\n\nLater the team drops `bronze` from the YAML. Now `silver` sits at position 0 and `gold` at position 1.\n\nTerraform compares by position. It sees that `lake[0]` used to be named `bronze` and is now `silver`. A container can't be renamed in place, so Terraform plans to replace it. Replace means delete it and create a new, empty one. The same happens to `lake[1]`. Then `lake[2]` is simply deleted.\n\nSo one small YAML edit plans to wipe out the `silver` and `gold` data. Spacelift shows this in the proposed plan. But a busy reviewer could approve it, and in PROD that is real data gone.\n\nWith `for_each`, each container is known by its key, like `lake[\"silver\"]`. Removing `bronze` touches only `lake[\"bronze\"]`. The others keep their names, so Terraform leaves them alone.",
+   "step": "Learn",
+   "fingerprint": "65300f5ca4108f0b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "find_replacements": {
+  "check:0:0": {
+   "q": "Why not “Adding or changing a tag”?",
+   "a": "Tags are labels on a resource, like `team = \"team-sales\"` or `owner = \"grp-sales-dev-owners\"`. Changing them is a real change, and it does show up in the plan. That part is right.\n\nWhat it misses is *how* Terraform makes the change. Azure lets you edit tags on a running workspace. So Terraform updates the workspace **in place**. That means it keeps the same workspace and just edits it. The plan marks this with `~`, not `-/+`:\n\n```\n~ resource \"azurerm_databricks_workspace\" \"this\" {\n  ~ tags = {\n      + \"owner\" = \"grp-sales-dev-owners\"\n    }\n```\n\nNothing is destroyed. The URL stays the same. Clusters, notebooks and jobs inside the workspace are untouched. A tag change in a Spacelift plan for DEV, UAT or PROD is usually safe to approve.\n\nChanging `managed_resource_group_name` is the better answer because Azure can't rename that resource group on an existing workspace, so Terraform must destroy the workspace and build a new one, which shows as `-/+` with `# forces replacement`.",
+   "step": "Check",
+   "fingerprint": "4a34176fb033466b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “No change: a workspace is never replaced”?",
+   "a": "\"No change: a workspace is never replaced\" sounds safe, but it isn't true. That's what makes it risky.\n\n**What it gets partly right:** many workspace changes do happen *in place*. That means Terraform edits the existing workspace without destroying it. Adding a tag is a good example. The plan marks these with `~`.\n\n**What it misses:** some attributes can't be edited in place. Change one, and Terraform must destroy the workspace and build a new one. The plan marks that with `-/+`. On a Databricks workspace, that means a new URL. Everything inside is lost, such as clusters, notebooks and jobs for team-sales.\n\nBelieving a workspace is \"never replaced\" is the dangerous part. You might skim the proposed plan in Spacelift and approve the apply without looking for `-/+`. In PROD, that mistake would be costly.\n\n**Why \"Changing `managed_resource_group_name`\" is better:** it names a real attribute that forces replacement. The `managed_resource_group_name` is the Azure resource group that Databricks creates and controls for the workspace. The lesson's plan shows it marked `-/+` with `# forces replacement`.",
+   "step": "Check",
+   "fingerprint": "1a60771489a1d289",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The workspace gets a new tag, nothing more”?",
+   "a": "That answer gets one thing right. Something in the workspace's settings did change, and often it is a small-looking edit, like one attribute in the Service stage's Terraform code.\n\nBut it misreads the mark. A simple tag change is an \"update in place\": Terraform edits the existing workspace and leaves it running. The plan marks that with `~`, like this:\n\n```\n~ resource \"azurerm_databricks_workspace\" \"this\" {\n  ~ tags = { ... }\n```\n\n`-/+` means something different. Some attributes, like `managed_resource_group_name`, can't be edited on a live workspace. Changing them **forces replacement**: Terraform deletes the old workspace and creates a fresh one.\n\nFor team-sales, that means the workspace URL changes. The clusters, notebooks and other work inside it are gone. Access set up for groups like `grp-sales-dev-owners` must be rebuilt. A tag change is harmless. This is not.\n\nSo when Spacelift shows a proposed plan, look at the mark, not the size of the edit.\n\n\"A new workspace, with a new URL and nothing in it\" is better because it describes what `-/+` really does: destroy the old workspace and build an empty new one.",
+   "step": "Check",
+   "fingerprint": "b7c22e350667b25a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The line about group access needing a rebuild goes slightly beyond the lesson's 'losing everything inside it', and the claim that `~` marks an in-place update is only implied by the lesson."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The workspace restarts and keeps its contents”?",
+   "a": "\"The workspace restarts and keeps its contents\" sounds safe, but that is not what `-/+` means.\n\n**What it gets right:** something big does happen to the workspace. And afterwards there is still a workspace with the same name in your Terraform code, so it can look like the \"same\" one came back.\n\n**What it misses:** `-/+` is the plan's mark for a replacement. Terraform first **destroys** the old workspace, then **creates** a brand new one. Nothing is carried over. Say team-sales's DEV workspace gets replaced because `managed_resource_group_name` changed. Their notebooks, clusters, jobs and permissions for groups like `grp-sales-dev-owners` are all gone. Users and tools also have to switch to a new URL.\n\nA restart that keeps everything would be closer to an in-place update. That shows as `~` in the plan, not `-/+`.\n\n**Why the other option is better:** \"A new workspace, with a new URL and nothing in it\" is right because a replacement is a delete followed by a create, so you get a fresh, empty workspace at a different address.",
+   "step": "Check",
+   "fingerprint": "2663f19c4e6627a0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only minor point is that the `~` for in-place updates and the 'destroys first, then creates' order go slightly beyond the lesson text, but both are accurate."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Approve: ten is a fair sample”?",
+   "a": "Checking the first ten was a good start. Your teammate looked, and those ten have no `-/+`. That part is fine.\n\nThe problem is what \"sample\" means here. A sample is a small part you check to guess about the whole. That works when one miss is cheap. Here, one miss is not cheap.\n\nA `-/+` (the plan's mark for a replacement) means Terraform destroys a resource and creates a new one. Picture a Service stage plan in Spacelift for PROD. If change 27 is the team-sales workspace with `managed_resource_group_name` changing, that workspace gets a new URL and loses everything inside it. Checking ten changes tells you nothing about the other thirty. A `-/+` could be change 11 or change 40.\n\nSo the risk isn't spread evenly, like a coin toss. One hidden replacement is enough to cause real damage, and only a full check rules it out.\n\n\"Check the other thirty for `-/+` too\" is better because you approve only after every change has been looked at, so no replacement can slip through.",
+   "step": "Check",
+   "fingerprint": "2d13fb9b7015b702",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The line about risk 'not spread evenly, like a coin toss' is slightly muddled, but it doesn't contradict the lesson, so all checks pass."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Ask for the plan to be split up”?",
+   "a": "\"Ask for the plan to be split up\" gets one thing right. It notices that 40 changes is a lot to check, and that only ten have been looked at.\n\nBut splitting doesn't answer the question in front of you. The same 40 changes would still be there, just in smaller pieces. Any `-/+` hiding in the unchecked thirty would still be hiding. A `-/+` is the plan's mark for a replacement: Terraform destroys the resource and creates a new one. If one of those thirty is the `azurerm_databricks_workspace`, approving the apply would give the workspace a new URL and lose everything inside it.\n\nThe lesson's rule is to find every `-/+` before approving. \"No `-/+` in the first ten\" tells you nothing about the other thirty. Splitting the plan doesn't do that check for you. Someone still has to look at every change.\n\n\"Check the other thirty for `-/+` too\" is better because it finishes the job the rule asks for: every change is checked before anyone approves.",
+   "step": "Check",
+   "fingerprint": "e060b33431cf273a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Keep changes with delete and create” in an interview?",
+   "a": "**The problem.** In our Service stage, one small YAML edit can change an attribute like `managed_resource_group_name`. Terraform can't change that \"in place\" (editing the existing thing). So it destroys the workspace and builds a new one. That means a new URL, and everything inside the workspace is lost.\n\n**The idea.** Terraform can save its plan as JSON (a structured text format code can read). In it, each resource change has a list called `actions`. A replacement is the case where that list holds both `\"delete\"` and `\"create\"`. So I collect only those resource addresses, in plan order. Then reviewers see them before anyone approves the apply in Spacelift.\n\n**Edge case.** The two words don't always come in the same order. With the setting `create_before_destroy`, Terraform builds the new resource first, so `actions` is `[\"create\", \"delete\"]`. Check that both are present, not their order. And a plain `\"delete\"` is risky too, but it deserves its own separate warning.\n\n**Likely follow-up:** \"Where would this check live?\"\n*Hint:* Make it a Spacelift policy on the proposed plan. A policy is an automatic rule the plan must pass. That way, a PROD workspace replacement gets blocked or needs extra sign-off before apply.",
+   "step": "Explain",
+   "fingerprint": "0a373a20691deb5d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The create_before_destroy order point goes beyond the lesson but does not contradict it, and the answer is close to the 200-word limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs a replacement slipped through**\n\nThe worst sign comes after apply. A workspace in DEV, UAT or PROD has a **new URL**. Product teams like `team-sales` report that their notebooks, jobs and clusters are gone. Bookmarks and links stop working.\n\nEarlier hints show up in the Spacelift proposed plan (the dry run you review before approving):\n\n- The summary line has destroy counts that don't fit the change. Say a small YAML edit, like renaming `managed_resource_group_name`, gives \"1 to add, 1 to destroy\" when you expected only \"1 to change\". The summary only gives counts. It won't tell you which resource is affected, but the mismatch is your cue to look closer.\n- A resource you expected to update in place (marked `~`) instead shows `-/+`.\n\n**Quickest check**\n\nOpen the text plan in the proposed run. Search for `-/+` and for `# forces replacement`. Each `-/+` gives the resource address, such as `azurerm_databricks_workspace.this`. The `# forces replacement` comment marks the attribute causing it. If a workspace shows up there, stop before approving.",
+   "step": "Learn",
+   "fingerprint": "2b4d5e3dd5c773e9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does this stop working?**\n\n**1. A plain delete is just as dangerous.**\nSay someone removes `team-sales` from `env.yml`. The plan may show only `\"delete\"` for that team's catalog, with no `\"create\"`. It is not a replacement, so a check for replacements skips it. Also flag plain deletes on important resources, and add a Spacelift policy that blocks them in UAT and PROD.\n\n**2. A renamed key looks like two separate changes.**\nImagine a `for_each` key changes from `sales` to `team-sales`. (`for_each` makes one resource per item in a map.) Terraform sees one address deleted and a different address created. Each change has only one action, so neither looks like a replacement, but the old one is still destroyed. Use a `moved` block to tell Terraform it is the same resource under a new name.\n\n**3. The text mark can differ.**\nWith `create_before_destroy`, Terraform builds the new resource first. The text plan then shows `+/-` instead of `-/+`. Read the `actions` list in the JSON plan, not the symbols. For the workspace itself, also set `prevent_destroy` as a safety net. It makes Terraform refuse any plan that would destroy it.",
+   "step": "Learn",
+   "fingerprint": "d2330cd58202431f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No check fails. Each point runs to 4-5 sentences against the 2-3 asked for, and the total is close to the 200-word limit."
+   }
+  },
+  "learn:term": {
+   "q": "What does “forces replacement” mean here?",
+   "a": "**\"Forces replacement\"** means Terraform can't edit the resource where it stands. It has to destroy it and build a brand-new one.\n\n**Everyday comparison:** you can repaint a house while living in it. You can't move its foundation that way. To change the foundation, you knock the house down and build again. Everything inside goes with the old house.\n\nTerraform works the same way. Some attributes (settings on a resource) can change in place, like a tag. Others are fixed once the resource exists. Change one of those, and Terraform plans a delete followed by a create.\n\nIn the lesson's example, the plan shows:\n\n```\n-/+ resource \"azurerm_databricks_workspace\" \"this\" {\n  ~ managed_resource_group_name = \"a\" -> \"b\" # forces replacement\n```\n\n- `-/+` marks a replacement: delete (`-`), then create (`+`).\n- `~` marks the attribute that changed, from `\"a\"` to `\"b\"`.\n- `# forces replacement` names the attribute causing it.\n\nFor a team like team-sales, this means a new workspace URL and losing the clusters, notebooks and jobs inside. So in the Spacelift proposed plan, find every `-/+` before approving.",
+   "step": "Learn",
+   "fingerprint": "e2866bbc2ea0834c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "import_existing": {
+  "check:0:0": {
+   "q": "Why not “Adopt it automatically”?",
+   "a": "\"Adopt it automatically\" sounds sensible. The storage account really does exist in Azure, and your resource block uses the same name, `stsalesdev`. A human would spot the match.\n\nTerraform doesn't work that way. It plans from its **state**, which is its own saved list of the things it manages. It does not search Azure for something with a matching name. If an address like `azurerm_storage_account.landing` is not in state, Terraform assumes the resource doesn't exist yet.\n\nSo the plan proposes a new storage account. In a Spacelift stack, that proposed plan could even pass review. The apply then fails, because Azure says the name `stsalesdev` is already taken.\n\nAdopting only happens when you ask for it. You add an `import` block with the resource's address and its Azure ID. Then the plan says \"1 to import\". Even then, read the rest of that plan in case your code doesn't match the real resource.\n\n\"Create a new one with the same name\" is right because it describes what Terraform does when the resource is missing from state: it plans a create, unaware that the name is already in use.",
+   "step": "Check",
+   "fingerprint": "89d88dfbcd940a78",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the Spacelift 'could pass review' remark goes beyond the lesson but does not contradict it."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing”?",
+   "a": "\"Nothing\" is a very human guess. The storage account really does exist in Azure. Your resource block even describes it. So it feels like there is nothing left to do.\n\nThe catch is where Terraform looks. It does not scan Azure to see what is already there. It plans from its **state**, which is its own record of the things it manages. Nobody ever added `stsalesdev` to that record, because someone made it by hand in the portal.\n\nSo Terraform compares your code to its state. It finds `azurerm_storage_account.landing` in the code and no matching entry in the state. To Terraform, that means \"this is new\", and the plan says \"1 to add\".\n\nIn a Spacelift run for the DEV stack, the proposed plan would look harmless. Then the approved apply would fail, because Azure says the name `stsalesdev` is already taken.\n\n\"Create a new one with the same name\" is better because it describes what Terraform actually plans when the resource is missing from state and there is no `import` block.",
+   "step": "Check",
+   "fingerprint": "b4f88c8e9c0e6f62",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “1 to add”?",
+   "a": "\"1 to add\" gets one thing right. The storage account isn't in Terraform's **state** (its record of what it manages). So Terraform doesn't know it exists. Without an import block, the plan would indeed say \"1 to add\".\n\nBut you added an import block, and that changes the plan. \"Add\" means Terraform will **create** a brand-new storage account. It would try to make another `stsalesdev` in `rg-sales-dev`. The name is already taken, so the apply would fail. In Spacelift, the proposed plan would look fine, then the approved apply would break.\n\nThe import block tells Terraform something different. It says: \"this resource already exists at this Azure ID, so link it to the address `azurerm_storage_account.landing` and start tracking it.\" Nothing new gets built. Terraform just writes the real resource into its state.\n\nSo the summary should say \"1 to import\". Also check that the same plan shows no changes or replacements for that resource. That tells you your code matches what's really there.\n\n\"1 to import\" is better because it means Terraform adopts the storage account that already exists instead of trying to build a second one.",
+   "step": "Check",
+   "fingerprint": "0180652abe52438b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that the Spacelift proposed plan would 'look fine' is not in the lesson, but it fits the lesson's point that the apply is what fails. Length is close to the 200-word limit."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “1 to destroy”?",
+   "a": "\"1 to destroy\" is not what this plan should say.\n\n**Destroy** means Terraform plans to delete a real resource. It only plans that for something already in its **state** (its record of what it manages) that your code no longer describes. The hand-made `stsalesdev` account isn't in state yet. So Terraform has nothing on its list to destroy.\n\nThere is a small grain of truth here. If your `azurerm_storage_account.landing` block doesn't match the real account, some differences force a **replace**. That means delete and recreate. The plan would then show a destroy alongside the import. But that is a warning sign, not the goal. In a Spacelift proposed run, you'd fix the code before anyone approves the apply.\n\nWhat the import block actually does is adopt the account. Terraform reads it from Azure and writes it into state. Nothing is made, changed or deleted.\n\n\"1 to import\" is better because it describes exactly that: the existing account joins Terraform's state untouched, and that is the clean result you're aiming for.",
+   "step": "Check",
+   "fingerprint": "035cab37340ae30e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The line 'Nothing is made, changed or deleted' only holds when the code already matches the real account, but the answer covers the mismatch case just before."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Apply it: changes are harmless”?",
+   "a": "It's true that the import part is safe. Adopting `stsalesdev` only records it in Terraform's **state**, the file where Terraform tracks what it manages. Nothing in Azure changes from that alone.\n\nThe problem is the other lines in the same plan. Those changes aren't part of adopting. They mean your resource block doesn't match the real account. Applying would rewrite the live account to match your code, including any settings you guessed or left out.\n\nThat is not harmless. Say team-sales relies on a network rule or access setting that your block doesn't include. Applying would change it on the real account, and their jobs could stop working. Some differences are worse: the plan may say **replace**, which means delete the account and make a new one. The data in `stsalesdev` would be lost.\n\nYou also can't tell these risks apart by guessing. Each changed line needs checking against what actually exists.\n\n\"Fix the code to match it first\" is better because it keeps going until the plan shows only \"1 to import\" and nothing to change, so Terraform truly just adopts the account.",
+   "step": "Check",
+   "fingerprint": "f59cd97554451524",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Remove the import block”?",
+   "a": "Removing the `import` block gets one thing right. You noticed the plan would change a real account, and you stopped it. Pausing there is good instinct.\n\nBut it doesn't solve the problem. It only swaps it for a different one.\n\nYour `resource \"azurerm_storage_account\" \"landing\"` block is still in the code. Without the `import` block, Terraform has no record of `stsalesdev` in its **state** (its own list of what it manages). So the next Spacelift proposed plan says \"1 to add\". Terraform tries to create the account again. The apply fails because the name `stsalesdev` is already taken.\n\nIf you delete the resource block too, you're back where you started. The account stays hand-made and unmanaged.\n\nThe real issue is the mismatch. Your code describes settings that differ from the live account. Removing the import hides that mismatch for now. It doesn't fix it.\n\n\"Fix the code to match it first\" is better. It keeps the import and corrects the code, so the plan shows only \"1 to import\" with no changes. Then you adopt the account exactly as it is.",
+   "step": "Check",
+   "fingerprint": "5842415b95461da6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the closing explanation runs to two sentences rather than the requested one, which is minor."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Adopt existing resources with an import block” matter?",
+   "a": "Terraform only knows about what is in its **state**, its saved record of what it manages. Anything built by hand is invisible to it.\n\nSo if your code describes something that already exists, the plan says \"create\". The apply then fails with an error like: \"A resource with the ID ... already exists - to be managed via Terraform this resource needs to be imported into the State\". That means someone made it by hand, often the network team.\n\nExample: the network team made the subnet `snet-sales-dev` in the portal for the team-sales workspace. Your Service stage also declares it. The Spacelift apply in DEV fails, and the stack is stuck.\n\nThe tempting fix is to delete the subnet so Terraform can recreate it. Don't. The workspace may already use it, so running clusters could lose their network. The network team's settings would be lost too.\n\nInstead, add an `import` block with the resource's address (its name in your code, like `azurerm_subnet.sales_dev`) and its Azure ID. The plan shows \"1 to import\". Then read the rest of the plan. If it would change anything, fix your code to match the real subnet.",
+   "step": "Explain",
+   "fingerprint": "a550038d2f2204d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “In state, imported, or new” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* Terraform plans from its state. That is the record of what it manages. Say someone made `stsalesdev` by hand in the Azure portal. It isn't in state, so Terraform thinks it doesn't exist and plans to create it. The apply then fails because the name is taken.\n\n*The idea.* So every resource address in the code falls into one of three groups. An address is a name like `azurerm_storage_account.landing`. Already in state means nothing to do. Not in state but with an `import` block means Terraform adopts the existing resource, and the plan says \"1 to import\". Anything else is a real add.\n\n*The trade-off.* Import is not a free pass. If the code doesn't match the real resource, the same plan also changes it, or even replaces it. So I read the whole plan and adjust the code until the import changes nothing.\n\n**A likely follow-up**\n\n\"In Spacelift, how would you catch a risky import before it reaches PROD?\"\n\nHint: mention reviewing the proposed plan in DEV. Then add a policy check that blocks any import that also updates or replaces the resource.",
+   "step": "Explain",
+   "fingerprint": "ccf39bf3709c89d3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "## Warning signs\n\n**The plan wants to add something that already exists.** In Spacelift's proposed plan, `azurerm_storage_account.landing` shows as \"1 to add\", but `stsalesdev` is already in the portal. Then the approved apply fails. The azurerm provider says a resource with that ID already exists and needs to be imported.\n\n**A quiet duplicate appears.** If the name in your code differs slightly from the real one, nothing fails. Terraform simply builds a second storage account next to the hand-made one. That's the second sofa. Watch for near-twin names in `rg-sales-dev`.\n\n**The import comes with surprises.** The summary says \"1 to import\" but also \"1 to change\", or even \"1 to destroy\". Changes are marked `~`. A replace is marked `-/+` with \"forces replacement\". A replace means the real account gets deleted and rebuilt, and the data in it is lost.\n\n## Quickest check\n\nBefore approving, read the plan's summary line. A clean adoption reads \"1 to import, 0 to add, 0 to change, 0 to destroy\". Anything else means your code and the real resource still disagree.",
+   "step": "Learn",
+   "fingerprint": "3411f0b496b5bd20",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The error wording, the `-/+` marker and the data-loss warning go beyond the lesson, but they are accurate and do not contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule holds, but these three situations need extra care.\n\n**Someone keeps editing it by hand.** Say a person still tweaks the `stsalesdev` storage account in the Azure portal. After import, every plan will undo their edits to match the code. Agree first that all changes go through the YAML config repo, then import.\n\n**Another stack already manages it.** If the Foundation stack already has a resource in its state (its saved list of what it manages), importing it into a Service stack gives it two owners. Each apply could overwrite the other's settings. Pick exactly one stack to own each resource. Take it out of the old owner before importing it into the new one.\n\n**There are dozens of hand-made resources.** Picture every cluster and service principal that team-sales built by hand in DEV. Matching all that code in one go is slow and easy to get wrong. Work in small batches. Make each Spacelift plan show \"import\" and no changes before moving on. Then repeat through UAT and PROD.",
+   "step": "Learn",
+   "fingerprint": "0109a3f85c9d4f25",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “state” mean here?",
+   "a": "**State** is Terraform's own record of what it manages. Think of a stock list kept by a storeroom clerk. The clerk trusts only the list. If someone carried a box in and never wrote it down, the clerk says \"we don't have that\" and orders another.\n\nTerraform works the same way. Its state is a file that pairs each **resource address** (the name in your code, like `azurerm_storage_account.landing`) with the real Azure ID it points to. Every plan compares your code with that state.\n\nIn the lesson's example, someone made `stsalesdev` by hand in the Azure portal. It really exists in `rg-sales-dev`, but it isn't in state. So when Spacelift runs the plan, Terraform thinks it must create it. The apply then fails because the name is taken.\n\nThe `import` block fixes this. It tells Terraform to write the existing resource into its state:\n\n- `to` is the address in your code.\n- `id` is the Azure ID of the real resource.\n\nAfter the apply, `stsalesdev` is on the list. Later plans treat it as already managed.",
+   "step": "Learn",
+   "fingerprint": "20a8f6b42f9ca7a0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "lock_info": {
+  "check:0:0": {
+   "q": "Why not “Whenever a run is blocked by it”?",
+   "a": "\"Whenever a run is blocked by it\" gets one thing right. A blocked run is often the first sign of a problem. A crashed run can leave its lock behind, a \"stale\" lock that nobody will ever release. In that case, `terraform force-unlock` is exactly the fix.\n\nWhat it misses: being blocked doesn't tell you *why*. The same error appears when the holder is still alive and working. Look at the example. `Who: spacelift@worker-7` and `Operation: OperationTypeApply` could mean a Spacelift apply on the `dbx-service-dev` stack is changing the DEV workspace right now. If you force-unlock then, your run and that apply both write the state file. That is the corruption the lock exists to prevent.\n\nSo the block is your cue to investigate, not your permission to unlock. Read `Who` and `Created`, then check that stack's runs in Spacelift to see whether that apply is still going or has died.\n\n\"Once the run holding it has stopped\" is better because it ties the unlock to the one fact that makes it safe: nobody else can still be writing the state.",
+   "step": "Check",
+   "fingerprint": "314eec778868ebe0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Never: a lock clears on its own”?",
+   "a": "\"Never: a lock clears on its own\" gets one thing right. You shouldn't rush to `terraform force-unlock`. If the run holding the lock is still working, it will release the lock when it finishes. Breaking it early lets two runs write the state at once, and that is how state gets corrupted.\n\nWhat it misses is the crashed run. A lock is only released by the run that took it. If that run dies partway through, nothing comes back to clean up. Picture the `spacelift@worker-7` apply on `dbx-service-dev` crashing. The azurerm backend keeps the lock on the state file, which Azure calls a blob. Here it is `tfstate/dbx-service-dev.tfstate`. The lock stays until someone removes it. Every later plan or apply on that stack fails with the same error. Waiting forever won't fix it.\n\nSo the real question isn't whether to force-unlock. It's when. First read the lock info to see who holds it. Then confirm that run is truly dead.\n\n\"Once the run holding it has stopped\" is better because it allows the one safe case for force-unlocking: a stuck lock with no live writer left to collide with.",
+   "step": "Check",
+   "fingerprint": "13b844c4c22c83b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only point to watch is the claim that a lock is only released by the run that took it. The lesson does not state this, though it does not contradict it."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Run terraform force-unlock now”?",
+   "a": "\"Run `terraform force-unlock` now\" gets one thing right. `terraform force-unlock` is the real command for clearing a lock, and it would make the error go away.\n\nBut it skips the check the lesson asks for: is the run holding the lock really dead? Here it isn't. The lock info says another run took the lock two minutes ago, and that run is still planning. Think of a Spacelift run on the `dbx-service-dev` stack that is busy comparing your YAML-driven config with what exists in Azure Databricks.\n\nThe lock exists so only one run touches the state at a time. State is Terraform's record of what it manages. If you remove the lock while that run is alive, your run and its run could both write the state blob. That's the stored state file in the Azure storage account. Two writers at once can corrupt it. Then Terraform's record no longer matches what really exists.\n\n`terraform force-unlock` is for a lock left behind by a crashed run, not a busy one.\n\n\"Wait for that run to finish\" is better because the lock is doing its job, and it will be released on its own when that healthy run completes.",
+   "step": "Check",
+   "fingerprint": "b0fc28dabaaa6c32",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Delete the state file and retry”?",
+   "a": "It's a tempting shortcut. Deleting the state file would make the lock error go away, because the lock sits on that file. That's about all it gets right.\n\nWhat it misses is that **state** is Terraform's only record of what it manages. In this stack it's the blob `tfstate/dbx-service-dev.tfstate` in the Azure storage account. That file is how Terraform knows it already created team-sales's clusters, the `sp-sales-etl-dev` service principal, and the access for `grp-sales-dev-owners`.\n\nDelete it, and Terraform forgets all of that. The next plan would try to create everything again. You'd get errors about things that already exist, or duplicates you'd have to clean up by hand.\n\nIt also ignores what the lock info told you. The other run took the lock two minutes ago and is still planning. Nothing is broken. The lock is doing its job by stopping two runs from writing state at once.\n\n\"Wait for that run to finish\" is better because the lock holder is alive and will release the lock on its own, so waiting keeps state safe and costs only a few minutes.",
+   "step": "Check",
+   "fingerprint": "a5eb2f51d76d72de",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Both applies just run more slowly”?",
+   "a": "\"Both applies just run more slowly\" treats this as a speed problem. Speed isn't what's at risk here.\n\n**State** is Terraform's record of what it manages. For example, it tracks which clusters and service principals exist for `team-sales` in DEV. Each apply reads that record, changes things in Azure Databricks, then writes the record back.\n\nWith no lock, two applies on the same stack can write that record at the same moment. One write can overwrite or garble the other. The record may end up broken, or no longer match what really exists. Terraform could then try to create `sp-sales-etl-dev` again, or lose track of a cluster.\n\nThat is why runs take a **lock** first. A lock is a \"busy\" marker on the state. With one in place, the second run doesn't quietly slow down. It stops with `Error acquiring the state lock`, as in the lesson's example.\n\n\"The state record could get corrupted\" is better because it names the real danger: two runs writing the same record at once, which is exactly what the lock prevents.",
+   "step": "Check",
+   "fingerprint": "cf04435f642e3803",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Terraform keeps the newer code”?",
+   "a": "\"Terraform keeps the newer code\" sounds safe, but Terraform has no such rule.\n\n**What it gets right:** it senses that two runs clash, and that one run's changes might win over the other's.\n\n**What it misses:** Terraform never compares the two runs and picks a winner. It doesn't look at whose code is newer at all. Each apply just changes real resources and then writes its results into the state file. State is Terraform's record of what it manages.\n\nPicture two teammates applying the `dbx-service-dev` stack at the same moment. One adds a cluster for `team-sales`. The other adds `sp-sales-etl-dev`. Both runs write to `dbx-service-dev.tfstate` at once. Their writes can overlap or overwrite each other. The record might end up missing the cluster, even though it really exists in the workspace. Or the file might end up half-written and unreadable.\n\nSo the danger isn't about which code wins. It's that the record itself breaks. That is why runs take a lock first.\n\n**Why \"The state record could get corrupted\" is better:** it names the real risk, which is that the record stops matching what actually exists in Azure.",
+   "step": "Check",
+   "fingerprint": "dc89b9ff7f5b03b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Start reading at the heading” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem.** A lock error from the `dbx-service-dev` stack has lines above the lock details. One is `Error message: state blob is already locked`. That line has a colon too. If I split every line at its colon, that noise gets mixed in with the real lock fields.\n\n**The idea.** So I only start reading at the `Lock Info:` heading. A yes-or-no flag called `inside` starts at no. It flips to yes when I reach the heading. Only the lines after that get cut into a key and a value.\n\n**An edge case.** If the heading never appears, I get an empty result. That's the honest answer: there's no lock info, so I shouldn't guess. I also cut each line at the first colon only, so the `Created` time keeps its own colons.\n\n**A follow-up an interviewer might ask**\n\n\"The lock says `Who: spacelift@worker-7`. Do you force-unlock right away?\"\n\n*Hint for a strong answer:* Not yet. Open that stack's runs in Spacelift and check whether the apply is still going. Only once you're sure that run is dead, run `terraform force-unlock` with that exact lock `ID`. The `ID` is the unique label Terraform gave this lock.",
+   "step": "Explain",
+   "fingerprint": "ed988611cdc417cd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that someone force-unlocked without checking**\n\n- The next plan for `dbx-service-dev` wants to create things that already exist, like a cluster for `team-sales`. That means the state, Terraform's record of what it manages, lost track of them.\n- An apply fails with \"already exists\" errors, or `sp-sales-etl-dev` shows up twice in the workspace.\n- Spacelift shows two applies on the same stack that overlapped in time.\n- The state blob's history in the Azure storage account shows two writes seconds apart.\n\n**Warning signs that the lock error was read wrong**\n\n- The `Created` time looks cut short, like `2026-10-09 23`, with the minutes and seconds gone.\n- Keys or values have stray spaces, so a lookup for `Who` finds nothing.\n\n**Quickest check**\n\nRead `Who` and `Created` first. Here `Who` is `spacelift@worker-7`, so a Spacelift run took the lock. Open that stack's runs in Spacelift. If an apply started near `23:25:51 UTC` is still running, the lock is real. Wait for it to finish. Only consider `terraform force-unlock` once you've confirmed that run is truly dead.",
+   "step": "Learn",
+   "fingerprint": "99e6124782c318ff",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. Minor: the blob-history sign and the claim that state 'lost track' of resources go beyond the lesson, though they fit its corruption warning, and 'blob' is not explained."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule or the method needs extra care.\n\n**1. The lock holder is still running.**\nSay `Who` shows `spacelift@worker-7` and that apply on `dbx-service-dev` is still going. Then the lock is doing its job. Don't run `terraform force-unlock`. Force-unlocking means removing the lock by hand, and two runs writing state at once would corrupt it. Only unlock once you've confirmed that run is really dead.\n\n**2. Spacelift manages the stack's state.**\nThis lesson's stack keeps state in an Azure storage account (the `azurerm` backend). A stack whose state Spacelift manages never shows this error. So for that kind of stack, there's no lock message to read. Look at the stack's runs instead.\n\n**3. The error has no `Lock Info:` heading.**\nThe `inside` flag only turns to yes at that heading. If the heading is missing, nothing gets stored, and you end up with an empty lookup table. An empty table tells you nothing about who holds the lock. Treat it as \"unknown\", not as \"safe to unlock\", and check the stack's runs by hand.",
+   "step": "Learn",
+   "fingerprint": "2d7c00e77785c9f2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Each situation runs four or five sentences rather than two or three, and the `inside` flag is mentioned without being explained, but both are minor."
+   }
+  },
+  "learn:term": {
+   "q": "What does “State” mean here?",
+   "a": "Think of a shared stock ledger in a warehouse. It lists every item the warehouse owns and where it sits. Before anyone orders or removes stock, they check the ledger first.\n\nTerraform's **state** is that ledger. It is a file listing everything Terraform has built for you. In this platform, that means workspaces, clusters from `clusters.yml`, and service principals like `sp-sales-etl-dev`. On each run, Terraform compares three things: your code, the state, and what really exists in Azure. The differences become the plan.\n\nIf two runs wrote the ledger at the same moment, entries could get scrambled. So a run takes a **lock** first, like signing the ledger out.\n\nIn the lesson's example, look at this line:\n\n```\n  Path:      tfstate/dbx-service-dev.tfstate\n```\n\nThat is the state file for the Service stage in DEV. It lives as a blob in an Azure storage account. A blob is just a file stored in Azure. The `Who` and `Operation` lines show that a Spacelift worker signed it out to run an apply.",
+   "step": "Learn",
+   "fingerprint": "987c9e62c27acde6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "moved_blocks": {
+  "check:0:0": {
+   "q": "Why not “1 to add, 1 to destroy: a new cluster”?",
+   "a": "\"1 to add, 1 to destroy\" is a real plan. It's just the plan for a different situation: the rename *without* a `moved` block.\n\nHere's what it gets right. Terraform does match its **state** (its saved record of what exists) to your code by **address**, the resource's name in code. So if you change `databricks_cluster.etl` to `databricks_cluster.sales_etl` and do nothing else, the old address looks gone and the new one looks brand new. The proposed plan in the team-sales Spacelift stack would then destroy the cluster and create a fresh one.\n\nWhat it misses is the `moved` block. That block links the two addresses. Terraform walks through the old addresses and finds `databricks_cluster.etl` gone from the code. Instead of marking it for destroy, it sees that a move points it at `databricks_cluster.sales_etl`. It updates the name in state. Nothing is added and nothing is destroyed. The same cluster keeps running under its new name.\n\n\"The cluster moves to its new address\" is better because the `moved` block turns a destroy-and-create into a simple rename in state, so the real cluster is never touched.",
+   "step": "Check",
+   "fingerprint": "6504aaa10d14c45e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “An error: addresses can't change”?",
+   "a": "That option gets one thing right. Terraform does care a lot about addresses. An **address** is the name Terraform uses to track a resource, like `databricks_cluster.etl`. Terraform matches what is in its **state** (its saved record of what exists) to your code by that address.\n\nBut changing an address is allowed. It is not an error. Without a moved block, Terraform treats the rename as two separate things. The old address is gone, so it plans to destroy the cluster. The new address is unknown, so it plans to create one. That is risky for team-sales, because their running cluster would be torn down. Still, Terraform doesn't stop you.\n\nThe `moved` block exists to fix exactly this. It links the old name to the new one. So when Spacelift runs the proposed plan for the Service stack in DEV, Terraform updates the name in state. The plan shows nothing destroyed and nothing created.\n\n\"The cluster moves to its new address\" is better because it describes what the `moved` block actually does: it updates the name in state, so the same cluster keeps running untouched.",
+   "step": "Check",
+   "fingerprint": "171d1f55eb343662",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A second copy of the cluster”?",
+   "a": "\"A second copy of the cluster\" has the right instinct: you don't want the real cluster destroyed. Keeping the old block `databricks_cluster.etl` next to the new `databricks_cluster.sales_etl` does stop the destroy.\n\nBut it fixes the wrong thing. Terraform still sees two separate addresses (the names it uses to track each resource). So the plan becomes \"keep the old one, create a new one.\" You get two real clusters in the workspace. That means double the cost, and two clusters that team-sales and `sp-sales-etl-dev` might both be pointed at. The new cluster is also a fresh, empty one. It has a new cluster ID and none of the history of the one you meant to keep.\n\nIt also only delays the problem. When you later delete the old block to tidy up, the next Spacelift plan will destroy the old cluster after all.\n\nA moved block is better because it tells Terraform the old address and the new address are the same cluster. Terraform then just updates the name in its state (its record of what exists), and nothing is destroyed or created.",
+   "step": "Check",
+   "fingerprint": "f33bfae5ecd91485",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer holds up against the lesson. The cluster ID and history point goes beyond the lesson but does not contradict it, and the final 'one sentence' on the moved block runs to two short sentences."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “An import block for the old one”?",
+   "a": "An import block feels close, because it is also about keeping a real cluster instead of building a new one. That part of the instinct is right.\n\nBut import solves a different problem. An **import block** tells Terraform to start tracking a real cluster that its state (its record of what it manages) doesn't know about yet. Here, Terraform already knows the cluster. It just knows it under the old address, `databricks_cluster.etl`.\n\nSo importing doesn't fix the mismatch. The old address is still in state with no code behind it, and the plan would still destroy it. That destroys the very cluster you meant to keep. If you instead imported the cluster to `databricks_cluster.sales_etl`, the same cluster would sit at two addresses, and the old one would still be marked for destroy.\n\nImport also needs the cluster's real ID. That ID differs in DEV, UAT and PROD, so you'd need a separate value for each environment.\n\nA moved block is better because it simply renames the existing entry in state from old to new, so nothing is destroyed, and the same block works in every environment.",
+   "step": "Check",
+   "fingerprint": "e0cb1755667062ef",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The import-block details (needs a real ID, differs per environment) go beyond the lesson, but they are accurate and do not contradict it."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “None: the rename is finished”?",
+   "a": "\"None: the rename is finished\" gets one thing right. In DEV, the rename really is done. DEV's state (Terraform's saved record of what it built) now knows the cluster as `databricks_cluster.sales_etl`. Deleting the `moved` block changes nothing there.\n\nWhat it misses is that each environment keeps its own state. DEV, UAT and PROD each run as a separate Spacelift stack. Applying in DEV does not touch PROD's record. PROD's state still lists the cluster under the old address, `databricks_cluster.etl`.\n\nNow picture PROD's next plan without the `moved` block. Terraform walks through PROD's old addresses. `databricks_cluster.etl` is not in the code, and no move points it anywhere, so it gets marked for destroy. Then `databricks_cluster.sales_etl` is a new address with no link to anything old, so it gets marked for create. team-sales would lose its running PROD cluster and get a fresh one with a new ID.\n\n\"Prod destroys and recreates it\" is better because it sees that the rename is only finished in environments that have already applied it, and PROD still needs the `moved` block to link the two names.",
+   "step": "Check",
+   "fingerprint": "9cb6c888088ec4db",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Two small additions go beyond the lesson: that each environment is a separate Spacelift stack, and the 'new ID' detail. Both fit the lesson's setting and do not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Dev loses the cluster”?",
+   "a": "\"Dev loses the cluster\" gets one thing right: deleting the `moved` block too early can cost you a cluster. It just points at the wrong environment.\n\nEach environment has its own **state**. That is Terraform's record of what it built and the address it filed each thing under. Dev has already applied the rename. So Dev's state already lists the cluster as `databricks_cluster.sales_etl`. That matches the code. With or without the `moved` block, Dev's plan shows no changes. Dev is safe.\n\nProd is the problem. Prod's state still lists the cluster as `databricks_cluster.etl`. Without the `moved` block, nothing links the old name to the new one. So Prod's Spacelift stack would propose a plan that sees `etl` gone from the code and `sales_etl` as brand new. That means destroy the old cluster, then create a fresh one. Any jobs running on it in PROD would be interrupted.\n\n\"Prod destroys and recreates it\" is better because it names the environment that still needs the `moved` block, and it says exactly what the plan would do there.",
+   "step": "Check",
+   "fingerprint": "92889a1492f81e0a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The only extra claim is that jobs on the cluster would be interrupted. The lesson does not say this, but it follows from a destroy and does not contradict the lesson."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Rename with moved, not destroy and create” matter?",
+   "a": "Terraform tracks each thing it built by its **address**, like `databricks_cluster.etl`. It keeps a record called **state** that links each address to the real object in Azure Databricks. Change the address in code, and Terraform thinks the old object should go and a new one should be made.\n\nHere is what that costs. Say team-sales renames `databricks_cluster.etl` to `databricks_cluster.sales_etl`. The Spacelift plan for the Service stack now says: destroy one cluster, create one cluster. If someone approves it without reading closely, the running cluster is deleted. Jobs pointing at its cluster ID break. Access for `grp-sales-dev-owners` is gone until the new cluster gets it.\n\nIdentities are worse. Recreate the service principal `sp-sales-etl-dev` and it gets a new ID. Every permission tied to the old ID is lost.\n\nA `moved` block avoids this. It tells Terraform the two addresses are the same object. The plan then shows a rename, with nothing destroyed. Keep the block in the code. UAT and PROD may not have applied the rename yet, and they need it too.",
+   "step": "Explain",
+   "fingerprint": "db0a0157188e718b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Keep, move, destroy, create” in an interview?",
+   "a": "**30-second answer**\n\n*Problem:* Terraform knows each resource by its address, like `databricks_cluster.etl`. If I rename it to `databricks_cluster.sales_etl`, the plan (Terraform's preview of changes) sees one address gone and a new one appear. So it would destroy team-sales's ETL cluster and build a fresh one.\n\n*Idea:* A `moved` block links the old name to the new one. Terraform then sorts every address. Still in the code: keep. Gone, but a move points it to an address that exists: move. Gone with no move: destroy. Any brand-new address that no move points to: create. It's like a change-of-address card. Your post follows you.\n\n*Edge case:* Leave the `moved` block in the code after the rename. DEV may have applied it already. But if PROD's Spacelift stack hasn't run yet, deleting the block makes PROD destroy and recreate.\n\n**Likely follow-up:** \"How would you prove a rename is safe before apply?\"\n\n*Hint:* Read the proposed plan in Spacelift. It should show the cluster as moved, with zero destroys. You could add a policy check that blocks any plan that destroys a cluster.",
+   "step": "Explain",
+   "fingerprint": "81b1f4266aba4c3c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\nThe clearest sign is in the Spacelift proposed plan (the preview Terraform shows before anything changes). You only renamed `databricks_cluster.etl` to `databricks_cluster.sales_etl`. Yet the summary says something like \"1 to add, 1 to destroy.\" A pure rename should never add or destroy anything.\n\nIf that plan gets approved anyway, the damage shows up after apply:\n\n- The cluster has a new cluster ID, which is the unique number Databricks gives it.\n- Jobs that pointed at the old ID fail with \"cluster not found.\"\n- Permissions granted outside Terraform, or libraries added by hand, are gone.\n- Running jobs stop partway when the old cluster is deleted.\n\n**A later trap**\n\nDEV applied the rename fine. Then someone deleted the `moved` block before UAT or PROD ran. Those stages never saw the rename, so their plans suddenly show destroy plus create.\n\n**Quickest check**\n\nRead the plan before approving. A correct rename shows the resource \"has moved to\" the new address. The summary should read \"0 to add, 0 to destroy.\" Anything else means the two names aren't linked.",
+   "step": "Learn",
+   "fingerprint": "b22b5a020900b3dc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The cluster ID, job failure and lost-permission details go beyond the lesson but are plausible and don't contradict it. 'Anything else means the two names aren't linked' slightly overgeneralises."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Moving between stacks.** A `moved` block only works inside one state file. State is Terraform's record of what it built. Say a cluster moves from the Foundation stack to a Service stack in Spacelift. Those are two separate states, so `moved` can't link them. Instead, use a `removed` block in the old stack so it forgets the cluster without deleting it. Then use an `import` block in the new stack to adopt the cluster.\n\n**2. Keys that come from YAML.** With `for_each`, addresses often use names read from team.yml, like `databricks_cluster.etl[\"team-sales\"]`. If a team is renamed in the config repo, every key changes at once. You need one `moved` block per changed key, or each one becomes a destroy plus a create.\n\n**3. Renames mixed with real changes.** A `moved` block fixes the name only. Say the same pull request also changes a setting the provider can't update in place. Then the plan still shows a replace, meaning destroy and recreate. Rename in one change, apply it through DEV, UAT and PROD, and only then change the settings.",
+   "step": "Learn",
+   "fingerprint": "fd8baaf59770be35",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. Minor: a cluster moving out of Foundation (account-level) is a slightly odd example, and the answer is close to the 200-word limit."
+   }
+  },
+  "learn:term": {
+   "q": "What does “address” mean here?",
+   "a": "An **address** is the name Terraform uses to find one resource. Think of a label on a drawer in a filing cabinet. Terraform keeps notes about each real thing it built in a file called **state**. Each note sits in a drawer, and the address is the label on that drawer.\n\nAn address has two parts joined by a dot. In `databricks_cluster.etl`, the first part, `databricks_cluster`, is the resource type: what kind of thing it is. The second part, `etl`, is the name you chose in the code.\n\nTerraform matches code to state by these labels. Say you change the code to `databricks_cluster.sales_etl`. Terraform looks for a drawer with that label and finds none. It also sees the drawer `databricks_cluster.etl`, which no code points at anymore. So it plans to destroy the old cluster and create a new one.\n\nThat's why the lesson's example names both addresses:\n\n```\nmoved {\n  from = databricks_cluster.etl\n  to   = databricks_cluster.sales_etl\n}\n```\n\nThis tells Terraform to relabel the drawer, not empty it. The real cluster in the team-sales workspace stays as it is.",
+   "step": "Learn",
+   "fingerprint": "9b04f55e2df1ca22",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "provider_versions": {
+  "check:0:0": {
+   "q": "Why not “5.0.0”?",
+   "a": "`5.0.0` gets one thing right. It is newer than `4.40`, and `~>` does allow newer versions. So the \"or newer\" half of the rule is met.\n\nWhat it misses is the other half. With `~> 4.40`, only the last number you wrote may go up. You wrote two numbers: `4` and `40`. So the `40` can climb to `41`, `45`, `99`, but the `4` must stay `4`. In `5.0.0` the first number changed, so Terraform will not pick it.\n\nThat first number is the **major version**. A new major version is where breaking changes usually land. A breaking change is one that can make code that worked before fail or behave differently. If `azurerm` 5.0 changed a default, your Service stage plan in Spacelift could suddenly propose changes to UAT or PROD workspaces. The constraint is there to keep that out until someone upgrades on purpose and the change is reviewed.\n\nThink of it as any reprint of the fourth edition, but not the fifth.\n\n`4.45.0` is the right answer because it keeps the `4` the same and only raises the number after it, from `40` to `45`.",
+   "step": "Check",
+   "fingerprint": "b54ae197c7ce2183",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “4.30.0”?",
+   "a": "`4.30.0` gets one thing right. It starts with `4`, so it is in the same **major version** (the first number) as the constraint. That means it carries no breaking changes from a jump to `5.0`.\n\nWhat it misses is the floor. `~> 4.40` means two things at once:\n\n- at least `4.40`\n- below `5.0`\n\n`4.30.0` is lower than `4.40`, so it fails the first rule. The `~>` operator only lets numbers go **up** from what you wrote, never down. Think of it as \"this version or a newer bug-fix or feature release in the same line.\"\n\nThis matters in practice. Say the Service stack for `team-sales` uses a setting that first appeared in azurerm `4.40`. An older provider like `4.30.0` might not know that setting at all. The Spacelift plan would then fail, or behave differently than it did in DEV.\n\n`4.45.0` is the better answer because it is at least `4.40` and still below `5.0`, so it passes both rules.",
+   "step": "Check",
+   "fingerprint": "ea2ba54ba63dbaa0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “1.91.0”?",
+   "a": "`1.91.0` is a reasonable guess. It stays on major version 1, so it avoids the big breaking jump to 2.0. That is exactly what `~> 4.40` would allow for `azurerm`, so it is easy to mix the two up.\n\nThe difference is how many numbers you wrote. The rule for `~>` is simple: only the **last** number you wrote may go up. Every number before it must match.\n\n- `~> 4.40` has two numbers, so the `40` may rise. `4.41` is fine.\n- `~> 1.90.0` has three numbers, so only the final `0` may rise. The `1` and the `90` are locked.\n\n`1.91.0` changes the `90` to `91`. That is a new minor release, which means a release with new features, not just bug fixes. It could change how your Service stage plans a workspace. The constraint was written to keep exactly that kind of change out of DEV, UAT and PROD until someone reviews it.\n\n`1.90.4` is the right answer because it keeps `1.90` exactly and only bumps the last number, which means bug fixes only.",
+   "step": "Check",
+   "fingerprint": "829a25bacb44abcf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The remark that a minor release means new features goes slightly beyond the lesson but does not contradict it, and the answer is about 175 words."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “2.0.0”?",
+   "a": "`2.0.0` gets one thing right. It is newer than `1.90.0`, and `~>` does allow newer versions. But it misses the other half of the rule.\n\n`~> 1.90.0` lets only the last number you wrote go up. You wrote three numbers: `1`, `90`, `0`. So only the last one, the bug-fix number, may change. The `1` and the `90` must stay exactly as they are. `2.0.0` changes the first number, so Terraform will not pick it.\n\nThat first number is the **major version**. A new major version is where the `databricks` provider usually puts **breaking changes**, meaning changes that can make existing code behave differently. Think of your Service stack in Spacelift planning `team-sales` clusters. A jump to `2.0.0` could change defaults and show surprise changes in the plan. Keeping that out is the whole point of the pin.\n\nIt is like agreeing to any reprint of edition 1.90, but not a whole new edition.\n\n`1.90.4` is the right answer because it keeps `1` and `90` the same and only raises the bug-fix number, which is exactly what `~> 1.90.0` allows.",
+   "step": "Check",
+   "fingerprint": "6a2afe349b0bfa3f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Run init again every day”?",
+   "a": "\"Run init again every day\" is not the best answer. It does touch the right command. `terraform init` is the step that picks a provider version, the plugin Terraform uses to talk to Azure or Databricks. So the idea points in a sensible direction.\n\nWhat it misses is the actual problem. The plans differ because your laptop and Spacelift ended up with different provider versions. Running init daily does not make them agree. Each place still runs init on its own and makes its own pick. New provider versions come out often, so the laptop and the Spacelift stack for team-sales in DEV could still land on different ones. A schedule does not tie them to one shared version, and nobody reviews the change.\n\nThe right answer is \"Commit .terraform.lock.hcl.\" That file records the exact version init picked. Once it is in the repo, every run uses that same version until someone runs `terraform init -upgrade` and the change is reviewed.\n\nCommitting `.terraform.lock.hcl` is better because it gives every run, on any laptop or Spacelift stack, the same exact provider version until a reviewed upgrade changes it.",
+   "step": "Check",
+   "fingerprint": "be8404d60135a337",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Delete the .terraform folder”?",
+   "a": "Deleting the `.terraform` folder points at the right place, but it doesn't solve the problem.\n\n**What it gets right:** `.terraform` is the local folder where `terraform init` stores the provider plugins it downloaded. So it does hold the version your laptop is using. Clearing it makes your laptop download again.\n\n**What it misses:** without a lock file, that fresh download just picks the newest version your constraint allows, such as anything matching `~> 4.40`. That might happen to match Spacelift today. But it's luck, not a rule. When a newer azurerm release comes out, the next Spacelift run may grab it, and your DEV plans drift apart again. Also, Spacelift usually starts each run with an empty workspace anyway, so deleting a folder on your laptop changes nothing there. Nothing gets written down that every run must follow.\n\n**Why \"Commit `.terraform.lock.hcl`\" is better:** the committed lock file records the exact provider version `terraform init` chose. Your laptop and every Spacelift stack then use that same version until someone runs `terraform init -upgrade` and the change is reviewed.",
+   "step": "Check",
+   "fingerprint": "3e829fc7708bbc9a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes, but it relies on facts the lesson never states (what the .terraform folder holds, and that Spacelift starts each run with an empty workspace), so those claims are unverified against the lesson."
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Pin providers and commit the lock file” matter?",
+   "a": "Without a pin, `terraform init` grabs the newest provider it can find. That can change from one day to the next, even when nobody touched your code.\n\nPicture the Service stack for `team-sales` in Spacelift. On Monday the DEV plan works with azurerm 3. On Tuesday azurerm 4 comes out. Spacelift starts each run fresh, so it downloads version 4. Version 4 needs a `subscription_id`, set in the provider block or in the `ARM_SUBSCRIPTION_ID` environment variable. Your code has neither. The plan fails, and the team asking for a new cluster in `clusters.yml` is stuck. Worse, a new major version can also change how resources are planned. Then a plan might show changes nobody asked for.\n\nPinning with `~> 3.100` (for example) keeps Terraform below 4.0. The lock file, `.terraform.lock.hcl`, goes further. It records the exact version picked. Commit it, and your laptop and every Spacelift run in DEV, UAT and PROD use that same version.\n\nUpgrading becomes a choice. Someone runs `terraform init -upgrade`, reviews the new plan, and merges it like any other change.",
+   "step": "Explain",
+   "fingerprint": "37ad63ad156ba37f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Compare part by part” in an interview?",
+   "a": "**A 30-second answer**\n\n**The problem.** Our Service stack pins the `databricks` provider with `~> 1.90.0`. When a new release such as `1.90.3` or `1.91.0` comes out, we need to know whether Terraform is allowed to pick it.\n\n**The idea.** Split each version at the dots into numbers. Then compare them one part at a time, from left to right. The major number comes first, then the minor, then the patch. A patch is a small bug-fix release. With `~>`, every part before the last one you wrote must match. So `1.90.3` passes, and `1.91.0` does not.\n\n**The edge case.** Never compare versions as plain text. Text compares one character at a time. It sees \"1\" before \"9\", so it would put `1.100.0` before `1.90.0`. Compared as numbers, 100 is bigger than 90, which is correct.\n\n**A likely follow-up**\n\n*\"Why does `~> 4.40` allow `4.41.0`, but `~> 4.40.0` doesn't?\"*\n\nHint: the number of parts you write decides which part may go up. Two parts means the minor number may grow. Three parts means only the patch may grow.",
+   "step": "Explain",
+   "fingerprint": "0483e58eb236d72c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Surprise plans.** A Spacelift plan for the Service stage shows changes nobody asked for. No YAML changed for `team-sales`, but a cluster or the access for `sp-sales-etl-dev` shows \"update in-place\" (Terraform wants to edit it). A new provider version often plans resources differently.\n- **Laptop and Spacelift disagree.** Your local plan is clean, but the Spacelift plan for the same code shows changes. The two runs are likely using different provider versions.\n- **DEV passed, PROD surprises.** UAT or PROD runs a few days later, and its plan differs from what was reviewed in DEV.\n- **The lock file keeps showing up.** `.terraform.lock.hcl` appears as a new or changed file after a plain `terraform init`. That means it was never committed, or someone upgraded without review.\n\n**Quickest check**\n\nFirst, look in the repo for that stage. Is `.terraform.lock.hcl` committed there? If not, each run picks its own versions.\n\nThen compare runs. `terraform init` prints each provider version it installs, like \"Installing databricks/databricks v1.90.3\". Compare that line on your laptop with the same line in the Spacelift run log. If the versions differ, the pinning or the locking was skipped.",
+   "step": "Learn",
+   "fingerprint": "0f15a2e3916ca001",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The lock-file bullet is wrong about the cause: a plain `terraform init` keeps the locked versions, so the file would not change just because someone upgraded without review, and an upgrade would show up as a reviewed commit. The DEV-vs-PROD sign is also weakly tied to the lesson, since environments "
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When pinning stops being enough**\n\n**1. Modules are not locked.** `.terraform.lock.hcl` only records provider versions. If your Service stage calls a workspace or catalog module from a registry or git repo, that module can change under you. Pin each module too: a fixed `version` for registry modules, or a git tag for repo modules.\n\n**2. You actually need the next major version.** Say a fix you need only ships in azurerm 5.0. `~> 4.40` will never pick it, by design. Raise the constraint on purpose, run `terraform init -upgrade`, and read the plan in DEV first. Then promote it through UAT and PROD like any other change.\n\n**3. Many stacks, many lock files.** Foundation and each workspace's Service stack have their own lock file. Over time they can drift onto different provider versions. Upgrade them together on a schedule, so team-sales in DEV and PROD run the same version. Also, a lock file made on a Mac may lack the checksums (fingerprints of the download) that Spacelift's Linux runners need. Record checksums for every platform you run on before committing.",
+   "step": "Learn",
+   "fingerprint": "d0de44003cefbbfb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes, but point 3 adds claims the lesson never makes (a lock file per stack, and the Mac vs Linux checksum issue) and runs to about five sentences, over the two-to-three limit."
+   }
+  },
+  "learn:term": {
+   "q": "What does “provider” mean here?",
+   "a": "Think of a **provider** as a translator Terraform hires. Terraform knows how to read your code and work out a plan. But it can't speak to Azure or Databricks on its own. The provider is a plugin (an add-on Terraform downloads) that knows how to talk to one of them.\n\nThe lesson's example names two providers:\n\n- `azurerm` talks to Azure. It handles Azure things, like the resource group that holds a workspace.\n- `databricks` talks to Databricks. It handles things like clusters, groups such as `grp-sales-dev-owners`, and service principals such as `sp-sales-etl-dev`. A service principal is a login for a program rather than a person.\n\nBoth sit inside the `required_providers` block. `source` says where Terraform gets the plugin, for example `hashicorp/azurerm`. `version` says which releases it may pick.\n\nWhen a Spacelift stack runs `terraform init`, Terraform downloads these plugins. New releases come out often and can change behaviour. That's why the lesson pins their versions.",
+   "step": "Learn",
+   "fingerprint": "6727333a9f6d4cfa",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "summarize_plan": {
+  "check:0:0": {
+   "q": "Why not “Nothing: it's unchanged”?",
+   "a": "\"Nothing: it's unchanged\" gets one thing half right. After the apply, a resource with the same address will still exist. For example, `azurerm_subnet.host` is still in your Service stack. So it can feel like the add and the destroy cancel out.\n\nBut they don't cancel. Terraform will **destroy** the old subnet and then **create** a new one. That is a real change, and it can hurt. Anything sitting on that subnet, like the team-sales workspace, can break while the subnet is gone. The new subnet is also a different object with a new ID.\n\nAn unchanged resource looks different. It is a **no-op** (Terraform's word for \"no operation, nothing to do\"). A no-op adds nothing to any counter, so it would show \"0 to add, 0 to change, 0 to destroy.\"\n\nThe summary line never prints the word \"replace.\" That is why one add plus one destroy for a single resource is the clue to spot in a Spacelift proposed run, before anyone approves it in UAT or PROD.\n\n\"It's being replaced\" is better because it names what really happens: the old resource is destroyed and a new one is created in its place.",
+   "step": "Check",
+   "fingerprint": "c588019678507a59",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It's being renamed”?",
+   "a": "\"It's being renamed\" gets one thing partly right. Something about the resource is changing, and a new one appears in its place.\n\nBut Terraform doesn't report renames. A plan lists what it will create, update, replace or destroy. \"Rename\" isn't in that list.\n\nSo when the summary says \"1 to add, 0 to change, 1 to destroy\" for one resource, that's a **replacement**. Terraform destroys the old resource, then creates it again. The summary line never says \"replace\". A replacement simply shows up as one add plus one destroy.\n\nThat difference matters. \"Rename\" sounds gentle, like the same thing just gets a new label. A replacement means the old resource is destroyed before the new one exists. Say it's `azurerm_subnet.host` in a Service stack. That subnet is torn down and built again.\n\nA Spacelift policy check sees this in the plan JSON. That's the output of `terraform show -json`. The change's `actions` list holds both `delete` and `create`.\n\n\"It's being replaced\" is better because it names what Terraform will actually do: destroy the resource, then create it again.",
+   "step": "Check",
+   "fingerprint": "982a9c4f7ddcb648",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “They're destroyed and made again”?",
+   "a": "\"They're destroyed and made again\" gets one thing right. Terraform can do that. It's called a **replacement**: it deletes the old resource and builds a fresh one. That happens when a setting can't be edited on a live resource, such as renaming `azurerm_subnet.host`.\n\nBut the summary line rules it out here. A replacement never appears as a \"change.\" It counts once under **add** and once under **destroy**. So if those two resources were being replaced, the line would say \"2 to add, 0 to change, 2 to destroy.\"\n\nThis line says \"0 to add\" and \"0 to destroy.\" Nothing is being built from scratch, and nothing is being removed. That leaves only the **change** counter, which means an edit to a resource that already exists.\n\nThink of a team's cluster in `clusters.yml`. Its owner group might change from `grp-sales-dev-users` to `grp-sales-dev-owners`. That is an edit, so the cluster stays and only that setting moves.\n\n\"They're updated in place\" is better because a plan with zero adds and zero destroys can only edit the existing resources, never rebuild them.",
+   "step": "Check",
+   "fingerprint": "b1dd382709c973ab",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Two new ones are created”?",
+   "a": "The answer \"Two new ones are created\" gets one thing right: two resources are affected by this plan. But it misreads which counter they sit in.\n\nTerraform's summary line has three separate counters:\n\n- **add** counts resources being created.\n- **change** counts resources being updated in place. \"In place\" means the existing resource is edited and keeps its identity.\n- **destroy** counts resources being removed.\n\nHere, `add` is 0. So nothing new is created. Both resources are in `change`.\n\nIt isn't a replacement either. A replacement means destroying the old resource and creating a new one. It would show as one add and one destroy, and both of those counters are 0.\n\nA realistic example: a product team edits `clusters.yml` to raise the autotermination time on two clusters for team-sales in DEV. When Spacelift proposes the plan, those two existing clusters are edited. No new clusters are built.\n\n\"They're updated in place\" is better because \"2 to change\" means exactly that: the two existing resources are edited where they stand, with nothing created or destroyed.",
+   "step": "Check",
+   "fingerprint": "028382c84571a1c3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The text printed by terraform plan”?",
+   "a": "The printed text isn't wrong. It describes the same plan, and it's great for a person reviewing a pull request.\n\nBut it's written for human eyes, not for code. To use it, your check would have to **parse** it, meaning pick facts out of loose sentences. That is fragile:\n\n- The wording, spacing and colours can change between Terraform versions. A check that worked last month could quietly break.\n- The summary line hides detail. If a cluster for `team-sales` gets replaced, the line just says \"1 to add, 1 to destroy\". Your check can't easily tell a replacement from two unrelated changes.\n- Long resource addresses and nested settings get wrapped and indented in ways that are hard to read reliably.\n\nThat's why Spacelift policies and PR checks for your Service stack don't read the text.\n\nThe JSON from `terraform show -json` is the better answer because it's the same plan as stable, structured data, with each change's `address` and `actions` list spelled out exactly.",
+   "step": "Check",
+   "fingerprint": "24507e9db0f801e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The state file from the last apply”?",
+   "a": "The state file is a fair guess, because the plan does use it. **State** is Terraform's record of what it last applied: every resource it manages and its settings. When you run `terraform plan`, Terraform compares your code with that record and with what really exists in Azure.\n\nBut state only describes the past. It knows nothing about the pull request.\n\nSay team-sales adds `sp-sales-etl-dev` to their `service_principals.yml`. The state file won't mention it, because nothing has been applied yet. It also can't tell you that a change to a subnet will force a **replacement** (destroy the old one, then create a new one). That answer only exists after Terraform does the comparison.\n\nA pull request check needs to judge what *will* happen if someone approves the apply. So it has to read the result of the comparison, not one of its inputs. Spacelift policies work the same way. They read the plan, not the state.\n\n`terraform show -json` is the right answer because it turns the plan itself into data, listing each resource's proposed `actions`.",
+   "step": "Check",
+   "fingerprint": "12366e07d8ad3d24",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:gotcha": {
+   "q": "Why does “Read every -/+ before approving” matter?",
+   "a": "In a Terraform plan, `-/+` marks a **replacement**: Terraform will delete the real thing, then build a new one. The summary line only says \"1 to add, 1 to destroy\". That looks harmless, like two small, unrelated changes. It never says \"replace\".\n\nHere is what can go wrong. Someone renames the UAT workspace in the config:\n\n```\n  # azurerm_databricks_workspace.this must be replaced\n-/+ resource \"azurerm_databricks_workspace\" \"this\" {\n      ~ name = \"dbw-sales-uat\" -> \"dbw-sales-uat-01\" # forces replacement\n    }\n\nPlan: 1 to add, 0 to change, 1 to destroy.\n```\n\nThe `# forces replacement` comment tells you which field caused it. Here, Azure can't rename a workspace in place, so Terraform must rebuild it.\n\nIf a reviewer only reads the summary and approves, the apply deletes the live workspace. Notebooks, jobs and cluster settings for team-sales go with it. Pipelines run by `sp-sales-etl-uat` stop until everything is rebuilt.\n\nSo on Spacelift's proposed run, before you merge, scan for every `-/+`. Then read the `# forces replacement` line under it. Ask: \"Do we really want this destroyed?\"",
+   "step": "Explain",
+   "fingerprint": "ce4bb4e4e6dd246d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Three counters, one check each” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"In our Spacelift stacks, policy checks read the plan as JSON, not as text. So they must count changes the same way Terraform's summary line does. Otherwise the numbers won't match what reviewers see.\"\n\n*The idea.* \"I start three counters at zero: add, change and destroy. I walk through the resource changes once. For each one, I ask three separate questions about its `actions` list. Does it include create? Update? Delete? Each yes adds one to its counter.\"\n\n*The edge case.* \"A replacement, say of `azurerm_subnet.host`, lists both delete and create. Separate checks count it once in add and once in destroy, just like Terraform. A no-op, meaning a resource with nothing to change, matches no question, so it counts nowhere.\"\n\n**A likely follow-up**\n\n\"Why not one `if`/`elif` chain?\"\n\nHint: `elif` means \"else if\". Only the first matching branch runs. So a replacement would land in just one counter, and destroys would be undercounted. Then a PROD policy meant to block destroying a workspace could miss it.",
+   "step": "Explain",
+   "fingerprint": "8f2ccfbb01d268d4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\nThe clearest sign: your counts don't match Terraform's own summary line. The text plan ends with something like \"Plan: 2 to add, 0 to change, 1 to destroy.\" If your numbers say something different for the same plan, something was skipped.\n\nWatch replacements most closely. Say someone renames the workspace for team-sales in `env.yml` and the workspace has to be rebuilt. A broken count might show \"1 to change\" and \"0 to destroy\". A Spacelift policy that blocks destroys in PROD would then wave it through. You'd only find out when the workspace and its clusters vanish during apply.\n\nOther signs:\n- Totals that are higher than the number of real changes, because no-ops got counted. A no-op is a resource with nothing to do.\n- A PR check that never flags anything, even on risky edits to `clusters.yml`.\n\n**Quickest check**\n\nMake a plan in DEV that you know forces a replacement. Run it through your check. Then put your counts next to Terraform's summary line for that same `tfplan` file. If all three numbers match, you're counting the way Terraform does.",
+   "step": "Learn",
+   "fingerprint": "d3bd02b725f81fe5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only weak spot is the broken-count example ('1 to change, 0 to destroy'), which is not what skipping the separate checks would typically produce (that would more likely give 1 add, 0 destroy), but it is hedged with 'might'."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The counts don't say what is being replaced.**\nA replacement shows up as one add plus one destroy, whatever the resource is. Replacing the PROD `azurerm_databricks_workspace` gives the same numbers as replacing a small DEV cluster policy. So don't let counts be your only check. Also read each change's `address` (the resource's name in the code) and block risky deletes by name.\n\n**2. Reality can change after the plan.**\nA plan is a snapshot. Someone might edit a group in Entra ID between the proposed run and the approved apply. Then your counts describe a world that no longer exists. Save the plan with `-out` so the apply does exactly what was checked. If Terraform says the saved plan is stale (out of date), run a fresh plan.\n\n**3. Many stacks, many plans.**\nFoundation and each Service workspace run as separate Spacelift stacks, and each has its own plan. Adding them all into one total hides which stack, and which environment, holds the destroy. Count per stack and per environment, and check PROD most strictly.",
+   "step": "Learn",
+   "fingerprint": "9c530256e912fb8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “state” mean here?",
+   "a": "\"State\" is Terraform's record of what it last applied.\n\nThink of a stockroom notebook. Each time the platform team sets something up, they write it down: \"made the subnet `azurerm_subnet.host`, made a cluster for team-sales.\" Next time, nobody guesses. They read the notebook, look at the room, and look at the new request.\n\nTerraform does the same. When you run `terraform plan -out tfplan`, it weighs three things:\n\n- **your code**: the runbook, fed by the teams' YAML\n- **state**: what Terraform last applied\n- **reality**: what actually exists right now\n\nFrom that comparison, it decides what to do with each resource: create, update, replace, destroy, or nothing. A \"nothing\" entry is called a **no-op**. It can still appear in the plan data. It just doesn't count in the summary.\n\nThen `terraform show -json tfplan > plan.json` writes that same plan out as data. That is the version Spacelift policies and PR checks read.\n\nSo state is not your code. It is the record your code gets compared against.",
+   "step": "Learn",
+   "fingerprint": "a50a070b991f8b51",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "variables_outputs": {
+  "check:0:0": {
+   "q": "Why not “Write module.workspace.azurerm_databricks_works…”?",
+   "a": "That option gets one thing right. It points at the exact place the URL lives: the `workspace_url` attribute (a value a resource exposes) on `azurerm_databricks_workspace.this`.\n\nBut it tries to reach inside the box. A module keeps its resources private. Your root code (the top-level Terraform that calls the module) can only read what the module hands back through outputs. To the root code, `module.workspace` has only outputs. There is nothing deeper to reach. So that long reference fails, and the plan stops with an error. Spacelift never gets as far as the policy checks.\n\nThink of the vending machine. You may know the snack sits on the third shelf, but you can't reach in. You only get what drops out of the slot.\n\nThe fix is to add the slot inside the module:\n\n```hcl\n# modules/workspace/outputs.tf\noutput \"workspace_url\" {\n  value = azurerm_databricks_workspace.this.workspace_url\n}\n```\n\nAdding an output and reading `module.workspace.workspace_url` is better because it uses the one door the module offers, so the plan works and the module's insides stay free to change.",
+   "step": "Check",
+   "fingerprint": "395dd8bf715d8cbd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the lines about Spacelift never reaching policy checks and the module's insides staying free to change go slightly beyond the lesson, but they are consistent with it and the setting."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Copy the URL from the Azure portal into the code”?",
+   "a": "Copying the URL from the Azure portal gets one thing right. The `databricks` provider does need the real workspace URL, and pasting it in would work today.\n\nBut it misses a lot. A pasted value is \"hardcoded,\" meaning typed in by hand instead of worked out by Terraform.\n\n- **It can't run from scratch.** On the first apply, the workspace doesn't exist yet, so there's no URL to copy. A fresh Spacelift stack would get stuck.\n- **It goes stale.** If the workspace is ever rebuilt, it gets a new URL. Your code would still point at the old one, and nothing would warn you.\n- **It breaks reuse.** The same Service stage runs for DEV, UAT and PROD. One pasted URL only fits one of them. You'd end up with separate copies of the code per environment, which is exactly what the module was meant to avoid.\n\nAdding an output is better because the module is a closed box and only outputs cross its wall. Your root code can never reach `azurerm_databricks_workspace.this` inside it. So the module must hand the URL out as `workspace_url`, and you read it as `module.workspace.workspace_url`, which stays correct in every environment.",
+   "step": "Check",
+   "fingerprint": "be38e79329c2ba86",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes on all five checks; the closing part should be one sentence as asked (it is three), and it is near the word limit with 'apply' and 'stack' unexplained."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A copy of the module for each”?",
+   "a": "A copy of the module for each environment would work at first. Each copy builds a workspace, so you would get both dev and prod.\n\nThe trouble comes later. Say the platform team adds a new access rule for `grp-sales-dev-owners` to the workspace module. With copies, someone must make that change in every folder. Miss one, and the copies drift apart. \"Drift\" means they slowly stop matching. Then a plan that passed in DEV tells you little about PROD, because PROD runs different code. The point of moving each Spacelift stack through DEV, UAT and PROD is to test the *same* thing each time.\n\nWith one module, the code stays the same. Only the values you hand in change:\n\n```hcl\nmodule \"workspace\" {\n  source = \"./modules/workspace\"   # same folder as in dev\n  env    = \"prod\"                  # only this value differs\n}\n```\n\n\"Only the values you pass in\" is the right answer because one recipe builds every environment, so a fix lands everywhere at once and DEV truly shows what PROD will get.",
+   "step": "Check",
+   "fingerprint": "da3d9c220fd368d6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The resources inside it”?",
+   "a": "It's a fair guess. The dev and prod workspaces do end up different: different names, maybe different sizes. So something about the resources changes.\n\nBut the *code* for those resources, inside the module folder, should stay exactly the same. The module is a recipe. You don't rewrite the recipe to bake a second cake. You just use different ingredients.\n\nIf you edited the resources inside for each environment, you'd need two copies of the module. Then a fix made in one could be forgotten in the other. That throws away the whole point of reusing it.\n\nThere's also the closed-box idea. The calling code can't reach inside the module anyway. It only hands values in through variables and reads values back through outputs.\n\nSo you call the same module twice and change only the input:\n\n```hcl\nmodule \"workspace_dev\" {\n  source = \"./modules/workspace\"\n  env    = \"dev\"\n}\n\nmodule \"workspace_prod\" {\n  source = \"./modules/workspace\"\n  env    = \"prod\"\n}\n```\n\n\"Only the values you pass in\" is better because the module code stays identical, and the variables alone decide how dev and prod differ.",
+   "step": "Check",
+   "fingerprint": "87b85ff6387b5360",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “A variable you passed into the module”?",
+   "a": "It's a fair guess, because variables are part of the story. They're just the wrong direction.\n\n**What it gets right:** variables are how values go *into* a module. In the example, you pass `env = \"dev\"`. The module may use that to name and build the workspace, so your input shapes the result.\n\n**What it misses:** you never passed in `workspace_url`. Nobody knows that URL ahead of time. Azure creates it when the workspace resource is built inside the module. Variables only flow in, so they can't carry a value the module makes along the way.\n\nFor that URL to reach your root code (the top-level Terraform that calls the module), the module must hand it back on purpose. It does this in an output block, roughly like this:\n\n```hcl\noutput \"workspace_url\" {\n  value = azurerm_databricks_workspace.this.workspace_url\n}\n```\n\nThen `module.workspace.workspace_url` reads that output. Without it, the plan stops with an error.\n\n**Why \"An output the module hands back\" is better:** `module.<name>.<output>` only ever reads what the module chose to send out, never what you sent in.",
+   "step": "Check",
+   "fingerprint": "ee4f1b9a1be60687",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “A resource you made in the root”?",
+   "a": "It's a fair guess. There is a real resource behind that URL: the Azure Databricks workspace that gets built. That part is right.\n\nBut that resource isn't in the root. It lives inside the `./modules/workspace` folder. The root is your top-level Terraform code, the part that calls the module. It never made the workspace itself. It asked the module to.\n\nThe reference also gives you a clue. If the root had made the workspace, it would point at the resource directly, starting with its type, like `azurerm_databricks_workspace.dev.workspace_url`. Instead it starts with `module.`, which means \"ask the module called `workspace`.\"\n\nAnd the root can't reach inside the module to grab the resource. The module is a closed box. The only way the URL gets out is if the module chooses to hand it back, in an `output` block in its own code:\n\n```hcl\noutput \"workspace_url\" {\n  value = azurerm_databricks_workspace.this.workspace_url\n}\n```\n\n\"An output the module hands back\" is better because `module.workspace.workspace_url` can only ever read what the module put out through the slot, never the resource itself.",
+   "step": "Check",
+   "fingerprint": "5b7ac4d47a8090f5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Only outputs cross the wall” in an interview?",
+   "a": "**The 30-second answer**\n\n*The problem:* In our Service stage, root code calls a `workspace` module for each environment. (\"Root code\" is the top-level Terraform that calls modules.) It needs values back, like the workspace URL for the `databricks` provider. If callers could reach any resource inside the module, every internal rename would break them.\n\n*The idea:* A module is a closed box. Values go in as variables, like `env = \"dev\"`. They come out only as outputs, read as `module.workspace.workspace_url`. Nothing deeper is reachable. So the outputs are the module's contract: the fixed promise it makes to callers.\n\n*The edge case:* You must output what callers need. Say the catalog code needs the workspace ID and the module doesn't output it. Then the Spacelift plan (Terraform's preview of changes) stops with an error. You add the output, and the reference works.\n\n**Likely follow-up**\n\n\"Why not just output everything?\"\n\n*Hint:* Every output is part of the contract, so each one must stay stable. Expose only what callers truly need. Then the module's insides can change freely without breaking DEV, UAT or PROD.",
+   "step": "Explain",
+   "fingerprint": "2ac6a8fea6925ecc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "The loudest sign shows up in the proposed plan. A Spacelift stack for the Service stage fails before anything is built. The log shows an error like \"Unsupported attribute\" or \"Reference to undeclared module\". That means some code asked for `module.workspace.<something>` that the module never output, or named a module that isn't called.\n\nA second sign comes from someone trying to reach inside the box. For example, they write a longer reference that points at a resource inside the `workspace` module. Terraform rejects it, because only outputs cross the wall.\n\nThe quiet sign is worse. Someone gets tired of the errors and pastes a workspace URL by hand into the `databricks` provider. The DEV plan passes. Then the UAT or PROD stack quietly points team-sales clusters at the DEV workspace. The plan looks clean, but it changes the wrong place.\n\nThe quickest check:\n\n1. Open the module's outputs file. That is the file of `output` blocks, often called `outputs.tf`.\n2. List every `module.<name>.<output>` reference in the root code.\n3. Each one needs a matching module call and a matching output name.\n4. Also look for hand-typed URLs or IDs that should come from an output instead.",
+   "step": "Learn",
+   "fingerprint": "59a3e478c9f384f7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The exact Terraform error messages and the hand-pasted URL scenario go beyond the lesson, but they don't contradict it. The check steps come close to the exercise's rules but are not the solution."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three places where the simple \"only outputs cross the wall\" picture needs extra care.\n\n**Modules inside modules.** Say the `workspace` module itself calls a `catalog` module. Your root code can't reach that inner module's outputs directly. The `workspace` module must pass the value on through an output of its own. Then you read it in the usual three parts, like `module.workspace.catalog_name`.\n\n**One module called many times.** With `for_each` (a way to call one module once per item, such as per environment), real Terraform adds a key, like the name `dev`, to each copy. The lesson's rule only covers plain three-part references, so it would mark these as bad. Treat that as a limit of this lesson's rule, not of Terraform.\n\n**Values across Spacelift stacks.** A stack is one separate Terraform run. The Service stack can't read `module.<name>.<output>` from the Foundation stack. Foundation must publish the value outside itself, for example in its saved state or as a Spacelift stack output. Service then reads it from there, not as a module reference.",
+   "step": "Learn",
+   "fingerprint": "a0d174b8b8a89511",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": false,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The for_each item gives no 'what to do instead' (it only says it is a limit of the lesson's rule), and each item runs to four or five sentences instead of the two or three asked for."
+   }
+  },
+  "learn:term": {
+   "q": "What does “module” mean here?",
+   "a": "A **module** is a folder of Terraform code you can reuse. Think of a recipe card. The same card makes a small batch or a big one, depending on the amounts you write in. In Terraform, those amounts are **variables**: named inputs you fill in.\n\nOn this platform, the Service stage could call one workspace module for `team-sales` in DEV, then again in PROD. The code inside stays the same. Only the values change.\n\nA module is also a closed box. Outside code can't reach in and grab its parts. It hands values back only through **outputs**, which are named values it chooses to share.\n\nIn the lesson's example:\n\n- `module \"workspace\"` calls the module and names it `workspace`.\n- `source = \"./modules/workspace\"` says which folder holds the recipe.\n- `env = \"dev\"` fills in a variable.\n- `module.workspace.workspace_url` reads one output back. The `databricks` provider (the plugin that talks to Databricks) uses it to find the workspace.\n\nThat last line works only because the module outputs `workspace_url`. If it didn't, the plan would stop with an error.",
+   "step": "Learn",
+   "fingerprint": "f8041711f14e088b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ }
+}
