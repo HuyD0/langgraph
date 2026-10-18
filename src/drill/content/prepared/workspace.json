@@ -456,20 +456,20 @@
   },
   "check:2:2": {
    "q": "Why not “A SQL warehouse”?",
-   "a": "**What it gets right:** A SQL warehouse can be serverless. Then Databricks runs the machines for you, just as the data scientist wants. That part fits.\n\n**What it misses:** A SQL warehouse is built for one kind of work: running SQL, dashboards and Genie (asking questions of your data in plain words). The question describes general notebook work. It never says the work is SQL only. Exploring data in a notebook often means Python too, like loading files, cleaning data or making charts. A SQL warehouse only runs SQL, so it covers just part of that work.\n\nThink of how a platform team would place it. A request from `team-sales` for daily notebook exploration is not a dashboard request. So it would not go to a warehouse like `bi-serverless`.\n\n**Why serverless compute is better:** Serverless compute is made for notebooks, starts in seconds, has nothing to size, and runs whatever the notebook needs, so it fits this daily exploration with no special setup.",
+   "a": "\"A SQL warehouse\" gets one thing right. A serverless SQL warehouse is run by Databricks, so the data scientist wouldn't manage machines.\n\nBut it misses what the work actually is. A SQL warehouse is built for SQL, dashboards and Genie (asking questions of your data in plain words). The work here is exploring data in a notebook. That isn't SQL for a dashboard.\n\nThink of the lesson's rules, checked in order:\n\n- Is the work SQL? No. It is notebook exploration, so a SQL warehouse is not the match.\n- Does it need a GPU (a chip built for training models) or an init script (a script that sets up each machine as it starts)? No. The question says no special setup.\n- Anything left goes to serverless.\n\nThe lesson's own table says the same thing: \"Exploring data in a notebook -> serverless.\"\n\n**Serverless compute** is better because it runs notebooks directly, starts in seconds, and leaves nothing to size. That fits a daily notebook user with no special needs.",
    "step": "Check",
    "fingerprint": "ecd01feed9c6689a",
    "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
-    "no_giveaway": true,
+    "no_giveaway": false,
     "standalone": true,
     "pass": false,
-    "notes": "The closing claim that serverless \"runs whatever the notebook needs\" contradicts the lesson, which says serverless takes no init scripts or custom machine setup and usually can't do GPU work; \"made for notebooks\" also narrows the lesson's \"notebooks, jobs and pipelines\"."
+    "notes": "The three-step 'rules checked in order' list (SQL first, then GPU or init script, then everything else to serverless) lays out the decision order that the pick_compute exercise asks the learner to write, and it isn't needed to explain why a SQL warehouse is the wrong answer."
    }
   },
   "explain:interview": {
@@ -492,7 +492,7 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The bill looks high for simple work.** A scheduled job sits on all-purpose compute. All-purpose costs more per DBU (Databricks Unit, a unit of processing time) than jobs compute. So the same nightly run costs more than it should.\n- **Classic clusters for plain work.** Plain Python jobs or notebook exploration get sized and managed by hand. Serverless would start in seconds with nothing to size.\n- **Setup missing.** A job like `nightly_load` needs `certs.sh` as an init script (a script that sets up each machine as it starts). If it lands on serverless, that setup can't run there.\n- **GPU work on the wrong compute.** A notebook that trains a model is placed on serverless. GPU work usually means classic compute.\n- **SQL off the warehouse.** A dashboard query for `team-sales` lands on a cluster instead of a SQL warehouse. Often the cause is the wrong rule order: a later rule fired before the \"is it SQL?\" rule.\n\n**Quickest check**\n\nOpen the Spacelift plan for the Service stage in DEV. Take each workload from `clusters.yml`. Ask the questions in the lesson's order. Does the compute in the plan match your answer each time?",
+   "a": "**Warning signs**\n\n- **The bill climbs.** A scheduled job like `nightly-load` runs on an all-purpose cluster instead of jobs compute. The work is the same, but each DBU costs more. (A DBU is Databricks' unit of processing time.)\n- **Clusters sit idle.** An all-purpose cluster stays on after the team stops using it. You still pay for that time.\n- **Startup failures.** A job that needs `/Shared/init/certs.sh` lands on serverless. Serverless doesn't take init scripts, which are setup scripts that run on each machine as it starts. So the job fails or runs without the setup it needs.\n- **No GPU.** A training notebook for `team-sales` gets compute without a GPU, the chip built for training models. It errors or crawls.\n- **SQL in the wrong place.** Dashboard or Genie queries run on a notebook cluster instead of a SQL warehouse.\n\n**Quickest check**\n\nTake each workload in `clusters.yml`. Ask the lesson's questions in order. Is it SQL? Does it need a GPU or an init script? Is it a notebook or a job? Then compare your answer with what the Spacelift plan creates. A plan is the list of changes Terraform proposes. Any mismatch is your bug.",
    "step": "Learn",
    "fingerprint": "d069495b51e8925d",
    "status": "failed",
@@ -501,29 +501,29 @@
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
-    "no_giveaway": true,
+    "plain": true,
+    "no_giveaway": false,
     "standalone": true,
     "pass": false,
-    "notes": "The answer uses \"GPU\" and \"SQL warehouse\" without explaining them, though the lesson defines both. It also says to \"ask the questions in the lesson's order\" without stating them, which is vague."
+    "notes": "The 'Quickest check' spells out the exercise's decision order (SQL first, then GPU or init script, then notebook or job), which is the skeleton of the pick_compute solution; the idle-cluster bullet also goes beyond what the lesson says."
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where \"first match wins\" needs extra care.\n\n**Two needs that clash.** Say `team-sales` lists SQL work in `clusters.yml` that also sets `init_script: True`. The SQL rule matches first, so it lands on a SQL warehouse. The init script never runs, because serverless takes no custom machine setup. Better: have Pydantic reject that mix so the team fixes the request before Spacelift plans anything.\n\n**AI work that doesn't need a GPU.** An agent built with LangGraph usually calls a hosted model. Hosted means Databricks or another service runs the model for you. Your own code needs no GPU. If a team ticks `needs_gpu` just because it's \"AI\", it gets pushed onto classic compute it doesn't need. Better: ask whether the code itself trains or runs a model on the machine.\n\n**New kinds of work.** As more teams join `env.yml`, someone may ask for a kind your rules never mention, like a pipeline. Since \"anything left goes to serverless\", it slips through quietly. Better: list the allowed kinds and make anything else fail validation.",
+   "a": "The rule works well when each workload's YAML fields are accurate and cover its real needs. Here are three places that need extra care.\n\n**The `kind` field is wrong.** Say team-sales lists a GPU notebook in `clusters.yml`, but it really runs every night on a schedule. The rule would send it to all-purpose compute. Fix the YAML so it says `job`. Then it lands on jobs compute, which costs less per DBU.\n\n**A need isn't captured by the flags.** The lesson says serverless can't take init scripts *or other custom machine setup*. If a team needs some other machine setup, the GPU and init-script flags won't catch it. The work would land on serverless and fail. Add a field for it, let Pydantic check it, and route it to classic compute like an init script.\n\n**You add a new rule.** Rules run in order, and the first match wins. Put a new rule in the wrong spot and it may never get a turn. Decide its position on purpose. Then look at the Spacelift plan in DEV before UAT and PROD.",
    "step": "Learn",
    "fingerprint": "214e7fbbdf770ae2",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The 'pipeline' example is misleading: the lesson says serverless works for pipelines, so sending one there is correct, not a failure. The LangGraph claim also comes from outside the lesson. LangGraph is never explained, and the answer runs slightly over 200 words."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
@@ -856,7 +856,7 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Prod tables land in `dev_sales`.** `catalog` has a default of `dev_sales`. If the `prod` target forgets to set `catalog: prod_sales`, prod quietly falls back to that default. Nothing errors. You just find prod data in the dev catalog.\n- **A \"missing variable\" error.** `warehouse_id` has no default. If a target forgets it, the deploy stops and names it as missing. That's the safe failure.\n- **Dev runs touch the wrong data.** A leftover `BUNDLE_VAR_catalog` in your shell, or a stray `--var`, wins over the target's value. Your dev deploy then writes somewhere you didn't expect.\n- **Colleagues overwrite each other.** Without `mode: development`, dev job names have no name prefix. Two people deploy, and one job replaces the other.\n- **Prod jobs run as a person.** Without `run_as`, the job's run history shows a person, not a service principal like `sp-sales-etl-prod`. A service principal is a non-human identity from Entra ID. Jobs break when that person leaves.\n\n**Quickest check**\n\nRun `databricks bundle validate -t prod`, then `-t dev`. Read the values it shows for each target. Check the catalog, the warehouse and the run-as identity before you deploy.",
+   "a": "**Warning signs that targets or variables are set up wrong**\n\n- **Dev writes land in prod data.** Tables for team-sales show up in `prod_sales` after a dev deploy. Usually `catalog` was typed in directly instead of using `${var.catalog}`, so the prod target's value never applied.\n- **People overwrite each other in dev.** Two engineers deploy and one person's `nightly_sales` job quietly replaces the other's. That points to a missing `mode: development`, which would put each person's name in front of resource names.\n- **Prod jobs run as a person.** The job's \"run as\" shows an engineer, not a service principal (a non-human identity from Entra ID) such as `sp-sales-etl-prod`. Then the job breaks when that person leaves or loses access.\n- **A deploy stops on an empty value.** `warehouse_id` has no default, so any target that doesn't set it has nothing to use.\n\n**Quickest check**\n\nRun `databricks bundle validate` once for each target, with `-t dev` and then `-t prod`. It checks the files before anything is created.\n\nThen open one deployed job in each workspace. Compare three things against `databricks.yml`:\n\n- its name, including the name in front;\n- its catalog;\n- its \"run as\" identity.",
    "step": "Learn",
    "fingerprint": "bf4fa8a57c7d249f",
    "status": "failed",
@@ -865,11 +865,11 @@
     "model": "databricks-claude-sonnet-5-5",
     "correct": false,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "It claims a leftover BUNDLE_VAR_catalog or --var overrides the target's value, and that `bundle validate` shows the resolved values; the lesson says neither (it only says the target beats the default and that validate checks the files). It also runs slightly over about 200 words."
+    "notes": "The first bullet's cause is muddled: a dev deploy would not use the prod target's value, so a hardcoded `catalog` explains the wrong catalog but not 'the prod target's value never applied'."
    }
   },
   "learn:stops": {

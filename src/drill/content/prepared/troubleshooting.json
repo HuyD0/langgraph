@@ -238,7 +238,7 @@
   },
   "check:1:1": {
    "q": "Why not “The SP must be added by hand in Databricks”?",
-   "a": "**Why \"The SP must be added by hand in Databricks\" isn't the best answer**\n\nIt gets one thing right. The SP has to exist before the plan can find it. Terraform won't make it here.\n\nBut it skips the real point of the question. The teammate's mistake is about what the code does. The word `data` in the error path means a **lookup**: Terraform only searches for something that should already be there. It was never written to create anything. That is why \"Terraform should just create it\" is wrong.\n\nIt also guesses at a fix the lesson never gives. In the lesson, an SP becomes findable by passing stages in order:\n\n1. It exists in Microsoft Entra ID.\n2. It is declared in `service_principals.yml`.\n3. The Foundation stack is applied, which registers it in the Databricks account.\n4. The Service stack assigns it to the workspace.\n\nA lookup fails when one of these is not done. So you check them in order and stop at the first gap. In the lesson's example, that gap was a missing entry in `service_principals.yml`.\n\n**Why the other option is better:** \"`data` means it only looks up what exists\" names the actual reason the teammate is wrong, and it points you to the stages that come before the lookup.",
+   "a": "**Why \"The SP must be added by hand in Databricks\" is not the best answer**\n\nIt gets one thing right. The SP must already be registered before the plan can find it. Something earlier is missing.\n\nBut it misses the point of the question. The teammate thinks Terraform should create the SP. The real issue is that the error path says `data`. A `data` block is a **lookup**: it reads something that should already exist. It was never going to create anything. \"Add it by hand\" doesn't explain that.\n\nIt also jumps to a fix without finding the cause. The lesson says to check the stages in order and stop at the first gap:\n\n- Is it the same commit as the failed run?\n- Does the SP exist in Microsoft Entra ID?\n- Is it declared in `service_principals.yml`?\n- Has Foundation been applied?\n- Has Service assigned it to the workspace?\n\nIn the lesson's example, `sp-sales-etl-uat` was only named in `dbx_access_connector.yml`. Foundation never saw it. The fix is to declare it, not to add it by hand.\n\n**Why the other answer is better:** \"`data` means it only looks up what exists\" names the real mistake, and it points you to check which earlier stage isn't done.",
    "step": "Check",
    "fingerprint": "37a76741ca8e0932",
    "status": "failed",
@@ -251,7 +251,7 @@
     "no_giveaway": false,
     "standalone": true,
     "pass": false,
-    "notes": "It runs to about 220 words, over the 200-word limit, and the numbered stage list plus 'check in order, stop at the first gap' lays out the ordered-check logic that next_check is meant to make the learner write."
+    "notes": "It lists the five stages in their fixed order with 'stop at the first gap', which is essentially the next_check solution. It also runs to about 230 words, over the 200 limit, and uses terms like SP and Foundation without explaining them."
    }
   },
   "check:2:0": {

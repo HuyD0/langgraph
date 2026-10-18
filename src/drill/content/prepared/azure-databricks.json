@@ -128,20 +128,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- A Spacelift run as `sp-sales-etl-dev` fails with a permission error on `main.sales.orders`, even though `SELECT` on that table was granted. Usually `USE SCHEMA` or `USE CATALOG` is missing higher up.\n- It works in DEV but fails in UAT. The table grant was copied to the UAT stage, but the schema or catalog grant was not.\n- One analyst can read the table and a new joiner in the same team can't. The first one was probably granted the key as a person, not through the group.\n- The opposite problem: people read tables they shouldn't. Someone put `SELECT` or `ALL PRIVILEGES` on the whole catalog, so it counts for every schema and table below.\n\n**Quickest check**\n\nPick the principal, meaning the person or service principal. List the groups they are in. Then open each level's permissions in Catalog Explorer, which is Databricks' screen for browsing catalogs, schemas and tables. Ask three questions:\n\n1. Is `USE CATALOG` on the catalog?\n2. Is `USE SCHEMA` on the catalog or the schema?\n3. Is `SELECT` on the catalog, the schema or the table?\n\n`ALL PRIVILEGES` counts as a yes for any of them. The first \"no\" is your gap. An empty table level is fine if the key sits higher up.",
+   "a": "**Warning signs**\n\n- A Spacelift apply goes green, but `sp-sales-etl-dev` still fails to read `main.sales.orders` with a permission error. The `SELECT` landed, but a key higher up was missed.\n- It works in DEV and fails in UAT or PROD. The grants were only made for one environment's catalog.\n- One analyst can read and a new joiner in `grp-sales-dev-owners` can't. Someone granted to a person, not the group.\n- People can read more than you meant. A broad grant on the catalog counts for every schema and table below it.\n\n**Quickest check**\n\nList every grant held by the principal (the person or program) and by each group it is in. You can see these in the Permissions tab in Catalog Explorer. Then ask three questions in order:\n\n1. Catalog: is there `USE CATALOG` or `ALL PRIVILEGES` on it?\n2. Schema: is there `USE SCHEMA` on the schema or its catalog?\n3. Table: is there `SELECT` on the table, its schema or its catalog?\n\nThe first \"no\" is the break. A table with no grant of its own isn't the problem if `SELECT` on its schema already covers it.",
    "step": "Learn",
    "fingerprint": "b87391940e1baf0e",
    "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
+    "correct": false,
     "answers_it": true,
     "plain": true,
     "no_giveaway": false,
     "standalone": true,
     "pass": false,
-    "notes": "The three numbered questions, including where each key may sit and the ALL PRIVILEGES rule, restate the can_read solution logic step by step; it also runs slightly long and brings in Catalog Explorer, which the lesson never mentions."
+    "notes": "The three-question check spells out the can_read logic (USE CATALOG; USE SCHEMA on schema or catalog; SELECT on table, schema or catalog), which gives away the exercise; it also drops ALL PRIVILEGES from steps 2 and 3, and the Catalog Explorer tab and per-environment catalog claims are not in the le"
    }
   },
   "learn:stops": {

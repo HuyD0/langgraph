@@ -2,20 +2,20 @@
  "apply_order": {
   "check:0:0": {
    "q": "Why not “It's faster”?",
-   "a": "\"It's faster\" misses the real problem. On the first deploy, a single stack doesn't run slowly. It can't plan at all.\n\nHere's why. The `databricks` provider (the plugin Terraform uses to talk to Databricks) needs the workspace URL before it can do anything. Say a Service stage creates the workspace and also adds team-sales clusters from `clusters.yml`. On a brand-new environment, that URL doesn't exist yet. So the provider can't connect, and the plan fails before anything is built.\n\nIs there any truth in \"faster\"? A little. Smaller stacks can plan and apply more quickly. But that's a side effect, not the reason for the split. On the first deploy, the two stacks run one after the other, so you don't save time overall.\n\nThe split works because of the **stack dependency**, which is a rule that one Spacelift stack runs only after another finishes. The first stack creates the workspace. The contents stack, with clusters and things like `sp-sales-etl-dev`, plans afterwards.\n\n\"The workspace URL exists by the time the second stack plans\" is better because it names the actual blocker, and it explains why the contents stack can plan once the workspace stack has finished.",
+   "a": "\"It's faster\" sounds reasonable, but speed isn't the problem the split solves. Two stacks can even take a bit longer, because the second stack waits for the first to finish its apply.\n\nThe real problem is about **planning**. A plan is Terraform's preview of what it will change. To make one, the `databricks` provider has to connect to a workspace. A provider is the plugin that talks to a service. It needs the workspace URL to do that:\n\n```hcl\nprovider \"databricks\" {\n  host = azurerm_databricks_workspace.this.workspace_url\n}\n```\n\nOn the first deploy, that workspace doesn't exist yet. The URL is unknown, so the provider can't connect, and the plan for clusters, groups like `grp-sales-dev-owners` or principals like `sp-sales-etl-dev` can't run.\n\nWith two stacks, the first stack creates the workspace and gets applied in Spacelift. The stack dependency then starts the second stack, which plans the workspace contents against a real URL.\n\nSo the better answer is \"The workspace URL exists by the time the second stack plans.\" It names the real fix: the provider gets a working address before it is asked to plan.",
    "step": "Check",
    "fingerprint": "e6e45999139ad512",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The lesson never says smaller stacks plan or apply faster, or that two stacks give no overall time saving, so the 'a little truth in faster' paragraph adds claims the lesson does not support."
+    "pass": true,
+    "notes": "No significant problems; the claim that two stacks can take longer and that the stack dependency 'starts' the second stack goes slightly beyond the lesson but does not contradict it."
    }
   },
   "check:0:2": {
@@ -128,38 +128,38 @@
   },
   "explain:interview": {
    "q": "How do I explain “Add whatever is ready next” in an interview?",
-   "a": "**The problem (about 10 seconds)**\n\"In our workspace stack, `azurerm_databricks_workspace.this` needs its resource group and VNet first. The `databricks_metastore_assignment` needs the workspace's `workspace_id`. Terraform has to pick a safe order. It reads these references and builds a **dependency graph**, a map of what needs what first.\"\n\n**The idea (about 10 seconds)**\n\"Add whatever is ready next. A resource is ready when everything it needs is already placed. Repeat until all are placed. It's like getting dressed: socks before shoes.\"\n\n**Edge case (about 10 seconds)**\n\"If a round finds nothing ready, the leftovers are waiting on each other. That's a loop, and Terraform stops with `Error: Cycle`. Picking names A to Z each round keeps the order predictable. But it re-scans the list every round, so it's slower on big graphs.\"\n\n**Likely follow-up:** \"Why not put the workspace and its clusters and service principals in one stack?\"\n\n*Hint:* The Databricks provider needs a real workspace URL to plan. Before the workspace exists, it can't. So split them into two Spacelift stacks. Add a **stack dependency**, a rule that the contents stack runs only after the workspace stack applies.",
+   "a": "**Spoken answer (about 30 seconds)**\n\n*The problem.* Some resources need others to exist first. In our Service stage, `databricks_metastore_assignment.this` refers to `azurerm_databricks_workspace.this.workspace_id`. So the workspace must come first. Terraform has to create things in an order that respects every need like that.\n\n*The idea.* Keep a list of what's done. Each round, go through the names A to Z. Pick the first one not yet listed whose dependencies are all listed already. Add it, then repeat until every resource is in. It's like getting dressed: socks before shoes.\n\n*Edge case.* Sometimes a round finds nothing ready. Then the leftovers are all waiting on each other. That's a loop, the same thing Terraform reports as `Error: Cycle`. So the function returns `None` rather than a half-finished list.\n\n**Likely follow-up:** \"Why go A to Z, instead of taking any ready resource?\"\n\n*Hint:* Often several resources are ready at once. Taking the first by name means the same `deps` always gives the same answer. That makes the result easy to check and test. Make clear this is the exercise's tie-break rule (how it picks between equals). It's not a claim about how Terraform orders its own work.",
    "step": "Explain",
    "fingerprint": "eacc4126e3a94cc5",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The edge-case part says the method \"re-scans the list every round, so it's slower on big graphs\", which the lesson never says, and it presents the exercise's A-to-Z picking as if it were what Terraform does; the claim that the workspace needs a resource group and VNet is also not in the lesson."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Apply fails halfway with \"not found\" errors.** For example, `databricks_metastore_assignment` runs before the workspace exists. This usually means an ID was typed in as plain text instead of referring to the other resource. Terraform only waits for things it can see a reference to.\n- **A rerun \"fixes\" it.** The first apply fails and the second succeeds. That points to an order Terraform never knew about.\n- **`Error: Cycle` at plan time.** Two or more resources point at each other, so neither can go first. Look for references that run both ways between them.\n- **The Service stack can't plan.** The Databricks provider (the plugin that talks to Databricks) has no workspace to connect to. This happens when the workspace and its contents sit in one stack, or when no stack dependency makes Service wait for the workspace stack.\n\n**Quickest check**\n\nOpen the code for the failing resource. Is `workspace_id` written as a reference like `azurerm_databricks_workspace.this.workspace_id`, or as a typed-in value? Check the code, not the plan. A plan shows the final values, so it can't tell you which one was used.\n\nThen, in Spacelift, confirm that the Service stack depends on the stack that creates the workspace.",
+   "a": "**Warning signs**\n\n- **`Error: Cycle` in a Spacelift plan.** Two or more resources are waiting on each other in a loop, so Terraform can't pick a start. For example, a grant for `grp-sales-dev-owners` might point at a catalog that, through some chain of references, points back at that grant.\n- **A Service stack that plans fine in DEV but fails in a brand-new UAT or PROD.** This can mean the Databricks provider is set up from a workspace that doesn't exist there yet. DEV may only work because its workspace was built long ago.\n- **An apply that fails and then passes when rerun, with no code change.** This is a hint, not proof. One possible cause is that Terraform didn't know one resource needed another, so it built them in the wrong order. A value typed in by hand, instead of a reference, hides that link.\n\n**Quickest check**\n\nOpen the resource that failed. Does it refer to the thing it needs, like `azurerm_databricks_workspace.this.workspace_id`? A reference is how Terraform learns the order. Then, in Spacelift, confirm the Service stack has a stack dependency on the stack that creates the workspace.",
    "step": "Learn",
    "fingerprint": "a07f886b89ae9bd9",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The claim that a plan can't show whether workspace_id was a reference or a typed value is wrong and not in the lesson. A plan marks a reference to a not-yet-created resource as \"known after apply\", so the plan can reveal it."
+    "pass": true,
+    "notes": "No significant problems; the answer stays consistent with the lesson, hedges its inferences, and stays under about 200 words."
    }
   },
   "learn:stops": {
@@ -1310,7 +1310,7 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Surprise plans.** A Spacelift plan for the Service stage shows changes nobody asked for. No YAML changed for `team-sales`, but a cluster or the access for `sp-sales-etl-dev` shows \"update in-place\" (Terraform wants to edit it). A new provider version often plans resources differently.\n- **Laptop and Spacelift disagree.** Your local plan is clean, but the Spacelift plan for the same code shows changes. The two runs are likely using different provider versions.\n- **DEV passed, PROD surprises.** UAT or PROD runs a few days later, and its plan differs from what was reviewed in DEV.\n- **The lock file keeps showing up.** `.terraform.lock.hcl` appears as a new or changed file after a plain `terraform init`. That means it was never committed, or someone upgraded without review.\n\n**Quickest check**\n\nFirst, look in the repo for that stage. Is `.terraform.lock.hcl` committed there? If not, each run picks its own versions.\n\nThen compare runs. `terraform init` prints each provider version it installs, like \"Installing databricks/databricks v1.90.3\". Compare that line on your laptop with the same line in the Spacelift run log. If the versions differ, the pinning or the locking was skipped.",
+   "a": "**Warning signs**\n\n- **Surprise changes in a plan.** Spacelift's proposed plan (the preview of what Terraform will change) wants to update the `team-sales` cluster or `sp-sales-etl-dev`. Yet nobody touched `clusters.yml` or `service_principals.yml`. A new provider version may have changed a default.\n- **Same code, different plans.** Your laptop shows \"no changes.\" The Spacelift stack for the Service stage shows edits. Or DEV and UAT disagree on identical YAML.\n- **A shifting version in the logs.** The `terraform init` output says which provider version it installed. If that number changes between runs with no reviewed upgrade, the pin is not holding.\n- **The lock file keeps appearing as new.** `.terraform.lock.hcl` is missing from the config repo, or shows up as an uncommitted file after each run.\n- **Errors after an unplanned upgrade.** Messages like \"unsupported argument\" can appear once a newer provider is picked. This happens when the constraint is too loose or missing and the lock file was never committed.\n\n**Quickest check**\n\nOpen the latest Spacelift run's `terraform init` log. Note the `azurerm` and `databricks` versions it installed. Compare them with the versions in the committed `.terraform.lock.hcl`. Then confirm `required_providers` uses `~>` for both providers.",
    "step": "Learn",
    "fingerprint": "0f15a2e3916ca001",
    "status": "failed",
@@ -1319,11 +1319,11 @@
     "model": "databricks-claude-sonnet-5-5",
     "correct": false,
     "answers_it": true,
-    "plain": true,
+    "plain": false,
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "The lock-file bullet is wrong about the cause: a plain `terraform init` keeps the locked versions, so the file would not change just because someone upgraded without review, and an upgrade would show up as a reviewed commit. The DEV-vs-PROD sign is also weakly tied to the lesson, since environments "
+    "notes": "It says the lock file is missing from the \"config repo\", but in this setup the config repo holds only the YAML and the lock file belongs with the Terraform root code; the answer is also about 215 words, over the 200 limit."
    }
   },
   "learn:stops": {
@@ -1710,20 +1710,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the simple \"only outputs cross the wall\" picture needs extra care.\n\n**Modules inside modules.** Say the `workspace` module itself calls a `catalog` module. Your root code can't reach that inner module's outputs directly. The `workspace` module must pass the value on through an output of its own. Then you read it in the usual three parts, like `module.workspace.catalog_name`.\n\n**One module called many times.** With `for_each` (a way to call one module once per item, such as per environment), real Terraform adds a key, like the name `dev`, to each copy. The lesson's rule only covers plain three-part references, so it would mark these as bad. Treat that as a limit of this lesson's rule, not of Terraform.\n\n**Values across Spacelift stacks.** A stack is one separate Terraform run. The Service stack can't read `module.<name>.<output>` from the Foundation stack. Foundation must publish the value outside itself, for example in its saved state or as a Spacelift stack output. Service then reads it from there, not as a module reference.",
+   "a": "The rule holds well, but a few situations bend it.\n\n**Modules built many times.** If the Service stage calls the workspace module once per team using `for_each` (a Terraform setting that repeats a block for each item in a list or map), the reference gains a key. It looks like `module.workspace[\"team-sales\"].workspace_url`. Expect that extra piece between the module name and the output, and check that the key really exists.\n\n**Values crossing stacks.** A module's outputs are only visible inside the same root code. The Service stack can't read `module.<name>.<output>` from the Foundation stack. Re-export the value as a root-level output in Foundation. Then pass it across with Spacelift stack dependencies or by reading Foundation's saved state.\n\n**Outputs not known yet.** On a first DEV run, `workspace_url` doesn't exist until the workspace is created. The plan shows it as \"known after apply.\" A `databricks` provider that needs that URL can fail or behave oddly. Create the workspace in an earlier stage, so the URL already exists when the provider needs it.",
    "step": "Learn",
    "fingerprint": "a0d174b8b8a89511",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
-    "answers_it": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The for_each item gives no 'what to do instead' (it only says it is a limit of the lesson's rule), and each item runs to four or five sentences instead of the two or three asked for."
+    "pass": true,
+    "notes": "No clear problem. The for_each, cross-stack and known-after-apply points go beyond the lesson but are accurate Terraform and fit the Azure Databricks setting, and the answer is about 175 words."
    }
   },
   "learn:term": {

@@ -74,38 +74,38 @@
   },
   "check:2:1": {
    "q": "Why not “Add more chunks so nothing is missed”?",
-   "a": "\"Add more chunks\" starts from a fair worry. If the fact the model needs was never retrieved, it can't use it. (A **chunk** is one piece of text your search step pulls in to add to the prompt.)\n\nBut it misses two things from this lesson.\n\nFirst, more chunks make the prompt longer. The lesson says answers get worse as the prompt grows, even when the right fact is in it. That drop is **context rot**. Going past 50 chunks pushes the prompt the wrong way. It also raises the call's fill, its input tokens as a percent of the window.\n\nSecond, it leaves the real problem alone. The question still sits at the very top. Models pay the most attention near the end of the prompt, so the question ends up where it gets the least attention.\n\nThe lesson also suggests testing fewer, better chunks. Try 5 against 50 and compare the eval scores (scores from tests that check answer quality). Fewer often wins.\n\n\"Put the question after the chunks\" is better because it moves the question to where models pay the most attention, without making the prompt any longer.",
+   "a": "\"Add more chunks so nothing is missed\" gets one thing right. Missing the fact you need is a real risk. A **chunk** is one piece of retrieved text, and if the right chunk never gets retrieved, the model can't use it.\n\nBut this prompt already has 50 chunks. The fact is probably in there. The problem is that the model doesn't use it well. Remember **context rot**: answers get worse as the prompt gets longer, even when the right fact is present. Adding more chunks makes the prompt longer, so it makes this problem worse, not better.\n\nMore chunks also fill the context window faster. That brings each call closer to the limit and makes cleanup needed sooner.\n\nThe lesson points the other way. Fewer, better chunks often win. You can test this by comparing eval scores for 5 chunks against 50.\n\n\"Put the question after the chunks\" is better because it moves the question to the end of the prompt, where models pay the most attention. It also costs no extra tokens.",
    "step": "Check",
    "fingerprint": "123869b1de3a2f51",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says the question at the top 'gets the least attention', but the lesson only says models pay the most attention near the end, so this claim goes beyond the lesson."
+    "pass": true,
+    "notes": "Minor: 'costs no extra tokens' and 'the fact is probably in there' go beyond the lesson, and the closing explanation runs to two sentences instead of one, but nothing contradicts the lesson."
    }
   },
   "check:2:2": {
    "q": "Why not “Send the chunks in a random order”?",
-   "a": "Shuffling the chunks does touch on something real: where text sits in a prompt matters. So it's thinking about order, which is the right area.\n\nBut it changes the wrong thing. The problem in this prompt is the question, not the chunks. The question sits at the very top. Then 50 chunks pile up after it. Models pay the most attention near the end of the prompt. Shuffling the chunks leaves the question at the top, still far from the end.\n\nRandom order also adds noise. Each run gets a different layout. That makes it hard to compare eval scores, which are the test results you use to judge a change. You can't tell if a better score came from your change or from luck.\n\nThe prompt also stays just as long. It's the same 50 chunks, just mixed up. So context rot, the way answers get worse as prompts get longer, is still there.\n\n\"Put the question after the chunks\" is better because it moves the question to the end, where the model pays the most attention.",
+   "a": "Shuffling the chunks gets one thing right. It notices that **where** text sits in the prompt matters. A chunk is one piece of retrieved text, and models do pay more attention to some spots than others.\n\nBut shuffling misses the real problem. The question is still at the very top, the spot farthest from the end, where models pay the most attention. After reading 50 chunks, the model has to reach all the way back to remember what it was asked. Random order doesn't move the question at all.\n\nShuffling also leaves the result to luck. The most useful chunk might land near the end one time and in the middle the next. Your eval scores (the measured quality of answers on test questions) would jump around from run to run. That makes it hard to tell if anything really improved.\n\nSo \"Put the question after the chunks\" is the better first change. It places the question at the end, where the model pays the most attention, right before it starts to answer.",
    "step": "Check",
    "fingerprint": "94cefb42659b2fbf",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says the problem is 'the question, not the chunks', but the lesson also says fewer, better chunks often beat more, so 50 chunks is part of the problem. The eval-noise argument against random order is also not from the lesson."
+    "pass": true,
+    "notes": "Passes, but the phrase \"the spot farthest from the end, where models pay the most attention\" could be misread as saying the top gets the most attention; rewording it would help beginners."
    }
   },
   "explain:interview": {
@@ -1092,20 +1092,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where planting facts and probing needs extra care.\n\n**1. Facts that change during the run.** Say the agent wrote to a staging table, then switched to the real one. A probe can't tell an old value from the current one, so a stale answer might look correct. Plant the change too, and count only the latest value as right. Ask the summary to keep \"latest values only.\"\n\n**2. The agent rewords the answer.** It may say \"the HR tickets table\" when you planted `hr_tickets`. An exact match scores that as forgotten, even though the agent remembered. Tell the probe to reply with the exact name only. Or have a person, or a second model acting as a judge, decide if the meaning matches.\n\n**3. Very long runs that compact many times.** Each summary gets summarised again, and details fade a little each round. Test after several compactions, not just one. For details that must survive, have the agent write them to a separate notes file it can reread, instead of trusting the summary alone.",
+   "a": "**1. Facts change during the run.**\nA ticket gets reopened, or the job writes to a new table halfway through. The summary might keep the old value, and a probe that only checks \"is the table named?\" would still pass. Plant an update on purpose, then ask for the latest value. Make your summary prompt ask for the current state, not the history.\n\n**2. You compact many times in one long run.**\nEach summary is built on the one before, so small losses pile up. A test after one compaction can look fine while round five has forgotten the goal. Run your probes after several rounds. Keep must-not-lose details, like ids and error codes, in a separate note or saved state the agent can look up, so they never pass through a summary at all.\n\n**3. Your planted facts aren't the ones that matter.**\nYou choose what to plant, but real runs may lose different details. Read logs from runs that failed after compaction, and plant those kinds of facts. Still judge mainly by whether the agent finishes the task.",
    "step": "Learn",
    "fingerprint": "807393e19b5c0d5f",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
-    "answers_it": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The brief asked for two or three sentences per situation, but points 1 and 2 each run to four sentences after the heading, so the format is not followed."
+    "pass": true,
+    "notes": "No real problems. Items 1 and 2 run to four sentences against the two-or-three limit, and the advice on saved state and failure logs goes beyond the lesson without contradicting it."
    }
   },
   "learn:term": {

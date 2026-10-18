@@ -710,9 +710,137 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Very lopsided data.** If almost every answer passes, kappa can look low even when the judge agrees on nearly everything. One edge case: if a judge says \"pass\" on every answer and the humans do not, kappa comes out as 0. That correctly says it is no better than luck. If the humans and the judge both give the same label on every answer, chance agreement is exactly 1. The formula then divides by zero, so kappa has no value. To avoid both problems, gather more failing examples and always read kappa next to the pass-and-fail check.\n\n**2. Very little data.** On ten answers, one changed label can move kappa a lot. Label more answers before trusting it. Aim for dozens, ideally a hundred or more.\n\n**3. Scores instead of pass or fail.** Some judges give a score from 1 to 5. Plain kappa treats a 4-versus-5 mix-up as just as wrong as 1-versus-5. Use **weighted kappa** instead. It is a version that gives partial credit when the two scores are close.",
+   "a": "Cohen's kappa is useful, but there are a few cases where it needs extra care.\n\n**1. Almost every answer passes.**\nWhen nearly everything is \"pass\", chance agreement is already close to 1. Kappa then divides by a tiny number, so it can come out low or jumpy even when the judge looks fine. If both sides say \"pass\" every single time, kappa can't be worked out at all, because you would be dividing by zero. Lean on the pass-and-fail check from the previous lesson here. Also add more failing examples to your test set.\n\n**2. Very few labelled answers.**\nWith ten or twenty pairs, one changed label can move kappa a lot. Treat a small-sample kappa as a rough hint, not a verdict. Gather more human labels before trusting it.\n\n**3. Scores instead of pass or fail.**\nPlain kappa treats every disagreement the same. On a 1 to 5 scale, a 4 versus a 5 counts as badly as a 1 versus a 5. Use **weighted kappa** instead, which gives partial credit for near misses. `cohen_kappa_score` supports this through its `weights` option.",
    "step": "Learn",
    "fingerprint": "7fae2ddb8e8a6bc0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “Cohen's kappa” mean here?",
+   "a": "**Cohen's kappa** is a score for how well a judge (here, the model grading answers) agrees with humans, after removing the agreement that would happen by pure luck.\n\n**Everyday comparison:** picture a weather forecaster in a desert who says \"sunny\" every single day. They'd be right almost always. That sounds great, but they never looked at the sky. Kappa asks: how much of that rightness came from actually looking?\n\n**The scale:** 1 means perfect agreement. 0 means no better than guessing. Below 0 means worse than guessing. As a rough guide, above 0.6 is good and above 0.8 is very good.\n\n**In the lesson's example:** humans and the judge agree on 9 of 10 answers, so observed agreement is 0.90. But both say \"pass\" most of the time, so they'd agree about 0.74 of the time by chance alone. Kappa looks at the room left above chance (1 − 0.74 = 0.26). Then it asks how much of that room the judge really covered (0.90 − 0.74 = 0.16). That gives about 0.62.\n\nSo 90% agreement becomes \"good, not great\" once luck is taken out.",
+   "step": "Learn",
+   "fingerprint": "1cd382897d975678",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "eval_cost": {
+  "check:0:1": {
+   "q": "Why not “It stays at $18 a month”?",
+   "a": "\"It stays at $18 a month\" gets one thing right. $18 is the correct bill today, at 1 in 10. The price of a single score also stays the same, about $0.006, whatever you choose.\n\nWhat it misses is that monitoring is not a flat fee. You pay for every score. The bill is the traces, times the **sampling rate** (the share of traces the scorer reads), times the cost of one score.\n\nScoring every trace moves the sampling rate from 1 in 10 to all of them. That turns 3,000 scores into 30,000. Ten times the scores means ten times the bill:\n\n- 1 in 10: 30,000 × 0.1 × $0.006 = $18\n- Every one: 30,000 × 1 × $0.006 = $180\n\nThat is why the lesson calls the sampling rate \"the dial.\" Turning it up or down changes the cost in direct proportion. The usual advice is to score enough traces to catch problems, not every one.\n\n\"It goes from $18 to $180 a month\" is better because it shows that scoring ten times as many traces makes the bill ten times bigger.",
+   "step": "Check",
+   "fingerprint": "2a51a501c8df7712",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It goes from $18 to $36 a month”?",
+   "a": "The $36 answer gets two things right. It starts from the correct bill of $18 a month. And it knows that scoring more traces costs more. A trace is the record of one real conversation with the app.\n\nWhat it misses is *how much* more. $36 is just double. That would only be true if you went from scoring 1 in 10 traces to 2 in 10.\n\nThe **sampling rate** is the share of traces the scorer reads. Scoring every trace moves it from 1 in 10 to 10 in 10. That is ten times as many scores:\n\n- 1 in 10: 3,000 scores × $0.006 = $18\n- Every one: 30,000 scores × $0.006 = $180\n\nEach score still costs the same $0.006. So the bill grows exactly as fast as the number of scores. Ten times the scores means ten times the bill.\n\nThis is why the lesson calls the sampling rate \"the dial.\" A small change in the share you score can make a big change in the monthly cost.\n\n\"It goes from $18 to $180 a month\" is better because it multiplies by the true change in the sampling rate, which is tenfold, not double.",
+   "step": "Check",
+   "fingerprint": "3962042444c4b241",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Only a minor looseness: calling the sampling-rate change \"small\" is odd when the example goes from 1 in 10 to every trace, and the answer is close to the word limit."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “$60”?",
+   "a": "\"$60\" is the price of one hour of an expert's time. It is not the price of the whole labelling job.\n\n**What it gets right:** it uses the right rate. People cost money by the hour, and $60 is that hourly cost.\n\n**What it misses:** it never counts how many hours the work takes. The question gives you the size of the job, and that is the step \"$60\" skips.\n\nHere is the missing step:\n\n1. 200 examples at 3 minutes each is 600 minutes.\n2. 600 minutes is 10 hours.\n3. 10 hours at $60 an hour is $600.\n\nSo the rule is hours times what an hour costs. \"$60\" uses only the second half of that rule.\n\nThis is easy to slip on because the rate is the only dollar figure in the question. It feels like the answer. But the question asks for the cost of the whole golden set. (The golden set is the batch of examples with the correct answers marked by hand.)\n\n\"$600\" is better because it turns the work into hours first, then prices those hours.",
+   "step": "Check",
+   "fingerprint": "cae2db025f25658c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “$36,000”?",
+   "a": "\"$36,000\" comes from multiplying all three numbers together: 200 examples × 3 minutes × $60. The first part is right. 200 examples at 3 minutes each is 600 minutes of work.\n\nThe slip is in the units. The $60 is a price per **hour**, but the 600 is a count of **minutes**. Multiplying them treats every minute as if it cost a full hour's pay. That makes the answer 60 times too big.\n\nThe fix is to turn minutes into hours first:\n\n- 200 × 3 = 600 minutes\n- 600 ÷ 60 = 10 hours\n- 10 hours × $60 = $600\n\nA quick sense check also helps. Ten hours of an expert's time is about one long working day. Paying $36,000 for one day of labelling should feel wrong straight away.\n\n\"$600\" is better because it converts the minutes into hours before multiplying by the hourly rate, so the units match.",
+   "step": "Check",
+   "fingerprint": "a322d20cb97f8175",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Score half of each answer”?",
+   "a": "\"Score half of each answer\" does get one thing right. The judge reads fewer tokens, so each score costs a bit less. (A **token** is a small chunk of text, roughly part of a word. You pay per token.)\n\nBut it breaks what the eval is for. The judge only sees part of the answer. A wrong fact, a missing step, or a rude closing line could sit in the half it never read. The judge would pass an answer it should fail. Now its verdicts are less trustworthy, and that is exactly what the question asks you to protect.\n\nThe savings are also smaller than they sound. The judge still reads the question, the instructions and any context. Only the answer part shrinks, so the bill drops by much less than half.\n\nCompare that with sampling in production. Sampling skips whole traces, but every trace it does score gets read in full. Cutting each answer in half damages every single score.\n\n\"Batch the full runs, which can wait\" is better because the judge sees the same examples and the same full answers, so the results are just as trustworthy, but batch processing (sending the jobs to run later in bulk) halves the price.",
+   "step": "Check",
+   "fingerprint": "4fd1b40b744ddcb3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer is sound, but the claim that the judge still reads the question, instructions and context so savings are small goes beyond the lesson, and at about 200 words it is right at the length limit."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Drop the must-pass cases”?",
+   "a": "\"Drop the must-pass cases\" gets one thing right. It would cut the bill. The runs line is examples times the cost of each example, times every change you test. Fewer examples means a smaller runs line.\n\nBut the question asks for a cut that keeps the eval trustworthy. This one fails that test. As the name says, must-pass cases are the ones the app has to get right. Removing them means you stop checking exactly those. The bill shrinks, but now a change could break something important and your eval would still look fine. That is a cheaper eval you can trust less.\n\nNotice the pattern. Any cut that removes examples trades trust for money. The lesson's own tips save money without touching *what* gets checked. Examples are a smoke set while you iterate, batching, and sampling in production. A **smoke set** is a few dozen quick examples for small changes, with the full eval kept for the finalists.\n\n\"Batch the full runs, which can wait\" is better. Batch processing (sending the work in bulk to be done later) halves the price. You still run the same examples with the same judge, so the eval is just as trustworthy.",
+   "step": "Check",
+   "fingerprint": "28450f438059b4c4",
    "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -723,14 +851,68 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "\"Both give the same label on every answer\" is misleading: if they agree on every answer and the labels are mixed, kappa is 1; the divide-by-zero case happens only when every answer has the same single label."
+    "notes": "It claims any cut that removes examples trades trust for money and that the lesson's tips never change what gets checked, but the lesson's smoke set and production sampling both score fewer examples, so this contradicts the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Price every line for a month, then find the big…” in an interview?",
+   "a": "**The 30-second answer**\n\n*The problem.* Teams often budget evals by the judge's token price. The judge is the model that grades answers. But it's only one cost, so the real bill surprises them.\n\n*The idea.* I split the bill into three lines and price each for a month. Runs: changes I test, times examples, times the cost of one example. People: hours spent labelling the golden set (hand-checked examples) and spot-checking the judge, times an hourly rate. Monitoring: real traces (records of live requests), times the share I score, times the cost of one score. Then I find the biggest line. Often it's people, not the model.\n\n*The trade-off.* Monitoring has a dial called the sampling rate. Scoring 1 in 10 traces is cheap but can miss rare failures. Scoring every one costs ten times more.\n\n**A likely follow-up**\n\n\"How would you cut this bill without losing trust in the results?\"\n\nHint: spend where the decision is made. Use a small smoke set (a few dozen examples) while iterating, and run the full eval only on finalists. Batch full runs, since they can wait. Sample in production.",
+   "step": "Explain",
+   "fingerprint": "0b4fc4c17d7b0aa8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the only small gap is that 'token price' is not explained for beginners."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The bill is far above your plan.** You probably priced only the judge. The full app answer plus the judge, on every example, on every change, adds up fast.\n- **The runs line jumps with each small tweak.** You may be running the full eval every time instead of a smoke set (a few dozen quick examples). Full runs at full price also mean batch processing was skipped. Batch means sending work to wait in a queue at half the price.\n- **Scores per month are close to traces per month.** Traces are records of real conversations. Monitoring cost rising with traffic is normal. But if 30,000 traces produce about 30,000 scores, the sampling rate is \"every one\" ($180), not \"1 in 10\" ($18).\n- **No hours appear anywhere.** Labelling the golden set and the weekly spot-checks were left out. These are often the biggest line. Or the spot-checks quietly stopped because nobody planned time for them.\n\n**Quickest check**\n\nPrice each line for one month: runs, people, monitoring. Compare each line to what you actually spent. Then look at the biggest one first.",
+   "step": "Learn",
+   "fingerprint": "f1000f6459e9efc9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The monthly bill is a good habit. But the numbers, and which line is biggest, shift in a few common cases.\n\n**1. Much more traffic.** At 30 million traces a month, scoring 1 in 10 costs about $18,000, not $18. Monitoring then becomes the biggest line. Lower the sampling rate (the share of traces you score), use a cheaper judge model, or score only risky traces, like ones users flagged.\n\n**2. Agents with long, uneven traces.** A trace is the full record of one request. In a multi-step agent, one trace might be 2,000 tokens or 50,000, so a single \"cost of one example\" misleads. Run a small sample first, measure the real token counts, and price from the average and the worst case.\n\n**3. Data that changes over time.** If your users' questions or your HR policies change, the golden set (your hand-labelled answer key) goes stale. \"Label once\" becomes \"relabel every quarter.\" Add that as a recurring cost on the people line, not a one-off.\n\nIn each case the method still holds. Price every line, find the biggest, spend your effort there.",
+   "step": "Learn",
+   "fingerprint": "dc8852abe8b78b95",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
-   "q": "What does “Cohen's kappa” mean here?",
-   "a": "**Cohen's kappa** is a score for how well a judge (here, the model grading answers) agrees with humans, after removing the agreement that would happen by pure luck.\n\n**Everyday comparison:** picture a weather forecaster in a desert who says \"sunny\" every single day. They'd be right almost always. That sounds great, but they never looked at the sky. Kappa asks: how much of that rightness came from actually looking?\n\n**The scale:** 1 means perfect agreement. 0 means no better than guessing. Below 0 means worse than guessing. As a rough guide, above 0.6 is good and above 0.8 is very good.\n\n**In the lesson's example:** humans and the judge agree on 9 of 10 answers, so observed agreement is 0.90. But both say \"pass\" most of the time, so they'd agree about 0.74 of the time by chance alone. Kappa looks at the room left above chance (1 − 0.74 = 0.26). Then it asks how much of that room the judge really covered (0.90 − 0.74 = 0.16). That gives about 0.62.\n\nSo 90% agreement becomes \"good, not great\" once luck is taken out.",
+   "q": "What does “sampling rate” mean here?",
+   "a": "The **sampling rate** is the share of real traffic your scorer actually checks. A **trace** is the record of one real request to your app: the question, the steps it took, and the answer.\n\nThink of a quality inspector at a bakery. Tasting every loaf would cost a lot of time and bread. So they taste 1 loaf in 10. That's often enough to notice if the oven is running too hot. Their sampling rate is 1 in 10, or `0.1`.\n\nYour eval scorer works the same way after launch. Real traces keep arriving. Each score costs money, because a judge model has to read the trace. So you pick a share to score.\n\nIn the lesson's HR assistant example, the monitoring line is:\n\n```python\nmonitor = 30000 * 0.1 * 0.006\n```\n\n- `30000` is the traces in a month.\n- `0.1` is the sampling rate, meaning 1 in 10.\n- `0.006` is the cost of one score in dollars.\n\nThat gives 3,000 scores, or $18 a month. Score every trace and it's $180. The sampling rate is the dial that sets this line of the bill.",
    "step": "Learn",
-   "fingerprint": "1cd382897d975678",
+   "fingerprint": "f1af167340cf5b61",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -838,20 +1020,20 @@
   },
   "check:2:2": {
    "q": "Why not “Count how many words each one has”?",
-   "a": "Counting words gets one small thing right. It can flag a summary that is far too long or far too short, and it never mistakes different wording for an error.\n\nBut it misses the main job: checking whether the summary is **correct**. Word count says nothing about meaning. Look at these two summaries of the same call:\n\n- \"Customer wants a refund for a broken phone.\" (8 words)\n- \"Customer loves the phone and wants another one.\" (8 words)\n\nBoth have eight words, so counting would score them the same. Yet the second one gets the call completely wrong.\n\nIt also fails in the other direction. Two good summaries can be different lengths and still both be right. So matching word counts tells you very little.\n\nWhat you need is something that understands meaning. That's where **LLM-as-a-judge** comes in: a second model reads each summary and grades it. It follows a **rubric**, which is a written set of grading rules, such as \"mentions the customer's problem\" and \"states what the agent did.\"\n\nAn LLM judge with a clear rubric is better because it checks whether the summary says the right things, whatever words it uses.",
+   "a": "Counting words does get one thing right. It's cheap and fast, and it can tell you if a summary is the right length. If your summaries are meant to be short, a word count can flag one that rambles.\n\nBut length says nothing about **meaning**. A summary can have exactly the right number of words and still be wrong. It might name the wrong customer, miss the actual problem, or invent a refund that never happened. Word count would score it as fine.\n\nIt also fails the other way. Two good summaries can describe the same call at different lengths, one in 20 words and one in 35. Counting words would treat them as different, even though both are correct.\n\nSo word count measures the shape of an answer, not whether it's right. That's the core problem with open-ended text. There's no single correct string, and no simple number captures \"did it say the right things.\"\n\n**An LLM judge with a clear rubric** (written grading rules) is better because a second model can read each summary for meaning and check it against rules like \"names the issue\" and \"states the outcome,\" whatever words were used.",
    "step": "Check",
    "fingerprint": "e1147b32de3a8dac",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The claim that word counting 'never mistakes different wording for an error' contradicts the later point that good summaries of different lengths would be wrongly scored, and the idea that word count can flag length problems is not from the lesson."
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:gotcha": {
@@ -1274,20 +1456,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**Very little data.** With only 20 or 30 labelled answers, one changed verdict can swing both kappa and AC1 a lot. Gather more labelled answers before trusting either score, and read each disagreement yourself.\n\n**More than two verdicts.** The lesson's luck formula, 2 × q × (1 − q), only works when there are exactly two verdicts, pass and fail. If your judge gives grades like pass, partial and fail, use the general form of AC1, which counts luck across every grade.\n\n**Pass rates that drift over time.** As your app improves, failures can become rarer. Then kappa can sink even though the judge hasn't changed. Recompute both numbers on each new batch of answers. If kappa falls while AC1 holds steady, that points to rarer failures, not a worse judge. Still check passes and failures separately, as the lesson says.",
+   "a": "Here are three places where this rule needs extra care.\n\n**1. The judge never says fail.** Say the human marks 4 of 100 answers as fail, and the judge passes everything. They still agree 96 times. AC1 comes out around 0.96, even though the judge caught none of the failures. Always count how many real failures the judge caught on its own, as in \"Checking your LLM judge.\"\n\n**2. Very little data.** With only 20 labeled answers, the rare verdict might show up once or not at all. One changed label can swing both kappa and AC1 a lot. Label more answers, ideally including extra fails on purpose, and report the raw counts next to the scores.\n\n**3. More than two verdicts or two judges.** The \"2 times q times (1 minus q)\" rule only works for two judges giving pass or fail. With \"pass / partial / fail,\" or three judges, you need the general form of AC1. Another option is to compare each pair of judges separately.",
    "step": "Learn",
    "fingerprint": "3e2291ff570dd0f6",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The answer writes the formula \"2 × q × (1 − q)\" in maths notation without defining q, which breaks the plain-words rule; the rest is accurate and on topic."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
@@ -1673,6 +1855,188 @@
    }
   }
  },
+ "judge_cost": {
+  "check:0:1": {
+   "q": "Why not “Switch to a cheaper judge you never checked”?",
+   "a": "That option gets one thing right. A smaller model really is cheaper. The lesson's Haiku example costs about a twentieth of Sonnet's price, so the bill would drop a lot.\n\nWhat it misses is trust. A judge is only useful if its verdicts match what a careful person would say. \"Never checked\" means you don't know if they do. The lesson shows the risk. When this app tried Haiku as a judge, it agreed with itself on only 77 in 100 answers. Its agreement with people had a kappa of 0.05. Kappa is a score for how much two raters agree beyond what luck alone would give, and 0 means pure chance. So those verdicts were close to coin flips.\n\nA cheap score you can't rely on is not a saving. You might ship a worse agent because the judge said it was fine. That is why a smaller judge sits last on the list, and only after it passes the agreement checks.\n\nBatching is better because it keeps the same trusted judge and simply waits a little longer for results, which halves the price to $9 a run.",
+   "step": "Check",
+   "fingerprint": "e3146a3e6cec6fb0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Add two more scorers to every answer”?",
+   "a": "\"Add two more scorers to every answer\" moves the bill the wrong way. It makes the cost go up, not down.\n\nA **scorer** is one check the judge runs on an answer, like \"is it grounded?\" or \"is it polite?\". Each scorer is its own model call. So the call count grows with every scorer you add.\n\nHere is the count with five scorers instead of three:\n\n- 500 examples × 5 scorers × 2 repeats = 5,000 calls, up from 3,000.\n- Input: 5,000 × 2,000 tokens = 10,000,000 tokens at $2 a million = $20.\n- Output: 5,000 × 200 tokens = 1,000,000 tokens at $10 a million = $10.\n- That is $30 a run, up from $18.\n\nWhat it gets right: extra scorers can check more qualities of an answer. But the lesson's first tip is the opposite. Score only what your acceptance criteria need. Those are the conditions an answer must meet to pass. Extra scorers add cost without answering the question you asked.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and the same verdicts, while batch processing halves the price to $9 a run.",
+   "step": "Check",
+   "fingerprint": "de57d0f182fb30a5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear problem: the arithmetic (5,000 calls, $30 a run, $9 batched) matches the lesson. It is close to the length limit and uses × and = signs, but these are everyday arithmetic."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The cost per call barely moves”?",
+   "a": "**\"The cost per call barely moves\"** is tempting for a fair reason. The judge reads 2,000 tokens. Even after the change, it writes only 800. Reading is still the bigger number, so the extra writing looks small.\n\nWhat it misses is the price per token. Output costs five times more than input here: $10 a million out against $2 in. A token the judge writes costs as much as five it reads.\n\nWork out one call before the change:\n\n- Input: 2,000 tokens at $2 a million = $0.004\n- Output: 200 tokens at $10 a million = $0.002\n- Total: $0.006\n\nNow after the long reason is added:\n\n- Input: still $0.004\n- Output: 800 tokens at $10 a million = $0.008\n- Total: $0.012\n\nThe total went from $0.006 to $0.012. That is twice as much. Across 3,000 calls a run, the change adds $18 to every run.\n\n**\"The cost per call doubles\"** is better because it counts output at its real, higher price, and that price makes 600 extra written tokens cost as much as the whole call did before.",
+   "step": "Check",
+   "fingerprint": "8bbec07163d6efd7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The arithmetic and the 5x price point match the lesson. The only small quibble is the 3,000-call figure, which comes from the lesson's example rather than the Check question."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The cost per call halves”?",
+   "a": "\"The cost per call halves\" points the wrong way. Nothing in this change makes a call cheaper. The judge reads the same 2,000 tokens. It just writes more. Every extra token it writes is billed, so the cost can only go up.\n\nHere is the sum, one call at a time. Prices are per million tokens, so divide by a million.\n\n**Before:**\n- Input: 2,000 tokens at $2 a million is $0.004.\n- Output: 200 tokens at $10 a million is $0.002.\n- Total: $0.006 a call.\n\n**After:**\n- Input: still $0.004.\n- Output: 800 tokens at $10 a million is $0.008.\n- Total: $0.012 a call.\n\nThe output part went from $0.002 to $0.008. That is four times as much. Output tokens cost five times more than input tokens, so a longer reason hurts fast. That is why the lesson suggests a verdict plus one sentence, with the output capped.\n\n\"The cost per call doubles\" is better because $0.006 becomes $0.012, which is exactly twice as much.",
+   "step": "Check",
+   "fingerprint": "cf5f95c5be79c66e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Switch now: cheaper is always better”?",
+   "a": "\"Switch now\" gets one thing right. Cost matters. A judge is a model call on every example, for every scorer, on every repeat. A judge at a twentieth of the price could cut a $360 monthly bill to about $18.\n\nWhat it misses is that a judge is only useful if you can trust its verdicts. This app's own tutor eval tried exactly this. The cheap judge, Claude Haiku, gave the same verdict on only 77 of 100 answers when asked twice. Its agreement with human graders was barely better than random guessing (a kappa of 0.05; kappa is a score where 0 means \"no better than chance\" and 1 means \"perfect agreement\"). Those verdicts look like data, but they tell you almost nothing. So you would save money on scores you can't act on. That is not a saving.\n\nThat is also why the lesson puts \"a smaller judge\" last on its list of savings. The safer steps come first: score only what matters, ask for short verdicts, cache the rubric, and batch the runs.\n\n\"Check it agrees with people and itself\" is better because it finds out whether the cheap judge's verdicts can be trusted before you rely on them.",
+   "step": "Check",
+   "fingerprint": "1475051fb682a989",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Run it only on easy examples”?",
+   "a": "\"Run it only on easy examples\" does save money: fewer examples means fewer calls. But it skips the real question, which is whether the cheaper judge can be trusted at all.\n\nEasy examples are the ones almost any judge gets right. So they hide a weak judge instead of exposing it. The hard, borderline answers are where a cheap judge slips. Those are also the answers your eval exists to catch. Scoring only the easy ones would give you a clean-looking report that tells you very little.\n\nIt also changes the test, not just the judge. Your scores would no longer be comparable with earlier runs, because the examples are different.\n\nThe lesson's own story shows the risk. Claude Haiku cost a twentieth of Sonnet's price. Yet it agreed with itself on only 77 in 100 answers. Its kappa with people was 0.05. Kappa is a score for agreement beyond lucky guessing, and 0.05 is barely above chance.\n\n\"Check it agrees with people and itself\" is the better first step, because it tells you whether the cheap verdicts mean anything before you trust them to save money.",
+   "step": "Check",
+   "fingerprint": "b97b10217e2783a7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count the calls, then price the tokens” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* \"An LLM judge, a model that scores another model's answers, is a paid call every time it scores. People guess the bill from one call and get surprised.\"\n\n*The idea.* \"So I count the calls first: examples times scorers times repeats. 500 examples, 3 scorers, run twice is 3,000 calls. Then I price the tokens, the small chunks of text models are billed by. I price input and output separately, because output costs more. That gave $18 a run, or $360 a month.\"\n\n*The trade-off.* \"A reasoning model's hidden thinking is billed as output. So I check real token counts in the traces. And a cheaper judge only saves money if people can still trust its verdicts.\"\n\n**A likely follow-up**\n\n\"How would you cut that bill?\"\n\nHint: go safest first. Drop scorers your acceptance criteria don't use. Ask for a short verdict, with output capped. Cache the rubric, so the repeated part is read cheaply. Batch the runs, sending them as a slower bulk job at half price. Try a smaller judge last, only after it passes agreement checks.",
+   "step": "Explain",
+   "fingerprint": "4af66d4d1432b7f8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the cost was not counted, or counted wrong:**\n\n- **The bill is far above your estimate.** Often someone priced the tokens but forgot to multiply by scorers or repeats. Three scorers run twice means six times the calls, not one.\n- **Output costs more than you expected.** On a reasoning model, the hidden thinking is billed as output. You never see it, but you pay for it, at the higher output price.\n- **Input tokens per call are higher than planned.** Long documents for grounding checks can swell every call.\n- **Verdicts are long essays.** No cap on output means each reason runs on, and you pay for every word.\n- **A cheap judge gives scores that wobble between runs.** That is the trust problem. The saving is not real if the verdicts are close to chance.\n\n**The quickest check:** open the traces for one eval run. A trace is the logged record of each model call. Count the calls. Then read the input and output token counts on a few of them. Multiply them out and compare with the bill. If the numbers don't match, one of the signs above is the cause.",
+   "step": "Learn",
+   "fingerprint": "d577c2eb898d3c12",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The simple sum (calls times tokens times price) is a good first estimate. Here are three places where it needs extra care.\n\n**A reasoning judge.** A reasoning model thinks before it answers, and that hidden thinking is billed as output. Your 200-token guess could really be 2,000. Run a small batch first, then read the real token counts in your traces (the logged record of each call).\n\n**Inputs that vary a lot.** Some questions pull in one short document, others pull in twenty long ones. One average can hide a few very expensive calls. Price from real counts in your traces, or estimate the short, typical and long cases separately.\n\n**Judging whole agent runs.** If the judge reads an agent's full trace (every step and tool result), the input can grow far past 2,000 tokens. Trim what the judge sees to the parts the scorer actually needs.\n\nAlso, once you add caching or batching, the price per token changes. Redo the sum with the discounted prices rather than assuming the old ones.",
+   "step": "Learn",
+   "fingerprint": "1e2e29d0f918dbfd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “LLM judge” mean here?",
+   "a": "An **LLM judge** is a language model you use to grade another model's answers. LLM stands for \"large language model\", like Claude.\n\nThink of a teacher marking exam papers. Your agent writes the answers. The judge reads each one, checks it against a marking guide, and gives a mark with a short reason.\n\nIn this lesson, the marking guide is the **rubric**: the instructions that tell the judge what a good answer looks like. A **scorer** is one thing being marked, such as \"is the answer backed by the documents?\"\n\nEvery time the judge marks one answer, that is a separate model call. You pay for what it reads: the rubric, the question, the answer and the documents. You also pay for what it writes: the verdict and the reason.\n\nThe example counts exactly this. In `calls = 500 * 3 * 2`, the judge marks 500 examples with 3 scorers, and each check runs twice. That is 3,000 separate judge calls.\n\nThe rest of the example prices those calls in **tokens**. Tokens are the small chunks of text that models are billed by.\n\nSo a judge is useful, but it is never free.",
+   "step": "Learn",
+   "fingerprint": "9bf59cb66c00612e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems: the definition, teacher comparison and example walk-through match the lesson, it stays under 200 words, and the quoted calls line is the lesson's own example, not the judge_bill solution."
+   }
+  }
+ },
  "memory_update_score": {
   "check:0:0": {
    "q": "Why not “It trusts any memory saved less than a month ago”?",
@@ -1784,20 +2148,20 @@
   },
   "explain:gotcha": {
    "q": "Why does “Fail any answer that keeps the old fact” matter?",
-   "a": "A lazy check only asks: \"Is the new fact in the answer?\" That check passes \"York, or maybe Leeds.\" But the user reading it can't tell which city is right. They might still go to Leeds.\n\nThe old fact is the warning sign. If it's still in the answer, the memory wasn't really updated. The agent just added the new fact next to the stale one.\n\nHere's how that hurts in real work. A support agent remembers each customer's plan. One customer moved from Silver to Gold. The agent replies, \"You're on Silver or Gold.\" A lenient check passes it because \"Gold\" appears. Your results say memory works. Meanwhile customers get confusing answers, and nobody notices.\n\nSo score three separate labels:\n\n- **current**: the agent used only the new fact.\n- **unsure**: it said it can't confirm. That's honest, but it's still not the new fact.\n- **stale**: the old fact is still there.\n\nBeing strict has one cost. A correct answer like \"you moved from Silver to Gold\" also lands in stale. So read a few stale answers by hand.",
+   "a": "An agent that half-remembers is easy to miss. It picks up the new fact but never lets go of the old one. So its answers mix the two.\n\nIf your check passes any answer that contains the new fact, those mixed answers look fine. Your scores say the memory works. In real use, it doesn't.\n\n**A small example.** A customer's delivery address changes from Leeds to York. Later they ask, \"Where will my parcel go?\" The agent replies, \"York, or maybe Leeds.\" A loose check sees \"York\" and passes it. But the customer can't tell which city is right. They might ring support, or the parcel might go to Leeds. The agent hasn't actually helped.\n\nThat's why the rule is strict. An answer that still uses the old fact counts as **stale** (out of date), even if the new fact is there too. An honest \"I can't confirm that\" counts as **unsure**, which is better than a confident mix.\n\nThe strictness has a cost. A correct answer like \"you moved from Silver to Gold\" also gets flagged as stale. So read a few stale answers by hand to spot these.",
    "step": "Explain",
    "fingerprint": "70bc3821701d2b7b",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says that if the old fact is still in the answer, 'the memory wasn't really updated', but the lesson's own caveat (a correct 'you moved from Silver to Gold' still scores stale) shows the old fact can appear in a correct answer, and the lesson's reason for strictness is that the user can't tell wh"
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:interview": {
@@ -1838,20 +2202,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The fact can be worded many ways.** Word matching breaks when the new fact shows up as \"the York site\" or a date written differently, and some correct answers mention the old value on purpose (\"you moved from Silver to Gold\"). Use an LLM judge (a second model told to grade each answer against clear rules), and still read a sample of the stale ones by hand.\n\n**2. A fact changes more than once.** If the office goes Leeds, then York, then Hull, \"old\" now means every past value, not just one. List all earlier values as stale, and plant changes at different times so you test old updates as well as fresh ones.\n\n**3. The system is much bigger.** With many users or a shared memory, one user's update can leak into another's answers, or simply get lost. Plant changes for several users, check the memory store for each one, and keep running both baselines (simple stand-ins that should fail) so a lazy scorer still gets caught.",
+   "a": "Here are three situations where the simple rule needs extra care.\n\n**The answer is worded differently.** Plain word matching looks for the exact text \"York\" or \"Leeds\". An answer like \"your office is in the city with the Minster\" is current, but it scores as unsure. And \"you moved from Leeds to York\" is correct, but it scores as stale. Instead, add an LLM judge (a second model that reads the answer and picks one of the three labels). Keep reading a sample by hand.\n\n**A fact changes more than once.** If the office goes Leeds, then York, then Hull, there are now two old values. Checking only the most recent old value misses an agent stuck on Leeds. Instead, record every past value as old. Have the code check confirm that each one is marked as replaced in the memory store.\n\n**You planted only a few changes.** With five answers, one odd reply moves the shares a lot. Instead, plant many changes across different kinds of facts, such as places, names and dates. Always compare your agent against the two baselines.",
    "step": "Learn",
    "fingerprint": "d9f73cf5017ae427",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "Point 1 says word matching breaks on \"the York site\", but that text contains \"York\", so the lesson's substring check would catch it; a better example would be a paraphrase like \"the northern office\"."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
@@ -2622,20 +2986,20 @@
   },
   "check:0:2": {
    "q": "Why not “The 100 new questions all land in the dev set”?",
-   "a": "**Why \"The 100 new questions all land in the dev set\" isn't the best answer**\n\nIt looks at the wrong questions. Where the *new* questions land isn't the danger. They are fresh, so they're fine in any split.\n\nIt's also not what happens. Say the deal is \"first 60% to dev, next 20% to test, last 20% to holdout,\" and the 100 new questions go on the end. Out of 300, the cut points move. Dev now runs to position 180, test to 240, holdout to 300. So the new questions (positions 201 to 300) land in test and holdout, not dev.\n\nWhat it misses is that the *old* questions move. In the same example, old test and old holdout questions slide into dev. Your holdout is no longer untouched. And re-dealing often means shuffling first. Then any old question can land anywhere, including a dev question you tuned on landing in the holdout. That makes the holdout score look better than it really is.\n\n**Why \"Old questions can move, even into the holdout\" is better:** it names the real risk, which is that re-dealing by position shuffles questions you've already used, so your splits stop being trustworthy.",
+   "a": "That option guesses where the *new* questions go. But the risk is about the *old* ones.\n\n**What it gets partly right:** re-dealing by position does change where things land. Adding 100 questions shifts every cut point. \"Dealing by position\" means a question's split depends on where it sits in the list, not on anything about the question itself.\n\n**What it misses:** nothing forces all 100 new questions into dev. They could land in any split, depending on how the list is ordered and cut. And even if they all did go to dev, that alone would not hurt you. Extra dev questions just give you more to tune on.\n\nThe real damage is that the 200 old questions get re-dealt too. A question you already tuned on (adjusted your prompts or settings to do well on) can land in the holdout. The holdout is supposed to be questions your system has never been shaped around. Now it contains familiar ones, so its score looks better than it really is.\n\n\"Old questions can move, even into the holdout\" is better because it names that real harm: tuned-on questions leaking into the holdout and quietly inflating its score.",
    "step": "Check",
    "fingerprint": "1522892ca94ec1c5",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It flatly says the new questions do not land in dev, based on an assumed append-only 60/20/20 deal the lesson never states, then adds an unsupported claim that re-dealing often shuffles first, where any question can land anywhere, which contradicts that flat claim."
+    "pass": true,
+    "notes": "No blocking problems. Minor: the 'gets partly right' section credits the option with a point it doesn't make (that re-dealing shifts things), and 'cut point' is mildly jargony."
    }
   },
   "check:1:1": {
@@ -2658,20 +3022,20 @@
   },
   "check:1:2": {
    "q": "Why not “They all move into dev”?",
-   "a": "\"They all move into dev\" gets one thing right: it takes seriously the worry that adding questions could disturb old ones. That worry is real when you deal questions out by position. Change the list, and old questions can land somewhere new.\n\nBut hashing removes that worry. A **hash** is a function that turns text, like an id, into a big number. The same id always gives the same number. Your split then comes from that number alone. You take the remainder after dividing by 100 (`% 100`), which gives a bucket from 0 to 99. Under 60 is dev, 60 to 79 is test, and 80 to 99 is holdout.\n\nNotice what is missing from that rule. It never looks at the other questions or at how many there are. So new questions can't change an old question's bucket. `\"ticket-1001\"` gave 72 last week, and it gives 72 today. It stays in test.\n\nNothing in the rule pushes questions toward dev, either. Each id lands wherever its own number says.\n\n\"They stay in the same split\" is better because each question's split depends only on its own id, and that id never changes.",
+   "a": "\"They all move into dev\" gets one small thing right. Most questions do end up in dev, because dev gets buckets 0 to 59, which is 60 out of every 100. So if you picture new questions arriving, most of *them* will likely land in dev.\n\nBut the option is about last week's questions, and those don't move at all. Each question's split comes from its id alone. The hash turns the id into a number, and `% 100` keeps the remainder, a bucket from 0 to 99. Nothing else goes into that sum. It doesn't depend on how many other questions exist or where they sit in the list.\n\nSo when 100 new questions arrive, `\"ticket-1001\"` still hashes to 72 and stays in test. A holdout question stays in holdout. Nothing gets pulled into dev.\n\nThat stability is the whole point. If old questions shifted, one you tuned on could slip into holdout and make its score look better than it really is.\n\n\"They stay in the same split\" is better because the same id always gives the same bucket, no matter how much data is added later.",
    "step": "Check",
    "fingerprint": "763388c80d203b06",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
     "plain": true,
-    "no_giveaway": false,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The second paragraph spells out the whole stable_split recipe in order (hash the id, take % 100, then the 0-59 / 60-79 / 80-99 ranges), which the question did not need and which hands over the exercise's logic."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:2:0": {

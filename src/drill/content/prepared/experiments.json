@@ -128,20 +128,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Signs ablations were skipped or done wrong**\n\n- **Parts nobody can justify.** Each run gets slower and costs more, but the score barely moves. Nobody can say what the reranker or memory adds.\n- **Two things changed at once.** An ablation removed two parts, or used a different question set. Then you can't tell which change caused the drop.\n- **Small gaps treated as real.** A 1 or 2 point drop is called \"this part matters.\" On 100 questions that's one or two questions, which is noise (random wobble between runs).\n- **Small rises treated as real, too.** A score that goes up slightly when a part is removed is just as likely to be noise. It needs the same paired check before you conclude anything.\n- **The \"off\" part still runs.** A trace (the record of every step a run took, which MLflow can show you) still lists the `rerank` step in the run without it. The switch didn't work, so that ablation's number is meaningless.\n\n**Quickest check**\n\nOpen one trace from each ablation run. Confirm the removed step is truly absent. Confirm every run used the same questions. Then, for any gap you plan to act on, count only the questions where the two versions disagree and apply the paired check.",
+   "a": "**Signs ablations were skipped**\n\n- The pipeline keeps growing, and nobody can say what each part adds.\n- Each answer gets slower and costs more, but the score doesn't move.\n- A bug hides in a step that does nothing useful, and you spend hours fixing it.\n\n**Signs they were done wrong**\n\n- **More than one thing changed.** The \"without reranker\" run also used a new prompt or a new question set. The drop then mixes two causes.\n- **Small drops treated as real.** A 1-point drop on 100 questions gets reported as a win. That is one question, which is noise (random wobble between runs).\n- **A 0 drop that hides real value.** Memory shows 0 points, but your eval has no follow-up questions. The test never used memory, so it couldn't miss it. Delete it, and real users with long chats complain.\n\n**Quickest check**\n\nFor any drop you plan to act on, run the paired check. Count the questions where only one version passed. If those counts are close, the drop isn't real.\n\nFor any 0 drop, open a few traces (the step-by-step logs of one run). Confirm the eval questions actually needed that part.",
    "step": "Learn",
    "fingerprint": "e5fd9d4e5c76d77b",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It runs to about 210 words, over the 200-word limit, and it uses \"paired check\" without explaining it, which a beginner may not follow. It also brings in MLflow, which this lesson never mentions."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:stops": {
@@ -164,20 +164,20 @@
   },
   "learn:term": {
    "q": "How is “Design” different from “Evaluate”?",
-   "a": "**Design** and **Evaluate** are two stages of the same job. Design is planning. Evaluate is reading the results.\n\nIn Design, you decide what to test before running anything. For ablations, you list extra versions of your best pipeline, each with one part switched off. In the lesson's code, that means calling `build_graph(use_rerank=False)` or `build_graph(use_rewrite=False)`.\n\nIn Evaluate, you run every version on the same 100 questions and judge the drops. You use the **paired check**: look only at the questions where the two versions disagree, one passing and the other failing. A small gap there is **noise**, meaning random wobble, not a real effect.\n\nThink of cooking. Design is deciding to make the soup once without salt and once without garlic. Evaluate is tasting each one against the original.\n\nIn the example, Design planned three versions. Evaluate looked at the **reranker**, a model that reorders search results so the best come first. On 8 questions, only the full pipeline passed. On 1, only the version without it passed. That gap of 7 is real. Removing memory changed nothing.",
+   "a": "**Design** is the planning stage. You decide *what to test* before anything runs. For ablations, that means listing extra variants of your best version, each with one part switched off. In the lesson's code, that's choosing calls like `build_graph(use_rerank=False)`.\n\n**Evaluate** is the reading stage. The variants have run on the same 100 questions, and now you judge the results. You compare scores and use the paired check, which counts only the questions where two versions disagree, to see which drops are real.\n\nSo Design asks \"what should we try?\" and Evaluate asks \"what did we learn?\" Design comes first and gives Evaluate something fair to compare.\n\n**Everyday comparison:** baking test cakes. Design is deciding to bake one cake without eggs and one without sugar, keeping everything else the same. Evaluate is tasting them side by side.\n\n**In the lesson's example:**\n- Design planned three variants: one without rewrite, one without the reranker, and one without memory.\n- Evaluate found the reranker's 7-point drop was real (8 versus 1 on the disagreeing questions). The rewrite's 1-point drop and memory's 0-point drop made both of them candidates to remove.",
    "step": "Learn",
    "fingerprint": "c73d4d257e1d1f00",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It uses 'ablations' and 'pipeline' without explaining them, drops in code calls like build_graph(use_rerank=False), runs to about 200 words, and 'Design planned three versions' is loose because there are three ablation variants plus the full pipeline."
+    "pass": true,
+    "notes": ""
    }
   }
  },
@@ -238,20 +238,20 @@
   },
   "check:1:2": {
    "q": "Why not “Nobody: everyone is reassigned”?",
-   "a": "\"Nobody: everyone is reassigned\" gets one worry right. If you drew groups fresh at random each week, some users would lose the new version. Whether any one person kept it would be pure luck. Users would flip between versions, which is confusing for them and muddles your results.\n\nBut a hash bucket is not a fresh draw. The hash turns a user's id into the same number every time, so each user's bucket (a number from 0 to 99) never changes. Only the cutoff moves.\n\nAt 10%, buckets 0 to 9 get the new version. At 50%, buckets 0 to 49 do. Anyone in buckets 0 to 9 is still below 49, so they stay in the new group. Nobody is moved out. Buckets 10 to 49 simply join them.\n\n```\nu-1001 → bucket 7  → new at 10%, still new at 50%\nu-1002 → bucket 30 → old at 10%, new at 50%\nu-1003 → bucket 86 → old at 10%, still old at 50%\n```\n\n\"Everyone in buckets 0 to 9\" is better because a fixed bucket with a rising cutoff guarantees that early users keep the new version as the rollout grows.",
+   "a": "\"Nobody: everyone is reassigned\" would be true if each rollout made a fresh random draw, like flipping a new coin for every user each week. That is a real risk. If you change how buckets are made, for example by changing the hash or the extra text mixed into it, everyone gets shuffled.\n\nBut a hash bucket does not work that way. The bucket comes only from the user's id. `hash_id` turns the same id into the same big number every time, and `% 100` turns that into the same bucket from 0 to 99. Changing the share from 10 to 50 does not touch anyone's bucket. It only moves the cutoff line.\n\nAt 10%, buckets 0 to 9 get the new version. At 50%, buckets 0 to 49 get it. Every bucket from 0 to 9 is still below 50, so those users keep the new version. The rollout just adds buckets 10 to 49 on top.\n\n\"Everyone in buckets 0 to 9\" is better because each user's bucket never moves. Raising the share only widens the range, so nobody who already had the new version loses it.",
    "step": "Check",
    "fingerprint": "c589b0d644159af7",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The example table uses made-up buckets for u-1001 (7) and u-1002 (30), which contradict the lesson's own example (u-1001 is bucket 13, u-1002 is bucket 86); this would confuse beginners."
+    "pass": true,
+    "notes": "No real problems. The aside about 'extra text mixed into' the hash goes beyond the lesson but is not wrong, and the closing explanation runs to two sentences instead of one."
    }
   },
   "check:2:1": {
@@ -366,9 +366,9 @@
  "best_run": {
   "check:0:0": {
    "q": "Why not “More setups, to find a cheaper one”?",
-   "a": "\"More setups\" isn't crazy. A cheaper setup that still scores well might exist, and trying more options is a normal next step.\n\nBut the question asks what the experiment should have had **from the start**. More setups is something you do *after* you hit the problem. It doesn't fix the cause.\n\nThe cause is that nothing said \"cost matters\" before the runs began. So the 12 setups were judged on quality alone, and the winner ended up costing three times what you can spend. If you add 12 more setups without changing that, you can land in the same spot again. You'd spend more time and money and still have no clear way to choose.\n\nA **decision rule** is the sentence you write before any run, like \"highest quality at $2 or less per 1,000 requests.\" It tells you which runs count and which to skip. It also shapes which setups are worth trying at all.\n\n\"A decision rule that includes the budget\" is better because it builds the cost limit into the plan from day one, so the experiment ends in a choice you can actually afford.",
+   "a": "\"More setups, to find a cheaper one\" gets one thing right. A cheaper setup that still scores well might exist, and trying more options is sometimes the next step.\n\nBut it treats the symptom, not the cause. The question asks what the experiment should have had **from the start**. The real gap is that nobody wrote down how a winner would be picked. Without the budget in that rule, the 12 runs were judged on quality alone. So the \"best\" one landed at three times the budget, and it can't be used.\n\nAdding more setups without a rule just repeats the problem. You spend more time and money, and you still have no clear way to say \"this one wins.\" You might drift toward pricey options again.\n\nA decision rule fixes this. It is a sentence you write before running anything, like \"highest quality at $2 or less per 1,000 requests.\" It shapes which setups you try, and it tells you how to read the results. Even \"no run fits the budget\" becomes a clear answer, not a surprise.\n\n**\"A decision rule that includes the budget\" is better because it makes cost part of the test from day one, so every run ends in a usable decision.**",
    "step": "Check",
-   "fingerprint": "e1ef1838d82244ae",
+   "fingerprint": "e3cf7b670f261fe5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -379,14 +379,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems. It states as fact that the 12 runs were judged on quality alone, which is an inference rather than something the lesson says. At about 200 words it is also right at the length limit."
    }
   },
   "check:0:2": {
    "q": "Why not “A bigger model, to lift quality”?",
-   "a": "\"A bigger model\" sounds sensible, because bigger models often do score higher on quality. That part is fair.\n\nBut it answers a different question. The Check asks what the experiment should have had **from the start**. A bigger model is just one more setup to try. It is not part of the plan for judging the setups you already have.\n\nIt also makes the real problem worse. Your best setup already costs three times your budget. A bigger model usually costs *more* per request, so it would likely land even further over the limit.\n\nThe real gap is that nobody said what \"best\" meant before running anything. Twelve setups were scored, but the winner was picked on quality alone, so it ignored cost. That is how you end up with a top result you can't afford to ship.\n\n**A decision rule that includes the budget** is better because, written down in Design, it would have pointed straight to the highest-quality setup that fits the budget, so the experiment ends in a decision you can act on.",
+   "a": "\"A bigger model, to lift quality\" sounds sensible. It gets one thing right: quality matters, and the model is a fair thing to vary in a run.\n\nBut it misses what the question asks. The question is about what the experiment needed *from the start*, before any runs. A bigger model is just another setup to try. It's a 13th attempt, not a fix to the plan.\n\nIt also makes the real problem worse. Bigger models usually cost more per request. Your best run is already three times over budget. A bigger model would likely push the cost even higher, not bring it down.\n\nThe deeper issue is that the 12 runs had no rule for picking a winner. So \"best quality\" ended up meaning best at any price. With a rule like \"highest quality at $2 or less per 1,000 requests\", over-budget runs are ruled out from the beginning. You would pick the best run that fits, or learn early that none do.\n\n\"A decision rule that includes the budget\" is better because it turns your runs into a clear choice you can afford, instead of a winner you can't use.",
    "step": "Check",
-   "fingerprint": "2833866b93422eef",
+   "fingerprint": "bd5de5fe6b14d32f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -397,14 +397,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problem. The claims that bigger models usually score higher and cost more come from outside the lesson, though they are reasonable and do not contradict it."
+    "notes": "Minor: the claim that bigger models usually cost more comes from general knowledge, not the lesson, but it is hedged and accurate."
    }
   },
   "check:1:1": {
    "q": "Why not “A second new prompt to compare it with”?",
-   "a": "It's a fair instinct. A score of 82% on its own means nothing, so you do need something to compare it with. That part is right.\n\nThe problem is *what* you compare it with. The question asks whether the new prompt **helped**. \"Helped\" means \"made things better than before.\" A second new prompt is not \"before.\" It's just another untested idea.\n\nSay the second prompt scores 78%. Now you know the first new prompt beats the second one. But you still don't know if either beats what you already have. Your current prompt might score 85%. Then both new prompts made things worse, and you'd never see it.\n\nThat's why you need a **baseline**: the version you have now, run the same way. \"The same way\" matters too. Use the same eval set (your fixed list of test questions), the same model and the same judge. Then the prompt is the only thing that changed. So any gap in the score is down to the prompt.\n\n**Why the other answer wins:** \"The current version's score, run the same way\" is better because it answers the real question, \"is this better than what we have?\", with only one thing changed.",
+   "a": "A second new prompt does give you something to compare with. That part is right. Two scores side by side tell you which of the two new prompts did better.\n\nBut the question is whether the new prompt *helped*. \"Helped\" means \"better than what you had before.\" A second new prompt is not what you had before. Both prompts could be worse than your current version, and you would never know. You might happily ship the \"winner\" and make the app worse.\n\nIt also adds a new unknown. Now you have two untested things and still no fixed point to measure them against.\n\nWhat you need is a **baseline**: the version you have now, scored on the same eval set, with the same model and the same judge. That keeps the **controls** fixed, so the prompt is the only thing that changed. Then any gap between the two scores can be put down to the prompt.\n\n\"The current version's score, run the same way\" is better because it is the only option that tells you whether 82% is an improvement over what you already have.",
    "step": "Check",
-   "fingerprint": "44c16ba0f2bd6420",
+   "fingerprint": "baf0b4b0088c926f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -415,50 +415,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems: it is about 190 words and covers what the option gets right, what it misses, and the one-sentence reason the baseline is better. The only nit is that it mentions the 'judge' and 'eval set' without re-explaining them, but they are defined in the lesson."
    }
   },
   "check:1:2": {
    "q": "Why not “A bigger model to run it on”?",
-   "a": "A bigger model doesn't answer the question. The question is whether the new prompt helped. To know that, you need something to compare the 82% against.\n\nIs there anything right about it? A bigger model might well push the score up. But that is the problem. It adds a second change on top of the prompt. The model is meant to be a **control**: something you hold fixed so it can't affect the result. Swap it, and if the score moves, you can't tell whether the prompt or the model did it. The test is no longer fair.\n\nIt also leaves the real gap open. Even with a bigger model, 82% still has nothing to be better than. Maybe the old prompt scored 85%. Maybe it scored 70%. You can't know.\n\n\"The current version's score, run the same way\" is better because it gives you a **baseline**. That is the score of what you have now, on the same eval set, model and judge. Then the prompt is the only difference, and any change in score can be put down to it.",
+   "a": "A bigger model doesn't tell you whether the new prompt helped. It actually makes things harder to read.\n\nYour question is about the prompt. So the prompt is the one thing you change on purpose. That's your **independent variable**. The model is one of your **controls**, the things you keep fixed. If you swap in a bigger model too, you've changed two things at once. When the score moves, you can't tell which change caused it.\n\nThere is a grain of sense in it. Trying a bigger model is a fair experiment. But it answers a different question: \"Does a bigger model help?\" It belongs in its own run, with the prompt held fixed.\n\nWhat's really missing is something to compare 82% against. On its own, 82% is just a number. It might be better than before, or worse. You need a **baseline**: the score of the version you have now, measured the same way.\n\n\"The current version's score, run the same way\" is better because it gives the 82% a fair comparison point, so any difference can be put down to the prompt alone.",
    "step": "Check",
-   "fingerprint": "64ef64d177262b4b",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The closing explanation runs to three sentences although the prompt asked for one, and 'eval set' and 'judge' are used without explanation, but these are minor."
-   }
-  },
-  "check:2:0": {
-   "q": "Why not “The quality of 0.81”?",
-   "a": "\"The quality of 0.81\" is a fair guess, because it is really part of the run. It gets logged and saved with everything else. But it is a **metric**, not a parameter.\n\nThe difference is about *who decides the value*.\n\n- A **parameter** is something you set before the run starts. You choose it on purpose.\n- A **metric** is something you measure after the run. The run produces it.\n\nYou did not pick 0.81. It came out of scoring the app on the eval set, probably with an LLM judge grading each answer. It is the *result* of the experiment, not one of its inputs.\n\nYou can see the split in the lesson's example. The two kinds go into different calls:\n\n```python\nmlflow.log_params({\"chunk_size\": 500})   # what you set\nmlflow.log_metrics({\"quality\": 0.81})    # what you measured\n```\n\nAnd the saved eval results file? That is an **artifact**, the third kind of record.\n\n\"The chunk size of 500\" is the better answer because it is the value you chose and changed on purpose, which is exactly what a parameter is.",
-   "step": "Check",
-   "fingerprint": "2f8d037e21a60c56",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No blocking problems. Minor: \"eval set\" and \"LLM judge\" are used without a quick gloss, and the code is introduced as \"the lesson's example\" although it uses 500 rather than the lesson's 512."
-   }
-  },
-  "check:2:2": {
-   "q": "Why not “The eval results file”?",
-   "a": "The eval results file does belong in the run. Saving it is a good habit, because it keeps the evidence behind your score. But it is an **artifact**, not a parameter.\n\nThe difference is about direction:\n\n- A **parameter** is something you *set* before the run. It is an input you chose on purpose.\n- A **metric** is a number you *measured*, like quality at 0.81.\n- An **artifact** is a *file* the run produces or keeps, like the eval results.\n\nThe eval results file comes out of the run. You didn't choose it in advance, so it can't be the setting you changed. In experiment terms, it is part of the result, not the independent variable (the one thing you changed on purpose).\n\nMLflow even logs them with different calls:\n\n```python\nmlflow.log_params({\"chunk_size\": 500})    # parameter: what you set\nmlflow.log_artifact(\"eval_results.json\")  # artifact: a file you keep\n```\n\n\"The chunk size of 500\" is better because it is the value you chose before running, which is exactly what a parameter records.",
-   "step": "Check",
-   "fingerprint": "50bcbac5fc440b87",
+   "fingerprint": "aed9a32e04d6cab6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -472,11 +436,47 @@
     "notes": ""
    }
   },
+  "check:2:0": {
+   "q": "Why not “The quality of 0.81”?",
+   "a": "\"The quality of 0.81\" is a fair guess. It is a number, and it is saved in the run, just like a parameter. But it is a **metric**, not a parameter.\n\nThe difference is *when* the number appears and *who* decides it.\n\n- A **parameter** is something you set before the run starts. You choose it on purpose. It is the input.\n- A **metric** is something you measure after the run. You don't choose it. The eval set and the LLM judge produce it. It is the result.\n\nYou can't just decide quality will be 0.81. You only learn it by running the test. That makes it an outcome, so it goes in the metrics.\n\nThe third item, the saved eval results file, is an **artifact**: a file kept with the run.\n\nThe lesson's example shows the split:\n\n```python\nmlflow.log_params({\"chunk_size\": 512})   # what you set\nmlflow.log_metrics({\"quality\": 0.81})    # what you measured\n```\n\n\"The chunk size of 500\" is better because it is the setting you chose before running, which is exactly what a parameter is.",
+   "step": "Check",
+   "fingerprint": "02312a1e234fc745",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The eval results file”?",
+   "a": "The eval results file is a real part of the run, so you're on the right track there. MLflow does keep it. But it's an **artifact**, not a parameter.\n\nHere's the difference. A run stores three kinds of things:\n\n- **Parameters**: the settings you chose before the run started. These are the inputs.\n- **Metrics**: the numbers you measured afterwards, like quality at 0.81.\n- **Artifacts**: files the run produced or saved, like the eval results.\n\nThe eval results file comes *out* of the run. You didn't set it. It's evidence you keep so you can look back at each answer and its grade later. That's why MLflow logs it separately, with something like `mlflow.log_artifact(...)`, not `mlflow.log_params(...)`.\n\nA handy test: ask \"did I choose this, or did the run give it to me?\" If the run gave it to you, it isn't a parameter.\n\n\"The chunk size of 500\" is better because it's the setting you deliberately chose before running. That makes it both your independent variable and a parameter.",
+   "step": "Check",
+   "fingerprint": "f7ae2aa3a14f079a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The mention of `mlflow.log_artifact(...)` goes beyond the lesson text, but it is accurate and does not contradict it."
+   }
+  },
   "explain:interview": {
    "q": "How do I explain “Skip over budget, keep the best” in an interview?",
-   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"I'd run several versions of an app, say different chunk sizes. Each one gets a quality score and a cost. Without a rule decided in advance, it's tempting to pick whichever looks best afterwards. That isn't a fair decision.\"\n\n**The idea.** \"So I write the rule down first: highest quality at $2 or less per 1,000 requests. I treat the budget as a hard filter, so anything over it is out. Among the runs that fit, the highest quality wins. It's like buying the best phone you can afford.\"\n\n**The trade-off.** \"A hard limit is simple and honest, but it's blunt. A run that's slightly over budget with much better quality still gets dropped. If that matters, I'd change the rule before the next experiment, not after seeing the results.\"\n\n**A likely follow-up:** *\"Why not pick the highest quality first, then check the cost?\"*\n\n**Hint for a strong answer:** The budget is part of the decision rule, not an afterthought. Filtering first means an over-budget run can never win, even by accident. Mention that MLflow's `search_runs` supports this directly: a `filter_string` for the budget, then `order_by` for quality.",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"After an experiment I have many runs. A run is one logged attempt, with a quality score and a cost. I need one clear winner, not a debate.\"\n\n*The idea.* \"I write the decision rule before running anything. For example: highest quality at $2 or less per 1,000 requests. Then I walk through the runs once. I skip any run over budget. Among the rest, I keep the best so far. I swap only when a run is strictly better.\"\n\n*The edge case.* \"A tie keeps the earlier run, so the result is predictable. If no run fits the budget, I return `None` instead of guessing. That tells the team the budget or the design needs a rethink.\"\n\n**A likely follow-up**\n\n\"Why not pick the highest quality first and check cost afterwards?\"\n\nHint: say the budget is a hard limit, not a tiebreaker. The top-quality run might be unaffordable, so you'd throw it away anyway. Filtering first means every run you compare is one you could actually ship. Writing the rule first also stops you moving the goalposts after you see the results.",
    "step": "Explain",
-   "fingerprint": "b183b7a8b9fd83ee",
+   "fingerprint": "8d1a1521130332be",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -492,9 +492,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **A big jump you can't explain.** Two runs differ in several parameters, like `chunk_size` and `model`. The score rose, but you can't say which change caused it.\n- **No baseline in the folder.** Your new run scores 0.81, but nothing in the MLflow experiment shows the current version run the same way. A number alone tells you nothing.\n- **Scores drift between identical setups.** The eval set or the LLM judge (the grading model) changed quietly between runs. A control slipped, so the comparison isn't fair.\n- **Great in testing, worse in real use.** The eval set was tweaked until the new version won. It no longer reflects real questions.\n- **The \"winner\" keeps changing.** If people argue over which run is best, the decision rule was probably picked after seeing the results.\n\n**Quickest check**\n\nOpen the MLflow experiment and compare the runs side by side in the UI. Look at the parameters column. Exactly one parameter should differ from the baseline run. The eval set and judge should match. Then find where the decision rule was written down, and confirm it was written before the runs.",
+   "a": "**Warning signs**\n\n- **Several things changed at once.** The \"winning\" run has a different chunk size, model *and* prompt from the baseline. You can't tell which change helped.\n- **No baseline beside the score.** A quality of 0.81 alone says nothing. Better than what?\n- **The same setup gives different scores.** That hints the controls moved, such as a new eval set or a different LLM judge.\n- **Great in testing, worse with real users.** The eval set may be too small or too easy. Or you ran many tries and kept the lucky one.\n- **The rule showed up after the results.** For example, \"cost matters less now\" appears once you've seen the numbers. That means you picked the winner first and explained it later.\n- **Gaps in the ledger.** Runs are missing parameters or metrics, so nobody can repeat them.\n\n**Quickest check**\n\nOpen the MLflow experiment and tick the candidate run and the baseline. Then use the compare view, which shows runs side by side.\n\nExactly one parameter should differ. Both runs should use the same eval set and judge. Then read the result against the decision rule you wrote down before running anything.",
    "step": "Learn",
-   "fingerprint": "3caee190b6ab1764",
+   "fingerprint": "e7aa1131f00c6cef",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -510,9 +510,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. A small eval set or a noisy judge.** With only 20 questions, a score of 0.81 against 0.80 may just be luck. An LLM judge can also grade the same answer differently on different runs. Use a bigger eval set, run each version more than once, and treat tiny gaps as ties.\n\n**2. Data that changes over time.** Real user questions drift (slowly shift) away from your eval set. A baseline scored months ago on old questions is no longer a fair comparison. Refresh the eval set with real questions from monitoring, then re-score the baseline on that same set.\n\n**3. Settings that affect each other.** Chunk size and `k` (how many chunks you fetch) often interact. The best chunk size at `k` = 5 may not be best at `k` = 10. Changing one thing at a time can miss the best mix. So plan a small grid (every combination of a few values) in Design, and log every parameter.\n\nIn each case the core idea holds. Keep the comparison fair, and write the decision rule down first.",
+   "a": "**Scores that wobble.** An LLM judge can give the same answer a slightly different grade each time, so 0.81 versus 0.80 may be pure luck. Run each version a few times, or on more questions, and only trust gaps bigger than that wobble.\n\n**Data that changes over time.** If users start asking new kinds of questions, a fixed eval set slowly stops matching real use. Refresh it now and then with real questions you collect during Monitor. Then re-run the baseline on the new set, so you still compare like with like.\n\n**Very little data.** With only ten test questions, one lucky answer can swing the score and crown the wrong winner. Grow the eval set before you decide. Treat a near-tie as \"no clear winner\" rather than trusting whichever number is a hair higher.\n\nIn each case the core idea holds. Change one thing, keep a baseline, and write the rule first. You just need more care before you believe the numbers.",
    "step": "Learn",
-   "fingerprint": "11784f56a475884c",
+   "fingerprint": "1a2a3f1bedc1e3d1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -528,9 +528,9 @@
   },
   "learn:term": {
    "q": "How is “run” different from “parameters”?",
-   "a": "A **run** is the whole record of one attempt. **Parameters** are one part inside that record: the settings you chose for that attempt.\n\nThink of a baking notebook. A run is one page, for one cake. The parameters are the settings you wrote on that page, like oven temperature and baking time. The same page also holds what you measured (**metrics**, like a taste score) and files you kept (**artifacts**, like a photo).\n\nIn the lesson's example, `mlflow.start_run(run_name=\"cs512-k5\")` opens one run. Inside it, `mlflow.log_params` records the parameters: `chunk_size` 512, `k` 5 and `model` `\"fast-model\"`. Then `mlflow.log_metrics` records `quality` 0.81 and `cost_per_1k` 1.8 on that same run.\n\nThe two work together. Each run keeps its parameters right next to its metrics. So when you compare runs in one experiment, you can see which settings went with which scores. Say two runs differ in only one parameter, and the controls (eval set, model, prompt) stayed fixed. Then a difference in score can be put down to that one parameter.",
+   "a": "A **run** is the whole record of one attempt. **Parameters** are just one part of that record: the settings you chose before you started.\n\nThink of baking. A run is one page in your baking notebook for a single cake. The parameters are what you wrote at the top: oven temperature, baking time, how much sugar. The same page also holds the result (**metrics**, like \"tastiness out of 10\") and maybe a photo (an **artifact**, meaning a saved file).\n\nIn the lesson's example, `mlflow.start_run(run_name=\"cs512-k5\")` opens a new page. Then `mlflow.log_params` writes the settings: `chunk_size` of 512, `k` of 5 (how many document pieces get fetched) and the `model`. Next, `mlflow.log_metrics` adds what you measured: `quality` of 0.81 and `cost_per_1k` of 1.8.\n\nHere is how they work together. Parameters say what you set. Metrics say what happened. The run keeps both on the same page. So later, when you compare runs, you can see which settings led to which results.\n\nOne run holds many parameters. Change a parameter and try again, and you get a new run.",
    "step": "Learn",
-   "fingerprint": "f107e34109e1c551",
+   "fingerprint": "cf02bc448e62b001",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -541,7 +541,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The gloss on k (document pieces fetched) is not in the lesson, but it is accurate and does not contradict it."
    }
   }
  },
@@ -674,20 +674,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Signs the idea was skipped:** you spend days tuning one step, like retrieval, and the eval score barely moves. That usually means the real problem sits in a different step, and nobody measured headroom first. (Headroom is the most you could gain by making that step perfect.)\n\n**Signs the oracle run itself went wrong:**\n\n- The oracle score lands almost exactly on your current score. The \"perfect\" step may never have been swapped in, so the app quietly ran its normal retrieval.\n- The oracle score comes out lower than your current system. That isn't impossible, but it's a reason to look closer. The gold labels (the known right answers for each step, like correct document ids) may be wrong or missing for some questions.\n- Some eval questions have no gold document ids at all. Then the oracle has nothing correct to hand over.\n\n**Quickest check:** open a few traces from the oracle run in MLflow. A trace is the saved record of each step's inputs and outputs. Confirm the documents passed to `generate` match the gold ids for that question. Then confirm every row in `eval_set` has gold ids filled in.",
+   "a": "**Signs the idea was skipped**\n\nYou spend days tuning one step, say retrieval, and the eval score barely moves. Each change gains a point or less. That often means you picked a step with little **headroom** (the most you could gain by making that step perfect). You were fixing the wrong leak in the bucket.\n\nAnother sign: when someone asks \"why work on this step first?\", the only answer is a hunch, not a number.\n\n**Signs it was done wrong**\n\n- The oracle runs were not planned in **Design**. So the eval set has no right answers per step, such as the correct document ids for each question. Without those, you cannot build a perfect version of that step.\n- The oracle run swaps more than one step at once. Then you cannot tell which step caused the gain.\n- You read the tuning variants in **Evaluate** before the oracle runs. Then you judge them without knowing how much room there was.\n\n**Quickest check**\n\nRun one oracle variant, for example \"right docs given.\" Compare it to your current score. A small gap means that step is not your bottleneck. A large gap means it is.",
    "step": "Learn",
    "fingerprint": "718be9fcfae32461",
    "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
-    "plain": true,
+    "plain": false,
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "The bullet saying an oracle score almost equal to the current score means the perfect step was probably never swapped in clashes with the lesson, where a small gain (78% to 80%) is a valid result showing that step has little headroom."
+    "notes": "The key term \"oracle\" (a step swapped for a perfect version) is never explained, and \"eval set\" and the Design/Evaluate stages are left undefined. At about 190 words it also sits right at the length limit."
    }
   },
   "learn:stops": {
@@ -710,20 +710,20 @@
   },
   "learn:term": {
    "q": "How is “Design” different from “Evaluate”?",
-   "a": "**Design** and **Evaluate** are two stages of testing your app.\n\n**Design** is planning, before anything runs. You choose the variants to test. A variant is one version of your app, like one with a new prompt. Here you also add oracle variants, such as `rag-oracle-retrieval`. You check that your eval set has the right answer for each step, like the correct document ids for each question.\n\n**Evaluate** is reading results, after the runs finish. You read the oracle scores first, because they show where effort will pay off.\n\nThey depend on each other. Evaluate can only read what Design set up. If you skip an oracle run in Design, there's nothing to compare later.\n\nThink of a doctor. Ordering the tests is Design. Reading the results is Evaluate.\n\nIn the lesson's example, the whole app scores 78%. When retrieval is swapped for the right documents, the whole app scores 91%. That 13-point gap is retrieval's headroom: the most you could gain by perfecting that step. Reranking's headroom is 6 points and the prompt's is 2. So you work on retrieval first.",
+   "a": "**Design** is the planning stage. You decide which variants (versions of your app) to test. This is where you add oracle runs. An oracle run swaps one step for a perfect version, like handing the model the right documents instead of what retrieval found. To plan these, your eval set (your test questions with their correct answers) also needs the right answer for each step, such as the correct document ids.\n\n**Evaluate** is the judging stage. You look at how each variant scored. The lesson says to read the oracle results first. Each one shows that step's headroom: the most you could gain by making that step perfect.\n\nThey work as a pair. Design decides what you will be able to learn. Evaluate is where you learn it. Skip the oracles in Design, and Evaluate can't point to the weak step.\n\nThink of a cooking contest. Design is choosing the dishes and buying ingredients. Evaluate is tasting them.\n\nIn the example, oracle retrieval scored 91% against the current 78%. That is 13 points of headroom, the biggest gap. So work on retrieval first.",
    "step": "Learn",
    "fingerprint": "04e059ce5a542884",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The answer uses \"oracle\" (variants, scores, run) and \"retrieval\" and \"reranking\" without ever explaining them, so a beginner can't tell what an oracle variant is; the content is otherwise consistent with the lesson."
+    "pass": true,
+    "notes": ""
    }
   }
  },
@@ -838,20 +838,20 @@
   },
   "explain:gotcha": {
    "q": "Why does “Make evals repeatable” matter?",
-   "a": "LLM outputs change from run to run. So do the scores from an LLM judge (a model that grades the answers). If you run each prompt only once, the gap you see may just be luck.\n\nHere is how that bites in real work. You test prompt B once and it scores 0.84. Prompt A scored 0.80. You ship B. A week later, a teammate reruns both, and B scores 0.79. Nothing changed except chance. You spent time rolling out a \"fix\" that never helped. Worse, people start to distrust your evals.\n\n\"Fix what you can\" means keeping everything else the same between the two setups: the same test examples, the same judge, the same scoring. Then the prompt is the only thing that differs.\n\nThen run each setup several times. Three to five is common. In MLflow you can log each repeat as a nested run (a child run grouped under one parent run). Use a different seed each time. A seed is a number that controls the random choices. Changing it shows you the natural spread.\n\nOnly call a winner when the scores clearly separate. If they overlap, decide on cost or speed, or test on more examples.",
+   "a": "LLM outputs change a little every time you run them. So does an LLM judge, which is a model that grades the answers. If you ignore this, luck can fool you.\n\nHere is a small example. You test prompt A once and get 0.80. You tweak it into prompt B, test once, and get 0.82. You ship B and tell your team it is better. A week later, users see answers no better than before. That 0.02 gap was just a lucky run. Worse, you may now build more changes on top of B, chasing noise.\n\nMaking evals repeatable means two things.\n\nFirst, fix what you can:\n- Set temperature to 0. Temperature is a setting that controls how random the output is.\n- Use the same test examples every time.\n- Use the exact same model version, not one that can quietly update behind the scenes.\n\nSecond, run each setup several times, often 3 to 5, and look at the spread of scores.\n\nNow a difference you see is far more likely to be real. If the scores overlap, treat it as a tie.",
    "step": "Explain",
    "fingerprint": "26ad22c6d3642e75",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The answer is about 225 words, over the roughly 200-word limit, and the MLflow nested-run and seed details add length the question did not need."
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:interview": {
@@ -1294,9 +1294,9 @@
  "decide_release": {
   "check:0:0": {
    "q": "Why not “Ship it: the quality win is clear”?",
-   "a": "\"Ship it\" gets one thing right. The quality win is real. With 15 wins and 5 losses, the gap is 10. The bar is twice the square root of 20, which is about 8.9. So 10 clears it, and the paired check would say \"clearly better.\"\n\nBut the rule never gets that far. Gates come first. A **gate** is a must-hold condition: if it fails, the answer is no, whatever else looks good. A must-pass case is exactly that kind of condition. One of them now fails, so the gate fails.\n\nChoosing \"ship\" here means letting a good number in one place outweigh a hard \"no\" in another. That is the cherry-picking the decision rule exists to stop. Think of the job offer again. A great team doesn't matter if the salary is below your minimum.\n\nThe quality win isn't wasted, though. Fix the failing case, rerun, and the new version may well ship next round.\n\n\"Keep the baseline: a gate failed\" is better because it follows the rule in its fixed order: any failed gate means no, and the failed gate is saved as the reason.",
+   "a": "\"Ship it\" gets one thing right. The quality win really is clear. The new version won 15 questions and lost 5. That gap of 10 is bigger than twice the square root of 20, which is about 9. So the paired check would say \"better\".\n\nBut that check never gets a turn. The rule runs the **gates** first. A gate is a must-hold condition: fail it and the answer is no. A failing must-pass case is a gate failure. Those cases are there because getting them wrong is not acceptable, however good the rest looks.\n\n\"Ship it\" lets a strong quality score make up for a broken must-pass case. That is the trap the lesson warns about: picking the number that favours the version you hoped would win. Gates cannot be traded away. Think of the job offer again: a great title does not help if the salary is below your minimum.\n\nThe saved reason would read \"must-pass case failed\". The team fixes it, then runs the comparison again.\n\n\"Keep the baseline: a gate failed\" is better because the fixed order checks gates first, and any failed gate ends the decision before quality is weighed.",
    "step": "Check",
-   "fingerprint": "c5431525bd7c7728",
+   "fingerprint": "77024ba3d2937d85",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1312,9 +1312,9 @@
   },
   "check:0:2": {
    "q": "Why not “Too close to call: one case is not much”?",
-   "a": "That option has one thing right. \"Too close to call\" keeps the baseline for now, so the version you run in production would be the same. But the reason it gives is wrong, and the saved reasons matter.\n\nIt misses two things.\n\nFirst, a must-pass case is a **gate**. A gate is a yes-or-no check that must hold, or the answer is no. It doesn't matter that only one case failed. One failure is enough. The size of the failure isn't part of the rule.\n\nSecond, quality isn't close at all. There are 15 wins and 5 losses, so the gap is 10. The bar is twice the square root of 20, which is about 8.9. A gap of 10 clears it, so on quality alone the new version clearly wins. But the rule never gets that far. Gates come first, and one failed.\n\n\"Too close to call\" also tells the team to gather more examples. More examples won't fix a broken must-pass case.\n\n\"Keep the baseline: a gate failed\" is better because it follows the rule in order and saves the true reason: fix that case first.",
+   "a": "\"Too close to call\" gets one thing right: it does not ship the new version. But it reaches that answer for the wrong reason.\n\n\"Too close to call\" belongs to the quality step. It means the wins and losses are too even to tell which version is better. That step only runs after every gate passes.\n\nA must-pass case is a **gate**: something that must hold, or the answer is no. Gates are not weighed against anything. One failure is enough. It does not matter how small it looks, or how strong the quality win is. That is the point of writing the rule down first. It stops you from talking yourself past a failure because the other numbers look good.\n\nCalling it \"too close to call\" also sends the team the wrong way. They would gather more examples or argue about cost, when the real job is to fix that one failing case.\n\n\"Keep the baseline: a gate failed\" is better because it follows the rule in order. It also records the true reason, so a reviewer knows exactly what to fix.",
    "step": "Check",
-   "fingerprint": "9b32717ad837bf3e",
+   "fingerprint": "dfd5f8cbb637aa82",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1325,14 +1325,32 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No substantive problems. The closing part runs two sentences where the brief asked for one, which is a minor style slip."
    }
   },
   "check:1:0": {
    "q": "Why not “Only the first gate that failed”?",
-   "a": "\"Only the first gate that failed\" gets one thing right. The decision itself would be correct. Any single failed gate means the answer is no, so you would still say \"keep baseline\". Stopping at the first failure doesn't change that.\n\nWhat it misses is the full picture. Say the report only mentions the cost. The team works on cost, runs the comparison again, and only then learns that a must-pass case also fails. That is a second round of fixing they could have avoided. The lesson's advice is to check every gate and list each one that fails, so the team can fix them all in one round.\n\nThere is a second reason. The reasons are saved with the decision. A reviewer reads that list, and so will you in six months. If one failure is left out, the record is incomplete, and nobody reading it later would know the must-pass case failed.\n\n\"Both failed gates\" is better because it gives the team and any later reader every reason for \"no\" at once, so all the problems can be fixed together.",
+   "a": "\"Only the first gate that failed\" gets one thing right: the decision itself. A gate is a must-hold check, so one failure is enough to say \"keep baseline\". Stopping early would not change the answer.\n\nWhat it misses is the reasons. The report is not just for the decision. It tells the team what to fix.\n\nPicture it. The report says only \"cost over budget\". The team spends a week making the version cheaper. They run the comparison again, and now it says \"must-pass case fails\". That problem was there all along. The report just hid it. Now they need a second round of fixing and re-running that could have been avoided.\n\nIt also misleads the reviewer, and you in six months. Anyone reading the saved reasons would think cost was the only issue.\n\nSo checking every gate costs almost nothing extra. It walks through the three gates once instead of stopping partway. And it saves whole rounds of work.\n\n\"Both failed gates\" is better because it gives the same decision plus the full list of problems, so the team can fix them all in one round.",
    "step": "Check",
-   "fingerprint": "4b7b8467bb698c7f",
+   "fingerprint": "c80a0dc5d724831f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. One minor point: the story has a report that shows only 'cost over budget', but in the lesson's listed gate order the must-pass check comes first, so the hidden failure would more naturally be cost."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The quality score first”?",
+   "a": "\"The quality score first\" gets one thing right. Quality does matter, and it is part of the rule. But it comes later, and only if every gate passes.\n\nHere two gates have already failed. Cost is over budget, and a must-pass case fails. A gate is a hard yes-or-no check. If any gate fails, the answer is \"keep baseline\", however good the quality looks. So the quality score cannot change the decision. The rule says not to even run the paired check.\n\nLeading with quality also causes two problems:\n\n- **It invites cherry-picking.** A strong quality number at the top makes it tempting to excuse the failures. That is exactly what a fixed rule, written before you run anything, is meant to stop.\n- **It hides what to fix.** The team needs the list of failed gates, not a score that does not count yet.\n\n\"Both failed gates\" is better because the report should name every gate that failed, cost and the must-pass case, so the team can fix both in one round.",
+   "step": "Check",
+   "fingerprint": "bcfec541914a80d2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1346,29 +1364,11 @@
     "notes": ""
    }
   },
-  "check:1:2": {
-   "q": "Why not “The quality score first”?",
-   "a": "\"The quality score first\" gets one thing right: quality does matter. It is part of the decision rule.\n\nBut it comes at the wrong time. The rule checks the **gates** first. Gates are the must-hold conditions: every must-pass case passes, cost per task is within budget, and p95 latency is within budget. Here two gates fail. So the answer is already \"keep baseline\". No quality score can change that.\n\nLeading with quality also brings back the problem the rule exists to stop. A strong score up front makes it tempting to argue past the failures, for example \"it's so much better, surely the cost is fine.\" Picking the number that favours the version you hoped would win is exactly what a fixed order prevents.\n\nThere is a practical cost too. The team needs to know *what to fix*. A quality score does not tell them that. A list of failed gates does.\n\n\"Both failed gates\" is better because it shows the real reasons for \"keep baseline\", both the cost and the must-pass case, so the team can fix everything in one round.",
-   "step": "Check",
-   "fingerprint": "035e5da7399db75c",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problems; the only small point is that 'p95 latency' is mentioned without a short explanation, though it isn't central to this case."
-   }
-  },
   "check:2:0": {
    "q": "Why not “Ship it: every gate passed”?",
-   "a": "\"Ship it: every gate passed\" gets one thing right. The gates did pass, so the new version is allowed to compete. Nothing rules it out.\n\nWhat it misses is what gates are for. A gate can only say no. Passing one means \"not disqualified,\" not \"better.\" Think of the job offer: the salary clearing your minimum doesn't mean you take the job. It just means you go on to compare the rest.\n\nThe next step in the rule is the quality check. Here, wins minus losses was not big enough to count as clearly better. So the numbers don't show the new version beats the old one. Shipping now would mean switching on a hunch. That is exactly what the fixed rule is meant to stop.\n\n\"Too close to call\" has its own planned outcome. You keep what already works, then gather more examples or decide on cost. You save that reason with the decision.\n\n\"Keep the baseline for now\" is better because you only switch when the evidence shows the new version is better, and here it doesn't.",
+   "a": "\"Ship it: every gate passed\" gets one thing right. All the gates did pass, so the new version is allowed to compete. Nothing rules it out.\n\nWhat it misses is that the gates only decide whether the new version gets to be judged on quality. Passing them doesn't make it better. Think of the job offer again. A salary that clears your minimum gets the offer considered. It doesn't mean you take it.\n\nAfter the gates comes the paired check. Here the gap between wins and losses wasn't big enough to count. So you have no clear evidence the new version answers questions better than the old one. Shipping anyway means swapping something proven for something unproven, with no clear gain.\n\n\"Too close to call\" has a fixed meaning in the rule. You keep the baseline for now. Then you either gather more examples to get a clearer answer, or decide on cost instead. You also save the reasons, so a reviewer can see why.\n\n\"Keep the baseline for now\" is better because a change should have to show it's better before it replaces what already works, and here it hasn't.",
    "step": "Check",
-   "fingerprint": "6d6daa3d203f6b01",
+   "fingerprint": "86d00c7785bdefad",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1384,27 +1384,27 @@
   },
   "check:2:1": {
    "q": "Why not “Drop the new version for good”?",
-   "a": "\"Drop the new version for good\" gets one thing right. You do not ship the new version today. The baseline stays in place.\n\nBut it reads \"too close to call\" as \"the new version lost.\" Those are different results. \"Too close\" means the gap between wins and losses was smaller than twice the square root of wins plus losses. In plain words, the test could not tell the two versions apart. It did not find the new version worse. The rule has a separate outcome for that, \"keep baseline\" because it is clearly worse.\n\nRemember too that this candidate passed every gate. All must-pass cases passed, and cost and speed were within budget. A version like that is worth another look. More examples might show a real gap. Or you might pick it because it is cheaper. Dropping it for good throws that chance away on evidence that never said no.\n\n\"Keep the baseline for now\" is better because it stays safe today while leaving room for more examples, or a choice based on cost, to settle the question later.",
+   "a": "\"Drop the new version for good\" gets one thing right. You don't ship it today. The baseline (the version already running) stays in place.\n\nBut it misreads what \"too close to call\" means. It does not say the new version is worse. It says your examples can't tell the two apart yet. The gap between wins and losses is too small to trust either way.\n\nIn this case, every gate has already passed. So the new version is fast enough, cheap enough, and passes every must-pass case. It might be just as good, or slightly better. You simply don't know yet.\n\nDropping it for good throws that away. The lesson gives two ways forward instead. You can gather more examples, so a real difference has a chance to show. Or you can choose on cost, if the new version is cheaper for the same quality.\n\n\"Drop for good\" treats \"unsure\" as if it were a clear loss. That is the mistake.\n\n\"Keep the baseline for now\" is better because it stays safe today while leaving room to test more or decide on cost.",
    "step": "Check",
-   "fingerprint": "46820a918c54af63",
-   "status": "passed",
+   "fingerprint": "29db3a20885ddb83",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
+    "correct": false,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": true,
-    "notes": ""
+    "pass": false,
+    "notes": "It says the new version \"might be just as good, or slightly better\", but too close to call also allows it to be slightly worse, so the uncertainty is described as tilted in the new version's favour."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Gates first, then one test” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* \"A model comparison gives me several numbers: quality, must-pass cases, cost and speed. Look at each one alone and I can usually find one that makes my favourite version win.\"\n\n*The idea.* \"So I write one rule before I run anything. First the gates. These are hard limits: every must-pass case passes, cost per task is within budget, and p95 latency is within budget. p95 means 95 out of 100 requests are faster than that. If any gate fails, we keep the baseline, which is the current version. I list every failed gate, not just the first. Only if all pass do I compare quality with a paired check: wins against losses on the same questions.\"\n\n*The trade-off.* \"A big quality gain still loses if it breaks a gate. And a small gap is 'too close to call', so we keep the baseline for now.\"\n\n**A likely follow-up**\n\n\"Why fix the order before you run the evaluation?\"\n\nHint: say it stops you choosing the rule after seeing the results. Logging the reasons with the decision also makes it easy for a reviewer, or you in six months, to check.",
+   "a": "**A 30-second answer**\n\n*The problem.* \"When I compare two versions, I get several numbers: quality, must-pass cases, cost and speed. If I read each one alone, I can usually find one that favours the version I hoped would win.\"\n\n*The idea.* \"So I write one decision rule before I run anything. First come the gates, the hard limits: must-pass cases, cost per task, and p95 latency, the time that 95 out of 100 requests beat. If any gate fails, the answer is keep the baseline, and I list every failure so the team can fix them all at once. Only if every gate passes do I compare quality, with one paired test on the same examples. The result is ship, keep baseline, or too close to call.\"\n\n*A trade-off.* \"A big quality win can't rescue a blown budget. That feels strict, but it stops us arguing after we've seen the results.\"\n\n**A likely follow-up**\n\n\"What do you do when it's too close to call?\"\n\n*Hint:* Keep the baseline for now. Then gather more examples, or choose on cost. Add that you save the reasons with the decision, so a reviewer can see why.",
    "step": "Explain",
-   "fingerprint": "f7a8187d14791147",
+   "fingerprint": "c12ab74d056e3ff9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1420,9 +1420,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The reason changes every time.** One release ships \"because quality went up\", the next \"because it's cheaper\". That suggests someone picked the number that favoured their version after seeing the results.\n- **A gate failed but it shipped anyway.** For example, p95 latency was over budget. (p95 latency means 95 out of 100 requests are faster than this time.) If good quality talked the team past a failed gate, the gates were not really gates.\n- **Fixes arrive one at a time.** The team fixes cost, then learns latency also failed. Only the first failing gate was reported.\n- **\"Too close to call\" never appears.** Every decision is a confident \"ship\" or \"keep\", even on tiny gaps in wins and losses.\n- **Decisions have no reasons.** A logged \"ship\" with no list of why leaves reviewers guessing.\n\n**Quickest check**\n\nOpen the saved decision record in MLflow, such as `decision.json`. Does it name the rule, and was that rule written before the evaluation run? Then redo the decision by hand from the logged numbers. Check each gate against its budget. Then do the paired check on wins and losses. If your answer differs from the logged one, the rule was skipped.",
+   "a": "**Warning signs the rule was skipped or done wrong**\n\n- **The reason to ship keeps changing.** One week it's \"quality went up\". The next it's \"it's cheaper\". That usually means someone picked whichever number looked best after seeing the results.\n- **Surprises after release.** Users complain it feels slow, or the bill jumps. A gate (a must-hold check like cost or speed) was probably never checked.\n- **Fixes come in drips.** A version is rejected for being slow. It gets fixed, then rejected again for cost. The check stopped at the first failing gate instead of listing them all.\n- **A \"win\" that fades.** It shipped on a small quality edge, then scores drop back in real use. The paired check (wins versus losses on the same questions) was skipped, or the gap was too small to count.\n- **Bare decisions.** A log says \"ship\" with no reasons and no link to the evaluation run.\n\n**Quickest check**\n\nOpen the saved decision records for your last few releases in MLflow. For each one, confirm three things:\n\n1. The rule was written before the evaluation ran. Compare the timestamps.\n2. Every gate shows its value next to its budget.\n3. The wins-minus-losses arithmetic holds up when you redo it by hand.",
    "step": "Learn",
-   "fingerprint": "7fa9a596d746ec31",
+   "fingerprint": "53bb820c4f508855",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1433,14 +1433,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Mostly fine. The check asks whether the rule was written before the run, but decision.json only names the rule and can't show timing. \"Gates\" and \"paired check\" are also not re-explained, and the length is right at the limit."
+    "notes": "The answer is sound, but it runs about 200 words, and the 'compare the timestamps' check is vague because the lesson's saved record has no time for when the rule was written."
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule works well, but three situations need extra care.\n\n**Very little data.** The paired check only counts questions where the two versions disagree. With just a handful of those, almost nothing clears \"twice the square root.\" Say 3 wins and 0 losses: 3 is less than twice the square root of 3, about 3.5, so the answer is still too close to call. Gather more examples, or decide on cost.\n\n**Data that changes over time.** Real user questions drift away from your test set. A version can pass every gate on old examples and still fail on today's traffic. Refresh your examples regularly, add new must-pass cases from real failures, and review the budgets too.\n\n**An LLM grading the answers.** In an LLM or RAG app (one that looks up documents before answering), a second model often decides \"right\" or \"wrong.\" That judge is a bit random, so wins and losses can flip on a rerun. Spot-check the judge against human grades. Grade each answer more than once and keep the majority result.",
+   "a": "**1. Very little data.** With only a handful of questions where the versions disagree, the paired check almost never finds a clear winner. You will keep getting \"too close to call.\" Add more examples first, or agree up front to decide on cost when quality is a tie.\n\n**2. Users or data change over time.** This is called drift: today's questions stop looking like the ones in your test set. A decision that was right last spring may be wrong now. Refresh the test set from recent real requests and run the same rule again. The saved reasons tell you why the old decision was made, so you can see whether that reasoning still holds.\n\n**3. An LLM grades the answers.** In LLM or RAG apps (RAG means the model looks up documents before answering), another model often judges right or wrong. That judge makes mistakes, which makes the wins and losses less trustworthy. Use the same judge for both versions, and check a sample of its grades by hand.",
    "step": "Learn",
-   "fingerprint": "e931b463e2c7e696",
+   "fingerprint": "1602d00b10f5d2b6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1451,14 +1451,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the small-data and LLM-judge items run to four sentences, over the requested two or three, and LLM is not spelled out. Neither breaks a check."
+    "notes": "Minor: point 2 runs to four sentences against the 2-3 asked for, and 'LLM' is not spelled out. Neither breaks a listed check."
    }
   },
   "learn:term": {
    "q": "How is “ship” different from “keep the baseline”?",
-   "a": "**Ship** means you switch to the new version. **Keep the baseline** means you stay with the version you already run (the \"baseline\"). They are the two firm answers your rule can give.\n\nThe difference is what it takes to reach each one. To ship, the new version must pass every gate, the checks that must hold. Then it must clearly win on quality, judged by the paired check. On the same questions, you count the ones only the new version got right (wins) and only the old one got right (losses). Wins must beat losses by a clear margin.\n\nKeeping the baseline is the safe default. Any failed gate leads there. So does the new version clearly losing. Even \"too close to call\" keeps it for now.\n\nThink of replacing your car. You buy the new one only if it fits your budget and is clearly better. Otherwise you keep the old one.\n\nIn the lesson's example, the candidate passes the must-pass cases and cost. Its p95 latency is 2.1 s, but the budget is 1.5 s. (p95 means 95 out of 100 requests are faster than this.) So the answer is keep baseline, because: too slow.",
+   "a": "The decision has three possible outcomes. Two of them are the opposites you are asking about.\n\n**Ship** means you release the new version to users. It replaces the old one.\n\n**Keep the baseline** means the old version (the \"baseline\", the one already running) stays, and the new one does not go out.\n\nThe third, **too close to call**, also keeps the baseline for now. It means you need more examples, or you choose on cost.\n\nShip has to be earned. First come the **gates**: checks that must all hold, or the answer is no. Then comes the **paired check**. On the same questions, count the ones only the new version got right (wins) and the ones only the old version got right (losses). You ship when every gate passes and wins are clearly ahead. You keep the baseline when any gate fails, or when losses are clearly ahead.\n\nIt's like replacing your phone. You switch only if the new one fits your budget and is clearly better.\n\nIn the lesson's example, the p95 latency was 2.1 s against a 1.5 s budget. (p95 means 95 out of 100 requests are faster than this.) One gate failed. So the answer is keep baseline, because: too slow.",
    "step": "Learn",
-   "fingerprint": "756ff0fa27a9340d",
+   "fingerprint": "7a246bd419ed96e2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2022,9 +2022,9 @@
  "fluke_risk": {
   "check:0:0": {
    "q": "Why not “Ship it: it won clearly on the dev set”?",
-   "a": "\"Ship it\" gets one thing right. A clear win on the dev set is a real signal, and that variant is the right one to look at more closely.\n\nWhat it misses is how many tries it took to get there. You tested 15 variants. Each one has about a 5% chance of \"winning\" by pure luck, which is called a **false positive**. Across 15 tries, the chance that at least one is a fluke falls between the 40% and 64% shown in the lesson's table. That is a lot.\n\nThere is a second problem. You picked the best of many, so its dev score is partly luck. That number is too optimistic. This is the **multiple comparisons problem**: the more you try, the more likely the top result looks better than it really is.\n\nSo a clear win on the same data you used to choose it doesn't prove much.\n\n\"Confirm it once on the holdout set\" is better because the holdout examples were kept aside and never used to pick the winner, so a single test there gives an honest score that luck in the search can't inflate.",
+   "a": "\"Ship it\" gets one thing right. A clear win on the dev set is a real signal. That prompt is a good candidate, and it deserves a closer look.\n\nWhat it misses is how the winner was found. You tried 15 variants. Each comparison has about a 5% chance of a lucky win, called a **false positive**. Across 15 tries, the chance that at least one of them \"wins\" by luck is roughly half. So the best of 15 is partly the best prompt and partly the luckiest one.\n\nIts dev score is also too optimistic. You used the dev set (the examples you test against while choosing) to pick the winner. A score from the same examples you used to choose will flatter your pick. A clear margin doesn't fix this. Luck can produce clear margins too.\n\n\"Confirm it once on the holdout set\" is better because the holdout examples were kept aside and never seen, so a single fresh test shows whether the win is real or just the luck of picking the best of many.",
    "step": "Check",
-   "fingerprint": "f9c5a5a3aa2c6f2f",
+   "fingerprint": "b5584177119bdf04",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2035,14 +2035,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: calling the dev win 'a real signal' slightly overstates it, since the lesson says the best of many is partly luck, but the answer corrects this later."
+    "notes": "No significant problems; 'roughly half' for 15 variants is about 54%, which fits between the lesson's 40% for 10 and 64% for 20."
    }
   },
   "check:0:2": {
    "q": "Why not “Try 15 more variants to be sure”?",
-   "a": "The instinct behind \"Try 15 more variants to be sure\" is good. You doubt the win and want more evidence before shipping. That caution is right.\n\nThe problem is that this option does the opposite of what you want. Every extra variant is another comparison, and each comparison has its own 5% chance of a lucky win, a **false positive**. With 15 variants, the odds that at least one won by luck are already about one in two. Adding 15 more pushes those odds even higher.\n\nIt also never tests the winner itself. You would be running more contests on the same **dev set**, the examples you have been tuning on. The best of 30 is still partly luck, and its dev score is still too optimistic.\n\nWhat you actually need is a fresh, fair look at the one prompt you picked.\n\n**Confirm it once on the holdout set** is the better answer. The holdout examples were never used to choose the winner, so a single check there shows whether the win was real or a fluke.",
+   "a": "\"Try 15 more variants to be sure\" gets one thing right. It doesn't trust a single win, and that caution is good.\n\nBut it adds evidence in the wrong direction. Each new variant is one more comparison, and each comparison has its own 5% chance of a lucky win. With 15 variants, the chance that at least one \"won\" by luck is already about 54%, roughly a coin flip. Going to 30 pushes it near 79%. You'd end up with a winner you can trust *less*, not more.\n\nIt also keeps using the dev set, the examples you've been tuning against. Picking the best of many on the same examples makes that score too optimistic. More tries on the same data only deepens the problem.\n\nWhat you actually need is a fresh, fair test the winner has never seen. That's the job of the holdout set: examples kept aside and not used while you search.\n\n**Confirm it once on the holdout set** is better because it gives a single, unbiased check on new data, so a lucky win on dev gets caught instead of shipped.",
    "step": "Check",
-   "fingerprint": "010edf5996ae4279",
+   "fingerprint": "d588ce5f22c39517",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2058,9 +2058,9 @@
   },
   "check:1:0": {
    "q": "Why not “20 prompts is too few to try”?",
-   "a": "\"20 prompts is too few to try\" points the wrong way. The problem is not that the teammate tried too few. Trying more prompts would make it worse, not better.\n\nWhat it gets right is small: the number of prompts does matter. But each extra prompt is one more chance for a lucky win. With 20 prompts, the chance that at least one \"wins\" by luck is already about 64%. With 50, it climbs even higher.\n\nWhat it misses is the real mistake. The teammate picked the best score on the dev set, the examples used while building, and then quoted that same score as a forecast. The best of many is partly luck, so that number is too optimistic. Production will likely look worse.\n\nThe fix is not more prompts. It is to confirm the winner once on the holdout set, the examples kept aside that it has never seen. That gives an honest score.\n\n\"The best of 20 is partly luck\" is better because it names the actual flaw: picking the top score from many tries inflates it, so it can't be trusted as a prediction.",
+   "a": "\"20 prompts is too few to try\" does notice something real. The number of prompts matters. But it gets the direction backwards.\n\nThe lesson's table shows why. Each comparison has a 5% chance of a **false positive**, meaning a prompt that looks like a winner only by luck. Try 1 prompt and that risk is 5%. Try 20 and the chance that at least one wins by luck is about 64%. Trying more prompts raises the fluke risk. So \"try more\" would make the teammate's problem worse.\n\nThat option also misses the real mistake. The teammate picked the best prompt using the dev set. Then they quoted its score on that same dev set. The best of many is partly luck, so that score is too optimistic. It is not a fair guess for production.\n\nThe fix is to limit how many prompts you test. Then confirm the winner **once** on the holdout set. That is the set of examples kept aside, which the winner has never seen.\n\n\"The best of 20 is partly luck\" is better because it names the real problem: the winner's dev-set score is inflated by luck, so it overstates what production will show.",
    "step": "Check",
-   "fingerprint": "4b9eb9b12c29eef5",
+   "fingerprint": "8b1565f0ad38054e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2076,9 +2076,9 @@
   },
   "check:1:1": {
    "q": "Why not “Dev-set scores always run low”?",
-   "a": "\"Dev-set scores always run low\" gets one thing right. It senses that the quoted number is not a fair forecast of production. That instinct is good.\n\nBut it points the wrong way. The **dev set** is the batch of examples you use while trying out variants. When you try 20 prompts on it and keep the top scorer, that score tends to run *high*, not low. Some of the winner's lead came from luck: it happened to suit those particular examples. In production it meets new examples, and that lucky boost fades.\n\nThe word \"always\" is also off. Dev scores are not low or high by nature. The problem comes from *picking the best of many* on the same set. Test one prompt and its dev score is a fair estimate. Test twenty and keep the top one, and the estimate becomes too rosy.\n\nThe fix is to check the winner once on the **holdout set**, examples it has never seen, and quote that score instead.\n\n\"The best of 20 is partly luck\" is the better answer because it names the real cause: choosing the top scorer out of many inflates its score.",
+   "a": "\"Dev-set scores always run low\" gets one thing right. The quoted dev-set score is not a safe forecast for production. (The dev set is the examples you used while trying and comparing prompts.)\n\nBut it has the direction backwards. The teammate's score is more likely too **high**, not too low.\n\nHere's why. Each prompt's score has some luck in it. Some prompts get a lucky bump on these particular examples. When you try 20 and keep the top one, you tend to pick a prompt that is good *and* got lucky. That luck won't repeat on new data, so real performance usually drops.\n\nThe word \"always\" is also a problem. Dev-set scores don't run low as a rule. The trouble comes from *choosing the best of many*, not from the dev set itself.\n\nSo the fix isn't to bump the number up. It's to test the winner **once** on the holdout set. That is the set of examples kept aside that the winner has never seen.\n\n\"The best of 20 is partly luck\" is better because it names the real cause: picking the top of many scores makes the winner look better than it really is.",
    "step": "Check",
-   "fingerprint": "4c72efa58b832763",
+   "fingerprint": "39b05dac3068eb67",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2094,9 +2094,9 @@
   },
   "check:2:0": {
    "q": "Why not “Run all 50 on the holdout set”?",
-   "a": "\"Run all 50 on the holdout set\" gets one thing right. The holdout set is the honest test. It holds examples kept aside that no variant has seen, so its scores are not inflated by tuning.\n\nThe problem is how often it gets used. The holdout set is meant for one job: confirming a single winner, once. If all 50 prompts run on it, you are back to picking the best of many. That best score is partly luck, just as before. The multiple comparisons problem has simply moved to a new place.\n\nWith 50 comparisons at the usual 5% bar, a lucky \"win\" is very likely. That is even more likely than the 64% the lesson shows for 20. Once you have picked a winner off the holdout set, you have no clean set left to check it on.\n\n\"Test fewer, with a stricter bar\" is better because it cuts the chance of a fluke while you are still planning, and it keeps the holdout set untouched for that one final confirmation.",
+   "a": "\"Run all 50 on the holdout set\" gets one thing right. The holdout set is the honest test, because it holds examples the prompts have never seen.\n\nThe problem is how many times you use it. Each comparison has about a 5% chance of a lucky win. Across 50 comparisons, the chance that at least one prompt \"wins\" by luck is about 92%. Running all 50 on the holdout just moves the fluke problem there. You would still pick the best of 50, and its score would still be too optimistic.\n\nThen the holdout is used up. Nothing clean is left to confirm the winner on. Its whole job is one final check of one winner.\n\n\"Test fewer, with a stricter threshold\" is better because it cuts the number of chances for luck before any test runs, and it makes each chance harder to win: you share the usual 5% across all your comparisons, so each one must clear a much higher bar.",
    "step": "Check",
-   "fingerprint": "d0975f7683d28e67",
+   "fingerprint": "351944715954e638",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2112,9 +2112,9 @@
   },
   "check:2:2": {
    "q": "Why not “Run each idea once to save money”?",
-   "a": "\"Run each idea once to save money\" sounds sensible. Saving money is a fair goal, and nothing in the lesson says you must run each idea many times.\n\nBut it doesn't touch the real danger. The danger comes from **how many comparisons** you make. A comparison means checking one prompt idea against the baseline, your current version. Each comparison has about a 5% chance of a **false positive**, a \"win\" that is really just luck.\n\nWith 50 ideas, you still make 50 comparisons, whether you run each once or not. The lesson's table shows that 20 comparisons already give about a 64% chance that at least one wins by luck. With 50, that chance is even higher. So you would very likely crown a fluke and think you found a better prompt. Running each idea once leaves the count at 50, so the risk stays just as high.\n\n\"Test fewer, with a stricter bar\" is better because it attacks the cause directly: it cuts the number of comparisons and divides the 5% by that number (the **Bonferroni** correction), so a lucky win is much harder to get.",
+   "a": "Saving money is a fair goal, and running each idea once is not wrong in itself. But it does not guard against the problem this lesson is about.\n\nThe risk comes from **how many comparisons** you make, not how many times you run each one. A comparison means checking one prompt against the baseline (your current version). Each one carries a 5% chance of a **false positive**, a \"win\" that is really just luck. Run 50 ideas once each and you still make 50 comparisons. The fluke risk is exactly the same as before; you have only cut the bill.\n\nThe table shows the chance of at least one lucky winner is already 64% with 20 variants. With 50 it climbs higher still. So the plan saves money but leaves you just as likely to crown a fluke.\n\n**\"Test fewer, with a stricter threshold\" is better because it shrinks the number of chances for luck and makes each lucky win harder to get.** For example, with 10 variants the Bonferroni correction (dividing 5% by the number of comparisons) asks each to pass at 0.5%.",
    "step": "Check",
-   "fingerprint": "4eb1e46533add2e4",
+   "fingerprint": "fb1a1289573ea9ef",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2130,9 +2130,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Chance of at least one fluke” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** \"Each comparison has about a 5% chance of naming a winner by pure luck. That's a false positive. If I test many prompt variants, those small chances add up.\"\n\n**The idea.** \"Each test has a 95% chance of *not* fooling me. For none of them to fool me, every single test has to come out clean, and that gets less likely with every test I add. Flip it around, and the chance of at least one fluke grows fast. With 20 variants, it's about 64%. It's like rolling a die. One roll rarely gives a six, but roll enough times and one turns up.\"\n\n**A trade-off.** \"The Bonferroni fix divides the 5% by the number of tests. That's strict. It blocks flukes, but it can also hide a real, small improvement.\"\n\n**A likely follow-up**\n\n*\"So how would you pick a prompt honestly?\"*\n\nHint: give two guards.\n- Limit how many variants you try.\n- Confirm the winner **once** on the holdout set. That's the examples it has never seen. In MLflow, that's a single run tagged `split = holdout`.",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"Every comparison has a small chance of a false positive. That means a variant looks better purely by luck. At the usual 95% standard, that chance is 5% per test.\"\n\n**The idea:** \"Those small chances add up. Each extra test is another chance for a fluke, so the odds that *every* test stays clean keep shrinking. With 20 variants, there's about a 64% chance at least one 'wins' by luck. It's like rolling a die. One roll rarely gives a six, but roll enough and a six turns up.\"\n\n**The trade-off:** \"You can guard against this with the Bonferroni correction. That means dividing the 5% by the number of tests, so 20 tests means 0.25% each. It's safer, but it's strict. A real but small improvement may fail to pass.\"\n\n**A likely follow-up**\n\n*\"So how do you trust the winner you picked?\"*\n\nHint: Point to the holdout set. That's a batch of examples kept aside, which no variant was tuned on. Confirm the winner there **once**. Its score on the dev set is too optimistic, because the best of many is partly luck. The holdout score is the honest one.",
    "step": "Explain",
-   "fingerprint": "0fa1bf7231d9b915",
+   "fingerprint": "f25210ee5c51ceb5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2143,14 +2143,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The phrase \"those small chances add up\" is loose, since they compound rather than sum, but it does not contradict the lesson. \"Dev set\" is also not explained."
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The winner's score sags later.** It looked great on the dev set (the examples you tuned on). Then it scores lower on the holdout set, or users find it no better than the old version.\n- **Lots of variants, small lead.** You tried many prompts and the best one beat the rest by only a point or two. With many tries, a small lead like that is often just luck.\n- **The holdout set gets reused.** In MLflow you see several runs tagged `split = holdout` for the same search. Each extra look turns the holdout into another chance for a fluke, so it stops being a fair check.\n- **Nobody counted the comparisons.** The report gives one best score but not how many variants were tried. Without that number, you can't judge how much luck is in it.\n\n**Quickest check**\n\nCount the dev runs in the experiment. That is how many variants you compared. Then run the winner on the holdout set once. If its holdout score is clearly below its dev score, the dev result was partly luck. If the two scores are close, the win is more likely real.",
+   "a": "**Warning signs**\n\n- **The winner's score drops later.** It looked great on the dev set, then sinks on the holdout set or with real users. That gap is the luck wearing off.\n- **The win is small.** The best prompt beat your current version by a hair, after many tries. Tiny wins found after a long search are often flukes.\n- **Lots of tries, one reported.** Your `prompt-search` experiment holds dozens of `dev` runs, but only the best score made it into the report.\n- **The holdout set was used more than once.** Several runs tagged `holdout`, or prompts tweaked after peeking at holdout scores. Once you tune against it, it is no longer \"unseen\". The holdout set is the batch of examples kept aside for the final check.\n\n**Quickest check**\n\nOpen the experiment in MLflow. Count the `dev` runs. That number is how many comparisons you made.\n\nThen find the winner's `holdout` run. Confirm three things:\n\n1. It exists.\n2. There is only one.\n3. Its score is close to the dev score.\n\nFor a stricter check, divide 5% by that count. This is the Bonferroni correction. Then ask whether the win still clears the tougher bar.",
    "step": "Learn",
-   "fingerprint": "d64d937bf7f4d171",
+   "fingerprint": "5ecdea0b999f0f52",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2166,9 +2166,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**Your variants are near-copies.** The 64% figure assumes each comparison is a separate coin flip. Ten prompts that differ by one word tend to win or lose together, so the real fluke risk is lower and Bonferroni (dividing 5% by the count) becomes too strict. Test fewer, more distinct variants, and still confirm the winner once on the holdout.\n\n**You keep checking the holdout.** The holdout only protects you if the winner sees it once. If you peek, tweak, and re-check, it quietly becomes a second dev set, and its score turns optimistic too. When you need another confirmation, set aside a fresh holdout.\n\n**The scores themselves are noisy.** An LLM can answer differently each time, and an LLM judge (a model that grades answers) can wobble too. On a small holdout, that noise can hide a real gain or fake one. Run each example a few times, average the scores, and grow the holdout until results stay steady.",
+   "a": "The rule assumes a few things. Here is where it needs extra care.\n\n**1. You peek at the holdout more than once.** The holdout only works while the winner has never seen it. If you check it after every tweak, it quietly becomes another set of examples you tune against, and its score turns optimistic too. Use it once, and when you need a fresh check, gather new holdout examples.\n\n**2. Your app's answers vary from run to run.** An LLM can give different outputs for the same input, so one eval run can look good by chance. Run each variant a few times and compare the averages, not a single lucky score.\n\n**3. You have very little data.** With a tiny holdout set, a few examples can swing the score a lot. Collect more examples first, or treat any \"win\" as a hint rather than proof.",
    "step": "Learn",
-   "fingerprint": "1e7094527a563d93",
+   "fingerprint": "aff9012543168dd2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2184,9 +2184,9 @@
   },
   "learn:term": {
    "q": "How is “Design” different from “Bonferroni”?",
-   "a": "They aren't two of the same kind of thing. **Design** is a stage of your work. **Bonferroni** is one tool you can use during that stage.\n\n**Design** is the planning step, before you run any tests. Here you decide what to compare and how many variants to try. The first guard lives here: keep the number small. Fewer comparisons means fewer chances for a lucky win.\n\n**Bonferroni** is a specific rule you can apply while designing. You take the usual 5% threshold (the bar a result must clear to count as a win) and divide it by the number of comparisons. That makes each win harder to get by luck.\n\nHow they work together, using the lesson's table:\n\n- Design says: \"Try 5 variants, not 20.\" The fluke chance drops from 64% to 23%.\n- Bonferroni then says: \"With 5 comparisons, use 1% instead of 5%.\" That pushes the fluke risk down further.\n\nEveryday comparison: Design is planning a road trip. Bonferroni is one rule in that plan, like \"drive slower when the route is longer.\" The plan comes first, and the rule is something you choose to add to it.",
+   "a": "They aren't two of the same kind of thing. **Design** is a *stage* of your work. **Bonferroni** is one *tool* you can use during that stage.\n\n**Design** is the planning step, before you run anything. You decide what to test and how many variants to try. The lesson's first guard lives here: keep the number of variants small. Fewer comparisons means fewer chances for a lucky \"win.\"\n\n**Bonferroni** is a specific rule you can apply while designing. You take the usual 5% fluke allowance and divide it by the number of comparisons. Each test then has to clear a much higher bar.\n\nHow they work together, using the lesson's table:\n\n- Test 20 variants at the normal 5% bar, and there's about a 64% chance one wins by luck.\n- Design says: do you really need 20? Cutting to 5 lowers the risk to 23%.\n- Bonferroni says: if you keep 20, make each one beat 0.25% (5% ÷ 20) instead of 5%.\n\nThink of planning a party. Design is deciding how many guests to invite. Bonferroni is a stricter dress code you set because the guest list is long.",
    "step": "Learn",
-   "fingerprint": "31966868ce7de33b",
+   "fingerprint": "6532a77d1c7f290f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2197,7 +2197,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; the road-trip analogy is loose but not wrong, and the length is near the limit."
+    "notes": ""
    }
   }
  },
@@ -2676,20 +2676,20 @@
   },
   "explain:interview": {
    "q": "How do I explain “Tick off a checklist” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* If you choose your metric or your winning rule after seeing results, you can talk yourself into almost any answer. So the plan has to be written, and complete, before the first run.\n\n*The idea.* \"I keep a fixed list of the seven fields a plan needs: question, change, eval set, metric, runs, test, and decision rule. The plan is a dict, which is a lookup table from a field's name to what I wrote. I look up each field. Anything missing or empty goes on a list of gaps, like ticking off a packing list. No gaps means every field is filled in. That's the first step, not the last.\"\n\n*Trade-off.* \"The check sees whether a field is there, not whether it's good. A metric of 'better' passes the check but is useless. So a person still reads the plan.\"\n\n**A likely follow-up**\n\n*\"Why log the plan to MLflow?\"*\n\nHint: `mlflow.log_dict` saves the plan right next to the results, with a timestamp. That shows the plan came before the results. It also lets anyone check later that you stuck to your own rule.",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"If you pick your metric or your winning rule after seeing results, you can talk yourself into almost any answer. So the plan has to be complete before the first run.\"\n\n*The idea:* \"I keep a fixed list of the fields every plan needs. I walk through that list once. For each field I look it up in the plan, which is a dict, meaning a lookup table from a field's name to what was written. If a field is missing or empty, it goes on a list of gaps. An empty gap list means the plan is ready to run.\"\n\n*The trade-off:* \"This checks that something was written, not that it's good. A decision rule that just says 'TBD' would pass. So the checklist catches forgotten fields. A human still has to judge the content.\"\n\n**A likely follow-up**\n\n*\"Why treat an empty value the same as a missing one?\"*\n\nHint for a strong answer: both mean the decision wasn't made. A blank decision rule leaves you just as free to choose a winner after looking. The goal is to block that, so both count as gaps.",
    "step": "Explain",
    "fingerprint": "ce52c4553400fd2b",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The follow-up hint says log_dict saves the plan 'with a timestamp' and that this 'shows the plan came before the results'. The lesson says neither, and logging the plan in the same run does not prove it was written first."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:spot": {
@@ -2986,20 +2986,20 @@
   },
   "check:1:2": {
    "q": "Why not “The 40 hardest questions”?",
-   "a": "**Why not \"The 40 hardest questions\"?**\n\nIt does get one thing right. Hard questions are good at showing when an idea is weak, and a smoke set exists to catch bad ideas fast.\n\nBut it misses two things.\n\n**It isn't stratified.** Stratified means a few questions from every group. The hardest questions often bunch up in just a few groups, like tricky billing or rare edge cases. Your other groups would get no questions at all. An idea could quietly break an easy, everyday group, and the smoke set would never show it.\n\n**It may skip the must-pass set.** Must-pass questions are the ones the app must never get wrong. Many of them are not especially hard. They are just important. If they aren't \"hard,\" they don't make the cut. Then an idea could fail a must-pass question and still look fine.\n\nRemember the smoke set's job. It is a quick filter for obviously bad ideas, so it needs to touch everything the app does.\n\n**Why the right answer wins:** \"A few from each group, plus all must-pass\" covers every kind of question and every must-never-fail question. A bad idea has nowhere to hide.",
+   "a": "Picking the 40 hardest questions sounds smart. It does get one thing right: hard questions are where a weak idea often shows its cracks first.\n\nBut it misses a lot.\n\n**It leaves out whole groups.** Hard questions tend to bunch up in a few topics. If billing questions are all \"easy\", none make the cut. A change that quietly breaks billing answers would slip through, because nothing in the smoke set asks about billing.\n\n**It can skip the must-pass questions.** These are the ones the app must never get wrong. Many of them are simple, so they wouldn't rank as \"hardest\". Yet a smoke set exists to catch exactly that kind of breakage fast.\n\n**It gives a lopsided picture.** An idea might help on tricky edge cases and hurt everything ordinary. With only hard questions, it looks like a win.\n\nThe smoke set is a quick filter for obviously bad ideas. To filter well, it has to touch every part of the app.\n\nThat's why the right option is **\"A few from each group, plus all must-pass.\"** It covers every topic and guarantees the non-negotiable questions get checked every single time.",
    "step": "Check",
    "fingerprint": "e31c8d1a30031fcf",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It adds claims the lesson never makes (hard questions are good at exposing weak ideas; the hardest questions bunch into a few groups so other groups get none) and ends by overclaiming 'a bad idea has nowhere to hide', when the lesson says the small smoke set is only a rough filter."
+    "pass": true,
+    "notes": "No blocking problems. The claims that hard questions cluster in a few topics and that many must-pass questions are simple come from outside the lesson, and the closing explanation runs to two sentences instead of one."
    }
   },
   "check:2:0": {

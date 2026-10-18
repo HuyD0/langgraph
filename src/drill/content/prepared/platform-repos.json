@@ -438,20 +438,20 @@
   },
   "check:2:0": {
    "q": "Why not “Yes: the first group listed wins”?",
-   "a": "\"Yes: the first group listed wins\" gets one thing right. It notices that a list can name the same group more than once, and that something must settle which level that group ends up with.\n\nBut it picks the wrong rule. Position in the list never decides anything. When a group appears twice, Databricks gives it the **highest** of its levels. So if `grp-sales-dev-owners` shows up with `CAN_EDIT` and with `CAN_MANAGE`, it gets `CAN_MANAGE`, whichever line comes first.\n\nThe question also says both plans end with the same groups holding the same permissions. A plan is Terraform's preview of what it will change. If the end result matches, nobody can do more or less in `/Teams/team-sales` under one plan than under the other. Flagging the order would make the reviewer chase a difference that changes nothing.\n\nA reviewer's job is to check access, not layout.\n\n\"No: only who ends up with what matters\" is better because the final permission each group holds on the folder is the only thing that affects what people can do, and here that is identical.",
+   "a": "**\"Yes: the first group listed wins\"** gets one thing right. It notices that something has to decide what happens when a list could say different things about a group.\n\nBut it picks the wrong rule. Position in the list never decides access. When a group appears twice, it ends up with the **highest** of its levels. For example, `CAN_EDIT` beats `CAN_READ`, wherever each one sits in the list.\n\nIt also misses what this question describes. Both plans give the same groups the same permissions. A **plan** is Terraform's preview of what it will change. Here, the order is the only difference. Databricks applies the whole set of grants on the folder together, so it doesn't read them top to bottom. Two lists with the same pairs, like `grp-sales-dev-owners` with `CAN_MANAGE` and `users` with `CAN_READ`, leave the folder in exactly the same state. Flagging that would send the team chasing a change that does nothing.\n\n**\"No: only who ends up with what matters\"** is better because a reviewer's job is to check the final access each group gets, and that is identical in both plans.",
    "step": "Check",
    "fingerprint": "5e6b96b5229bcb19",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says \"Databricks gives it the highest\" of its levels, but the lesson never credits Databricks; the interview angle says the runbook code keeps whichever level ranks higher, so the tutor assigns the rule to the wrong actor."
+    "pass": true,
+    "notes": "No real problem. The line about Databricks applying grants together goes slightly beyond the lesson, but it fits the lesson's 'review who ends up with what, not the order'."
    }
   },
   "check:2:1": {
