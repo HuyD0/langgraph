@@ -342,6 +342,16 @@ idea, ungraded:
   `uv run drill tutor prepare --profile <name>` drafts what is missing (costs money);
   `uv run drill tutor prepared --sample 50` shows a spot-check sample, and `--check` / `--reject
   lesson_id/key` record your verdict.
+- **Choosing a version of the tutor: cost, speed and quality** (`drill.tradeoff`,
+  `notebooks/learning/cost_speed_quality.ipynb`): the experiment that compares ways of answering the
+  standard questions (prepared answers, bigger or smaller models, and a **cacheable** prompt that puts
+  the lesson and rules first, marked for the model's prompt cache, as a version to test, not a change
+  to the live tutor). It scores every answer on pass rate, p95 time to first words and dollars per
+  1,000 answers with the cache counted. Then it applies a rule written first: no worse than the
+  baseline by more than 3 points, fast enough, then the cheapest. Measured from the real prompts, a
+  lesson's fixed start is often shorter than the minimum a model will cache, so today nothing is
+  cached. The notebook teaches the method free on a labelled practice recording. Its companion,
+  `notebooks/learning/evaluating_the_tutor.ipynb`, checks whether a cheaper judge can be trusted.
 - **Quiet signals on the tutor's answers** (`askSignal` in `page/ask.js`): with no buttons, the page
   notes what the learner did next and sends it as CODE feedback on the latest answer, once each,
   within half an hour on the same lesson: `saved` (to the study list), `asked_again` (nearly the
