@@ -1,8 +1,483 @@
 """AI & ML foundations: How models learn from data, and how you know whether they're any good."""
 
-from drill.content.model import angle, case, example, exercise, lesson, machine, module, question, stack
+from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, machine, module, pile, piles, practice,
+                                 question, rewrite, seesaw, sortby, sortrow, stack, steps)
 
 MODULE = module('foundations', 'AI & ML foundations', "How models learn from data, and how you know whether they're any good.")
+
+lesson(MODULE, 'kind_of_ai',
+    title='What kind of AI is it?',
+    cards=[
+        card('Four tools, four kinds of job',
+             '"AI" covers very different tools. The first question about any idea is which one fits.',
+             picture=sortby('Which tool fits the job?',
+                            sortrow('A rule', 'The answer follows a fixed rule: refunds over $50 need a manager', 'If-then code', icon='listcheck'),
+                            sortrow('A model trained on examples', 'Predict a label or a number from past cases: will this invoice be paid late?', 'Machine learning', icon='chart'),
+                            sortrow('A large language model (LLM)', 'Read and write language: draft a reply, sum up a document', 'Generative AI', icon='chat'),
+                            sortrow('An LLM with your documents', 'Find the right passage in your own content, then answer from it', 'RAG', icon='search'))),
+        card('How a model learns from examples',
+             'A **machine learning** model learns from past cases that already have the right answer, called **labels**.',
+             picture=steps(('listcheck', 'Examples with answers', 'Three years of invoices, each labelled "paid late" or "on time".'),
+                           ('chart', 'Training', 'The model finds patterns that link an invoice\'s details to its label.'),
+                           ('target', 'Prediction', 'For a new invoice it gives a score: how likely it is to be late.')),
+             after='No labelled examples means nothing to learn from and nothing to test on: one of the gates from "Is this a good AI use case?".'),
+        card('An LLM is trained too, just differently',
+             'An LLM was trained by its provider on a huge amount of text, so it can do many language jobs from instructions alone, called a **prompt**.',
+             picture=piles(pile('A trained model', ['Trained on your own labelled examples', 'One narrow job, like late or not', 'Gives a score you can set a threshold on']),
+                           pile('An LLM', ['Trained by the provider on huge amounts of text', 'Many jobs, from a prompt', 'Writes text that has to be checked']))),
+        card('Pick the simplest one that works',
+             'Each step up costs more and is harder to test, so go only as far as the job needs.',
+             picture=steps(('listcheck', 'A rule', 'If a fixed rule always gives the right answer, write the rule.'),
+                           ('chart', 'A trained model', 'For one prediction learned from past examples.'),
+                           ('chat', 'An LLM', 'For reading and writing language.'),
+                           ('search', 'An LLM with your documents (RAG)', 'When answers must come from your own content.'),
+                           ('bot', 'An agent', 'An LLM that takes steps and uses tools, when the job needs actions.'))),
+    ],
+    example=example('Four ideas, four tools', """# flag claims over $500 with no receipt
+#   -> a rule
+# predict which invoices will be late
+#   -> a model trained on past invoices
+# answer HR questions from the policy
+#   -> an LLM with your documents (RAG)
+# read an email, update the order
+#   -> an agent: an LLM using tools"""),
+    check=question(
+        'You need to predict which invoices will be paid late, from 3 years of past invoices marked late or on time. Which fits best?',
+        [
+            'A model trained on past invoices',
+            'An LLM that writes about each invoice',
+            'A fixed rule on the invoice amount',
+        ],
+        answer=0,
+        why='You have past cases with the right answer, and the job is one prediction: that is what a trained model is for. An LLM writes language, and one fixed rule rarely captures what makes an invoice late.',
+    ),
+    angle=angle(
+        pattern='Check the simplest tool first, then step up',
+        text='The big idea: "AI" covers a rule, a trained model, an LLM, an LLM with your documents, and an agent, and you pick the simplest one that does the job. Your code checks the task\'s facts in that order. If a fixed rule works, it answers "rule". If the task takes actions, it answers "agent". If it is about language, it answers "rag" when the answers must come from your own documents and "llm" otherwise. If there are labelled examples, it answers "trained model". Otherwise there is nothing to build on yet. It is like picking a tool from a toolbox: a screwdriver before a power drill.',
+        say='"First I ask which kind of AI fits: a [[rule|chatbot|agent::The simplest: if-then code.]] if the answer is fixed, a model trained on [[labelled|random|recent::Past cases that have the right answer.]] examples for one prediction, and an LLM only for [[language|numbers|storage::Reading and writing text.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Pick the Kind of AI',
+        topic='foundations',
+        difficulty='easy',
+        fn='pick_tool',
+        prompt="""Your function gets `task`, a dict of True or False facts:
+
+- `"fixed_rule"`: a fixed rule always gives the right answer
+- `"takes_actions"`: it must take steps and use tools
+- `"language"`: the job is reading or writing language
+- `"own_documents"`: the answers must come from your own documents
+- `"labelled_examples"`: you have past cases with the right answer
+
+Check them in this order and return the first that fits:
+
+1. `fixed_rule` → `"rule"`
+2. `takes_actions` → `"agent"`
+3. `language` and `own_documents` → `"rag"`
+4. `language` → `"llm"`
+5. `labelled_examples` → `"trained model"`
+6. none of these → `"not yet"`""",
+        pattern='Test the conditions from simplest to most complex, and return at the first match.',
+        target='a few checks in order',
+        realworld='Teams vetting AI ideas start with "could a rule do it?" and step up only as far as needed. Many ideas end up as a rule or a small trained model, which are cheaper and easier to test than an LLM.',
+        practice=practice(
+            intro='Four ideas from around the company. For each, pick the simplest kind of AI that does the job.',
+            explain='The big idea: "AI" covers a rule, a trained model, an LLM, an LLM with your documents and an agent, and you pick the simplest one that works. The expenses check needed only a rule, the HR questions needed an LLM answering from the policy pages, predicting who cancels needed a model trained on past customers, and the supplier email needed an agent because it had to take actions.',
+            pattern='The simplest tool that does the job',
+            realworld='When someone brings an AI idea at work, ask first whether a rule could do it, then whether it is one prediction from past examples, and only then reach for an LLM or an agent.',
+            gotchas=[
+                ['An LLM for everything', 'An LLM is the most flexible tool and the hardest to test. A rule or a trained model is cheaper and steadier when it fits.'],
+                ['Forgetting the labels', 'A trained model needs past cases with the right answer. No labels, no model.'],
+            ],
+            asks=[
+                ask('Which kind of AI fits?', ['A rule: amount and receipt', 'A model trained on past claims', 'An LLM reading every claim'], answer=0,
+                    evidence=evidence('claim', who='An idea from finance', text='"Flag every expense claim over $500 that has no receipt."'),
+                    clue='Could a plain if-then always give the right answer here?',
+                    why='Over $500 and no receipt is a fixed rule, so write the rule. It is free to run and never wrong.',
+                    wrong=[None, 'There is nothing to predict: the rule already says which claims to flag.', 'An LLM would cost money on every claim and could get a fixed rule wrong.']),
+                ask('Which kind of AI fits?', ['An LLM answering from the policy pages', 'A model trained on past HR questions', 'A rule for each kind of question'], answer=0,
+                    evidence=evidence('claim', who='An idea from HR', text='"Answer staff questions about HR policy, and show the policy page each answer comes from."'),
+                    clue='It is language, and the answers must come from your own documents.',
+                    why='Reading and writing language from your own policy pages is RAG: an LLM that finds the right passage and answers from it, showing its source.',
+                    wrong=[None, 'A trained model predicts a label or a number. It can\'t write an answer from a policy page.', 'Staff ask in endless ways. No set of rules can cover them.']),
+                ask('Which kind of AI fits?', ['A model trained on those records', 'An LLM asked about each customer', 'A rule on how long they stayed'], answer=0,
+                    evidence=evidence('claim', who='An idea from sales', text='"Predict which customers will cancel next month, from two years of records marked stayed or left."'),
+                    clue='One prediction, and past cases with the right answer.',
+                    why='Past records labelled stayed or left, and one prediction to make: a trained model, which gives a score per customer you can check against what happens.',
+                    wrong=[None, 'An LLM can talk about customers, but it doesn\'t learn your records\' patterns the way a trained model does.', 'One rule rarely captures why people leave. The labelled records let a model learn it.']),
+                ask('Which kind of AI fits?', ['An agent: an LLM that uses tools', 'A model trained on past emails', 'A rule on the email subject'], answer=0,
+                    evidence=evidence('claim', who='An idea from operations', text='"Read a supplier\'s email, look up the order, and update its delivery date in the system."'),
+                    clue='It doesn\'t just answer: it has to look things up and change them.',
+                    why='Reading the email is language, and looking up and updating the order are actions with tools: that is an agent. It also needs the most care, because it changes real data.',
+                    wrong=[None, 'A trained model makes one prediction. This job has to read, look up and update.', 'Suppliers write in many ways, and a rule can\'t update the order for you.']),
+            ],
+        ),
+        starter="""def pick_tool(task):
+    # your code here
+    pass
+""",
+        solution="""def pick_tool(task):
+    if task["fixed_rule"]:
+        return "rule"
+    if task["takes_actions"]:
+        return "agent"
+    if task["language"] and task["own_documents"]:
+        return "rag"
+    if task["language"]:
+        return "llm"
+    if task["labelled_examples"]:
+        return "trained model"
+    return "not yet"
+""",
+        cases=[
+            case({"fixed_rule": False, "takes_actions": False, "language": True, "own_documents": True, "labelled_examples": False},
+                 expected="rag", sample=True),
+            case({"fixed_rule": True, "takes_actions": False, "language": False, "own_documents": False, "labelled_examples": True}, expected="rule"),
+            case({"fixed_rule": False, "takes_actions": False, "language": False, "own_documents": False, "labelled_examples": True}, expected="trained model"),
+            case({"fixed_rule": False, "takes_actions": True, "language": True, "own_documents": False, "labelled_examples": False}, expected="agent"),
+            case({"fixed_rule": False, "takes_actions": False, "language": False, "own_documents": False, "labelled_examples": False}, expected="not yet"),
+        ],
+        guided="""def pick_tool(task):
+    # Replace every ___ with real code, then run the tests.
+    if task["fixed_rule"]:
+        return "rule"
+    if task["takes_actions"]:
+        return "agent"
+    # language from your own documents
+    if ___:
+        return "rag"
+    if task["language"]:
+        return "llm"
+    if task["labelled_examples"]:
+        return ___
+    return "not yet"
+""",
+        fills=['task["language"] and task["own_documents"]', '"trained model"'],
+        concepts=[
+            [
+                'Return at the first match',
+                'Each `if` returns straight away, so the order of the checks decides which answer wins.',
+                """if task["fixed_rule"]:
+    return "rule"   # stops here""",
+            ],
+            [
+                'and',
+                '`a and b` is True only when both are True.',
+                'True and False   # False',
+            ],
+        ],
+        byhand='A fixed rule? No. Takes actions? No. Language and own documents? Yes and yes: return "rag".',
+        why='A few checks in a fixed order.',
+        gotchas=[
+            [
+                'Checking the complex tool first',
+                'Put the rule check first. If a rule works, nothing else is needed.',
+            ],
+            [
+                'An LLM for a prediction',
+                'Predicting a label from past records is a trained model\'s job. An LLM is for language.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'how_llms_work',
+    title='How an LLM works, in plain words',
+    cards=[
+        card('Text becomes tokens',
+             'An LLM doesn\'t read letters or whole words. It reads **tokens**: pieces of words, about three quarters of a word each in English. Models are priced and limited in tokens.',
+             picture=piles(pile('What you write', ['Refunds over $50 need a manager', ('listcheck', '6 words')]),
+                           pile('What the model reads', ['Ref · unds · over · $ · 50 · need · a · manager', ('chart', '8 tokens')])),
+             after='How text splits depends on the model; this is one example. 1,000 tokens is roughly 750 English words.'),
+        card('It predicts the next token, again and again',
+             'An LLM writes one token at a time.',
+             picture=steps(('chat', 'Read the prompt', 'Your instructions, the question, and anything else you send.'),
+                           ('sparkle', 'Pick a likely next token', 'From patterns in the text it was trained on.'),
+                           ('reset', 'Add it, then repeat', 'Token by token, until the answer is finished.')),
+             after='It writes what is likely, not what is checked. That is why it can sound sure and still be wrong: the next lesson.'),
+        card('It only reads what fits in the context window',
+             'The **context window** is how many tokens the model can take in at once. What isn\'t sent, it never sees, and it remembers nothing between calls unless you send it again.',
+             picture=piles(pile('Sent in this call: it sees it', ['Your instructions', 'The question', 'Earlier messages you resend', 'Documents you add']),
+                           pile('Not sent: it never sees it', [('x', 'Yesterday\'s chat, unless resent'), ('x', 'Your new policy, unless added'), ('x', 'Anything over the window\'s limit')]))),
+        card('Temperature: how varied the answers are',
+             '**Temperature** is a setting from low to high.',
+             picture=seesaw(('Low temperature', 'steadier, more alike each time'), ('High temperature', 'more varied, more creative'), caption='Even at a low temperature the same question can get a different answer, so test more than once.')),
+        card('More context isn\'t better',
+             'It is tempting to send everything: every document, the whole chat. That costs more on every call, and the answers often get worse. Answers grow less reliable as the prompt gets longer, even when the right fact is in it: this is called **context rot**, and a bigger window doesn\'t fix it.',
+             picture=seesaw(('Sending everything', 'more tokens, paid on every call'), ('Answer quality', 'drops as the prompt grows'), caption='Send only what the model needs for this question.'),
+             after='Later lessons show how: fewer, better passages from your documents, and measuring how full the context is.'),
+    ],
+    example=example('What the model reads for one question', """# instructions        ~50 tokens
+# policy page added   ~6,000 tokens
+# the question        ~15 tokens
+# total read: a little over 6,000,
+# paid for on every question"""),
+    check=question(
+        'Your assistant answered well yesterday. Today it says it has never seen that conversation. Why?',
+        [
+            'It only sees what is sent in each call',
+            'It forgets because it is broken',
+            'Its tokens ran out overnight',
+        ],
+        answer=0,
+        why='An LLM remembers nothing between calls. If yesterday\'s conversation isn\'t sent again, it has never seen it. That is normal, not broken.',
+    ),
+    angle=angle(
+        pattern='Add up what is sent, then compare with the window',
+        text='The big idea: an LLM reads tokens, predicts the next token again and again, and only sees what is sent in each call, up to its context window. Your code adds up the tokens of every part of the prompt, then adds the room you keep for the answer. If the total is no more than the window, it fits. It returns the total and whether it fits. It is like packing a suitcase: everything has to go in at once, with room left for what you bring back.',
+        say='"An LLM reads [[tokens|letters|pages::Pieces of words.]], predicts the next one again and again, and only sees what I send in each [[call|week|session::It remembers nothing between them.]], up to its [[context window|hard drive|training data::How much it can take in at once.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Will It Fit in the Window?',
+        topic='foundations',
+        difficulty='easy',
+        fn='fits_window',
+        prompt="""Your function gets three things:
+
+- `parts`: a list of dicts, each with `"name"` and `"tokens"`: the pieces of the prompt.
+- `window`: the most tokens the model can take in at once.
+- `answer_room`: tokens you keep free for the answer.
+
+The total is the tokens of every part plus `answer_room`.
+
+Return `[total, fits]`, where `fits` is True if the total is no more than `window`.""",
+        pattern='Add up a list, then compare with a limit.',
+        target='one pass over the parts',
+        realworld='Before adding documents or long chat histories to a prompt, teams check it still fits the model\'s window with room for the answer, and remember that every token is paid for on every call.',
+        practice=practice(
+            intro='A few things people get wrong about how LLMs work, from a team building the HR assistant.',
+            explain='The big idea: an LLM reads tokens, predicts the next one again and again, and only sees what is sent in each call. You counted that a policy page makes the model read thousands of tokens per question, saw it can\'t know a new policy unless it is sent, saw why two runs can be worded differently, and matched temperature to the job.',
+            pattern='It only knows what you send it',
+            realworld='When an AI answer surprises you at work, first ask what was in the prompt: what was sent, what wasn\'t, and how many tokens it took.',
+            gotchas=[
+                ['Thinking it remembers', 'It remembers nothing between calls. Earlier messages only count if you send them again.'],
+                ['Thinking it knows your news', 'It knows its training text, not last week\'s policy. Send the policy, or search your documents for it.'],
+            ],
+            asks=[
+                ask('Roughly how many tokens does the model read for this one question?', ['A little over 6,000', 'About 15, the question', 'About 60, the sentences'], answer=0,
+                    evidence=evidence('code', title='The prompt for one question', text="""You are the HR assistant.
+Answer from the policy below.
+[policy page: 6,000 tokens]
+Question: How much parental leave do I get?"""),
+                    clue='Everything in the prompt counts, not just the question.',
+                    why='The model reads the whole prompt: the instructions, the 6,000-token policy page and the question. That is a little over 6,000 tokens, paid for on every question.',
+                    wrong=[None, 'The question is only part of it. The policy page is read every time too.', 'The policy page alone is 6,000 tokens.']),
+                ask('Is that right?', ['Only if the policy is sent in the prompt', 'Yes: models read the internet daily', 'Yes: it learns from every question'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"The model knows our new travel policy; we published it last week."'),
+                    clue='Where does the model get anything it wasn\'t trained on?',
+                    why='The model knows its training text, not your new policy. It only sees the policy if you send it in the prompt, or find it in your documents (RAG).',
+                    wrong=[None, 'Models don\'t read your intranet. They see what you send.', 'It doesn\'t learn from questions. Each call starts fresh.']),
+                ask('You ask the same question twice and get two different wordings. What does it mean?', ['Normal: it picks likely tokens each time', 'It is broken and must be replaced', 'Someone changed the prompt between'], answer=0,
+                    alone=True,
+                    clue='How does it choose each next token?',
+                    why='It picks a likely next token each time, and more than one is likely, so wordings differ. That is why you test on many examples, many times.',
+                    wrong=[None, 'Different wordings are normal for an LLM, not a fault.', 'Even with the same prompt, the wording can change.']),
+                ask('Why the different temperatures?', ['Variety for slogans, steadiness for policy', 'A higher temperature costs less money', 'A lower temperature answers faster'], answer=0,
+                    evidence=evidence('code', title='Settings for two features', text="""marketing slogans:    temperature 0.9
+policy answers:       temperature 0.1"""),
+                    clue='Which job wants the same answer every time?',
+                    why='Slogans benefit from variety, so a high temperature. Policy answers should be steady, so a low one, though even then they can vary a little.',
+                    wrong=[None, 'Temperature changes how varied answers are, not the price.', 'Temperature changes how varied answers are, not the speed.']),
+            ],
+        ),
+        starter="""def fits_window(parts, window, answer_room):
+    # your code here
+    pass
+""",
+        solution="""def fits_window(parts, window, answer_room):
+    total = answer_room
+    for part in parts:
+        total = total + part["tokens"]
+    return [total, total <= window]
+""",
+        cases=[
+            case([{"name": "instructions", "tokens": 50}, {"name": "policy page", "tokens": 6000}, {"name": "question", "tokens": 15}],
+                 8000, 500, expected=[6565, True], sample=True),
+            case([{"name": "chat history", "tokens": 120000}, {"name": "question", "tokens": 20}], 128000, 8000, expected=[128020, False]),
+            case([], 8000, 500, expected=[500, True]),
+        ],
+        guided="""def fits_window(parts, window, answer_room):
+    # Replace every ___ with real code, then run the tests.
+    # Start with the room kept for the answer.
+    total = answer_room
+    for part in parts:
+        total = ___
+    # It fits if the total is no more than the window.
+    return [total, ___]
+""",
+        fills=['total + part["tokens"]', 'total <= window'],
+        concepts=[
+            [
+                'Adding up in a loop',
+                'Start a total, then add each part\'s tokens to it.',
+                """total = 500
+for t in [50, 6000, 15]:
+    total = total + t   # 6565""",
+            ],
+            [
+                'A comparison is True or False',
+                '`total <= window` gives True when it fits and False when it doesn\'t.',
+                '6565 <= 8000   # True',
+            ],
+        ],
+        byhand='Start with 500 for the answer. Add 50, 6,000 and 15: 6,565. 6,565 is no more than 8,000, so it fits. Return [6565, True].',
+        why='Each part is added once.',
+        gotchas=[
+            [
+                'Forgetting room for the answer',
+                'The answer\'s tokens count against the window too. Keep room for it.',
+            ],
+            [
+                'Every token is paid for',
+                'Fitting isn\'t the only question: a 6,000-token page sent with every question is paid for every time.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'why_ai_wrong',
+    title='Why AI gets it wrong',
+    cards=[
+        card('Confident and wrong: hallucination',
+             'A **hallucination** is an answer that sounds sure but isn\'t true. It happens because the model writes what is likely, not what is checked.',
+             picture=sortby('What it can look like',
+                            sortrow('A made-up rule', '"You get 52 weeks of paid leave"', 'Wrong fact', icon='alert'),
+                            sortrow('A made-up source', 'Quotes a policy page that doesn\'t exist', 'Fake source', icon='alert'),
+                            sortrow('A sure tone', 'No "I don\'t know", even when it should say it', 'Overconfident', icon='alert'))),
+        card('Same question, different answers',
+             'Ordinary code gives the same output for the same input. An LLM may not.',
+             picture=piles(pile('Ordinary code', ['Same input, same output', 'Test it once, then trust it']),
+                           pile('An LLM', [('reset', 'Same input, maybe a different output'), ('flask', 'Test many examples, many times')]))),
+        card('What makes it less likely',
+             'You can make it less likely, and catch more of it.',
+             picture=steps(('book', 'Give it the facts', 'Answer from your documents (RAG), not from memory.'),
+                           ('pencil', 'Say what to do when unsure', '"If the policy doesn\'t say, say so and point to HR."'),
+                           ('flask', 'Measure it', 'An eval set with right answers, run on every change.'),
+                           ('person', 'A person checks what matters', 'Where a wrong answer causes harm, someone reviews it first.'))),
+        card('It can be unfair',
+             'An LLM learned from human writing, unfair patterns included. It can treat people differently by name, gender or background, without anyone asking it to.',
+             picture=sortby('How to check',
+                            sortrow('Pairs that differ in one thing', 'The same question with only the name changed, like Ana or Ahmed', 'Same answer?', icon='people'),
+                            sortrow('Where people are affected', 'Hiring, pay, leave, complaints', 'Check first', icon='alert')),
+             after='Different answers to the same question with only a name changed is a fairness problem. Put such pairs in your eval set.'),
+        card('Why the rest of this course exists',
+             'You can\'t make an LLM never wrong. You can measure how often, agree how often is acceptable, and catch the rest.',
+             picture=rewrite(('Make it never wrong', 'Measure how often it is wrong'),
+                             ('Test it once', 'Test it on every change'),
+                             ('Trust a confident answer', 'Check where a wrong one causes harm')),
+             after='That is what acceptance criteria, evals, must-pass sets and monitoring are for.'),
+    ],
+    example=example('Checking an answer against its source', """source = ["5 unused days carry over"]
+answer = ["30 unused days carry over"]
+# "30 unused days" is not in the source:
+# unsupported, a likely hallucination"""),
+    check=question(
+        'The HR assistant quotes "Policy HR-114, section 3", but there is no such policy. What is that called?',
+        ['A hallucination', 'A timeout', 'A rate limit'],
+        answer=0,
+        why='An answer that sounds sure but isn\'t true, here a made-up source, is a hallucination. A timeout or a rate limit would give no answer at all.',
+    ),
+    angle=angle(
+        pattern='Keep each claim the source doesn\'t back',
+        text='The big idea: an LLM writes what is likely, not what is checked, so it can be confidently wrong, and the answer is to give it the facts, measure it and check what matters. Your code goes through the claims in the answer and keeps each one that isn\'t in the source, in order. Those are unsupported: the likely hallucinations. It is like checking a report against the receipts: any amount with no receipt gets questioned.',
+        say='"An LLM writes what is [[likely|checked|stored::Not what has been checked.]], so it can be confidently wrong. I give it the facts from our documents, measure how often it is wrong on an [[eval set|budget|server::Examples with known right answers.]], and have a person [[check|ignore|retrain::Review it first.]] where a wrong answer causes harm."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Unsupported Claims',
+        topic='foundations',
+        difficulty='easy',
+        fn='unsupported',
+        prompt="""Your function gets two lists of short claims (strings):
+
+- `answer`: the claims the AI made.
+- `source`: the claims in the document it should answer from.
+
+Return a list of the answer's claims that are not in `source`, in the order they appear in `answer`. If every claim is backed, return `[]`.""",
+        pattern='Keep the items of one list that are missing from another.',
+        target='one pass over the answer',
+        realworld='Grounding checks compare what an answer says with the documents it was given. Claims with no support are flagged for a person, or counted by a scorer in the eval.',
+        practice=practice(
+            intro='The HR assistant is in testing. Decide what each sign of trouble means and what to do.',
+            explain='The big idea: an LLM writes what is likely, not what is checked, so it can be confidently wrong and give different answers to the same question. You spotted an answer the policy page didn\'t back, saw that one good test isn\'t enough, saw that an instruction helps but has to be measured, and put a person where a wrong answer could cause harm.',
+            pattern='Give it the facts, then measure',
+            realworld='When you plan an AI feature at work, assume it will sometimes be confidently wrong. Ask how you will measure how often, and who checks the answers where a mistake would hurt.',
+            gotchas=[
+                ['Trusting a sure tone', 'A confident answer isn\'t a checked one. Compare it with the source.'],
+                ['Testing once', 'The same question can get different answers. Test many examples, many times.'],
+            ],
+            asks=[
+                ask('What went wrong?', ['It answered with something the page doesn\'t say', 'The policy page itself must be out of date', 'The question must have been asked unclearly'], answer=0,
+                    evidence=evidence('code', title='The policy page, and the answer', text="""policy page:
+  Up to 5 unused days carry over.
+the assistant said:
+  You can carry over all 30 unused days."""),
+                    clue='Is "all 30 days" anywhere on the page?',
+                    why='The page says up to 5 days. The assistant said 30, which nothing on the page backs: a hallucination, said with full confidence.',
+                    wrong=[None, 'Nothing says the page is old. The answer just doesn\'t match it.', 'The question was clear. The answer made up a number.']),
+                ask('You tested the assistant once and it was right. Is it ready?', ['Not yet: test many examples, many times', 'Yes: it was right when you tried', 'Yes: models give the same answer'], answer=0,
+                    alone=True,
+                    clue='Would the same question always get the same answer?',
+                    why='One right answer says little: the same question can get a different answer, and other questions may fail. Measure it on an eval set, more than once.',
+                    wrong=[None, 'One try is one sample. Measure on many.', 'An LLM can answer the same question differently.']),
+                ask('What do you say?', ['That helps, but measure it with evals too', 'Agreed: one instruction fixes it', 'No: nothing can reduce it at all'], answer=0,
+                    evidence=evidence('claim', who='A manager said', text='"Just tell the model not to make things up, and we\'re done."'),
+                    clue='Does an instruction guarantee it, or just make it less likely?',
+                    why='Telling it what to do when unsure helps, but it still writes what is likely. Measure how often it is wrong with an eval set, and check where it matters.',
+                    wrong=[None, 'An instruction makes it less likely, not impossible.', 'Giving it the facts, clear instructions and checks all reduce it.']),
+                ask('Where does a person most need to check the answer before it goes out?', ['Where a wrong answer could cause harm', 'On every answer, always, forever', 'Nowhere, if the eval score is high'], answer=0,
+                    alone=True,
+                    clue='Where would a confident wrong answer hurt someone?',
+                    why='Put people where a wrong answer causes harm, like pay, health or legal advice. Checking everything doesn\'t scale, and a high average still lets some wrong answers through.',
+                    wrong=[None, 'Checking every answer doesn\'t scale. Focus people where harm is possible.', 'A high average still lets some wrong answers through.']),
+            ],
+        ),
+        starter="""def unsupported(answer, source):
+    # your code here
+    pass
+""",
+        solution="""def unsupported(answer, source):
+    missing = []
+    for claim in answer:
+        if claim not in source:
+            missing.append(claim)
+    return missing
+""",
+        cases=[
+            case(["30 unused days carry over", "carry-over ends in March"], ["5 unused days carry over", "carry-over ends in March"],
+                 expected=["30 unused days carry over"], sample=True),
+            case(["5 unused days carry over"], ["5 unused days carry over"], expected=[]),
+            case([], ["5 unused days carry over"], expected=[]),
+        ],
+        guided="""def unsupported(answer, source):
+    # Replace every ___ with real code, then run the tests.
+    missing = []
+    for claim in answer:
+        # keep the claims the source doesn't back
+        if ___:
+            missing.append(___)
+    return missing
+""",
+        fills=['claim not in source', 'claim'],
+        concepts=[
+            [
+                'not in',
+                '`x not in items` is True when x isn\'t one of the list\'s items.',
+                '"30 days" not in ["5 days"]   # True',
+            ],
+        ],
+        byhand='"30 unused days carry over" is not in the source: keep it. "carry-over ends in March" is in the source: skip it. Return ["30 unused days carry over"].',
+        why='Each claim is checked once against the source.',
+        gotchas=[
+            [
+                'Exact text only',
+                'This check matches exact wording. Real grounding checks use a model or a scorer to judge whether the source backs a claim said in other words.',
+            ],
+        ],
+    ),
+)
 
 lesson(MODULE, 'split_by_key',
     title='Train, validation and test data',
@@ -441,294 +916,6 @@ count += 1   # count is now 2""",
             [
                 'Thresholds drift',
                 "When the incoming data changes, the scores shift and yesterday's best threshold quietly gets worse. Monitor the rate of positive predictions.",
-            ],
-        ],
-    ),
-)
-
-lesson(MODULE, 'average_precision',
-    title='Quality across every threshold: PR-AUC',
-    learn=[
-        "Precision and recall depend on where you set the threshold. To judge the model itself, across every possible threshold, you draw how it does at each threshold as a curve and measure the **area under the curve** (AUC). Bigger is better. You don't need to draw it: below, each AUC is put in plain words, and PR-AUC comes with a simple walk down the list that gives the number libraries report.",
-        "**ROC-AUC** (ROC is just a name to remember; it comes from old radar work) is the chance that a random real positive (an example that is really 1) gets a higher score than a random negative (an example that is really 0): 0.5 is guessing, 1.0 is perfect. It's popular, but when positives are rare it flatters the model, because there are so many easy negatives to rank below them.",
-        "**PR-AUC** is the area under the precision-recall curve, usually computed as **average precision**: walk down the list from the highest score, and each time you reach a real positive, note the precision so far. Average those. For rare events (fraud, failures, the one document that answers a question) it is the honest number. Its baseline (what random guessing scores) is the share of positives, not 0.5: a random model on 1% positives scores about 0.01.",
-    ],
-    example=example('Average precision, by hand', """score  label   precision each time a real positive is reached
-0.95     1     1 of 1 = 1.00
-0.80     0
-0.70     1     2 of 3 = 0.67
-0.40     0
-0.20     1     3 of 5 = 0.60
-average precision = (1.00 + 0.67 + 0.60) / 3, about 0.76"""),
-    check=question(
-        'Fraud is 1 in 200 transactions. Your model has ROC-AUC 0.97 and PR-AUC 0.18. What is true?',
-        [
-            'The model is excellent: 0.97 means near perfect',
-            'ROC-AUC flatters it; PR-AUC says most alerts are false alarms',
-            'PR-AUC must be a bug when ROC-AUC is this high',
-        ],
-        answer=1,
-        why='A random model would score about 0.005 PR-AUC here, so 0.18 is far better than random: real skill. But it also means most alerts are false alarms, which ROC-AUC hides.',
-    ),
-    angle=angle(
-        pattern='Sort by score, then walk down',
-        text='The big idea: for rare events, average precision is the honest score, because it rewards finding the real positives near the top. Your code first counts the real positives and returns 0 if there are none. Then it sorts the examples by score, highest first, like ranking exam papers. It walks down the list counting how many it has seen and how many were real positives. At each real positive it adds the precision so far, and at the end it divides that sum by the number of positives.',
-        say='"When positives are rare, I report [[average precision|ROC-AUC|accuracy::It rewards finding the real cases near the top of the list.]]. ROC-AUC can look good just because there are so many [[easy negatives|real positives|thresholds::Lots of obvious no\'s are simple to rank low.]] to rank low."',
-        classic=None,
-    ),
-    stack=stack('scikit-learn and MLflow', """from sklearn.metrics import average_precision_score, roc_auc_score
-
-mlflow.log_metrics({
-    "pr_auc": average_precision_score(labels, scores),
-    "roc_auc": roc_auc_score(labels, scores),
-})"""),
-    exercise=exercise(
-        title='Average Precision',
-        topic='foundations',
-        difficulty='medium',
-        fn='average_precision',
-        prompt="""Your function gets two things:
-
-- `scores`: the model's score for each example, like `[0.2, 0.95, 0.4]`. No two scores are the same.
-- `labels`: for each example, `1` if it really is a positive (the thing you are looking for) or `0` if not, in the same order, like `[1, 1, 0]`.
-
-Sort the examples by score, highest first, keeping each label with its score, and walk down the list. Each time you reach a positive, work out the precision so far: positives found so far divided by examples seen so far.
-
-Return the average of those precisions: add them up, then divide by the number of positives. Round it to 2 decimal places. If there are no positives, return 0.""",
-        pattern='Sort by score, then one walk down the list keeping two counts.',
-        target='a sort, then one walk down the list',
-        realworld='Fraud, safety and retrieval teams report PR-AUC (average precision) because the thing they care about is rare. scikit-learn calls it `average_precision_score`.',
-        starter="""def average_precision(scores, labels):
-    # your code here
-    pass
-""",
-        solution="""def average_precision(scores, labels):
-    positives = sum(labels)
-    if positives == 0:
-        return 0
-    pairs = sorted(zip(scores, labels), reverse=True)
-    seen = 0
-    found = 0
-    total = 0.0
-    for score, label in pairs:
-        seen += 1
-        if label == 1:
-            found += 1
-            total += found / seen
-    return round(total / positives, 2)
-""",
-        cases=[
-            case([0.2, 0.95, 0.4, 0.8, 0.7], [1, 1, 0, 0, 1], expected=0.76, sample=True),
-            case([0.9, 0.8, 0.1], [1, 1, 0], expected=1.0),
-            case([0.9, 0.8, 0.1], [0, 0, 1], expected=0.33),
-            case([0.5, 0.4], [0, 0], expected=0.0),
-            case([0.9, 0.6, 0.5, 0.3], [0, 1, 1, 0], expected=0.58),
-        ],
-        guided="""def average_precision(scores, labels):
-    # Replace every ___ with real code, then run the tests.
-    positives = sum(labels)
-    if positives == 0:
-        return 0
-
-    # Step 1: pair each score with its label, highest first.
-    pairs = sorted(zip(scores, labels), reverse=True)
-
-    seen = 0      # examples seen so far
-    found = 0     # positives found so far
-    total = 0.0   # the precisions added up
-    # Step 2: at each positive, add the precision so far.
-    for score, label in pairs:
-        seen += 1
-        if label == 1:
-            found += 1
-            total += ___
-    # Step 3: average: divide the total by the positives.
-    return round(___, 2)
-""",
-        fills=['found / seen', 'total / positives'],
-        concepts=[
-            [
-                'Pairing and sorting',
-                '`zip(a, b)` pairs the items up. `sorted(..., reverse=True)` sorts the pairs by their first item, biggest first. A `for` loop can then take each pair apart: `for age, name in pairs:`.',
-                """pairs = sorted(zip([30, 45], ['Ann', 'Bo']), reverse=True)
-# [(45, 'Bo'), (30, 'Ann')]""",
-            ],
-            ['sum', '`sum(numbers)` adds up a list. On a list of 1s and 0s it counts the 1s.', 'sum([1, 0, 1])   # 2'],
-            [
-                'Counting with +=',
-                '`count += 1` adds 1 to `count`. It is short for `count = count + 1`.',
-                """count = 0
-count += 1
-count += 1   # count is now 2""",
-            ],
-            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
-        ],
-        byhand='There are 3 positives. Sorted by score: 0.95 (positive), 0.8, 0.7 (positive), 0.4, 0.2 (positive). At 0.95: 1 positive found in 1 seen, precision 1.0. At 0.7: 2 found in 3 seen, 0.667. At 0.2: 3 found in 5 seen, 0.6. 1.0, 0.667 and 0.6 add up to 2.267. Divided by the 3 positives, that is 0.756, which rounds to 0.76. Returns 0.76.',
-        why='Sorting is the slowest step; the walk after it looks at each example once.',
-        gotchas=[
-            [
-                'Know the baseline',
-                'A PR-AUC of 0.3 is poor when half the examples are positive, and excellent when 1 in 100 is. Always say what share is positive.',
-            ],
-            [
-                'Ties in scores',
-                'Real models often give equal scores. Libraries handle ties carefully; this exercise keeps the scores distinct so the order is clear.',
-            ],
-        ],
-    ),
-)
-
-lesson(MODULE, 'calibration_table',
-    title='Are the probabilities honest?',
-    learn=[
-        'A model that says "70% likely" should be right about 70% of the time when it says that. That is **calibration**. Many models are overconfident, and LLMs (large language models, the kind behind chatbots) asked to rate their own confidence often are.',
-        "To check, put the predictions into buckets, usually called **bins**, by their probability (0-20%, 20-40%, and so on) and compare, in each bucket, the average prediction with how often the thing really happened. In a calibrated model the two numbers match. The chart of these pairs is called a **reliability diagram**.",
-        'One number for all of it is the **Brier score**. For each prediction, take the gap between the predicted probability and what happened (1 or 0), and multiply the gap by itself. The Brier score is the average of those. Lower is better, 0 is perfect, and always guessing 50% scores 0.25.',
-        'Calibration matters whenever the probability itself drives a decision: auto-approve above 90%, send to a person below. An overconfident model makes that threshold mean something it does not.',
-    ],
-    example=example('A reliability table', """bucket      predictions   average prediction   really happened
-0-20%           40              0.12                0.10   ✓ close
-40-60%          25              0.51                0.48   ✓ close
-80-100%         35              0.92                0.61   ✗ overconfident"""),
-    check=question(
-        'In the 80-100% bucket the average prediction is 0.92 but only 61% really happened. What does that mean for an "auto-approve above 90%" rule?',
-        [
-            'Nothing: the threshold stays at 90, where it was set',
-            'Overconfident: the rule approves far more mistakes than it seems',
-            'Underconfident: the threshold could safely be lowered',
-        ],
-        answer=1,
-        why='The threshold assumes 90% means 90%. Here it means about 61%, so many of the cases the rule approves are wrong. Recalibrate the scores (adjust them so 0.9 really means about 90%), or set the threshold from the table.',
-    ),
-    angle=angle(
-        pattern='Five buckets with running totals',
-        text="The big idea: a model that says 70% should be right about 70% of the time, so you compare what it predicted with what happened. Your code gives each prediction a bucket number from 0 to 4 with `int(p * 5)`, like sorting mail into five slots. Three lists, each a row of five numbers, keep how many predictions each bucket has, their total, and how many really happened. Then, for each bucket that isn't empty, it makes a row with the average prediction and the share that happened.",
-        say='"If a model says 70%, it should be right [[70%|100%|50%::The same chance it claimed.]] of the time. I sort its predictions into [[buckets|folds|batches::Group them by how sure the model said it was.]] and check each one against how often the thing really [[happened|failed|changed::Compare the guess with what came true.]]."',
-        classic=None,
-    ),
-    stack=stack('scikit-learn: reliability curve and Brier score', """from sklearn.calibration import calibration_curve
-from sklearn.metrics import brier_score_loss
-
-really, predicted = calibration_curve(outcomes, predictions, n_bins=5)
-mlflow.log_metric("brier", brier_score_loss(outcomes, predictions))"""),
-    exercise=exercise(
-        title='The Reliability Table',
-        topic='foundations',
-        difficulty='medium',
-        fn='calibration_table',
-        prompt="""Your function gets two things:
-
-- `predictions`: how likely the model said each thing was, from 0 to just under 1, like `[0.1, 0.9]`.
-- `outcomes`: what really happened, `1` (it did) or `0` (it didn't), in the same order, like `[0, 1]`.
-
-Put each prediction `p` in a bucket numbered 0 to 4 with `int(p * 5)`. `int` cuts off the decimals, so `int(1.75)` is `1`. Bucket 0 holds 0 up to (but not including) 0.2, bucket 1 holds 0.2 up to 0.4, and so on.
-
-Go from bucket 0 up to bucket 4, skipping empty ones. For each, make a row `[bucket, average, share]`:
-
-- `average`: its predictions added up, divided by how many it has.
-- `share`: how many of its outcomes are 1, divided by how many it has.
-
-Round both to 2 decimal places. Return the list of rows.""",
-        pattern='Add up totals per bucket in one pass, then one pass over the buckets to build the rows.',
-        target='one pass over the predictions, then one over the buckets',
-        realworld='A reliability table is how you find out whether "confidence: 0.9" from a model or an LLM judge (an LLM that grades answers) can be used as a threshold, or needs recalibrating first.',
-        starter="""def calibration_table(predictions, outcomes):
-    # your code here
-    pass
-""",
-        solution="""def calibration_table(predictions, outcomes):
-    counts = [0, 0, 0, 0, 0]
-    totals = [0, 0, 0, 0, 0]
-    happened = [0, 0, 0, 0, 0]
-    for p, outcome in zip(predictions, outcomes):
-        bucket = int(p * 5)
-        counts[bucket] += 1
-        totals[bucket] += p
-        happened[bucket] += outcome
-    rows = []
-    for bucket in range(5):
-        if counts[bucket] > 0:
-            average = round(totals[bucket] / counts[bucket], 2)
-            share = round(happened[bucket] / counts[bucket], 2)
-            rows.append([bucket, average, share])
-    return rows
-""",
-        cases=[
-            case([0.25, 0.35, 0.9, 0.95, 0.85], [0, 1, 1, 0, 1], expected=[[1, 0.3, 0.5], [4, 0.9, 0.67]], sample=True),
-            case([0.1, 0.3, 0.9, 0.95, 0.85], [0, 1, 1, 0, 1], expected=[[0, 0.1, 0.0], [1, 0.3, 1.0], [4, 0.9, 0.67]]),
-            case([], [], expected=[]),
-            case([0.1, 0.16, 0.35, 0.9, 0.95, 0.85], [0, 0, 1, 1, 0, 1], expected=[[0, 0.13, 0.0], [1, 0.35, 1.0], [4, 0.9, 0.67]]),
-            case([0.25, 0.35, 0.65, 0.75], [0, 1, 1, 1], expected=[[1, 0.3, 0.5], [3, 0.7, 1.0]]),
-            case([0.5, 0.45, 0.55], [1, 0, 0], expected=[[2, 0.5, 0.33]]),
-            case([0.99], [1], expected=[[4, 0.99, 1.0]]),
-        ],
-        guided="""def calibration_table(predictions, outcomes):
-    # Replace every ___ with real code, then run the tests.
-    counts = [0, 0, 0, 0, 0]     # predictions per bucket
-    totals = [0, 0, 0, 0, 0]     # predictions added up
-    happened = [0, 0, 0, 0, 0]   # outcomes that were 1
-
-    for p, outcome in zip(predictions, outcomes):
-        # Step 1: the bucket is p times 5, decimals cut off.
-        bucket = ___
-        counts[bucket] += 1
-        totals[bucket] += p
-        happened[bucket] += outcome
-
-    # Step 2: one row per bucket that has predictions.
-    rows = []
-    for bucket in range(5):
-        if counts[bucket] > 0:
-            average = round(totals[bucket] / counts[bucket], 2)
-            # share: happened, divided by the count
-            share = round(___, 2)
-            rows.append([bucket, average, share])
-    return rows
-""",
-        fills=['int(p * 5)', 'happened[bucket] / counts[bucket]'],
-        concepts=[
-            [
-                'Bucket number',
-                'Multiply by 5, then `int` cuts off the decimals.',
-                'int(0.35 * 5)   # 1.75 becomes 1',
-            ],
-            [
-                'A list of totals',
-                '`totals[1]` is the slot at position 1 (positions start at 0). `totals[1] += 0.3` adds 0.3 to that slot. Keep one slot per bucket.',
-                """totals = [0, 0]
-totals[1] += 0.3
-# totals is now [0, 0.3]""",
-            ],
-            [
-                'zip',
-                'Walks two lists side by side, one pair at a time.',
-                """for x, y in zip([1, 2], [5, 6]):
-    print(x, y)   # 1 5, then 2 6""",
-            ],
-            [
-                'range',
-                '`range(5)` gives 0, 1, 2, 3 and 4, one at a time.',
-                """for i in range(3):
-    print(i)   # 0, then 1, then 2""",
-            ],
-            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
-            [
-                'Adding to a list',
-                '`my_list.append(x)` puts x on the end of the list.',
-                """names = []
-names.append('Ann')   # ['Ann']""",
-            ],
-        ],
-        byhand='0.25 and 0.35 times 5 are 1.25 and 1.75: bucket 1. 0.9, 0.95 and 0.85 times 5 are 4.5, 4.75 and 4.25: bucket 4. Buckets 0, 2 and 3 are empty, so they get no row. Bucket 1: 0.25 and 0.35 add up to 0.6. 0.6 divided by 2 is 0.3. 1 of its 2 outcomes is 1: 1 divided by 2 is 0.5. Row [1, 0.3, 0.5]. Bucket 4: 0.9, 0.95 and 0.85 add up to 2.7. 2.7 divided by 3 is 0.9. 2 of its 3 outcomes are 1: 2 divided by 3 is 0.667, rounded to 0.67. Row [4, 0.9, 0.67]. The model said about 0.9, but it happened only 0.67 of the time: it is overconfident. Returns [[1, 0.3, 0.5], [4, 0.9, 0.67]].',
-        why='One step per prediction, then one per bucket.',
-        gotchas=[
-            [
-                'Small buckets are noisy',
-                'A bucket with 3 predictions tells you little. Use fewer buckets, or more data, before concluding the model is miscalibrated.',
-            ],
-            [
-                'Calibrated is not the same as good',
-                'A model that gives every example the same overall rate (say 5%, when 5% of cases are positive) is perfectly calibrated and useless. Look at calibration alongside PR-AUC or precision and recall.',
             ],
         ],
     ),
