@@ -1,4 +1,186 @@
 {
+ "batch_leftovers": {
+  "check:0:0": {
+   "q": "Why not “Yes: it times every request”?",
+   "a": "It's a fair guess. A batch job does keep some timing: it records when the job was created and when it finished. So time is being tracked in a sense.\n\nBut that's not the time you're asking about. **p95 time to first words** means: line up all the waits from \"request sent\" to \"first words appear,\" and take the one that 95 out of 100 requests beat. It describes what a person feels while waiting.\n\nA batch request doesn't start right away. It sits in a **queue**, a waiting line on Foundry's side, until there's spare capacity. That wait could be seconds or hours, and it has nothing to do with how fast the model is. Any time you measure from a batch includes that queue wait. So two models could look fast or slow just because of when their jobs got picked up.\n\nAlso, the timestamps belong to the whole job, not to the first words of each answer.\n\nThat's why the lesson says to time a small **inline sample** for speed.\n\n\"No: batch answers waited in a queue first\" is better because it names the real problem: queue time pollutes any speed number, so a batch can't show what a waiting person feels.",
+   "step": "Check",
+   "fingerprint": "33016ec13e53cdad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claims about job-level created and finished timestamps, and about queue waits depending on spare capacity, are not in the lesson. They do not contradict it, so I let them pass."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Only if the job finishes within an hour”?",
+   "a": "That option gets one thing right. It senses that waiting time spoils the measurement. But it puts the problem in the wrong place.\n\nFirst, some jargon. \"Time to first words\" is how long a person waits before the model starts replying. \"p95\" means the time that 95 out of 100 requests beat. It is the slow end that users notice.\n\nHow fast the whole job finishes doesn't change what each answer went through. A job that finishes in an hour, or in five minutes, still parked every request in a queue first. Its timings mix queue wait with model work, and you can't pull them apart. A batch also doesn't stream words to you as they're written. You get finished answers in a file, so there is no \"first words\" moment to time at all.\n\nSo a fast job is still the wrong tool for speed. Time a small inline sample for that, and batch the rest.\n\n\"No: batch answers waited in a queue first\" is better because it names the real reason. No batch timing reflects what a waiting person feels, however quickly the job ends.",
+   "step": "Check",
+   "fingerprint": "e728d54d62b98d41",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claim that batch doesn't stream words is not in the lesson, though it doesn't contradict it, and the answer stays just under the word limit."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Wait: it will expire on its own”?",
+   "a": "\"Wait: it will expire on its own\" gets one thing right. A batch is for work nobody is waiting on, so a bit of patience is normal. A slow job is not a crisis.\n\nBut the key idea is wrong. On Foundry, the 24 hours is a **target**, not a deadline. A target is the time it aims for. A deadline is when it would be forced to stop. Missing the target does not end the job. A late job keeps running until **you** cancel it. So waiting for it to expire means waiting for something that won't happen. Meanwhile, the 700 finished answers sit unused, and the 300 slow ones may stay stuck.\n\nCancelling is safe because it hands back only what finished. You lose nothing that was done. Then you match each answer to its request by `custom_id`, the label each request carries. The requests with no answer are the **leftovers**. You send those in a fresh job.\n\n\"Cancel it, keep the 700, send the 300 again\" is better because you keep the finished work now and give the unfinished part a new chance to complete.",
+   "step": "Check",
+   "fingerprint": "6cd0635892d704fb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Send all 1,000 again as a new job”?",
+   "a": "\"Send all 1,000 again\" gets one thing right. The old job is late, and starting a new job is a fair way to get things moving.\n\nBut it throws away good work. 700 requests are already done. Sending them again means you pay for them twice and wait for them twice. Even at half the price, paying twice for the same answers is a waste.\n\nIt also leaves the old job alone. On Foundry, 24 hours is a target, not a deadline. A late job keeps running until you **cancel** it, which means you tell Foundry to stop it. So the old job could keep going alongside the new one. You'd end up with two answers for many of the same `custom_id`s, and you'd have to sort out which to keep.\n\nThere's one more catch. Cancelling is what hands you the 700 finished answers. Skip it, and you don't get them back yet.\n\n\"Cancel it, keep the 700, send the 300 again\" is better because it stops the late job, keeps every answer you already paid for, and re-sends only the **leftovers**: the requests that failed or never came back.",
+   "step": "Check",
+   "fingerprint": "a2e89f47787b4e15",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that skipping the cancel means you don't get the 700 back is an inference the lesson doesn't state outright, and the answer is close to the 200-word limit."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “By position: line 1 is request 1”?",
+   "a": "Matching by position feels natural. It's how inline calls work: you send one request, you get its answer, and the pairing is obvious. Your request file is also in order, so it seems fair to expect the output to follow.\n\nBut a batch doesn't keep that order. The service works on many requests at once, and each answer is written down when it finishes. So line 1 of the output might be the answer to request 40.\n\nThere's a second problem. Some requests fail, and some never come back at all, for example if the job was cancelled. That leaves gaps. With position matching, one missing answer shifts every line after it. Request 5 gets request 6's answer, and so on down the file. You'd pair the wrong questions with the wrong answers, and nothing would warn you.\n\nYou also couldn't tell which requests are missing, so you wouldn't know which leftovers to send again.\n\n\"By each line's `custom_id`\" is better because each answer carries the label of its own request, so it matches correctly no matter the order or how many went missing.",
+   "step": "Check",
+   "fingerprint": "890c4e4eab5c1739",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “By the length of each answer”?",
+   "a": "Matching by length sounds clever, but nothing ties an answer's length to its request.\n\n**What it gets right:** it notices that you need *some* clue on each answer to pair it with its request, because the order can't be trusted.\n\n**What it misses:**\n\n- **You don't know the length ahead of time.** The model writes the answer. You can't predict that request `q1` will produce 412 characters.\n- **Lengths repeat.** Two answers can easily be the same length, or close. Then you can't tell which is which.\n- **Failed requests break it.** A failed line has an error instead of an answer. There's no answer length to compare.\n- **Missing answers stay hidden.** If a request never came back, length gives you no way to spot which one is gone. So you can't send the leftovers again.\n\nA `custom_id` is a label you choose and attach to each request. The service copies it, unchanged, onto that request's line in the output.\n\n**Why `custom_id` is better:** it's a unique label you set yourself, and it comes back on every result line, answered or failed, so each one points to exactly one request.",
+   "step": "Check",
+   "fingerprint": "3ce83bfda65e6ec5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Note what came back, then walk the requests” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem.** \"A batch job answers many requests later, in any order. Some fail, and some never come back. So I can't assume the output lines up with my requests.\"\n\n**The idea.** \"First I go through the output once and note every `custom_id` that came back with an answer. I keep those ids in a set, which is a collection where checking 'is this in here?' is instant. Then I walk my requests in their original order. Any id I didn't note is a leftover, and I send those again as a new job.\"\n\n**An edge case.** \"If a job runs late and I cancel it, I only get what finished. The same method still works. Everything unfinished simply shows up as a leftover.\"\n\n**A likely follow-up**\n\n*\"Why not just search the output for each request?\"*\n\nHint for a strong answer: that would go through the whole output again for every single request. With a million requests, that gets very slow. Noting the ids in a set first means each check is instant, so the whole thing stays one quick pass over each list.",
+   "step": "Explain",
+   "fingerprint": "26ef6acb38363f40",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The count is off.** You sent 500 requests but scored only 470 answers. The score can look fine, because the missing ones simply aren't counted. Some failed, and some never came back.\n- **Answers don't fit their questions.** The output comes back in any order. If answers were paired by position instead of by `custom_id`, an answer about refunds may sit next to a question about shipping. Scores then look oddly random or low.\n- **Speed numbers look strange.** If speed was timed from the batch, you'll see minutes or hours per answer. That's time spent waiting in a queue (a waiting line on the server), not what a person feels. Speed should come from a small inline sample.\n- **A job is still `in_progress` well past 24 hours.** It won't stop on its own. Cancelling gives you only what finished, so the rest need sending again.\n\n**Quickest check**\n\nCompare two numbers: requests sent, and `custom_id`s that came back with an answer. If they differ, you have leftovers to send again. Then read three or four answers next to their own questions, matched by `custom_id`, to confirm the pairing is right.",
+   "step": "Learn",
+   "fingerprint": "c5241fe87a1b246b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule needs extra care.\n\n**Someone is waiting, or the set is tiny.** A batch can take minutes or hours, so it's wrong for a chat app where a person watches the screen. For a handful of requests, the half price saves almost nothing, and inline calls finish sooner. Use inline, meaning one call at a time while you wait.\n\n**The same leftovers fail every time.** Some requests fail for a reason that won't go away. Maybe the prompt is too long, or a content filter (a safety check that blocks some text) rejects it. Resending those forever wastes jobs. Cap how many times you retry, then read the error details and fix the request itself.\n\n**The job is very large.** A batch file has size and line limits, so a huge eval set must be split into several jobs. Then each `custom_id` must be unique across all of them, not just within one file. Otherwise two answers could match the same request. Keep one master list of requests and check every job's output against it.",
+   "step": "Learn",
+   "fingerprint": "e0f933c693502c76",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes. The file-limit and content-filter points go beyond the lesson but don't contradict it. Some items run longer than the requested two or three sentences."
+   }
+  },
+  "learn:term": {
+   "q": "How is “batch” different from “job”?",
+   "a": "In this lesson, the **batch** is *what* you send, and the **job** is *the work done on it*.\n\n**The batch** is the bundle of requests. It's your `requests.jsonl` file: many questions, one per line, each with its own `custom_id`. On its own, it just sits there.\n\n**The job** is the single piece of work the service runs on that bundle. It starts when you call `client.batches.create(...)`. It has its own `job.id` and a status that changes over time, like `validating`, `in_progress`, `completed`. You check on it with `client.batches.retrieve(job.id)`. You can also cancel it, and then you get back only what finished.\n\n**How they fit together:** you hand over one batch, and one job processes it. If some requests fail or never come back, those leftovers become a new batch, sent as a new job.\n\n**Everyday comparison:** a bag of laundry is the batch. The wash the laundromat runs on that bag is the job. The wash takes time, can be \"still going\" or \"done,\" and can be stopped early with only part of the bag clean.\n\nOne naming catch: the SDK calls jobs `batches`.",
+   "step": "Learn",
+   "fingerprint": "c4078b1f1aaa20d2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
  "better_option": {
   "check:0:0": {
    "q": "Why not “No: it costs 10 times more per call”?",

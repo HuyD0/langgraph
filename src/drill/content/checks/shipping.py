@@ -19,13 +19,14 @@ CHECKS = {
                 "An app people rely on needs its own capacity."),
     ],
     "promote_model": [
-        ask("The champion scores 80. You agreed a challenger must be at least 2 points better. "
-            "The challenger scores 81. What happens?",
-            ["The champion stays", "The challenger takes over", "They split the traffic in half"],
-            answer=0,
-            clue="Is 1 point better a meaningful margin, by your own rule?",
-            why="81 doesn't clear the threshold you set, so the champion keeps the alias. A tiny gain is "
-                "often noise, and every swap carries risk."),
+        ask("Your LLM judge holds @champion. You keep its prompt but switch the model that runs it to a "
+            "cheaper one. How should you treat the result?",
+            ["As the same judge: the prompt defines it", "As a new version that keeps @champion", "As a new version that must earn its aliases"],
+            answer=2,
+            clue="The prompt is only half of what grades your answers.",
+            why="A judge is its prompt plus its model, so a new model means a new version. Like any challenger "
+                "it starts with no alias and earns @challenger, then @champion, by beating the old judge against "
+                "grades people gave."),
         ask("You promoted version 5 to @champion. An hour later it's giving bad answers. "
             "What's the quickest fix?",
             ["Retrain version 5 overnight", "Point @champion back to version 4", "Delete version 5 from the registry"],

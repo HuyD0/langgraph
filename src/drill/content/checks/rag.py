@@ -64,6 +64,42 @@ CHECKS = {
             clue="Recall counts how many of the right documents were found. How do you know which are right?",
             why="Recall@k needs a small set of questions where someone has marked the right documents by hand."),
     ],
+    "pick_vector_size": [
+        ask("Your index holds 5 million chunks at 1,536 numbers each. A teammate wants to switch to a model "
+            "that gives 768, \"just for the new documents\". What happens?",
+            ["Every chunk must be embedded again", "It works: search handles mixed sizes", "Only the new chunks need a bigger k"],
+            answer=0,
+            clue="Can a vector from one model be compared with a vector from another?",
+            why="Vectors from two models can't be compared, and an index has one size, so a new model means new "
+                "embeddings for every chunk and a rebuilt index. Plan it as a one-off as big as the first indexing."),
+        ask("A 3,072-number model tops a public leaderboard. On your own eval set, recall@5 is 0.86 with it "
+            "and 0.86 with your 768-number model. Which do you keep?",
+            ["The 768 model: same recall, less cost", "The 3,072 model: bigger finds more", "The 3,072 model: the leaderboard says so"],
+            answer=0,
+            clue="Which test used your questions and your documents?",
+            why="Bigger is not always better on your own documents. The honest check is retrieval quality on "
+                "your own eval set, and there the smaller model does just as well, with fewer units and "
+                "faster search."),
+    ],
+    "rescore_candidates": [
+        ask("Your index no longer fits its endpoint, and you have already shrunk the vectors as far as "
+            "the model allows. What is the other lever that shrinks the index?",
+            ["Store each number in fewer bits", "Ask for more results and re-score them", "Switch to exhaustive search"],
+            answer=0,
+            clue="A vector has a length. Something else about it takes up room, and you have already pulled the first lever.",
+            why="Storing each number in 16 bits, or quantizing it to 8 or even 1, makes the same vectors take less "
+                "memory, with a small loss of recall. Oversampling wins some recall back but shrinks nothing, and "
+                "exhaustive search makes search slower, not smaller."),
+        ask("A legal team says one missed clause is one too many. Searches are rare and nobody minds "
+            "waiting. Which search do you set up on Azure AI Search?",
+            ["Exhaustive: compare every vector", "HNSW: check a small part, fast", "Binary quantization: 1 bit a number"],
+            answer=0,
+            clue="Which search can never miss the true closest chunk?",
+            why="Exhaustive search compares the question with every stored vector, so the closest ones are "
+                "always found. It is slower, and here speed does not matter. HNSW trades a little recall for "
+                "speed, and binary quantization saves room at some cost in recall: the opposite of what this "
+                "team asked for."),
+    ],
     "ndcg_at_k": [
         ask("You want to compare two rerankers with nDCG@5, but your test questions have no relevance "
             "grades yet. What do you do?",

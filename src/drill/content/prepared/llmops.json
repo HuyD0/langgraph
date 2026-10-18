@@ -363,6 +363,188 @@
    }
   }
  },
+ "prompt_cache": {
+  "check:0:0": {
+   "q": "Why not “The instructions are too long to cache”?",
+   "a": "**\"Too long\" points the wrong way.** Length does matter for caching, so that option is on the right topic. But the rule is a *minimum*, not a maximum. The start must be at least 512 tokens on the Claude 5.5 models, or 1,024 on GPT models. (A token is a small chunk of text, often part of a word.) At 2,000 tokens, these instructions clear both bars easily. In fact, long fixed text is where caching saves the most money.\n\n**What it misses is the very first line.** The cache only matches when the next prompt begins with *exactly* the same text. Here, the prompt opens with a timestamp that changes every second. So by the second call, the first few tokens already differ. Nothing after that point can match, even though the 2,000 tokens of instructions never change. Every call writes a fresh cache and none read one, so the hit rate stays at 0.\n\nThe fix is to put the fixed instructions first and move the time to the end.\n\n**Why the other option is better:** \"The time changes, so each start differs\" names the real cause: the changing text sits at the front, so the start is never identical.",
+   "step": "Check",
+   "fingerprint": "2084c748b8e5d982",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Caching only works on the user message”?",
+   "a": "\"Caching only works on the user message\" gets things backwards. The lesson says caching keeps the **start** of the prompt: instructions, a tool list, a document. That start usually sits in the system prompt, the fixed setup text sent before the user's question. The user message changes on every call, so the lesson puts it last, after the part you want cached. This option points at the wrong piece of the prompt.\n\nIt also doesn't explain the hit rate of 0. Your 2,000 tokens of instructions are well over the minimum length, so length isn't the issue.\n\nThe real problem is the timestamp. The lesson's first rule is that the start must be **identical** from one call to the next. Your start includes the time down to the second. The date part stays the same, but the clock part changes, so no two calls share exactly the same start. To fix it, put the fixed instructions first and the timestamp after them.\n\n\"The time changes, so each start differs\" is better because it names the rule that's actually broken: the start must be identical, and a changing clock in it means it never is.",
+   "step": "Check",
+   "fingerprint": "f534354b0f028cad",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the answer is about 200 words, right at the limit, and 'no two calls share the same start' slightly overstates it."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “GPT models never cache prompts”?",
+   "a": "That option gets one thing right: in this case, the GPT cache really does not hit. But it gives the wrong reason.\n\nGPT models do cache prompts. They do it by themselves, without you asking. The lesson says so: \"GPT models cache by themselves.\" So \"never\" is simply not true.\n\nWhat matters is length. A cache only kicks in when the fixed start of the prompt (the part that stays the same every call) is long enough. Length is counted in tokens, the small chunks of text a model reads.\n\n- On Claude Sonnet 5.5, the minimum is 512 tokens.\n- On GPT models, the minimum is 1,024 tokens.\n\nYour fixed start is 700 tokens. That clears Claude's bar but falls short of GPT's. Make the start 1,024 tokens or more, and GPT would start reporting `cached_tokens` too.\n\n\"Each model has its own minimum length\" is the better answer because it explains why the same 700-token prompt hits on one model and misses on the other.",
+   "step": "Check",
+   "fingerprint": "03a837152eb29079",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Claude also caches the question”?",
+   "a": "**It notices something real.** The cache does hit on Claude here, so something about Claude is different. But the reason it gives is wrong.\n\n**Why it's wrong:** The question is the part that changes on every call. That's why it goes last. A cache read only happens when the next prompt starts with exactly the same text. A new question is new text, so caching it wouldn't help the next call. And on GPT, the cache misses before it even reaches the question.\n\n**What it misses:** Look at the numbers. The fixed start is 700 tokens. A token is a small chunk of text, roughly part of a word.\n\n- Claude Sonnet 5.5 needs at least 512 tokens. 700 is enough, so it can cache.\n- GPT models need at least 1,024 tokens. 700 is too short, so nothing gets cached at all.\n\nSame prompt, two different minimums. That alone explains the hit on one and the miss on the other.\n\n**Why \"Each model has its own minimum length\" is better:** it points to the actual rule, the minimum length, that a 700-token start passes on Claude and fails on GPT.",
+   "step": "Check",
+   "fingerprint": "178c1bdcb68e914f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “High: the start is the same”?",
+   "a": "\"High: the start is the same\" gets one thing right. An identical start is needed for a cache hit. If the instructions and lesson text come first, every question about that lesson begins with the same text.\n\nBut an identical start is only one of three conditions. The start must also be long enough, and the next call must come **soon**. The provider keeps the cached start for only about 5 minutes. After that it is thrown away.\n\nHere, questions arrive about once a day. That is far longer than 5 minutes. So each new question finds no cache waiting. The start has to be sent at full price again. On Claude, with `cache_control` set, that call even pays a quarter extra to write a new cache. That cache then expires before anyone uses it.\n\nYou would see this in the usage. `cache_read_input_tokens` stays at 0. `cache_creation_input_tokens` shows the start being written again each time.\n\n\"Near zero: the cache has gone\" is better because it accounts for timing: with a day between calls, the 5-minute cache has always expired, so almost no input is ever read from it.",
+   "step": "Check",
+   "fingerprint": "82a54ecc9102af10",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “About half of the calls”?",
+   "a": "\"About half of the calls\" gets one thing right. It notices that some calls write the cache and others could read it. If every call wrote a fresh start and the next call reused it, you might picture a split like that.\n\nThe timing breaks that picture. The cached start only lasts about 5 minutes. Learners ask about a lesson about once a day. So by the time the next question arrives, the cache is long gone. That call finds nothing to read. It pays to write a new cache instead, and that cache also expires before anyone uses it. Almost no tokens are ever read back.\n\nThere is a second slip too. The hit rate is not a share of calls. It is the share of all input tokens that were read from the cache. Even a call that hits still sends its changing part, like the question, at the normal price.\n\n\"Near zero: the cache has gone\" is better because a day-long gap is far beyond the 5-minute window, so nearly every call starts cold, with nothing in the cache to read.",
+   "step": "Check",
+   "fingerprint": "e0eb97de97d1fb8f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the 'what it gets right' part is a charitable guess at the learner's reasoning, but it does not contradict the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add up as you go” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Agents resend the same long start on every call. With prompt caching, that start is read back at a small share of the price. I want to measure how often that really happens.\"\n\n*The idea:* \"I walk through the calls once. I keep two running totals: tokens read from the cache, and all input tokens. At the end I divide the first by the second. That share is the hit rate.\"\n\nA \"running total\" is just a number you keep adding to as you go.\n\n*An edge case:* \"If a call has no count for something, I treat it as zero. If no input was sent at all, I return zero instead of dividing by zero, which would crash.\"\n\n**A likely follow-up**\n\n\"Your hit rate is low. Why might that be?\"\n\nHint for a strong answer: tie it to the three rules.\n- Something that changes sits near the start, like a timestamp. Then the start is no longer identical.\n- The fixed start is shorter than the minimum length.\n- Calls are more than about 5 minutes apart, so the cache has expired.\n\nThe usual fix is to put fixed text first and changing text last.",
+   "step": "Explain",
+   "fingerprint": "df5492bdd116fa8b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Reads stay at zero.** `cache_read_input_tokens` (Claude) or `cached_tokens` (GPT) is 0 on call after call. Your hit rate sits near nothing.\n- **Writes on every call.** `cache_creation_input_tokens` is big each time. On Claude that means you pay the quarter-extra write fee over and over and never get the cheap read. Your bill can go *up*, not down.\n- **Costs and speed don't change.** You turned caching on, but the bill and response times look the same as before.\n- **It works in testing, then fades.** Quick back-to-back test calls hit. Real users come minutes apart, so the cache (about 5 minutes) has expired.\n\n**Usual causes**\n\nSomething that changes sits near the start, such as a timestamp, the user's name or a reordered tool list. Or the fixed start is shorter than the minimum: 512 tokens on Claude 5.5, 1,024 on GPT.\n\n**Quickest check**\n\nSend the same question twice, a few seconds apart. Then compare the two usage reports. The second call should show a large cached count. If it doesn't, the start isn't identical or isn't long enough.",
+   "step": "Learn",
+   "fingerprint": "b8ab9210f42ec518",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only minor point is that 'response times' goes slightly beyond the lesson, which talks about price but not speed, though it does not contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Prompt caching only pays off when its three conditions hold. Here are common cases where it quietly stops working.\n\n**Something changing sits near the start.** A timestamp, the user's name or RAG chunks (passages a search step pulls in for each question) placed before the fixed text make every start different. Then nothing matches and you get no cache reads. Move anything that changes to the end, and keep the fixed part in the same order every time. Even editing one word of the instructions or the tool list starts a fresh cache.\n\n**Calls are too far apart.** The cache lasts about 5 minutes. A quiet app with one question every ten minutes misses every time. On Claude it also pays the extra quarter to write the cache each time. Check the hit rate in the usage counts. If it stays near 0, turn `cache_control` off.\n\n**The fixed start is too short.** Below 512 tokens on Claude 5.5 or 1,024 on GPT, nothing is cached at all. A token is a small chunk of text, often part of a word. For short prompts, caching simply doesn't apply, and that's fine.",
+   "step": "Learn",
+   "fingerprint": "5c3703eaccd957d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the first two situations run longer than the requested two or three sentences each, and the advice to turn cache_control off goes slightly beyond the lesson, but nothing contradicts it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Prompt caching” mean here?",
+   "a": "**Prompt caching** means the model provider remembers the opening part of your prompt for a few minutes. Then it doesn't have to process that part from scratch next time.\n\nHere's an everyday comparison. You phone a help desk, and each time you'd normally re-read your whole account history before asking a question. With caching, the agent says, \"I still have your file open from five minutes ago, just ask.\" You only pay full effort for the new question. The answer is still worked out fresh each time.\n\nIn the lesson's example, the fixed part goes first: `system = INSTRUCTIONS + LESSON_TEXT`. That text is the same for every question, so it can be cached. The learner's `question` goes last in `messages`, because it changes each call.\n\nThe `usage` dict shows the result. `cache_read_input_tokens: 900` means 900 tokens came from the cache at a small share of the normal price. Tokens are the small chunks of text the model counts and charges by. Only `input_tokens: 60`, the new question, were processed at full price.",
+   "step": "Learn",
+   "fingerprint": "c20bad48c10bf6b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
  "token_cost": {
   "check:0:0": {
    "q": "Why not “The model's accuracy on last month's eval set”?",

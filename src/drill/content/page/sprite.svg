@@ -124,6 +124,8 @@
 <symbol id="s-dedupe_chunks" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="10" height="12" rx="1.5"/><rect x="-1" y="-5" width="10" height="12" rx="1.5"/><path d="M2 -2l5 6M7 -2l-5 6"/></symbol>
 <symbol id="s-retrieve" viewBox="-12 -12 24 24"><path d="M-9 -7h8M-9 -3h6M-9 1h5"/><circle cx="3" cy="2" r="4.5"/><path d="M6.5 5.5l3 3"/></symbol>
 <symbol id="s-recall_at_k" viewBox="-12 -12 24 24"><path d="M-9 -5q9 15 18 0"/><circle cx="-3" cy="0" r="1.4"/><circle cx="2" cy="2" r="1.4"/><circle cx="7" cy="-8" r="1.4"/></symbol>
+<symbol id="s-pick_vector_size" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="7" rx="1.5"/><path d="M-4.5 -7v7M0 -7v7M4.5 -7v7"/><path d="M-9 4v4M9 4v4M-9 6h18"/></symbol>
+<symbol id="s-rescore_candidates" viewBox="-12 -12 24 24"><circle cx="-8" cy="-6" r="1.8"/><circle cx="-1" cy="-3" r="1.8"/><circle cx="3" cy="3" r="1.8"/><circle cx="8" cy="7" r="2.2"/><circle cx="6" cy="-7" r="1.5"/><circle cx="-7" cy="6" r="1.5"/><path d="M-6.3 -5.3l3.6 1.6M0 -1.5l2 3M4.4 4.1l1.9 1.5M0.6 -3.9l4.1 -2.4M-7.9 -4.2l0.8 8.7"/></symbol>
 <symbol id="s-embedding_blind_spots" viewBox="-12 -12 24 24"><circle cx="-2" cy="-2" r="6"/><path d="M2.5 2.5l6 6"/><path d="M-6 -6l8 8"/></symbol>
 <symbol id="s-ndcg_at_k" viewBox="-12 -12 24 24"><circle cx="-8" cy="-7" r="1.4"/><path d="M-4 -7h13M-4 -2h9M-4 3h6M-4 8h3"/></symbol>
 <symbol id="s-rerank_check" viewBox="-12 -12 24 24"><path d="M-9 -6h5M-9 0h5M-9 6h5M4 -6h5M4 0h5M4 6h5"/><path d="M-3 -6L3 6M-3 6L3 -6"/></symbol>
@@ -184,8 +186,10 @@
 <symbol id="s-must_pass_gate" viewBox="-12 -12 24 24"><path d="M0 -9l2.6 5.5 6 .8-4.4 4.2 1.1 6L0 4.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol>
 <symbol id="s-first_bad_version" viewBox="-12 -12 24 24"><path d="M-9 0h18M-9 -3v6M9 -3v6M0 -4v8"/><path d="M3 -8l4 4M7 -8l-4 4"/></symbol>
 <symbol id="s-judge_agreement" viewBox="-12 -12 24 24"><path d="M-9 0l3 3 6-7M-1 4l3 3 7-8"/></symbol>
+<symbol id="s-vague_checks" viewBox="-12 -12 24 24"><path d="M-9 -6l2 2 3-4M-9 0l2 2 3-4M-9 7q1.5-2.5 3 0t3 0"/><path d="M0 -6h9M0 0h9M0 6h9"/></symbol>
 <symbol id="s-cohen_kappa" viewBox="-12 -12 24 24"><rect x="-8" y="-8" width="16" height="16" rx="2"/><path d="M0 -8v16M-8 0h16M-5 -5l2 2M3 3l2 2"/></symbol>
 <symbol id="s-judge_consistency" viewBox="-12 -12 24 24"><path d="M-7 -2a7 7 0 0 1 12 -4M7 2a7 7 0 0 1 -12 4"/><path d="M5 -9v3h-3M-5 9v-3h3"/></symbol>
+<symbol id="s-disagreement" viewBox="-12 -12 24 24"><path d="M-9 8v-3M-5 8v-9M-1 8v-5"/><path d="M2 -4.5a3.5 3.5 0 1 1 5.2 3.4c-1.4.8-1.7 1.6-1.7 3.1"/><circle cx="5.5" cy="6.5" r="1"/></symbol>
 <symbol id="s-gwet_ac1" viewBox="-12 -12 24 24"><circle cx="-3" cy="0" r="6"/><circle cx="3" cy="0" r="6"/><circle cx="7" cy="-7" r="1.5"/></symbol>
 <symbol id="s-judge_biases" viewBox="-12 -12 24 24"><path d="M0 -8v15M-7 7h14"/><path d="M-9 -2l18 -7"/><path d="M-9 -2l-3 7h6zM9 -9l-3 7h6z"/></symbol>
 <symbol id="s-judge_cost" viewBox="-12 -12 24 24"><path d="M-2 -6v13M-9 7h14M-10 -3h16"/><path d="M-10 -3l-2 6h5zM6 -3l-2 6h5z"/><circle cx="8" cy="-8" r="3"/><path d="M8 -10v4"/></symbol>
@@ -198,6 +202,7 @@
 <symbol id="s-eval_cost" viewBox="-12 -12 24 24"><rect x="-10" y="-9" width="13" height="17" rx="2"/><path d="M-7 -4l1.5 1.5 3-3M-7 2l1.5 1.5 3-3"/><circle cx="7" cy="5" r="4"/><path d="M7 3v4"/></symbol>
 <symbol id="s-percentile" viewBox="-12 -12 24 24"><path d="M-10 7c4 0 5-12 9-12s6 9 11 11"/><path d="M5 -8v15" stroke-dasharray="2 2"/></symbol>
 <symbol id="s-pareto_models" viewBox="-12 -12 24 24"><path d="M-9 -8c0 8 6 15 17 16"/><circle cx="-6" cy="-1" r="1.4"/><circle cx="1" cy="5" r="1.4"/><circle cx="4" cy="-3" r="1.4"/></symbol>
+<symbol id="s-batch_leftovers" viewBox="-12 -12 24 24"><rect x="-9" y="-10" width="14" height="17" rx="2"/><path d="M-6 -6h8M-6 -2h8M-6 2h5"/><path d="M8 3a5 5 0 1 1-4 7M8 3v3h-3"/></symbol>
 <symbol id="s-better_option" viewBox="-12 -12 24 24"><rect x="-9" y="-7" width="18" height="16" rx="2"/><path d="M-9 -2h18M-4 -9v4M4 -9v4M-2 4h4M0 2v4"/></symbol>
 <symbol id="s-graduation_gate" viewBox="-12 -12 24 24"><path d="M-10 -3l10-5 10 5-10 5z"/><path d="M-5 0v5c3 2 7 2 10 0v-5M10 -3v6"/></symbol>
 <symbol id="s-promote_model" viewBox="-12 -12 24 24"><rect x="-8" y="-1" width="16" height="9" rx="2"/><path d="M0 -9v8M-3 -6l3-3 3 3"/></symbol>
@@ -235,6 +240,7 @@
 <symbol id="s-token_cost" viewBox="-12 -12 24 24"><ellipse cx="0" cy="-5" rx="7" ry="2.5"/><path d="M-7 -5v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 -1v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4M-7 3v4c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-4"/></symbol>
 <symbol id="s-estimate_vs_actual" viewBox="-12 -12 24 24"><path d="M-4 8v-12" stroke-dasharray="2 2"/><path d="M4 8v-16M-9 8h18"/></symbol>
 <symbol id="s-cache_hits" viewBox="-12 -12 24 24"><path d="M2 -10l-8 11h6l-2 9 8-11h-6z"/></symbol>
+<symbol id="s-prompt_cache" viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2"/><path d="M-10 -1h9" stroke-width="3"/><path d="M2 -1h6" stroke-dasharray="2 2"/><path d="M-5 4l-2 3h3l-2 3"/></symbol>
 <symbol id="s-plan_calls" viewBox="-12 -12 24 24"><path d="M-6 -9h12M-6 9h12M-5 -9c0 6 10 6 10 9s-10 3-10 9M5 -9c0 6-10 6-10 9s10 3 10 9"/></symbol>
 <symbol id="s-circuit_breaker" viewBox="-12 -12 24 24"><path d="M-10 2h4M6 2h4"/><circle cx="-5" cy="2" r="1.5"/><circle cx="5" cy="2" r="1.5"/><path d="M-4 1l8-6"/></symbol>
 <symbol id="s-burn_rate" viewBox="-12 -12 24 24"><path d="M0 9c-5 0-7-3-7-6 0-4 4-6 4-10 3 2 4 4 4 6 1-1 2-2 2-4 2 2 4 5 4 8 0 3-3 6-7 6z"/></symbol>
