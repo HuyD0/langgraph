@@ -198,10 +198,14 @@ def test_the_public_repository_holds_no_real_content():
         pytest.skip("the private copy: real lessons belong here")
     import yaml
 
-    for f in (ROOT / "content-packs").glob("*/lessons/*.yaml"):
-        assert yaml.safe_load(f.read_text())["status"] == "slot", f"{f} is filled in; keep real lessons private"
-    for f in (ROOT / "content-packs").glob("*/assets/*"):
-        assert f.name == "README.md", f"{f}: keep screenshots and diagrams in the private copy"
+    # Only the shared packs: internal/ (the work copy's real lessons) and private/ (a laptop's own) may be filled.
+    shared = [p for p in (ROOT / "content-packs").iterdir() if p.is_dir() and p.name not in ("internal", "private", "templates")]
+    assert shared, "no shared pack found under content-packs/"
+    for pack in shared:
+        for f in pack.glob("lessons/*.yaml"):
+            assert yaml.safe_load(f.read_text())["status"] == "slot", f"{f} is filled in; keep real lessons private"
+        for f in pack.glob("assets/*"):
+            assert f.name == "README.md", f"{f}: keep screenshots and diagrams in the private copy"
 
 
 def test_the_server_serves_a_pack_and_only_its_named_files(tmp_path, monkeypatch):

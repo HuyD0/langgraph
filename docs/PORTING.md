@@ -120,7 +120,9 @@ git push -u origin main
 ```
 
 Then fill `content-packs/internal/` ([CONTENT_PACKS.md](CONTENT_PACKS.md)) and run the quick
-way above. `app.yaml` already points `DRILL_CONTENT_PACKS` at that folder, so nothing the public
+way above. The public test suite runs unchanged in the work copy: the `UPSTREAM` file switches the
+few two-copy tests (`tests/test_porting.py`, `tests/test_packs.py`, `tests/test_scrub.py`) to the
+work copy's expectations, so a sync pull request there is green when nothing is wrong. `app.yaml` already points `DRILL_CONTENT_PACKS` at that folder, so nothing the public
 repository owns is edited at work.
 
 **Bring in a new release** whenever one is tagged here. Do it on a branch and open a pull

@@ -420,20 +420,20 @@
   },
   "check:1:0": {
    "q": "Why not “Release all 4 claims”?",
-   "a": "\"Release all 4 claims\" gets one thing right: nothing here calls for abstaining. No claim is contradicted, and three claims are supported. So the answer is mostly solid and worth sending.\n\nWhat it misses is the rule for releasing. The gate releases only when **every** claim is supported. Here one claim is unsupported. That means the passage it cites doesn't say it.\n\nThe claim might still be true. Maybe another source backs it, or it cites the wrong passage. But the gate can't confirm it from what the app found. Releasing it would show the user a statement nobody checked, which is the kind of slip a groundedness check exists to stop.\n\nThink of the lesson's example. \"You can also get store credit instead\" cited passage [3], and [3] didn't back it. Releasing it could promise the user something the sources don't confirm.\n\n\"Revise: drop the unsupported one\" is the better answer because it keeps the three verified claims and removes only the one the gate couldn't confirm.",
+   "a": "\"Release all 4 claims\" gets one thing right. Nothing here calls for abstaining. Three claims are supported, and none are contradicted, so most of the answer is solid and worth showing.\n\nBut it misses the gate's rule for releasing. Release means **every** claim is supported. Here, one claim is unsupported. That means the passage it cites doesn't say it. The claim might be true, or the model might have made it up. The gate can't tell, so it shouldn't vouch for it.\n\nIf you release all four, that unbacked claim reaches the user looking just as trustworthy as the other three. That is exactly what a groundedness check (checking that each statement is backed by its source) is meant to stop. In the lesson's example, \"You can also get store credit instead\" would slip through.\n\n\"Revise: drop the unsupported one\" is better because it keeps the three backed claims and removes only the one the sources don't support. The user still gets a useful answer, and every claim in it is backed.",
    "step": "Check",
    "fingerprint": "6f6859497ee7712d",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says releasing the unsupported claim would show 'a statement nobody checked', but the verifier did check it and found the passage doesn't say it; the problem is that it failed the check, not that it was never checked."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:1:1": {
@@ -728,20 +728,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "This rule works well for exact repeats. Here are three places where it needs extra care.\n\n**Near-duplicates.** Two footers that differ only by a page number or a typo get different keys, so both are kept. If that matters, add fuzzy matching. That means treating chunks as copies when they are *very similar*, for example when most of their words overlap or their embeddings are close.\n\n**Documents that change over time.** An updated policy has different text, so it gets a new key. Nothing is dropped, and the old and new versions both stay in the index. Search may then return outdated answers. Removing duplicates can't fix this. Instead, record which source document each chunk came from. When a document is updated, delete its old chunks before adding the new ones.\n\n**Very large or ongoing data.** The set of seen keys lives in memory, so it can grow too big. It is also lost between runs when new chunks arrive in batches. Store the keys in a table, perhaps as a hash (a short fingerprint of the text). Then check new chunks against that table. The Databricks SQL version handles this kind of scale.",
+   "a": "The rule \"clean the text into a key, keep the first copy\" works well for exact repeats. Here are three places it needs extra care.\n\n**Near-duplicates.** Two footers that differ only by a date or page number get different keys, so both survive. Strip out the parts that vary (numbers, dates) before building the key. Or use fuzzy matching, which compares how similar two texts are rather than requiring an exact match.\n\n**Data that changes over time.** \"Keep the first\" may keep an old version of a page when a newer one exists. Decide what \"first\" means on purpose. In the SQL version, that is the `ORDER BY` inside `row_number()`. For example, order by last-updated date so the newest copy wins.\n\n**Repeats that carry meaning.** The same sentence can sit in two different documents, like a warning in both Product A and Product B manuals. Dropping one copy loses the link to that source. Keep one chunk for search, but record every source it came from. Metadata (extra labels stored alongside the text) is a good place for that.",
    "step": "Learn",
    "fingerprint": "d26a208ff638e3f4",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The closing claim that the Databricks SQL version 'handles this kind of scale' is not in the lesson and is misleading, because that query rebuilds the table in one pass and does not remember keys between batches."
+    "pass": true,
+    "notes": "No blocking problems. Minor: each item runs to four or five sentences against the two-to-three guideline, and `row_number()` is mentioned without explanation."
    }
   },
   "learn:term": {
@@ -760,6 +760,188 @@
     "standalone": true,
     "pass": true,
     "notes": ""
+   }
+  }
+ },
+ "embedding_blind_spots": {
+  "check:0:1": {
+   "q": "Why not “Ship it: 92 in 100 overall is high”?",
+   "a": "\"Ship it\" gets one thing right. 92 in 100 is a strong overall number. For plain questions, search usually finds the right passage.\n\nBut that overall number is an average, and averages hide things. Questions that use product codes only find the right passage 40 times in 100. That is fewer than half. Embedding models often stumble on codes like these, because they learned from public text that rarely contains your internal codes.\n\nThink about who asks those questions. Someone typing a product code wants one exact answer. If search misses it more often than not, that person is let down most of the time. A high overall score does not help them at all.\n\nSo the lesson's habit applies: measure recall (how often the right passage came back) group by group, and look at the weakest group. That group shows where users will struggle after launch.\n\n\"Fix it for product codes before launch\" is better because it acts on the weakest group, so the people who ask with codes are not failed on day one.",
+   "step": "Check",
+   "fingerprint": "d7b062ec5824dcb7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Drop product codes from the test set”?",
+   "a": "Dropping product codes would make the numbers look better. It would not make search work better.\n\nThere is one small thing it gets right. It notices that the codes group behaves differently from the rest. Spotting that is the whole point of measuring group by group.\n\nBut it hides the problem instead of solving it. Your test set (the list of questions you check search with) is meant to look like what real users will ask. Real users will still type product codes after launch. If you remove those questions, your recall goes up. Recall here means how often the right passage came back. That higher number is no longer true for your users. About 60 in 100 code questions will still fail. You just won't see it anymore.\n\nThis is the trap the lesson warns about: a good overall number covering up a group that fails. Deleting the weak group makes that trap worse on purpose.\n\n\"Fix it for product codes before launch\" is better because it treats the weakest group as the place users will be let down. It improves search there, then re-measures that group to prove the fix worked.",
+   "step": "Check",
+   "fingerprint": "f276e7f19298e1d3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The index will cost more to run”?",
+   "a": "\"The index will cost more to run\" sounds reasonable, but nothing in the question is about cost. The question describes a testing gap. Staff ask in two languages, and the test only checks one of them.\n\nSo this option gets nothing right about the risk. It points at money when the real problem is search quality. (An \"index\" is the stored set of embedded documents that search looks through.)\n\nHere is what it misses. The lesson says embedding models often match other languages worse. A Spanish question may fail to find the right English passage.\n\nIf every test question is in English, you never measure that. Your recall could look high. Recall is the share of questions where the right passage came back. But that number only describes English questions. The Spanish group isn't in the test at all, so its failures stay hidden.\n\nThe fix is the lesson's approach. Add Spanish test questions as their own group. Then measure recall for each group and look at the weakest one.\n\n\"Spanish questions may fail unseen\" is better because it names the real risk: a weaker group of questions that your English-only test can never reveal.",
+   "step": "Check",
+   "fingerprint": "c0c690c8776feb8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “English recall will drop”?",
+   "a": "\"English recall will drop\" gets one thing right. It notices that language matters for search. But it points at the wrong group.\n\nNothing in this setup makes English questions worse. Every test question is in English, so English is exactly what you are measuring. If English recall were poor, your test would show it. (Recall here means the share of questions where the right passage came back.)\n\nThe real problem is the group you never tested. The lesson lists \"other languages\" as a known weak spot for embedding models. An embedding model is the tool that turns text into numbers so search can match meaning. Your staff also ask questions in Spanish. Those questions might find the right passage far less often. But no Spanish question is in your test, so that weakness never appears in any number.\n\nYour recall could look healthy and still hide a group that fails. That is the lesson's core warning. A group you don't test is a group you can't see.\n\n\"Spanish questions may fail unseen\" is better because it names both the group at risk and the reason you wouldn't notice: your test leaves that group out entirely.",
+   "step": "Check",
+   "fingerprint": "955aa334fe3f4c56",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “A: it tops the public ranking”?",
+   "a": "It's a fair instinct. A public ranking is a scoreboard where many embedding models are tested on the same shared set of questions. Topping it tells you something real: model `A` is good at matching general text. That makes it a sensible model to put on your shortlist.\n\nBut the ranking was measured on other people's text, mostly general English. It never saw your product codes. It can't tell you whether `A` will match \"SKU-4471-B\" to the right passage. Product codes are one of the known blind spots for embedding models, so this gap matters.\n\nYour own test asks the question you actually care about: did the right passage come back for *your* hard questions? If `B` wins there, especially on the codes group, that is direct evidence. The ranking is only indirect evidence about different text.\n\nThink of hiring someone. A top school grade is nice. But if one candidate did better on a trial of your actual work, that tells you more.\n\n**B is better because it was proven on your own data, including the product codes your users will really search for.**",
+   "step": "Check",
+   "fingerprint": "ebff4a3beaea5bc6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The claim that topping the ranking makes A a sensible shortlist pick goes slightly beyond the lesson but does not contradict it, and 'proven' in the last line is a mild overstatement."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Whichever is newer”?",
+   "a": "\"Whichever is newer\" picks a model by its release date. A date is not a test result.\n\n**What it gets right:** it accepts that embedding models differ, so the choice matters. (An embedding model turns text into numbers so search can find text with similar meaning.)\n\n**What it misses:** the lesson says each model learned from public text, so some kinds of text match worse than others. Product codes are one of those blind spots. A release date says nothing about whether a model handles *your* codes. Neither does a public ranking. Rankings are measured on other people's text, mostly general English.\n\nThe only thing that answers \"does it find my codes?\" is your own test. Group your hard questions, such as plain questions and questions with codes. Then measure recall for each group. Recall means how often the right passage came back. Compare the two models side by side.\n\nIn this question, you already have that evidence. B does better on your own questions with product codes.\n\n**Why \"B: it does better on your own data\" is better:** it trusts a measurement on your own hard questions, not a guess based on age or someone else's text.",
+   "step": "Check",
+   "fingerprint": "4fc36240d2eca7df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the 'what it gets right' credit is a mild stretch, and the answer is close to the 200-word limit."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count per group, then find the lowest” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"An overall recall score can look fine while one kind of question mostly fails. Recall here just means: did the right passage come back? In one test, overall was 77%, but questions with product codes found their passage only 40% of the time.\"\n\n*The idea:* \"So I tag each test question with a group, like plain, codes or other languages. For each group, I count how many found their passage and turn that into a share. Then I look at the lowest share. That is where users will be let down.\"\n\n*The trade-off:* \"Small groups are noisy. With twenty code questions, one or two misses move the share a lot. So I report the count next to the share, and I add questions to thin groups.\"\n\n**A likely follow-up**\n\n\"How would you use this to choose between two embedding models?\" An embedding model is the tool that turns text into numbers for search.\n\n*Hint:* Run both models on the same grouped test, side by side. Prefer the model with the stronger weakest group, not just the higher average. Public rankings use mostly general English, so they say nothing about your codes.",
+   "step": "Explain",
+   "fingerprint": "454cf33332d01665",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **One good overall number, then complaints.** Recall means \"how often the right passage came back.\" It looked fine in testing, but real users say search misses things.\n- **Complaints follow a pattern.** Searches with product codes, policy numbers or internal names fail. So do questions in another language.\n- **Traces look \"close but wrong.\"** A trace is the step-by-step record of one run. The passages that came back are on the right general topic, but not the exact document the user needed.\n- **Length bias.** Short FAQ entries keep beating long policies, or the other way round.\n- **Unfair answers about people.** Results lean on stereotypes about names, genders or roles.\n- **A suspiciously high score.** One model family wrote the test questions, embedded the documents and judged the answers. A weakness they share stays hidden.\n- **The model was chosen from a public ranking alone.** Nobody tested it on your own text.\n\n**Quickest check**\n\nSplit your test results by group: plain, codes, other languages, people. Work out recall for each group separately. If one group sits far below the overall number, you have found the blind spot. Then add some real questions written by actual users, and test again.",
+   "step": "Learn",
+   "fingerprint": "36630c6326737350",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes, but it sits right at the length limit (about 195 words). The 'close but wrong' trace sign and the direction of the length bias are extrapolations the lesson does not state."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. A group has only a few questions.**\nIf the \"codes\" group has three questions, one lucky hit swings its score from 33% to 67%. Then the \"weakest group\" may just be noise. Collect at least a couple dozen questions per group before you trust the ranking. Treat tiny groups as early warnings, not verdicts.\n\n**2. Your documents or users change over time.**\nNew product codes appear, a new country starts using the app, or old policies get replaced. A group that scored well last month can quietly slip. Rerun the group-by-group test whenever the documents or the embedding model change. Add fresh questions taken from real user searches.\n\n**3. Questions fit more than one group, or none.**\nA French question about a policy number belongs to two groups. It might fail for a reason you never named, like typos. You can only find weak spots among the groups you chose. So also read the failed questions one by one. Allow a question to carry more than one label, and add new groups when a pattern shows up.",
+   "step": "Learn",
+   "fingerprint": "f113474e0ff99ce0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "All checks pass. The only slip is that each point runs to four or more sentences instead of the two or three requested, but that is not one of the five checks."
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "A good-looking average can hide a real failure.\n\nPicture a support bot for a parts supplier. The team tests retrieval, the step that fetches the passage meant to answer a question. Overall recall is 85%. Recall means the share of questions where the right passage came back. They ship it.\n\nBut most of their test questions were plain English. Many real customers ask things like \"Is part HX-204 in stock?\" Product codes like that are harder for an embedding model to match. It learned mostly from public text, where codes like yours are uncommon. So questions with codes fail more often. Those customers get the wrong passage or nothing useful, and they are often the ones ready to buy.\n\nThe team only hears about it from complaints.\n\nSplitting the questions into groups and measuring recall for each would have shown the weak codes group before launch. They could then compare two models side by side on their own questions and pick the one that handles their codes better.\n\nThe average shows how most questions go. The weakest group shows who gets let down.",
+   "step": "Learn",
+   "fingerprint": "13dedd4f97ee3b99",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claims that codes are uncommon in public text and that code customers are ready to buy go slightly beyond the lesson but don't contradict it."
    }
   }
  },
@@ -2234,6 +2416,188 @@
     "standalone": true,
     "pass": true,
     "notes": ""
+   }
+  }
+ },
+ "what_embeddings_are": {
+  "check:0:1": {
+   "q": "Why not “Passage B, at 0.10”?",
+   "a": "\"Passage B, at 0.10\" mixes up which way the score runs.\n\n**What it gets right:** it reads the two scores correctly. B really does score 0.10. And with some measures, like plain distance between two places, a smaller number does mean closer. So picking the low number is a natural guess.\n\n**What it misses:** cosine similarity runs the other way. It measures whether two vectors (lists of numbers) point the same direction.\n\n- **1** means they point the same way, so the meanings are very close.\n- **0** means they are unrelated.\n\nSo 0.10 says passage B is almost unrelated to the question. In the lesson's example, \"expense claim\" scored 0.12 against \"parental leave\". That is about how far off B is. Sending B to the LLM (the language model that writes the answer) would give it text that has little to do with the question. Search ranks passages by cosine from highest to lowest, so B would land near the bottom.\n\n**Why A is better:** at 0.95, passage A points almost the same way as the question, so it most likely means nearly the same thing and can help answer it.",
+   "step": "Check",
+   "fingerprint": "1f8c70f7f41efbd4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Neither: cosine measures length”?",
+   "a": "\"Neither: cosine measures length\" has the idea backwards. Cosine similarity deliberately ignores length. It only asks which way two vectors point.\n\nThere is one small grain of truth in it. Length does show up in the calculation. You multiply the numbers position by position, add them up, then divide by the two vectors' lengths. But that division is there to *cancel* length out, not to measure it. What's left is purely about direction.\n\nPicture two arrows on a map. One is short, one is long. If they point the same way, cosine says they match. That's why a short question can still match a long passage.\n\nSo the option misses the main point. A score of 0.95 is not a statement about size. It says the question and passage A point almost the same way. In embedding terms, that means they mean nearly the same thing. A score of 0.10 says passage B points somewhere nearly unrelated.\n\nPassage A is the better answer because its cosine of 0.95 means its meaning lies very close to the question's, so it most likely holds what the question is asking about.",
+   "step": "Check",
+   "fingerprint": "c5132f7d5b9b6694",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “The newer model is broken”?",
+   "a": "\"The newer model is broken\" sounds reasonable, because the results really did turn to nonsense. But it blames the wrong thing. The newer model can work perfectly well, even better than the old one.\n\nHere is what it misses. Each model learns its own space. Remember, nobody chose what each dimension means. The model learned that from text. So position 1 in the old model's vector and position 1 in the new model's vector can stand for completely different things.\n\nYour documents were placed on the old model's \"map.\" Your questions are now placed on the new model's map. Comparing them is like plotting a street address from one city onto a map of another city. Each map is fine on its own. They just don't line up.\n\nSo the numbers you compare no longer describe the same thing. The \"nearest\" passages are near by accident, not by meaning.\n\nThe fix is to embed the questions and the passages with the same model. That usually means re-embedding all your documents with the new model.\n\n\"The two models' spaces don't match\" is better because it names the real cause. Vectors only make sense when compared with others made by the same model.",
+   "step": "Check",
+   "fingerprint": "088e1f480f4991ea",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The answer runs to about 205 words, slightly over the roughly 200-word limit, and it adds an unrequested 'fix' paragraph. The closing 'better because' part is also two sentences when the brief asked for one."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The documents got too long”?",
+   "a": "\"The documents got too long\" sounds reasonable, but it doesn't fit what happened.\n\nFirst, the documents didn't change. The only thing that changed was the model used for the questions. If results were fine before the switch and nonsense after, the cause has to be the switch.\n\nSecond, length isn't what breaks search here. An embedding model gives the same count of numbers for any text, short or long. And cosine similarity compares direction, not length, so a long passage can still match a short question.\n\nIt does get one small thing right. Very long text can blur its meaning, and models have an input limit, so text past that point gets cut off. But that would make results slightly worse, not turn them into nonsense overnight.\n\nThe real issue is that each model learns its own space. Its dimensions (the positions in the list of numbers) mean different things. Comparing a vector from one model with a vector from another is like reading coordinates from two different maps.\n\n\"The two models' spaces don't match\" is better because it points at the one thing that changed, and that change makes every comparison meaningless.",
+   "step": "Check",
+   "fingerprint": "569de83cd2d11031",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The input-limit and 'blur its meaning' claims are not in the lesson, though they do not contradict it. Otherwise the answer is accurate and under 200 words."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Yes: long passages always score low”?",
+   "a": "**\"Yes: long passages always score low\" doesn't fit how cosine similarity works.**\n\nIt does catch one real thing. A long passage often covers several ideas. Its embedding (the list of numbers standing for its meaning) then blends those ideas, so it may match a narrow question less sharply. But that comes from mixed meaning, not from length. And it doesn't happen \"always\".\n\nHere is what it misses. The text's length doesn't change how many numbers you get. A two-line question and a two-page passage both become 1,536 numbers. Cosine similarity then divides by each vector's length, where \"length\" means how big the arrow is, not how many words the text had. Dividing like that removes size from the score, so only the direction is left. A long text gains no advantage and takes no penalty just for being long.\n\nThe question also tells you the score is 0.9. That's close to 1, so the two point almost the same way. That is a strong match, not a low score.\n\n**\"No: cosine compares direction, not length\"** is better because it names the actual rule: the score depends on which way the arrows point, so a short question and a long passage can match well.",
+   "step": "Check",
+   "fingerprint": "c717a27769327b96",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Yes: the question must be longer”?",
+   "a": "That option starts from a fair instinct. A two-line question and a two-page passage look very different, so it seems natural to worry that the short one can't \"match\" the long one. It's also true that a very short text gives the model less to go on.\n\nBut it misses how cosine similarity works. Every text, short or long, becomes a vector of the same size: 1,536 numbers. Cosine similarity only asks whether two vectors point the same way. It ignores how long they are. So the question doesn't need to be longer to be compared fairly.\n\nThe score already answers the question. A cosine of 0.9 is close to 1, which means the two vectors point in nearly the same direction. In plain words, the question and the passage are about the same thing. Padding the question with extra words wouldn't fix anything, because nothing is broken. It could even blur the meaning and lower the match.\n\n\"No: cosine compares direction, not length\" is better because it names the actual rule: cosine scores whether two arrows point the same way, so a short question and a long passage can match strongly.",
+   "step": "Check",
+   "fingerprint": "4e69e7538ca6dd8c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The claims that a short text gives the model less to go on and that padding could lower the match come from outside the lesson. They are plausible and hedged, and they don't contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Dot product over the lengths, then keep the best” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* \"A user asks a question. I need the passage that means the same thing, even if it uses different words.\"\n\n*The idea:* \"Every text becomes an embedding, a list of numbers. I compare the question to each passage with cosine similarity. That's the dot product, meaning multiply matching positions and add them up. Then I divide by the two vectors' lengths, which is each vector's overall size. Dividing removes size, so only direction counts. I walk through the passages once and keep the highest score.\"\n\n*Edge case:* \"If a vector is all zeros, its length is zero and the division breaks, so I'd guard against that. Also, an internal product code the model never learned may score low even when it's the right match.\"\n\n**A likely follow-up**\n\n\"Why divide at all? Why not just use the dot product?\"\n\n*Hint:* Without dividing, a vector with bigger numbers can score higher just for being bigger, not for meaning the same thing. Dividing keeps the comparison fair between a short question and a long passage. A strong answer says direction carries the meaning, not size, like two arrows on a map.",
+   "step": "Explain",
+   "fingerprint": "1b24be14c6238b7e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **A score above 1.** Cosine tops out at 1, meaning \"same direction\". A bigger number means the step of dividing by the two vectors' lengths was skipped.\n- **The longest passage keeps winning.** Without that division, long passages get big totals just for having bigger numbers, not for matching meaning. A short, exact answer loses to a long, rambling one.\n- **Questions with internal terms come back with unrelated passages.** A product code the model never learned may land nowhere useful. Its nearest passage is just the least-bad guess, often with a low score.\n- **The LLM answers confidently from the wrong passage.** The LLM answers from what retrieval returns. If the top passage is off, the answer is off.\n\n**Quickest check**\n\nScore a few pairs where you already know the answer, like the lesson's example. \"Parental leave\" vs \"maternity leave\" should score high, and vs \"expense claim\" should score near 0. Also score one text against itself: it should be exactly 1. Then try a short and a long passage that say the same thing. Both should score about the same against the question.",
+   "step": "Learn",
+   "fingerprint": "0fec5004dc8c6d93",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Words the model never learned.** Internal product codes, ticket numbers or team slang may land nowhere useful, so the right passage scores low. Add keyword search alongside it (often called **hybrid search**, meaning you combine exact-word matching with meaning matching).\n\n**2. Switching embedding models.** Each model builds its own space, so a vector from one model means nothing next to a vector from another. If you upgrade the model, re-embed every passage, and always embed questions with the same model as the passages.\n\n**3. A very large number of passages.** Comparing the question with every passage one by one is fine for hundreds, but gets slow for millions. Use a **vector index**, a structure that finds near neighbours without checking them all, such as Databricks Vector Search.\n\nA related caution: \"closest\" is not always \"correct.\" Text like \"leave is allowed\" and \"leave is not allowed\" can score very close. So return a few top passages, not just one, and let the LLM read them.",
+   "step": "Learn",
+   "fingerprint": "31380eabf383e775",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “embedding” different from “vector”?",
+   "a": "A **vector** is just the container. It's an ordered list of numbers, like `[0.12, -0.40, 0.88, ...]`. On its own it says nothing about meaning. A vector could hold anything: temperatures, prices, pixel colours.\n\nAn **embedding** is a vector made by a model from text, so that its position captures meaning. Every embedding is a vector, but not every vector is an embedding. \"Embed\" is also the verb: you embed a question to get its vector.\n\n**An everyday comparison:** a vector is like a pair of map coordinates. Any two numbers make coordinates. An embedding is the coordinates of a real café, chosen so that similar cafés sit nearby.\n\n**How they work together:** `text-embedding-3-small` embeds \"parental leave\" into a vector of 1,536 numbers. It does the same for \"maternity leave.\" Because both are vectors, you can compare them with cosine similarity. That measures whether two arrows point the same way, ignoring their length. Here it gives 0.91, nearly the same direction. \"Expense claim\" scores 0.12, far off.\n\nThe model supplies the meaning. The vector gives you something you can do maths on.",
+   "step": "Learn",
+   "fingerprint": "43eb8c7ba441b528",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the café analogy is a little loose (café locations aren't chosen to cluster), and the 0.91 and 0.12 scores are the lesson's example numbers but are stated as if the model really output them."
    }
   }
  }

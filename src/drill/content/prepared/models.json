@@ -38,20 +38,20 @@
   },
   "check:1:0": {
    "q": "Why not “How new each model is”?",
-   "a": "\"How new each model is\" gets one thing right. It senses that price per call isn't the whole story. But it points at the wrong missing piece.\n\nNewness never shows up in the money. The lesson's net monthly value uses four things: volume (how many calls you make), success rate (the share of answers that are good), value per success (what each good answer earns or saves), and cost per call. A model's release date isn't any of those. A brand-new model and an old one are judged the same way: by what their good answers earn, minus what their calls cost.\n\nThe manager's \"cheapest per call\" rule only looks at the cost side. It ignores the earning side. A cheaper model may give fewer good answers. If the earnings it loses are bigger than what it saves on calls, it makes less net money each month.\n\n\"How many good answers each gives\" is the right answer because success rate is exactly the earning half of the formula that the cheapest-per-call rule leaves out.",
+   "a": "It's a fair thought. Newer models often do better, so \"how new\" hints at something real: quality matters, not just price.\n\nBut newness isn't part of the money sum. Net monthly value is what good answers earn minus what the calls cost:\n\n- **Earned:** volume times success rate times value per success.\n- **Cost:** volume times cost per call.\n\nA model's release date appears nowhere in that. A brand-new model might be no better at *your* task than an older one. It might even be worse. Age is a guess about quality, not a measure of it. You could pick the newest model and still lose money if it succeeds less often on your requests.\n\nThe manager's \"cheapest per call\" idea only looks at the cost side. What it really leaves out is the earning side, and newness doesn't fill that gap. A measured success rate does. That's the number you'd log in MLflow (the tool that records each experiment run) as `success_rate`.\n\n\"How many good answers each gives\" is the better answer because it is the success rate, the exact missing piece that decides how much each model earns.",
    "step": "Check",
    "fingerprint": "81c6c4d9634d8388",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The closing line calls success rate \"exactly the earning half\" of the formula, but the lesson's earning side is volume times success rate times value per success, and it warns against choosing by success rate alone; the answer also credits the \"newness\" option with an intent (sensing that price isn'"
+    "pass": true,
+    "notes": "No major problems. The claim that newer models often do better comes from outside the lesson, and the length is borderline at about 200 words."
    }
   },
   "check:1:2": {
@@ -384,20 +384,20 @@
   },
   "check:0:2": {
    "q": "Why not “Every request takes about 900 ms”?",
-   "a": "\"Every request takes about 900 ms\" gets one thing right. 900 ms really is the **average**: add up all the times and divide by how many requests there were.\n\nBut an average blends fast and slow requests into one number. It hides the spread. Very few requests may actually take 900 ms.\n\nHere is one way those numbers can happen. Take 100 requests:\n\n- 94 finish in about 700 ms.\n- 6 take about 4 seconds.\n\nThe average works out to about 900 ms. Now sort the times, fastest first, and look at the 95th one. That is one of the slow ones, so the **p95** is 4 seconds. (p95 means 95 out of 100 requests finish within that time.)\n\nSo no single request \"feels like\" 900 ms. Most feel quick. A handful feel painfully slow, and users remember those.\n\n\"About 1 in 20 requests feels slow\" is the better answer. A p95 of 4 seconds means the slowest roughly 5 out of 100 requests, about 1 in 20, take around 4 seconds, and that is exactly what the average hides.",
+   "a": "\"Every request takes about 900 ms\" reads the average as if it were a promise for each request. It isn't.\n\n**What it gets right:** the average really is 900 ms. Most requests are probably fast, maybe well under a second.\n\n**What it misses:** an average blends fast and slow requests into one number. A few very slow ones get hidden by many quick ones. Picture nine requests at 500 ms and one at 4,500 ms. The average is 900 ms, yet that one user waited four and a half seconds.\n\nThe p95 tells you about that spread. A p95 of 4 seconds means 95 out of 100 requests finish in 4 seconds or less. So the slowest 5 out of 100 take about 4 seconds or longer. That's more than four times the average, and those users notice.\n\nThis is why teams compare models and configs (their settings) on p95, not the average.\n\n**Why \"About 1 in 20 requests feels slow\" is better:** 5 out of 100 is 1 in 20, so it describes what real users experience instead of an average that no single request may actually take.",
    "step": "Check",
    "fingerprint": "246b2cf7c532c471",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The last paragraph says the slowest ~5 in 100 requests 'take around 4 seconds', but p95 only means those requests take 4 seconds or longer, since 95 finish within it; the tail could be much slower. The arithmetic in the example is fine (the average comes to about 898 ms)."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:1:1": {

@@ -381,12 +381,558 @@
    }
   }
  },
+ "deployment_types": {
+  "check:0:1": {
+   "q": "Why not “Global, because it is the cheapest”?",
+   "a": "\"Global, because it is the cheapest\" gets one thing right. Global really is the cheapest type. For `gpt-4.1` it costs $2.00 per million input tokens, against $2.20 for Data Zone or Regional. A token is a small chunk of text the model reads or writes.\n\nWhat it misses is the rule. Your HR data must stay in the EU. With Global, Azure may process your requests in any Azure region, including ones outside the EU. Your stored data stays in your chosen geography whichever type you pick. But the processing could still happen elsewhere, and that breaks the rule.\n\nSo the answer skips the first step. The lesson's order is: data rules first, then model and region, then price. Price only chooses among the options that already pass the rules. Here Global is out before price even comes up. A cheaper option you are not allowed to use is not an option at all.\n\nData Zone EU, or Regional in the EU, is better because it keeps processing inside the EU. That follows the rule, and it costs only about 10% more.",
+   "step": "Check",
+   "fingerprint": "10d4f619ab4be6b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Any type: stored data stays put”?",
+   "a": "That option gets one thing right. **Stored data** (the files and records Azure keeps for you) does stay in your chosen geography, whichever deployment type you pick. That part of the lesson is true.\n\nWhat it misses is **processing**. Processing is the moment the model actually reads your request and works on it. Each time your app sends HR data to the model, that data travels to wherever the model runs.\n\nWith a Global deployment, that can be any Azure region in the world. So an EU employee's record might be handled in the US or Asia, even though it's stored in the EU. \"Must stay in the EU\" covers that moment too, so Global breaks the rule.\n\nThat's why the lesson says the data rules come first. They remove Global before price is even considered. Global being cheapest doesn't help if you aren't allowed to use it.\n\n\"Data Zone EU, or Regional in the EU\" is better because both keep processing, not just storage, inside the EU, which is what the rule actually asks for.",
+   "step": "Check",
+   "fingerprint": "4b26ccdf25425477",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Use Global: it is only a test”?",
+   "a": "\"Use Global: it is only a test\" gets one thing right. Trying a new model early is useful. Global is also where new models usually appear first, with the most quota (your allowed tokens per minute), and it is the cheapest type.\n\nWhat it misses is that the data rule doesn't care whether you call it a test. With Global, your requests may be processed in any Azure region, including ones outside the EU. Your stored data stays in your chosen geography, but the processing does not. If your test sends real data, that data can leave the EU, and the rule is broken. Tests often use real data, because that is how you see if the model works for you.\n\nIt also flips the lesson's order. Step one is your data rules. They decide which deployment types you may use at all. Global is out before price or convenience even come up.\n\n\"Wait for it in the EU Data Zone\" is better because it follows the rule first and still gets you the new model, just a little later.",
+   "step": "Check",
+   "fingerprint": "18f88fa14ab6d360",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. Minor: 'Tests often use real data' and 'just a little later' go beyond what the lesson says, but neither contradicts it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Use Global, then delete the data”?",
+   "a": "**Why \"Use Global, then delete the data\" falls short**\n\nIt gets one thing right. It notices that the data matters, and it tries to limit the damage.\n\nBut it misses what the rule is about. A **Global** deployment may *process* your request in any Azure region. \"Processing\" means the model reads your prompt and works on it. So the moment you send EU data, it might be handled in the US or Asia. That is the very thing your EU-only rule forbids.\n\nDeleting afterwards can't undo that. The data has already left the EU while it was being worked on. The rule is broken at send time, not at storage time.\n\nThere's a second gap too. The lesson says stored data stays in your chosen geography whatever type you pick. So deletion doesn't even target the risky part, which is the processing.\n\nRemember the order: data rules first, then model and region, then price. Global fails step one, so it's out, however new or cheap it is.\n\n**Why waiting is better:** an EU Data Zone deployment keeps processing inside the EU, so you follow the rule from the very first request instead of trying to fix it afterwards.",
+   "step": "Check",
+   "fingerprint": "df51909b8a6fa2d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “$10 a month”?",
+   "a": "\"$10 a month\" gets one thing right. Data Zone does cost more than Global, so the answer points the right way. But the number is ten times too small.\n\nHere is the sum, step by step:\n\n- The price gap is $2.20 minus $2.00. That is **$0.20** per million input tokens.\n- Your app sends 500 million input tokens. That is 500 \"millions.\"\n- 500 × $0.20 = **$100**.\n\nYou can check it another way:\n\n- Global: 500 × $2.00 = $1,000 a month.\n- Data Zone: 500 × $2.20 = $1,100 a month.\n- The difference is $100.\n\nAn answer of $10 usually comes from a decimal slip. Using $0.02 as the gap instead of $0.20 gives exactly $10. Another slip is reading \"about 10% more\" as \"$10 more.\" The 10% is a percentage of the bill, not a fixed dollar amount. Ten percent of $1,000 is $100.\n\n\"$100 a month\" is better because it multiplies the real $0.20 gap by all 500 million tokens.",
+   "step": "Check",
+   "fingerprint": "b7b910b8f1169f86",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “$1,000 a month”?",
+   "a": "\"$1,000 a month\" is a real number from this question. It's just the answer to a different question.\n\nPrices are \"per million tokens.\" A token is a small chunk of text, often part of a word. Your app sends 500 million input tokens a month, which is 500 lots of a million.\n\n- On Global Standard, each million costs $2.00. So 500 × $2.00 = $1,000.\n- On Data Zone, each million costs $2.20. So 500 × $2.20 = $1,100.\n\nSo $1,000 is the full monthly bill on Global. The question asks what Data Zone *adds*: the extra you pay on top of Global. That number misses the last step, which is taking the difference between the two bills.\n\n$1,100 − $1,000 = $100.\n\nYou can also get there directly. Data Zone costs $0.20 more per million, and 0.20 × 500 = $100. That matches the lesson's \"about 10% more.\"\n\n\"$100 a month\" is better because it is the gap between the two bills, which is exactly the extra cost the question asks about.",
+   "step": "Check",
+   "fingerprint": "c64259fdb1092c6e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Filter by the rules, then take the cheapest” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** In Azure AI Foundry, each model deployment has a type. The type decides where requests may be processed. Global is cheapest. Data Zone and Regional cost about 10% more but keep processing inside one area. Company privacy rules may forbid some types.\n\n**The idea.** Rules first, price last. I drop every option whose data location isn't on the allowed list. Among what's left, I take the cheapest. It's like booking a flight: first only flights that land where you need to be, then the cheapest of those. If I looked at price first, I'd grab Global and might break the rules.\n\n**Edge case.** Sometimes nothing passes the rules. Then I report clearly that no option is allowed, instead of quietly falling back to Global.\n\n**A follow-up an interviewer might ask:** \"The cheapest allowed option has no quota in your region. What now?\"\n\nHint: quota is the tokens per minute you may use. It's set per region, per model and per type, and it doesn't carry over between regions. A strong answer treats model availability and enough quota as part of the filter, checked before price. Bonus point: new models often reach Global first.",
+   "step": "Explain",
+   "fingerprint": "6ac837f9b2186ab0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\nThe bill looks too good. Restricted data is running at $2.00 a million input tokens for gpt-4.1. That is the Global price. It may mean someone picked on price first and skipped the data rules. Global can process requests in any Azure region, so EU-only HR data would break the rules.\n\nThe privacy team flags it later. A review finds a deployment type that isn't on their allowed list. The app worked fine, so nobody noticed.\n\nThe plan fails at setup. The model you wanted isn't offered as Data Zone or Regional in your region yet. New models often come to Global first.\n\nThe app runs out of room sooner than planned. **Quota** means the tokens per minute you may use. Maybe two apps share one quota, so each gets half. Or someone assumed quota from another region would carry over. It doesn't.\n\n**Quickest check**\n\nList every deployment with its type and region. Compare each type to the allowed list from your data rules. Then check quota for that region, model and type. Only after both pass, confirm you chose the cheapest type left.",
+   "step": "Learn",
+   "fingerprint": "8b4269e59001be46",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"filter by data rules, then take the cheapest\" is a good start. Here are three places where it needs extra care.\n\n**The cheapest allowed option has no room.** Data Zone EU might pass your rules but have too little quota (tokens per minute) for your traffic, or not offer the model yet. Check that the model exists there and that quota is enough before you compare prices. If one deployment is too small, ask for more quota or spread the load over a second allowed region.\n\n**Things change over time.** New models usually land in Global first, and Data Zone or Regional versions come later. Prices and your privacy team's rules can also change. Don't decide once and forget it. Re-check the options when you switch models or when the rules are updated.\n\n**Cheap but slow.** Batch costs half as much, but your results come back later, not right away. That is fine for overnight jobs. It is wrong for a chatbot a person is waiting on. Add \"how fast must it answer?\" as a filter before you look at price.",
+   "step": "Learn",
+   "fingerprint": "7df326d724b35363",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “deployment type” mean here?",
+   "a": "A **deployment type** is a setting you pick for each model in Azure AI Foundry. It decides where in the world your requests may be processed. \"Processed\" means the moment the model reads your prompt and writes its reply. It also changes the price.\n\nThink of sending a parcel. You can let the courier route it through any depot in the world. That's cheapest. Or you pay a bit more to keep it inside one continent, or inside one country. The parcel arrives either way. You are choosing the route, and the route sets the price.\n\nThe lesson names three types:\n\n- `Global`: any Azure region. A region is one group of data centres, like East US.\n- `Data Zone`: only inside the US, the EU or Asia Pacific.\n- `Regional`: only inside one geography you choose.\n\nYour stored data stays in your chosen geography whichever type you pick. The type only covers processing.\n\nIn the HR example, the data must stay in the EU. `Global` could process requests anywhere, so it's ruled out, even though it's cheapest at $2.00. Of the types left, `Data Zone EU` is the cheapest at $2.20.",
+   "step": "Learn",
+   "fingerprint": "b33ce84cb938dd21",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The definition comes before the everyday comparison, though the brief asked for the comparison first, and \"one country\" only loosely matches \"one geography\"."
+   }
+  }
+ },
+ "embedding_cost": {
+  "check:0:1": {
+   "q": "Why not “Only new documents use the new model”?",
+   "a": "It sounds sensible. Why pay to redo work you've already done? And part of it is true: after the switch, new documents do go through the new model.\n\nWhat it misses is that vectors (the lists of numbers an embedding makes) from two different models can't be compared. Each model has its own way of turning meaning into numbers. Their numbers don't line up.\n\nHere is why that matters. Every question also becomes a vector before the search. After the switch, the question's vector comes from the new model. The old documents still have vectors from the old model. The search would be comparing numbers that don't share a meaning, so it can't tell which old documents match.\n\nSo the old documents have to be embedded again with the new model. That is one more full pass over every document, paid once. It is a one-off cost, like the first time you built the index. How big it is depends on the new model's price per token.\n\n\"Every document is embedded again, once\" is better because it names the real extra cost: one full re-embedding, paid once, so every vector comes from the same model.",
+   "step": "Check",
+   "fingerprint": "dc5ad7e16243c06a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing: the old vectors still work”?",
+   "a": "It is a tempting answer, and it gets one thing right. The old vectors don't break or vanish. They still work fine, as long as you keep using the old model.\n\nThe catch is that a **vector** (the list of numbers an embedding model makes from text) only makes sense next to other vectors from the same model. Each model has its own way of turning meaning into numbers. Once you switch, every new question becomes a vector from the new model. Comparing it with document vectors from the old model is like comparing prices in two different currencies without converting. The search would return poor matches.\n\nSo you can't keep the old document vectors. Every document has to go through the new model again. That is one more full pass, priced like the first build: the documents times their tokens times the new model's price per token. Your monthly bill can change too, because new documents and questions are now billed at the new model's price.\n\n\"Every document is embedded again, once\" is better because it names the real cost: one full re-embedding, since vectors from two models can't be compared.",
+   "step": "Check",
+   "fingerprint": "10f3da9dd8b240f1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “$1.50”?",
+   "a": "\"$1.50\" is ten times too big. The method behind it is usually right. The slip is in the size of the numbers.\n\nWhat it gets right: you multiply the questions by their tokens, then multiply by the price. That is the correct order of steps.\n\nWhere it goes wrong: one zero sneaks in somewhere. Here is the sum done slowly.\n\n1. Count the tokens: 300,000 questions times 25 tokens = 7,500,000 tokens. That is 7.5 million.\n2. Price per million is $0.02, so 7.5 times $0.02 = $0.15.\n\nTo get $1.50, you would need 75 million tokens, not 7.5 million. Or you might divide by 100,000 instead of by a million. Both are easy slips when a number has this many zeros.\n\nA quick habit helps. First write the token count in millions, here 7.5. Then multiply by the price per million. A small number of millions keeps the zeros from wandering.\n\n\"$0.15\" is better because it is exactly 7.5 million tokens times $0.02 per million, with no extra zero added.",
+   "step": "Check",
+   "fingerprint": "55e9998b5ba88965",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “$150”?",
+   "a": "\"$150\" gets the first step right. It counts the tokens correctly: 300,000 questions times 25 tokens is 7,500,000 tokens a month. It also multiplies by the price, which is the right move.\n\nThe slip is in the last step. The price is $0.02 per *million* tokens. \"$150\" is what you get if you divide by a thousand instead of a million, as if the price were $0.02 per thousand tokens. That makes the answer a thousand times too big.\n\nHere is the sum done the lesson's way:\n\n- 7,500,000 tokens is 7.5 million tokens.\n- 7.5 million times $0.02 is $0.15.\n\nA quick sense check helps here. The lesson says embeddings are rarely the big cost line. $150 a month just to turn questions into vectors would be surprisingly large. That is a hint to recheck the units.\n\n\"$0.15\" is better because it divides the token count by a million before multiplying by the price, which matches how the price is quoted.",
+   "step": "Check",
+   "fingerprint": "7ed4e1bc11acea6d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Embedding the documents the first time”?",
+   "a": "\"Embedding the documents the first time\" is a real cost. You do pay it. Every chunk of every document becomes a **vector**, a list of numbers that captures meaning, when you first build the **index**, the store the search looks through. So this option is not wrong about the cost existing.\n\nIt is just hard to forget. Building the index is the first thing anyone plans, so this cost is always on the list. In the HR example it is 3,000,000 tokens, or $0.06, once.\n\nThe one that slips through is re-embedding. Vectors from two different models can't be compared. So when someone swaps in a newer embedding model, every document has to be embedded again. That is one more full pass, about the same size as the first one. It feels like a small upgrade, so nobody thinks to budget for it. But the bill arrives either way.\n\n\"Embedding everything again after a model change\" is the better answer because it is a full pass that is easy to leave out of the plan. That is why the lesson says to plan for it before anyone swaps the model.",
+   "step": "Check",
+   "fingerprint": "df07d558e1b52234",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Embedding new documents each month”?",
+   "a": "\"Embedding new documents each month\" is a real cost, so it is not a wrong idea. It just isn't the one people forget.\n\n**What it gets right:** every new document must become a vector before the search can find it. A vector is the list of numbers that stands for the text's meaning. So yes, you pay for this every month.\n\n**What it misses:** this cost is easy to see coming. New documents arrive on a steady schedule, so it lands in the monthly budget almost by itself. It is also tiny. In the HR example, 100 new documents is 150,000 tokens. At $0.02 a million, that is about $0.003, well under one cent a month.\n\nThe forgotten cost only shows up when someone swaps the embedding model. Vectors from two different models can't be compared. So every old document has to be embedded again, in one full pass. That is the same size as the first build. Nobody plans for it, because nothing has changed in the documents themselves.\n\n\"Embedding everything again after a model change\" is better because it is a full, surprise cost that hides until the swap, so it is the easiest to leave out of the plan.",
+   "step": "Check",
+   "fingerprint": "40493a78dcc8f28f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Tokens times the price, once and every month” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"A RAG app turns text into vectors, which are lists of numbers, so a search can match meaning. That step is billed per token, a small piece of a word. So I need to know what it costs.\"\n\n*The idea:* \"I count the tokens and multiply by the price per token. I pay once to embed every document. Then I pay every month for new documents and every question. For example, 2,000 documents of 1,500 tokens at $0.02 a million comes to $0.06, once.\"\n\n*The trade-off:* \"A better embedding model can find better matches. But switching means embedding every document again, because vectors from two models can't be compared. So I budget that full pass before anyone swaps the model.\"\n\n**A likely follow-up**\n\n\"Is embedding the biggest cost in a RAG app?\"\n\nHint: say no, usually not. The monthly embedding bill is often just cents. The search service that stores and searches the vectors tends to cost far more. A strong answer shows you know where the real money goes.",
+   "step": "Explain",
+   "fingerprint": "6426b79f74e42437",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "A few warning signs tell you the embedding cost was skipped or worked out wrong.\n\n**Your estimate looks wildly off.** If the one-off cost for 2,000 documents comes out at $60,000 instead of cents, you probably forgot to turn the price per million into a price per token. A sum a million times too big, or too small, is the classic slip.\n\n**The bill keeps growing after launch.** If you only priced the first build, the monthly line surprises you. Every new document and every question costs tokens too.\n\n**A sudden spike in one month.** Someone swapped the embedding model, and every document was embedded again. That full pass was never in the plan.\n\n**Search results turn to nonsense.** The app compares old vectors with new ones from a different model. These can't be compared, so matches look random.\n\n**Quickest check:** do the sum by hand once. Count the tokens, multiply by the price, divide by a million. Then compare that with the token count and charge on your provider's usage page for one day. If the two numbers are close, your plan holds.",
+   "step": "Learn",
+   "fingerprint": "55a1702a7053ce02",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The rule \"tokens times price, once and every month\" holds up well. It needs extra care in a few places.\n\n**Documents that get edited.** The monthly sum only counts new documents. If HR updates policies often, each edited chunk must be embedded again. Add changed documents to the monthly token count, not just new ones.\n\n**Chunks that overlap.** Many RAG apps split text into chunks that share a few sentences with their neighbours, so search doesn't lose context at the edges. That means you embed more tokens than the documents contain. Count the tokens in the chunks, not in the original documents.\n\n**Agents that search more than once.** The lesson assumes one short question becomes one vector. An agent may rewrite a question into several searches, or include chat history, and each search is embedded. Multiply the question tokens by the searches per question.\n\nIn all three cases the bill usually stays small at these prices. The point is that your token count is wrong, so fix the count first.",
+   "step": "Learn",
+   "fingerprint": "ddc8cb216e1f58e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "How is “embedding” different from “vector”?",
+   "a": "They are two sides of one step. **Embedding** is the action: a model reads text and turns it into numbers. **Vector** is what comes out: the list of numbers itself, like `[0.12, -0.48, 0.91, ...]`.\n\nThink of a map app. You type an address, and the app works out its GPS coordinates. Working out the coordinates is the embedding. The coordinates are the vector. Two places close together have similar coordinates. In the same way, two texts with similar meaning get similar vectors, so a search can find them.\n\nOne catch: people often say \"an embedding\" when they mean the vector it produced. So the words get used loosely.\n\nIn the lesson's HR assistant, every chunk of the 2,000 documents gets embedded once, and that is where you pay per token. Each embedding gives back one vector. Every question also gets embedded into a vector before the search compares it with the stored ones.\n\nThe cost lives in the embedding step. The vectors are what you keep and search. Storing them is the next lesson's cost.",
+   "step": "Learn",
+   "fingerprint": "12301d9914a4de44",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "find_the_price": {
+  "check:0:1": {
+   "q": "Why not “The name of the person who typed it”?",
+   "a": "Knowing who typed the line isn't useless. It gives you someone to ask, and some teams do track that. But it doesn't help with the real problem this lesson is about: pricing pages change.\n\nPicture opening the worksheet six months from now. You see \"web search: $14 per 1,000 — typed by Sam.\" You still can't tell where $14 came from. Was it the list price, or your company's deal? Which region? Is it still true? You'd have to find Sam. Sam may not remember, or may have left the company.\n\nA name points to a person. What you need is a way to check the number yourself and to know how old it is. A price is only true on a certain page, on a certain day. When the page updates, an old number quietly goes stale, and your estimates go wrong without anyone noticing.\n\n\"The page it came from, and the date\" is the right answer because anyone can open that page, check the price, see if it has changed since that date, and update the line.",
+   "step": "Check",
+   "fingerprint": "0ae7a83a7e35de2e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “A note saying prices never change”?",
+   "a": "**\"A note saying prices never change\"** has one good instinct. It tries to tell the reader how far to trust the number. That part is fair. A bare \"$14 per 1,000\" leaves people guessing.\n\nBut the note says something false. The lesson's first point is that pricing pages change. Providers raise prices, cut them, rename tiers, and add regions. A note promising the price is fixed would mislead the next reader. They might keep using an old number long after it stopped being true.\n\nIt also gives them nothing to act on. If the price looks wrong, where do they look? The note doesn't say. And if the bill comes in at three times the plan, nobody can quickly tell whether the price moved or the usage did.\n\nThe right answer is **\"The page it came from, and the date.\"** It lets anyone open the same page, see whether it changed since that day, and update the line. For example:\n\n```\n# web search: $14 per 1,000 (provider's pricing page, checked 2025-03-01)\n```",
+   "step": "Check",
+   "fingerprint": "1b91b2b2290ca89e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “One region is always faster”?",
+   "a": "\"One region is always faster\" is not the best answer because it rests on a claim the lesson never makes. The lesson talks about price, units, and what you really pay. It says nothing about speed. And the word \"always\" is risky. Very few things in cloud pricing are \"always\" true.\n\nWhat it gets right: it sees that picking a region can be about more than the price tag. A **region** is one area of data centers, like US East. A **Global deployment** is a different pricing tier from a single-region one. Here, the region costs $0.022 instead of $0.02, so something has to make that extra 10% worth paying.\n\nWhat it misses: a good reason to pay more is a firm rule your project must follow. \"It might be quicker\" is not a firm rule. You would have to measure it before relying on it.\n\n\"Your data must stay in that region\" is better because it is a hard requirement, often set by law or company policy. When a requirement like that applies, the slightly higher price is simply the cost of following the rule.",
+   "step": "Check",
+   "fingerprint": "2caff7175e06ad89",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The closing explanation runs to two sentences where one was asked for, which is minor."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Global prices change every day”?",
+   "a": "\"Global prices change every day\" sounds reasonable, because the lesson does say pricing pages change. That's why you write down the source and the date next to each price.\n\nBut this answer misses the point of the question in two ways.\n\nFirst, the question gives you two fixed prices: $0.02 per million tokens for Global and $0.022 for one region. Global is the cheaper one. Saying its price might move doesn't explain why you'd choose to pay more.\n\nSecond, the lesson never says one kind of price changes more than another. Both prices come from pricing pages, and any page can change. So \"prices change\" applies to the region price too. It isn't a reason to pick one over the other.\n\nThe question is really about something cost can't settle. Sometimes a rule matters more than saving two tenths of a cent. A \"rule\" here could be a law, a contract, or your company's policy about where data is handled.\n\n\"Your data must stay in that region\" is better because it gives a real requirement that can make the slightly higher price the right choice.",
+   "step": "Check",
+   "fingerprint": "490b1e0caa9f3fe1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The pricing calculator”?",
+   "a": "The pricing calculator is a good tool, just for a different moment. It helps you **plan**. You type in what you expect to use, and it multiplies that by the list price. That is useful before launch, when you have no bill yet.\n\nBut the question asks what your feature **really cost last month**. The calculator can't answer that, for two reasons:\n\n- **It doesn't know what you used.** It only knows what you typed in. If web search ran three times more than planned, the calculator still shows the plan.\n- **It shows the list price.** That is the public price for one region and the standard tier. Your company may pay a different rate through its agreement.\n\nSo the calculator gives you an estimate. The question wants the real number.\n\n`system.billing.usage` is a built-in Databricks table, which works like a spreadsheet Databricks fills in for you. It records the DBUs (Databricks Units, the measure Databricks bills by) your workloads actually used, day by day.\n\n`system.billing.usage` is better because it shows what you actually used last month, not what you guessed you would use.",
+   "step": "Check",
+   "fingerprint": "ebf405020d665ed0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The only minor point is that 'day by day' and 'built-in' for system.billing.usage go beyond what the lesson states, but they do not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The model's documentation”?",
+   "a": "The model's documentation is a fair guess. It tells you what the model does. It may even list a price per unit, like dollars per million tokens. That helps you **plan** a cost before launch.\n\nBut the question asks what your feature **really cost last month**. The documentation can't answer that. It doesn't know:\n\n- How many tokens or DBUs (Databricks Units, the measure Databricks bills by) your feature actually used.\n- Whether usage spiked, like the web search line that came in at 3 times the plan.\n- Your company's own rate, region or tier. Docs show list prices at best.\n\nSo the documentation gives you an estimate. It never gives you a bill.\n\n`system.billing.usage` is a system table. That is a table Databricks fills in for you automatically. It records the DBUs your workspace actually used, broken down by day and by what used them. Multiply those DBUs by your company's price for one DBU and you get real dollars.\n\n**In one sentence:** `system.billing.usage` is better because it shows what you actually used, not what you expected to use.",
+   "step": "Check",
+   "fingerprint": "4b35dad677ab55bc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Price per unit, times the units one task uses” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem.* \"Providers bill in different units. Models charge per million tokens. Search charges per 1,000 searches. Databricks charges per DBU. You can't budget until they all share one unit.\"\n\n*The idea.* \"So I price one finished task. For each thing it uses, I divide the price by the unit size. Then I multiply by how much one task uses, and add the lines up. Say a model costs $2 per million input tokens. One task sends 1,800 tokens in, so that line costs $0.0036.\"\n\n*The edge case.* \"A pricing page shows a list price, for one region and one tier. My company's rate may differ. So I write the source and date beside each line. After launch, I check it against the real bill.\"\n\nJargon: *tokens* are small chunks of text a model reads or writes. A *DBU* (Databricks Unit) is the unit Databricks bills by.\n\n**A likely follow-up**\n\n\"The bill came in three times your estimate. What do you do?\"\n\nHint: don't just raise the budget. Find which line drifted. Then check the traces, which are records of each step a task took. Maybe the agent calls web search more often than you planned.",
+   "step": "Explain",
+   "fingerprint": "021c38007ab3a030",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The estimate is off by a round factor, like 1,000 or 1,000,000.** This usually means a unit was misread. For example, a price \"per million tokens\" was treated as \"per thousand.\" A task you planned at $0.0036 shows up as $3.60.\n- **Every line of the bill is lower than planned by about the same percent.** You probably used the list price, and your company's agreement gives a discount. A different region or currency can also shift every line.\n- **One line is far above plan**, like web search at 3 times the estimate. Each task likely uses more units than you assumed, such as two searches instead of half of one. Traces show this. A trace is the step-by-step record of what your agent did.\n- **A price has no source or date next to it.** You can't tell if it is out of date, because pricing pages change.\n\n**Quickest check**\n\nPick one line. Open its pricing page, read the unit, and redo the sum by hand. Then compare one day of real spend with your estimate times the number of tasks run that day. On Azure, use Azure Cost Management. On Databricks, use the `system.billing.usage` table.",
+   "step": "Learn",
+   "fingerprint": "6379b7e85a5f5893",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: it assumes the company agreement means a discount (the lesson only says the rate differs), and its 'two searches instead of half' example would be 4 times the plan, not the 3 times it mentions."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Each task uses a different amount.** The method assumes one task uses a fixed amount, like 1,800 input tokens and half a search. Agents don't always behave that way. One task might loop or call web search five times. Estimate from an average, then check traces (the step-by-step logs of what the agent did) to see the real spread.\n\n**2. Your price isn't the list price.** The page shows one region, the standard tier and no discounts. You might pay a different rate through your company's agreement, region or currency. A Batch, Global or reserved option can also change the price. The DBU price also differs by product and region, since $0.07 is for model serving in US East. Ask whoever buys cloud services at your company for your actual rate.\n\n**3. The page changes, or the estimate drifts.** Prices go stale. Usage can also grow in ways you didn't plan. Keep the source and date next to every line, and recheck them. After launch, compare against the real bill in Azure Cost Management or the `system.billing.usage` table. Look into anything far off plan.",
+   "step": "Learn",
+   "fingerprint": "210e5852870e8dea",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. Minor: each point runs 5-6 sentences against the 2-3 sentence guidance, and the claim that DBU prices differ by product and region goes slightly beyond the lesson, though it follows from the '$0.07 for model serving in US East' wording."
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Every cost estimate you make is only as good as the price you started from. Prices sit on provider pages, and those pages change. If you skip reading the unit, or forget where a number came from, small mistakes turn into big bills.\n\nHere is a realistic case. A team plans an agent that searches the web. Someone sees \"$14\" and reads it as $14 for 1,000 tokens (tokens are the small chunks of text a model reads). It was really $14 per 1,000 searches. The plan says $210 a month. Each task also runs more searches than they guessed. The real bill comes in at $630. Nobody knows where the $210 came from, so nobody can tell which part was wrong.\n\nThe four habits prevent this:\n\n- Read the unit, so \"per 1,000 searches\" never gets mixed up with \"per million tokens.\"\n- Price one task, so the estimate matches how the agent really works.\n- Write the source and date, so anyone can check it later.\n- Compare against the real bill after launch, so a 3-times gap gets caught early.",
+   "step": "Learn",
+   "fingerprint": "354bc9bb834abd22",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The example is a bit muddled: it blames a unit misread, then says the gap came from extra searches per task. Nothing in it contradicts the lesson, though."
+   }
+  }
+ },
  "make_a_skill": {
   "check:0:0": {
    "q": "Why not “Ask Claude in the instructions to add up the co…”?",
-   "a": "Asking Claude to \"add up the costs carefully\" gets one thing right. It puts the cost step into the skill's instructions, so Claude will not forget to do it.\n\nBut it misses how a model works. Claude writes answers by predicting likely text, one piece at a time. It does not run a calculator underneath. Most of the time the sum comes out right. Sometimes a digit slips or a line gets skipped. The word \"carefully\" does not change that. It only asks for care. It does not give Claude a tool that cannot slip.\n\nThere is a second problem. The total might differ from one run to the next. For a cost figure that someone will use to decide whether to build, \"usually right\" is not good enough.\n\nA **script** is a small program the skill runs, like `scripts/tco.py` in this repository. It takes the cost inputs and does the arithmetic the same exact way every time. Claude's job becomes running it and reporting the table it prints.\n\nSo the script option is better because the computer does the exact maths and the model only explains the result.",
+   "a": "Asking Claude to \"add up the costs carefully\" gets one thing right. It puts the requirement in the instructions, so Claude knows a total is needed. That part is good.\n\nWhat it misses is that the word \"carefully\" doesn't change how Claude works. Claude is a language model. It writes answers by predicting likely text, not by doing exact arithmetic the way a calculator does. Most of the time the sum will be right. Sometimes a number will be slightly off, and it may come out different on two runs with the same inputs. You can't easily tell which runs went wrong.\n\nThe total cost of ownership (every cost of running the idea over time, added up) is exactly the kind of figure people make decisions on. One wrong digit there matters.\n\nThat is why this skill ships with `scripts/tco.py`. Claude passes it the inputs, the script does the maths, and Claude reports the table it prints.\n\n**Why the script wins:** a script gives the same correct total every time for the same inputs, and you can test it once and trust it.",
    "step": "Check",
-   "fingerprint": "8a8d282986e64197",
+   "fingerprint": "3eecc8b494b10de9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -402,9 +948,9 @@
   },
   "check:0:2": {
    "q": "Why not “Write the current prices into the description”?",
-   "a": "That option gets one thing right. To report a total cost of ownership (TCO, meaning every cost of running the system added up), the skill does need prices from somewhere.\n\nBut it puts them in the wrong place, and it still leaves the hard part unsolved.\n\n**Wrong place.** The description has one job: to tell Claude what the skill does and when to use it. Claude reads it up front, alongside every other skill's description, to decide whether this skill matches a request. It is capped at 1,024 characters. A price list there crowds out the \"when to use it\" wording, which makes the skill less likely to be picked at all.\n\n**Still unreliable.** Even with the right prices in front of it, Claude would still add up the total itself. A model can get sums wrong, especially when there are many line items.\n\n**Goes stale.** Prices change. Then a fixed list gives old answers with full confidence.\n\nA script is better because it does the arithmetic the same exact way every time. That is what the skill's `scripts/tco.py` does.",
+   "a": "Putting prices into the description has one good instinct: real numbers are better than guesses. But it puts them in the wrong place and still leaves the hard part undone.\n\nFirst, the description has a different job. Claude reads the name and description of every skill up front to decide *whether* to use it. It is a short \"what this does and when to use it\" note, capped at 1,024 characters. A price list there crowds out the words that help Claude pick your skill at the right moment.\n\nSecond, it doesn't make the answer reliable. Even with the right prices, Claude would still add up the total cost of ownership (all the costs of running the system over time) in its head. A model can get sums wrong.\n\nThird, prices change. Numbers baked into a description go stale quietly.\n\nThe right answer is better because a script like `scripts/tco.py` does the arithmetic the same way every time, so the total is exact, and the skill just runs it and reports the table.",
    "step": "Check",
-   "fingerprint": "4abed1ae5779a1ca",
+   "fingerprint": "34ff74d39d38d1e5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -415,14 +961,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'goes stale' point and the 'crowds out the when-to-use wording' point are reasonable inferences that go beyond the lesson but do not contradict it. The closing 'better' explanation also runs to two sentences instead of one."
+    "notes": ""
    }
   },
   "check:1:0": {
    "q": "Why not “The script that adds up costs”?",
-   "a": "The script is a real part of the skill. It matters because a model can get sums wrong and `scripts/tco.py` cannot. If Claude used your skill but reported a wrong total cost, the script would be a good place to look.\n\nBut that is not the problem here. The problem is that Claude never uses the skill at all. The script only runs at step 8, after Claude has already picked the skill and started following its steps. If the skill is never picked, the script never runs. So changing it cannot fix this.\n\nThink about what Claude sees first. Up front, it reads only the `name` and `description` of every skill. It loads the rest, including the steps and the script, only when a request matches. So when a skill is ignored, the cause sits in those few lines of frontmatter, the settings between the `---` markers.\n\n\"The description: when to use it\" is better because the description is what Claude checks to decide whether your skill fits the request. A vague or missing \"Use when...\" means it never gets chosen.",
+   "a": "The cost script is a sensible thing to check, just not first. It is the right place for exact sums, because a model can add numbers wrong and a script cannot. If your cost table came out wrong, `scripts/tco.py` would be the first suspect.\n\nBut look at the problem. Claude never uses the skill at all. The script only runs at step 8, after Claude has already picked the skill and started following its steps. So the script never gets a chance to run. Fixing it cannot change whether the skill is chosen.\n\nHere is how choosing works. Up front, Claude reads only the `name` and `description` of every skill. It loads the rest of `SKILL.md` only when a request matches. If the `description` never says something like \"Use when someone asks whether an AI idea is worth doing\", Claude has no reason to pick it.\n\n\"The description: when to use it\" is better because, of the two settings Claude reads before choosing, the `description` is the one that says when the skill applies, so it decides whether the skill is ever used.",
    "step": "Check",
-   "fingerprint": "838715e60da93902",
+   "fingerprint": "6daf6dfd11bb36eb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -433,14 +979,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; the last paragraph runs to two sentences where one was requested, and 'never gets chosen' slightly overstates the lesson, but neither is wrong."
+    "notes": ""
    }
   },
   "check:1:1": {
    "q": "Why not “The output format at the end”?",
-   "a": "The output format is a fair thing to check. It shapes what Claude writes back once the skill is running. A messy format can make the answer hard to read.\n\nBut that is not the problem here. The skill never runs at all. The output format sits in the body of `SKILL.md`, and Claude only opens the body *after* it has picked the skill. So fixing the format can't help Claude pick it.\n\nHere is the order Claude works in:\n\n1. Up front, it reads just the `name` and `description` of every skill.\n2. If a request matches one, it loads the rest: the steps, the output format, any reference files.\n\nYour skill is failing at step 1. If the description is vague, or doesn't say when to use it, Claude never reaches step 2. A clear \"Use when someone asks whether an AI idea is worth doing...\" gives it a reason to match.\n\nThe description is better because, of the two things Claude reads up front, it is the one that says when to use the skill, and that decides whether the skill is ever picked.",
+   "a": "The output format is a real part of a good skill. It tells Claude what the finished answer should look like, such as the cost table and a clear verdict. If that part were vague, you would get messy or uneven results.\n\nBut that only matters once the skill is running. The problem here comes earlier: Claude never uses the skill at all.\n\nRemember how Claude finds skills. Up front, it reads only two things from every skill: the `name` and the `description` in the frontmatter (the settings between the `---` markers). The body, including the output format, loads only after a request matches. So Claude never even sees the output format until it has already picked the skill. Fixing it cannot help Claude pick it.\n\nThe `description: when to use it` is the better answer. The name is mostly a label, so the description is what Claude compares against your request. It must say what the skill does and when to use it, for example \"Use when someone asks whether an AI idea is worth doing.\"",
    "step": "Check",
-   "fingerprint": "7e3a49c4c9f4d4d9",
+   "fingerprint": "fbf832920ffbab73",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -451,14 +997,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: 'a clear verdict' and 'the name is mostly a label' go slightly beyond the lesson, but neither contradicts it."
    }
   },
   "check:2:0": {
    "q": "Why not “In ~/.claude/skills/ in your home”?",
-   "a": "`~/.claude/skills/` does work. Claude Code would find the skill there and load it. The catch is whose computer that folder is on.\n\nThe `~` symbol is shorthand for your home folder, the personal folder your user account owns. So `~/.claude/skills/` exists only on your machine. A skill you put there is yours alone. That is the right spot for something just for you, like a personal habit or a draft you are still testing.\n\nThe question asks for everyone on the project. Your teammates each have their own home folder. Your copy never reaches theirs. Each person would have to copy the folder by hand, and their copies would drift apart as you edit yours.\n\nA project's `.claude/skills/` folder sits inside the project's repository. A repository is the shared folder of code the whole team works from, usually tracked with Git. Git is a tool that records changes and shares them between people. When you commit the skill there and teammates pull the latest changes, they all get the same version, including later fixes.\n\n**In the project's `.claude/skills/` is better because the skill travels with the project, so everyone gets one identical, up-to-date copy automatically.**",
+   "a": "Putting the folder in `~/.claude/skills/` does work. Claude Code will find the skill and load it. The catch is who gets it.\n\nThe `~` symbol is short for your home folder. That is the personal space on your own computer, for example `/Users/sam` or `C:\\Users\\sam`. Skills kept there are for you alone. They follow you into every project you open, but they never leave your machine.\n\nYour teammates have their own home folders, so they would not see your skill. Each of them would have to copy the folder over by hand. Then, when you improve the instructions, their copies would fall out of date.\n\nA project's `.claude/skills/` folder sits inside the project's repository. A repository is the shared set of files the team keeps in version control, a tool like Git that tracks changes and lets everyone download the latest copy. You commit the skill (save it into the repository's history). After that, anyone who pulls the project gets the same skill, including every later fix.\n\n\"In the project's .claude/skills/\" is better because the skill travels with the shared project, so everyone on it gets the same, up-to-date version automatically.",
    "step": "Check",
-   "fingerprint": "9e3ae2a6af0f6204",
+   "fingerprint": "806d26627e476a07",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -469,14 +1015,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The Git, commit and pull details go beyond the lesson but do not contradict it, and the answer is about 195 words, just under the limit."
+    "notes": ""
    }
   },
   "check:2:2": {
    "q": "Why not “Zipped and uploaded in Settings”?",
-   "a": "\"Zipped and uploaded in Settings\" is a real way to install a skill, so it is not a made-up option. But it belongs to a different place and a different audience.\n\n**What it gets right:** On claude.ai (the chat website), you do zip the skill folder and upload it in Settings, with code execution turned on. That works.\n\n**What it misses:** The question asks about two things.\n\n- **Claude Code**, the tool that runs in your terminal and works inside your project folder. Uploading in claude.ai Settings does not put the skill into Claude Code.\n- **Everyone on your project.** An upload in Settings is tied to your own account. Your teammates would each have to zip and upload it themselves.\n\nA project's `.claude/skills/` folder sits inside the project's files. When the project is shared, for example through git (a tool that tracks and shares code changes), the skill goes along with it. Anyone who opens the project in Claude Code gets `vet-ai-use-case` with no extra setup.\n\n**Why `.claude/skills/` wins:** it lives inside the project itself, so every teammate who uses the project in Claude Code gets the skill automatically.",
+   "a": "\"Zipped and uploaded in Settings\" is a real way to install a skill, so it isn't a made-up option. But it belongs to a different place.\n\nThat route is for **claude.ai**, the chat website. You zip the folder (squash it into one file), upload it in your account's Settings, and turn on code execution so `scripts/tco.py` can run. It makes the skill work for you in that chat app.\n\nThe question asks about two other things:\n\n1. **Claude Code**, the tool that runs in your terminal and reads skills from folders on disk. It doesn't look at what you uploaded to the website.\n2. **Everyone on the project.** An upload sits in one person's settings. Teammates don't get it unless each of them uploads it too.\n\nClaude Code has two folder choices. `~/.claude/skills/` is your personal folder, just for you. A project's `.claude/skills/` lives inside the project itself.\n\nPutting the folder in the project's `.claude/skills/` is better because it ships with the project's files, so everyone who opens that project in Claude Code gets the same skill automatically.",
    "step": "Check",
-   "fingerprint": "5e40d09a1869aa25",
+   "fingerprint": "af63893dfa7e2b5c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -487,14 +1033,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problems. The claims about git sharing and uploads being tied to one account go beyond the lesson but do not contradict it."
+    "notes": ""
    }
   },
   "explain:interview": {
    "q": "How do I explain “Check the rules, then write the file” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** A Claude skill is a `SKILL.md` file. Claude reads its name and description first. If those break the rules, the skill will not load. So a file that looks fine can still be useless.\n\n**The idea.** I check before I write. First I collect every rule the name or description breaks. If there are any, I return them all together, so they can be fixed in one go. Only when everything passes do I build the file. That means the frontmatter (the settings between `---` markers), then a title, then the numbered steps. It's like a form that is checked before it is sent.\n\n**A trade-off.** Collecting every problem takes a little more care than stopping at the first one. But it saves round trips. Nobody fixes one error only to hit the next.\n\n**A likely follow-up:** \"Why not just write the file and let Claude reject it?\"\n\n*Hint for a strong answer:* A file that breaks the rules simply will not load. Checking first means you only ever produce a file that works. You also get clear reasons for any failure, at the moment you can fix them.",
+   "a": "**Your 30-second answer**\n\n*The problem.* A Claude skill is a folder with a `SKILL.md` file. Claude reads its name and description first. If those break the rules, the skill will not load.\n\n*The idea.* So I check before I write. I gather every rule the input breaks and report them all together. Only when nothing is wrong do I build the file. That means the frontmatter (the settings between `---` markers), then a title, then numbered steps. It's like a form that is checked before it is sent.\n\n*The trade-off.* Collecting every problem takes a little more code than stopping at the first one. But the person can fix everything in one pass instead of retrying again and again.\n\n**Likely follow-up:** \"Why not just write the file and fix problems later?\"\n\n*Hint at a strong answer:* Catching mistakes when the file is created is cheaper than finding out later that the skill would not load. You could add that passing the rules isn't the whole job. The description also decides whether Claude ever picks the skill, so a valid but vague description is still a risk.",
    "step": "Explain",
-   "fingerprint": "2cdc72f37bcfde5f",
+   "fingerprint": "7897a1209b56f876",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -505,14 +1051,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The line 'you only ever produce a file that works' slightly overclaims, since passing the checks only means the file will load."
+    "notes": ""
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\nThe clearest sign is silence. You ask Claude to assess an AI idea and it just answers freely, with no gates or cost table. That usually means the skill never loaded. Either the frontmatter (the settings between the `---` markers) broke a rule, or the description was too vague to match your request.\n\nA second sign is drift. Two similar ideas get vetted in different orders, or a step goes missing. The steps in the body may be unclear, or too long for Claude to follow closely.\n\nA third sign is wrong sums. The total cost of ownership doesn't add up when you check it by hand. That means Claude did the maths itself instead of running `scripts/tco.py`.\n\n**Quickest check**\n\nIn Claude Code, type `/vet-ai-use-case`. If it isn't offered, the skill didn't load. Check the folder location and the frontmatter.\n\nNext, ask a plain question like \"Is this AI idea worth building?\" without naming the skill. If the skill doesn't start, rewrite the description so it clearly says when to use it.\n\nFinally, run one test idea with a known gap. Check that the gap gets flagged and that the cost table came from the script.",
+   "a": "**Warning signs your skill is broken or never ran**\n\n- **It never kicks in.** You ask Claude to assess an AI idea, and it answers in its own loose way. There is no one-line use case, no gates, no cost table. Usually the description is too vague. Or the file broke a rule, so Claude never saw the skill at all.\n- **The answers drift.** Two similar ideas come back in different shapes, with steps missing or reordered. A skill is meant to make the routine identical every time.\n- **The cost totals wobble.** The same inputs give slightly different totals, or the rows don't add up. That means the model did the sums itself instead of running `scripts/tco.py`.\n- **Known gaps slip through.** You feed it an idea with an obvious hole, like no acceptance criteria, and it passes anyway.\n\n**Quickest check**\n\nOpen a fresh Claude Code session and type `/vet-ai-use-case`. If it isn't offered, the skill didn't load, so recheck the frontmatter (the settings between the `---` markers). If it loads, run one idea whose gaps you already know. Then compare its cost table with what `tco.py` prints when you run it yourself on the same inputs.",
    "step": "Learn",
-   "fingerprint": "75deb3e474874160",
+   "fingerprint": "f8121b23a6d20be7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -523,14 +1069,52 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the answer sits right at the ~200-word limit, and 'That means Claude did the maths itself' is a slight overclaim, since wrong inputs could also give a bad total."
+    "notes": ""
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "A skill keeps working only while its trigger, its tools and its facts stay right. Here are three places that can break.\n\n**Many skills with similar descriptions.** Claude picks a skill from its name and description alone, so two overlapping skills can fire at the wrong time. Make each description name a clear, distinct trigger, then test with requests meant to match it and requests meant to skip it.\n\n**No way to run the script.** On claude.ai, the cost step depends on code execution being turned on in Settings. If it is off, Claude may add up the cost itself and get it wrong, so turn it on, or have the skill say plainly that the table could not be produced.\n\n**Your vetting rules or prices change.** The skill only knows what you wrote, so old gates or cost rates give confident but stale answers. Keep changing details in reference files or script inputs, review them on a schedule, and rerun your test cases after each edit.",
+   "a": "**1. The description is vague or overlaps another skill.** Claude reads only the name and description up front, so a fuzzy description means your skill never loads, or a similar one loads instead. Name the exact trigger, like \"when someone asks whether an AI idea is worth doing,\" and test it with real requests.\n\n**2. The facts behind the routine change over time.** Prices, approved models and company rules shift, and a skill written once quietly goes out of date. Keep changing numbers in a separate reference file or in the inputs the script reads. Then review the skill on a schedule.\n\n**3. The routine grows very large.** A huge SKILL.md is slow to load and hard for Claude to follow, and different teams may vet ideas differently. Keep the main steps short. Move details into reference files that Claude opens only when needed, or split the routine into several smaller skills.\n\nIn every case, test it the same way the lesson says. Run the skill on ideas with known problems, see what it misses, and fix the instructions.",
    "step": "Learn",
-   "fingerprint": "d6d0b70f88cd6283",
+   "fingerprint": "36601cbd04abfbc2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No rule is broken. Some claims go beyond the lesson, such as a large SKILL.md being 'slow to load', 'different teams may vet ideas differently' (which doesn't follow from size), and the advice to review on a schedule."
+   }
+  },
+  "learn:term": {
+   "q": "How is “Claude skill” different from “SKILL.md”?",
+   "a": "A **Claude skill** is the whole package: a folder that teaches Claude one routine. **SKILL.md** is one file inside that folder. It holds the instructions.\n\nThink of a flat-pack furniture box. The box is the skill. It holds the instruction sheet (SKILL.md) plus the extra parts and tools you need. The sheet tells you what to do. The box carries everything together.\n\nHere is the lesson's example:\n\n```\nvet-ai-use-case/      <- the skill (the folder)\n  SKILL.md            <- the instructions\n  scripts/\n    tco.py            <- a script the instructions call\n```\n\nThey work together like this. SKILL.md starts with **frontmatter**, a few settings between `---` markers. Two are required: `name` and `description`. Claude reads only those two for every skill up front. When a request matches the description, Claude opens the rest of SKILL.md. Then it follows the steps. At step 8 it runs `scripts/tco.py` to get exact cost numbers.\n\nSo SKILL.md is the brain of the skill. But a skill can be more than that one file. It can also hold reference files and scripts.",
+   "step": "Learn",
+   "fingerprint": "de73b8641d734d56",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "paid_tools": {
+  "check:0:0": {
+   "q": "Why not “$140”?",
+   "a": "**Why not \"$140\"?**\n\n\"$140\" gets the price part right. It uses $14 per 1,000 and divides by 1,000 correctly.\n\nThe slip is in counting the uses. \"$140\" comes from 10,000 questions times $14, divided by 1,000. That treats each question as one search.\n\nBut the agent searches **3 times** for each question. The bill is per search, not per question. So first count the searches:\n\n- 10,000 questions times 3 searches = 30,000 searches\n- 30,000 times $14, divided by 1,000 = $420\n\n```python\n10000 * 14 / 1000      # $140: counts questions, not searches\n10000 * 3 * 14 / 1000  # $420: counts every search\n```\n\nThis is the lesson's \"agents multiply it\" point. One question can trigger several tool calls. A \"trace\" (the step-by-step log of what the agent did) shows how many. Leave out that number and you undercount the bill, here by two thirds.\n\n**\"$420\" is better because it multiplies by the 3 searches per question, so it counts every search you actually pay for.**",
+   "step": "Check",
+   "fingerprint": "f7426797aa814b02",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -544,11 +1128,47 @@
     "notes": ""
    }
   },
-  "learn:term": {
-   "q": "How is “Claude skill” different from “SKILL.md”?",
-   "a": "A **Claude skill** is the whole package: a folder that teaches Claude one routine. **`SKILL.md`** is one file inside that folder, the one holding the instructions.\n\nThink of a meal kit. The skill is the whole box. `SKILL.md` is the recipe card on top. The box can also hold extra items, such as pre-measured spices. Those are like reference files and scripts. You can't have the kit without the card, but the card alone isn't the whole kit.\n\nIn this lesson's example, the skill is the folder `.claude/skills/vet-ai-use-case`. Inside it:\n\n- `SKILL.md` holds the frontmatter (the settings between `---` markers, such as `name` and `description`) and the numbered steps.\n- `scripts/tco.py` is a helper script that adds up the cost table exactly.\n\nThey work together like this. Claude first reads only the `name` and `description` from `SKILL.md`. If a request matches, it reads the rest of the file. Then it follows the steps, opening the other files only when a step needs them. For example, step 8 tells it to run `tco.py`.\n\nSo `SKILL.md` is the required core, and the skill is that file plus everything it brings along.",
-   "step": "Learn",
-   "fingerprint": "f55104f444e8c929",
+  "check:0:2": {
+   "q": "Why not “$42”?",
+   "a": "**Why \"$42\" is not the best answer**\n\n\"$42\" gets one thing right. It counts the 3 searches per question. That is the part agents add, and many people forget it.\n\nThe slip is in the scale. 3 searches times $14 is $42. But the $14 covers 1,000 searches, so $42 is the bill for just 1,000 questions. The agent answers 10,000 questions, which is ten times more. So $42 misses a factor of ten. In practice that usually means dividing by 10,000 instead of 1,000, or dropping a zero.\n\nHere is the sum, step by step:\n\n1. Count the uses: 10,000 questions times 3 searches = 30,000 searches.\n2. Times the price: 30,000 times $14 = $420,000.\n3. Divide by 1,000, because the price is per 1,000 searches: $420 a month.\n\n```python\n10000 * 3 * 14 / 1000   # 420.0, so $420 a month\n```\n\nA quick sense check helps. 30,000 searches is 30 batches of 1,000. Each batch costs $14, so the bill is 30 times $14, which is $420.\n\n**\"$420\" is better because it counts every search across all 10,000 questions, then divides by 1,000 exactly once.**",
+   "step": "Check",
+   "fingerprint": "306f890582cbedcc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the answer is about 200 words, right at the length limit, and the claim about what the slip 'usually means in practice' is speculation but harmless."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “$500”?",
+   "a": "\"$500\" gets the arithmetic right. It takes the 50,000 pages, multiplies by $10, and divides by 1,000. That is exactly how per-page pricing works.\n\nThe problem is the price it uses. $10 per 1,000 pages is the Layout service. Layout finds tables and the structure of a page, meaning where headings, columns and boxes sit. The question says you only need the text, not the tables. So you would pay for work you never use.\n\nThis is the lesson's \"use the cheapest service that does the job\" idea. Read is the service that just pulls out the words, and it costs $1.50 per 1,000 pages. Same pages, same sum, cheaper service:\n\n```\n50000 * 10 / 1000    # $500 with Layout (more than you need)\n50000 * 1.5 / 1000   # $75 with Read (just the text)\n```\n\nPicking Layout here costs over six times as much for the same useful result.\n\n\"$75\" is better because it uses the same correct sum with the cheapest service that still gives you the text you need.",
+   "step": "Check",
+   "fingerprint": "f48b05ac6d87a573",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems: the sums ($500 vs $75, about 6.7x) match the lesson. The only addition is the aside about headings, columns and boxes, which the lesson doesn't say but which doesn't contradict it."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “$7.50”?",
+   "a": "\"$7.50\" gets one important thing right. It picks Read, the cheaper service. You only need the text, so paying $10 for Layout (the service that also finds tables) would waste money.\n\nThe slip is in the arithmetic. The price is per 1,000 pages, so you divide by 1,000. \"$7.50\" is what you get if you divide by 10,000 instead. That is one zero too many. It is an easy mistake with big numbers, and it makes the bill look ten times smaller than it really is.\n\nHere is the sum, step by step:\n\n```python\n50000 * 1.5 / 1000   # 75.0 -> $75\n50000 * 1.5 / 10000  # 7.5  -> the \"$7.50\" slip\n```\n\nA quick sanity check helps. 50,000 pages is 50 lots of 1,000 pages. Each lot costs $1.50. So 50 times $1.50 is $75.\n\n\"$75\" is better because it uses the right service and divides by 1,000, which matches how the price is quoted.",
+   "step": "Check",
+   "fingerprint": "c84ecd4ab4f483de",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -560,6 +1180,114 @@
     "standalone": true,
     "pass": true,
     "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “It stays as planned”?",
+   "a": "\"It stays as planned\" gets one thing right. The price per search does not change. Bing still charges $14 per 1,000 searches, whatever your design says.\n\nBut the bill is not set by the design. It is set by how many searches actually happen. The rule is uses times price, divided by 1,000. If the uses go up, the bill goes up with them.\n\nThat is what the traces tell you. A trace is a record of what the agent really did on each question, step by step. Here they show 4 searches per question, not 1. The plan was a guess. The traces are the facts.\n\nWith 30,000 questions a month:\n\n```\n30000 * 1 * 14 / 1000   # planned: $420 a month\n30000 * 4 * 14 / 1000   # actual: $1,680 a month\n```\n\nSame price, four times the uses, four times the bill. This is why you take the calls per question from traces, not from the design.\n\n\"It is 4 times the plan\" is better because a per-use bill grows in step with the number of uses, and the traces show four times as many.",
+   "step": "Check",
+   "fingerprint": "fa779c62baee6668",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “It is a quarter of the plan”?",
+   "a": "\"A quarter of the plan\" gets one thing right. It sees that the numbers 1 and 4 are linked by a factor of 4. But it flips the direction.\n\nWeb search is billed per call. Every search costs money, so more searches mean a bigger bill, never a smaller one. The design planned 1 search per question. The traces show 4. A trace is the record of what the agent actually did on each run. So the agent makes 4 times as many paid calls as planned.\n\nTake the lesson's numbers: 30,000 questions a month, at $14 per 1,000 searches.\n\n- Planned, 1 search each: 30,000 searches, so 30,000 × 14 / 1,000 = $420 a month.\n- Actual, 4 searches each: 120,000 searches, so 120,000 × 14 / 1,000 = $1,680 a month.\n\nA quarter of the plan would be about $105. That is the opposite of what happens.\n\n\"It is 4 times the plan\" is better because the bill is uses times price, so 4 times the uses means 4 times the bill.",
+   "step": "Check",
+   "fingerprint": "34ce96d272ff74d6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Uses times the price per thousand” in an interview?",
+   "a": "**A 30-second answer**\n\n**The problem:** Some tools don't charge by tokens (the chunks of text a model reads and writes). Web search and document reading charge per use. Those bills can be bigger than the model's own bill.\n\n**The idea:** Count the uses, multiply by the price per 1,000, then divide by 1,000. Say 30,000 questions a month each search once, at $14 per 1,000 searches. That's 30,000 times 14 divided by 1,000, so $420 a month.\n\n**The edge case:** Agents multiply it. An agent may search three times for one question. That's 90,000 searches, or $1,260 a month, which is triple the $420. So I take the calls per question from traces (logs of the steps in real runs), not from guesses.\n\n**A likely follow-up**\n\n*\"How would you cut that bill?\"*\n\nHint: Use the cheapest service that does the job, and do the work once.\n\n- Read each document once, when it arrives, not again for every question.\n- Use plain text reading at $1.50 per 1,000 pages instead of layout at $10 when you don't need tables.\n- Cap the number of searches per task.",
+   "step": "Explain",
+   "fingerprint": "d126726efaf30c77",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The bill beats your estimate.** You planned for model tokens only. Then the invoice shows search or document reading costing more than the model itself.\n- **Costs grow faster than usage.** Questions went up 10%, but the search bill doubled. That often means the agent is calling search more times per question than you assumed.\n- **Pages billed exceed pages owned.** You have 20,000 pages of documents, but the invoice shows far more. Something is re-reading the same documents on every question instead of once, when they arrive.\n- **The pricey option everywhere.** Every page goes through Layout at $10 per 1,000, even plain text that needs no tables. The $1.50 Read option would do.\n\n**Quickest check**\n\nOpen a sample of your traces. A trace is the step-by-step record of what the agent did for one question. Count the tool calls in each and take the average per question. Multiply by your monthly questions and the price per 1,000, then divide by 1,000. If that is far below the invoice, your assumptions are off. Then look for loops, or for searches with no cap.",
+   "step": "Learn",
+   "fingerprint": "b03ab3b621b13bc4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The simple sum (uses times price, divided by 1,000) works well until one of these shows up.\n\n**Agents with wildly varying call counts.** An average of \"2 searches per question\" from your traces can hide a few questions where the agent loops and searches 20 times. A trace is the log of each step an agent took. Budget for the heavy cases, not just the average, and put a hard cap on calls per task so a loop can't run up the bill.\n\n**Prices that aren't flat.** Real price lists often have free allowances, volume discounts, or a different price above a certain amount. \"Page\" can also mean something unexpected, such as a fixed number of characters for some file types. Read the pricing page and work out each price band separately.\n\n**Usage that changes over time.** \"Read each document once\" stops being once if you later switch to a better model and reprocess everything. It also grows as new documents arrive. Count reprocessing as a fresh one-off cost, and rerun the sum each month with current traces.",
+   "step": "Learn",
+   "fingerprint": "f43e0fe27cc71d22",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No problems. The pricing-page points (free allowances, discounts, what counts as a page) go beyond the lesson but do not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Most cost planning focuses on tokens, the small chunks of text a model reads and writes. Tools work differently. They charge a flat price **each time** you use them, and that can quietly grow bigger than the model bill.\n\nHere is how it goes wrong. A team builds the HR assistant. They plan for 30,000 questions a month and guess \"one web search per question.\" That's $420 a month, so they budget for it.\n\nThen the agent goes live. Agents decide for themselves when to call a tool, and this one often searches three times to feel sure. Nobody checked the traces, which are the logs of each step the agent took. The real bill is $1,260 a month. That's three times the plan, with no change to the model at all.\n\nThe same thing happens with documents. If the agent re-reads 20,000 pages with the $10 layout service on every question, a one-time $200 job becomes a cost you pay on every question.\n\nCounting uses, not just tokens, lets you spot this before the invoice does. Then you can cap searches, read documents once, and pick the cheapest service that works.",
+   "step": "Learn",
+   "fingerprint": "acf5ce5e5ffc0cfc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The figures ($420, $1,260, $200) match the lesson, and the answer is about 190 words. It uses two examples where the prompt asked for one, which is a minor point."
    }
   }
  },
@@ -710,20 +1438,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the simple formulas need care.\n\n**The monthly net is zero or negative.** Payback divides the build cost by the monthly net. If fixed costs eat all the savings, the net is zero or below. Dividing then gives an error or a meaningless negative number of months. The build never pays back, so payback should be `None`, Python's word for \"no value.\" Then compare tasks a month to break-even to see how far short you are.\n\n**The saving per task is zero or negative.** Break-even divides fixed costs by the saving per task. If the AI costs more per finished task than today's way, no number of tasks covers the running costs. Fix the cost per task first, for example with a cheaper model or fewer retries.\n\n**The numbers drift over time.** LLM prices change. Ticket volume grows or shrinks. Uncaught mistakes may rise as questions change. A single flat month can mislead. Swap the guesses for numbers the POC (proof of concept, a small trial) measured. Log them again in MLflow and recheck as they change.",
+   "a": "The simple rule assumes every month looks the same. Here are three places where that breaks.\n\n**Usage ramps up slowly.** Staff rarely switch over on day one. Early months might see 1,000 tickets, not 6,000, so real payback takes longer than build cost divided by monthly net. Plan month by month with a ramp, and track actual volume during the POC (proof of concept, the small trial build).\n\n**Quality or prices drift.** With an LLM app, costs per task shift when the model provider changes prices or prompts grow longer. Mistakes can also creep up as policies or documents change, which raises the \"mistakes nobody caught\" cost. Re-measure saving per task regularly, for example by logging new MLflow runs, and redo the numbers.\n\n**Costs jump at scale.** \"Fixed\" costs often stay flat only up to a point. Past it, you may need a bigger search index or more monitoring staff, so costs step up suddenly. Work out break-even separately for each cost level.\n\nAlso, if the savings are only soft (quieter afternoons, not real money), no payback ever arrives.",
    "step": "Learn",
    "fingerprint": "cbea0429d02548ab",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
     "plain": true,
-    "no_giveaway": false,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The first case spells out the core logic of the `payback_plan` exercise: when the monthly net is zero or below, payback should be `None`. That hands the learner the key guard of the solution."
+    "pass": true,
+    "notes": "No major problems; the closing line on soft savings is a slight overstatement and a fourth case beyond the requested two or three, but it does not contradict the lesson."
    }
   },
   "learn:term": {
@@ -931,6 +1659,188 @@
    "a": "They're closely linked, but they aren't the same thing.\n\n**To size** a system is to decide one number: how many tokens a minute it must handle. It answers \"how big?\"\n\n**Capacity planning** is doing that sizing *ahead of time*, as part of a bigger job. You gather the inputs, work out the size, and then check it against the limits on the path. Those are the deployment's quota and the gateway's rate limits. That way, nothing breaks after launch.\n\nSo sizing is one step. Capacity planning is the whole habit of doing that step early and acting on it.\n\n**Everyday comparison:** a café owner decides \"we need 4 staff for the lunch rush.\" That's sizing. Working this out the week before opening, then checking the budget and the rota, is capacity planning.\n\n**In the lesson's example:** working out that the busiest minute needs about 75000 tokens is sizing. Doing it before go-live, then asking the platform team for a quota above 75000, is capacity planning. It also means checking the gateway limits too, so users don't hit error 429.",
    "step": "Learn",
    "fingerprint": "6bb28a945d720fe6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "ptu_or_paygo": {
+  "check:0:1": {
+   "q": "Why not “14”?",
+   "a": "Your math is right. 42,000 divided by 3,000 really is 14. So \"14\" is exactly how much capacity your busiest minute needs.\n\nThe catch is that the deployment won't accept 14. A deployment is the copy of the model you set up and pay for. For `gpt-4.1` on Global, the smallest deployment you can create is 15 PTUs. A PTU (provisioned throughput unit) is one block of model capacity kept just for you. You can't order fewer than the minimum, even if your app would never use the extra one.\n\nThink of buying eggs by the box. You might need 14 eggs, but if the smallest box holds 15, you walk out with 15. Capacity is sold in whole blocks, not in any amount you like.\n\nThat extra PTU isn't wasted, either. It gives you a little headroom, meaning spare room, so a minute slightly busier than you expected still fits.\n\n\"15\" is better because it is the smallest amount you can actually buy that still covers your busiest minute.",
+   "step": "Check",
+   "fingerprint": "1a996e3aead4801c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “42”?",
+   "a": "\"42\" starts from the right number. 42,000 tokens a minute is the correct busiest-minute load, with output already weighted. But \"42\" just drops the thousands. It never divides by what one PTU handles.\n\nA PTU (provisioned throughput unit) is one block of model capacity kept just for you. Here each one handles 3,000 tokens a minute. So the real sum is 42,000 divided by 3,000, which gives 14 PTUs, not 42.\n\nThen there's one more step. A deployment has a minimum size. For `gpt-4.1` on Global, that's 15 PTUs. 14 is under the minimum, so you round up to 15. It's like eggs sold in boxes: you can't buy 14 if the smallest box holds 15.\n\nBuying 42 would also be costly. Reserved monthly, that's 42 × $260 = $10,920. The right size costs 15 × $260 = $3,900. You'd pay nearly three times as much for capacity you never use.\n\n\"15\" is better because it divides the load by one PTU's capacity, then rounds up to the deployment's minimum.",
+   "step": "Check",
+   "fingerprint": "7c9802f0e9bd087f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Nothing, because it was idle”?",
+   "a": "\"Nothing, because it was idle\" mixes up the two ways to pay.\n\n**What it gets right:** that is exactly how pay per token works. With the Standard option, you pay for each token (a small chunk of text) the model reads or writes. No requests all weekend means no tokens, so no bill.\n\n**What it misses:** a PTU (provisioned throughput unit) works differently. You are renting a block of model capacity that is kept just for you. That capacity sits ready every hour, so you pay for every hour, whether you use it or not. The lesson also notes that billing can't be paused. It runs until you delete the deployment. Reserved monthly terms are billed in full too.\n\nFor example, 15 PTUs on Global at $1.00 an hour, idle for a 48-hour weekend, still costs 15 × $1.00 × 48 = $720.\n\nThink of it like renting a parking space. You pay for the space even when your car isn't in it.\n\n\"The full hourly price\" is better because PTUs charge for capacity that is held for you, not for the work you actually do.",
+   "step": "Check",
+   "fingerprint": "da1d6dacbc056a3a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Half the hourly price”?",
+   "a": "\"Half the hourly price\" gets one thing right. You do still pay something over the weekend, even though nothing is running. So it avoids the trap of thinking idle hours are free.\n\nBut it assumes the price drops when the deployment (your set-up copy of the model) sits idle. That isn't how a PTU works.\n\nA PTU is capacity kept just for you. Nobody else can use it, whether you send a request or not. So you are paying for the reservation itself, not for the work done. Busy hour, quiet hour, or empty weekend, each hour costs the same.\n\nThe lesson also says billing can't be paused. It keeps running until you delete the deployment. There is no \"idle rate\" and no half-price mode.\n\nThis is the real difference from pay per token. With pay per token, an empty weekend costs nothing, because you only pay for tokens (small chunks of text) used.\n\n\"The full hourly price\" is better because a PTU charges every hour for capacity held for you, used or not, until the deployment is deleted.",
+   "step": "Check",
+   "fingerprint": "7b6b7178500cdeb4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “They fail with error 429”?",
+   "a": "\"They fail with error 429\" describes what happens **without** spillover. That part is real. Error 429 means \"too many requests.\" The service is saying it has no room for you right now. A full PTU deployment with nothing behind it will send that error back.\n\nBut the question says spillover is **on**. Spillover exists to stop exactly that failure. When your reserved capacity is full, spillover sends the extra requests somewhere else instead of turning them away.\n\nThat \"somewhere else\" is a pay-per-token deployment. It is the Standard kind, where you pay for each token used. So the extra requests still get answered. You pay for them by the token, on top of your hourly PTU bill.\n\nSo the 429 answer misses the whole point of the setting. It treats spillover as if it did nothing.\n\n\"They go to a pay-per-token deployment\" is better because it describes what spillover actually does: it moves the overflow to Standard capacity, so the requests are served instead of failing.",
+   "step": "Check",
+   "fingerprint": "0f7c2137547305e3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that a full PTU deployment returns 429 isn't stated in the lesson, but it fits the lesson's 'instead of failing' and is true."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “They wait for the next hour”?",
+   "a": "It's an easy mix-up, because the lesson does mention hours. A PTU deployment is billed by the hour. That part is true. But billing is about how you pay. It doesn't control what happens to your requests.\n\nHere's what the answer misses. Capacity is sized per minute, from the busiest minute. When that minute's capacity is full, nothing in the setup holds extra requests for an hour. A user waiting an hour for a reply would be a broken app anyway.\n\n**Spillover** exists for exactly this moment. It's a setting that sends the extra requests somewhere else when the PTU deployment is full. That somewhere is a pay-per-token deployment, which is a second deployment that charges for each token used. So the request still gets answered right away. You just pay for its tokens at the normal per-token price, instead of the request failing.\n\n\"They go to a pay-per-token deployment\" is better because that is exactly what spillover does: it moves the overflow to pay-per-token so the extra requests are served now, not delayed or dropped.",
+   "step": "Check",
+   "fingerprint": "3365529bf4b794cb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. Minor: 'right away' and 'normal per-token price' go slightly beyond the lesson's wording, and 'PTU' is not re-explained."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Normalize, divide, then round up to the minimum…” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* With pay per token, a busy minute can hit error 429, meaning \"too many requests.\" A PTU (provisioned throughput unit) is model capacity kept just for you. The question is how many to buy.\n\n*The idea.* Size from the busiest minute. First, normalize: convert everything into input tokens. For gpt-4.1, one output token counts as 4 input tokens. So 30,000 input plus 3,000 output becomes 42,000. Next, divide by what one PTU handles, which is 3,000 a minute. That gives 14.\n\n*The edge case.* Capacity is sold in whole blocks. On Global, gpt-4.1 needs at least 15 PTUs, then steps of 5. So 14 becomes 15. It's like eggs: the smallest box holds 15.\n\n**A likely follow-up**\n\n\"Will PTUs save us money?\"\n\nHint: say no. They buy capacity, not savings. For a load this busy all month, pay per token is about $3,679. Reserved PTUs cost $3,900, and hourly PTUs cost $10,950. What you pay for is steady speed. Then mention spillover. If the PTU deployment is full, extra requests go to pay per token instead of failing.",
+   "step": "Explain",
+   "fingerprint": "cf0b04a65a83d772",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that the PTU sizing went wrong**\n\nA **PTU** (provisioned throughput unit) is a block of model capacity kept just for you. Here is what a slip looks like in your numbers.\n\n- **The count is suspiciously low.** Output tokens were counted the same as input tokens. Or the size came from an average minute instead of the busiest one.\n- **The count isn't a size you can buy.** It has a fraction, like 14.3. It sits below the deployment's minimum. Or it falls between steps, like 17 on Global or 60 on Regional.\n- **The budget expected savings.** Someone thought PTUs would cost less than pay per token. The lesson's example shows they cost about the same or more, even when busy all month.\n- **The bill keeps running.** Someone assumed a deployment could be paused. It can't. Billing runs until it is deleted.\n- **Requests fail when the PTU deployment is full.** **Spillover** was left off. Spillover sends extra requests to a pay-per-token deployment instead.\n\n**Quickest check:** Run the lesson's worked example (30,000 input, 3,000 output) through your sizing. You should get 42,000 normalized tokens and 15 PTUs. If you get anything else, look again at the busiest-minute numbers and the rounding.",
+   "step": "Learn",
+   "fingerprint": "50386b1c64c45390",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does PTU sizing stop working?**\n\n**1. Traffic that spikes rarely.** You size from the busiest minute, so a short daily spike means paying for idle capacity all the other hours. Billing can't be paused, so this gets expensive. Stay on pay-per-token, or buy a small PTU base and let spillover send the extra requests to pay-per-token.\n\n**2. A different model or deployment type.** The output weight, the tokens one PTU handles, the minimum and the step size all change. For `gpt-4.1`, \"minimum 15, then steps of 5\" holds only on Global or Data Zone, while Regional starts at 50 and goes up in steps of 50. Look up the numbers for your exact model and deployment type before you divide and round.\n\n**3. Usage that changes over time.** Agents often add tool calls and longer answers, so output tokens grow and each one counts several times. Last month's busiest minute can quietly become too small. Measure the busiest minute again regularly and resize, and delete deployments you no longer use.",
+   "step": "Learn",
+   "fingerprint": "b94c1b7760307b66",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “spillover” mean here?",
+   "a": "Think of a restaurant where you've booked a private room. Your table is always waiting. If more friends show up than the room holds, the host seats them in the main dining room instead of sending them home. They still eat. They just order from the regular menu at regular prices.\n\nSpillover works the same way. Your PTU deployment is the private room: capacity kept just for you. A \"deployment\" means a model set up and ready to answer requests. When the PTU deployment is full, extra requests go to a pay-per-token deployment. They get answered instead of failing. You pay per token only for that overflow.\n\nIn the lesson's example, the busiest minute comes to 42,000 tokens once each output token is counted as 4 input tokens. Divided by 3,000 per PTU, that gives 14. That's under the minimum, so you buy 15.\n\nNow suppose a minute ever runs busier than those 15 PTUs can handle. Spillover sends the extra requests to pay per token. You get steady, reserved capacity for normal load, plus a safety net for surprise spikes.",
+   "step": "Learn",
+   "fingerprint": "8cd317f16012a706",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1292,20 +2202,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does \"one-off plus monthly times months\" stop working?**\n\n**1. Usage grows over time.**\nThe simple sum treats every month the same. A RAG app (one that looks up your documents before answering) often gets more questions and more documents each month. That raises token, embedding and search costs. Embeddings are the number lists that capture a text's meaning. Instead, estimate each year separately from the cost drivers, such as queries per month and how much data you index.\n\n**2. A one-off cost comes back.**\nThe first indexing of all documents is a one-off. But if you switch to a new embedding model, every document must be embedded again. Add planned rebuilds like this as extra one-off costs in the year they happen.\n\n**3. Very small use.**\nWith only a few users, hosting, monitoring and on-call cost about the same as with many. So each answer becomes expensive. Divide the total by the expected number of answers. Then compare that with the cost of people doing the work by hand.",
+   "a": "**When the simple \"one-off plus monthly times months\" rule needs extra care:**\n\n**1. Usage grows over time.** The rule assumes each month costs the same. A popular assistant gets more questions and more documents each month, so tokens, search and checking all rise. Estimate cost per query and per document instead, then multiply by a forecast of volume for each year.\n\n**2. Prices or models change.** Model prices often drop, and you may switch models halfway through. Each switch brings a one-off cost too, like re-running evals and re-embedding all documents. Plan for these as extra one-off items at the point you expect them.\n\n**3. A long life, like five years or more.** A dollar spent in year five is worth less to the business than one spent today. Finance teams handle this with \"discounting,\" which means shrinking future costs by a yearly rate. Ask what rate they use, and treat the plain sum as a rough first number.\n\nAlso remember that the biggest item is not always the easiest to cut. Check whether that saving is actually possible.",
    "step": "Learn",
    "fingerprint": "22f07b8375a1f1ad",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
-    "answers_it": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The brief asks for two or three sentences per situation, but items 1 and 3 run to four or five sentences (item 1 includes an embeddings definition), so the format is not followed."
+    "pass": true,
+    "notes": "Passes all checks. Minor: it brings in outside ideas (falling model prices, discounting) and calls eval re-runs one-off, whereas the lesson lists them as monthly maintenance, but none of this contradicts the lesson."
    }
   },
   "learn:term": {
@@ -1324,6 +2234,188 @@
     "standalone": true,
     "pass": true,
     "notes": ""
+   }
+  }
+ },
+ "vector_storage": {
+  "check:0:1": {
+   "q": "Why not “It grows by about 6 percent”?",
+   "a": "\"It grows by about 6 percent\" gets one thing right. The *data* does grow by about 6 percent. Going from 34 GB to 36 GB is 2 GB more, and 2 divided by 34 is roughly 0.06.\n\nWhat it misses is how the bill is worked out. Search services don't charge per gigabyte. They charge for whole **units**. A unit is a fixed block of capacity that runs every hour, whether you use all of it or not. Here each unit holds 35 GB.\n\nAt 34 GB, everything fits in one unit. At 36 GB, one unit is 1 GB short. You can't buy a sliver of a unit, so you need a second whole one. On Azure AI Search S1, that's a jump from about $245 a month to about $490.\n\nSo the bill doesn't follow the data smoothly. It stays flat, then jumps a full step when you cross a unit's limit. It's like hotel rooms: one extra guest can mean booking a whole extra room.\n\n\"It doubles: you need a second unit\" is better because it follows the real billing rule, whole units rounded up, rather than the raw size of the data.",
+   "step": "Check",
+   "fingerprint": "57cf2e3ad67cccb7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing until you reach 70 GB”?",
+   "a": "\"Nothing until you reach 70 GB\" gets one thing right. Two units hold up to 70 GB. So once you have two units, the bill stays flat all the way from 36 GB to 70 GB.\n\nBut it puts the step in the wrong place. The step is not at 70 GB. It is just past 35 GB. A unit is a fixed block of capacity that you pay for every hour it runs. Each unit holds 35 GB. At 34 GB you fit in one unit. At 36 GB you are 1 GB over, and you cannot buy a fraction of a unit. You must add a whole second one, at about $245 a month.\n\nThink of hotel rooms with 2 guests to a room. When the third guest arrives, you book a second room. You don't wait until guest four fills it. Going past 70 GB is like guest five showing up. That is when a third room, or a third unit, is needed.\n\n\"It doubles: you need a second unit\" is better because the bill jumps from one unit to two the moment your vectors outgrow the first 35 GB.",
+   "step": "Check",
+   "fingerprint": "54ecf745273e0481",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It stays the same”?",
+   "a": "\"It stays the same\" gets two things right. You still have the same 5 million chunks. And each number in a vector still takes 4 bytes.\n\nWhat it misses is the middle part of the formula. Space is chunks times dimensions times 4 bytes. \"Dimensions\" just means how many numbers are in each vector. Going from 1,536 to 3,072 means every vector now holds twice as many numbers. Each chunk is the same text, but its vector is twice as long.\n\nHere is the sum both ways:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThat change matters for the bill too. 30.7 GB fits in one 35 GB S1 partition. 61.4 GB needs two, so you pay for a whole extra unit.\n\n\"It doubles\" is better because dimensions is one of the multipliers, so doubling it doubles the total space.",
+   "step": "Check",
+   "fingerprint": "d16e3634feaf3cf2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It halves”?",
+   "a": "\"It halves\" gets one thing right. The size does change by a factor of two. But it gets the direction backwards.\n\nA \"dimension\" is just one number in a vector. Going from 1,536 to 3,072 dimensions means every vector now holds twice as many numbers. Each number still takes 4 bytes. So each vector takes twice the bytes, not half.\n\nThe number of chunks stays the same at 5 million. Only the numbers per vector changed. Here is the lesson's formula for both cases:\n\n- 5,000,000 × 1,536 × 4 = 30,720,000,000 bytes, about 30.7 GB\n- 5,000,000 × 3,072 × 4 = 61,440,000,000 bytes, about 61.4 GB\n\nThe space goes up. It does not go down.\n\nA mix-up may come from thinking a bigger model packs data more tightly. It doesn't. More dimensions just means a longer list of numbers to store.\n\n\"It doubles\" is better because the space equals chunks times dimensions times 4 bytes, so doubling the dimensions with the same chunks doubles the space.",
+   "step": "Check",
+   "fingerprint": "aaaa854d73f91261",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Nothing, because nobody searched”?",
+   "a": "\"Nothing, because nobody searched\" sounds fair. Some cloud services do charge per use, such as paying for each API call. So linking cost to activity is a reasonable instinct.\n\nA search endpoint doesn't work that way. An endpoint is a server set up to answer searches. To answer fast, it keeps your vectors loaded and ready all the time. Keeping that server running costs money whether anyone asks a question or not.\n\nThat's why the lesson says you pay for capacity, not use. Capacity means how much the service is set up to hold and handle. On Databricks AI Search Standard, one unit costs $0.28 an hour. Over a month that's about $204, even with zero searches.\n\nSo a forgotten test endpoint is a quiet, steady cost. If you're not using one, delete it.\n\n\"It still bills every hour it exists\" is the better answer because it matches how these services actually charge: for the hours the endpoint is kept running, not for the searches it answers.",
+   "step": "Check",
+   "fingerprint": "937cf7e40d5d5c5d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Only the space the vectors take”?",
+   "a": "\"Only the space the vectors take\" sounds sensible. Many cloud services do charge like that: you pay a little for each gigabyte you store. So it gets one thing right. The size of your vectors does matter, because it decides how many units you need.\n\nBut that's not how search services bill. You don't pay per gigabyte. You pay for **units**, which are blocks of capacity the service keeps switched on for you. Each unit has a price per hour. It is charged whether you use it or not.\n\nFor Databricks AI Search on Standard, one unit costs $0.28 an hour. That's about $204 a month. The endpoint is the running service that answers your searches. If nobody searches it for a whole month, it still runs, so you still pay about $204 for each unit. A small set of vectors doesn't make that cheaper. You still pay for at least one whole unit.\n\n\"It still bills every hour it exists\" is the better answer because the cost comes from keeping the endpoint running, not from how much it stores or how often anyone searches it.",
+   "step": "Check",
+   "fingerprint": "a0aaf3ac89d16b0b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The closing line says cost is 'not from how much it stores', which sits slightly awkwardly beside the earlier point that vector size decides the number of units, but it does not contradict the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Work out the size, then round up to whole units” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Vector search services don't bill by the gigabyte. They bill whole units of capacity. Each unit runs every hour, even if nobody searches.\"\n\n*The idea:* \"So I work out the size first: number of vectors, times dimensions, times 4 bytes. Dimensions just means how many numbers are in each vector. Six million vectors of 3,072 numbers is about 73.7 GB. Then I divide by what one unit holds and round up. With 35 GB units, 73.7 divided by 35 is 2.1, so that's 3 units, not 2.1.\"\n\n*The edge case:* \"The bill moves in steps. Growing from 34 GB to 36 GB doesn't add a small cost. It adds a whole unit.\"\n\n**A likely follow-up**\n\n\"How would you bring that bill down?\"\n\n*Hint at a strong answer:* Shrink the vectors. OpenAI's newer models let you ask for fewer numbers per vector, such as 256 instead of 3,072. That can drop you a whole unit or more. Then name the trade-off: quality may dip a little. So you'd test on your eval set first. An eval set is a fixed list of test questions with known good answers. You could also add that idle endpoints should be shut down, since they bill every hour.",
+   "step": "Explain",
+   "fingerprint": "eb090fb52847abe0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems: the figures (73.7 GB, 2.1, 3 units, 34→36 GB step) match the lesson, and the whole answer is only about 200 words, with a shorter spoken part."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **The bill is higher than you planned.** Your estimate said something like \"2.1 units\", and you budgeted for 2. Services only sell whole units. So you pay for 3.\n- **The bill jumps after a small change.** You added a few more documents, and the cost went up by a whole unit's price. That is the step pattern from the lesson. It means your plan sat close to a unit's edge.\n- **Cost doubled after a model swap.** Moving from `text-embedding-3-small` to `text-embedding-3-large` doubles the numbers per vector. That doubles the space too.\n- **Money spent with no traffic.** An endpoint (a running search service) that nobody queries still bills every hour.\n- **Answers got worse after shrinking vectors.** You cut the numbers per vector to save space, and retrieval quality quietly dropped.\n\n**Quickest check**\n\nOpen the billing or service page. Compare the units it shows with the units you planned. If they differ, redo your estimate and round to whole units.\n\nIf you shrank your vectors, run your eval set before and after. An eval set is a fixed list of test questions with known good answers. Then compare the scores.",
+   "step": "Learn",
+   "fingerprint": "9d36cb5dca4b25d8",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The 'Cost doubled after a model swap' bullet overreaches: the lesson says the space doubles, but billing moves in whole-unit steps, so the cost need not double, and a doubling after that swap is expected rather than a sign of error."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The simple rule works well for rough planning. Here are three places where it needs extra care.\n\n**The index stores more than the raw vectors.** Services keep extra data so search is fast: a lookup structure linking similar vectors, plus the chunk text and metadata (extra labels like source or date). Real usage can be well above vectors times dimensions times 4 bytes. Check the service's reported index size, and leave spare room.\n\n**The vectors are compressed.** Some services can store each number in 1 byte, or even 1 bit, instead of 4. This is called quantization. If it is on, the 4-byte rule overstates the space. Use the byte size the service actually stores.\n\n**The data keeps changing.** If you switch to a new embedding model, you usually keep the old and new indexes running side by side for a while. That can double your units during the move. Steady growth also pushes you over a step sooner than you expect. Plan for next year's size, not today's.",
+   "step": "Learn",
+   "fingerprint": "dfddb3565a76850f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "Why does this matter?",
+   "a": "Without this idea, cloud bills surprise you. Here is a realistic case.\n\nA team stores 30 GB of vectors on Azure AI Search. One S1 unit holds 35 GB, so they pay about $245 a month. They plan a budget by gigabytes: \"we're at 30 GB, so a bit more data costs a bit more money.\"\n\nThen they switch from `text-embedding-3-small` to `text-embedding-3-large` for better answers. Each vector now has twice as many numbers, so the data jumps to about 60 GB. That no longer fits in one unit. They need two, and the bill doubles to about $490 a month. The search results got a little better, but the cost doubled overnight.\n\nA \"unit\" is a fixed block of capacity you rent by the hour, whether anyone uses it or not. You can't rent half of one.\n\nIf they had first multiplied vectors by numbers per vector by 4 bytes, then rounded up to whole units, they'd have seen the jump coming. They could also have tried shorter vectors and checked quality on their eval set, which is their own set of test questions with known good answers.",
+   "step": "Learn",
+   "fingerprint": "e7adedf0186cf4df",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The numbers match the lesson (30 GB fits one 35 GB S1 unit at $245; large vectors double the size to 60 GB, which needs 2 units at about $490). It is plain, about 200 words, and gives no solution code."
    }
   }
  }

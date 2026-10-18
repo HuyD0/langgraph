@@ -6,7 +6,7 @@ from drill.content.model import (angle, ask, card, case, evidence, example, exer
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
 
-# Lesson 1.1's six ideas, one practice question each. ``bin`` is where it lands; ``value``,
+# The first lesson's (use_case_score) six ideas, one practice question each. ``bin`` is where it lands; ``value``,
 # ``doable`` and ``gate`` are the facts the Python exercise sorts by (a test checks they agree).
 WHERE = [
     ('gate', 'Stopped at a gate, so shelved'),
@@ -420,6 +420,174 @@ for ch in "80 in 100":
             [
                 'No owner',
                 'Without someone who wants the result and will decide, a working pilot still goes nowhere. Find the owner before the build.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'team_roles',
+    title='Who moves the agent forward',
+    cards=[
+        card('An AI feature is never finished',
+             'Ordinary features can be shipped and left until the next release. An AI feature can\'t: the model, the questions people ask, your documents and the prices keep changing, even when your code doesn\'t.',
+             picture=piles(pile('Set and forget', ['Ship it, then move on', 'Change it at the next release', 'Test it once']),
+                           pile('Run and tend', [('activity', 'Watch it every week'), ('reset', 'Fix it within hours when it goes wrong'), ('flask', 'Test every change, every time')]))),
+        card('The people who build and run it',
+             'An AI feature needs several kinds of work. Each kind has an owner.',
+             picture=sortby('Who owns what?',
+                            sortrow('AI engineer', 'Prompts, model, tools, evals and cost per task', 'Builds it', icon='code'),
+                            sortrow('Software engineer', 'Fits it into the app: APIs and error handling', 'Connects it', icon='puzzle'),
+                            sortrow('Data engineer', 'The data: pipelines, quality, personal data', 'Feeds it', icon='layers'),
+                            sortrow('Platform engineer', 'Capacity, rollout, alerts and incidents', 'Runs it', icon='power'))),
+        card('The people who decide and guard it',
+             'Others decide what it is for, what a good answer is, and what it may never do.',
+             picture=sortby('Who owns what?',
+                            sortrow('Product manager', 'The problem, and whether it ships', 'Decides', icon='target'),
+                            sortrow('Subject-matter expert', 'What a right answer is: rubrics, labels, checking the judge', 'Defines good', icon='person'),
+                            sortrow('Security and privacy', 'Who may see what, and where data may go', 'Guards it', icon='lock'),
+                            sortrow('Finance', 'The budget, and the alerts when cost runs high', 'Budgets it', icon='coin'),
+                            sortrow('Executive sponsor', 'Fit with the business, risk, the last word in a crisis', 'Backs it', icon='briefcase')),
+             after='A **subject-matter expert** (SME) is someone who knows the work itself, like an HR advisor for the HR assistant. On a small team one person may hold several of these roles. What matters is that every kind of work has an owner.'),
+        card('They work together the whole way',
+             'The loop goes round fast and often, so nobody can hand their part over once and walk away.',
+             picture=steps(('target', 'Frame', 'Product manager, sponsor and SME agree the problem and what success is.'),
+                           ('layers', 'Data', 'Data engineer, with security and privacy, gets the data ready.'),
+                           ('code', 'Build and evaluate', 'AI engineer builds; the SME defines good and checks the answers.'),
+                           ('rocket', 'Ship and monitor', 'Platform engineer rolls it out and watches; the product manager decides.'),
+                           ('reset', 'Improve, every week', 'AI engineer and SME fix what the traces show, then round again.'))),
+        card('One decider per decision',
+             'A **RACI** table says, for each decision, who is **R**esponsible (does the work), who is **A**ccountable (makes the final call: exactly one person), who is **C**onsulted (asked first) and who is **I**nformed (told after).',
+             picture=sortby('A quick fix to a prompt',
+                            sortrow('AI engineer', 'Makes the change', 'Responsible', icon='code'),
+                            sortrow('Product manager', 'Says it can go out', 'Accountable', icon='target'),
+                            sortrow('Subject-matter expert', 'Checks the answers are right', 'Consulted', icon='person'),
+                            sortrow('Platform engineer', 'Knows it is coming', 'Informed', icon='power'))),
+    ],
+    example=example('A RACI for the HR assistant', """# decision: ship a prompt fix
+raci = {"AI engineer": "R",
+        "product manager": "A",
+        "HR advisor (SME)": "C",
+        "platform engineer": "I"}
+# exactly one A: one person decides"""),
+    check=question(
+        'The HR assistant starts giving a wrong answer about parental leave. Who confirms the fix gives the right answer?',
+        [
+            'An HR policy expert, the SME',
+            'The platform engineer',
+            'The finance team',
+        ],
+        answer=0,
+        why='The subject-matter expert knows the policy, so they say what a right answer is. The platform engineer rolls the fix out, and finance watches the cost, but neither can judge the answer.',
+    ),
+    angle=angle(
+        pattern='Exactly one Accountable, at least one Responsible',
+        text='The big idea: an AI feature is never finished, so many people keep working on it together, and a RACI table makes clear who does the work and who decides. Your code goes through each decision in the table. It counts the people marked "A" and the people marked "R". A decision with anything other than exactly one "A", or with no "R", is a problem, so it adds that decision\'s name to a list. It returns the list in the order the decisions came. It is like a relay team: each leg needs exactly one runner holding the baton.',
+        say='"An AI feature is never [[finished|started|tested::It keeps changing after launch.]], so the AI engineer, the subject-matter expert, platform, security and the product manager keep working on it [[together|in turn|alone::Not one after another.]], and every decision has exactly one person who [[decides|codes|watches::The Accountable one.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Check the RACI',
+        topic='use cases',
+        difficulty='easy',
+        fn='raci_problems',
+        prompt="""Your function gets `raci`, a dict. Each key is a decision, like `"ship a prompt fix"`. Each value is a dict of person to letter: `"R"` (does the work), `"A"` (makes the final call), `"C"` (asked first) or `"I"` (told after).
+
+A decision is a problem if it doesn't have exactly one `"A"`, or if it has no `"R"`.
+
+Return a list of the decisions that are problems, in the order they came. No problems gives `[]`.""",
+        pattern='Count the letters for each decision, then test the rules.',
+        target='one pass over the decisions and their people',
+        realworld='Teams that build AI features write a light RACI for the decisions that matter, like shipping a fix or raising the budget, and revisit it as the team changes. Two people who both think they decide is a common cause of a slow, messy incident.',
+        practice=practice(
+            intro='Set up the team around the HR assistant: who owns what, who decides, and why nobody can walk away after launch.',
+            explain='The big idea: an AI feature is never finished, so the people who build, run, decide and guard it keep working on it together, and each decision has exactly one person who makes the call. You saw that moving the team on after launch leaves nobody watching, that a team with no subject-matter expert can\'t say what a right answer is, that a RACI names one Accountable person, and that a small team can hold several roles as long as each has an owner.',
+            pattern='Every kind of work has an owner',
+            realworld='When an AI project starts at work, list the roles, put a name next to each, and write a short RACI for the decisions that matter. Check it again whenever someone joins or leaves.',
+            gotchas=[
+                ['Moving the team on after launch', 'An AI feature drifts and breaks as the world changes. Someone has to keep watching it and fixing it.'],
+                ['No subject-matter expert', 'Engineers can build it, but only someone who knows the work can say what a right answer is.'],
+                ['Two people who both decide', 'Name exactly one Accountable person for each decision, or an urgent fix waits while two people argue.'],
+            ],
+            asks=[
+                ask('What is the risk?', ['Nobody watches it as its answers drift', 'None: it passed its evals at launch', 'The next release grows too big'], answer=0,
+                    evidence=evidence('claim', who='A manager said', text='"The assistant is live. Let\'s move the team onto the next project and look at it again at the next release."'),
+                    clue='What keeps changing after launch, even if the code doesn\'t?',
+                    why='The model, the questions and the documents keep changing, so answers drift or break. Someone has to watch it weekly and be ready to fix it within hours.',
+                    wrong=[None, 'Passing at launch says nothing about next month, when the questions and documents have changed.', 'The size of the next release isn\'t the risk. An unwatched assistant is.']),
+                ask('Who is missing before anyone can say what a right answer is?', ['A subject-matter expert', 'Another AI engineer', 'The finance team'], answer=0,
+                    evidence=evidence('code', title='Invited to the kickoff', text="""Product manager
+AI engineer
+Platform engineer"""),
+                    clue='Who knows the HR policies themselves?',
+                    why='Only someone who knows the work, here an HR advisor, can say whether an answer is right. Without them the evals measure nothing real.',
+                    wrong=[None, 'More engineers can build more, but none of them knows the HR policies.', 'Finance sets the budget, not what a right answer is.']),
+                ask('Two people each think they make the final call on whether a fix ships. What does a RACI change?', ['It names one Accountable person', 'It lets both of them decide', 'It removes the decision'], answer=0,
+                    alone=True,
+                    clue='How many people may be Accountable for one decision?',
+                    why='Each decision has exactly one Accountable person. The other can be Consulted first, so an urgent fix doesn\'t wait while two people argue.',
+                    wrong=[None, 'Two deciders is the problem a RACI exists to fix.', 'The decision still has to be made. A RACI says who makes it.']),
+                ask('What do you say?', ['Fine: one person can hold several roles', 'We must hire one person per role', 'Then skip the roles nobody holds'], answer=0,
+                    evidence=evidence('claim', who='The team lead said', text='"We are five people. We don\'t need all these roles."'),
+                    clue='Is a role a person, or a kind of work that needs an owner?',
+                    why='A small team can have one person as AI engineer and platform engineer. What matters is that each kind of work has an owner: skip security and privacy, and nobody owns where the data goes.',
+                    wrong=[None, 'Roles are kinds of work, not head count. One person can hold several.', 'Skipping a role leaves its work with nobody. Give it to someone.']),
+            ],
+        ),
+        starter="""def raci_problems(raci):
+    # your code here
+    pass
+""",
+        solution="""def raci_problems(raci):
+    problems = []
+    for decision in raci:
+        letters = list(raci[decision].values())
+        if letters.count("A") != 1 or "R" not in letters:
+            problems.append(decision)
+    return problems
+""",
+        cases=[
+            case({"ship a prompt fix": {"AI engineer": "R", "product manager": "A", "SME": "C", "platform engineer": "I"},
+                  "raise the budget": {"product manager": "A", "finance": "A", "AI engineer": "C"},
+                  "pick the model": {"AI engineer": "R", "product manager": "C"}},
+                 expected=["raise the budget", "pick the model"], sample=True),
+            case({"ship a prompt fix": {"AI engineer": "R", "product manager": "A"}}, expected=[]),
+            case({}, expected=[]),
+        ],
+        guided="""def raci_problems(raci):
+    # Replace every ___ with real code, then run the tests.
+    problems = []
+    for decision in raci:
+        # Step 1: everyone's letters for this decision.
+        letters = list(raci[decision].values())
+        # Step 2: exactly one A, and at least one R.
+        if ___ or ___:
+            problems.append(decision)
+    return problems
+""",
+        fills=['letters.count("A") != 1', '"R" not in letters'],
+        concepts=[
+            [
+                'values() of a dict',
+                '`d.values()` gives every value; `list(...)` turns it into a list you can count.',
+                """d = {"Ana": "R", "Bo": "A"}
+list(d.values())   # ["R", "A"]""",
+            ],
+            [
+                'count',
+                '`letters.count("A")` says how many times "A" appears in the list.',
+                '["A", "C", "A"].count("A")   # 2',
+            ],
+        ],
+        byhand='"ship a prompt fix": one A and an R: fine. "raise the budget": two A\'s, and no R: a problem. "pick the model": an R but no A: a problem. Return ["raise the budget", "pick the model"].',
+        why='Each person in each decision is looked at once, so the work grows with the size of the table.',
+        gotchas=[
+            [
+                'Two Accountable people',
+                'If two people both make the call, nobody does when it is urgent. Exactly one A per decision.',
+            ],
+            [
+                'Nobody Responsible',
+                'A decision with someone to approve it but nobody to do the work never happens. Give every decision an R.',
             ],
         ],
     ),
@@ -1125,7 +1293,7 @@ lesson(MODULE, 'fit_for_purpose',
                             sortrow('One criterion just missed, like 5.5 seconds against 5', 'Improve that one, then test again.', 'Fix', look='dashed', icon='reset'),
                             sortrow('A must-pass case failed, more than one criterion was missed, or a miss is far off', 'However good the averages look.', 'Stop', icon='x'))),
         card('The tools behind each criterion',
-             'The next lessons give you the tools behind each criterion. Foundations show how to measure quality honestly, Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
+             'The next lessons give you the tools behind each criterion. Foundations explain what an LLM is, then how to measure quality honestly; Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
     ],
     example=example('Pilot results against the acceptance criteria', """criteria = {"quality": 0.80, "seconds": 5,
             "cost": 2.00}

@@ -1,8 +1,131 @@
 """RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack, source
+from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
+                                 rewrite, sortby, sortrow, source, stack, steps)
 
 MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
+
+lesson(MODULE, 'what_embeddings_are',
+    title='What an embedding is: meaning as a place',
+    learn=[
+        'An **embedding** turns a piece of text into a list of numbers, a **vector**. OpenAI\'s text-embedding-3-small gives 1,536 numbers for any text, short or long. Each position is a **dimension**, and nobody chose what each one means: the model learned them from huge amounts of text.',
+        'Think of each vector as a place in a space with 1,536 directions. Texts that mean similar things land close together, even with no words in common: "laptop broken" sits next to "computer won\'t start", and far from "broke the laptop budget".',
+        '**Cosine similarity** measures how close two vectors are by the direction they point: 1 means the same direction, 0 means unrelated. Length doesn\'t count, so a short question and a long passage can still match. Search ranks passages by it.',
+        'That is how retrieval works: the question is embedded the same way as the passages, the nearest passages come back first, and the LLM answers from them. It is also how it can miss: text the model never learned a meaning for, like an internal product code, may land nowhere useful.',
+    ],
+    example=example('Cosine similarity, with example numbers', """"parental leave" vs
+  "maternity leave"   0.91  same idea
+  "time off"          0.74  related
+  "expense claim"     0.12  unrelated
+# 1 = same direction, 0 = unrelated"""),
+    check=question(
+        'A question\'s cosine similarity is 0.95 with passage A and 0.10 with passage B. Which is more likely to help answer it?',
+        ['Passage A, at 0.95', 'Passage B, at 0.10', 'Neither: cosine measures length'],
+        answer=0,
+        why='Closer to 1 means the two point the same way: similar meaning. 0.10 is close to unrelated, and cosine ignores length; it compares direction.',
+    ),
+    angle=angle(
+        pattern='Dot product over the lengths, then keep the best',
+        text='The big idea: an embedding places text in a space where similar meanings land close together, and cosine similarity measures how close by direction. Your code works out the cosine between the question and each passage: multiply the numbers position by position and add them up, then divide by the two vectors\' lengths. It keeps the passage with the highest cosine and returns its id and the score, rounded to 2 places. It is like two arrows on a map: what matters is whether they point the same way, not how long they are.',
+        say='"An embedding turns text into a list of [[numbers|words|files::A vector.]]. Similar meanings land [[near each other|far apart|in order::On the map of meaning.]], and cosine similarity measures how close by [[direction|length|size::Where the vector points.]]: 1 is the same, 0 is unrelated."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Nearest Passage',
+        topic='rag',
+        difficulty='medium',
+        fn='nearest',
+        prompt="""Your function gets two things:
+
+- `question`: a vector, a list of numbers.
+- `passages`: a list of dicts, each with `"id"` and `"vector"` (the same length as the question).
+
+The cosine similarity of two vectors a and b is:
+
+- the **dot product**: multiply a and b position by position and add it all up,
+- divided by (the length of a times the length of b), where a vector's length is the square root of the sum of its numbers squared.
+
+Return `[id, score]` for the passage with the highest cosine similarity, with the score rounded to 2 decimal places. On a tie, the first one. No passages gives `[None, 0]`.""",
+        pattern='Work out a score for each item, keep the best so far.',
+        target='one pass over the passages, one pass over each vector',
+        realworld='Vector search services do exactly this, over millions of vectors, with tricks to skip most of them. Knowing the sum behind it explains why the length of a passage doesn\'t matter and why direction does.',
+        starter="""def nearest(question, passages):
+    # your code here
+    pass
+""",
+        solution="""def nearest(question, passages):
+    def length(v):
+        return sum(x * x for x in v) ** 0.5
+    best = None
+    best_score = -2
+    for p in passages:
+        dot = 0
+        for i in range(len(question)):
+            dot = dot + question[i] * p["vector"][i]
+        score = dot / (length(question) * length(p["vector"]))
+        if score > best_score:
+            best = p["id"]
+            best_score = score
+    if best is None:
+        return [None, 0]
+    return [best, round(best_score, 2)]
+""",
+        cases=[
+            case([3, 4, 0], [{"id": "p1", "vector": [4, 3, 0]}, {"id": "p2", "vector": [0, 0, 5]}, {"id": "p3", "vector": [6, 8, 0]}],
+                 expected=["p3", 1.0], sample=True),
+            case([1, 0, 0], [{"id": "p1", "vector": [0, 1, 0]}, {"id": "p2", "vector": [1, 1, 0]}], expected=["p2", 0.71]),
+            case([1, 0, 0], [], expected=[None, 0]),
+        ],
+        guided="""def nearest(question, passages):
+    # Replace every ___ with real code, then run the tests.
+    def length(v):
+        return sum(x * x for x in v) ** 0.5
+    best = None
+    best_score = -2
+    for p in passages:
+        # Step 1: the dot product, position by position.
+        dot = 0
+        for i in range(len(question)):
+            dot = ___
+        # Step 2: divide by both lengths.
+        score = dot / (length(question) * length(p["vector"]))
+        # Step 3: keep the best so far.
+        if ___:
+            best = p["id"]
+            best_score = score
+    if best is None:
+        return [None, 0]
+    return [best, round(best_score, 2)]
+""",
+        fills=['dot + question[i] * p["vector"][i]', 'score > best_score'],
+        concepts=[
+            [
+                'The dot product',
+                'Multiply the two vectors position by position and add the results.',
+                """a = [3, 4, 0]
+b = [4, 3, 0]
+3*4 + 4*3 + 0*0   # 24""",
+            ],
+            [
+                'A vector\'s length',
+                'The square root of the sum of its numbers squared. `** 0.5` takes a square root.',
+                """(3*3 + 4*4 + 0*0) ** 0.5   # 5.0""",
+            ],
+        ],
+        byhand='The question [3, 4, 0] has length 5. p1 [4, 3, 0]: dot 24, length 5, cosine 24 divided by 25 = 0.96. p2 [0, 0, 5]: dot 0, cosine 0. p3 [6, 8, 0]: dot 50, length 10, cosine 50 divided by 50 = 1.0: the same direction, though twice as long. Return ["p3", 1.0].',
+        why='Each passage is scored once, and each score walks the vector once.',
+        gotchas=[
+            [
+                'Using distance instead of direction',
+                '[6, 8, 0] is farther from [3, 4, 0] than [4, 3, 0] is, yet it points the same way. Cosine compares direction, so it wins.',
+            ],
+            [
+                'Mixing two embedding models',
+                'Vectors from different models live in different spaces. Compare only vectors from the same model.',
+            ],
+        ],
+    ),
+)
 
 lesson(MODULE, 'chunk_text',
     title='Chunking documents',
@@ -544,7 +667,7 @@ lesson(MODULE, 'pick_vector_size',
         source('Azure Cosmos DB: vector search performance tips', 'https://learn.microsoft.com/azure/cosmos-db/gen-ai/vector-search-performance-tips'),
     ],
     learn=[
-        "An **embedding**, also called a **vector**, is a list of numbers that stands for a chunk's meaning. How many numbers it holds is its number of **dimensions**: typically 384 to 1,536 today, and some models give 3,072. That size is a decision with four sides: cost, speed, quality, and a door that only opens one way.",
+        "An embedding (a vector) is the list of numbers that stands for a chunk's meaning, and how many numbers it holds is its number of dimensions: typically 384 to 1,536 today, and some models give 3,072. That size is a decision with four sides: cost, speed, quality, and a door that only opens one way.",
         'Cost first. Searches are answered by an **endpoint**: machines kept running for that job, sold in **units** of capacity. Double the numbers in each vector and one unit holds about half as many vectors, so the same documents need about twice the units. On Databricks AI Search (the new name for Databricks Vector Search), one Standard unit holds up to 2 million vectors of 768 numbers, or 1 million of 1,536.',
         'Speed pulls the same way: a search compares vectors number by number, so a longer vector means more work for every comparison. And bigger is not always better on your own documents. A model with more dimensions can top a public leaderboard and do no better on your contracts or tickets. The only honest check is retrieval quality on your own **eval set** (the questions with their right documents marked by hand, from "Measuring retrieval"), scored as recall@k.',
         "The fourth side is a **one-way door**: a change that is costly to undo. Vectors from two models cannot be compared, and an index has one fixed size, so if you change the model or the size, every chunk gets a new embedding and the index is rebuilt. Plan it as a one-off as big as the first indexing, not a setting you flip. Some newer models let you ask for a shorter vector with a `dimensions` setting, which makes shrinking cheap to try. So the rule: start with the model's default size. Shrink if cost or speed is the problem and recall is already high. Grow only if recall is too low.",
@@ -848,6 +971,145 @@ pairs[:2]   # [(-0.9, 'c7'), (-0.81, 'c1')]""",
             [
                 'Asking for exactly k',
                 'If the fast index returns only k candidates, re-scoring can only reorder them, and a chunk the shortcut missed is gone. Ask for more than you will show, then cut back to k.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'embedding_blind_spots',
+    title='Embedding models have blind spots',
+    cards=[
+        card('Some text is harder to find',
+             'An embedding model turns text into numbers so search can find similar meaning. It learned from public text, so some kinds of text match worse than others.',
+             picture=sortby('Where embedding models often stumble',
+                            sortrow('Jargon and codes', 'Product codes, policy numbers, internal names', 'Harder to match', icon='tag'),
+                            sortrow('Other languages', 'A question in French, documents in English, or a mix', 'Weaker', icon='chat'),
+                            sortrow('Very short or very long text', 'A one-line FAQ beside a ten-page policy', 'Uneven', icon='book'),
+                            sortrow('People', 'Names, genders and backgrounds linked to jobs or roles', 'Can be unfair', icon='people'))),
+        card('Test on your own hard questions',
+             'An overall recall number can hide a group that fails.',
+             picture=steps(('listcheck', 'Group your test questions', 'Plain, jargon and codes, other languages, about people.'),
+                           ('search', 'Measure recall for each group', 'Did the right passage come back, group by group?'),
+                           ('alert', 'Look at the weakest group', 'That is where users will be let down.'))),
+        card('Choose on your data, not a public ranking',
+             'Public rankings of embedding models are measured on other people\'s text, mostly general English.',
+             picture=piles(pile('A public ranking', ['Other people\'s text', 'Mostly general English', 'Says nothing about your codes']),
+                           pile('Your own test', [('check', 'Your jargon and languages'), ('check', 'Your hard questions, by group'), ('check', 'Two models, side by side')]))),
+        card('Don\'t let one family check itself',
+             'If the same model family writes your test questions, embeds your documents and judges the answers, a weakness they share can pass every step unseen.',
+             picture=rewrite(('Every test question written by one model', 'Some written by the people who ask them'),
+                             ('One model family for everything', 'A different family for the judge'))),
+    ],
+    example=example('Recall by group', """# did the right passage come back?
+plain:     46 of 50  (92%)
+codes:      8 of 20  (40%)
+# overall 54 of 70 (77%) hides that
+# questions with codes mostly fail"""),
+    check=question(
+        'Retrieval finds the right passage for 92 in 100 questions overall, but only 40 in 100 questions that use product codes. What do you do?',
+        [
+            'Fix it for product codes before launch',
+            'Ship it: 92 in 100 overall is high',
+            'Drop product codes from the test set',
+        ],
+        answer=0,
+        why='The average hides a group that mostly fails, and people asking about product codes will be let down. Try another embedding model, add keyword search, or rewrite the codes, then measure that group again.',
+    ),
+    angle=angle(
+        pattern='Count per group, then find the lowest',
+        text='The big idea: embedding models match some kinds of text worse than others, so measure retrieval group by group and look at the weakest. Your code counts, for each group, how many questions there were and how many found their passage. Then it works out each group\'s share and keeps the group with the lowest share, the first one on a tie. It returns that group and its share, rounded to 2 places. It is like a teacher looking past the class average to the pupil who is struggling.',
+        say='"An embedding model can miss jargon, other languages or [[codes|summaries|titles::Like SKU-4471 or HR-114.]], so I measure recall for each [[group|day|model::Kind of question.]] of questions, not just the average, and look hardest at the [[weakest|biggest|newest::Where users are let down.]] one."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Weakest Group',
+        topic='rag',
+        difficulty='easy',
+        fn='weakest_group',
+        prompt="""Your function gets `results`, a list of dicts, one per test question, each with `"group"` (like `"plain"` or `"codes"`) and `"found"` (True if the right passage came back).
+
+For each group, its recall is the questions found divided by the questions in that group.
+
+Return `[group, recall]` for the group with the lowest recall, rounded to 2 decimal places. On a tie, the group seen first. No results gives `[None, 0]`.""",
+        pattern='Count per group in a dict, then find the lowest share.',
+        target='one pass to count, one pass over the groups',
+        realworld='Search teams report retrieval recall per slice of questions, like language or question type, because the overall number hides the slice that fails. They compare embedding models on those slices before choosing.',
+        starter="""def weakest_group(results):
+    # your code here
+    pass
+""",
+        solution="""def weakest_group(results):
+    total = {}
+    found = {}
+    for r in results:
+        g = r["group"]
+        total[g] = total.get(g, 0) + 1
+        found[g] = found.get(g, 0) + (1 if r["found"] else 0)
+    worst = None
+    worst_rate = 2
+    for g in total:
+        rate = found[g] / total[g]
+        if rate < worst_rate:
+            worst = g
+            worst_rate = rate
+    if worst is None:
+        return [None, 0]
+    return [worst, round(worst_rate, 2)]
+""",
+        cases=[
+            case([{"group": "plain", "found": True}, {"group": "plain", "found": True}, {"group": "codes", "found": False},
+                  {"group": "codes", "found": True}, {"group": "codes", "found": False}, {"group": "plain", "found": False}],
+                 expected=["codes", 0.33], sample=True),
+            case([{"group": "plain", "found": True}], expected=["plain", 1.0]),
+            case([], expected=[None, 0]),
+        ],
+        guided="""def weakest_group(results):
+    # Replace every ___ with real code, then run the tests.
+    total = {}
+    found = {}
+    for r in results:
+        g = r["group"]
+        # Step 1: count questions and finds for each group.
+        total[g] = total.get(g, 0) + 1
+        found[g] = ___
+    worst = None
+    worst_rate = 2
+    for g in total:
+        rate = found[g] / total[g]
+        # Step 2: keep the lowest so far.
+        if ___:
+            worst = g
+            worst_rate = rate
+    if worst is None:
+        return [None, 0]
+    return [worst, round(worst_rate, 2)]
+""",
+        fills=['found.get(g, 0) + (1 if r["found"] else 0)', 'rate < worst_rate'],
+        concepts=[
+            [
+                'Counting in a dict',
+                '`d.get(key, 0) + 1` adds one to a count, starting from 0 the first time.',
+                """d = {}
+d["codes"] = d.get("codes", 0) + 1   # 1""",
+            ],
+            [
+                'Starting above any real value',
+                'Recall is at most 1, so starting the lowest at 2 means the first real group always replaces it.',
+                """worst_rate = 2
+if 0.33 < worst_rate:
+    worst_rate = 0.33""",
+            ],
+        ],
+        byhand='plain: 3 questions, 2 found: 0.67. codes: 3 questions, 1 found: 0.33. The lowest is codes. Return ["codes", 0.33].',
+        why='One pass to count, then one look at each group.',
+        gotchas=[
+            [
+                'Trusting the overall recall',
+                'A good average can hide a group that mostly fails. Report recall per group.',
+            ],
+            [
+                'Choosing a model from a public ranking',
+                'Public rankings use other people\'s text. Compare models on your own groups.',
             ],
         ],
     ),

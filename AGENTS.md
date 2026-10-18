@@ -39,7 +39,7 @@ uv sync                                  # install
 scripts/check.sh                         # build the page + run the fast tests: run before every commit
 uv run drill build-page                  # page only -> dist/daily-drill.html
 uv run pytest -q -m "not slow"           # fast tests (the full suite also runs notebooks)
-uv run drill tutor map                   # regenerate docs/tutor/CURRICULUM_MAP.md after content changes
+uv run drill tutor map                   # write docs/tutor/CURRICULUM_MAP.md (generated, git-ignored) for the tutor project
 uv run python scripts/contrast.py        # colour contrast in every look, after colour changes
 node scripts/screenshots.mjs URL         # retake docs/screens/ from a running server (Chrome, no installs)
 ```
@@ -63,7 +63,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 3. Docs that describe what you changed are updated (the table above says which). If the change
    is visible, retake the screen gallery (`node scripts/screenshots.mjs`, see
    [docs/screens/README.md](docs/screens/README.md)) so the pictures stay true.
-4. Content changes: `uv run drill tutor map` was run.
+4. Content changes: the map is generated, not committed (`scripts/check.sh` writes it); when the
+   lessons change, re-upload it to the tutor project ([docs/tutor/README.md](docs/tutor/README.md)).
 5. Front-end changes: the beginner course [docs/course/inside-page-html.html](docs/course/inside-page-html.html)
    still tells the truth. It shows real lines from `page.html`, `tokens.css` and `build.py`;
    `tests/test_course.py` fails when one of them disappears and names the lesson to update. If
@@ -115,7 +116,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - This machine's shell may set `MLFLOW_EXPERIMENT_NAME`; run Databricks/MLflow commands with
   `env -u MLFLOW_EXPERIMENT_NAME -u MLFLOW_EXPERIMENT_ID ...`.
 - Unity Catalog trace outputs come back as JSON strings; UC datasets reject MLflow tags.
-- A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `page.html` (a test checks).
+- A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `src/drill/content/page/sprite.svg`,
+  one symbol per line (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
 - `dist/` is git-ignored; the page is built, never committed.
 - Some sections of `page.html` live in `src/drill/content/page/` and come back in at their

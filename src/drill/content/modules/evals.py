@@ -519,6 +519,294 @@ for name in ages:
     ),
 )
 
+lesson(MODULE, 'average_precision',
+    title='Quality across every threshold: PR-AUC',
+    learn=[
+        "Precision and recall depend on where you set the threshold. To judge the model itself, across every possible threshold, you draw how it does at each threshold as a curve and measure the **area under the curve** (AUC). Bigger is better. You don't need to draw it: below, each AUC is put in plain words, and PR-AUC comes with a simple walk down the list that gives the number libraries report.",
+        "**ROC-AUC** (ROC is just a name to remember; it comes from old radar work) is the chance that a random real positive (an example that is really 1) gets a higher score than a random negative (an example that is really 0): 0.5 is guessing, 1.0 is perfect. It's popular, but when positives are rare it flatters the model, because there are so many easy negatives to rank below them.",
+        "**PR-AUC** is the area under the precision-recall curve, usually computed as **average precision**: walk down the list from the highest score, and each time you reach a real positive, note the precision so far. Average those. For rare events (fraud, failures, the one document that answers a question) it is the honest number. Its baseline (what random guessing scores) is the share of positives, not 0.5: a random model on 1% positives scores about 0.01.",
+    ],
+    example=example('Average precision, by hand', """score  label   precision each time a real positive is reached
+0.95     1     1 of 1 = 1.00
+0.80     0
+0.70     1     2 of 3 = 0.67
+0.40     0
+0.20     1     3 of 5 = 0.60
+average precision = (1.00 + 0.67 + 0.60) / 3, about 0.76"""),
+    check=question(
+        'Fraud is 1 in 200 transactions. Your model has ROC-AUC 0.97 and PR-AUC 0.18. What is true?',
+        [
+            'The model is excellent: 0.97 means near perfect',
+            'ROC-AUC flatters it; PR-AUC says most alerts are false alarms',
+            'PR-AUC must be a bug when ROC-AUC is this high',
+        ],
+        answer=1,
+        why='A random model would score about 0.005 PR-AUC here, so 0.18 is far better than random: real skill. But it also means most alerts are false alarms, which ROC-AUC hides.',
+    ),
+    angle=angle(
+        pattern='Sort by score, then walk down',
+        text='The big idea: for rare events, average precision is the honest score, because it rewards finding the real positives near the top. Your code first counts the real positives and returns 0 if there are none. Then it sorts the examples by score, highest first, like ranking exam papers. It walks down the list counting how many it has seen and how many were real positives. At each real positive it adds the precision so far, and at the end it divides that sum by the number of positives.',
+        say='"When positives are rare, I report [[average precision|ROC-AUC|accuracy::It rewards finding the real cases near the top of the list.]]. ROC-AUC can look good just because there are so many [[easy negatives|real positives|thresholds::Lots of obvious no\'s are simple to rank low.]] to rank low."',
+        classic=None,
+    ),
+    stack=stack('scikit-learn and MLflow', """from sklearn.metrics import average_precision_score, roc_auc_score
+
+mlflow.log_metrics({
+    "pr_auc": average_precision_score(labels, scores),
+    "roc_auc": roc_auc_score(labels, scores),
+})"""),
+    exercise=exercise(
+        title='Average Precision',
+        topic='foundations',
+        difficulty='medium',
+        fn='average_precision',
+        prompt="""Your function gets two things:
+
+- `scores`: the model's score for each example, like `[0.2, 0.95, 0.4]`. No two scores are the same.
+- `labels`: for each example, `1` if it really is a positive (the thing you are looking for) or `0` if not, in the same order, like `[1, 1, 0]`.
+
+Sort the examples by score, highest first, keeping each label with its score, and walk down the list. Each time you reach a positive, work out the precision so far: positives found so far divided by examples seen so far.
+
+Return the average of those precisions: add them up, then divide by the number of positives. Round it to 2 decimal places. If there are no positives, return 0.""",
+        pattern='Sort by score, then one walk down the list keeping two counts.',
+        target='a sort, then one walk down the list',
+        realworld='Fraud, safety and retrieval teams report PR-AUC (average precision) because the thing they care about is rare. scikit-learn calls it `average_precision_score`.',
+        starter="""def average_precision(scores, labels):
+    # your code here
+    pass
+""",
+        solution="""def average_precision(scores, labels):
+    positives = sum(labels)
+    if positives == 0:
+        return 0
+    pairs = sorted(zip(scores, labels), reverse=True)
+    seen = 0
+    found = 0
+    total = 0.0
+    for score, label in pairs:
+        seen += 1
+        if label == 1:
+            found += 1
+            total += found / seen
+    return round(total / positives, 2)
+""",
+        cases=[
+            case([0.2, 0.95, 0.4, 0.8, 0.7], [1, 1, 0, 0, 1], expected=0.76, sample=True),
+            case([0.9, 0.8, 0.1], [1, 1, 0], expected=1.0),
+            case([0.9, 0.8, 0.1], [0, 0, 1], expected=0.33),
+            case([0.5, 0.4], [0, 0], expected=0.0),
+            case([0.9, 0.6, 0.5, 0.3], [0, 1, 1, 0], expected=0.58),
+        ],
+        guided="""def average_precision(scores, labels):
+    # Replace every ___ with real code, then run the tests.
+    positives = sum(labels)
+    if positives == 0:
+        return 0
+
+    # Step 1: pair each score with its label, highest first.
+    pairs = sorted(zip(scores, labels), reverse=True)
+
+    seen = 0      # examples seen so far
+    found = 0     # positives found so far
+    total = 0.0   # the precisions added up
+    # Step 2: at each positive, add the precision so far.
+    for score, label in pairs:
+        seen += 1
+        if label == 1:
+            found += 1
+            total += ___
+    # Step 3: average: divide the total by the positives.
+    return round(___, 2)
+""",
+        fills=['found / seen', 'total / positives'],
+        concepts=[
+            [
+                'Pairing and sorting',
+                '`zip(a, b)` pairs the items up. `sorted(..., reverse=True)` sorts the pairs by their first item, biggest first. A `for` loop can then take each pair apart: `for age, name in pairs:`.',
+                """pairs = sorted(zip([30, 45], ['Ann', 'Bo']), reverse=True)
+# [(45, 'Bo'), (30, 'Ann')]""",
+            ],
+            ['sum', '`sum(numbers)` adds up a list. On a list of 1s and 0s it counts the 1s.', 'sum([1, 0, 1])   # 2'],
+            [
+                'Counting with +=',
+                '`count += 1` adds 1 to `count`. It is short for `count = count + 1`.',
+                """count = 0
+count += 1
+count += 1   # count is now 2""",
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
+        ],
+        byhand='There are 3 positives. Sorted by score: 0.95 (positive), 0.8, 0.7 (positive), 0.4, 0.2 (positive). At 0.95: 1 positive found in 1 seen, precision 1.0. At 0.7: 2 found in 3 seen, 0.667. At 0.2: 3 found in 5 seen, 0.6. 1.0, 0.667 and 0.6 add up to 2.267. Divided by the 3 positives, that is 0.756, which rounds to 0.76. Returns 0.76.',
+        why='Sorting is the slowest step; the walk after it looks at each example once.',
+        gotchas=[
+            [
+                'Know the baseline',
+                'A PR-AUC of 0.3 is poor when half the examples are positive, and excellent when 1 in 100 is. Always say what share is positive.',
+            ],
+            [
+                'Ties in scores',
+                'Real models often give equal scores. Libraries handle ties carefully; this exercise keeps the scores distinct so the order is clear.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'calibration_table',
+    title='Are the probabilities honest?',
+    learn=[
+        'A model that says "70% likely" should be right about 70% of the time when it says that. That is **calibration**. Many models are overconfident, and LLMs (large language models, the kind behind chatbots) asked to rate their own confidence often are.',
+        "To check, put the predictions into buckets, usually called **bins**, by their probability (0-20%, 20-40%, and so on) and compare, in each bucket, the average prediction with how often the thing really happened. In a calibrated model the two numbers match. The chart of these pairs is called a **reliability diagram**.",
+        'One number for all of it is the **Brier score**. For each prediction, take the gap between the predicted probability and what happened (1 or 0), and multiply the gap by itself. The Brier score is the average of those. Lower is better, 0 is perfect, and always guessing 50% scores 0.25.',
+        'Calibration matters whenever the probability itself drives a decision: auto-approve above 90%, send to a person below. An overconfident model makes that threshold mean something it does not.',
+    ],
+    example=example('A reliability table', """bucket      predictions   average prediction   really happened
+0-20%           40              0.12                0.10   ✓ close
+40-60%          25              0.51                0.48   ✓ close
+80-100%         35              0.92                0.61   ✗ overconfident"""),
+    check=question(
+        'In the 80-100% bucket the average prediction is 0.92 but only 61% really happened. What does that mean for an "auto-approve above 90%" rule?',
+        [
+            'Nothing: the threshold stays at 90, where it was set',
+            'Overconfident: the rule approves far more mistakes than it seems',
+            'Underconfident: the threshold could safely be lowered',
+        ],
+        answer=1,
+        why='The threshold assumes 90% means 90%. Here it means about 61%, so many of the cases the rule approves are wrong. Recalibrate the scores (adjust them so 0.9 really means about 90%), or set the threshold from the table.',
+    ),
+    angle=angle(
+        pattern='Five buckets with running totals',
+        text="The big idea: a model that says 70% should be right about 70% of the time, so you compare what it predicted with what happened. Your code gives each prediction a bucket number from 0 to 4 with `int(p * 5)`, like sorting mail into five slots. Three lists, each a row of five numbers, keep how many predictions each bucket has, their total, and how many really happened. Then, for each bucket that isn't empty, it makes a row with the average prediction and the share that happened.",
+        say='"If a model says 70%, it should be right [[70%|100%|50%::The same chance it claimed.]] of the time. I sort its predictions into [[buckets|folds|batches::Group them by how sure the model said it was.]] and check each one against how often the thing really [[happened|failed|changed::Compare the guess with what came true.]]."',
+        classic=None,
+    ),
+    stack=stack('scikit-learn: reliability curve and Brier score', """from sklearn.calibration import calibration_curve
+from sklearn.metrics import brier_score_loss
+
+really, predicted = calibration_curve(outcomes, predictions, n_bins=5)
+mlflow.log_metric("brier", brier_score_loss(outcomes, predictions))"""),
+    exercise=exercise(
+        title='The Reliability Table',
+        topic='foundations',
+        difficulty='medium',
+        fn='calibration_table',
+        prompt="""Your function gets two things:
+
+- `predictions`: how likely the model said each thing was, from 0 to just under 1, like `[0.1, 0.9]`.
+- `outcomes`: what really happened, `1` (it did) or `0` (it didn't), in the same order, like `[0, 1]`.
+
+Put each prediction `p` in a bucket numbered 0 to 4 with `int(p * 5)`. `int` cuts off the decimals, so `int(1.75)` is `1`. Bucket 0 holds 0 up to (but not including) 0.2, bucket 1 holds 0.2 up to 0.4, and so on.
+
+Go from bucket 0 up to bucket 4, skipping empty ones. For each, make a row `[bucket, average, share]`:
+
+- `average`: its predictions added up, divided by how many it has.
+- `share`: how many of its outcomes are 1, divided by how many it has.
+
+Round both to 2 decimal places. Return the list of rows.""",
+        pattern='Add up totals per bucket in one pass, then one pass over the buckets to build the rows.',
+        target='one pass over the predictions, then one over the buckets',
+        realworld='A reliability table is how you find out whether "confidence: 0.9" from a model or an LLM judge (an LLM that grades answers) can be used as a threshold, or needs recalibrating first.',
+        starter="""def calibration_table(predictions, outcomes):
+    # your code here
+    pass
+""",
+        solution="""def calibration_table(predictions, outcomes):
+    counts = [0, 0, 0, 0, 0]
+    totals = [0, 0, 0, 0, 0]
+    happened = [0, 0, 0, 0, 0]
+    for p, outcome in zip(predictions, outcomes):
+        bucket = int(p * 5)
+        counts[bucket] += 1
+        totals[bucket] += p
+        happened[bucket] += outcome
+    rows = []
+    for bucket in range(5):
+        if counts[bucket] > 0:
+            average = round(totals[bucket] / counts[bucket], 2)
+            share = round(happened[bucket] / counts[bucket], 2)
+            rows.append([bucket, average, share])
+    return rows
+""",
+        cases=[
+            case([0.25, 0.35, 0.9, 0.95, 0.85], [0, 1, 1, 0, 1], expected=[[1, 0.3, 0.5], [4, 0.9, 0.67]], sample=True),
+            case([0.1, 0.3, 0.9, 0.95, 0.85], [0, 1, 1, 0, 1], expected=[[0, 0.1, 0.0], [1, 0.3, 1.0], [4, 0.9, 0.67]]),
+            case([], [], expected=[]),
+            case([0.1, 0.16, 0.35, 0.9, 0.95, 0.85], [0, 0, 1, 1, 0, 1], expected=[[0, 0.13, 0.0], [1, 0.35, 1.0], [4, 0.9, 0.67]]),
+            case([0.25, 0.35, 0.65, 0.75], [0, 1, 1, 1], expected=[[1, 0.3, 0.5], [3, 0.7, 1.0]]),
+            case([0.5, 0.45, 0.55], [1, 0, 0], expected=[[2, 0.5, 0.33]]),
+            case([0.99], [1], expected=[[4, 0.99, 1.0]]),
+        ],
+        guided="""def calibration_table(predictions, outcomes):
+    # Replace every ___ with real code, then run the tests.
+    counts = [0, 0, 0, 0, 0]     # predictions per bucket
+    totals = [0, 0, 0, 0, 0]     # predictions added up
+    happened = [0, 0, 0, 0, 0]   # outcomes that were 1
+
+    for p, outcome in zip(predictions, outcomes):
+        # Step 1: the bucket is p times 5, decimals cut off.
+        bucket = ___
+        counts[bucket] += 1
+        totals[bucket] += p
+        happened[bucket] += outcome
+
+    # Step 2: one row per bucket that has predictions.
+    rows = []
+    for bucket in range(5):
+        if counts[bucket] > 0:
+            average = round(totals[bucket] / counts[bucket], 2)
+            # share: happened, divided by the count
+            share = round(___, 2)
+            rows.append([bucket, average, share])
+    return rows
+""",
+        fills=['int(p * 5)', 'happened[bucket] / counts[bucket]'],
+        concepts=[
+            [
+                'Bucket number',
+                'Multiply by 5, then `int` cuts off the decimals.',
+                'int(0.35 * 5)   # 1.75 becomes 1',
+            ],
+            [
+                'A list of totals',
+                '`totals[1]` is the slot at position 1 (positions start at 0). `totals[1] += 0.3` adds 0.3 to that slot. Keep one slot per bucket.',
+                """totals = [0, 0]
+totals[1] += 0.3
+# totals is now [0, 0.3]""",
+            ],
+            [
+                'zip',
+                'Walks two lists side by side, one pair at a time.',
+                """for x, y in zip([1, 2], [5, 6]):
+    print(x, y)   # 1 5, then 2 6""",
+            ],
+            [
+                'range',
+                '`range(5)` gives 0, 1, 2, 3 and 4, one at a time.',
+                """for i in range(3):
+    print(i)   # 0, then 1, then 2""",
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 3, 2)   # 0.67'],
+            [
+                'Adding to a list',
+                '`my_list.append(x)` puts x on the end of the list.',
+                """names = []
+names.append('Ann')   # ['Ann']""",
+            ],
+        ],
+        byhand='0.25 and 0.35 times 5 are 1.25 and 1.75: bucket 1. 0.9, 0.95 and 0.85 times 5 are 4.5, 4.75 and 4.25: bucket 4. Buckets 0, 2 and 3 are empty, so they get no row. Bucket 1: 0.25 and 0.35 add up to 0.6. 0.6 divided by 2 is 0.3. 1 of its 2 outcomes is 1: 1 divided by 2 is 0.5. Row [1, 0.3, 0.5]. Bucket 4: 0.9, 0.95 and 0.85 add up to 2.7. 2.7 divided by 3 is 0.9. 2 of its 3 outcomes are 1: 2 divided by 3 is 0.667, rounded to 0.67. Row [4, 0.9, 0.67]. The model said about 0.9, but it happened only 0.67 of the time: it is overconfident. Returns [[1, 0.3, 0.5], [4, 0.9, 0.67]].',
+        why='One step per prediction, then one per bucket.',
+        gotchas=[
+            [
+                'Small buckets are noisy',
+                'A bucket with 3 predictions tells you little. Use fewer buckets, or more data, before concluding the model is miscalibrated.',
+            ],
+            [
+                'Calibrated is not the same as good',
+                'A model that gives every example the same overall rate (say 5%, when 5% of cases are positive) is perfectly calibrated and useless. Look at calibration alongside PR-AUC or precision and recall.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'must_pass_gate',
     title='A must-pass set',
     learn=[
@@ -785,7 +1073,7 @@ lesson(MODULE, 'judge_agreement',
     learn=[
         'An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.',
         'Check passes and failures separately: the share of human passes the judge also passed is its **true positive rate** (TPR), and the share of human failures it also failed is its **true negative rate** (TNR). A judge that passes everything looks accurate when most answers are good, and catches nothing.',
-        'One more reason to doubt a judge: it goes easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its **model family**). Researchers call this habit **self-preference bias**. This app is an example: one Claude model (Opus) writes the answers the tutor keeps ready behind "Ask about this lesson", and another (Sonnet) grades them, so the grader is a relative of the writer. The fix is the same: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.',
+        'One more reason to doubt a judge: it goes easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its **model family**). Researchers call this habit **self-preference bias**. Judges have biases too shows it in this app. The fix is the same: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.',
         'How high must the two shares be? There is no magic number. Set the pass mark by the job (a judge that blocks answers must catch nearly every failure; one that only reports can miss more) and by the ceiling: two people never agree on every answer, and a judge cannot be asked to agree with one person more than two people agree with each other. Write the mark down before you look.',
     ],
     example=example('Agreement on each side', """humans passed 8, failed 2
@@ -1646,6 +1934,148 @@ Return AC1 rounded to 2 decimal places. You will never divide by zero.""",
             [
                 'Still check each side',
                 'Like kappa, AC1 is one number. Keep checking how the judge does on passes and on failures separately.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'judge_biases',
+    title='Judges have biases too',
+    cards=[
+        card('Three biases to know',
+             'An LLM judge can lean one way for reasons that have nothing to do with the answer\'s quality.',
+             picture=sortby('What can tilt a judge?',
+                            sortrow('Position', 'It prefers whichever answer it reads first, or second', 'Order', icon='reset'),
+                            sortrow('Length', 'It prefers the longer, more detailed-looking answer', 'Verbosity', icon='listcheck'),
+                            sortrow('Same family', 'It prefers answers written by its own model family', 'Self-preference', icon='people'))),
+        card('Catch position bias: swap and score twice',
+             'Show the judge the same two answers in both orders.',
+             picture=steps(('flask', 'A first, then B', 'The judge picks A.'),
+                           ('reset', 'B first, then A', 'The same two answers, order swapped.'),
+                           ('check', 'Compare the two verdicts', 'The same winner both ways: trust it. It flipped: call it a tie, or look closer.'))),
+        card('Same family, same blind spots',
+             'When one model family writes the answers and also judges them, the scores come out flattering. This app does exactly that for the tutor\'s prepared answers: Claude Opus drafts, and Claude Sonnet judges.',
+             picture=piles(pile('Riskier', ['A judge from the app\'s own family', 'One judge only', 'Never checked against people']),
+                           pile('Safer', [('scale', 'A judge from a different family'), ('scale', 'Two judges from two families'), ('person', 'Checked against expert labels')])),
+             after='This app checks its judge against people\'s labels, and that check is what catches a flattering judge.'),
+        card('The fixes, in one place',
+             'None of these is expensive; the swap costs one more call per pair.',
+             picture=steps(('reset', 'Swap the order', 'Score both orders, and count a flip as a tie.'),
+                           ('pencil', 'Say length isn\'t quality', 'Put it in the rubric, and compare answers of similar length.'),
+                           ('scale', 'A judge from another family', 'Or two judges from two families, and read where they disagree.'),
+                           ('person', 'Check against people', 'The agreement checks from the last lessons.'))),
+    ],
+    example=example('Swapping the order', """# same two answers, both orders
+a_first = "A"   # winner when A is shown first
+b_first = "B"   # winner when B is shown first
+# different winners: the verdict
+# follows the order, not the answers,
+# so count it as a tie"""),
+    check=question(
+        'The judge picks answer A when A is shown first, and answer B when B is shown first. What is that?',
+        ['Position bias', 'Length bias', 'A rate limit'],
+        answer=0,
+        why='The answers didn\'t change, only their order, and the verdict followed the order. That is position bias: score both orders and count a flip as a tie.',
+    ),
+    angle=angle(
+        pattern='Score both orders, keep the pairs that flip',
+        text='The big idea: an LLM judge can favour the first answer, the longer answer, or answers from its own model family, so you test for each and fix it. Your code goes through pairs that were judged in both orders. A pair whose winner changed when the order changed has flipped, so its id goes on a list. It returns the list in order. It is like asking a friend which of two photos is better, then asking again with them swapped: if the answer changes, the order decided, not the photos.',
+        say='"An LLM judge can favour the first answer, the [[longer|newer|cheaper::More detailed-looking, not better.]] one, or answers from its own model [[family|budget|region::Same provider, same style.]]. So I swap the order, put length rules in the rubric, and check the judge against [[people|itself|speed::Expert labels.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Flipped Verdicts',
+        topic='evals',
+        difficulty='easy',
+        fn='flipped',
+        prompt="""Your function gets `pairs`, a list of dicts. Each has:
+
+- `"id"`: the pair's name
+- `"a_first"`: the winner (`"A"` or `"B"`) when answer A was shown first
+- `"b_first"`: the winner when answer B was shown first
+
+A pair has **flipped** if the two winners differ.
+
+Return a list of the ids that flipped, in the order they came. None flipped gives `[]`.""",
+        pattern='Compare two fields on each item, and keep the ones that differ.',
+        target='one pass over the pairs',
+        realworld='Teams that compare two versions with an LLM judge score every pair in both orders. Pairs that flip are counted as ties, and a high flip rate means the judge itself needs fixing before its verdicts mean anything.',
+        practice=practice(
+            intro='The team compares versions of the HR assistant with an LLM judge. Check whether the judge can be trusted.',
+            explain='The big idea: an LLM judge can favour the first answer, the longer answer, or answers from its own model family. You saw a verdict that followed the order, scores that followed the length while experts saw no difference, a same-family comparison that needed a judge from another family, and that agreement with expert labels is the strongest check of all.',
+            pattern='Test the judge before trusting it',
+            realworld='When someone at work says "the judge says version B is better", ask: were both orders scored, does the rubric say length isn\'t quality, is the judge from a different family than the app, and has it been checked against people?',
+            gotchas=[
+                ['Scoring one order only', 'A single order can hide position bias. Score both and count flips as ties.'],
+                ['A judge grading its own family', 'Same-family judges flatter. Use another family, or two judges.'],
+            ],
+            asks=[
+                ask('What do you conclude?', ['The verdict follows the order', 'Answer A is clearly better', 'Answer B is clearly better'], answer=0,
+                    evidence=evidence('code', title='The same pair, judged twice', text="""A shown first:  winner A
+B shown first:  winner B"""),
+                    clue='Did the answers change between the two runs?',
+                    why='Only the order changed, and the winner changed with it: position bias. Count this pair as a tie.',
+                    wrong=[None, 'A only won when it came first.', 'B only won when it came first.']),
+                ask('What is most likely going on?', ['The judge rewards length', 'Long answers are better', 'Short answers are wrong'], answer=0,
+                    evidence=evidence('code', title='Judge scores by answer length', text="""short answers (under 80 words):  3.1 of 5
+long answers (over 300 words):   4.4 of 5
+experts rated both groups about the same"""),
+                    clue='The experts saw no difference. What does the judge see that they don\'t?',
+                    why='Experts rated both groups the same, but the judge scored long answers higher: length bias. Tell the judge length isn\'t quality, and compare answers of similar length.',
+                    wrong=[None, 'The experts rated them the same, so length isn\'t making them better.', 'The experts rated short answers as good as long ones.']),
+                ask('What do you check before believing it?', ['Rerun with a judge from another family', 'Nothing: the judge chose clearly', 'The same judge, twice more'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"We compared our Claude app with a GPT version, using a Claude judge. Claude won easily."'),
+                    clue='Which family wrote the winning answers, and which family judged them?',
+                    why='A Claude judge may favour Claude-written answers. Rerun with a judge from another family, or two judges from two families, before trusting the result.',
+                    wrong=[None, 'A clear result can still be a flattering one.', 'The same judge would lean the same way again.']),
+                ask('Which is the strongest check that a judge isn\'t flattering your app?', ['Its agreement with expert labels', 'A longer, stricter rubric', 'A newer, bigger judge model'], answer=0,
+                    alone=True,
+                    clue='What does the judge have to match to be trusted?',
+                    why='Agreement with people who know the work is the real test. A stricter rubric or a bigger model can still be biased in ways only that comparison shows.',
+                    wrong=[None, 'A rubric helps, but only people\'s labels show whether the judge is right.', 'A bigger model can still favour its own family.']),
+            ],
+        ),
+        starter="""def flipped(pairs):
+    # your code here
+    pass
+""",
+        solution="""def flipped(pairs):
+    out = []
+    for pair in pairs:
+        if pair["a_first"] != pair["b_first"]:
+            out.append(pair["id"])
+    return out
+""",
+        cases=[
+            case([{"id": "q1", "a_first": "A", "b_first": "A"},
+                  {"id": "q2", "a_first": "A", "b_first": "B"},
+                  {"id": "q3", "a_first": "B", "b_first": "B"}], expected=["q2"], sample=True),
+            case([{"id": "q1", "a_first": "B", "b_first": "A"}], expected=["q1"]),
+            case([], expected=[]),
+        ],
+        guided="""def flipped(pairs):
+    # Replace every ___ with real code, then run the tests.
+    out = []
+    for pair in pairs:
+        # the winner changed when the order changed
+        if ___:
+            out.append(___)
+    return out
+""",
+        fills=['pair["a_first"] != pair["b_first"]', 'pair["id"]'],
+        concepts=[
+            [
+                '!= for "different"',
+                '`a != b` is True when the two values differ.',
+                '"A" != "B"   # True',
+            ],
+        ],
+        byhand='q1: A both times, steady. q2: A then B, flipped. q3: B both times, steady. Return ["q2"].',
+        why='Each pair is checked once.',
+        gotchas=[
+            [
+                'Treating a flip as a win',
+                'A flipped pair says nothing about which answer is better. Count it as a tie.',
             ],
         ],
     ),

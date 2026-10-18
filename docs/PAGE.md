@@ -62,8 +62,8 @@ Home shows the path as a sticker book, with the six phases always in view:
   "Earlier" or "Coming up" label, and what you come out with. The page is printed on the phase's
   own paper, matched to its shape: dots, graph paper, a lattice, ruled lines, hatching, dashes.
 - **Lesson pictures**: every lesson has its own small line drawing on its sticker, faded until you
-  get there. A new lesson needs one: put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` in
-  the sprite at the top of `page.html`, drawn as strokes on a 24 grid centred on 0, and make it
+  get there. A new lesson needs one: put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` on its own line in
+  `page/sprite.svg` (the sprite the build pastes into `page.html`), drawn as strokes on a 24 grid centred on 0, and make it
   look different from its neighbours. Until it has one, its sticker shows the module's icon and
   `tests/test_content.py` fails to remind you.
 - **Order**: each sticker carries its place, like 2.11 (phase 2, lesson 11), and a dotted trail
@@ -224,8 +224,8 @@ in card text (`text`, `after` and `note` all go through `withTrust`).
 Two kinds of thing are told apart by **shape**, never a new colour: `look="solid"` (a filled
 tile) and `look="dashed"` (a ruler-edged tile). Icons are names from the page's sprite (`i-...`);
 a test fails if a card names one the page doesn't have. Keep to one idea per card, two to seven
-cards, with the same example running through them (lesson 1.3 uses a food delivery app, then the
-HR assistant; 1.4 puts the HR assistant's non-functional requirements on the pillars). Use the real
+cards, with the same example running through them (`split_requirements` uses a food delivery app, then the
+HR assistant; `well_architected` puts the HR assistant's non-functional requirements on the pillars). Use the real
 terms on the cards themselves, never a made-up shorthand for them.
 
 **Cards or a diagram?** A [lesson diagram](#lesson-diagrams) adds one picture to Learn paragraphs,
@@ -575,14 +575,14 @@ from the lesson's own example, so picture and text tell one story.
 
 ## Sticker callbacks
 
-The course teaches some foundations once, early, and then uses them quietly: gathering requirements (1.3),
-functional and non-functional requirements (1.4), the well-architected pillars (1.5), the
-acceptance criteria and must-pass cases (1.6), leakage, precision and
+The course teaches some foundations once, early, and then uses them quietly: gathering requirements,
+functional and non-functional requirements, the well-architected pillars, the
+acceptance criteria and must-pass cases (all in Frame), leakage, precision and
 recall, cost per finished task, tokens that grow every step, the baseline and its controls,
 deciding before the runs, a real win or luck, reading a trace, prompt injection, never trusting
 model output, least privilege, retries, idempotent writes, reading a Terraform plan. Where a later lesson uses one, the sticker
 the learner earned in the lesson that taught it sits right after the phrase. Tapping it opens a
-card under the paragraph: the idea in a few words, what it means here, and "Revisit 1.4". If that
+card under the paragraph: the idea in a few words, what it means here, and "Revisit" with that lesson's number (worked out from its id, never written in). If that
 lesson isn't done yet, the sticker is a dashed outline and the card offers it instead. Teachers
 call this a spiral curriculum.
 

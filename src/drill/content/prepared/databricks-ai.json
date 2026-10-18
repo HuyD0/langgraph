@@ -38,20 +38,20 @@
   },
   "check:1:0": {
    "q": "Why not “Grant EXECUTE on the catalog”?",
-   "a": "Granting `EXECUTE` on the catalog is a real step, just for a different problem. It is true that `EXECUTE` on a catalog flows down to every function inside it. So the agent's service principal (an identity for an app, not a person) could then run `lookup_order`.\n\nBut look at what is going wrong. The agent *is* picking a tool. It just picks the wrong one. That means it is not being refused. Permissions decide *who is allowed to run* a function. They don't help the model decide *which* function fits the job.\n\nThe model decides by reading the tool description. That description comes from your `COMMENT`s. Right now it says only \"helper\". That tells the model nothing about what `lookup_order` does or what to pass in. More access won't change that.\n\nSo the right answer is \"Write clear comments on it and each parameter.\" It fixes the text the model actually reads to choose a tool. For example, `'Look up the status of one order'` on the function, and `'The order number, like A-1042'` on `order_id`.",
+   "a": "\"Grant EXECUTE on the catalog\" fixes a different problem.\n\n`EXECUTE` is about permission: whether the agent is allowed to run a function. If the agent were being refused, a missing grant would be a fair guess. But here the agent isn't refused. It runs a tool, just the wrong one. So the trouble is in choosing, not in access.\n\nA catalog grant also reaches far. `EXECUTE` on a catalog flows down to every function inside it, which is much more access than one tool needs. And it changes nothing about how the model decides.\n\nThe model picks tools by reading their descriptions, and those come from the `COMMENT` text. A comment like \"helper\" tells it nothing about what `lookup_order` does or what to pass in.\n\n\"Write clear comments on it and each parameter\" is the better answer because it gives the model the words it needs to match the right tool to the task, like this:\n\n```sql\nCOMMENT 'Look up the status of one order'\norder_id STRING COMMENT 'The order number, like A-1042'\n```",
    "step": "Check",
    "fingerprint": "e76cf828281583f5",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says EXECUTE on the catalog means the service principal 'could then run lookup_order', but the lesson says calling a function also needs USE CATALOG and USE SCHEMA, so EXECUTE alone is not enough."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:1:1": {
@@ -128,20 +128,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**The classic sign: it works for you, then fails once deployed.**\n\nYou test the agent in a notebook. Every tool call succeeds. You deploy it, and the same calls get refused. That happens because each call runs with the **caller's** permissions. In the notebook, the caller is you. In production, it is often a **service principal** (an identity for an app, not a person). If only your people group got `EXECUTE`, the agent's identity has nothing.\n\n**Other things to watch for:**\n\n- Only some tools fail. The grant may have gone on one function, not the whole schema.\n- The tools are allowed, but the agent picks the wrong one. That points to vague `COMMENT` text, not permissions.\n\n**Quickest check:**\n\nFind out which identity the deployed agent runs as, and which group it belongs to. For example, `support-bots`.\n\nThen read through your `GRANT` statements. Confirm that group has all three:\n\n1. `USE CATALOG` on the catalog.\n2. `USE SCHEMA` on the schema.\n3. `EXECUTE` on the function, or on the schema or catalog above it.\n\nIf any one is missing, that's your gap.",
+   "a": "**The classic sign:** it works when you test it, then breaks once deployed. In your notebook, the tool runs with *your* permissions. The deployed agent runs as a service principal (an identity for an app, not a person). If only people got `EXECUTE`, the agent is refused.\n\n**What you might see:**\n\n- **Logs or traces** (the step-by-step record of an agent's run) show a tool call failing with a \"permission denied\" or \"does not have EXECUTE\" error.\n- **Answers** like \"I couldn't look that up,\" while the same question worked in testing.\n- **Scores** that looked great in notebook testing, then fall on tool-based questions in real use.\n- **Wrong tool picks**, even with permissions fine. That usually points to vague `COMMENT` text, not grants.\n\n**Quickest check:** In Catalog Explorer, open the function's Permissions tab. Then ask three questions about the service principal, or a group it belongs to:\n\n1. Does it have `USE CATALOG` on the catalog?\n2. Does it have `USE SCHEMA` on the catalog or the schema?\n3. Does it have `EXECUTE` on the function, its schema, or its catalog?\n\nGrants on a place above count too. Any \"no\" explains the refusal.",
    "step": "Learn",
    "fingerprint": "932eeff068d848c3",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The checklist says USE SCHEMA must be on the schema, but the lesson says it can also come from the catalog above, so the check could report a gap that isn't there."
+    "pass": true,
+    "notes": "The answer matches the lesson. The Catalog Explorer Permissions tab is not in the lesson, but it does not contradict it. The three-question check restates the lesson's rule as a manual check, not as the exercise's code, so it is not a giveaway."
    }
   },
   "learn:stops": {
@@ -566,20 +566,20 @@
   },
   "check:0:2": {
    "q": "Why not “Rerun the same benchmarks until the score goes …”?",
-   "a": "Rerunning does get one thing right. A benchmark run is how you check your Genie Agent, so you will rerun it. That part is fine.\n\nWhat it misses is that a benchmark only measures. Each run asks Genie the questions fresh and compares its rows with your trusted SQL. Genie does not learn from the run. Nothing about the agent changes between runs, so you have not fixed anything. It is like stepping on a scale again and hoping for a different number without changing what you eat.\n\nThe 3 failed questions are the useful part. They show where Genie misunderstands your data. Maybe it does not know what \"last week\" means for your team, or which column holds refunds.\n\n\"Add instructions, example SQL or trusted assets that cover what the failures got wrong, then rerun\" is better because it changes what Genie knows. An instruction is plain-text guidance. A trusted asset is an example query or SQL function you have checked. The rerun then shows whether that fix actually raised the score.",
+   "a": "Rerunning gets one thing right. You do rerun benchmarks, but only to check whether a change worked.\n\nThe problem is that nothing has changed. Benchmarks only measure. Genie does not learn from them. Each run asks Genie every question fresh, with the same instructions, examples and tables as before. So the same gaps that caused the 3 failures are still there.\n\nThe score might wobble a little between runs, because Genie writes its SQL fresh each time. If it creeps up to 8 in 10, that is luck, not a better agent. Real users would still hit the same weak spots. Chasing a lucky run also hides what is actually broken.\n\nThe better path starts with the failures. Look at what each one got wrong. Maybe Genie misread \"last week,\" or picked the wrong table for refunds. Then give it what it was missing: a plain-text instruction, an example SQL query, or a trusted asset (a checked query or SQL function Genie can reuse, with its answers marked as verified).\n\nThe other option is better because it fixes the cause of each failure first, then reruns to prove the fix worked.",
    "step": "Check",
    "fingerprint": "dfd27fbfc4f693de",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It defines a trusted asset as \"an example query or SQL function you have checked\", but the lesson says trusted assets are example queries with parameters plus SQL functions, and a plain example query is not one."
+    "pass": true,
+    "notes": "Passes all checks; the only soft spot is the 'score might wobble between runs' point, which the lesson does not state but only hedges and does not contradict."
    }
   },
   "check:1:0": {

@@ -68,6 +68,10 @@ git config --global init.defaultBranch main
 git config --global pull.rebase true
 git config --global core.editor "code --wait"
 echo "ok: $(git config --global user.name) <$(git config --global user.email)>"
+if [[ -d scripts/hooks ]]; then  # run from a clone of this repo: the scrub runs before every push
+  git config core.hooksPath scripts/hooks
+  echo "ok: pre-push scrub hook (scripts/hooks)"
+fi
 
 # ---------- 7. SSH key (for GitHub / Azure DevOps) ----------
 step "SSH key"

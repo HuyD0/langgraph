@@ -346,20 +346,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The comparison only shows pass rate and cost per success.** The team's cost per success can look cheap, like the example's $0.74. That hides what the *extra* passes cost.\n- **The bill grows much faster than the passes.** The team uses many times the tokens of one agent, but passes only one or two more tasks.\n- **The team passes the same or fewer tasks and still costs more.** More spending sometimes buys less accuracy.\n- **A design's token counts are missing.** Searching traces for `tags.design = 'team'` returns nothing or empty `token_usage`. The tag was probably set outside the traced function. The lesson says the tag is lost there.\n\n**Quickest check**\n\nPut both designs side by side on the same tasks. Subtract the costs. Subtract the passes. Divide the extra dollars by the extra passes. Then ask whether one more passed task is worth that much to you.\n\nAlso compare your trace token totals with the `system.ai_gateway.usage` table. That table is a second record of every model call. If the two don't agree, find out why before you trust the cost.",
+   "a": "**Warning signs**\n\n- The team got picked because its pass rate was higher. Nobody wrote down what each extra pass cost.\n- Cost per success looks cheap, yet the monthly bill jumps after launch. Cost per success averages the spend across all passes, so it hides the price of the few extra ones.\n- Your cost totals only count passed runs. Failed runs cost money too.\n- Many traces have no `design` tag. A trace is MLflow's record of one run: every model call and its token count. Untagged traces mean team and single-agent costs get mixed together, or quietly dropped.\n- The team \"wins\" by one or two tasks out of ten. A gap that small can be luck. It may vanish on a fresh set of tasks.\n\n**Quickest check**\n\nAdd up the tokens from the team's tagged traces. Compare that total with `system.ai_gateway.usage`. The gateway is the service every model call passes through, and this table logs each call. If the two totals disagree, some runs were missed or mis-tagged.\n\nThen confirm your comparison shows the extra-pass cost right beside the pass rate. Ask whether one more pass is worth that much to you.",
    "step": "Learn",
    "fingerprint": "9ac3795e75a483db",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
     "plain": true,
-    "no_giveaway": false,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The 'Quickest check' spells out the exercise's method step by step (subtract costs, subtract passes, divide extra dollars by extra passes), which gives away the `extra_pass_cost` solution."
+    "pass": true,
+    "notes": "No real problems. The 'could be luck' bullet goes beyond the lesson but doesn't contradict it, and the answer is close to the 200-word limit."
    }
   },
   "learn:stops": {
@@ -1202,20 +1202,20 @@
  "team_experiment": {
   "check:0:0": {
    "q": "Why not “Twenty questions is too few to compare any two …”?",
-   "a": "\"Twenty questions is too few to compare any two designs\" has some truth in it. With fewer questions, a small gap like 2 passes is easier to get by chance. More questions would help.\n\nBut it misses the main problem in this setup. Each design answered each question only once. Agents give different answers on different tries. So a single try can't show whether a pass was steady or a lucky one-off.\n\nThe lesson's fix is to run each question 3 to 5 times. A question counts as \"passed every time\" only if every try passed. That shows which designs are reliable, not just which got lucky once.\n\nThe lesson's own example also uses 20 questions. With 3 tries each and a decision rule written before any run, that was enough to make a call. So the lesson doesn't point to the number of questions as the problem here. It points to the single try.\n\n\"One run each: agents vary, so 2 more passes may be luck\" is the better answer because it names the real gap: with one try per question, 14 versus 12 could just be chance.",
+   "a": "That option has a grain of truth. More questions do give you more confidence, and a small set can be noisy. Noisy means results bounce around by chance.\n\nBut it blames the wrong thing. The lesson's own example uses 20 questions and still reaches a fair verdict. Twenty can work. What made that example trustworthy was running each question 3 times and counting a question as **passed every time** only if all its tries passed.\n\nThe option also says \"too few to compare *any* two designs.\" That is too sweeping. If one design passed 20 and the other passed 2, twenty questions would show a real difference.\n\nThe real problem in the scenario is **one run each**. Agents give different answers on different tries. So a single try per question can't tell a better design from a lucky one. Adding more questions, each still tried once, would not fix that.\n\nThe right answer, \"One run each: agents vary, so 2 more passes may be luck,\" is better because it names the actual flaw and points to the fix: repeat each question 3 to 5 times.",
    "step": "Check",
    "fingerprint": "0cf59c5119aa697e",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It claims the lesson's 20-question example 'was enough to make a call', but the lesson never says 20 questions is enough; it only shows an example, so this is an unsupported claim."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:0:2": {
