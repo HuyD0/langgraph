@@ -532,6 +532,185 @@ if not names:
     ),
 )
 
+lesson(MODULE, 'pick_vector_size',
+    title='How big should a vector be?',
+    checked='2026-10-18',
+    sources=[
+        source('Databricks AI Search cost management', 'https://learn.microsoft.com/azure/databricks/ai-search/cost-management'),
+        source('Databricks AI Search: what it is and its limits', 'https://learn.microsoft.com/azure/databricks/ai-search/ai-search'),
+        source('Databricks AI Search best practices', 'https://learn.microsoft.com/azure/databricks/ai-search/best-practices'),
+        source('Azure OpenAI embedding models (models sold directly by Azure)', 'https://learn.microsoft.com/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure'),
+        source('Azure AI Search: truncate dimensions', 'https://learn.microsoft.com/azure/search/vector-search-how-to-truncate-dimensions'),
+        source('Azure Cosmos DB: vector search performance tips', 'https://learn.microsoft.com/azure/cosmos-db/gen-ai/vector-search-performance-tips'),
+    ],
+    learn=[
+        "An **embedding**, also called a **vector**, is a list of numbers that stands for a chunk's meaning. How many numbers it holds is its number of **dimensions**: typically 384 to 1,536 today, and some models give 3,072. That size is a decision with four sides: cost, speed, quality, and a door that only opens one way.",
+        'Cost first. Searches are answered by an **endpoint**: machines kept running for that job, sold in **units** of capacity. Double the numbers in each vector and one unit holds about half as many vectors, so the same documents need about twice the units. On Databricks AI Search, one Standard unit holds up to 2 million vectors of 768 numbers, or 1 million of 1,536.',
+        'Speed pulls the same way: a search compares vectors number by number, so a longer vector means more work for every comparison. And bigger is not always better on your own documents. A model with more dimensions can top a public leaderboard and do no better on your contracts or tickets. The only honest check is retrieval quality on your own **eval set** (the questions with their right documents marked by hand, from "Measuring retrieval"), scored as recall@k.',
+        "The fourth side is a **one-way door**: a change that is costly to undo. Vectors from two models cannot be compared, and an index has one fixed size, so if you change the model or the size, every chunk gets a new embedding and the index is rebuilt. Plan it as a one-off as big as the first indexing, not a setting you flip. Some newer models let you ask for a shorter vector with a `dimensions` setting, which makes shrinking cheap to try. So the rule: start with the model's default size. Shrink if cost or speed is the problem and recall is already high. Grow only if recall is too low.",
+    ],
+    example=example('One unit, two sizes, one eval set', """one Standard unit on Databricks AI Search:
+  2,000,000 vectors at   768 dimensions
+  1,000,000 vectors at 1,536  (the same unit)
+
+1,800,000 chunks, recall@5 on our eval set:
+    768: 0.86  -> 1 unit
+  1,536: 0.87  -> 2 units, slower search
+recall is high, cost is the problem: shrink to 768"""),
+    check=question(
+        'Recall@5 is 0.88 on your eval set, and the search endpoint is the big line on the bill. text-embedding-3-small gives 1,536 numbers per vector by default. What do you try first?',
+        ['Shrink the vector and re-check recall', 'Grow to 3,072 numbers to be safe', 'Keep 1,536: size never moves the bill'],
+        answer=0,
+        why='Recall is already high and cost is the problem, so shrink. This model takes a `dimensions` setting: ask it for fewer numbers, make the embeddings again, and check that recall@5 held up. Growing costs more and fixes nothing that is broken.',
+    ),
+    angle=angle(
+        pattern='Clear the recall floor, then the cheapest',
+        text="The big idea: the size of a vector is a decision with four sides, cost, speed, quality and a one-way door, and the only honest judge of quality is recall on your own eval set. Your code goes through the options and skips any whose recall is under the floor. Among the rest it keeps the cheapest, and when two cost the same, the faster one (the lower p95: how slow it was, with 95 out of 100 searches faster than this). It returns that option's `dims`, or `None` if nothing clears the floor. It is like buying a car seat: first the ones that pass the safety test, then the cheapest of those.",
+        say='"I start with the model\'s [[default|biggest|smallest::The size the model gives when you ask for nothing special.]] size. If recall is already high and cost or speed is the problem, I [[shrink|grow|double::Make each vector shorter, not longer.]] the vectors, and I only grow them when [[recall|speed|k::The share of the right documents that made the top k.]] is too low."',
+        classic=None,
+    ),
+    stack=stack('Azure OpenAI: ask for a shorter vector', """from openai import AzureOpenAI
+
+client = AzureOpenAI()   # endpoint, key and API version from environment variables
+r = client.embeddings.create(
+    model="text-embedding-3-large",   # on Azure this is your deployment's name; 3,072 numbers by default
+    input=chunk_text,
+    dimensions=1024,                  # ask for fewer: the first numbers carry the most meaning
+)
+vector = r.data[0].embedding          # 1,024 numbers
+# text-embedding-ada-002 has no dimensions setting: always 1,536.
+# On Databricks, store these in your own column and create the index
+# with embedding_dimension=1024 (embeddings you make yourself: "self-managed").
+# Azure AI Search can also keep a cut-down copy of stored vectors:
+# truncationDimension, together with quantization (numbers kept with less precision).
+# Databricks limits: an index takes at most 4,096 dimensions, and a storage-optimized
+# endpoint (the other endpoint kind) needs a size divisible by 16."""),
+    exercise=exercise(
+        title='Pick the Vector Size',
+        topic='rag',
+        difficulty='easy',
+        fn='pick_vector_size',
+        prompt="""Your function gets two things:
+
+- `options`: a list of rows, one dict per vector size you tried, like `{"dims": 768, "recall": 0.81, "monthly_cost": 120, "p95_ms": 40}`. `dims` is how many numbers are in each vector, `recall` is recall@5 on your eval set, `monthly_cost` is what the search endpoint costs a month, and `p95_ms` is how slow search was: 95 out of 100 searches were faster than this.
+- `recall_floor`: the lowest recall you can accept, like `0.8`.
+
+Skip every row whose `recall` is under `recall_floor` (a recall exactly equal to the floor is fine). Of the rest, pick the row with the lowest `monthly_cost`. If two rows tie on cost, pick the one with the lower `p95_ms`. If they tie on both, keep the one that came first.
+
+Return that row's `dims`, or `None` if no row clears the floor.""",
+        pattern='Drop what misses the recall floor, pick the cheapest of the rest, and break ties on speed.',
+        target='one walk through the options',
+        realworld='Teams pick the biggest embedding model "to be safe", then pay for twice the units and slower search for a gain they never measured. Set the recall floor from your eval set, then take the cheapest size that clears it: quality first, then cost, the same rule as "Deployment types and regions": pass the rules, then take the cheapest.',
+        starter="""def pick_vector_size(options, recall_floor):
+    # your code here
+    pass
+""",
+        solution="""def pick_vector_size(options, recall_floor):
+    best = None
+    for row in options:
+        if row["recall"] < recall_floor:
+            continue
+        if best is None:
+            best = row
+        elif row["monthly_cost"] < best["monthly_cost"]:
+            best = row
+        elif row["monthly_cost"] == best["monthly_cost"] and row["p95_ms"] < best["p95_ms"]:
+            best = row
+    if best is None:
+        return None
+    return best["dims"]
+""",
+        cases=[
+            case([
+                {'dims': 384, 'recall': 0.74, 'monthly_cost': 60, 'p95_ms': 25},
+                {'dims': 768, 'recall': 0.86, 'monthly_cost': 120, 'p95_ms': 40},
+                {'dims': 1536, 'recall': 0.87, 'monthly_cost': 240, 'p95_ms': 70},
+            ], 0.85, expected=768, sample=True),
+            case([], 0.8, expected=None),
+            case([{'dims': 1536, 'recall': 0.7, 'monthly_cost': 240, 'p95_ms': 70}], 0.8, expected=None),
+            case([
+                {'dims': 1024, 'recall': 0.9, 'monthly_cost': 160, 'p95_ms': 55},
+                {'dims': 768, 'recall': 0.88, 'monthly_cost': 160, 'p95_ms': 40},
+            ], 0.85, expected=768),
+            case([
+                {'dims': 3072, 'recall': 0.92, 'monthly_cost': 480, 'p95_ms': 120},
+                {'dims': 768, 'recall': 0.8, 'monthly_cost': 120, 'p95_ms': 40},
+            ], 0.8, expected=768),
+            case([
+                {'dims': 768, 'recall': 0.7, 'monthly_cost': 120, 'p95_ms': 40},
+                {'dims': 3072, 'recall': 0.9, 'monthly_cost': 480, 'p95_ms': 120},
+            ], 0.85, expected=3072),
+            case([
+                {'dims': 1024, 'recall': 0.9, 'monthly_cost': 160, 'p95_ms': 50},
+                {'dims': 768, 'recall': 0.9, 'monthly_cost': 160, 'p95_ms': 50},
+            ], 0.85, expected=1024),
+        ],
+        guided="""def pick_vector_size(options, recall_floor):
+    # Replace every ___ with real code, then run the tests.
+
+    best = None   # the best row so far
+    for row in options:
+        # Step 1: recall under the floor? Skip this row.
+        if ___:
+            continue
+        # First row to clear the floor? It is the best so far.
+        if best is None:
+            best = row
+        # Step 2: cheaper than best? It becomes the best.
+        elif ___:
+            best = row
+        # Same cost as best, but faster? It wins.
+        elif row["monthly_cost"] == best["monthly_cost"] and row["p95_ms"] < best["p95_ms"]:
+            best = row
+
+    if best is None:
+        return None
+    # Step 3: the size from the best row.
+    return ___
+""",
+        fills=[
+            'row["recall"] < recall_floor',
+            'row["monthly_cost"] < best["monthly_cost"]',
+            'best["dims"]',
+        ],
+        concepts=[
+            [
+                'None as "nothing yet"',
+                'Start with None and replace it with the first row that passes. `x is None` checks whether you have found anything yet.',
+                """best = None
+if best is None:
+    print('nothing yet')""",
+            ],
+            [
+                'continue',
+                'Skips the rest of this turn of the loop and moves on to the next row.',
+                """for n in [1, -2, 3]:
+    if n < 0:
+        continue   # skips -2, goes on to 3""",
+            ],
+            [
+                'if, elif and the word and',
+                'Python tries each test in order and runs only the first one that is true. `x and y` is True only when both are True.',
+                """n = 5
+if n > 10: print('big')
+elif n > 1 and n == 5: print('five')   # this one runs""",
+            ],
+        ],
+        byhand='The floor is 0.85. Row 1 (384 dimensions) has recall 0.74: under the floor, skip it. Row 2 (768) has 0.86: it clears the floor, and it is the first to do so, so it is the best so far at $120 a month. Row 3 (1,536) has 0.87: it clears the floor too, but $240 a month is more than $120, so the best stays. Return 768.',
+        why='One walk through the options.',
+        gotchas=[
+            [
+                'Picking by recall alone',
+                'The biggest size may win recall by a hair, and that hair can cost twice the units. Set the floor from what the product needs, then let cost and speed decide.',
+            ],
+            [
+                'Treating size as a setting',
+                'A new size means a new embedding for every chunk and a rebuilt index. Budget it like the first indexing, not like changing a setting.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'ndcg_at_k',
     title='Ranking quality: nDCG',
     learn=[
