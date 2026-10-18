@@ -255,4 +255,33 @@ CHECKS = {
             why="AC1 helps only when kappa is low but AC1 is high. Both low means the judge and the people really do "
                 "disagree."),
     ],
+    "judge_cost": [
+        ask("Your judge reads 2,000 tokens and writes 200 for each call. You add a long reason to every "
+            "verdict, and output grows to 800 tokens. At $2 in and $10 out per million, what happens?",
+            ["The cost per call doubles", "The cost per call barely moves", "The cost per call halves"],
+            answer=0,
+            clue="Output costs five times input here. Work out both parts before and after.",
+            why="Before: 2,000 times $2 plus 200 times $10, divided by a million = $0.006. After: 2,000 times "
+                "$2 plus 800 times $10 = $0.012. Output is the dear part, so long reasons cost."),
+        ask("Your team wants a judge a twentieth of the price. What do you do first?",
+            ["Check it agrees with people and itself", "Switch now: cheaper is always better", "Run it only on easy examples"],
+            answer=0,
+            clue="What did the last lessons check before trusting a judge?",
+            why="A cheap judge that disagrees with people gives verdicts you can't use. Check its "
+                "agreement first, then switch if it passes."),
+    ],
+    "eval_cost": [
+        ask("Labelling 200 examples takes 3 minutes each, and an hour of an expert's time costs $60. "
+            "What does the golden set cost to label?",
+            ["$600", "$60", "$36,000"],
+            answer=0,
+            clue="Minutes into hours first, then times the hourly cost.",
+            why="200 times 3 minutes is 600 minutes, which is 10 hours. 10 times $60 = $600."),
+        ask("Which change cuts the eval bill without making the eval less trustworthy?",
+            ["Batch the full runs, which can wait", "Score half of each answer", "Drop the must-pass cases"],
+            answer=0,
+            clue="Which one changes the price, not what gets checked?",
+            why="Batch processing halves the price of the same calls, so the verdicts are as good as "
+                "before. The other two check less."),
+    ],
 }

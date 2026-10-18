@@ -1,6 +1,7 @@
 """Evals: Measuring whether a change made your AI better or worse."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
+                                 seesaw, sortby, sortrow, source, stack, steps)
 
 MODULE = module('evals', 'Evals', 'Measuring whether a change made your AI better or worse.')
 
@@ -1316,6 +1317,138 @@ Return AC1 rounded to 2 decimal places. You will never divide by zero.""",
     ),
 )
 
+lesson(MODULE, 'judge_cost',
+    title='The cost of an LLM judge',
+    checked='2026-10-18',
+    sources=[
+        source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing'),
+        source('Claude: Extended thinking', 'https://platform.claude.com/docs/en/build-with-claude/extended-thinking'),
+        source('OpenAI API pricing', 'https://developers.openai.com/api/docs/pricing'),
+    ],
+    cards=[
+        card('A judge is a model call',
+             'Every time an **LLM judge** scores an answer, it is a model call, billed for the tokens it reads and the tokens it writes. Output costs more: Claude Sonnet 5.5 is $2 a million tokens in and $10 a million out.',
+             picture=piles(pile('What it reads: input', ['The rubric, its instructions', 'The question and the answer', ('book', 'The documents, to check grounding')]),
+                           pile('What it writes: output', ['The verdict', 'The reason for it', ('alert', 'Hidden thinking, on a reasoning model')]))),
+        card('The calls multiply',
+             'Count the calls first, then price the tokens.',
+             picture=steps(('listcheck', 'Examples times scorers times repeats', '500 examples, 3 scorers, each run twice: 3,000 calls.'),
+                           ('coin', 'Price the input', '3,000 times 2,000 tokens = 6,000,000 at $2 a million: $12.'),
+                           ('coin', 'Price the output', '3,000 times 200 tokens = 600,000 at $10 a million: $6.'),
+                           ('clock', 'Times the runs', '$18 a run. 20 runs a month: $360.')),
+             after='A reasoning model thinks before it answers, and that thinking is billed as output, though you never see it. Check what each call really used in your traces.'),
+        card('Cheaper, safest first',
+             'Work down the list, and stop when the bill is small enough.',
+             picture=steps(('listcheck', 'Score only what matters', 'The scorers your acceptance criteria use, no more.'),
+                           ('pencil', 'Ask for a short verdict', 'A verdict and one sentence, with the output capped.'),
+                           ('copy', 'Cache the rubric', 'It starts every call, so prompt caching reads it for a tenth of the price or less.'),
+                           ('clock', 'Batch the runs', 'Eval runs can wait: batch processing halves the price.'),
+                           ('scale', 'A smaller judge, last', 'Only after it passes the agreement checks from the last lessons.'),
+                           decide=True)),
+        card('Cheap, but can you trust it?',
+             'This app\'s own tutor eval tried Claude Haiku as a judge, at a twentieth of Sonnet\'s price. It agreed with itself on only 77 in 100 answers, and with people barely beyond chance (kappa 0.05).',
+             picture=seesaw(('Price', 'a twentieth of the bigger judge'), ('Trust', 'verdicts close to chance'), caption='A cheap verdict nobody can trust is not a saving.')),
+    ],
+    example=example('One eval run, scored by the judge', """calls = 500 * 3 * 2      # 3,000 calls
+inp = calls * 2000 * 2 / 1000000
+# 6,000,000 tokens at $2: $12
+out = calls * 200 * 10 / 1000000
+# 600,000 tokens at $10: $6
+# $18 a run; 20 runs a month: $360
+# batch the runs: $9 a run, $180"""),
+    check=question(
+        'Your judge costs $18 per eval run. Which change cuts the cost and keeps verdicts you can trust?',
+        [
+            'Batch the runs: same judge, half the price',
+            'Switch to a cheaper judge you never checked',
+            'Add two more scorers to every answer',
+        ],
+        answer=0,
+        why='Batch processing halves the price, and the judge stays the one you checked: $18 becomes $9 a run. An unchecked judge may cost less and tell you nothing, and more scorers add calls.',
+    ),
+    angle=angle(
+        pattern='Count the calls, then price the tokens',
+        text='The big idea: an LLM judge is a model call per example, per scorer, per repeat, billed for its input tokens and its output tokens, so count the calls first and then price them. Your code multiplies examples, scorers and repeats to get the calls. It multiplies the calls by the input tokens and the input price, and by the output tokens and the output price, dividing each by a million because prices are per million tokens. It returns the calls and the cost, rounded to cents. It is like marking exams: papers, times questions per paper, times how many markers read each one.',
+        say='"A judge is a model [[call|rule|person::Billed like any other model use.]] for every example, every scorer and every repeat. I count the calls, price the input and the [[output|cache|batch::The verdict and its reason, the dearer tokens.]] tokens, and only switch to a cheaper judge once it passes the [[agreement|speed|price::The checks against itself and against people.]] checks."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Price the Judge',
+        topic='evals',
+        difficulty='easy',
+        fn='judge_bill',
+        prompt="""Your function gets `run`, a dict:
+
+- `"examples"`, `"scorers"` and `"repeats"`: the calls are these three multiplied together.
+- `"input_tokens"` and `"output_tokens"`: tokens in one call.
+- `"input_price"` and `"output_price"`: dollars per million tokens.
+
+The cost is the calls times the input tokens times the input price, plus the calls times the output tokens times the output price, all divided by 1,000,000.
+
+Return `[calls, cost]`, with the cost rounded to 2 decimal places.""",
+        pattern='Multiply out the calls, then price input and output separately.',
+        target='a few multiplications',
+        realworld='Before an eval runs on every pull request, teams price one run and multiply by how often it runs. The judge\'s output tokens and its repeats are what usually surprise them.',
+        starter="""def judge_bill(run):
+    # your code here
+    pass
+""",
+        solution="""def judge_bill(run):
+    calls = run["examples"] * run["scorers"] * run["repeats"]
+    inp = calls * run["input_tokens"] * run["input_price"]
+    out = calls * run["output_tokens"] * run["output_price"]
+    cost = (inp + out) / 1000000
+    return [calls, round(cost, 2)]
+""",
+        cases=[
+            case({"examples": 500, "scorers": 3, "repeats": 2, "input_tokens": 2000, "output_tokens": 200, "input_price": 2, "output_price": 10},
+                 expected=[3000, 18.0], sample=True),
+            case({"examples": 200, "scorers": 1, "repeats": 1, "input_tokens": 1500, "output_tokens": 100, "input_price": 0.1, "output_price": 0.5},
+                 expected=[200, 0.04]),
+            case({"examples": 0, "scorers": 3, "repeats": 2, "input_tokens": 2000, "output_tokens": 200, "input_price": 2, "output_price": 10},
+                 expected=[0, 0.0]),
+        ],
+        guided="""def judge_bill(run):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: one call per example, per scorer, per repeat.
+    calls = ___
+    # Step 2: input and output are priced separately.
+    inp = calls * run["input_tokens"] * run["input_price"]
+    out = ___
+    # Step 3: prices are per million tokens.
+    cost = (inp + out) / 1000000
+    return [calls, round(cost, 2)]
+""",
+        fills=['run["examples"] * run["scorers"] * run["repeats"]', 'calls * run["output_tokens"] * run["output_price"]'],
+        concepts=[
+            [
+                'Input and output prices',
+                'Models charge a different price for the tokens you send and the tokens they write. Price each part on its own, then add them.',
+                """inp = 6000000 * 2      # $ per million
+out = 600000 * 10
+(inp + out) / 1000000  # 18.0""",
+            ],
+            [
+                'Multiplying counts',
+                'Calls are examples times scorers times repeats: 500 times 3 times 2 is 3,000.',
+                '500 * 3 * 2   # 3000',
+            ],
+        ],
+        byhand='Calls: 500 times 3 times 2 is 3,000. Input: 3,000 times 2,000 tokens is 6,000,000, times $2 is 12,000,000. Output: 3,000 times 200 is 600,000, times $10 is 6,000,000. Together 18,000,000, divided by 1,000,000 is $18. Return [3000, 18.0].',
+        why='A few multiplications, whatever the size of the run.',
+        gotchas=[
+            [
+                'Forgetting the repeats',
+                'Running the judge twice to check it agrees with itself doubles the calls. Count it in the price.',
+            ],
+            [
+                'A cheaper judge, unchecked',
+                'A smaller judge can cost a twentieth as much and still be worthless if it disagrees with people. Check agreement first, then switch.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
     learn=[
@@ -2316,6 +2449,155 @@ abs(0.2 - 0.5)   # 0.3""",
             [
                 'Refresh the eval set on purpose',
                 'When the mix shifts, sample new real questions into the eval set, and keep the old ones to catch regressions.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'eval_cost',
+    title='The cost of evals',
+    checked='2026-10-18',
+    sources=[source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing')],
+    cards=[
+        card('Three lines on the eval bill',
+             'Evals cost more than the judge. Price each line for a month, then look at the biggest.',
+             picture=sortby('What does it cost?',
+                            sortrow('Eval runs', 'Examples times (the app\'s answer plus the judge), times every change you test', 'Every change', icon='flask'),
+                            sortrow('People', 'Labelling the golden set, and checking the judge\'s verdicts by hand', 'Once, then weekly', icon='people'),
+                            sortrow('Monitoring', 'Real traces after launch, times the share you score, times the cost of a score', 'Every day after launch', icon='activity'))),
+        card('People are often the biggest line',
+             'Time is money too: count the hours, times what an hour costs.',
+             picture=steps(('people', 'Label the golden set, once', '200 examples at 3 minutes each: 10 hours, at $60 an hour: $600.'),
+                           ('listcheck', 'Spot-check the judge, every week', '50 verdicts at 3 minutes each: 2.5 hours, $150 a week.'))),
+        card('Monitoring: the sampling rate is the dial',
+             'After launch, a scorer reads real traces. The **sampling rate** is the share of them it scores. One score with Claude Sonnet 5.5, at 2,000 tokens in and 200 out, costs about $0.006.',
+             picture=sortby('30,000 traces a month: how many do you score?',
+                            sortrow('1 in 10', '3,000 scores times $0.006', '$18 a month', icon='activity'),
+                            sortrow('Every one', '30,000 scores times $0.006', '$180 a month', look='dashed', icon='alert'))),
+        card('Keep it affordable',
+             'Spend where the decision is made.',
+             picture=steps(('flask', 'A smoke set while you iterate', 'A few dozen examples for quick changes; the full eval only for the finalists.'),
+                           ('clock', 'Batch the full runs', 'Eval runs can wait, so batch processing halves the price.'),
+                           ('activity', 'Sample in production', 'Score enough traces to catch problems, not every one.')),
+             after='This app\'s own tutor answers cost about $0.036 each to draft and judge: about $64 for all 1,788, done once and reused, not on every question.'),
+    ],
+    example=example('One month of evals for the HR assistant', """runs = 20 * 500 * 0.05     # $500
+people = 10 * 60           # $600
+monitor = 30000 * 0.1 * 0.006
+# $18
+# total $1,118 a month;
+# people are the biggest line"""),
+    check=question(
+        'Monitoring scores 1 in 10 of 30,000 traces a month, at $0.006 a score. What happens to the bill if you score every trace?',
+        [
+            'It goes from $18 to $180 a month',
+            'It stays at $18 a month',
+            'It goes from $18 to $36 a month',
+        ],
+        answer=0,
+        why='1 in 10 is 3,000 scores, times $0.006 = $18. Every trace is 30,000 scores, times $0.006 = $180: ten times the scores, ten times the bill.',
+    ),
+    angle=angle(
+        pattern='Price every line for a month, then find the biggest',
+        text='The big idea: evals cost runs, people and monitoring, and the biggest line is often the people, not the model. Your code prices each line for a month. Runs are the runs times the examples times the cost of one example. People are the hours times the hourly cost. Monitoring is the traces times the sampling rate times the cost of a score. It adds them up and keeps the name of the biggest line, in that order on a tie. It returns the total, rounded to cents, and the name. It is like running a restaurant: food, staff and rent each month, and staff is often the biggest.',
+        say='"An eval bill has three lines: the [[runs|servers|licences::Examples times answers and judging, every change.]], the people who label and check, and [[monitoring|marketing|training::Scoring real traces after launch.]]. In production the [[sampling rate|model size|cache size::The share of traces you score.]] is the dial I turn."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Add Up the Eval Bill',
+        topic='evals',
+        difficulty='easy',
+        fn='eval_month',
+        prompt="""Your function gets `plan`, a dict:
+
+- `"runs"`: eval runs a month, `"examples"`: examples in each run, `"cost_per_example"`: dollars to answer and judge one example.
+- `"people_hours"`: hours of labelling and checking a month, `"hourly"`: dollars an hour.
+- `"traces"`: traces a month after launch, `"sample_rate"`: the share scored, like `0.1`, `"cost_per_score"`: dollars a score.
+
+The three lines are:
+
+- `"runs"`: runs times examples times cost_per_example
+- `"people"`: people_hours times hourly
+- `"monitoring"`: traces times sample_rate times cost_per_score
+
+Return `[total, biggest]`: the total of the three rounded to 2 decimal places, and the name of the biggest line. On a tie, the first in the order above.""",
+        pattern='Price each line, add them, and keep the biggest so far.',
+        target='three lines',
+        realworld='Teams that budget evals only for model calls are surprised by the labelling hours and by monitoring that scores every trace. Pricing all three lines shows which one to cut first.',
+        starter="""def eval_month(plan):
+    # your code here
+    pass
+""",
+        solution="""def eval_month(plan):
+    lines = [
+        ["runs", plan["runs"] * plan["examples"] * plan["cost_per_example"]],
+        ["people", plan["people_hours"] * plan["hourly"]],
+        ["monitoring", plan["traces"] * plan["sample_rate"] * plan["cost_per_score"]],
+    ]
+    total = 0
+    biggest = None
+    biggest_cost = -1
+    for name, cost in lines:
+        total = total + cost
+        if cost > biggest_cost:
+            biggest = name
+            biggest_cost = cost
+    return [round(total, 2), biggest]
+""",
+        cases=[
+            case({"runs": 20, "examples": 500, "cost_per_example": 0.05, "people_hours": 10, "hourly": 60,
+                  "traces": 30000, "sample_rate": 0.1, "cost_per_score": 0.006},
+                 expected=[1118.0, "people"], sample=True),
+            case({"runs": 40, "examples": 500, "cost_per_example": 0.05, "people_hours": 10, "hourly": 60,
+                  "traces": 30000, "sample_rate": 1, "cost_per_score": 0.006},
+                 expected=[1780.0, "runs"]),
+            case({"runs": 0, "examples": 500, "cost_per_example": 0.05, "people_hours": 0, "hourly": 60,
+                  "traces": 0, "sample_rate": 0.1, "cost_per_score": 0.006},
+                 expected=[0.0, "runs"]),
+        ],
+        guided="""def eval_month(plan):
+    # Replace every ___ with real code, then run the tests.
+    lines = [
+        ["runs", plan["runs"] * plan["examples"] * plan["cost_per_example"]],
+        ["people", ___],
+        ["monitoring", plan["traces"] * plan["sample_rate"] * plan["cost_per_score"]],
+    ]
+    total = 0
+    biggest = None
+    biggest_cost = -1
+    for name, cost in lines:
+        total = total + cost
+        # keep the biggest so far; a tie keeps the first
+        if ___:
+            biggest = name
+            biggest_cost = cost
+    return [round(total, 2), biggest]
+""",
+        fills=['plan["people_hours"] * plan["hourly"]', 'cost > biggest_cost'],
+        concepts=[
+            [
+                'A list of [name, cost] pairs',
+                'Putting each line as a name and a cost in one list lets one loop add them up and find the biggest.',
+                """lines = [["runs", 500], ["people", 600]]
+for name, cost in lines:
+    print(name, cost)""",
+            ],
+            [
+                'A share as a decimal',
+                'A sampling rate of 1 in 10 is `0.1`. Traces times 0.1 is how many get scored.',
+                '30000 * 0.1   # 3000.0',
+            ],
+        ],
+        byhand='Runs: 20 times 500 times $0.05 = $500. People: 10 hours times $60 = $600. Monitoring: 30,000 times 0.1 times $0.006 = $18. Total $1,118. The biggest is people at $600. Return [1118.0, "people"].',
+        why='Three lines, each worked out once.',
+        gotchas=[
+            [
+                'Budgeting only the model',
+                'Labelling and checking by hand often cost more than every model call. Put the hours in the budget.',
+            ],
+            [
+                'Scoring every trace',
+                'Scoring every trace multiplies the monitoring bill. Start with a sampling rate and raise it when you need more examples.',
             ],
         ],
     ),
