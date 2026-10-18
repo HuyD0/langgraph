@@ -112,6 +112,21 @@ dataset, the registered prompt version and the app version, with parameters (mod
 judge) and a description; its scores show on the version too. On Databricks set
 `DRILL_PROMPT_SCHEMA` (and `MLFLOW_TRACING_SQL_WAREHOUSE_ID`) in `.env` first.
 
+**Embedding models, compared on the course's own text.** Free and local: Ollama serves the models.
+
+```bash
+ollama pull bge-large && ollama pull embeddinggemma
+uv run drill experiment embeddings              # 150 Check questions, stratified by module
+uv run drill experiment embeddings --sample 0   # all of them
+```
+
+It searches every Learn paragraph for each question's own lesson and logs a parent run (the
+comparison, the paired tests, the sample's question ids) with one child run per setup: each model
+with and without its recommended search prompt, and embeddinggemma's vectors cut to 256 numbers.
+`bge-large` is the same model as Databricks' `databricks-bge-large-en` endpoint. Only the questions
+are sampled; the search always covers every paragraph, because a smaller haystack flatters every
+model. Check questions share words with the Learn text, so read the ranking, not the level.
+
 On Databricks a prompt's links to traces are kept with the prompt version in the registry (its page
 lists the traces), not on the trace; the `prompt` tag is there to filter traces by it.
 

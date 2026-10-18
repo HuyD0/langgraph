@@ -675,6 +675,38 @@ def tutor_snapshot_cmd(
     console.print("Next: in your tutor project's knowledge, remove last week's tutor-snapshot.md, then add this one.")
 
 
+experiment_app = typer.Typer(add_completion=False, help="Experiments on this Mac, each logged as MLflow runs you can rerun.")
+app.add_typer(experiment_app, name="experiment")
+
+
+@experiment_app.command("embeddings")
+def experiment_embeddings_cmd(
+    sample: int = typer.Option(150, "--sample", help="Check questions to ask, stratified by module (0: all of them)."),
+    seed: int = typer.Option(7, "--seed", help="Which sample: the same seed gives the same questions."),
+) -> None:
+    """Compare local embedding models (bge-large, embeddinggemma) on finding the right lesson for each Check question. Free."""
+    import mlflow
+
+    from drill import embedding_compare as ec
+    from drill.content import modules
+    from drill.content.build import build_data
+
+    data = build_data(modules.load())
+    try:
+        out = ec.run(data, n=sample, seed=seed,
+                     command=f"uv run drill experiment embeddings --sample {sample} --seed {seed}")
+    except OSError as exc:
+        console.print(f"[red]Ollama didn't answer ({exc}). Start it, then: ollama pull bge-large; ollama pull embeddinggemma[/red]")
+        raise typer.Exit(1)
+    console.print(f"{out['chunks']} chunks, {out['questions']} questions (content {out['fingerprint']})")
+    for name, m in out["numbers"].items():
+        console.print(f"  {name:34} recall@5 {m['recall_at_5']:.2f} ({m['recall_ci_low']:.2f} to {m['recall_ci_high']:.2f})  "
+                      f"MRR {m['mrr']:.2f}  weakest {m['weakest_module']} {m['weakest_module_recall']:.2f}  {m['seconds']:.0f}s")
+    for p in out["pairs"]:
+        console.print(f"  {p['first']} vs {p['second']}: only first {p['only_first']}, only second {p['only_second']}, p {p['p_value']:.3f}")
+    console.print(f"Best: {out['best']}. Runs in MLflow: {mlflow.get_tracking_uri()}")
+
+
 tracing_app = typer.Typer(add_completion=False, help="Where MLflow traces go: this Mac's MLflow, or your Databricks workspace.")
 app.add_typer(tracing_app, name="tracing")
 
