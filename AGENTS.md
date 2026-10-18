@@ -6,7 +6,7 @@ change, and the house rules. Claude Code, Codex, Cursor, Copilot and Gemini all 
 
 ## What this is
 
-Daily Drill is a learning path for AI engineering on Databricks: about 170 short lessons, each going
+Daily Drill is a learning path for AI engineering on Databricks: about 190 short lessons, each going
 **Learn → Check → Build → Explain**. The learner is **new to coding**. Everything they see uses
 plain words and no maths notation (no Big-O).
 
@@ -52,6 +52,11 @@ DRILL_PORT=8788 DRILL_DATABASE_URL=sqlite:///.drill/preview.db uv run drill-serv
 
 The server **caches the page when it starts**: restart it after every `build-page`.
 
+CI (`.github/workflows/`) runs on every pull request: `tests.yml` runs the **full** suite
+(`uv run pytest -q`, including the slow notebook tests that `scripts/check.sh` skips) with no cloud
+credentials, and checks every `notebooks/m*.ipynb` still has its unsolved exercises; `codeql.yml`
+scans the Python and the JavaScript. GitHub's secret scanning and push protection are on.
+
 ## Done means
 
 1. `scripts/check.sh` passes.
@@ -71,6 +76,9 @@ The server **caches the page when it starts**: restart it after every `build-pag
    you change a pattern it teaches (how screens render, events, saving, tokens, the build),
    update that lesson's snippet and its `anchors` entry, then republish it to its artifact
    (https://claude.ai/artifact/TYnPBikbTkiCJoGLdkQ9Ws; read the live one first).
+6. Publishing the page: after `main` is published to the claude.ai artifact as version N, tag the
+   commit `v0.N` (`git tag -a v0.N -m "page version N" && git push origin v0.N`). The work copy
+   merges tags, never `main` ([docs/PORTING.md](docs/PORTING.md)).
 
 ## House rules
 
@@ -110,6 +118,17 @@ The server **caches the page when it starts**: restart it after every `build-pag
   `tests/test_scrub.py`, run by `scripts/check.sh` and the pre-push hook
   (`git config core.hooksPath scripts/hooks`). Its denylist lives outside the repository, in
   `~/.config/daily-drill/denylist.txt`.
+- **Changes that port well** (details in [docs/PORTING.md](docs/PORTING.md), "Writing changes that
+  port well"). A downstream copy may merge a whole release, pick single commits or adapt them, so:
+  - One topic per PR and per commit; no unrelated refactors, renames or reformatting mixed in.
+  - A behaviour change comes with a test; generated files are regenerated, never hand-edited.
+  - Lesson ids are the contract: never reuse or remove one; a pack lesson names its core
+    lesson by id in `prerequisites`, and learners' progress is saved under ids.
+  - The PR description names the areas touched (the table above) and has a **Compatibility**
+    line when it changes something others rely on: a lesson id, an `/api/*` route or MCP tool, a
+    `drill` command or flag, an `app.yaml` or `databricks.yml` variable. Say what breaks and
+    how to move over, or "none".
+  - Nothing about any downstream goes into public files: no names, paths, branches or code.
 
 ## Gotchas
 
@@ -119,9 +138,14 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `src/drill/content/page/sprite.svg`,
   one symbol per line (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
+- The HR assistant is the running example: its numbers live in `src/drill/content/running_example.py`,
+  and `tests/test_running_example.py` fails when a lesson drifts from them.
 - `dist/` is git-ignored; the page is built, never committed.
 - Some sections of `page.html` live in `src/drill/content/page/` and come back in at their
   `/*INCLUDE page/<file>*/` line. Search both places, read the page through `build.page_source()`,
   and when moving a section, check the build's fingerprint is unchanged ([docs/FRONTEND.md](docs/FRONTEND.md), "Parts").
 - Other sessions publish the claude.ai artifact too: compare the live page with your build
   before publishing, so you don't undo someone else's work.
+- Lesson ids are frozen: `tests/fixtures/lesson_ids.txt` lists every id ever shipped. A new lesson
+  appends its id; a renamed one adds `old: new` to `modules.ALIASES`; none is ever removed or reused
+  (progress is saved under ids, and packs name them).

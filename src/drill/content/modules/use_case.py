@@ -248,7 +248,7 @@ lesson(MODULE, 'use_case_card',
   "task": "answer policy questions",
   "decision": "a draft answer from the policy pages",
   "action": "HR approves or edits it before sending",
-  "today": "15 minutes by hand, $8",
+  "today": "8 minutes by hand, $8",
   "success": "80 in 100 approved unedited",
   "wrong_answer": "HR catches it before sending",
   "data": "last month's 200 questions",
@@ -303,7 +303,7 @@ Return a list of the gap field names, in the order above. A complete card gives 
   "task": "answer policy questions",
   "decision": "a draft answer from the policy pages",
   "action": "HR approves or edits it before sending",
-  "today": "15 minutes, $8",
+  "today": "8 minutes, $8",
   "success": "faster answers",
   "wrong_answer": "",
   "data": "200 past questions",
@@ -362,8 +362,8 @@ Return a list of the gap field names, in the order above. A complete card gives 
     return gaps
 """,
         cases=[
-            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it before sending', 'today': '15 minutes, $8', 'success': 'faster answers', 'wrong_answer': '', 'data': '200 past questions', 'feedback': 'edits are logged and added to the eval set'}, expected=['success', 'wrong_answer', 'owner'], sample=True),
-            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it', 'today': '15 minutes, $8', 'success': '80 in 100 approved', 'wrong_answer': 'HR checks first', 'data': '200 past questions', 'feedback': 'edits go into the eval set', 'owner': 'Head of HR'}, expected=[]),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it before sending', 'today': '8 minutes, $8', 'success': 'faster answers', 'wrong_answer': '', 'data': '200 past questions', 'feedback': 'edits are logged and added to the eval set'}, expected=['success', 'wrong_answer', 'owner'], sample=True),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it', 'today': '8 minutes, $8', 'success': '80 in 100 approved', 'wrong_answer': 'HR checks first', 'data': '200 past questions', 'feedback': 'edits go into the eval set', 'owner': 'Head of HR'}, expected=[]),
             case({}, expected=['user', 'task', 'decision', 'action', 'today', 'success', 'wrong_answer', 'data', 'feedback', 'owner']),
             case({'user': '  ', 'task': 'triage tickets', 'decision': 'which team gets the ticket', 'action': 'the ticket is routed; the team can bounce it back', 'today': '2 minutes each', 'success': '90 in 100 routed right', 'wrong_answer': 'rerouted by hand', 'data': '', 'feedback': 'bounced tickets are relabelled', 'owner': 'IT lead'}, expected=['user', 'data']),
         ],
@@ -615,7 +615,7 @@ lesson(MODULE, 'gather_requirements',
              picture=rewrite(('What would you like it to do?', 'Walk me through the last time you did this'),
                              ('Would AI help you?', 'Show me where it takes the longest'),
                              ('It has to be fast', 'How long does it take today?')),
-             after='Today\'s number is your **baseline**: if an answer takes 15 minutes now, "under 5 seconds" is a target you can check.'),
+             after='Today\'s number is your **baseline**: if HR takes 8 minutes to answer now, "under 5 seconds" is a target you can check.'),
         card('Ask the how-well questions yourself',
              'Users talk about what it should do. Ask the how-well questions yourself, one per area, or nobody will.',
              picture=pillars('The HR assistant',
@@ -665,7 +665,7 @@ Return a dict with one entry per person: the list of topics to ask them, in the 
 A topic missing from `owners` goes to `"owner"`, the person who decides, because someone still has to answer it.
 
 No topics gives `{}`.""",
-        pattern='Group items by a key, starting an empty list the first time you see the key.',
+        pattern='Group by a key; start its list the first time you meet it.',
         target='one pass over the topics',
         realworld='Before requirement interviews, teams list the open questions and who can answer each one, so every meeting has an agenda and nobody with a stake is forgotten.',
         practice=practice(
@@ -682,7 +682,7 @@ No topics gives `{}`.""",
                 ask('What do you ask next?', ['How long do people wait for an answer today?', 'Which model is the fastest one we can use?', 'Can security wait until after the pilot?'], answer=0,
                     evidence=evidence('claim', who='The product owner said', text='"Make it fast, and it must be secure."'),
                     clue='"Fast" compared with what? Find out where things stand now.',
-                    why='Today\'s wait is your baseline: if HR answers in 15 minutes now, "under 5 seconds" is a clear target. Then ask the same of "secure": secure against what, and for whom?',
+                    why='Today\'s wait is your baseline: if HR takes 8 minutes to answer now, "under 5 seconds" is a clear target. Then ask the same of "secure": secure against what, and for whom?',
                     wrong=[None, 'That picks a solution before you know the target. First find out how fast is fast enough.', 'Security is a requirement, not an extra. Ask what "secure" means to them instead.']),
                 ask('You need to know where personal data may go. Who is missing?', ['The privacy team', 'More HR advisors', 'Nobody: the owner decides that'], answer=0,
                     evidence=evidence('code', title='Invited to the first meeting', text="""HR advisors      will use it
@@ -697,7 +697,7 @@ Head of HR ops   pays and decides"""),
                     wrong=['That gets a wish list. Ask about a real time it happened instead.', None, 'People say yes to be polite. It tells you nothing you can build or test.']),
                 ask('You asked the how-well questions one by one. Which one has no answer yet?', ['What if it is down for an hour', 'How fast an answer has to be', 'Where personal data may go'], answer=0,
                     evidence=evidence('code', title='Your notes from the interviews', text="""how fast:       5 seconds, 95 in 100
-cost:           under $1 an answer
+cost:           under $2 an answer
 personal data:  stays in the EU
 who sees it:    HR staff only
 at once:        200 people"""),
@@ -804,7 +804,7 @@ lesson(MODULE, 'split_requirements',
         card('Give it a number',
              '"Fast" can\'t pass or fail, but a number can. If you can\'t say yes or no after measuring, rewrite the requirement.',
              picture=rewrite(('fast', 'under 5 seconds, for 95 in 100 answers'), ('always up', 'working 99.9% of office hours, its **uptime**'),
-                             ('cheap', 'under $1 per answer'), ('secure', 'only HR staff can see the answers'))),
+                             ('cheap', 'under $2 per answer'), ('secure', 'only HR staff can see the answers'))),
         card('One sentence can hold both',
              'People often write both kinds in one line. Cut it in two, so each half can be checked on its own: one by watching, one by measuring.',
              picture=split(['Answer time-off questions', 'within 5 seconds'],
@@ -813,11 +813,11 @@ lesson(MODULE, 'split_requirements',
              'The HR assistant is an AI chatbot that answers staff questions about HR policy, like leave and expenses. Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. For AI the usual ones are speed, uptime, cost per answer, privacy (where personal data may go), security (who can see what) and how many people at once.',
              picture=piles(pile('Functional', ['R1 Answer policy questions', 'R3 Show the source page', 'R5 Hand hard questions to a person']),
                            pile('Non-functional', [('clock', 'R2 5 seconds, 95 in 100'), ('lock', 'R4 Personal data stays in the EU'),
-                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed'))),
+                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $2 an answer')], look='dashed'))),
         card('They choose the design',
              'Features rarely decide how a system is built. The how-well numbers do: they pick the model, where it runs, and how much capacity you pay for.',
              picture=sortby('What does it decide?',
-                            sortrow('R7 Under $1 an answer', 'A smaller, cheaper model, not the biggest', 'The model', look='dashed', icon='coin'),
+                            sortrow('R7 Under $2 an answer', 'A smaller, cheaper model, not the biggest', 'The model', look='dashed', icon='coin'),
                             sortrow('R4 Personal data stays in the EU', 'Which region and model service you may use', 'Where it runs', look='dashed', icon='lock'),
                             sortrow('R6 200 people at once', 'Pay per use, or capacity reserved in advance', 'Capacity', look='dashed', icon='people')),
              after='The next lesson puts each non-functional requirement under a pillar of a well-architected review.'),
@@ -883,7 +883,7 @@ R3  Show the source page for every answer
 R4  Personal data never leaves the EU
 R5  Hand hard questions to a person
 R6  Serve 200 users at once
-R7  Cost under $1 per answer"""),
+R7  Cost under $2 per answer"""),
                     clue='How would you check R4: by watching the assistant do something, or by checking where the data is stored?',
                     why='A user never sees where their data is stored, so you can\'t watch it. You check it by inspecting where the data lives, which is measuring. Where personal data may go is privacy: non-functional.',
                     wrong=['You can\'t watch this happen in the app. You check it by inspecting where the data is stored.', None]),
@@ -938,7 +938,7 @@ R7  Cost under $1 per answer"""),
                 {"id": "R4", "text": "Personal data never leaves the EU"},
                 {"id": "R5", "text": "Hand hard questions to a person"},
                 {"id": "R6", "text": "Serve 200 users at once"},
-                {"id": "R7", "text": "Cost under $1 per answer"},
+                {"id": "R7", "text": "Cost under $2 per answer"},
             ], expected=[
                 [{"id": "R1", "text": "Answer policy questions from the HR pages"},
                  {"id": "R3", "text": "Show the source page for every answer"},
@@ -946,7 +946,7 @@ R7  Cost under $1 per answer"""),
                 [{"id": "R2", "text": "Reply within 5 seconds for 95 in 100 questions"},
                  {"id": "R4", "text": "Personal data never leaves the EU"},
                  {"id": "R6", "text": "Serve 200 users at once"},
-                 {"id": "R7", "text": "Cost under $1 per answer"}],
+                 {"id": "R7", "text": "Cost under $2 per answer"}],
             ], sample=True),
             case([], expected=[[], []]),
             case([{"id": "A", "text": "99.9 percent UPTIME"}, {"id": "B", "text": "Encrypt every stored answer"}],
@@ -1036,7 +1036,7 @@ lesson(MODULE, 'well_architected',
              picture=pillars('HR assistant',
                              pillar('Reliability', 'power', 'So the review\'s first question is: what does the assistant do when the model is down?', open=True),
                              pillar('Security', 'lock', 'R4: personal data stays in the EU.', chips=['R4 EU']),
-                             pillar('Cost Optimization', 'coin', 'R7: under $1 per answer.', short='Cost', chips=['R7 $1']),
+                             pillar('Cost Optimization', 'coin', 'R7: under $2 per answer.', short='Cost', chips=['R7 $2']),
                              pillar('Operational Excellence', 'eye', 'R10: a record of every answer.', short='Operations', chips=['R10 log']),
                              pillar('Performance Efficiency', 'gauge', 'R2: 5 seconds for 95 in 100. R6: 200 people at once.', short='Performance', chips=['R2 5 s', 'R6 200']),
                              list_questions=False)),
@@ -1059,7 +1059,7 @@ Reliability: model down?
 Security: who sees what?
   -> R4: data stays in the EU
 Cost: what grows the bill?
-  -> R7: under $1 an answer
+  -> R7: under $2 an answer
 Operations: would we notice?
   -> R10: every answer kept
 Performance: busiest minute?
@@ -1284,7 +1284,7 @@ lesson(MODULE, 'fit_for_purpose',
                             sortrow('Quality: 80 in 100 answers right', 'R1 Answer policy questions. The owner and the users agree it.', 'Functional', icon='check'),
                             sortrow('Must-pass: the dangerous cases it must never get wrong', 'The card\'s wrong-answer box, like showing one person\'s data to another. The owner, privacy and security agree them.', 'Functional', icon='lock'),
                             sortrow('Speed: how many seconds a person will wait', 'R2 5 seconds, 95 in 100: the Performance Efficiency pillar. The users say how long they will wait.', 'Non-functional', look='dashed', icon='gauge'),
-                            sortrow('Cost: the cost per finished task must beat today\'s', 'R7 Under $1 an answer: the Cost Optimization pillar. The owner, who pays.', 'Non-functional', look='dashed', icon='coin')),
+                            sortrow('Cost: the cost per finished task must beat today\'s', 'R7 Under $2 an answer: the Cost Optimization pillar. The owner, who pays.', 'Non-functional', look='dashed', icon='coin')),
              after='Speed and cost are non-functional requirements, each resting on a pillar from the review. Quality and must-pass are different: they measure the functional requirement itself, because an AI does its job right only some of the time. With ordinary software you watch a feature work once; with AI, even what it does has to be measured.'),
         card('Go, fix or stop',
              'After the pilot, the call, often called a go/no-go decision, is one of three. Writing the acceptance criteria down first stops anyone from moving them to fit the result.',
@@ -1298,7 +1298,7 @@ lesson(MODULE, 'fit_for_purpose',
     example=example('Pilot results against the acceptance criteria', """criteria = {"quality": 0.80, "seconds": 5,
             "cost": 2.00}
 pilot    = {"quality": 0.78, "seconds": 4,
-            "cost": 1.20, "must_pass_failures": 0}
+            "cost": 1.87, "must_pass_failures": 0}
 # cost and speed met; quality 2 points short
 # and within 5 points of its criterion: fix it,
 # then test again"""),
@@ -1366,7 +1366,7 @@ pilot    = {"quality": 0.82, "seconds": 5.5,
                     wrong=[None, 'Fix is for a missed criterion. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed criteria.']),
                 ask('What do you do?', ['Go: raise the cost criterion to $3, still cheaper than by hand', 'Fix: one criterion missed, so cut the cost and retest', 'Stop: it is far over the agreed cost criterion'], answer=2,
                     evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 cost criterion, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost criterion to $3 and call it a go."'),
-                    clue='A close miss on cost is at most 1.2 times its criterion: $2.40 here. And when were the criteria agreed?',
+                    clue='Use the same rule as for speed: how far over $2.00 may a near miss go? And when were the criteria agreed?',
                     why='$3.00 is well past $2.40, so it is not a near miss, and raising the criterion after seeing the result is moving it to fit. If the cost case really has changed, agree new acceptance criteria before the next pilot.',
                     wrong=['Change the criterion once you see the result and the criterion meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
             ],
@@ -1399,7 +1399,7 @@ pilot    = {"quality": 0.82, "seconds": 5.5,
     return "stop"
 """,
         cases=[
-            case({"quality": 0.78, "seconds": 4, "cost": 1.2, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="fix", sample=True),
+            case({"quality": 0.78, "seconds": 4, "cost": 1.87, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="fix", sample=True),
             case({"quality": 0.86, "seconds": 3, "cost": 1.5, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="go"),
             case({"quality": 0.95, "seconds": 2, "cost": 0.5, "must_pass_failures": 1}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
             case({"quality": 0.7, "seconds": 4, "cost": 1.0, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
@@ -1457,7 +1457,7 @@ if 9 > 5 * 1.2:
 len([1]) == 1 and False   # False""",
             ],
         ],
-        byhand='No must-pass failures. Quality 0.78 is below 0.80: missed, and 0.78 is not below 0.75, so still close. Seconds 4 is not above 5. Cost 1.20 is not above 2.00. One miss, and it is close: return "fix".',
+        byhand='No must-pass failures. Quality 0.78 is below 0.80: missed, and 0.78 is not below 0.75, so still close. Seconds 4 is not above 5. Cost 1.87 is not above 2.00. One miss, and it is close: return "fix".',
         why='A handful of comparisons, whatever the numbers.',
         gotchas=[
             [

@@ -1,9 +1,9 @@
-"""AI & ML foundations: How models learn from data, and how you know whether they're any good."""
+"""AI & ML foundations: What kind of AI fits a job, how an LLM works and why it gets things wrong, then how to judge a model's predictions."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, machine, module, pile, piles, practice,
                                  question, rewrite, seesaw, sortby, sortrow, stack, steps)
 
-MODULE = module('foundations', 'AI & ML foundations', "How models learn from data, and how you know whether they're any good.")
+MODULE = module('foundations', 'AI & ML foundations', "What kind of AI fits a job, how an LLM works and why it gets things wrong, then how to judge a model's predictions.")
 
 lesson(MODULE, 'kind_of_ai',
     title='What kind of AI is it?',
@@ -382,7 +382,7 @@ answer = ["30 unused days carry over"]
     angle=angle(
         pattern='Keep each claim the source doesn\'t back',
         text='The big idea: an LLM writes what is likely, not what is checked, so it can be confidently wrong, and the answer is to give it the facts, measure it and check what matters. Your code goes through the claims in the answer and keeps each one that isn\'t in the source, in order. Those are unsupported: the likely hallucinations. It is like checking a report against the receipts: any amount with no receipt gets questioned.',
-        say='"An LLM writes what is [[likely|checked|stored::Not what has been checked.]], so it can be confidently wrong. I give it the facts from our documents, measure how often it is wrong on an [[eval set|budget|server::Examples with known right answers.]], and have a person [[check|ignore|retrain::Review it first.]] where a wrong answer causes harm."',
+        say='"An LLM writes what is [[likely|checked|stored::Not what has been checked.]], so it can be confidently wrong. I give it our documents, measure how often it is wrong on an [[eval set|budget|server::Examples with known right answers.]], and have a person [[check|ignore|retrain::Review it first.]] where a mistake would hurt."',
         classic=None,
     ),
     exercise=exercise(
@@ -429,7 +429,7 @@ the assistant said:
                     wrong=[None, 'An instruction makes it less likely, not impossible.', 'Giving it the facts, clear instructions and checks all reduce it.']),
                 ask('Where does a person most need to check the answer before it goes out?', ['Where a wrong answer could cause harm', 'On every answer, always, forever', 'Nowhere, if the eval score is high'], answer=0,
                     alone=True,
-                    clue='Where would a confident wrong answer hurt someone?',
+                    clue='People can\'t check everything. Where does checking matter most?',
                     why='Put people where a wrong answer causes harm, like pay, health or legal advice. Checking everything doesn\'t scale, and a high average still lets some wrong answers through.',
                     wrong=[None, 'Checking every answer doesn\'t scale. Focus people where harm is possible.', 'A high average still lets some wrong answers through.']),
             ],

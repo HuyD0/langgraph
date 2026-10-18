@@ -539,7 +539,9 @@ def test_fast_changing_lessons_say_when_they_were_checked():
     assert f"const STALE_DAYS = {STALE_DAYS};" in page, "the page and drill content stale agree on when to warn"
     later = freshness(modules.load(), datetime.date(2030, 1, 1))
     total = sum(len(m.lesson_ids) for m in modules.load())
-    assert not later["fresh"] and len(later["due"]) == total, "every lesson comes due as time passes"
+    assert not later["fresh"] and later["due"] and len(later["due"]) + len(later["never"]) == total, "every sourced lesson comes due as time passes"
+    assert all(r["sources"] for r in later["due"]) and not any(r["sources"] for r in later["never"]), "only lessons with sources age"
+    assert "old = sources.length > 0 && age > STALE_DAYS" in page, "the page warns only on sourced lessons"
     data = build_data(modules.load())
     assert data["lessons"]["masked_columns"]["checked"][1][0][1].startswith("https://")
     assert all(lesson["checked"][0] for lesson in data["lessons"].values()), "every lesson has a date on the page"

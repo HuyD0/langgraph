@@ -2,9 +2,9 @@
  "assign_splits": {
   "check:0:0": {
    "q": "Why not “The test set was too small”?",
-   "a": "\"The test set was too small\" has a grain of truth. A small test set does make it more likely that a rare group slips through. With 15 refund-fraud questions out of 300, that group is only 5% of the data. A random split can easily hand the test set zero of them.\n\nBut size isn't the real cause. Even a bigger test set could still end up with no fraud questions by bad luck. Growing it only lowers the odds. It also takes examples away from dev, the set you tune prompts against. The real problem is that nothing in the split *guaranteed* every group shows up.\n\nStratifying fixes that at any size. \"Stratify\" means you first sort examples by group, then deal each group across the sets on purpose, like dealing cards from a separate deck. The 15 fraud questions would go 9 to dev, 3 to test and 3 to holdout. Every set gets some, every time.\n\n\"The split wasn't stratified, so a small group could miss a set entirely\" is better because it names the actual cause and points straight to the fix.",
+   "a": "\"The test set was too small\" has a grain of truth. A smaller test set does make it easier for a rare group to get left out by luck. With 15 refund-fraud questions out of 300, a random split might put three in test, or two, or none.\n\nBut size isn't the root cause. A bigger test set only lowers the odds of missing the group. It never guarantees the group shows up. It also takes examples away from dev, where you do your tuning. And the same problem can hit dev or holdout too.\n\nThe real issue is that a plain random split ignores groups. It treats all 300 examples as one pile. Rare groups are then at the mercy of chance.\n\n**Stratifying** fixes that. It means splitting each group on its own. You deal the 15 fraud questions across dev, test and holdout, then do the same for every other group. Now every set gets fraud questions, whatever its size.\n\n\"The split wasn't stratified, so a small group could miss a set entirely\" is better because it names the actual cause and points straight to the fix.",
    "step": "Check",
-   "fingerprint": "b4b6ab99a7795e3a",
+   "fingerprint": "83f0ade20b12b1f8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -20,9 +20,9 @@
   },
   "check:0:1": {
    "q": "Why not “Refund fraud questions are too hard to evaluate”?",
-   "a": "That option points at the questions, but the problem is in how they were split.\n\n**What it gets right:** refund-fraud questions may well be tricky. They likely behave differently from ordinary questions. That instinct is useful, because a group that behaves differently is exactly the kind you should split by.\n\n**What it misses:** how hard a question is has no effect on where a random split puts it. A random split ignores what each example is about. With only 15 fraud questions out of 300, a 20% test set should get about 3 of them. But nothing guarantees that, and by plain bad luck it can get zero. Easy questions would have the same risk if there were only 15 of them.\n\nIt also hints at the wrong fix. \"Too hard to evaluate\" suggests dropping them. Hard groups are the ones you most need in your test set.\n\n**Why the right answer is better:** \"The split wasn't stratified, so a small group could miss a set entirely\" names the real cause. Stratifying means dealing each group across dev, test and holdout on purpose, so every set gets its share of fraud questions.",
+   "a": "That option sounds plausible, because refund-fraud questions may well be tricky. But difficulty isn't the problem described here. The problem is that the test set has *zero* of them. A hard question can still be evaluated. You just need some of them in the set to measure how the app does.\n\nWhat went wrong is the split itself. 15 out of 300 is a small group. A plain random split gives no guarantee that each group lands in every set. So a small group can end up missing from one set entirely, and that is what happened here.\n\n\"Too hard to evaluate\" also points you toward the wrong fix: dropping or ignoring those questions. That hides a weak spot instead of measuring it.\n\nThe real fix is to **stratify**, which means treating refund fraud as its own group. You then deal its examples across dev, test and holdout, like dealing cards from a separate deck.\n\nThe better answer names the actual cause: an unstratified random split can leave a small group out of a set entirely, and stratifying prevents that.",
    "step": "Check",
-   "fingerprint": "83a9367cfa29c753",
+   "fingerprint": "ffac0655a558f1d7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -33,14 +33,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claim that hard groups are the ones you most need in the test set goes beyond the lesson, but it doesn't contradict it. The answer is also close to the 200-word limit."
+    "notes": ""
    }
   },
   "check:1:0": {
    "q": "Why not “Nothing, more checks find more bugs”?",
-   "a": "It gets one thing right. Looking at results often really does surface problems. That's exactly why the **dev** set exists: check it as often as you like.\n\nWhat it misses is what the **test** set is *for*. Its job is to tell you how your app will do on questions it has never been shaped around. That only works if your choices weren't guided by it.\n\nWhen you check the test set after every change and keep whatever scores higher, the test set quietly becomes part of your tuning. Over a week, your prompt drifts toward those specific examples. The score climbs, but some of that climb is the prompt fitting those exact questions, not getting better at real traffic. It's like a student who sees the exam after every practice session. Their marks go up, but the marks stop telling you what they actually know.\n\nSo the extra checks don't find more bugs. They wear out your honest measure.\n\n\"You're tuning against the test set\" is better because it names the real problem: the test set has turned into a second dev set, so it can no longer give you an unbiased score before a release.",
+   "a": "That answer gets one thing right. Checking your work often really does catch problems early. That habit is good. It just belongs on the dev set.\n\nWhat it misses is the test set's job. The test set is meant to tell you how your app will do on questions it has never been tuned for. That only works if your changes were never shaped by it.\n\nEach time you check the test set and then tweak the prompt, you nudge the prompt toward those exact examples. Do that all week and the prompt slowly fits those specific questions. This is called **overfitting**: doing well on the examples you studied, but not on new ones.\n\nSo the test score climbs, but it no longer predicts how real users will fare. You haven't found more bugs. You've lost your honest measuring stick.\n\nThe fix is simple. Iterate on dev as much as you like, and touch test only before a release.\n\n\"You're tuning against the test set\" is better because it names the real problem: repeated looking-and-changing turns the test set into a second dev set, so its score stops being trustworthy.",
    "step": "Check",
-   "fingerprint": "b933709204fea0fa",
+   "fingerprint": "8cf4ddcdf24823bc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -56,9 +56,9 @@
   },
   "check:1:2": {
    "q": "Why not “The test set is too small to use”?",
-   "a": "\"The test set is too small to use\" has a grain of truth. A small test set gives shaky scores. A few lucky or unlucky examples can swing the number a lot. And the smaller it is, the faster you can accidentally fit your prompt to it.\n\nBut the question never says the test set is small. And size isn't the real problem here.\n\nThe problem is *how* it's being used. Checking the test set after every change, then tweaking based on what you saw, means you're quietly shaping your prompt to those exact examples. Its score stops telling you how the app does on new questions. It only tells you how well you've learned that one set.\n\nThat would happen with a huge test set too. Making it bigger doesn't fix the habit. The fix is to iterate on the **dev** set, which is the one meant for frequent looks. Then check the test set rarely, before a release.\n\n\"You're tuning against the test set\" is better because it names the actual mistake: the test set has been turned into a second dev set, so it can no longer give an honest score.",
+   "a": "\"The test set is too small to use\" points at a real worry, but not the one in this question.\n\n**What it gets right:** a small test set can give a shaky score. With only a few examples, one lucky or unlucky answer moves the number a lot. That is worth thinking about when you build your sets.\n\n**What it misses:** the question says nothing about size. The problem is the habit of checking the test set after every change. Each time you look and then tweak your prompt, you nudge it toward doing well on *those exact examples*. After a week, the score mostly tells you how well you fit the test set. It no longer tells you how the app will do on new questions.\n\nA bigger test set would not fix this. Tuning against it would spoil it just the same, only more slowly. That is why the lesson gives each set one job: tweak freely against the dev set, and check the test set rarely, just before a release.\n\n\"You're tuning against the test set\" is better because it names the real mistake: using the test set like a dev set makes its score dishonest, whatever its size.",
    "step": "Check",
-   "fingerprint": "e21580810bcb3fb5",
+   "fingerprint": "d96a1b124f11813d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -69,32 +69,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The claims about small test sets being noisy and easier to overfit come from general knowledge, not the lesson, but they don't contradict it. Length is just under 200 words."
+    "notes": "Minor: the claims about small sets giving shaky scores and about a bigger set spoiling 'more slowly' go beyond the lesson, though they don't contradict it, and the length is right at the 200-word limit."
    }
   },
   "check:2:0": {
    "q": "Why not “Write another 100 questions by hand”?",
-   "a": "Writing another 100 questions by hand does get something right. You'd have more examples, and checking each one yourself means the correct answers are reliable. That is exactly what a **golden** set is: a fixed set you checked by hand.\n\nBut it doesn't fix the real problem. All 200 questions would come from the same place: your own head. You'd write them in your style, about the topics you expect, with the same blind spots as the first 100. Real users don't ask like that. They make typos, mix two questions into one, ask about things you never thought of, and their interests change over time. Last year's guesses, doubled, are still guesses.\n\nIt also misses **past failures**, the questions your app has actually gotten wrong before. Those are the cases you most want to catch if they ever come back, and you can't invent them from imagination.\n\n\"Add real traffic and past failures\" is better because it fills the eval set with how people really use the app today, including the spots where it has already broken.",
+   "a": "Writing another 100 questions by hand does get one thing right. More checked examples make your eval set bigger and steadier, and hand-checked questions are reliable. That is why the lesson keeps a **golden** set: a fixed group of examples you checked yourself.\n\nBut the new questions come from the same place as the old ones: your own head. You would write them in your own style, about the topics you expect. Real users don't work that way. They make typos. They ask vague or odd questions. They bring up things that changed since last year. A bigger pile of your own guesses is still a guess about how the app is used.\n\nIt also skips the bugs you already know about. Mistakes the app made before won't show up unless you deliberately add them back.\n\n\"Add real traffic and past failures\" is the better answer. A sample of recent real questions shows how people actually use the app today, and past failures make sure old mistakes stay fixed.",
    "step": "Check",
-   "fingerprint": "ca12dc3cb15c7484",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems; the details about typos and shifting interests go slightly beyond the lesson but do not contradict it."
-   }
-  },
-  "check:2:1": {
-   "q": "Why not “Ask a model to make up more questions”?",
-   "a": "Asking a model to write more questions does get one thing right. It gives you more examples, quickly and cheaply. That can help fill a thin group, like questions that can't be answered.\n\nBut the question asks what makes the set **closer to how the app is really used**. Made-up questions don't do that. A model writes questions the way it imagines people ask. Those tend to be tidy, well-phrased and on familiar topics. Real users type half-sentences, make typos, mix two questions together, and ask about things that didn't exist last year.\n\nMade-up questions also share your blind spots. If you prompt a model using your old 100 questions, you mostly get variations of those same 100. The set grows bigger, but not more realistic.\n\nAnd they can't include the cases where your app actually broke. Only your own logs know those.\n\n\"Add real traffic and past failures\" is better because it pulls in how people really ask today, plus the exact mistakes you never want to repeat.",
-   "step": "Check",
-   "fingerprint": "1cce4227df5c91b1",
+   "fingerprint": "570749daad035ed1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -108,11 +90,29 @@
     "notes": ""
    }
   },
+  "check:2:1": {
+   "q": "Why not “Ask a model to make up more questions”?",
+   "a": "Asking a model to make up more questions does get one thing right: it gives you more examples, quickly and cheaply. That can help fill a thin group, like refund questions, when you have very few.\n\nBut the Check question asks what would make the set **closer to how the app is really used**. Made-up questions can't do that. A model writes what it *imagines* users ask. Real users type short, messy questions with typos, mix two topics, or ask about things that changed since last year. A model tends to write clean, tidy questions in its own style. Those are often easier for another model to answer, so your scores can look better than reality.\n\nMade-up questions also miss your **past failures**, the exact cases where the app went wrong before. A model has no idea which ones those were.\n\nSo you'd have a bigger set, but not a more realistic one.\n\n\"Add real traffic and past failures\" is better because it brings in questions real users actually asked, plus the mistakes you never want to repeat, so the eval set reflects real use.",
+   "step": "Check",
+   "fingerprint": "85b0bd44896f6014",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the points about messy real queries and model-written questions being too tidy go beyond the lesson but do not contradict it."
+   }
+  },
   "explain:interview": {
    "q": "How do I explain “A counter per group” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem:* \"If I split an eval set purely at random, a small group, like refund questions, can end up missing from the test set. Then my test score says nothing about refunds.\"\n\n*The idea:* \"So I deal each group separately, like cards from its own deck. I keep a running count for every group. Each new example looks at its group's count and takes the next slot in a fixed pattern: three to dev, one to test, one to holdout. Then the pattern repeats. Every set gets every group in the same proportions.\"\n\n*An edge case:* \"The pattern is fixed, so the input must be shuffled first. Otherwise the order of the data decides the split. Also, a group with fewer than five examples never fills the pattern, so it may get no test or holdout examples at all.\"\n\n**A likely follow-up**\n\n\"What if several questions come from the same user?\"\n\n*Hint for a strong answer:* Deal whole bundles instead of single examples. Keep one user's questions together and send the whole bundle to one set. That follows the leakage rule. Leakage means the same information showing up in more than one set, which makes test scores look better than they really are.",
+   "a": "**A 30-second answer**\n\n**The problem.** \"A plain random split can leave a small group, like refunds, out of the test set completely. Then the test score tells you nothing about refunds.\"\n\n**The idea.** \"So I deal each group separately, like cards from its own deck. I keep a counter for every group. Each example looks up its group's count and takes that slot in a fixed pattern: three dev, one test, one holdout. Then the pattern starts again. Every set ends up with every group in about the same proportions, and it only walks through the list once.\"\n\n**The trade-off.** \"The pattern is fixed, so the list must be shuffled first. Otherwise the original order of the data decides the split. Also, a group with fewer than five examples can't reach every set.\"\n\n**A likely follow-up**\n\n*\"What if several questions come from the same user?\"*\n\nHint for a strong answer: bring up the leakage rule. Leakage means a set gets clues it shouldn't have. Say you'd deal whole users, or whole documents, instead of single questions, so related examples stay in one set. Admit the proportions then become only roughly equal.",
    "step": "Explain",
-   "fingerprint": "e8af49d5737610e5",
+   "fingerprint": "0e36b9f9e1b86116",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -128,9 +128,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs in your numbers**\n\n- **Test matches dev too closely.** A small drop from dev to test is normal. If test is just as high, the same user or document may sit in both sets. That is leakage: test answers seeping in from examples you tuned on.\n- **The score is great, then real use is worse.** The test or holdout set has stopped being honest. Someone tuned against it, or peeked at the holdout and changed things.\n- **Test climbs steadily each release** while real-world feedback stays flat. That often means people are tuning against test.\n- **A group's score is missing, or jumps wildly between runs.** That group probably has zero or one or two examples in that set. A plain random split does this to small groups.\n- **Scores can't be compared over time.** Nobody recorded which version, like `faq-v4`, was used.\n\n**Quickest check**\n\nMake a small table. Put groups down the side and dev, test and holdout across the top, then count the examples in each cell. Each row should have roughly the same proportions.\n\nThen list the user and document IDs in each set. No ID should appear in more than one set.",
+   "a": "Here are the signs that the split was skipped or done wrong.\n\n**A group is missing or tiny in test.** You look at per-group scores and `refunds` is blank, or rests on one example. That usually means a plain random split, not a stratified one. Stratified means each group is dealt across the sets in the same proportions.\n\n**Scores move when the app didn't change.** If test is mostly `billing` while dev is heavy on `refunds`, the overall score shifts because the mix differs, not because your prompt got better or worse.\n\n**A great eval score that drops in real use.** Common causes:\n- Leakage: the same user or document shows up in more than one set.\n- A holdout that was looked at and tuned against, so it is no longer honest.\n- No recent real traffic in the set.\n\n**Old bugs come back.** Past failures were never added to the set.\n\n**Results nobody can compare.** Nobody knows which set version, like `faq-v4`, was used.\n\n**Quickest check:** count examples per group in each set and compare the proportions. Then confirm no user ID or document ID appears in more than one set.",
    "step": "Learn",
-   "fingerprint": "3858da5d26e10fa6",
+   "fingerprint": "2bda9e3cf6e99c80",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -141,14 +141,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes, though the 'small drop from dev to test is normal' claim goes slightly beyond the lesson, and at about 195 words it is right at the length limit."
+    "notes": ""
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**Tiny groups.** The 3-1-1 pattern needs at least five examples in a group before every set gets a share. A group with only two examples lands entirely in dev, so test and holdout never see it. Write more examples for rare groups first, or merge them into a similar group.\n\n**Traffic that changes over time.** Real questions drift as products, prices and policies change. A split built months ago can miss what users ask today. Add fresh traffic as a new named version, like `faq-v5`. Keep scoring the old version too, so you can still compare results.\n\n**Examples that must stay together.** Say one user asked three billing questions. Dealing them one at a time spreads them across dev, test and holdout. That is leakage: the test quietly contains something very close to what you tuned on, so scores look better than they really are. Deal whole bundles (all of one user, or all questions about one document) instead of single examples. Then check that each set still has roughly the same mix of groups.",
+   "a": "The dealing method works well in the common case. Here are three places it needs extra care.\n\n**Very small groups.** If a group has only two or three examples, a 3-dev, 1-test, 1-holdout pattern leaves test or holdout without that group. Collect or write more examples for rare groups, or merge tiny groups into a broader one. Then check that every set really contains every group.\n\n**Data that changes over time.** Real user questions drift. Drift means new products, new wording and new problems appear. A set built from last year's traffic can look great while today's users struggle. Add fresh traffic regularly, and save each refresh under a new version name like `faq-v5` so old and new scores aren't mixed up.\n\n**Bundles that must stay together.** Sometimes one user or one document has many questions, spread across several groups. Dealing single examples would split that bundle across sets, which is leakage. Leakage means the app has effectively seen test material during tuning. Instead, deal whole bundles, keeping each user's or document's questions in one set. Group proportions then come out roughly even rather than exact.",
    "step": "Learn",
-   "fingerprint": "a31dfbd5a50f2777",
+   "fingerprint": "f6a2e15b493bee06",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -159,14 +159,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems; the answer stays within the lesson, gives three concrete cases with fixes, is about 180 words, and does not give the solution."
    }
   },
   "learn:term": {
    "q": "How is “golden” different from “recent real traffic”?",
-   "a": "**Golden** examples are a fixed set you checked by hand. \"Fixed\" means the set stays the same from one run to the next. \"Checked by hand\" means a person looked over each example. Because it doesn't move, it gives you a steady yardstick.\n\n**Recent real traffic** is a sample of what users have actually been sending lately. \"Traffic\" just means the requests coming into your app. \"Sample\" means you take some of them, not all. This part changes over time, because what users ask changes.\n\nSo golden is steady and trusted. Recent traffic is fresh and keeps you close to real use.\n\nThink of a cooking school. The golden set is the classic recipes every student is graded on. Recent traffic is what diners actually ordered this week.\n\nThey work together. In the lesson's example, billing, shipping and refunds questions can come from both places, plus past failures. Then you stratify: you deal each group across dev, test and holdout. Naming each version, like `faq-v4`, keeps results comparable as the mix changes.",
+   "a": "Both feed your eval set, but they do different jobs.\n\nThe **golden** set is fixed. You chose each question and checked its correct answer by hand. It only changes when you decide, and each version gets a name like `faq-v4`. Its job is **stability**: the same questions every run, so you can fairly compare today's prompt with last week's.\n\n**Recent real traffic** is a sample of questions real users asked lately. Nobody wrote them for testing. Its job is **realism**: it shows what people actually ask now, with messy wording and topics you never thought of.\n\nThink of a driving test. The golden set is the fixed exam route, the same turns every time, so scores compare fairly. Real traffic is a drive through town today. It is less controlled but closer to real life.\n\nThey work together. Golden keeps results comparable. Traffic keeps them honest. Say users suddenly ask lots of `refunds` questions your golden set barely covers. Traffic exposes that gap, and you might add some to the next version. Then you deal both across dev, test and holdout by group: `billing`, `shipping`, `refunds`.",
    "step": "Learn",
-   "fingerprint": "fdd447267b4fa3e4",
+   "fingerprint": "73293189a757c6b9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -177,7 +177,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The 'stability' and 'realism' labels and the refunds scenario go slightly beyond the lesson's wording, but they fit it and do not contradict it."
    }
   }
  },
@@ -1676,9 +1676,9 @@
  "gwet_ac1": {
   "check:0:1": {
    "q": "Why not “A bigger model to replace both judges”?",
-   "a": "Swapping in a bigger model treats the low kappa as proof that the judges are bad. That is the part it gets wrong.\n\n**What it gets right:** If two judges truly disagreed, a stronger judge might help. Wanting a better judge is a fair instinct.\n\n**What it misses:** Nothing here says the judges are bad. They agree on 97 of 100 answers. The low kappa (0.3) most likely comes from the **kappa paradox**. When almost every answer passes, kappa assumes a lot of that agreement could happen by luck. It then subtracts all of it, so the score drops even though the judges agree.\n\nA bigger model doesn't fix that. You would test the new judge with kappa too, and you would hit the same paradox. You would also pay more and still not know what went wrong.\n\nThe right next step is to find the cause first. Compute a second agreement score that isn't fooled by a rare verdict. Then check passes and failures separately.\n\n**Why \"AC1, which stays fair when a verdict is rare\" is better:** AC1 counts luck in a way that doesn't blow up when one verdict is rare, so it tells you whether these judges really agree before you replace anything.",
+   "a": "**Why not \"A bigger model to replace both judges\"?**\n\nThis option takes the low kappa seriously. That is a fair instinct, since a low score deserves attention.\n\nBut look at the numbers first. The two judges agree on 97 of 100 answers. The lesson explains that when almost every answer passes, kappa can come out low even when judges agree nearly every time. This is the **kappa paradox**. Kappa assumes a lot of agreement would happen by luck when one verdict is so common, and it subtracts all of that luck away.\n\nSo the 0.3 may say more about how kappa counts luck than about the judges themselves. Replacing the judges skips that question. You would still need to measure the new setup, and you would face the same puzzle about what a low kappa means.\n\nThe better next step is to check the score with a second measure. If kappa is low but AC1 is high, the judges mostly agree, and the low kappa comes from the rare verdict.\n\n**\"AC1, which stays fair when a verdict is rare\"** is better because it tells you whether the judges really disagree or whether kappa is just being thrown off by how rare failures are.",
    "step": "Check",
-   "fingerprint": "3710afa679805439",
+   "fingerprint": "6c1beb9796553c86",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1689,14 +1689,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems. It is near the word limit, and it never says in plain words how AC1 counts luck differently."
    }
   },
   "check:0:2": {
    "q": "Why not “Nothing more: 0.3 means they disagree”?",
-   "a": "That option takes kappa at face value. It gets one thing right: a low kappa is worth noticing. You shouldn't ignore it.\n\nBut look at the raw numbers. The judges agree on 97 of 100 answers. That is not what disagreement looks like. Something else is pulling kappa down.\n\nThat something is the **kappa paradox**. When almost every answer passes, kappa assumes two judges would agree a lot just by luck. Think of two people who both say \"pass\" nearly every time. They would match often even if they never read the answers. Kappa subtracts all of that expected luck. Very little is left, so the score lands near 0.3 even though real agreement is high.\n\nSo \"nothing more\" stops too early. It reads 0.3 as \"they disagree\" when the low score may only reflect how rare failures are. You'd risk throwing out a judge that actually works.\n\nThe better answer is **AC1, which stays fair when a verdict is rare**. It counts luck in a way that doesn't blow up when one verdict dominates, so it shows whether the 97% agreement is real. Either way, still check passes and failures separately.",
+   "a": "The option does get one thing right. A low kappa is a real warning sign, and you shouldn't wave it away.\n\nBut look at the raw numbers. The two judges agree on 97 of 100 answers. That is not what disagreement looks like. So \"0.3 means they disagree\" contradicts the very facts in the question.\n\nWhat it misses is the **kappa paradox**. When almost every answer passes, kappa assumes two judges would agree a lot just by luck. Both say \"pass\" so often that matching up seems easy. Kappa then takes all that \"luck\" away, and very little is left. The low score comes from how kappa counts luck, not from the judges fighting.\n\nStopping at kappa also means skipping the other checks the lesson asks for. One is a second measure. The other is looking at passes and failures separately.\n\nThe better answer, \"AC1, which stays fair when a verdict is rare,\" wins because AC1 counts luck in a way that doesn't blow up when one verdict is rare. That lets you tell whether the judges truly disagree or whether kappa is just being misleading.",
    "step": "Check",
-   "fingerprint": "8401e921e76e15f5",
+   "fingerprint": "eea00c8b2b1f5fe6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1707,14 +1707,32 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problems. The closing paragraph runs to two sentences where one was asked for, and 'blow up' is a loose phrase."
    }
   },
   "check:1:1": {
    "q": "Why not “Kappa and AC1 always give the same number”?",
-   "a": "\"Kappa and AC1 always give the same number\" gets one thing right. In this question, the two numbers really do come out almost the same.\n\nBut \"always\" is the problem. The lesson's own example shows they can be far apart. When 96 and 98 of 100 answers passed, kappa was about 0.66 and AC1 was about 0.98. So they do not always match.\n\nWhat the option misses is *why* they match here. Both scores ask the same thing: how much better than luck do the judges agree? The only difference is how each one guesses the luck part.\n\nWhen both judges fail half the answers, pass and fail are equally common. In that balanced case, kappa and AC1 make the same guess about luck. Both say luck alone would give agreement about half the time. Same luck guess, same agreement of 9 in 10, so nearly the same score.\n\nThey only split apart when one verdict becomes rare. Then kappa guesses luck too high, and its score drops.\n\n\"AC1 only differs when one verdict is rare\" is better because it names the exact condition that makes the two scores split, instead of claiming they never do.",
+   "a": "\"Kappa and AC1 always give the same number\" gets one thing right. In this question, the two numbers really do come out almost the same. So the answer matches what you see here.\n\nBut \"always\" is the problem. The lesson's own example shows them splitting apart. There, almost every answer passed. Kappa came out about 0.66, while AC1 came out about 0.98. So they are clearly not always equal.\n\nHere is why they match in this question. Both methods start with how often the judges agree, then take away the agreement you'd expect by luck. They only differ in how they count luck. When each judge fails half the answers, pass and fail are equally common. In that balanced case, both methods expect the judges to agree about half the time by luck. Same luck, same starting point, so you get about the same score.\n\n\"AC1 only differs when one verdict is rare\" is better because it says *when* the two numbers split. Luck is counted differently only when one verdict is rare, and here neither verdict is.",
    "step": "Check",
-   "fingerprint": "a568af480b13c317",
+   "fingerprint": "33dd83ce877532ba",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the last paragraph says luck is counted differently only when a verdict is rare, which sits loosely with the earlier line that the methods always count luck differently, and it runs to two sentences instead of one."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Half and half breaks both measures”?",
+   "a": "\"Half and half breaks both measures\" gets one thing right: the half-and-half split is why the two numbers match. But it has the effect backwards. Half and half is the easy case, not the broken one.\n\nBoth measures ask the same question: how much better than luck do the judges agree? They differ only in how they count luck. When each judge fails half the answers, kappa counts luck as one half. AC1 averages the two pass rates, which also gives one half, and its luck rule then gives one half too. The luck is the same and the real agreement is the same (9 in 10), so both scores land at about 0.8. That is a healthy, honest score.\n\nNothing is broken here. The kappa paradox (a low kappa for judges who nearly always agree) only shows up when one verdict is very common. That makes kappa's luck count balloon.\n\n\"AC1 only differs when one verdict is rare\" is better because it names the real cause: the two ways of counting luck agree at a fifty-fifty split and only pull apart when one verdict is rare.",
+   "step": "Check",
+   "fingerprint": "bfdb4d42f8f135f7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1728,29 +1746,11 @@
     "notes": ""
    }
   },
-  "check:1:2": {
-   "q": "Why not “Half and half breaks both measures”?",
-   "a": "\"Half and half breaks both measures\" gets one thing right. The half-and-half split really is the reason the two numbers match. But it gets the effect backwards. Nothing breaks here.\n\nThink about what each measure does. Both start from how often the judges agree. Then each one takes away the agreement you would expect by luck alone. The only difference between them is how they count that luck.\n\nWhen passes and fails are split evenly, the two ways of counting luck give the same answer. Each one says luck alone would make the judges agree about half the time. So both measures take away the same amount, and they land on the same score.\n\nThat score is also a fair one. The judges agree on 9 in 10, well above the half you would expect from luck, and both numbers show that. An even split is actually the easiest case for both measures. The trouble starts when one verdict becomes rare. That is where kappa's luck count balloons and the two measures drift apart.\n\n\"AC1 only differs when one verdict is rare\" is better because it names the real cause: the two measures count luck the same way at an even split and only part ways when one verdict is uncommon.",
-   "step": "Check",
-   "fingerprint": "f86e82c13205a5f4",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The answer is about 210 words, slightly over the ~200 guide, and the 'easiest case for both measures' line goes a little beyond the lesson but does not contradict it."
-   }
-  },
   "check:2:1": {
    "q": "Why not “AC1 rescues it, so trust the judge”?",
-   "a": "\"AC1 rescues it\" gets one thing right. Checking AC1 is the correct move when kappa is low. AC1 is there to catch the kappa paradox. That is when kappa looks bad only because one verdict is rare, even though the judges agree almost every time.\n\nBut look at the actual number. AC1 is 0.25. That is barely higher than kappa's 0.2, and both are low. AC1 only \"rescues\" a judge when it comes out **high** while kappa stays low, like the lesson's example of 0.98 against 0.66. Here, counting luck the fairer way still shows weak agreement. So the low kappa is not a side effect of a rare verdict. It reflects real disagreement between your judge and the people.\n\nTrusting the judge here would mean shipping something that often gives a different verdict than a human would. You would still want to check passes and failures separately to see where it goes wrong.\n\n\"They really disagree; both are low\" is better because it reads both numbers honestly. When neither one is high, there is no paradox to explain away.",
+   "a": "That option gets one thing right. When kappa is low, looking at AC1 is a smart next step. AC1 is the check that tells you whether a rare verdict is dragging kappa down unfairly.\n\nBut AC1 only \"rescues\" a judge when it comes out **high**. That is the pattern the lesson describes: kappa low, AC1 high, so the judges mostly agree and the rare verdict caused the low kappa.\n\nHere AC1 is 0.25. That is low too. A score near 0 means \"no better than luck,\" and 1 means \"perfect agreement.\" So 0.25 says the judge beats luck by only a little. Two ways of counting luck give the same answer: the judge and the people often see answers differently.\n\nTrusting the judge here would mean ignoring what AC1 actually says. You would also skip the lesson's last step, which still applies: check passes and failures separately to see where the judge goes wrong.\n\n\"They really disagree; both are low\" is better because it reads both numbers honestly, and the rescue story needs a high AC1 that isn't there.",
    "step": "Check",
-   "fingerprint": "12bc6adcaeb1c728",
+   "fingerprint": "8d917680d805b98a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1761,14 +1761,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the closing explanation runs to two sentences where the brief asked for one, and 'often gives a different verdict' goes slightly beyond the lesson, but neither makes it wrong."
+    "notes": ""
    }
   },
   "check:2:2": {
    "q": "Why not “The rare verdict is causing it”?",
-   "a": "\"The rare verdict is causing it\" gets one thing right. A rare verdict really can drag kappa down. That is the kappa paradox: when almost every answer passes, kappa assumes a lot of the agreement is just luck, so it can score two judges low even when they agree almost every time.\n\nBut that explanation only fits one pattern: **kappa low, AC1 high**. AC1 (Gwet's AC1) exists for this exact case. It counts luck in a way that stays fair when one verdict is rare. So if the rare verdict were the only problem, AC1 would come out high and show that the judges mostly agree.\n\nHere AC1 is 0.25. That is nearly as low as kappa's 0.2. The measure built to see past the rare-verdict effect still finds poor agreement. Blaming the rare verdict would explain away a real problem with your judge.\n\n\"They really disagree; both are low\" is better because when even AC1, which corrects for the rare verdict, stays low, the low score reflects real disagreement and not a quirk of the math.",
+   "a": "\"The rare verdict is causing it\" points at something real. When one verdict is rare, kappa can come out low even when two judges agree almost every time. That is the kappa paradox from this lesson.\n\nBut that explanation only fits one pattern: **kappa low, AC1 high**. AC1 is Gwet's measure of \"how much better than luck.\" It counts luck in a way that stays fair when one verdict is rare. So if a rare verdict were the only problem, AC1 would not be fooled. It would come out high, like the 0.98 in the lesson's example.\n\nHere AC1 is 0.25. That is barely above luck too. AC1 has ruled out the rare-verdict excuse. Blaming the rare verdict would hide a judge that really doesn't match people.\n\n\"They really disagree; both are low\" is better because when even AC1, the measure built to resist the rare-verdict problem, is low, the low score comes from real disagreement and not from how luck was counted.\n\nYour next step is the same either way. Check passes and failures separately to see where the judge and people part ways.",
    "step": "Check",
-   "fingerprint": "fa5f29fd9758ce0f",
+   "fingerprint": "6a038d3628c8addf",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1784,9 +1784,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Count luck another way” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"When almost every answer passes, Cohen's kappa can come out low even when two judges agree nearly every time. That's the kappa paradox. Kappa assumes the judges would agree by luck very often, then subtracts all of that. In one example, they agree 98 times out of 100, but kappa is only about 0.66.\"\n\n**The idea:** \"Gwet's AC1 asks the same question: how much better than luck? But it counts luck differently, so a rare verdict doesn't inflate it. In that same example, luck drops from about 0.94 to about 0.06, and AC1 comes out around 0.98. I log both in MLflow. Low kappa with high AC1 means the judges mostly agree. Both low means they really disagree.\"\n\n**The trade-off:** \"A high AC1 can still hide misses on the rare verdict. So I also check passes and failures separately.\"\n\n**A likely follow-up**\n\n*\"Why not just report raw agreement?\"*\n\nHint for a strong answer: raw agreement ignores luck completely. A lazy judge that says \"pass\" every time would still score 96% here. You need a score that removes luck. AC1 just removes it more fairly when one verdict is rare.",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"Kappa asks how much better than luck two judges agree. When almost every answer passes, kappa expects a lot of agreement by luck. In one example, two judges agree on 98 of 100 answers. Kappa counts luck as 0.94, so it comes out around 0.66. Judges who really agree end up looking shaky. That's called the kappa paradox.\"\n\n*The idea.* \"Gwet's AC1 counts luck another way. Average the two judges' pass rates and call that q. Luck is then 2 times q times (1 minus q). That number stays small when one verdict dominates. In the same example it's about 0.06, so AC1 comes out around 0.98. After that, you take luck away the same way kappa does.\"\n\n*Trade-off.* \"AC1 could make a judge look fine even if it misses the rare failures. So I log both numbers in MLflow. I still check passes and failures separately.\"\n\n**Likely follow-up:** \"How do you read the two numbers together?\"\n\n*Hint:* If kappa is low but AC1 is high, the judges mostly agree, and the rare verdict is dragging kappa down. If both are low, the judges really disagree.",
    "step": "Explain",
-   "fingerprint": "6991c0827746c4c4",
+   "fingerprint": "5b848fce048f11e3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1797,14 +1797,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The one point to watch is the follow-up hint's 'lazy judge scores 96%', which follows from judge A's 96 passes but is not stated in the lesson."
+    "notes": ""
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs it's going wrong**\n\n- **A low kappa next to near-perfect agreement.** Your MLflow run shows `judge_kappa` around 0.6, but the two judges agree on 98 of 100 answers. If you only looked at kappa, you might throw out a judge that works fine.\n- **Almost every verdict is the same.** Pass rates of 95% or more are where the kappa paradox (kappa looking bad even when judges agree) shows up.\n- **A high AC1 hiding real trouble.** AC1 can look great while the judges still disagree on most of the few failures. Rare fails are often the cases you care about most.\n- **`judge_ac1` looks odd.** It comes out above 1, or it barely differs from kappa on lopsided data. That points to a mistake in how luck was counted.\n\n**Quickest check**\n\nWork out three plain numbers by hand: how often the judges agree, and each judge's pass rate.\n\n- High agreement plus lopsided pass rates explains a low kappa.\n- Then run your `gwet_ac1` on the lesson's example. You should get about 0.98, and kappa about 0.66.\n- Finally, look at the failures on their own. Do the judges agree on those?",
+   "a": "**Warning signs**\n\nThe clearest sign is a mismatch. Your MLflow run shows a low `judge_kappa`, maybe around 0.6, yet the two judges agree on almost every answer. If someone ignores this, a judge that works well gets thrown out or rebuilt for no reason.\n\nLook at the pass rates too. If both judges pass nearly everything, kappa's \"luck\" part will be close to 1. That leaves very little room for kappa to score well. This is the kappa paradox at work.\n\nThe opposite mistake also happens. A high `judge_ac1` can hide a real problem. The judges might agree on all the passes but split on the few failures. Those failures are often the answers you care about most.\n\n**Quickest check**\n\n1. Put three numbers side by side: raw agreement (the share of answers where they match), kappa and AC1.\n2. If agreement and AC1 are high but kappa is low, the rare verdict is causing the low kappa.\n3. Then count the failures on their own. Of the answers either judge failed, how many did both fail? If that share is low, the judges really disagree where it matters.",
    "step": "Learn",
-   "fingerprint": "324c1253a3cf1514",
+   "fingerprint": "d87349ad802441fc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1820,9 +1820,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where this rule needs extra care.\n\n**1. The judge never says fail.** Say the human marks 4 of 100 answers as fail, and the judge passes everything. They still agree 96 times. AC1 comes out around 0.96, even though the judge caught none of the failures. Always count how many real failures the judge caught on its own, as in \"Checking your LLM judge.\"\n\n**2. Very little data.** With only 20 labeled answers, the rare verdict might show up once or not at all. One changed label can swing both kappa and AC1 a lot. Label more answers, ideally including extra fails on purpose, and report the raw counts next to the scores.\n\n**3. More than two verdicts or two judges.** The \"2 times q times (1 minus q)\" rule only works for two judges giving pass or fail. With \"pass / partial / fail,\" or three judges, you need the general form of AC1. Another option is to compare each pair of judges separately.",
+   "a": "Here are three situations where this needs extra care.\n\n**Very few answers.** With only 20 answers and one or two fails, a single disagreement can swing kappa and AC1 by a lot. Label more answers before trusting either number. Also log the raw counts (how many passes, fails and disagreements) next to the scores.\n\n**More than two verdicts.** The luck formula here, 2 times q times (1 minus q), only works for pass/fail. If your judge gives scores like 1 to 5, use the general form of AC1 that handles many categories. Or use weighted kappa, which counts \"4 vs 5\" as a smaller miss than \"1 vs 5\".\n\n**A judge that almost never fails anything.** AC1 can stay high even if the judge misses most of the rare failures, because those failures are only a few answers out of many. So always check fails on their own: of the answers the human failed, how many did the judge also fail? That one number shows whether the judge catches the cases you care about.",
    "step": "Learn",
-   "fingerprint": "3e2291ff570dd0f6",
+   "fingerprint": "5bcba3f9ec1ffd80",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1838,9 +1838,9 @@
   },
   "learn:term": {
    "q": "What does “kappa paradox” mean here?",
-   "a": "A \"paradox\" is a result that seems to contradict itself. Here, two judges agree almost every time, yet kappa gives them a mediocre score.\n\n**An everyday comparison.** Picture two weather forecasters in a desert. Both say \"no rain\" nearly every day, so they agree nearly every day. A strict grader says: \"Of course you agree. Anyone guessing 'no rain' would.\" The grader treats most of their agreement as luck and gives them little credit, even though they really do see the weather the same way.\n\n**Where it shows up in the lesson's example.**\n\n- Judge A passes 96 of 100 answers. Judge B passes 98.\n- They agree on 98 of 100. That's 98% agreement.\n- Because \"pass\" is so common, kappa assumes they'd agree about 94% of the time by luck alone.\n- Kappa only gives credit for agreement above that luck level. The gap from 94% up to 98% is small, so kappa comes out around 0.66.\n\nThat's the paradox. Agreement is 98%, but kappa looks only so-so.\n\nGwet's AC1 counts luck more gently when one verdict is rare. It puts luck at about 6%, so AC1 lands around 0.98.",
+   "a": "A **paradox** is a result that seems to contradict itself. Here, the paradox is that two judges agree almost every time, yet Cohen's kappa gives them a low-looking score.\n\n**An everyday comparison.** Picture two weather forecasters in a desert. Both say \"sunny\" nearly every day, and they almost always match. A strict reviewer says, \"Of course you match. It's always sunny. You'd match by luck.\" So the reviewer gives them little credit, even though they really do agree.\n\nKappa is that strict reviewer. When one verdict is very common, kappa assumes most of the agreement came from luck, and it subtracts all of that.\n\n**In the lesson's example:**\n\n- Judge A passes 96 of 100. Judge B passes 98.\n- They agree on 98 of 100. That's very close agreement.\n- Because \"pass\" is so common, kappa counts luck as about 0.94. That means kappa thinks 94% agreement would happen by chance alone.\n- That leaves little room above luck, so kappa lands at about 0.66.\n\nGwet's AC1 counts luck as only about 0.06, so it gives about 0.98. That fits better with how often the judges actually match.",
    "step": "Learn",
-   "fingerprint": "86ffe9ae74597c56",
+   "fingerprint": "0754398de92ced00",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2040,9 +2040,9 @@
  "judge_biases": {
   "check:0:1": {
    "q": "Why not “Length bias”?",
-   "a": "\"Length bias\" is a real thing to watch for, so it's a fair guess. It means the judge likes the longer, more detailed-looking answer, even when it isn't better.\n\nBut look at what happened in the question. The judge saw the same two answers both times. Only the order changed. That means the lengths didn't change either. Answer A was just as long in both rounds, and so was answer B.\n\nIf length were tilting the judge, it would pick the longer answer every time, whichever slot it sat in. You'd see the same winner in both orders. Instead, the winner switched. It was always the answer shown first.\n\nSo length bias can't explain the flip. Something that stayed the same can't cause something that changed. The one thing that did change was the order, and the verdict followed it.\n\nThat's the point of the swap test. It holds the answers fixed and moves only their position, so a flip points straight at order.\n\n\"Position bias\" is the better answer because the order was the only thing that changed, and the winner changed right along with it.",
+   "a": "\"Length bias\" names a real problem. The lesson calls it verbosity bias: a judge that prefers the longer, more detailed-looking answer. So it's a fair guess that something other than quality is steering the judge.\n\nIt doesn't fit this case, though. Look at what changed between the two rounds. The judge saw the **same two answers** both times. Answer A was just as long in round two as in round one, and so was B. Only the order they were shown in was different.\n\nIf length were driving the choice, the judge would pick the longer answer both times. The winner would stay the same. Instead, the winner switched, and it switched exactly when the order switched. Length stayed fixed, so it can't explain a change.\n\nThat's why the swap test is useful. It holds everything steady except order. Then it checks whether the verdict follows the answers or follows their position.\n\n\"Position bias\" is the better answer because the judge picked whichever answer came first, and order was the only thing that changed.",
    "step": "Check",
-   "fingerprint": "8d2b10472f66f8fd",
+   "fingerprint": "be0d7979bc86ca7c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2058,9 +2058,9 @@
   },
   "check:0:2": {
    "q": "Why not “A rate limit”?",
-   "a": "A \"rate limit\" is a cap set by the model provider. It limits how many calls you can make in a stretch of time, say 100 requests per minute. Go over it and your extra calls get refused with an error.\n\nThere is a small link here. The swap test does cost one extra call per pair, so on a big batch you could bump into a rate limit. That part is a real concern.\n\nBut a rate limit can't explain this result. When you hit one, you get no verdict at all, just an error. Here the judge answered both times. It just picked a different winner each time. Same two answers, only the order changed, and the verdict followed the order.\n\nThat is a judge leaning toward whatever it reads first. It is a flaw in the judging, not a problem with sending requests.\n\n\"Position bias\" is the better answer because it names exactly what happened: the verdict depended on where an answer was shown, not on how good it was.",
+   "a": "A **rate limit** is a cap that an AI provider puts on how many requests you can send in a set time, such as 100 calls per minute. Go over it and your call gets refused, usually with an error message. You get no verdict at all.\n\nThat doesn't match what happened here. Both calls went through, and the judge gave a clear answer each time. Nothing was blocked or cut off.\n\nThe only link to rate limits is a small practical one. The swap test doubles your judge calls, so on a big batch you might hit a limit. That's about running the test, though. It doesn't explain the result.\n\nThe real clue is the pattern. When A is shown first, A wins. When B is shown first, B wins. The two answers never changed. Only their order did. So the order is choosing the winner, not the quality of the answers.\n\n\"Position bias\" is better because it names exactly that: the judge favours whichever answer sits in the first slot, whatever that answer says.",
    "step": "Check",
-   "fingerprint": "b8ac5b1c7542726c",
+   "fingerprint": "cd12fbc6bc714f84",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2076,9 +2076,9 @@
   },
   "check:1:1": {
    "q": "Why not “Nothing: 60 percent is clear”?",
-   "a": "\"Nothing: 60 percent is clear\" gets one thing right. A 60-to-40 split over 300 pairs is a real gap. It's unlikely to be pure luck, so the number does tell you *something*.\n\nThe problem is *what* it tells you. Every pair was scored in one order only. If version B always sat in the same spot, say always shown first, the judge may simply prefer that spot. That's position bias: the judge leans toward whichever answer it reads first, or second, no matter how good it is.\n\nSo the 60 percent could mean \"B is better.\" Or it could mean \"the slot B was in is favoured.\" With one order, you can't tell those apart. A big, clear number can still be measuring the wrong thing.\n\nHere is what a swap might reveal. Say a pair was judged \"B wins\" in the first order. Score it again with the answers swapped. If B still wins, that's a real win. If the winner flips to A, the order decided, so it counts as a tie.\n\n\"Score them again in the other order\" is better because one extra call per pair shows which of B's wins hold up and which were just the order talking.",
+   "a": "\"Nothing: 60 percent is clear\" gets one thing right. Out of 300 pairs, 60 percent is a real gap. With that many pairs, it's unlikely to be random luck, the way a coin might land heads six times out of ten.\n\nBut a big sample only protects you from random noise. It doesn't protect you from a **bias**, meaning a lean that tilts every verdict the same way.\n\nHere every pair was scored in one order only. Suppose version B always sat in the same slot, say first. The judge may simply prefer whatever it reads first. That's **position bias**. If so, the 60 percent could be measuring the slot, not the quality of B. Scoring 300 pairs doesn't wash that out. It repeats the same tilt 300 times, so the number looks confident while still being wrong.\n\nNothing in a one-order run can tell you which story is true. The data can't separate \"B is better\" from \"first place wins.\"\n\n\"Score them again in the other order\" is better because it shows which pairs keep the same winner when swapped. Those verdicts reflect the answers. Pairs that flip get counted as ties.",
    "step": "Check",
-   "fingerprint": "dba9781f6e307758",
+   "fingerprint": "83aa60dadbddb09e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2089,14 +2089,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that a 60-to-40 split over 300 pairs is 'unlikely to be pure luck' comes from outside the lesson, and the answer runs right at the 200-word limit, but neither is serious enough to fail it."
+    "notes": "No blocking problems. The closing part runs to three short sentences rather than the one requested, and the coin-flip comparison is slightly muddled."
    }
   },
   "check:1:2": {
    "q": "Why not “Add more pairs in the same order”?",
-   "a": "Adding more pairs does get one thing right. With only a few pairs, a 60 percent win could be luck. More pairs shrink that random wobble, so the number gets steadier.\n\nBut position bias is not random. It is a steady tilt in one direction. Suppose the judge leans toward whichever answer it reads first, and version B is always shown first. Every new pair gets the same push toward B. Three hundred pairs or three thousand, the tilt comes along each time.\n\nSo more pairs in the same order give you a more confident number, not a more honest one. You could end up very sure of something the order decided, not the answers.\n\nIt is like a scale that always reads two kilos heavy. Weighing yourself a hundred times won't fix it. You get the same wrong reading, just more often.\n\n**\"Score them again in the other order\" is better because it separates the answers from their position: if B still wins when shown second, you can trust it, and any pair that flips counts as a tie.**",
+   "a": "Adding more pairs feels sensible. More examples usually make a result steadier. That part is true: with more pairs, random luck matters less.\n\nBut position bias isn't random luck. It's a steady lean. If version B was always shown in the same slot, say first, then every new pair carries the same tilt. Three thousand pairs in one order would give you the same skewed answer, just with more confidence. You'd be measuring the order more precisely, not the quality.\n\nPut simply, more data shrinks noise (random wobble). It does nothing about bias (a push in one direction every time).\n\nThat's why that 60 percent can't be trusted yet. Part or all of it could come from where B sat, not from B being better.\n\nScoring the same pairs again in the other order is better because it directly tests whether the winner follows the answer or the slot: if B still wins when it's moved, you can believe it, and any pair that flips counts as a tie.",
    "step": "Check",
-   "fingerprint": "dd2a08f3a7a9b940",
+   "fingerprint": "a521ac239930d44f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2112,9 +2112,9 @@
   },
   "check:2:1": {
    "q": "Why not “A judge from your app's family”?",
-   "a": "A judge from your app's own family is the riskiest choice here. The lesson doesn't give it any real strength in this situation.\n\nThe problem is **self-preference**. That means a judge tends to favour answers written by its own model family. Your app's answers come from that same family. So the judge leans toward your app. That lean has nothing to do with which answers are actually better.\n\nThe result is flattering scores. Your app looks stronger than it is. The rival looks weaker than it is. A comparison is only useful if the judge treats both sides the same way, and this judge doesn't.\n\nThe same trap works in reverse. A judge from the rival's family would lean toward the rival. Either way, one side gets a \"home team\" advantage.\n\nThe lesson lists this setup under \"Riskier\": a judge from the app's own family. Checking the judge against people's labels is what would expose the flattery.\n\nA judge from a third family is better because it belongs to neither side, so it has no family to favour.",
+   "a": "It's a natural pick. That judge is easy to set up, and it's probably good at grading. So it isn't useless.\n\nThe problem is **self-preference bias**. A judge tends to favour answers written by its own model family. A \"model family\" is a group of related models from the same maker, like Claude Opus and Claude Sonnet. They were trained in similar ways, so they share habits and blind spots.\n\nYour app runs on one family. A judge from that same family will read your app's answers and find them familiar. It will likely score them a bit higher than they deserve. The rival's answers sound less \"like home,\" so they lose points they shouldn't.\n\nThat makes the comparison tilted before it starts. Even if your app wins, you can't tell whether it was better or just more familiar to the judge.\n\nA judge from the rival's family has the same problem in reverse.\n\n**A judge from a third family is better because it has no family ties to either app, so neither side gets a hidden boost.**",
    "step": "Check",
-   "fingerprint": "1545b4a2806f33ac",
+   "fingerprint": "7aa1f98bbfc03e15",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2125,14 +2125,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problem; the only slight overreach is calling it the 'riskiest' choice (the lesson says 'Riskier') while also saying a rival-family judge would be biased too."
+    "notes": "The 'easy to set up' and 'probably good at grading' praise is not in the lesson, but it doesn't contradict it, so I let it pass."
    }
   },
   "check:2:2": {
    "q": "Why not “A judge from the rival's family”?",
-   "a": "It's a fair thought. Picking a judge from the rival's family does fix one problem. The judge is no longer from *your* family, so it won't flatter *your* app's answers.\n\nBut it creates the same problem on the other side. Remember self-preference: a judge tends to favour answers written by its own model family. A judge from the rival's family would lean toward the rival's answers. You haven't removed the bias. You've just pointed it at the other app.\n\nSo the comparison is still tilted. If the rival wins, you can't tell whether it truly gave better answers or the judge simply liked its own family's style.\n\nThink of a cooking contest between two chefs. Asking the second chef's mum to judge is no fairer than asking the first chef's mum. Each has a reason to lean one way.\n\nA judge from a third family is better because it has no family tie to either app, so neither side gets a built-in advantage.",
+   "a": "Picking a judge from the rival's family does get one thing right. It avoids self-preference bias toward *your* app. A judge from your own family would flatter your answers, and this choice steps away from that.\n\nBut it doesn't remove the bias. It just moves it. Self-preference bias means a judge favours answers written by its own model family. A \"model family\" is a group of models from the same maker, trained in similar ways, like Claude Opus and Claude Sonnet. A judge from the rival's family would recognise the rival's style and lean toward it. Now the rival gets the home advantage instead of you.\n\nSo the comparison is still tilted. It's tilted the other way. If your app wins anyway, that's a strong sign. But a loss tells you very little, because you can't tell whether the answers were worse or the judge was biased.\n\nA judge from a third family is better because it has no stake in either side, so neither app's answers sound like its own.",
    "step": "Check",
-   "fingerprint": "8b9cc29208ef0181",
+   "fingerprint": "1428e587ad58d34d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2143,14 +2143,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems; the claim that a win under a rival-family judge is a strong sign goes slightly beyond the lesson but follows logically from self-preference bias."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Score both orders, keep the pairs that flip” in an interview?",
-   "a": "**A 30-second answer you could say out loud:**\n\n**The problem.** \"An LLM judge is a model that grades other models' answers. It can have position bias. That means it favours whichever answer it reads first, or second, even when the content is the same.\"\n\n**The idea.** \"So I show the judge each pair of answers twice, once in each order. If the same answer wins both times, I trust the verdict. If the winner changes, the order decided, not the quality. I count that pair as a tie and keep a list of the flipped pairs to review.\"\n\n**The trade-off.** \"It costs one extra judge call per pair. That's cheap next to trusting a biased score. One edge case: if many pairs flip, the judge is unreliable on this task. I'd fix the rubric (the written grading rules) or change the judge.\"\n\n**A follow-up an interviewer might ask:**\n\n\"Swapping fixes position bias. What about the other biases?\"\n\n*Hint:* Name the other two and their fixes. For length bias, say in the rubric that length isn't quality, and compare answers of similar length. For self-preference, use a judge from a different model family, or two judges from two families. Then check the judge against expert human labels.",
+   "a": "Here's a 30-second answer you could give, in three parts.\n\n**The problem.** \"An LLM judge is a model that scores other models' answers. It can have position bias. That means it favours whichever answer it reads first, or second, no matter which answer is actually better.\"\n\n**The idea.** \"So I show the judge the same two answers twice, once in each order. If the same answer wins both times, I trust the verdict. If the winner changes, the order decided, not the answers. I count that pair as a tie, and I keep a list of those flipped pairs to look at more closely.\"\n\n**The trade-off.** \"It costs one extra judge call per pair. That's cheap compared to trusting a verdict that's really just a coin toss.\"\n\n**A likely follow-up:** \"What if lots of pairs flip?\"\n\n*Hint at a strong answer:* A high flip rate means the judge isn't reliable on this task. You'd tighten the rubric (the scoring instructions), try a judge from a different model family, or use two judges. Then you'd check the judge's verdicts against labels from human experts.",
    "step": "Explain",
-   "fingerprint": "e821f0f513840010",
+   "fingerprint": "4e179478c198200a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2166,9 +2166,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "Warning signs usually show up in your judge's numbers before anyone complains.\n\n**Position bias:** one slot wins too often. If the answer shown first, or second, wins most comparisons, the order may be deciding, not the quality.\n\n**Length bias:** scores follow word count. If the longer answer nearly always wins, even when a shorter one is correct, the judge is rewarding length. Looking detailed is not the same as being right.\n\n**Self-preference:** the scores look flattering. Answers from the judge's own model family score high. But when experts label the same answers, or real people use the app, the quality looks worse. A score that looks great and then drops in real use is the classic sign.\n\n**The quickest check is the swap.** Take some pairs and show the judge each pair in both orders. See whether the winner changes. A change is called a \"flip,\" and it means the order decided, not the answers. If many pairs flip, don't trust those verdicts yet.\n\nFor length and self-preference, compare the judge's scores with expert labels. These are the agreement checks from the last lessons. Low agreement points to a tilted judge.",
+   "a": "**Warning signs**\n\n- **Position bias.** The answer in the first slot (or the second) wins far more often than the other. Run the same pairs again in a new order and some winners change.\n- **Verbosity bias.** Longer answers keep winning. Short answers that are correct get marked down. If you sort results by length, the scores climb with it.\n- **Self-preference bias.** Your judge rates answers from its own model family higher than people do. The offline scores look great. Then real users or experts find the answers weaker, and quality seems to drop once you ship.\n\nThe common thread is a score that looks too good and doesn't hold up outside your test.\n\n**Quickest checks**\n\n1. **Swap and score twice.** Take your pairs, show the judge each one in both orders, and compare the two verdicts. Any pair whose winner changed has flipped. That verdict followed the order, not the answers. Count it as a tie, or look closer.\n2. **Compare against people.** Put the judge's scores next to expert labels. These are answers that people have already rated by hand. Where the judge is kinder than the people, you have likely found a flattering judge.",
    "step": "Learn",
-   "fingerprint": "5f49933ddf83dec1",
+   "fingerprint": "60151e89abdb86d0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2184,9 +2184,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three cases where the swap-and-check rule needs extra care.\n\n**The judge scores one answer at a time.** If the judge gives each answer a score on its own, there is no \"first\" or \"second\" to swap, so this check has nothing to catch. Length and same-family bias can still creep in. Lean on the other fixes: say in the rubric (the judge's scoring guide) that length isn't quality, and check scores against people's labels.\n\n**More than two answers at once.** With three or more answers in one prompt, two orders no longer cover every arrangement. Break the comparison into pairs instead, and run the swap on each pair.\n\n**Only one model family to use.** A model family is a group of models from the same maker, like Claude Opus and Claude Sonnet. If every judge you can use comes from the same family that wrote the answers, you can't add a second judge from elsewhere. That makes checking against expert labels the main guard, so keep a small labelled set and keep testing against it.",
+   "a": "The swap-and-score method has limits. Here are three places where it needs extra care.\n\n**Ranking more than two answers.** With three or more answers, there are many possible orders, and two runs can't cover them. Shuffle the order several times and see which answer wins most often. Or score each answer on its own against a rubric (a written list of what a good answer has).\n\n**Lots of pairs flip.** Counting a flip as a tie works when flips are rare. If many pairs flip, the judge is mostly following the order, so piling up ties hides a broken judge. Rewrite the judge prompt or try a different model. Then recheck it against people's labels.\n\n**Length really does matter.** Some tasks need detail, like a full troubleshooting guide. Here \"compare answers of similar length\" could punish the answer that is complete. Make the rubric spell out what must be covered, so the judge rewards coverage, not extra words.",
    "step": "Learn",
-   "fingerprint": "b4342905e6130d94",
+   "fingerprint": "da6cede1ad18d61c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2202,9 +2202,9 @@
   },
   "learn:term": {
    "q": "Why does this matter?",
-   "a": "An LLM judge is a language model you ask to grade answers, so you don't have to read thousands yourself. If the judge is tilted, every decision you make from its scores is tilted too.\n\nHere's a realistic way it goes wrong. You're testing a new version of your support agent against the old one. Your script always shows the judge the new answer first. The new version \"wins\" 70% of the time, so you ship it.\n\nBut the judge simply liked whatever it read first. Users see no improvement. You spent a week and learned nothing. Worse, you trusted a number that was really measuring the order you used.\n\nLength bias causes a similar slide. If longer answers keep winning, your agent slowly gets wordier, not better.\n\nSelf-preference makes it quieter still. A judge from the same model family flatters its own family's writing, so weak spots look fine.\n\nThe fixes are cheap. Swapping the order costs one extra call per pair, and it tells you whether the verdict came from the answers or from the order.",
+   "a": "An LLM judge is a model you ask to grade answers. It feels objective, but it can tilt for reasons unrelated to quality. If you don't test for that, you make decisions on a score that is quietly wrong.\n\nHere's a realistic case. Your team writes a new prompt for a support agent. To compare it with the old one, you show the judge both answers for 200 questions. Your script always puts the new answer first. The judge picks the new one 70% of the time. Everyone celebrates and ships it.\n\nBut the judge had position bias. It leaned toward whatever it read first. The new prompt wasn't really better. Customers notice no change, and you've lost weeks chasing a fake win.\n\nSwapping the order would have caught it. Many verdicts would flip, and flips count as ties. The \"70% win\" would shrink to something close to even.\n\nThe same thing happens with the other two biases. Longer answers win just for being long. A judge from the same model family flatters its own family's writing. Each fix is cheap. Skipping them can cost you a wrong decision.",
    "step": "Learn",
-   "fingerprint": "78fa254d0437791d",
+   "fingerprint": "ae30bee4318b38de",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2404,9 +2404,9 @@
  "judge_cost": {
   "check:0:1": {
    "q": "Why not “Switch to a cheaper judge you never checked”?",
-   "a": "That option gets one thing right. A smaller model really is cheaper. The lesson's Haiku example costs about a twentieth of Sonnet's price, so the bill would drop a lot.\n\nWhat it misses is trust. A judge is only useful if its verdicts match what a careful person would say. \"Never checked\" means you don't know if they do. The lesson shows the risk. When this app tried Haiku as a judge, it agreed with itself on only 77 in 100 answers. Its agreement with people had a kappa of 0.05. Kappa is a score for how much two raters agree beyond what luck alone would give, and 0 means pure chance. So those verdicts were close to coin flips.\n\nA cheap score you can't rely on is not a saving. You might ship a worse agent because the judge said it was fine. That is why a smaller judge sits last on the list, and only after it passes the agreement checks.\n\nBatching is better because it keeps the same trusted judge and simply waits a little longer for results, which halves the price to $9 a run.",
+   "a": "\"Switch to a cheaper judge you never checked\" gets one thing right. A smaller model really does cost less per call, and it can cut the bill far more than batching does.\n\nWhat it misses is trust. A judge is only useful if its verdicts match what careful people would say. This app's own tutor eval tried Claude Haiku as a judge at a twentieth of Sonnet's price. It agreed with itself on only 77 of 100 answers. Its agreement with people had a kappa of 0.05. Kappa is a score for how much two raters agree beyond pure luck, where 0 means no better than guessing. So those verdicts were close to coin flips. A cheap verdict nobody can trust is not a saving.\n\nThat is why the lesson puts \"a smaller judge\" last on the list. You only switch after the new judge passes the agreement checks from earlier lessons. This option skips those checks.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and simply waits for cheaper batch processing, halving the bill from $18 to $9 a run.",
    "step": "Check",
-   "fingerprint": "e3146a3e6cec6fb0",
+   "fingerprint": "5ae703b569ce2631",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2422,9 +2422,9 @@
   },
   "check:0:2": {
    "q": "Why not “Add two more scorers to every answer”?",
-   "a": "\"Add two more scorers to every answer\" moves the bill the wrong way. It makes the cost go up, not down.\n\nA **scorer** is one check the judge runs on an answer, like \"is it grounded?\" or \"is it polite?\". Each scorer is its own model call. So the call count grows with every scorer you add.\n\nHere is the count with five scorers instead of three:\n\n- 500 examples × 5 scorers × 2 repeats = 5,000 calls, up from 3,000.\n- Input: 5,000 × 2,000 tokens = 10,000,000 tokens at $2 a million = $20.\n- Output: 5,000 × 200 tokens = 1,000,000 tokens at $10 a million = $10.\n- That is $30 a run, up from $18.\n\nWhat it gets right: extra scorers can check more qualities of an answer. But the lesson's first tip is the opposite. Score only what your acceptance criteria need. Those are the conditions an answer must meet to pass. Extra scorers add cost without answering the question you asked.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and the same verdicts, while batch processing halves the price to $9 a run.",
+   "a": "Adding two more scorers makes the bill bigger, not smaller. Each scorer is its own model call on every answer. The calls are examples times scorers times repeats.\n\nWith 3 scorers you have 500 × 3 × 2 = 3,000 calls. With 5 scorers you have 500 × 5 × 2 = 5,000 calls. Every call still reads about 2,000 tokens and writes about 200. So the cost rises from $18 a run to about $30. At 20 runs a month, that is $600 instead of $360.\n\nWhat it gets right: more scorers can check more things about each answer. But the lesson's first tip points the other way. Score only what your acceptance criteria use. Your acceptance criteria are the checks you agreed decide whether the agent is good enough. Extra scorers you don't need are pure cost.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and the same verdicts, and halves the price to $9 a run. Batch processing means sending the calls as a job that can wait, rather than needing answers right away.",
    "step": "Check",
-   "fingerprint": "de57d0f182fb30a5",
+   "fingerprint": "595e63b5b5c24135",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2435,14 +2435,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No clear problem: the arithmetic (5,000 calls, $30 a run, $9 batched) matches the lesson. It is close to the length limit and uses × and = signs, but these are everyday arithmetic."
+    "notes": ""
    }
   },
   "check:1:1": {
    "q": "Why not “The cost per call barely moves”?",
-   "a": "**\"The cost per call barely moves\"** is tempting for a fair reason. The judge reads 2,000 tokens. Even after the change, it writes only 800. Reading is still the bigger number, so the extra writing looks small.\n\nWhat it misses is the price per token. Output costs five times more than input here: $10 a million out against $2 in. A token the judge writes costs as much as five it reads.\n\nWork out one call before the change:\n\n- Input: 2,000 tokens at $2 a million = $0.004\n- Output: 200 tokens at $10 a million = $0.002\n- Total: $0.006\n\nNow after the long reason is added:\n\n- Input: still $0.004\n- Output: 800 tokens at $10 a million = $0.008\n- Total: $0.012\n\nThe total went from $0.006 to $0.012. That is twice as much. Across 3,000 calls a run, the change adds $18 to every run.\n\n**\"The cost per call doubles\"** is better because it counts output at its real, higher price, and that price makes 600 extra written tokens cost as much as the whole call did before.",
+   "a": "\"The cost per call barely moves\" is a natural guess. The input really doesn't change: the judge still reads the same 2,000 tokens. And 800 output tokens is still fewer than 2,000 input tokens, so the change can look small.\n\nWhat it misses is the price. Output tokens cost five times as much as input tokens: $10 a million against $2. So a few hundred extra output tokens weigh far more than their count suggests.\n\nHere is the arithmetic for one call:\n\n- **Before:** input 2,000 × $2 / 1,000,000 = $0.004. Output 200 × $10 / 1,000,000 = $0.002. Total: $0.006.\n- **After:** input is still $0.004. Output 800 × $10 / 1,000,000 = $0.008. Total: $0.012.\n\nThat is exactly twice the cost. Across 3,000 calls a run, $18 becomes $36. That is why \"ask for a short verdict\" is on the list of savings.\n\n\"The cost per call doubles\" is better because it weighs each token by its price, not just its count. Output's higher price turns a modest token increase into twice the bill.",
    "step": "Check",
-   "fingerprint": "8bbec07163d6efd7",
+   "fingerprint": "3c276c8f7730c2de",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2453,14 +2453,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The arithmetic and the 5x price point match the lesson. The only small quibble is the 3,000-call figure, which comes from the lesson's example rather than the Check question."
+    "notes": ""
    }
   },
   "check:1:2": {
    "q": "Why not “The cost per call halves”?",
-   "a": "\"The cost per call halves\" points the wrong way. Nothing in this change makes a call cheaper. The judge reads the same 2,000 tokens. It just writes more. Every extra token it writes is billed, so the cost can only go up.\n\nHere is the sum, one call at a time. Prices are per million tokens, so divide by a million.\n\n**Before:**\n- Input: 2,000 tokens at $2 a million is $0.004.\n- Output: 200 tokens at $10 a million is $0.002.\n- Total: $0.006 a call.\n\n**After:**\n- Input: still $0.004.\n- Output: 800 tokens at $10 a million is $0.008.\n- Total: $0.012 a call.\n\nThe output part went from $0.002 to $0.008. That is four times as much. Output tokens cost five times more than input tokens, so a longer reason hurts fast. That is why the lesson suggests a verdict plus one sentence, with the output capped.\n\n\"The cost per call doubles\" is better because $0.006 becomes $0.012, which is exactly twice as much.",
+   "a": "\"The cost per call halves\" gets one thing right: the cost does change by a factor of two. But it gets the direction backwards.\n\nA longer reason means the judge writes *more* tokens, not fewer. Every token is billed. So adding tokens can never make a call cheaper. A **token** is a small chunk of text, roughly part of a word, and you pay for each one the model reads or writes.\n\nHere is the math for one call:\n\n- **Before:** input is 2,000 × $2 per million = $0.004. Output is 200 × $10 per million = $0.002. Total: **$0.006**.\n- **After:** input is still $0.004. Output is 800 × $10 per million = $0.008. Total: **$0.012**.\n\n$0.006 becomes $0.012. That is double.\n\nThis also shows why output matters so much. Output costs five times as much per token as input. So the 600 extra output tokens cost more than all 2,000 input tokens put together.\n\n\"The cost per call doubles\" is better because it follows the real numbers: more output tokens at the pricier output rate push each call from $0.006 to $0.012.",
    "step": "Check",
-   "fingerprint": "cf5f95c5be79c66e",
+   "fingerprint": "8166175a1fa610b0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2476,9 +2476,9 @@
   },
   "check:2:1": {
    "q": "Why not “Switch now: cheaper is always better”?",
-   "a": "\"Switch now\" gets one thing right. Cost matters. A judge is a model call on every example, for every scorer, on every repeat. A judge at a twentieth of the price could cut a $360 monthly bill to about $18.\n\nWhat it misses is that a judge is only useful if you can trust its verdicts. This app's own tutor eval tried exactly this. The cheap judge, Claude Haiku, gave the same verdict on only 77 of 100 answers when asked twice. Its agreement with human graders was barely better than random guessing (a kappa of 0.05; kappa is a score where 0 means \"no better than chance\" and 1 means \"perfect agreement\"). Those verdicts look like data, but they tell you almost nothing. So you would save money on scores you can't act on. That is not a saving.\n\nThat is also why the lesson puts \"a smaller judge\" last on its list of savings. The safer steps come first: score only what matters, ask for short verdicts, cache the rubric, and batch the runs.\n\n\"Check it agrees with people and itself\" is better because it finds out whether the cheap judge's verdicts can be trusted before you rely on them.",
+   "a": "\"Switch now: cheaper is always better\" gets one thing right. Cost matters. A judge a twentieth of the price would shrink a $360 monthly bill to about $18. That is a real saving, and the lesson does list a smaller judge as one way to cut the bill.\n\nBut it misses the point of a judge. You pay a judge for verdicts you can trust. If the verdicts are wrong, you are paying for noise, however little you pay.\n\nThe lesson's own example shows this. This app's tutor eval tried Claude Haiku as a cheap judge. It gave the same verdict on the same answer only 77 times in 100. Its agreement with people was a kappa of 0.05. Kappa is a score for agreement that subtracts the agreement you would get by luck, so 0.05 is barely better than guessing.\n\nThat is also why a smaller judge sits last on the list. It goes after the safer savings like short verdicts, caching and batching, and only once it passes the agreement checks.\n\n\"Check it agrees with people and itself\" is better because it tells you whether the cheap verdicts are worth anything before you rely on them.",
    "step": "Check",
-   "fingerprint": "1475051fb682a989",
+   "fingerprint": "f0c90c5af8573dd5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2494,9 +2494,9 @@
   },
   "check:2:2": {
    "q": "Why not “Run it only on easy examples”?",
-   "a": "\"Run it only on easy examples\" does save money: fewer examples means fewer calls. But it skips the real question, which is whether the cheaper judge can be trusted at all.\n\nEasy examples are the ones almost any judge gets right. So they hide a weak judge instead of exposing it. The hard, borderline answers are where a cheap judge slips. Those are also the answers your eval exists to catch. Scoring only the easy ones would give you a clean-looking report that tells you very little.\n\nIt also changes the test, not just the judge. Your scores would no longer be comparable with earlier runs, because the examples are different.\n\nThe lesson's own story shows the risk. Claude Haiku cost a twentieth of Sonnet's price. Yet it agreed with itself on only 77 in 100 answers. Its kappa with people was 0.05. Kappa is a score for agreement beyond lucky guessing, and 0.05 is barely above chance.\n\n\"Check it agrees with people and itself\" is the better first step, because it tells you whether the cheap verdicts mean anything before you trust them to save money.",
+   "a": "\"Run it only on easy examples\" gets one thing right. Fewer examples means fewer calls, and calls are what multiply the bill.\n\nBut it misses the real question. The team wants a judge at a twentieth of the price. Before you save anything, you need to know if that judge's verdicts can be trusted. Choosing which examples to score doesn't tell you that. It only changes what you measure.\n\nIt also weakens the eval itself. The lesson's set mixes 200 golden examples with 300 from real traffic. Keep only the easy ones and you're no longer testing your agent on the cases you chose to care about.\n\nThe lesson's own story shows the risk. This app tried Claude Haiku as a judge. It agreed with itself on only 77 in 100 answers. Its kappa with people was 0.05. Kappa is a score for agreement beyond lucky guessing, where 0 means pure chance. So its verdicts were close to chance.\n\n\"Check it agrees with people and itself\" is better because it tests the cheap judge's trustworthiness first, and a cheap verdict nobody can trust is not a saving.",
    "step": "Check",
-   "fingerprint": "b97b10217e2783a7",
+   "fingerprint": "479d799b0fb61490",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2507,14 +2507,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problem; the line about 'cases you chose to care about' is a mild inference beyond the lesson, and the kappa definition is correct but not stated in the lesson."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Count the calls, then price the tokens” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"An LLM judge, a model that scores another model's answers, is a paid call every time it scores. People guess the bill from one call and get surprised.\"\n\n*The idea.* \"So I count the calls first: examples times scorers times repeats. 500 examples, 3 scorers, run twice is 3,000 calls. Then I price the tokens, the small chunks of text models are billed by. I price input and output separately, because output costs more. That gave $18 a run, or $360 a month.\"\n\n*The trade-off.* \"A reasoning model's hidden thinking is billed as output. So I check real token counts in the traces. And a cheaper judge only saves money if people can still trust its verdicts.\"\n\n**A likely follow-up**\n\n\"How would you cut that bill?\"\n\nHint: go safest first. Drop scorers your acceptance criteria don't use. Ask for a short verdict, with output capped. Cache the rubric, so the repeated part is read cheaply. Batch the runs, sending them as a slower bulk job at half price. Try a smaller judge last, only after it passes agreement checks.",
+   "a": "**A 30-second spoken answer**\n\n*The problem.* An LLM judge is a model that scores another model's answers. Every score is a paid model call. People often guess the bill from the token price alone, and the real bill surprises them.\n\n*The idea.* So I count the calls first: examples, times scorers, times repeats. 500 examples, 3 scorers, each run twice, is 3,000 calls. Then I price the tokens, the small chunks of text the model reads and writes. Input and output are priced separately, and output costs more. At 2,000 tokens in and 200 out, that's $18 a run.\n\n*The edge case.* A reasoning model thinks before answering. That hidden thinking is billed as output. So I check real usage in the traces, the logged record of each call.\n\n**A likely follow-up**\n\n\"How would you cut that bill?\"\n\nHint: go from safest to riskiest. Drop scorers your acceptance criteria don't use. Ask for a short verdict, capped. Cache the rubric. Batch the runs to halve the price. Try a smaller judge last, and only if it agrees with people. A cheap verdict nobody trusts saves nothing.",
    "step": "Explain",
-   "fingerprint": "4af66d4d1432b7f8",
+   "fingerprint": "a3a2e9759d5fd3a0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2525,14 +2525,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Passes all checks; the only weak spot is the claim that people often guess the bill from the token price alone, which the lesson never says but which does not contradict it."
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs the cost was not counted, or counted wrong:**\n\n- **The bill is far above your estimate.** Often someone priced the tokens but forgot to multiply by scorers or repeats. Three scorers run twice means six times the calls, not one.\n- **Output costs more than you expected.** On a reasoning model, the hidden thinking is billed as output. You never see it, but you pay for it, at the higher output price.\n- **Input tokens per call are higher than planned.** Long documents for grounding checks can swell every call.\n- **Verdicts are long essays.** No cap on output means each reason runs on, and you pay for every word.\n- **A cheap judge gives scores that wobble between runs.** That is the trust problem. The saving is not real if the verdicts are close to chance.\n\n**The quickest check:** open the traces for one eval run. A trace is the logged record of each model call. Count the calls. Then read the input and output token counts on a few of them. Multiply them out and compare with the bill. If the numbers don't match, one of the signs above is the cause.",
+   "a": "**Warning signs**\n\n- **The bill is far above your estimate.** You budgeted around $18 a run, and the invoice says several times that. Usually you missed a multiplier: a forgotten scorer, an extra repeat, or more examples than you thought.\n- **Output tokens are much higher than you expected.** You asked for a verdict and one sentence, yet each call writes thousands of tokens. A reasoning model's hidden thinking is billed as output, at the higher price, even though you never see it.\n- **Long, rambling verdicts.** The judge writes paragraphs because nothing caps its output.\n- **Cheap judge, shaky scores.** After switching to a smaller judge, the same answer passes on one run and fails on the next. Or its verdicts stop matching what people decided. That is a cheap verdict nobody can trust.\n\n**Quickest check**\n\nOpen the traces for one eval run. A trace is the log of each model call. Count the judge calls and compare that number to examples times scorers times repeats. Then look at the input and output token counts on a few calls. Multiply them out and compare the result with your bill. The gap shows you where the money went.",
    "step": "Learn",
-   "fingerprint": "d577c2eb898d3c12",
+   "fingerprint": "fa2d78caebe08836",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2548,9 +2548,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple sum (calls times tokens times price) is a good first estimate. Here are three places where it needs extra care.\n\n**A reasoning judge.** A reasoning model thinks before it answers, and that hidden thinking is billed as output. Your 200-token guess could really be 2,000. Run a small batch first, then read the real token counts in your traces (the logged record of each call).\n\n**Inputs that vary a lot.** Some questions pull in one short document, others pull in twenty long ones. One average can hide a few very expensive calls. Price from real counts in your traces, or estimate the short, typical and long cases separately.\n\n**Judging whole agent runs.** If the judge reads an agent's full trace (every step and tool result), the input can grow far past 2,000 tokens. Trim what the judge sees to the parts the scorer actually needs.\n\nAlso, once you add caching or batching, the price per token changes. Redo the sum with the discounted prices rather than assuming the old ones.",
+   "a": "**When the judge is a reasoning model.** Its hidden thinking is billed as output, and its length changes from call to call. A fixed guess like 200 output tokens can badly undercount. Read the real token counts from your traces, which are the logs of each call, and price from those.\n\n**When inputs vary a lot in size.** Some examples carry a few short documents, others carry long ones, so one average input size can mislead. Measure input tokens per example, and price the long ones separately if they dominate the bill.\n\n**When you add caching or batching.** A cached rubric is read for a tenth of the price or less, and a batch run is half price. One flat price per million tokens no longer fits. Split the tokens into parts, such as cached rubric and fresh question, and give each part its own price.\n\nThe core habit still holds in every case. Count the calls first, then price the tokens.",
    "step": "Learn",
-   "fingerprint": "1e2e29d0f918dbfd",
+   "fingerprint": "3f8fee787d1a02d0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2566,9 +2566,9 @@
   },
   "learn:term": {
    "q": "What does “LLM judge” mean here?",
-   "a": "An **LLM judge** is a language model you use to grade another model's answers. LLM stands for \"large language model\", like Claude.\n\nThink of a teacher marking exam papers. Your agent writes the answers. The judge reads each one, checks it against a marking guide, and gives a mark with a short reason.\n\nIn this lesson, the marking guide is the **rubric**: the instructions that tell the judge what a good answer looks like. A **scorer** is one thing being marked, such as \"is the answer backed by the documents?\"\n\nEvery time the judge marks one answer, that is a separate model call. You pay for what it reads: the rubric, the question, the answer and the documents. You also pay for what it writes: the verdict and the reason.\n\nThe example counts exactly this. In `calls = 500 * 3 * 2`, the judge marks 500 examples with 3 scorers, and each check runs twice. That is 3,000 separate judge calls.\n\nThe rest of the example prices those calls in **tokens**. Tokens are the small chunks of text that models are billed by.\n\nSo a judge is useful, but it is never free.",
+   "a": "An **LLM judge** is a language model you ask to grade another model's answer. LLM stands for \"large language model\", like Claude.\n\nThink of a teacher marking exam papers. Your agent writes the answers. The judge is the marker. It reads the marking guide (the **rubric**), the question, the student's answer, and any source documents. Then it writes a grade and a short reason.\n\nThe catch is that every single marking is a separate model call. You pay for the tokens it reads and the tokens it writes. A **token** is a small chunk of text, roughly part of a word.\n\nIn the lesson's example, the judge shows up in this line:\n\n```python\ncalls = 500 * 3 * 2      # 3,000 calls\n```\n\nThat is 500 examples, 3 **scorers** (different things the judge checks, like grounding or tone), and each check run twice. Each of those 3,000 calls is the judge marking one answer. The next lines price what it read (`inp`) and what it wrote (`out`).\n\nSo \"LLM judge\" here means a grader you pay per paper marked.",
    "step": "Learn",
-   "fingerprint": "9bf59cb66c00612e",
+   "fingerprint": "0d77d8c3db88e1ee",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2579,7 +2579,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems: the definition, teacher comparison and example walk-through match the lesson, it stays under 200 words, and the quoted calls line is the lesson's own example, not the judge_bill solution."
+    "notes": "No real problems. The 'grounding or tone' scorer examples are illustrative; tone is not named in the lesson but does not contradict it."
    }
   }
  },
@@ -3696,9 +3696,9 @@
  "weighted_score": {
   "check:0:1": {
    "q": "Why not “The plain eval-set average, since every example…”?",
-   "a": "\"Every example counts once\" sounds fair, and it gets one thing right. It is an honest summary of **the eval set itself**. If you only asked \"how did we do on these test questions?\", it would be the answer.\n\nBut the eval set is not a copy of real traffic. You chose to give refunds extra examples, 3 in 10, so you could measure them properly. Real users only ask about refunds 1 in 20 times. A plain average counts refunds about six times more than users actually meet them. Because refunds score badly, the headline looks **worse** than what real users experience.\n\nIt also hides something. One blended number never shows that refunds are the weak spot. Billing could be fine and refunds broken, and you would only see a vague middle score.\n\n\"Weighted\" just means each group counts in proportion to its share of real traffic.\n\n**The traffic-weighted score, shown next to each group's score, is better because the headline matches what real users experience, while the per-group scores keep the refunds problem in plain sight.**",
+   "a": "The plain eval-set average sounds fair. Every example counts once, and nothing is hidden or fudged. As a summary of *your test set*, it is accurate.\n\nBut your test set is not a copy of real life. You gave refunds extra examples on purpose, 3 in 10, so you could measure them well. Real users ask about refunds only 1 in 20 times.\n\nRefunds score badly. So in the plain average they pull the number down about six times harder than users actually feel them. The headline ends up describing the mix you chose to test, not what users experience.\n\nThere is a second problem. One blended number, plain or weighted, hides *where* the trouble is. Someone reading \"the score is X\" never learns that refunds are failing.\n\nThe traffic-weighted score counts each group as much as real users meet it. \"Weighted\" means each group's score is scaled by its share of traffic. Showing each group's score next to it keeps the weak refund result in plain view.\n\n**So the better answer is \"The traffic-weighted score, shown next to each group's score,\" because it gives an honest headline and still shows where the problem is.**",
    "step": "Check",
-   "fingerprint": "721c129fc395da77",
+   "fingerprint": "b253ff99b0755190",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3714,9 +3714,9 @@
   },
   "check:0:2": {
    "q": "Why not “The refund score alone, since it is the worst”?",
-   "a": "Picking the worst score gets one thing right: it refuses to let a bad group hide. Refunds failing is a real problem, and you should not bury it.\n\nBut as the overall number, it misleads. Refunds are only 1 in 20 of real questions. The refund score tells you nothing about how the other 19 in 20 questions go. So the headline would describe a small slice of traffic as if it were all of it.\n\nIt also throws information away. The other groups' scores, and how many examples each one rests on, disappear from the report.\n\nA plain average of the eval set has the opposite flaw. Refunds are 3 in 10 of your eval examples. That is right for measuring them closely. But averaging that way makes refunds count six times more than they do in real traffic.\n\n\"The traffic-weighted score, shown next to each group's score\" is better because the headline counts each group as often as real questions do, while the per-group scores keep the refund problem in plain view.",
+   "a": "That option gets one thing right. Refunds are scoring badly, and that deserves attention. Hiding a failing group is exactly what this lesson warns against.\n\nBut it is not an *overall* number. Refund questions are only 1 in 20 of real traffic. The other 19 in 20 users ask about other things. If your headline is the refund score, you are telling everyone that the typical user gets that bad an experience. Most users don't.\n\nIt also throws away information. You learn nothing about how the other groups are doing. A drop in billing next week would be invisible.\n\nThere is a second trap. Refunds are 3 in 10 of your eval set because you gave them extra examples on purpose. That was the right call for measuring refunds well. It just means neither the eval-set mix nor the single worst group reflects what real users meet.\n\n\"The traffic-weighted score, shown next to each group's score\" is better because the headline counts each group as often as real users hit it, while the per-group scores keep the refund problem in plain view.",
    "step": "Check",
-   "fingerprint": "6190b475f96d6997",
+   "fingerprint": "3f4c8ec9eafbe04f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3732,9 +3732,9 @@
   },
   "check:1:0": {
    "q": "Why not “The same 90 percent, but in bold”?",
-   "a": "Making the number bold changes how it looks, not what it says. The manager asked a specific question: are refund questions working? A single 90 percent can't answer that, however loudly you print it.\n\nIs there anything right about it? Only that a headline number is useful. A quick summary has its place. But the problem was never that the number was hard to see. The problem is that one overall score blends every group together. Billing could be passing almost every time while refunds fail half the time, and the blend can still land at a comfortable 90 percent. The weak group hides inside the strong one.\n\nBold also adds false confidence. It makes the number look more important, which makes the hidden problem easier to miss.\n\n\"A score for each group, with its count\" is better because it shows the refund score on its own. The count tells the manager how many examples that score rests on, so they know how much to trust it.",
+   "a": "Making the number bold changes how it looks, not what it says. The report still has one number, and that one number is the problem.\n\nThe product manager asked a specific question: are refund questions working? A single 90 percent cannot answer that. It is a blend of every group. Billing could be near perfect while refunds fail often, and the blend can still look fine. Bold text just draws more attention to a number that hides the answer.\n\nWhat it gets right is small. A headline number is still worth showing, and making it easy to spot is not wrong. But the fix the report needs is more information, not louder formatting.\n\nThe count matters too. A \"count\" here means how many eval examples a group's score is based on. A refunds score of 100 percent from 3 examples is much weaker evidence than 100 percent from 50. Without the count, the reader cannot tell a solid score from a lucky one.\n\n\"A score for each group, with its count\" is better because it answers the refunds question directly and shows how much to trust that answer.",
    "step": "Check",
-   "fingerprint": "5409a0b6f5002fc0",
+   "fingerprint": "422d3c9ecdf7523e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3750,9 +3750,9 @@
   },
   "check:1:1": {
    "q": "Why not “Last week's score next to it”?",
-   "a": "\"Last week's score next to it\" does get one thing right. It shows a **trend**, meaning whether things got better or worse over time. That is useful. If the score dropped from 95% to 90%, you would know something changed.\n\nBut it answers a different question. The manager asked about **refunds**. Two overall numbers still mix every group together. Refunds could be failing half the time in both weeks, and both numbers would still look fine because billing is so large.\n\nIt can even hide a fresh problem. Say billing improved a little and refunds got much worse in the same week. The two changes can cancel out. The overall score stays flat, and nobody notices that refunds broke.\n\nSo you would still not be able to say \"refunds are working\" or \"refunds are not.\" You would only know the blend moved, or did not.\n\n\"A score for each group, with its count\" is better because it answers the manager directly: you can point to the refunds number and see how many examples it rests on, so you know how much to trust it.",
+   "a": "Putting last week's score next to this week's does add something real. It shows a trend, meaning whether things are getting better or worse over time. If the score dropped from 90% to 80%, you would know something changed.\n\nBut it doesn't answer the product manager's question. Both numbers are still one blended score across every group. Refunds could be failing half the time in both weeks, and the two numbers would still look steady and fine. Worse, billing could improve while refunds get worse. The two changes cancel out, and the headline doesn't move at all.\n\nSo the comparison tells you *whether* the overall number moved. It can't tell you *which* group is struggling. The product manager asked about refunds specifically, and a blended number has no way to show that.\n\n\"A score for each group, with its count\" is better because it shows the refunds score directly, and the count (how many examples the score is based on) tells you how much to trust it.",
    "step": "Check",
-   "fingerprint": "b420a772dfd0382a",
+   "fingerprint": "be353e952860c2a7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3768,9 +3768,9 @@
   },
   "check:2:0": {
    "q": "Why not “Give it a score of zero”?",
-   "a": "\"Give it a score of zero\" gets one thing right. It refuses to pretend the gift card group is fine. Something real is missing, and a zero at least makes noise about it.\n\nBut a score is a claim about evidence. A zero says \"we tested gift card questions and every single one failed.\" You never tested any. The honest number of examples behind that group is zero. That means you know nothing about it, not that it fails.\n\nTreating \"unknown\" as \"failing\" causes two problems:\n\n- **It distorts the headline.** If gift cards get some share of real traffic, a fake 0% drags the weighted score down for a failure that may not exist.\n- **It points to the wrong fix.** A zero invites people to debug the agent. The actual gap is in your eval set, which simply has no gift card questions yet.\n\n\"Call it a blind spot to fill\" is better because it reports the truth (no data yet) and names the right next step: write gift card examples, then measure that group for real.",
+   "a": "A score of zero sounds cautious, but it says something you don't actually know.\n\n**What it gets right:** it refuses to ignore the group. Real users ask about gift cards, so the report shouldn't act as if they don't exist. That instinct is good.\n\n**What it misses:** a zero is a measurement. It claims \"we tested gift card questions and the agent failed every one.\" But you never tested any. The agent might handle them well, or badly. You simply have no evidence.\n\nThat false zero also does damage. Gift cards carry real traffic, so in the weighted headline number their zero pulls the score down. Now the headline is wrong in a way that looks precise. Someone reading it might think the agent got worse, when really the eval set just has a gap.\n\nIt also points to the wrong fix. A zero suggests \"repair the agent.\" The real next step is \"write some gift card examples and measure.\"\n\n**\"Call it a blind spot to fill\"** is better because it honestly reports that the group is unmeasured and names the fix: add examples for it.",
    "step": "Check",
-   "fingerprint": "872b0593eae1bc5d",
+   "fingerprint": "284888c6f2ac78ae",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3786,9 +3786,9 @@
   },
   "check:2:2": {
    "q": "Why not “Leave it out, since it's new”?",
-   "a": "**\"Leave it out, since it's new\" gets one thing right.** You have no gift card examples, so you can't give that group a score. Leaving it out at least avoids making up a number or logging it as 0%. A zero would wrongly say \"it always fails\" when really you just don't know.\n\n**But it misses the bigger point.** Real users are already asking about gift cards. Being new doesn't make that traffic matter less. If the group simply vanishes from the report, three things go wrong:\n\n- The report looks complete when it isn't. Readers assume every kind of question was checked.\n- Your headline weighted score quietly covers only part of real traffic. Nobody can see which part is missing.\n- Nothing prompts anyone to add gift card examples, so the gap can last for a long time.\n\nIn short, leaving it out hides the problem instead of reporting it.\n\n**\"Call it a blind spot to fill\" is the better answer.** It openly flags that real users are meeting something you haven't measured, and it turns that gap into a clear next step: add gift card examples to the eval set.",
+   "a": "\"Leave it out, since it's new\" gets one thing right. You have no gift card examples, so you can't give that group a score. Making one up, or calling it 0%, would be wrong. A missing score is not a zero.\n\nBut leaving it out quietly hides a real gap. Real users are already asking about gift cards. Your headline number (the single score at the top of the report) is weighted by real traffic. If gift cards just disappear from the report, that number only covers part of what users ask. Yet it looks as if it covers everything. Nobody reading it would know a slice of real questions was never tested.\n\nThe key point is that you don't know how gift card questions go. They might be fine. They might not. Leaving the group out hides that uncertainty instead of showing it.\n\n\"Call it a blind spot to fill\" is better because it names the gap in the report, so readers know the score doesn't cover gift cards, and it points to the fix: add gift card examples to the eval set.",
    "step": "Check",
-   "fingerprint": "66b78e32984692e6",
+   "fingerprint": "2d06bc10bada5ab3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3804,9 +3804,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “A weighted average” in an interview?",
-   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"One overall score can hide failures. Billing might pass 90% of the time while refunds pass only 50%. A plain average of the eval set, meaning my collection of test examples, counts each group by how many examples I wrote. It doesn't count how often real users hit that group.\"\n\n**The idea.** \"So the headline number is a weighted average. Each group counts as much as its share of real traffic. In my example, a plain average says 70%. Weighted by traffic it's 78%, because billing is 70% of what users ask.\"\n\n**The edge case.** \"A weighted headline can bury a small group that's failing. So I always report each group's score next to it, with how many examples it's based on. And if a group appears in traffic but not in my eval set, that's a blind spot, not a zero.\"\n\n**Likely follow-up:** \"Why not just make the eval set match traffic?\"\n\n*Hint:* Small groups would then get too few examples to measure reliably. Give them extra examples so you can measure them well. Then weight by traffic for the headline.",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"One overall score can hide a failing group. Billing might pass 90% of the time while refunds pass only 50%, and the average still looks fine.\"\n\n*The idea:* \"So I report a score for each group, with how many examples it's based on. For the headline number, I weight each group by its share of real traffic. I don't weight it by its share of the eval set, meaning the test examples I score. I often give small, risky groups extra examples. That helps measure them, but a plain average would then overcount them. In my example, billing is 70% of traffic, so the honest headline is 78%, not 70%.\"\n\n*The edge case:* \"If a group shows up in traffic but not in my eval set, I flag it as a blind spot. I don't score it as zero.\"\n\n**Likely follow-up**\n\n\"If you have a weighted headline, why still report per-group scores?\"\n\n*Hint:* A small group can fail badly and barely move the weighted number. Per-group scores show where to fix things. The example counts show how much to trust each score.",
    "step": "Explain",
-   "fingerprint": "e104870b31054150",
+   "fingerprint": "4d00648aa6c87391",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3822,9 +3822,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **One number only.** Your MLflow run shows a single `pass_rate` and no `pass_rate.billing` or `pass_rate.refunds`. You can't see which group is failing.\n- **Good score, unhappy users.** The headline looks fine, but complaints cluster around one topic, such as refunds. A strong group was hiding a weak one.\n- **Score shifts after launch.** The eval score is noticeably higher or lower than what real use shows. A common cause is a plain average. Your small groups got extra examples, so they count more than real users meet them.\n- **Missing groups.** Real traffic contains a group that isn't in your eval set at all. That's a blind spot, not a zero.\n- **Tiny counts.** A group shows 100% from just three examples. That score is shaky.\n\n**Quickest check**\n\nPut a small table side by side for each group: pass rate, number of eval examples, and share of real traffic. Then compute the plain average and the traffic-weighted average. If they differ a lot, or a traffic group has no eval examples, you've found the problem.",
+   "a": "**Warning signs**\n\n- **One number, no breakdown.** Your MLflow run shows a single score. No `pass_rate.billing`, no `pass_rate.refunds`. You can't tell which group is failing.\n- **Good headline, angry users.** The score looks healthy. Then complaints pile up about one topic, like refunds. A weak group was hiding inside the average.\n- **Headline drops after launch.** The eval score was high, but real-world results are lower. Often the eval set over-tested an easy group, or a group you boosted on purpose got counted too heavily.\n- **Headline equals the plain average.** If your \"weighted\" number matches the simple eval-set average exactly, the weighting may never have been applied.\n- **A group in traffic is missing from the report.** That's a blind spot. Don't read it as a zero, and don't read it as fine.\n\n**Quickest check**\n\nOpen the run's metrics. Confirm there is one score per group, each with its example count. Then take the traffic shares and redo the headline by hand, like the 78% example. If your number doesn't match, something is off.",
    "step": "Learn",
-   "fingerprint": "1d2110d80f9cc1a5",
+   "fingerprint": "8c5e3f8bc84cf81d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3835,14 +3835,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; it is about 175 words and consistent with the lesson, though 'you've found the problem' when the two averages differ is slightly loose."
+    "notes": ""
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where the rule needs extra care.\n\n**A group has very few examples.** If refunds has only 5 eval examples, its pass rate can swing a lot from one run to the next just by chance. Always show the example count next to each score. Add more examples before trusting a big change in a small group.\n\n**Traffic changes over time.** The traffic shares are a snapshot. If a product launch doubles refund questions, last month's shares make the headline number misleading. Recompute the shares regularly from recent logs (records of real user requests). The drift lesson later in this module covers how to notice this.\n\n**Groups are fuzzy in an LLM app.** In a chatbot, one question can be about billing and refunds at once, or fit no group at all. Then the shares may not add up cleanly, and some traffic lands nowhere. Add an \"other\" group and label a sample of real questions by hand. Treat any traffic you can't score as a blind spot, not a zero.",
+   "a": "**1. Traffic changes over time.**\nYour weights are only as good as the traffic numbers behind them. If refunds jump from 30% to 50% of real questions after a policy change, last month's weights make the headline too rosy. Recompute the traffic shares from recent logs each time you report.\n\n**2. A group has very few examples.**\nA pass rate built on 5 examples can swing from 40% to 80% just by luck. Always show the example count next to each group's score, as the lesson says. Treat small groups as \"not yet trustworthy\" and add examples before acting on them.\n\n**3. Users ask about something your eval set never covers.**\nThis is common in LLM apps, where people type anything. Say 10% of traffic is about shipping, but you have no shipping examples. That 10% is a blind spot, not a zero, so report it as \"untested share of traffic\" next to the headline and write examples for it.",
    "step": "Learn",
-   "fingerprint": "a07e6e68af5bc7f3",
+   "fingerprint": "2033fa9c51d84ed2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3858,9 +3858,9 @@
   },
   "learn:term": {
    "q": "What does “for each group” mean here?",
-   "a": "**\"For each group\"** means you split your test examples into categories and give each category its own score. You don't squash everything into one number.\n\n**An everyday comparison:** a restaurant has an average rating of 4 stars. That sounds fine. Now rate each dish separately. The pizza gets 5 stars and the soup gets 2. The single average hid the soup problem. Rating each dish shows you exactly what to fix.\n\n**In the lesson's example,** the groups are the kinds of questions users ask: `billing` and `refunds`. Every example in the eval set (the test questions you run your agent on) belongs to one group. So you report `billing` at 90% and `refunds` at 50%, each based on 50 examples.\n\nThe example count matters too. A score from 5 examples is much shakier than one from 50.\n\n**In the MLflow code,** the loop saves one metric per group, such as `pass_rate.billing` and `pass_rate.refunds`. A metric is just a named number stored with the run. The weighted headline score, `pass_rate.weighted`, is saved separately. So you get both the big picture and the details.",
+   "a": "\"For each group\" means you split your test examples into categories and give each category its own score, instead of one number for everything.\n\n**Everyday comparison:** a school report card. One overall grade of B could hide an A in history and a D in maths. Listing each subject separately shows where the trouble is. Each subject is a \"group.\"\n\n**In the lesson's example,** the groups are the kinds of questions the FAQ bot handles: `billing` and `refunds`. Each one gets its own pass rate, which is the share of its examples the bot got right. Billing is at 90%. Refunds is at 50%. A single blended number would blur that gap.\n\nNext to each score, you also report how many examples it is based on. Here that is 50 each. A score built on 5 examples is much shakier than one built on 50.\n\n**In the MLflow code,** the loop walks through the groups once. It logs a separate metric for each one, with names like `pass_rate.billing` and `pass_rate.refunds`. Only after that does it log the single weighted headline number.",
    "step": "Learn",
-   "fingerprint": "2674dd25ea9c316c",
+   "fingerprint": "2beea8bb0f952f0a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -3871,7 +3871,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the restaurant analogy's numbers (average 4 with a 5 and a 2) are loose but not wrong."
+    "notes": ""
    }
   }
  }

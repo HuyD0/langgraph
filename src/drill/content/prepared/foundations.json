@@ -220,20 +220,20 @@
   },
   "check:0:2": {
    "q": "Why not “Its tokens ran out overnight”?",
-   "a": "\"Its tokens ran out overnight\" sounds reasonable because tokens are real and they do have limits. The lesson says models are priced and limited in tokens. So the answer is pointing at something true.\n\nBut it treats tokens like a supply that drains over time, like fuel in a tank. That's not how the limit in this lesson works. The **context window** is how many tokens the model can take in *at once*, in a single call. A \"call\" is one request you send to the model. Each new call starts fresh. Nothing about time passing, like a night going by, uses tokens up.\n\nThe real reason is simpler. The model remembers nothing between calls. Yesterday's conversation only reached the model because it was sent in yesterday's calls. Today, unless your code sends that chat again, the model never sees it. To the model, that conversation doesn't exist.\n\n\"It only sees what is sent in each call\" is better because it names the actual cause: today's call didn't include yesterday's chat. It also points to the fix, which is to resend the earlier messages you want the model to see.",
+   "a": "It's a reasonable guess. Tokens do matter here. The **context window** (how many tokens the model can take in at once) is counted in tokens. If you send a very long conversation, the oldest parts can fall outside that limit.\n\nBut that isn't what happened. Tokens aren't a supply that drains overnight. The model doesn't keep yesterday's chat stored somewhere, slowly running low. It keeps nothing between calls at all.\n\nEach call starts fresh. The model only reads what you send in that call: your instructions, the question, and any earlier messages you choose to resend. Yesterday it answered well because yesterday's messages were in the prompt. Today they weren't resent, so to the model they don't exist.\n\nSo the problem isn't running out. It's that the conversation was never sent. If your app resends the earlier messages, the model \"remembers\" them again.\n\n\"It only sees what is sent in each call\" is the better answer. It names the real cause: the model has no memory between calls, so anything not resent is invisible to it.",
    "step": "Check",
    "fingerprint": "7fb20a8da8f69523",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
-    "answers_it": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The brief asks for the better answer's advantage in one sentence, but the final paragraph uses two (the cause, then a separate sentence about the fix)."
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:interview": {
@@ -312,9 +312,9 @@
  "kind_of_ai": {
   "check:0:1": {
    "q": "Why not “An LLM that writes about each invoice”?",
-   "a": "It's a fair thought. An LLM can read an invoice's details and write something sensible about it. It might even guess \"this looks risky.\" So it isn't useless.\n\nBut it misses what this job actually is. You don't need writing. You need one prediction: late or on time. That is a narrow job, not a language job.\n\nIt also ignores your best asset. You have three years of invoices, each already marked with the right answer. Those marks are called **labels**. The LLM was trained by its provider on general text, not on your history. It never learned which of your customers tend to pay late.\n\nIts output is also harder to use. It gives you text that someone has to check. A trained model gives a score, like \"72% likely to be late.\" You can set a **threshold** on that score, meaning a cut-off such as \"flag anything over 60%.\" You can also test that score against past invoices to see how often it's right.\n\nAnd an LLM costs more per invoice. That breaks the rule of picking the simplest tool that works.\n\n\"A model trained on past invoices\" is better because it learns directly from your labelled history and gives a testable score for exactly this one prediction.",
+   "a": "It's a fair thought. An LLM can read an invoice's details and write something sensible, like \"this customer has paid late before, so watch it.\" That part is real. LLMs are good at reading and writing language.\n\nBut this job isn't about language. It's a prediction: late or on time. And you already have the perfect material for that. Three years of invoices, each with the right answer attached. Those answers are called **labels**.\n\nAn LLM never learned from your labelled invoices. Its provider trained it on general text, so it would be guessing from general knowledge, not from your own history.\n\nIt also gives you text, not a number. You'd have to read and check every note. A trained model gives a score, like \"80% likely to be late.\" You can set a **threshold** on that score, a cut-off like \"flag anything over 70%.\" You can also test it against past invoices to see how often it's right.\n\nAnd an LLM costs more for each invoice it handles.\n\nA model trained on past invoices is better because it learns directly from your labelled examples and gives a score you can test and act on.",
    "step": "Check",
-   "fingerprint": "957319c1e64b7ce1",
+   "fingerprint": "b13ce13be3a95dae",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -325,14 +325,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; it is about 210 words, slightly over the ~200 guide, but still acceptable."
+    "notes": ""
    }
   },
   "check:0:2": {
    "q": "Why not “A fixed rule on the invoice amount”?",
-   "a": "It's a fair guess. The lesson does say to try the simplest tool first, and a rule is the simplest. A rule like \"invoices over $10,000 will be late\" is easy to write and easy to check.\n\nBut a rule only fits when it **always** gives the right answer. Late payment doesn't work like that. Some big invoices get paid on time. Some small ones are paid late. Lateness likely depends on many details together: who the customer is, their past habits, the payment terms, the time of year. One cut-off on the amount can't capture that mix.\n\nA rule also wastes what you already have. You have three years of invoices, each with a **label** (the right answer, \"late\" or \"on time\"). Those labels are exactly what a model needs to learn from and to be tested on. A rule ignores them, and you'd be guessing where to set the cut-off.\n\nA model trained on past invoices is better because it learns the real patterns from those labelled examples and gives each new invoice a likelihood score you can act on.",
+   "a": "It's a fair guess. The lesson says to try the simplest tool first, and a rule is the simplest. So checking for a rule is the right instinct.\n\n**What it gets right:** Invoice amount might matter. Big invoices could be paid late more often. A rule like \"flag invoices over $5,000\" is cheap, fast, and easy to explain.\n\n**What it misses:** A rule only works when it *always* gives the right answer. Lateness doesn't work like that. It probably depends on many details together: which customer it is, their past payment habits, the payment terms (how many days they have to pay), the time of year. A small invoice from a slow payer may be late. A big one from a reliable customer may not. One fixed cut-off on amount can't capture that mix. Nobody knows the exact rule in advance anyway.\n\n**The clue in the question:** you have three years of invoices already marked \"late\" or \"on time\". Those marks are **labels**, the right answers a model can learn from.\n\nA model trained on past invoices is better because it finds the patterns across all those details for you, then gives each new invoice a likelihood score.",
    "step": "Check",
-   "fingerprint": "34f39090855358b0",
+   "fingerprint": "f46159a7f3fe54c4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -348,27 +348,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Check the simplest tool first, then step up” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"AI\" covers very different tools. Teams often reach for a large language model (LLM) when a simpler tool would do the job cheaper and more reliably.\n\n*The idea:* I climb a ladder from the bottom. If a fixed if-then rule always gives the right answer, I write the rule. If the job is one prediction learned from labelled past cases (cases where the right answer is already known), I train a model. Only for reading or writing language do I use an LLM. I add my own documents (RAG) when answers must come from them. I build an agent, an LLM that uses tools, only when the job needs actions.\n\n*The trade-off:* Each step up costs more and is harder to test. A rule is predictable. An LLM writes text that someone has to check. One edge case: a trained model needs labelled examples. Without them, there is nothing to learn from yet.\n\n**Likely follow-up:** \"What makes you move up a step?\"\n\n*Hint:* Point to evidence. For example, the rule keeps missing cases, or the input is free-form text a rule can't handle. Stepping up should be a choice you can justify, not a default.",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"AI\" is a big word. Teams often reach for a large language model (an LLM, the kind of model behind chat tools) when a plain rule would do the job better.\n\n*The idea:* I start with the simplest tool and step up only when it can't do the job. First, a fixed rule. Next, a model trained on past examples that already have the right answer. Next, an LLM for reading and writing language. Then RAG, where the LLM answers from our own documents. Last comes an agent, an LLM that takes actions using tools.\n\n*The trade-off:* each step up costs more and is harder to test. A rule is easy to check: it's right or it's wrong. An LLM writes text that someone has to review.\n\n**A likely follow-up**\n\n\"What if the simple tool works most of the time, but not always?\"\n\n*Hint:* Say you'd measure it before deciding. Test the simple tool on real past cases and count the misses. Step up only if those misses really matter. You can also keep the rule for the cases it handles well and send only the hard cases to the bigger tool.",
    "step": "Explain",
-   "fingerprint": "426e929768024c11",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems. The answer is about 200 words, right at the length limit, and the claim that teams often over-use LLMs is not from the lesson, though it is harmless."
-   }
-  },
-  "learn:spot": {
-   "q": "How would I spot it going wrong?",
-   "a": "You'll usually see it in cost, consistency, or accuracy. Here are the common signs that the wrong kind of AI was picked.\n\n**An LLM doing a rule's job.** The same input gets different answers on different runs. A plain check like \"is this refund over $50?\" is sometimes wrong. Each request costs money and takes seconds when a rule would be free and instant.\n\n**An LLM without your documents.** Answers sound confident but don't match your own policy. This is called a **hallucination**: the model makes up something that sounds plausible.\n\n**A trained model with too few labelled examples.** The test score looks great, then drops once real cases arrive. Or there's no way to measure accuracy at all, because nothing has a known right answer.\n\n**An agent where no action is needed.** Your **traces** (step-by-step records of what the system did) show many steps and tool calls for a simple question. It's slow and costly.\n\n**Quickest check:** write the job in one sentence. Ask if a fixed rule could answer it. Then run five cases where you already know the right answer, a few times each, and compare.",
-   "step": "Learn",
-   "fingerprint": "9609afb47bae1911",
+   "fingerprint": "130bdf08c3d7f0e9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -382,11 +364,11 @@
     "notes": ""
    }
   },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "The \"simplest tool first\" idea holds up well. But a few situations need extra care.\n\n**1. The rule keeps growing.** A rule like \"refunds over $50 need a manager\" is easy. But if it turns into hundreds of special cases, it gets hard to read and hard to trust. If you have labelled past cases, consider a trained model instead.\n\n**2. The world changes over time.** A model trained on three years of invoices learned old patterns. If customers start paying differently, its scores slowly get worse. This is called **drift**. Keep checking its accuracy on recent cases and retrain it on fresh data. With RAG, the same thing happens when your documents go out of date, so keep them current.\n\n**3. One job is really several jobs.** \"Read an email, check if the customer is likely to pay late, then reply\" mixes language, a prediction, and an action. One label for the whole thing won't fit. Split it into parts. Then pick the simplest tool for each part.",
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the wrong kind of AI was picked**\n\n- **An LLM doing a rule's job.** The same refund question gets different answers on different runs. Costs and wait times are high for something a single `if` line could decide.\n- **A plain LLM where answers must come from your documents.** Replies sound confident but quote policies you don't have. This is called a \"hallucination\": the model makes something up that sounds right.\n- **A trained model with no real labels.** Labels are past cases with the known right answer. Without enough of them, the test score looks great, then drops once real invoices arrive. Or there is simply nothing honest to test on.\n- **An LLM where a trained model fits.** You get text back but no score. So you can't set a threshold, meaning a cut-off like \"flag anything over 70% likely late.\"\n- **An agent where no actions are needed.** Traces, the step-by-step logs of what the agent did, show long chains of tool calls just to answer a question.\n\n**Quickest check**\n\nTake 10 to 20 real past cases where you know the right answer. Try the simplest tool on them first. If it gets them right, stop there. Only step up when it clearly fails.",
    "step": "Learn",
-   "fingerprint": "7e29e5fb5818695f",
+   "fingerprint": "4dc26184581553ec",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -397,14 +379,32 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes. The drift idea goes beyond the lesson but does not contradict it. Items 2 and 3 run slightly over the two-to-three-sentence guide, which is a minor issue."
+    "notes": "No real problems. It runs to about 200 words, and the hallucination term and the '10 to 20 cases' figure come from outside the lesson, but neither contradicts it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The \"simplest tool first\" idea holds up well. Here are three places where it needs extra care.\n\n**The rule grows too many exceptions.** A rule like \"refunds over $50 need a manager\" is easy. But if every week adds a new special case, the rule becomes a tangle nobody trusts. If you have labelled past cases, a trained model may now be the simpler choice.\n\n**The world changes over time.** A model trained on three years of invoices learns old habits. If customers start paying differently, its scores quietly get worse. This is called **drift**. Retrain on recent data and keep checking its accuracy. RAG has the same risk: if the policy documents change, update what it searches.\n\n**One job holds several kinds of work.** A real system often mixes them. Picture a claims process: a rule checks the receipt, a model scores the risk, and an LLM drafts the reply. Pick the simplest tool for each step, not one tool for the whole system.",
+   "step": "Learn",
+   "fingerprint": "0a732d7589847d5c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problem. The drift paragraph runs a little past three sentences, and drift and retraining come from outside the lesson, but nothing contradicts it."
    }
   },
   "learn:term": {
    "q": "How is “machine learning” different from “labels”?",
-   "a": "They're not the same kind of thing. **Machine learning** is the method. **Labels** are part of what it learns from.\n\n**Machine learning** is a way of building a model (a program that makes predictions) by showing it past cases instead of writing rules by hand. The model finds patterns on its own.\n\n**Labels** are the right answers attached to those past cases. They tell the model what actually happened.\n\n**How they work together:** machine learning needs labels to learn. Without them, the model has nothing to learn from and nothing to test against.\n\n**Everyday comparison:** think of a student studying old exams. The studying is the machine learning. The answer key is the labels. Without the answer key, the student can't tell which guesses were right.\n\n**The lesson's example:**\n- Labels: three years of invoices, each marked \"paid late\" or \"on time\".\n- Machine learning: the model studies those invoices and links their details to the labels.\n- Result: for a new invoice, it gives a score for how likely it is to be paid late.",
+   "a": "They are two different kinds of thing. One is a method. The other is the data that method needs.\n\n**Machine learning** is the method. It means building a model, a program that learns patterns from past cases instead of following rules you wrote by hand.\n\n**Labels** are the right answers attached to those past cases. They are what the model learns from.\n\nSo machine learning is the learning. Labels are the answer key it learns against.\n\n**An everyday comparison:** think of studying with flashcards. The answer on the back of each card is the label. You, getting better by checking yourself against those answers, are the machine learning.\n\n**The lesson's example:**\n\n- **Past cases:** three years of invoices.\n- **Labels:** the mark on each invoice, \"paid late\" or \"on time\".\n- **Machine learning:** the model finds patterns that link an invoice's details to its label. Then it scores a new invoice on how likely it is to be late.\n\n**How they work together:** without labels, the model has nothing to learn from and nothing to test against. That is why labelled examples are one of the gates for a good use case.",
    "step": "Learn",
-   "fingerprint": "1d5efef074061a86",
+   "fingerprint": "2406015c8129f7f0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -822,9 +822,9 @@
  "why_ai_wrong": {
   "check:0:1": {
    "q": "Why not “A timeout”?",
-   "a": "A **timeout** is when a program waits too long for a reply and gives up. The request stops, and you get no answer at all.\n\nThe only thing it gets right is that something went wrong. But it's the wrong kind of problem.\n\nIn this question, the HR assistant *did* answer. It even named a source: \"Policy HR-114, section 3\". The trouble is that this policy doesn't exist. So the problem is not a missing answer. It is an answer that sounds sure but isn't true.\n\nThat matches one of the lesson's examples: **a made-up source**. The model writes what is likely, not what is checked. A real-looking policy name is a likely thing to write, so it wrote one.\n\nA timeout tells you nothing came back. Here, a confident, invented reference came back. That is why you would check the answer against your real documents, not just check whether an answer arrived.\n\n\"A hallucination\" is the better answer because it names exactly what happened: the assistant confidently quoted a source that doesn't exist.",
+   "a": "\"A timeout\" doesn't fit what happened. A timeout is about no answer coming back. Here an answer did come back. The assistant quoted \"Policy HR-114, section 3\" as if it were real.\n\nSo the problem isn't a missing reply. The problem is what the reply says. It points to a source that doesn't exist.\n\nThe lesson lists this exact case under hallucination: \"A fake source: it quotes a policy page that doesn't exist.\" It happens because the model writes what is likely, not what is checked. A policy number with a section sounds likely, so the model writes one, in a sure tone.\n\nWhat \"A timeout\" gets right: something did go wrong. What it misses is the kind of wrong. Calling it a timeout would send you to fix the wrong thing. The lesson's fixes target hallucination instead. Give the model the real documents (RAG, short for retrieval-augmented generation: answering from your documents, not from memory). Tell it to say so when the policy is silent. Add cases like this to your eval set.\n\n\"A hallucination\" is better because it names the real problem: a confident answer that isn't true, here a made-up policy.",
    "step": "Check",
-   "fingerprint": "1d6f698e9d2d785a",
+   "fingerprint": "f656d8345f595e3b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -840,9 +840,9 @@
   },
   "check:0:2": {
    "q": "Why not “A rate limit”?",
-   "a": "\"A rate limit\" is a real thing that can go wrong in an AI app, so it's not a silly guess. But it doesn't fit this situation.\n\nA **rate limit** is a cap on how many requests you can send to a model in a set time, say 100 per minute. Go over it and the service refuses. You get an error like \"too many requests\" and no answer at all.\n\nIn the question, the assistant *did* answer. It sounded sure. It even named a source, \"Policy HR-114, section 3\". The problem is that the source doesn't exist. Nothing was blocked or refused. The model simply wrote something that looked likely, without checking it.\n\nThat's the \"made-up source\" case from the lesson. A rate limit explains a missing answer. It can't explain a confident, invented one.\n\n\"A hallucination\" is better because it names exactly what happened: an answer that sounds certain but isn't true, here a policy reference the model made up.",
+   "a": "\"A rate limit\" is a real thing that can go wrong when you use an AI service. So it's a fair guess. But it doesn't fit what happened here.\n\nA **rate limit** is a cap on how many requests you can send in a set time, like \"60 per minute.\" Go over it, and the service refuses. You get an error, often \"429 Too Many Requests.\" In other words, you get *no answer*.\n\nIn this question, the assistant *did* answer. It quoted \"Policy HR-114, section 3\" in a sure tone. The trouble is that the policy doesn't exist. A rate limit can't produce that. It blocks answers. It doesn't invent them.\n\nWhat happened is the model wrote what *sounded* likely. HR answers often cite a policy number, so it made one up. Nothing checked it against real documents. That's the \"fake source\" pattern from the lesson.\n\n\"A hallucination\" is better because it names exactly this: a confident answer, here a made-up source, that isn't true.",
    "step": "Check",
-   "fingerprint": "29ca54bbac78eb2b",
+   "fingerprint": "d79bfb1ce6e3aa47",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -858,9 +858,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Keep each claim the source doesn't back” in an interview?",
-   "a": "**Your 30-second answer**\n\n**The problem.** \"An LLM writes what is likely, not what is checked. So it can state something that sounds sure but isn't true. That's called a hallucination.\"\n\n**The idea.** \"I compare the answer to the source it should come from. I go through the answer's claims once, in order. Any claim the source doesn't back, I keep. Those are the likely hallucinations. It's like checking a report against the receipts. Any amount with no receipt gets questioned.\"\n\n**The trade-off.** \"An exact text match is strict. 'Five days roll over' means the same as '5 unused days carry over', but the words don't match. So a true claim can get flagged. A looser check, like a second model judging the meaning, helps. But that check can make mistakes too.\"\n\n**A likely follow-up**\n\n*\"Where would this fit in a real system?\"*\n\nHint: link it to measuring. Run it on your eval set, which is a list of test questions with known right answers, every time you change something. Where a wrong answer could cause harm, like pay or leave, send flagged answers to a person to review.",
+   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"An LLM writes what is likely, not what is checked. So it can state something confidently that isn't true. That's a hallucination. For example, the policy says 5 days carry over, but the answer says 30.\"\n\n**The idea.** \"So I compare the answer to its source. I go through each claim in the answer once, in order. Any claim the source doesn't contain, I keep as unsupported. It's like checking a report against the receipts. Any amount with no receipt gets questioned.\"\n\n**The trade-off.** \"An exact text match is cheap and strict. But it flags true claims that are just worded differently, like 'five days roll over'. So I treat it as a first filter. Flagged claims go to a person or a smarter check, especially where a wrong answer could cause harm.\"\n\n**A likely follow-up:** \"How would you catch claims that mean the same thing in different words?\"\n\n**Hint at a strong answer:** Start simple. Make text lowercase and trim extra spaces. Then try meaning-based matching. One option is an LLM-as-judge, which means a second model rates whether the source backs the claim. Add that this checker can also be wrong, so test it on an eval set too. An eval set is a list of examples with known right answers.",
    "step": "Explain",
-   "fingerprint": "dee54e1aa519d87e",
+   "fingerprint": "9a114324a59e6f12",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -871,14 +871,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problem. The answer is about 215 words, slightly over the target, and the lowercase/trim tip and LLM-as-judge come from outside the lesson, though they don't contradict it."
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "Here are the warning signs that hallucination wasn't handled well.\n\n**In your results:**\n- Your score looks great after one test run, then users start reporting wrong answers. One run hid the randomness.\n- The same question gives different answers when you ask it again.\n- The bot never says \"I don't know.\" Not once, even on questions your documents don't cover.\n\n**In your traces** (a trace is a step-by-step record of what the agent did):\n- The answer quotes a number, rule or policy page that doesn't appear in the documents it pulled up.\n- It answers confidently when nothing useful was retrieved.\n\n**In fairness checks:**\n- Two questions that differ only by a name, like Ana and Ahmed, get different answers.\n\n**Quickest check to confirm:**\nPick five real answers. Open each trace. For every claim, ask: \"Is this in the source it retrieved?\" Anything without a match is a likely hallucination. Then ask one question three times and compare. Finally, swap a name and see if the answer changes.\n\nIf any of these fail, add those cases to your eval set. That's your list of known right answers, run on every change.",
+   "a": "Here are the warning signs that hallucination, randomness or unfairness slipped past you.\n\n**A score that looks too good.** Your eval (a set of questions with known right answers) passes at 100%, then users report wrong answers. Often the eval was run once, or only on easy questions.\n\n**Answers with no source behind them.** In your traces (the step-by-step record of what the agent did), the answer quotes a policy or a number, but no retrieved document contains it. That is a likely hallucination.\n\n**Never saying \"I don't know\".** Logs show zero \"not covered, ask HR\" replies, even for odd questions. A healthy system admits gaps sometimes.\n\n**Same question, different results.** A test passes on Monday and fails on Tuesday with no change. The model's randomness was never measured.\n\n**Name-swapped pairs disagree.** \"Ana\" and \"Ahmed\" ask the same leave question and get different answers.\n\n**Quickest check:** pick ten real answers. Look for each key claim in the retrieved source. Run each question three times. Swap one name. Any claim with no source, any flip, or any name gap means a step was skipped.",
    "step": "Learn",
-   "fingerprint": "9e865d082a028b1b",
+   "fingerprint": "e59c1e27e8486fbf",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -889,14 +889,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problem. The closing line 'means a step was skipped' slightly overstates, since an unsupported claim is only a likely hallucination."
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where checking claims against a source needs more care.\n\n**1. Same meaning, different words.** If the source says \"5 unused days carry over\" and the answer says \"five leftover days roll over,\" an exact match flags a true claim as unsupported. Instead, tidy the text first (same case, numbers written the same way). For looser wording, use a second LLM as a \"judge\" that decides if the source backs the claim. Then spot-check the judge, because it can be wrong too.\n\n**2. The source itself goes out of date.** If the leave policy changes but your documents don't, a wrong answer can match the old source perfectly and pass. Keep your documents current, record which version each answer used, and re-run your eval set when policies change.\n\n**3. A much bigger system.** With thousands of answers a day, people can't review them all. Run automatic checks on everything. Then send a small random sample to humans, plus every answer in high-harm areas like pay or hiring. Track the unsupported rate over time. This tracking is called monitoring.",
+   "a": "Here are three places where the simple \"is this claim in the source?\" check needs extra care.\n\n**1. The answer rewords the source.**\nThe source says \"5 unused days carry over\". The answer says \"five leftover days roll over\". An exact text match calls that unsupported, even though it is true. Instead, compare meaning, not wording. A common way is an \"LLM judge\": a second model asked \"does the source back this claim?\" Spot-check its verdicts by hand.\n\n**2. The source itself changes.**\nPolicies get updated. In a RAG app (one that answers from your documents), an old document can \"support\" a claim that is no longer true. Instead, date and version your documents. Refresh the search index when a policy changes. Then rerun your eval set.\n\n**3. Claims combine facts.**\nReal answers are long. A true claim might need two source lines together, like \"5 days carry over\" plus \"max 10 days total\". A line-by-line check misses that. Instead, split answers into small single claims first. Where a wrong answer causes harm, have a person review it.",
    "step": "Learn",
-   "fingerprint": "59ec0273b00ea676",
+   "fingerprint": "d598ba290c77d636",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -912,9 +912,9 @@
   },
   "learn:term": {
    "q": "What does “hallucination” mean here?",
-   "a": "A **hallucination** is when an AI gives an answer that sounds sure but isn't true.\n\nThink of a friend who never wants to say \"I don't know.\" You ask what time the shop closes. They answer \"9 pm\" in a calm, certain voice. They didn't check. It just sounded about right. Sometimes they're correct. Sometimes the shop closed at 6.\n\nAn LLM (large language model, the kind of AI behind chatbots) works a bit like that friend. It writes the words that are *likely* to come next. It doesn't check them against the facts. So it can be wrong and still sound confident.\n\nIn the lesson's example, the `source` (the real policy text) says:\n\n```python\nsource = [\"5 unused days carry over\"]\n```\n\nBut the AI's `answer` says:\n\n```python\nanswer = [\"30 unused days carry over\"]\n```\n\nNothing in `source` backs up \"30 unused days.\" The claim looks like a real policy, but nobody can point to where it came from. That unsupported claim is the likely hallucination.\n\nIt's like checking a report against the receipts. Any amount with no receipt gets questioned.",
+   "a": "A **hallucination** is when an AI gives an answer that sounds sure but isn't true.\n\n**An everyday comparison:** picture a new coworker who hates saying \"I don't know.\" You ask about the leave policy. They haven't read it, so they give you a number that *sounds* right, in a calm, confident voice. They aren't lying on purpose. They're guessing what a policy usually says.\n\nAn LLM (large language model, the kind of AI behind chat tools) works a bit like that. It writes what is *likely* to come next, not what it has *checked*. So it can state a made-up rule or quote a page that doesn't exist, with no hint of doubt.\n\n**In the lesson's example:**\n\n```python\nsource = [\"5 unused days carry over\"]\nanswer = [\"30 unused days carry over\"]\n```\n\nThe `source` is the real policy. The `answer` is what the AI said. \"30 unused days\" sounds plausible, but the source never says it. That claim is **unsupported**: nothing backs it up. That makes it a likely hallucination.\n\nIt's like checking a report against the receipts. Any amount without a receipt gets questioned.",
    "step": "Learn",
-   "fingerprint": "75e0e78dc0796051",
+   "fingerprint": "f7065f58adc7f9f1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
