@@ -1065,6 +1065,257 @@ round(0.8 * 0.9 + 0.2 * 0.1, 2)   # 0.74""",
     ),
 )
 
+lesson(MODULE, 'judge_consistency',
+    title='Does the judge agree with itself?',
+    learn=[
+        'An LLM judge can give a **different verdict on the very same answer** when you ask it twice. Before trusting any of its scores, run it twice on the same answers and count how often the verdict changes. This is a **consistency check** (people also call it test-retest).',
+        "If a judge changes its mind on 1 answer in 4, a quarter of its verdicts are partly luck. It also can't agree with people more reliably than it agrees with itself. Aim for nearly the same verdict every time. Things that help: clearer instructions, asking the judge to quote the part of the answer it's judging, and judging each answer three times and keeping the **majority**.",
+        "Judges have other known habits that have nothing to do with quality. They tend to prefer **longer** answers, the answer shown **first** when comparing two, and answers written by a model like themselves. Test each habit the same way: change only that one thing, like the order, and see whether the verdict moves.",
+    ],
+    example=example('The same six answers, judged twice', """run 1: pass pass fail pass fail pass
+run 2: pass fail fail pass pass pass
+changed: answers 2 and 5
+2 of 6   → a flip rate of 0.33"""),
+    check=question(
+        'You run your judge twice on the same 300 answers. It gives a different verdict on 70 of them. What does that tell you?',
+        [
+            'The answers changed between the two runs',
+            'Many of its verdicts are partly luck',
+            'It gets stricter the second time round',
+        ],
+        answer=1,
+        why="The answers were the same both times, so every change came from the judge. A judge that flips that often can't be trusted on any single verdict.",
+    ),
+    angle=angle(
+        pattern='Ask twice, count the flips',
+        text="The big idea: a judge you can trust gives the same verdict on the same answer every time. Your code walks the two runs side by side, counts the answers where the verdict changed, and divides by how many answers there are. That share is the flip rate: 0 means perfectly steady, and anything much above a few percent means its single verdicts are partly luck.",
+        say='"Before I trust a judge, I run it [[twice|faster|once::More than one go on the very same answers.]] on the same answers. If it [[changes its mind|agrees with people|costs more::Gives a new verdict to an answer it already judged.]] often, its scores are partly luck."',
+        classic=None,
+    ),
+    stack=stack('MLflow: the same judge, two runs', """first = mlflow.genai.evaluate(data=dataset, scorers=[judge])
+second = mlflow.genai.evaluate(data=dataset, scorers=[judge])
+# line up each answer's two verdicts, then
+mlflow.log_metric("judge_flip_rate", flips / len(dataset))"""),
+    exercise=exercise(
+        title='Flip Rate',
+        topic='evals',
+        difficulty='easy',
+        fn='flip_rate',
+        prompt="""Your function gets two lists, in the same order: the judge's verdicts on the same answers, from two runs. `True` means pass and `False` means fail.
+
+- `first`: the first run, like `[True, True, False]`.
+- `second`: the second run, like `[True, False, False]`.
+
+Count the answers where the verdict changed between the runs, then divide by the number of answers. Return that share rounded to 2 decimal places.""",
+        pattern='Walk two lists side by side and count where they differ.',
+        target='one walk through the verdicts',
+        realworld='Before switching to a cheaper judge for daily checks, teams run it twice on the same answers. A judge that flips on a quarter of them is noise, however cheap it is.',
+        starter="""def flip_rate(first, second):
+    # your code here
+    pass
+""",
+        solution="""def flip_rate(first, second):
+    changed = 0
+    for a, b in zip(first, second):
+        if a != b:
+            changed += 1
+    return round(changed / len(first), 2)
+""",
+        cases=[
+            case([True, True, False, True, False, True], [True, False, False, True, True, True], expected=0.33, sample=True),
+            case([True, False], [True, False], expected=0.0),
+            case([True, True, True, True], [False, False, False, False], expected=1.0),
+            case([True] * 7 + [False] * 3, [True] * 6 + [False] * 4, expected=0.1),
+            case([False, True, False, True, False], [False, True, True, True, False], expected=0.2),
+        ],
+        guided="""def flip_rate(first, second):
+    # Replace every ___ with real code, then run the tests.
+    changed = 0
+
+    # a is the first run's verdict, b the second's.
+    for a, b in zip(first, second):
+        # Count the answers where the verdict changed.
+        if ___:
+            changed += 1
+
+    # The share that changed, rounded to 2 places.
+    return round(___, 2)
+""",
+        fills=['a != b', 'changed / len(first)'],
+        concepts=[
+            [
+                'zip',
+                'Walks two lists side by side, giving you one item from each.',
+                """for x, y in zip([1, 2], [1, 5]):
+    print(x == y)   # True, then False""",
+            ],
+            [
+                'Not equal',
+                '`a != b` is `True` when the two are different, which is exactly when the verdict changed.',
+                """True != False    # True
+True != True     # False""",
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(2 / 6, 2)   # 0.33'],
+        ],
+        byhand='Compare the runs answer by answer: answer 1 pass and pass, the same. Answer 2 pass and fail, changed. Answer 3 fail and fail, the same. Answer 4 pass and pass, the same. Answer 5 fail and pass, changed. Answer 6 pass and pass, the same. That is 2 changes out of 6 answers. 2 divided by 6 is 0.333, which rounds to 0.33. Return 0.33.',
+        why='One walk through the verdicts to count the changes, then one division.',
+        gotchas=[
+            [
+                'Change nothing but the run',
+                'Use the same model, instructions and settings both times. If anything else changes, you are measuring that change, not the judge.',
+            ],
+            [
+                'Two runs is a start',
+                'A flip rate from two runs on 20 answers is rough. Use more answers, or a third run, before deciding.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'gwet_ac1',
+    title='When kappa misleads',
+    learn=[
+        "When almost every answer passes (or almost every one fails), Cohen's kappa can come out **low even when two judges agree nearly every time**. This is called the **kappa paradox**. It happens because kappa expects a lot of agreement by luck when one verdict is so common, and takes all of it away.",
+        "**Gwet's AC1** asks the same question, how much better than luck, but counts luck in a way that stays fair when one verdict is rare. Take the two judges' pass rates and find their average; call it q. Agreement by luck is then 2 times q times (1 minus q). AC1 is worked out from that the same way kappa is.",
+        'Report both. If kappa is low but AC1 is high, the judges mostly agree and the low kappa comes from the rare verdict. If both are low, they really do disagree. Either way, still check passes and failures separately, as in "Checking your LLM judge".',
+    ],
+    example=example('100 answers, almost all of them pass', """judge A: pass 96, fail 4
+judge B: pass 98, fail 2
+they agree on 98 of 100
+kappa: about 0.66
+  (luck counted as 0.94)
+AC1: about 0.98
+  (luck counted as 0.06)"""),
+    check=question(
+        'Two judges agree on 97 of 100 answers, and almost all of them pass. Kappa is only 0.3. What should you look at next?',
+        [
+            'AC1, which stays fair when a verdict is rare',
+            'A bigger model to replace both judges',
+            'Nothing more: 0.3 means they disagree',
+        ],
+        answer=0,
+        why='When one verdict is rare, kappa can be low even though the judges almost always agree. AC1 shows whether that is what is happening.',
+    ),
+    angle=angle(
+        pattern='Count luck another way',
+        text="The big idea: when one verdict is rare, kappa overstates how much two judges would agree by luck, so it can look bad for judges that really agree. Gwet's AC1 counts luck differently. Your code counts how often the two agree and how often each one says pass. It averages the two pass rates into one number, works out luck as 2 times that number times one minus it, and then takes luck away the same way kappa does.",
+        say='"When almost every answer passes, kappa can look [[bad|great|random::Lower than the agreement deserves.]] even when two judges agree. So I also report [[AC1|recall|the average::Gwet\'s measure, two letters and a number.]], which counts luck in a fairer way."',
+        classic=None,
+    ),
+    stack=stack('Both numbers, side by side in MLflow', """from sklearn.metrics import cohen_kappa_score
+
+mlflow.log_metrics({
+    "judge_kappa": cohen_kappa_score(human, judge),
+    "judge_ac1": gwet_ac1(human, judge),
+})"""),
+    exercise=exercise(
+        title="Gwet's AC1",
+        topic='evals',
+        difficulty='medium',
+        fn='gwet_ac1',
+        prompt="""Your function gets two lists, in the same order: two judges' verdicts on the same answers. `True` means pass and `False` means fail.
+
+- `a`: the first judge, like `[True, True, True, False]`.
+- `b`: the second judge, like `[True, True, False, False]`.
+
+Work out AC1 in four steps:
+
+1. observed: the share of answers they agree on.
+2. q: the average of the two pass rates. A pass rate is the share of `True` in a list.
+3. chance: 2 times q times (1 minus q).
+4. AC1: observed minus chance, divided by 1 minus chance.
+
+Return AC1 rounded to 2 decimal places. You will never divide by zero.""",
+        pattern='Count agreements and passes in one walk, then a few lines of arithmetic.',
+        target='one walk through the verdicts',
+        realworld='Most answers from a good tutor pass, so failures are rare. Teams checking a judge on that kind of data report AC1 next to kappa, so a rare verdict does not make a good judge look bad.',
+        starter="""def gwet_ac1(a, b):
+    # your code here
+    pass
+""",
+        solution="""def gwet_ac1(a, b):
+    n = len(a)
+    agree = 0
+    a_pass = 0
+    b_pass = 0
+    for x, y in zip(a, b):
+        if x == y:
+            agree += 1
+        if x:
+            a_pass += 1
+        if y:
+            b_pass += 1
+    observed = agree / n
+    a_rate = a_pass / n
+    b_rate = b_pass / n
+    q = (a_rate + b_rate) / 2
+    chance = 2 * q * (1 - q)
+    return round((observed - chance) / (1 - chance), 2)
+""",
+        cases=[
+            case([True, True, True, False], [True, True, False, False], expected=0.53, sample=True),
+            case([True] * 96 + [False] * 4, [True] * 98 + [False] * 2, expected=0.98),
+            case([True, False, True, False], [True, False, True, False], expected=1.0),
+            case([True, False, True, False], [False, True, False, True], expected=-1.0),
+            case([True] * 10, [True] * 9 + [False], expected=0.89),
+        ],
+        guided="""def gwet_ac1(a, b):
+    # Replace every ___ with real code, then run the tests.
+    n = len(a)
+    agree = 0
+    a_pass = 0
+    b_pass = 0
+
+    for x, y in zip(a, b):
+        if x == y:
+            agree += 1
+        if x:
+            a_pass += 1
+        if y:
+            b_pass += 1
+
+    observed = agree / n
+    a_rate = a_pass / n
+    b_rate = b_pass / n
+
+    # Step 2: the average of the two pass rates.
+    q = ___
+    # Step 3: luck is 2 times q times (1 minus q).
+    chance = ___
+
+    # Step 4: (observed - chance) divided by
+    # (1 - chance), rounded to 2 places.
+    return round(___, 2)
+""",
+        fills=['(a_rate + b_rate) / 2', '2 * q * (1 - q)', '(observed - chance) / (1 - chance)'],
+        concepts=[
+            [
+                'An average of two numbers',
+                'Add them, then divide by 2. Brackets make the adding happen first.',
+                """(0.75 + 0.5) / 2   # 0.625""",
+            ],
+            [
+                'Brackets first',
+                'Python multiplies and divides before it adds and subtracts. Brackets make the part inside happen first.',
+                """2 * 0.5 * (1 - 0.5)   # 0.5""",
+            ],
+            ['round', '`round(x, 2)` keeps 2 digits after the dot.', 'round(0.5294, 2)   # 0.53'],
+        ],
+        byhand='They agree on answers 1, 2 and 4: 3 out of 4, so observed is 0.75. Judge a passed 3 of 4, a pass rate of 0.75. Judge b passed 2 of 4, a pass rate of 0.5. q is the average: 0.75 plus 0.5 is 1.25, divided by 2 is 0.625. Chance is 2 times 0.625 times 0.375, which is 0.46875. Observed minus chance is 0.75 minus 0.46875, which is 0.28125. 1 minus chance is 0.53125. 0.28125 divided by 0.53125 is about 0.529, which rounds to 0.53. Return 0.53.',
+        why='One walk through the verdicts to count, then a fixed amount of arithmetic.',
+        gotchas=[
+            [
+                'Not a way to rescue a bad judge',
+                'If kappa and AC1 are both low, the judges really disagree. AC1 only helps when kappa is low for the wrong reason.',
+            ],
+            [
+                'Still check each side',
+                'Like kappa, AC1 is one number. Keep checking how the judge does on passes and on failures separately.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'checker_score',
     title='Testing the checker with planted mistakes',
     learn=[
