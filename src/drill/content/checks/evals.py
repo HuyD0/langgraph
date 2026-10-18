@@ -259,6 +259,22 @@ CHECKS = {
             why="The answers were the same; only the order moved, and the verdict moved with it. That is position bias, a "
                 "known habit of judges."),
     ],
+    "disagreement": [
+        ask("Your app drafts an answer three times, and the three drafts give three different dates. "
+            "What should happen next?",
+            ["Send the judge the first draft", "Write it again or send it to a person", "Average the three dates"],
+            answer=1,
+            clue="This flag is raised before the judge ever sees the draft. Who or what fixes a shaky draft?",
+            why="Three drafts that disagree are a flag that the model is guessing. The flag belongs at drafting "
+                "time: the draft is written again or handed to a person before any judge sees it."),
+        ask("You score a confidence flag against the judge's verdicts and get a ROC-AUC of 0.52. The pass mark "
+            "you wrote beforehand was 0.7. What do you do?",
+            ["Add it: it is above 0.5", "Leave it out: it is barely better than guessing", "Lower the pass mark to 0.5 and add it"],
+            answer=1,
+            clue="What does 0.5 mean on this scale, and when was the pass mark set?",
+            why="0.5 means the flag cannot tell a passing draft from a failing one, so 0.52 is close to luck. "
+                "The pass mark was written first so the result could not talk you into moving it."),
+    ],
     "gwet_ac1": [
         ask("Two judges both fail half the answers, and agree on 9 in 10. Kappa and AC1 come out almost the "
             "same. Why?",

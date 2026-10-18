@@ -116,6 +116,10 @@ CALLBACKS = {
         callback('must_pass_gate', phrase='like your must-pass set', idea='Must-pass set',
                  here='Your release gate holds the cases that can never get worse. A checklist splits the same way: a few checks are gates, and the rest add up to a score.'),
     ],
+    'disagreement': [
+        callback('judge_consistency', phrase='judge three times and keep the majority', idea='Keep the majority',
+                 here='One unlucky run gets outvoted by three. The model that writes gets the same treatment: three drafts, and a disagreement between them is the flag.'),
+    ],
     'percentile': [
         callback('split_requirements', phrase='Compare models and configs (their settings) on p95.', idea='Non-functional requirement',
                  here='"Under 3 seconds for 95 in 100 requests" says how well, not what: you check it by measuring, with a stopwatch on many requests. p95 is how you write its number.',

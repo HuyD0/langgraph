@@ -785,7 +785,8 @@ lesson(MODULE, 'judge_agreement',
     learn=[
         'An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.',
         'Check passes and failures separately: the share of human passes the judge also passed is its **true positive rate** (TPR), and the share of human failures it also failed is its **true negative rate** (TNR). A judge that passes everything looks accurate when most answers are good, and catches nothing.',
-        'There is one more reason to doubt a judge: it tends to go easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its **model family**). Researchers call this habit **self-preference bias**. This app is an example: one Claude model (Opus) writes the answers the tutor keeps ready behind "Ask about this lesson", and another Claude model (Sonnet) grades them, so the grader is a relative of the writer. The fix is the same one: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.',
+        'One more reason to doubt a judge: it goes easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its **model family**). Researchers call this habit **self-preference bias**. This app is an example: one Claude model (Opus) writes the answers the tutor keeps ready behind "Ask about this lesson", and another (Sonnet) grades them, so the grader is a relative of the writer. The fix is the same: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.',
+        'How high must the two shares be? There is no magic number. Set the pass mark by the job (a judge that blocks answers must catch nearly every failure; one that only reports can miss more) and by the ceiling: two people never agree on every answer, and a judge cannot be asked to agree with one person more than two people agree with each other. Write the mark down before you look.',
     ],
     example=example('Agreement on each side', """humans passed 8, failed 2
 judge passed all 10
@@ -1366,6 +1367,141 @@ True != True     # False""",
             [
                 'Two runs is a start',
                 'A flip rate from two runs on 20 answers is rough. Use more answers, or a third run, before deciding.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'disagreement',
+    title="When the model isn't sure",
+    checked='2026-10-18',
+    sources=[source('Detecting hallucinations in large language models using semantic entropy (Nature, 2024)', 'https://www.nature.com/articles/s41586-024-07421-0')],
+    learn=[
+        "A model shows it is unsure in two ways. As it writes, it picks each word from a list of candidates, each with a chance of being next: its **confidence** in that word. When it is unsure, no candidate scores high. Or ask the same question three times and compare: that check is **self-consistency**, and different answers mean it is unsure.",
+        "Both are flags, never verdicts: only the source, or a person, settles whether a fact is true. Chat models are trained to sound sure, so a fluent answer can be **confidently wrong**: high confidence, yet it contradicts the source. Made-up facts (**hallucinations** is the industry word) cluster in numbers, names and dates, so confidence on those risky words matters most.",
+        "The flag belongs at drafting time, before the judge. Low confidence on the risky words, or three drafts that disagree, means the draft is written again or sent to a person. The last lesson steadied a judge the same way: judge three times and keep the majority.",
+        "Is a flag worth adding? Score it with **ROC-AUC**, the number you met in Quality across every threshold: here, the chance that a passing draft looked more confident than a failing one. 0.5 is guessing, 1 is perfect. Write the pass mark (say 0.7) before you see the result. This app tried three flags on its own tutor (below); none reached 0.7, so it added none.",
+    ],
+    example=example("This app's own test, 18 Oct 2026", """50 questions, 3 drafts each: 150 drafts
+judged by a stronger model: 76 in 100 passed
+pass mark, written first:        ROC-AUC 0.7
+drafts use different words       0.62
+confidence on numbers and names  0.61
+drafts state different numbers   0.50  (no better than guessing)
+→ none reached the pass mark: no flag added. Cost: $0.36"""),
+    check=question(
+        'A draft says the vector size is 1536, and the model gave that word a 98 in 100 chance. The source says 3072. What is the honest reading?',
+        [
+            'The source must be out of date',
+            'The model was confidently wrong',
+            'High confidence means it checked',
+        ],
+        answer=1,
+        why='Chat models are trained to sound sure, so a high chance on a word does not prove it is true. Confidence is a flag, never a verdict: the source, or a person, settles it.',
+    ),
+    angle=angle(
+        pattern='Unsure is a flag, not a verdict',
+        text="The big idea: when a model doubts itself (low confidence on a number or a name, or three drafts that disagree), that can be an early warning for made-up facts. But a sure-sounding answer can still be wrong, so the warning only decides whether to redraft or ask a person, never whether the fact is true. Your code turns each draft's numbers into a set, so order and repeats don't matter, finds the set that comes up most often, and counts the drafts whose set is different. Dividing by the number of drafts gives the share that disagree: 0 means they all state the same numbers, and a high share means the model is guessing.",
+        say='"When a model writes a number or a name, I check how [[sure|fast|long::Its confidence on that word.]] it was and whether three drafts [[agree|rhyme|arrive::Say the same thing.]]. If not, I redraft. That is a warning, never a [[verdict|cost|prompt::Models are often confidently wrong.]] on the fact."',
+        classic=None,
+    ),
+    stack=stack('scikit-learn and MLflow: is the flag worth adding?', """from sklearn.metrics import roc_auc_score
+# passed: the judge's verdict per draft; confidence: the flag's score
+# (GPT models on Microsoft Foundry return word chances; the Claude endpoints don't)
+auc = roc_auc_score(passed, confidence)   # 0.5 guessing, 1 perfect
+mlflow.log_metric("confidence_auc", auc)
+# the pass mark, written before the run: 0.7"""),
+    exercise=exercise(
+        title='Do the Drafts Agree?',
+        topic='evals',
+        difficulty='easy',
+        fn='disagreement',
+        prompt="""Your function gets `drafts`: a list of answers to the same question. Each answer is itself a list of the numbers it states, as strings, like `["1536", "2024"]`. Two drafts agree when they state the same numbers, in any order; a repeated number counts once. A draft that states no numbers is an empty list `[]`, and two such drafts agree with each other.
+
+Find the set of numbers that comes up most often across the drafts (if two sets tie for most common, pick either: the share comes out the same). Count the drafts whose set is different, and divide by the number of drafts. Return that share rounded to 2 decimal places. One draft, or none, returns `0.0`.""",
+        pattern='Turn each draft into a set, find the most common one, count the others.',
+        target='two walks through the drafts',
+        realworld='Teams that draft answers with a small model and grade with a bigger one want an early warning before the judge. ROC-AUC says whether a flag is worth adding: this app measured 0.50 for whether its drafts stated different numbers and 0.62 for whether they used different words, both under the 0.7 pass mark, so it added neither. Oxford researchers showed in 2024 that comparing what the drafts mean, not just their words, catches more hallucinations than word-level confidence (Nature, 2024): the next flag to try.',
+        starter="""def disagreement(drafts):
+    # your code here
+    pass
+""",
+        solution="""def disagreement(drafts):
+    if len(drafts) < 2:
+        return 0.0
+    facts = [set(d) for d in drafts]
+    common = facts[0]
+    for f in facts:
+        if facts.count(f) > facts.count(common):
+            common = f
+    differ = 0
+    for f in facts:
+        if f != common:
+            differ += 1
+    return round(differ / len(facts), 2)
+""",
+        cases=[
+            case([["1536"], ["1536"], ["3072"]], expected=0.33, sample=True),
+            case([["1536", "2024"], ["2024", "1536"], ["1536", "2024"]], expected=0.0),
+            case([], expected=0.0),
+            case([["42"]], expected=0.0),
+            case([["1"], ["2"], ["1"], ["2"]], expected=0.5),
+            case([[], ["7"], []], expected=0.33),
+            case([["1"], ["2"], ["3"]], expected=0.67),
+        ],
+        guided="""def disagreement(drafts):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: one draft or none: nothing to compare.
+    if len(drafts) < 2:
+        return 0.0
+
+    # Step 2: each draft's numbers as a set, so order and repeats don't matter.
+    facts = [set(d) for d in drafts]
+
+    # Step 3: the most common set. Only a bigger count replaces it, so a tie keeps the first (either is fine).
+    common = facts[0]
+    for f in facts:
+        if facts.count(f) > ___:
+            common = f
+
+    # Step 4: count the drafts whose set is different.
+    differ = 0
+    for f in facts:
+        if ___:
+            differ += 1
+
+    # Step 5: the share, rounded to 2 places.
+    return round(___, 2)
+""",
+        fills=['facts.count(common)', 'f != common', 'differ / len(facts)'],
+        concepts=[
+            [
+                'set',
+                'Turns a list into a set: order and repeats stop mattering, so two drafts that state the same numbers in a different order count as agreeing.',
+                """set(["2024", "1536"]) == set(["1536", "2024"])   # True""",
+            ],
+            [
+                'count',
+                '`items.count(x)` says how many times `x` is in the list. The set with the biggest count is the most common one.',
+                """[{"1"}, {"2"}, {"1"}].count({"1"})   # 2""",
+            ],
+            [
+                'Guard the small cases first',
+                'With one draft or none there is nothing to compare, so return 0.0 before doing any dividing.',
+                """if len(drafts) < 2:
+    return 0.0""",
+            ],
+        ],
+        byhand='Three drafts: the first states 1536, the second 1536, the third 3072. As sets, {1536} appears twice and {3072} once, so {1536} is the most common. Draft 1 matches it, draft 2 matches it, draft 3 differs. That is 1 draft out of 3. 1 divided by 3 is 0.333, which rounds to 0.33. Return 0.33.',
+        why='One walk to find the most common set, one more to count the drafts that differ from it.',
+        gotchas=[
+            [
+                'Order inside a draft does not matter',
+                'A draft that says 2024 then 1536 agrees with one that says 1536 then 2024. Compare sets, not lists.',
+            ],
+            [
+                'Agreement is not truth',
+                'Three drafts can agree on the same wrong number. A low share means the draft goes on to the judge, not that it is right: the source, or a person, still decides.',
             ],
         ],
     ),

@@ -2,7 +2,7 @@
 
 Generated from `src/drill/content` by `uv run drill tutor map`; do not edit by hand. These are the lessons that exist; anything not listed here has not been built yet.
 
-The learning path has 187 lessons in 25 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (up to three multiple-choice questions, one at a time), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 187 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
+The learning path has 188 lessons in 25 modules, in the order below. Each lesson has four steps: Learn (a short reading), Check (up to three multiple-choice questions, one at a time), Build (a small Python exercise that runs in the browser, with a starting scaffold that has blanks to fill) and Explain (the pattern used and what to say). 48 of the 188 lessons also have a "Spot the gotcha" card in the Explain step: risky code, pick the rule it breaks, then see the fix. The learner saves things to a study list that brings them back for review after 3, 10, 30 and 90 days.
 
 Each module is tagged with the stage of an AI project it belongs to. The tags are labels, not the order:
 
@@ -2045,7 +2045,8 @@ If versions pass up to a point and fail after it, bisect: test the middle, keep 
 
 An LLM judge is a model too: it can be wrong. Before trusting its scores, compare it with human labels on the same answers.
 Check passes and failures separately: the share of human passes the judge also passed is its true positive rate (TPR), and the share of human failures it also failed is its true negative rate (TNR). A judge that passes everything looks accurate when most answers are good, and catches nothing.
-There is one more reason to doubt a judge: it tends to go easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its model family). Researchers call this habit self-preference bias. This app is an example: one Claude model (Opus) writes the answers the tutor keeps ready behind "Ask about this lesson", and another Claude model (Sonnet) grades them, so the grader is a relative of the writer. The fix is the same one: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.
+One more reason to doubt a judge: it goes easier on answers it wrote itself, and somewhat on answers from a close relative, a model built by the same maker on the same base (its model family). Researchers call this habit self-preference bias. This app is an example: one Claude model (Opus) writes the answers the tutor keeps ready behind "Ask about this lesson", and another (Sonnet) grades them, so the grader is a relative of the writer. The fix is the same: check the judge against human labels on the same answers, or add a second judge from a different family and see whether the two agree.
+How high must the two shares be? There is no magic number. Set the pass mark by the job (a judge that blocks answers must catch nearly every failure; one that only reports can miss more) and by the ceiling: two people never agree on every answer, and a judge cannot be asked to agree with one person more than two people agree with each other. Write the mark down before you look.
 
 - **Check:** Your judge agrees with humans 92 times in 100 overall. Is it good enough? Right answer: Not until you check passes and failures separately. Why: Overall agreement hides a judge that never fails anything.
 - **Check, question 2:** Human reviewers failed 20 answers. Your judge failed only 2 of those same 20. What does that tell you about the judge? Right answer: It lets most bad answers through. Why: It failed only 2 of the 20 answers people failed. That share, its true negative rate, is very low: most bad answers get through.
@@ -2090,7 +2091,20 @@ Judges have other known habits that have nothing to do with quality. They tend t
 - **Exercise:** Flip Rate, writing `flip_rate`. Approach: Walk two lists side by side and count where they differ.
 - **Explain:** the pattern is Ask twice, count the flips. Why this pattern: The big idea: a judge you can trust gives the same verdict on the same answer every time. Your code walks the two runs side by side, counts the answers where the verdict changed, and divides by how many answers there are. That share is the flip rate: 0 means perfectly steady, and anything much above a few percent means its single verdicts are partly luck. What to say: "Before I trust a judge, I run it twice on the same answers. If it changes its mind often, its scores are partly luck."
 
-### 120. When kappa misleads (`gwet_ac1`)
+### 120. When the model isn't sure (`disagreement`)
+
+A model shows it is unsure in two ways. As it writes, it picks each word from a list of candidates, each with a chance of being next: its confidence in that word. When it is unsure, no candidate scores high. Or ask the same question three times and compare: that check is self-consistency, and different answers mean it is unsure.
+Both are flags, never verdicts: only the source, or a person, settles whether a fact is true. Chat models are trained to sound sure, so a fluent answer can be confidently wrong: high confidence, yet it contradicts the source. Made-up facts (hallucinations is the industry word) cluster in numbers, names and dates, so confidence on those risky words matters most.
+The flag belongs at drafting time, before the judge. Low confidence on the risky words, or three drafts that disagree, means the draft is written again or sent to a person. The last lesson steadied a judge the same way: judge three times and keep the majority.
+Is a flag worth adding? Score it with ROC-AUC, the number you met in Quality across every threshold: here, the chance that a passing draft looked more confident than a failing one. 0.5 is guessing, 1 is perfect. Write the pass mark (say 0.7) before you see the result. This app tried three flags on its own tutor (below); none reached 0.7, so it added none.
+
+- **Check:** A draft says the vector size is 1536, and the model gave that word a 98 in 100 chance. The source says 3072. What is the honest reading? Right answer: The model was confidently wrong. Why: Chat models are trained to sound sure, so a high chance on a word does not prove it is true. Confidence is a flag, never a verdict: the source, or a person, settles it.
+- **Check, question 2:** Your app drafts an answer three times, and the three drafts give three different dates. What should happen next? Right answer: Write it again or send it to a person. Why: Three drafts that disagree are a flag that the model is guessing. The flag belongs at drafting time: the draft is written again or handed to a person before any judge sees it.
+- **Check, question 3:** You score a confidence flag against the judge's verdicts and get a ROC-AUC of 0.52. The pass mark you wrote beforehand was 0.7. What do you do? Right answer: Leave it out: it is barely better than guessing. Why: 0.5 means the flag cannot tell a passing draft from a failing one, so 0.52 is close to luck. The pass mark was written first so the result could not talk you into moving it.
+- **Exercise:** Do the Drafts Agree?, writing `disagreement`. Approach: Turn each draft into a set, find the most common one, count the others.
+- **Explain:** the pattern is Unsure is a flag, not a verdict. Why this pattern: The big idea: when a model doubts itself (low confidence on a number or a name, or three drafts that disagree), that can be an early warning for made-up facts. But a sure-sounding answer can still be wrong, so the warning only decides whether to redraft or ask a person, never whether the fact is true. Your code turns each draft's numbers into a set, so order and repeats don't matter, finds the set that comes up most often, and counts the drafts whose set is different. Dividing by the number of drafts gives the share that disagree: 0 means they all state the same numbers, and a high share means the model is guessing. What to say: "When a model writes a number or a name, I check how sure it was and whether three drafts agree. If not, I redraft. That is a warning, never a verdict on the fact."
+
+### 121. When kappa misleads (`gwet_ac1`)
 
 When almost every answer passes (or almost every one fails), Cohen's kappa can come out low even when two judges agree nearly every time. This is called the kappa paradox. It happens because kappa expects a lot of agreement by luck when one verdict is so common, and takes all of it away.
 Gwet's AC1 asks the same question, how much better than luck, but counts luck in a way that stays fair when one verdict is rare. Take the two judges' pass rates and find their average; call it q. Agreement by luck is then 2 times q times (1 minus q). AC1 is worked out from that the same way kappa is.
@@ -2102,7 +2116,7 @@ Report both. If kappa is low but AC1 is high, the judges mostly agree and the lo
 - **Exercise:** Gwet's AC1, writing `gwet_ac1`. Approach: Count agreements and passes in one walk, then a few lines of arithmetic.
 - **Explain:** the pattern is Count luck another way. Why this pattern: The big idea: when one verdict is rare, kappa overstates how much two judges would agree by luck, so it can look bad for judges that really agree. Gwet's AC1 counts luck differently. Your code counts how often the two agree and how often each one says pass. It averages the two pass rates into one number, works out luck as 2 times that number times one minus it, and then takes luck away the same way kappa does. What to say: "When almost every answer passes, kappa can look bad even when two judges agree. So I also report AC1, which counts luck in a fairer way."
 
-### 121. The cost of an LLM judge (`judge_cost`)
+### 122. The cost of an LLM judge (`judge_cost`)
 
 A judge is a model call: Every time an LLM judge scores an answer, it is a model call, billed for the tokens it reads and the tokens it writes. Output costs more: Claude Sonnet 5.5 is $2 a million tokens in and $10 a million out. What it reads: input: The rubric, its instructions; The question and the answer; The documents, to check grounding. What it writes: output: The verdict; The reason for it; Hidden thinking, on a reasoning model.
 The calls multiply: Count the calls first, then price the tokens. 1. Examples times scorers times repeats: 500 examples, 3 scorers, each run twice: 3,000 calls. 2. Price the input: 3,000 times 2,000 tokens = 6,000,000 at $2 a million: $12. 3. Price the output: 3,000 times 200 tokens = 600,000 at $10 a million: $6. 4. Times the runs: $18 a run. 20 runs a month: $360. A reasoning model thinks before it answers, and that thinking is billed as output, though you never see it. Check what each call really used in your traces.
@@ -2115,7 +2129,7 @@ Cheap, but can you trust it?: This app's own tutor eval tried Claude Haiku as a 
 - **Exercise:** Price the Judge, writing `judge_bill`. Approach: Multiply out the calls, then price input and output separately.
 - **Explain:** the pattern is Count the calls, then price the tokens. Why this pattern: The big idea: an LLM judge is a model call per example, per scorer, per repeat, billed for its input tokens and its output tokens, so count the calls first and then price them. Your code multiplies examples, scorers and repeats to get the calls. It multiplies the calls by the input tokens and the input price, and by the output tokens and the output price, dividing each by a million because prices are per million tokens. It returns the calls and the cost, rounded to cents. It is like marking exams: papers, times questions per paper, times how many markers read each one. What to say: "A judge is a model call for every example, every scorer and every repeat. I count the calls, price the input and the output tokens, and only switch to a cheaper judge once it passes the agreement checks."
 
-### 122. Testing the checker with planted mistakes (`checker_score`)
+### 123. Testing the checker with planted mistakes (`checker_score`)
 
 A checker (usually called a grader, or in MLflow a scorer) is whatever marks each run pass or fail: an LLM judge, or a bit of code. A checker that misses mistakes looks just like one that works: every run passes. So test it on planted mistakes: runs where you put a fault in on purpose, so you already know which ones should fail. Testers call this fault injection.
 Plant more than wrong answers. Plant false successes too: the agent says "I've closed the ticket", but the ticket is still open. A judge that reads only the agent's last message is easily fooled by a confident claim like that.
@@ -2144,7 +2158,7 @@ The fix is a code-based grader that checks the real end state: read the ticket t
       return t["status"] == "closed"
   ```
 
-### 123. Testing memory with planted changes (`memory_update_score`)
+### 124. Testing memory with planted changes (`memory_update_score`)
 
 An agent with memory can keep giving an old fact after its source has changed. An ordinary eval never notices, because nothing changes while it runs. So plant a change: update a source on purpose (the office moves from Leeds to York), then ask a question that depends on it.
 Score each answer as one of three outcomes: current (it used the new fact), unsure (it said it can't confirm, which is honest) or stale (it used the old fact). Be strict: an answer that mentions the old fact counts as stale, even if it gives the new one too, because the user cannot tell which is right. The price: a correct answer like "you moved from Silver to Gold" also scores as stale, so read a few of the stale ones by hand.
@@ -2178,7 +2192,7 @@ Then add checks that catch lazy scoring. A code check reads the memory store its
       return "unsure"
   ```
 
-### 124. Drafted labels, expert-confirmed (`review_queue`)
+### 125. Drafted labels, expert-confirmed (`review_queue`)
 
 With hundreds of questions, experts can't write every expected answer from scratch. Instead an LLM drafts the expected facts from the question and its source article, and experts confirm or correct the drafts. This is called pre-labelling (or model-assisted labelling). The drafter may also see the articles the app found, from the trace (the saved record of each step the app took for that question), but never the app's own answer. Checking a draft is several times faster than writing one.
 Expert time is still the scarce part, so decide which drafts they see first. Highest: must-pass questions, where a wrong label is costly. Next: drafts where two independent drafting runs disagree, which usually means the question is ambiguous. Then: questions from rare groups, where each label carries more weight. Everything else can wait, or be spot-checked.
@@ -2190,7 +2204,7 @@ Track how often experts change a draft. If they rarely do, you can send fewer dr
 - **Exercise:** Build the Review Queue, writing `review_queue`. Approach: A score from simple rules, then sort by score, with the id to break ties.
 - **Explain:** the pattern is Score, then sort. Why this pattern: The big idea: expert time is scarce, so the riskiest drafts get reviewed first. Your code gives each item points: 4 for must-pass, 2 if the two drafts disagree, and 1 for a rare group. It stores each item as a pair: minus its points, then its id. Sorting puts smaller numbers first, so the minus sign brings the most points to the top, and items with equal points fall into A to Z order by id. It is like a hospital waiting room, where the most urgent go first. What to say: "Expert time is scarce, so I send the riskiest drafts first. Must-pass items count most, then drafts that disagree, then rare groups."
 
-### 125. Reading regressions and improvements (`change_report`)
+### 126. Reading regressions and improvements (`change_report`)
 
 When you compare two versions on the same questions, most questions get the same result from both. The informative ones are where they disagree: a regression is a question the new version gets wrong that the old one got right; an improvement is the reverse. Statisticians call these discordant pairs.
 Counting them decides the comparison (that is McNemar's test, from the Experiment design module). Reading them explains it. For each one, open both traces side by side and find the first step where they differ: different documents retrieved, a different order, a different tool, an extra loop. Then label the cause in a few words.
@@ -2202,7 +2216,7 @@ Count the causes in each direction. "6 improvements, mostly *moved the right doc
 - **Exercise:** Count Regressions, Improvements and Their Causes, writing `change_report`. Approach: One walk through the ids, counting each change into one of two dicts of causes.
 - **Explain:** the pattern is Find what changed, count the causes. Why this pattern: The big idea: the questions where two versions disagree are the ones that explain a change, so you label why each one changed and count the causes. Your code goes through every question id. If the old version failed and the new one passed, it is an improvement. If the old passed and the new failed, it is a regression. For each one it looks up the cause and adds 1 to that cause's count in a dict, a lookup table, like keeping tally marks. Questions with the same result are skipped. What to say: "I don't stop at the score. I read every question that changed, label why it changed, and count the causes for regressions and improvements."
 
-### 126. Sorting changes before reading them (`sort_changes`)
+### 127. Sorting changes before reading them (`sort_changes`)
 
 With a few hundred questions, a comparison can produce sixty regressions and improvements: too many to read one by one. Sort them into buckets automatically first, then read a sample from each bucket.
 The most useful first cut for RAG comes straight from the traces: did the two versions send different articles to the generation step (where the model writes the answer), or the same articles and the answer changed anyway? The first points at retrieval, the second at generation: the prompt, the model or the scorer.
@@ -2214,7 +2228,7 @@ Then read a handful from each bucket and label causes as usual. You get the erro
 - **Exercise:** Bucket the Changes, writing `sort_changes`. Approach: Compare the two lists as sets, then file the qid.
 - **Explain:** the pattern is Compare as sets, then bucket. Why this pattern: The big idea: sort changed questions by whether the articles found changed, so you know which part of the pipeline to look at. Your code turns each article list into a set: a collection where order and repeats don't matter. If the old and new sets differ, the versions found different articles, so the question goes under retrieval. If the sets are the same, even in a different order, it goes under answer. It is like checking two shopping bags hold the same items, however they were packed. What to say: "Before reading changed questions, I check whether the articles found changed. If they did, I look at retrieval; if not, at the answer step."
 
-### 127. Drift monitoring (`mix_shift`)
+### 128. Drift monitoring (`mix_shift`)
 
 Your eval set is a snapshot. Real questions change: new products, new policies, new kinds of users.
 Watch the mix of production traffic against the eval set. When it shifts, eval scores stop predicting real quality, and the eval set needs refreshing.
@@ -2226,7 +2240,7 @@ Drift (also called data drift or distribution shift) is when the mix of real que
 - **Exercise:** Notice Drift, writing `mix_shift`. Approach: Turn both lists into shares, then compare them category by category.
 - **Explain:** the pattern is Compare shares, add up the gaps. Why this pattern: The big idea: when real questions move away from your eval set, its scores stop predicting real quality, so you measure that drift. Your code first adds up each list with `sum`. Then for each category it turns both counts into shares of their own total and takes the gap between them, using `abs` so the gap is never negative. It adds up the gaps and halves the result. 0 means the same mix, and 1 means completely different. Shares let you compare a list of 10 questions with one of 10,000. What to say: "I compare the mix of question types in my eval set with real traffic. When the gap gets too big, I refresh the eval set, because its scores stop matching real quality."
 
-### 128. The cost of evals (`eval_cost`)
+### 129. The cost of evals (`eval_cost`)
 
 Three lines on the eval bill: Evals cost more than the judge. Price each line for a month, then look at the biggest. What does it cost? "Eval runs": Examples times (the app's answer plus the judge), times every change you test (Every change). "People": Labelling the golden set, and checking the judge's verdicts by hand (Once, then weekly). "Monitoring": Real traces after launch, times the share you score, times the cost of a score (Every day after launch).
 People are often the biggest line: Time is money too: count the hours, times what an hour costs. 1. Label the golden set, once: 200 examples at 3 minutes each: 10 hours, at $60 an hour: $600. 2. Spot-check the judge, every week: 50 verdicts at 3 minutes each: 2.5 hours, $150 a week.
@@ -2243,7 +2257,7 @@ Keep it affordable: Spend where the decision is made. 1. A smoke set while you i
 
 Quality, cost and latency, and which option pays for itself.
 
-### 129. Latency that users feel (`percentile`)
+### 130. Latency that users feel (`percentile`)
 
 Latency is how long a request takes to come back, often in milliseconds (ms; 1,000 ms is one second). Averages hide slow requests. p95 is the time that 95 out of 100 requests finish within (they take that long or less). p99 is the same for 99 out of 100.
 Measure end-to-end latency: the whole request (retrieval, tools, model calls), which is what a trace's total duration gives you. A trace is MLflow's record of every step one request went through. Compare models and configs (their settings) on p95.
@@ -2277,7 +2291,7 @@ Measure end-to-end latency: the whole request (retrieval, tools, model calls), w
       return best
   ```
 
-### 130. Comparing LLMs for a task (`pareto_models`)
+### 131. Comparing LLMs for a task (`pareto_models`)
 
 To choose a model for a task, run each candidate on the same eval set, with the same judge, and record quality, cost and p95 latency as one MLflow run per model.
 Throw out any model that another model beats: at least as good on quality, cost and latency, and better on at least one. The usual term is that the winner dominates the loser. What's left is a short list of real trade-offs, decided by what quality is worth to you. The models nothing beats are called the Pareto front.
@@ -2288,7 +2302,7 @@ Throw out any model that another model beats: at least as good on quality, cost 
 - **Exercise:** Keep the Models Nothing Beats, writing `pareto_models`. Approach: Compare every pair: keep a model only if no other model beats it.
 - **Explain:** the pattern is Compare every pair. Why this pattern: The big idea: throw out any model that another model beats, and what's left is a short list of real trade-offs. A helper, `beats`, says model A beats B if A is at least as good on quality, cost and latency, and better on at least one. Your code compares each model with every model in the list and keeps it only if none beats it. That is fine for a handful of models, but with thousands the number of comparisons grows very fast. What to say: "I drop any model that another one beats: at least as good on quality, cost and speed, and better on one. What's left is the Pareto front, a short list of real trade-offs."
 
-### 131. Inline or batch? (`batch_leftovers`)
+### 132. Inline or batch? (`batch_leftovers`)
 
 There are two ways to send work to a model. Inline is one call at a time while someone waits. A batch is many requests in one file, sent as one job that comes back later, at about half the price. On Microsoft Foundry the target is 24 hours, and it often takes minutes.
 A batch suits work nobody is waiting for, like answering or judging an eval set. It can't measure speed: a batch answer waited in a queue, and that isn't what a person feels. So time a small inline sample for speed, and send the rest as a batch.
@@ -2300,7 +2314,7 @@ Each request carries a `custom_id`. Answers come back in any order, and some can
 - **Exercise:** Send the Leftovers Again, writing `leftovers`. Approach: Note every id that came back with an answer, then keep the requests that were not noted.
 - **Explain:** the pattern is Note what came back, then walk the requests. Why this pattern: The big idea: a batch answers many requests later and in any order, so you match answers by `custom_id` and send the leftovers again. Your code goes through the output lines once and notes every id that came back with an answer. Then it goes through the requests in order and keeps each id that was not noted: those failed, or never came back. Looking an id up in a set is instant, so this stays fast for a million requests. What to say: "A batch costs about half and comes back later, in any order. I match every answer by its custom_id, then send the ones that failed or never came back as a new job."
 
-### 132. Net value per month (`better_option`)
+### 133. Net value per month (`better_option`)
 
 Every experiment ends with a decision, and the decision is about value: what does a success earn or save, and what does each call cost?
 Net monthly value is what good answers earn (volume times success rate times value per success) minus what the calls cost (volume times cost per call). A cheaper model can end up making less money if it succeeds less often, and an expensive one can pay for itself many times over.
@@ -2316,7 +2330,7 @@ People often call this the return on investment (ROI) question. Strictly, ROI is
 
 Graduating, registering, promoting and canarying on Databricks.
 
-### 133. The graduation gate (`graduation_gate`)
+### 134. The graduation gate (`graduation_gate`)
 
 A common setup is a shared experiment space: one model deployment for everyone, with a spending limit and a rate limit for each person. That keeps trials cheap. But it is no place for an app people rely on: one busy experiment can use up the capacity, and nobody is named to fix things.
 Graduation moves an app out of that space onto production capacity, with limits sized for it. An app that graduates on enthusiasm alone can hit rate limits, a surprise bill or quiet failures in its first week.
@@ -2330,7 +2344,7 @@ The graduation gate checks the pack against its acceptance criteria (the limits 
 - **Exercise:** Check the Graduation Pack, writing `graduation_gate`. Approach: Check every rule, add a reason for each one that fails, and sort at the end.
 - **Explain:** the pattern is Check every rule, keep every failure. Why this pattern: The big idea: an app should graduate on evidence the trial measured, and the gate lists every check that fails so the team can fix them all in one round. Your code checks the six rules one after another. Each rule that fails adds its reason to a list, and the code never stops early. Exactly at a limit passes, because it uses `<` and `>`, not `<=` and `>=`. At the end, `sorted` puts the reasons in A to Z order, and an empty list means it graduates. What to say: "I check every rule and collect all the reasons that fail, instead of stopping at the first one. That way the team can fix everything in one round."
 
-### 134. Model registry and promotion (`promote_model`)
+### 135. Model registry and promotion (`promote_model`)
 
 A model registry (such as MLflow's on Databricks) stores every trained version with its metrics. Aliases like `@champion` point at the version serving traffic.
 Promote a challenger (a newer version that wants the job) only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.
@@ -2342,7 +2356,7 @@ The LLM judge that scores your champion and challenger (a model that grades answ
 - **Exercise:** Promote a Challenger, writing `promote_model`. Approach: Keep the best so far, and let a challenger replace it only if it clears the threshold.
 - **Explain:** the pattern is Keep the best so far. Why this pattern: The big idea: only promote a challenger when it beats the champion by a meaningful margin on the same data. Your code first works out the threshold: the champion's score plus `min_gain`. Then it goes through the challengers, keeping the best so far, like holding the tallest card you have seen. A challenger takes over only if it clears the threshold and scores higher than the current best. A tie is not higher, so the earlier version stays, and if nobody clears the threshold the champion stays. What to say: "A challenger only replaces the champion if it wins by at least the minimum gain. Among those, the highest score wins, and a tie goes to the earlier version."
 
-### 135. Canary releases (`route_request`)
+### 136. Canary releases (`route_request`)
 
 Never switch all traffic to a new agent at once. In a canary release, you send a small share (say 10%) to the new version (the canary), compare its traces and evals with the old one, then move the split.
 A Databricks serving endpoint can serve several versions and split traffic between them by percentage. Rolling back is just setting the new version to 0%.
@@ -2353,7 +2367,7 @@ A Databricks serving endpoint can serve several versions and split traffic betwe
 - **Exercise:** Canary a New Agent Version, writing `route_request`. Approach: A running total: stop at the first route where the total is bigger than the bucket.
 - **Explain:** the pattern is Add up percents until you pass. Why this pattern: The big idea: a canary release sends a small share of traffic to the new version, and using the user's id means one person always gets the same version. Your code takes the last two digits, `user_id % 100`, as a bucket from 0 to 99. Then it goes through the routes, adding each percent to a running total. The first route whose total is bigger than the bucket answers. With a 90 and 10 split, buckets 0 to 89 get the first version and 90 to 99 the second. What to say: "I turn each user id into a number from 0 to 99, so a person always sees the same version. Then I add up the route percents, and the first route whose running total passes that number wins."
 
-### 136. Rolling out a new prompt (`prompt_rollout`)
+### 137. Rolling out a new prompt (`prompt_rollout`)
 
 Before a new prompt version gets the `production` alias, first run an offline evaluation: score it on your eval set (your saved test questions) with `mlflow.genai.evaluate`, before any real user sees it. Then give it a small share of real traffic, as a canary.
 Tag every trace with the prompt version it used. Then you can compare versions on real questions and decide with a rule you wrote down first: promote, keep testing, or roll back.
@@ -2368,7 +2382,7 @@ Tag every trace with the prompt version it used. Then you can compare versions o
 
 Traces that answer your questions, slow steps and runaway agents.
 
-### 137. Designing traces for experiments (`summarize_by_tag`)
+### 138. Designing traces for experiments (`summarize_by_tag`)
 
 A trace records one request: every model call, retrieval and tool, with timings, inputs, outputs and token counts. Design traces before you need them.
 Tag every trace with the things you'll want to split your results by later (for example, comparing two models): config, model, prompt version, environment. A trace is made of spans, one for each step inside it (a model call, a retrieval, a tool). Mark spans with their type (RETRIEVER, TOOL, CHAT_MODEL) so evaluation and analysis can find them, and put per-request details in span attributes (extra details saved on a span).
@@ -2392,7 +2406,7 @@ Give each version you compare a name with `mlflow.set_active_model(name=...)`, l
   answer = chain.invoke(q)   # full trace saved
   ```
 
-### 138. Reading agent traces (`slowest_chain`)
+### 139. Reading agent traces (`slowest_chain`)
 
 A trace records one agent run as nested spans: the run, each model call, each tool call, each web (HTTP) request inside a tool. MLflow Tracing and LangSmith show them as a tree. A span that holds other spans is their parent; the spans directly inside it are its children. A parent's time includes its children's time, so a span's own time is what is left after you take its children away.
 To find what's slow, start at the root (the top span, the whole run) and follow the slowest child down. That chain of slowest steps is the critical path. The answer is usually one tool or one model call.
@@ -2404,7 +2418,7 @@ An agent team makes the same kind of tree when each helper is traced under its o
 - **Exercise:** Find the Slow Path in a Trace, writing `slowest_chain`. Approach: List each span's children in one pass, then walk down from the root, always into the slowest child.
 - **Explain:** the pattern is Follow the slowest child down. Why this pattern: The big idea: to find what's slow, start at the root and keep following the slowest child down. Your code first goes through the spans to find the root and build a dict, a lookup table from each parent's name to its children. Then it walks down: it adds the current span's name to the path, picks the child with the biggest `ms`, and moves to it. When a span has no children, it stops. It is like following the thickest branch of a tree out to its tip. What to say: "To find what's slow, I start at the root and keep stepping into the slowest child. Where it stops is usually the slow tool or model call."
 
-### 139. Traces to a table (`trace_table_row`)
+### 140. Traces to a table (`trace_table_row`)
 
 Reading traces one at a time stops working after a few dozen runs. Turn each trace into one row of a few numbers: steps (model calls), tool errors, the biggest prompt and total tokens. Then sort and filter the rows, like a spreadsheet, to find the runs worth reading.
 Rows with many steps or many tool errors are the runs to open first. The biggest prompt (the most input tokens in one call) shows how close a run came to filling the context window, the most a model can read in one call.
@@ -2416,7 +2430,7 @@ On Databricks, production traces can be stored as tables in Unity Catalog, so yo
 - **Exercise:** Turn a Trace into a Row, writing `trace_table_row`. Approach: One pass over the spans, updating two counts, a running biggest and a running total as you go.
 - **Explain:** the pattern is Four numbers from one trace. Why this pattern: The big idea: turn each trace into one row of a few numbers, so you can sort and filter runs like a spreadsheet. Your code starts four numbers at 0 and looks at each span once. It adds 1 to steps for a model call, and 1 to tool errors for a failed tool call. It keeps the biggest input tokens seen so far, and adds every span's input and output tokens to the total. An empty trace leaves all four at 0. What to say: "I turn each trace into one row of a few numbers: model steps, tool errors, biggest prompt and total tokens. Then I sort the rows to find the runs worth reading."
 
-### 140. How full is the context? (`context_fill`)
+### 141. How full is the context? (`context_fill`)
 
 Answers get worse as the prompt gets longer, even when the right fact is in it. A model's context window is the most tokens it can read in one call. This drop is called context rot, and a model with a bigger window does not fix it.
 An agent sends its whole history again on every call, so each call reads more than the last. Measure the context usage of each call (how full it is, the fill): its input tokens as a percent of the window. When it passes a line, for example 80 percent, clean up before the run hits the limit: clear old tool results or summarise (next lesson).
@@ -2428,7 +2442,7 @@ Three habits keep the context small and useful. Put the question after the retri
 - **Exercise:** Watch the Context Fill Up, writing `context_fill`. Approach: Work out each fill in one walk. Keep the biggest, and note the first index over 80.
 - **Explain:** the pattern is Track the biggest, note the first. Why this pattern: The big idea: measure each call's fill, its input tokens as a percent of the window, so you can clean up before a run hits the limit. Your code works out each call's fill in order, and `enumerate` gives each call's position from 0. It keeps the biggest fill so far, like a high score. It also notes the first position over 80, and the `first_over is None` check stops later ones replacing it. At the end it rounds the biggest fill to a whole number. What to say: "For each call I work out how full the context window is. I keep the biggest, and note the first call over 80 percent, because that's when to clean up."
 
-### 141. What a summary forgets (`summary_recall`)
+### 142. What a summary forgets (`summary_recall`)
 
 When the context gets too full, agents compact it: they swap old messages for a short summary. A vague "summarise this" prompt drops exact details like table names, ticket ids and error codes. The agent then redoes work, or says it is finished when it is not.
 Try the cheap fix first: clear old tool results, keeping only the note that each tool ran. If runs are still too long, summarise with required sections: the goal, decisions, exact names, ids and error codes, open tasks and the next step. Keep the last few messages word for word.
@@ -2458,7 +2472,7 @@ To test a summary, plant facts: put a few details you will ask about later, like
   {messages}"""
   ```
 
-### 142. Guardrails for agents (`detect_loop`)
+### 143. Guardrails for agents (`detect_loop`)
 
 Agents in production need guardrails: limits that stop a run before it does damage or burns money. The simplest catches the same call repeated again and again.
 Production systems also cap total steps, tokens and time, and tell the model why it was stopped.
@@ -2470,7 +2484,7 @@ In LangGraph, the step cap is `recursion_limit`. Its default in langgraph 1.2.11
 - **Exercise:** Stop a Looping Agent, writing `detect_loop`. Approach: Keep a count of identical calls in a row; start again at 1 when the call changes.
 - **Explain:** the pattern is Count repeats in a row. Why this pattern: The big idea: the simplest guardrail stops an agent that makes the same call again and again. Your code remembers the previous call and a count of repeats in a row. If the current call matches the previous one, the count goes up by 1. If not, the count starts again at 1. As soon as the count reaches `limit`, it returns that call's position. If that never happens, it returns -1. What to say: "I count how many times the same call comes in a row. When the call changes, the count goes back to 1, and I stop the agent once it reaches the limit."
 
-### 143. Label failures, then count (`failure_counts`)
+### 144. Label failures, then count (`failure_counts`)
 
 With hundreds of failed runs, reading traces at random wastes time, and fixing them one by one never ends. Give each failed trace in a sample, say 50, one label for its failure mode: a short name for what went wrong. Then count the labels and fix the biggest group first. This is called error analysis.
 Use a fixed list of labels, so the same problem always gets the same name. A research taxonomy (a fixed list of categories) called MAST names the common ways agents fail, such as repeating steps, not knowing when to stop, ignoring the task, and weak or missing checks.
@@ -2486,7 +2500,7 @@ A person labels the first batch by hand. An LLM judge (a model that grades) can 
 
 Cost and caching in production.
 
-### 144. Tokens and cost (`token_cost`)
+### 145. Tokens and cost (`token_cost`)
 
 LLM providers bill per token (roughly three quarters of a word), with separate prices for input and output. Output usually costs several times more. Prices are quoted in dollars per million tokens.
 Track cost per model, per feature and per user from day one. When the bill jumps, that breakdown tells you why.
@@ -2497,7 +2511,7 @@ Track cost per model, per feature and per user from day one. When the bill jumps
 - **Exercise:** Cost per Model, writing `token_cost`. Approach: Group by model: add each call's cost to that model's total in a dict.
 - **Explain:** the pattern is Add up cost per model. Why this pattern: The big idea: track cost per model from day one, so when the bill jumps you can see why. For each call, your code multiplies input tokens by the input price and output tokens by the output price, then divides the sum by one million. It adds that cost to its model's running total, kept in a dict, a lookup table from model name to number. `totals.get(model, 0)` starts a new model at 0. Rounding to 4 places happens only at the end. What to say: "For each call I work out the cost from its input and output prices, and add it to that model's total. I round only at the end, so small errors don't pile up."
 
-### 145. Estimate against actual (`estimate_vs_actual`)
+### 146. Estimate against actual (`estimate_vs_actual`)
 
 Before launch, every cost number is a guess. If nobody checks it against the real bill, a project can run far over for months before anyone notices.
 So each month, set the estimate (what the plan said a project would cost) next to the actual (what it really cost). Percent over is the extra spend as a share of the estimate. A project planned at $400 that cost $520 is $120 over, which is 30 percent of $400.
@@ -2511,7 +2525,7 @@ Flag only projects over by a set margin, such as 20 percent, and look at the big
 - **Exercise:** Projects Over Estimate, writing `estimate_vs_actual`. Approach: Filter and rank: work out each project's percent over, keep the ones at or above the threshold, then sort biggest first with the name breaking ties.
 - **Explain:** the pattern is Keep the overruns, biggest first. Why this pattern: The big idea: check every estimate against the real bill each month, and look at the biggest overruns first. For each project, your code works out how far over it is: the extra spend divided by the estimate. It keeps the project only if that share is at least the threshold, and turns it into a whole percent. Then it sorts the pairs so the biggest percent comes first, with equal percents in A to Z order by name. What to say: "Each month I compare every project's real bill with its estimate. I flag the ones that went over by my margin or more, and look at the biggest first."
 
-### 146. Caching responses (`cache_hits`)
+### 147. Caching responses (`cache_hits`)
 
 Many requests repeat. A cache returns a stored answer instead of calling the model again, which saves money and time. It looks answers up by a key, usually the prompt text.
 Caches have a size limit. LRU (least recently used) removes whatever hasn't been used for the longest time.
@@ -2522,7 +2536,7 @@ Caches have a size limit. LRU (least recently used) removes whatever hasn't been
 - **Exercise:** Count Cache Hits, writing `cache_hits`. Approach: Keep the cache as a list in order of use: used longest ago at the front, newest at the end.
 - **Explain:** the pattern is A list kept in order of use. Why this pattern: The big idea: a cache reuses stored answers to save money and time, and when full it removes the prompt used longest ago. Your code keeps the cache as a list in order of use, oldest at the front. On a hit it counts it, takes the prompt out and puts it back at the end. On a miss with a full cache, `pop(0)` first removes the front one. Finding a prompt in a list means reading it from the start: fine for 2 prompts, slow for 10,000. What to say: "I keep the prompts in the order they were used. A hit moves a prompt to the back. When the cache is full, I remove the one at the front."
 
-### 147. Prompt caching (`prompt_cache`)
+### 148. Prompt caching (`prompt_cache`)
 
 Agents and tutors send the same long start again and again: instructions, a tool list, a document. Prompt caching lets the model provider keep that start for a few minutes. When the next prompt begins with exactly the same text, that part is a cache read, at a small share of the input price: a tenth on most models, less on some. This is different from caching whole answers: the model still writes a new answer every time.
 Three things decide whether it hits. The start must be identical, so put what never changes first and what changes last. It must be long enough: at least 512 tokens on the Claude 5.5 models, 1,024 on GPT models. And the next call must come soon, within about 5 minutes. On Claude you ask for it with `cache_control`, and the first call pays a quarter extra to write the cache. GPT models cache by themselves.
@@ -2538,7 +2552,7 @@ Each call's usage says what happened. Claude reports `cache_read_input_tokens` a
 
 Timeouts, circuit breakers and error budgets: staying up when the services you rely on don't.
 
-### 148. Timeouts and deadlines (`plan_calls`)
+### 149. Timeouts and deadlines (`plan_calls`)
 
 Every call that can wait forever eventually will. Set a timeout on every model and HTTP call.
 Better still, give the whole request a deadline and pass the remaining time down, so no step starts work it can't finish.
@@ -2549,7 +2563,7 @@ Better still, give the whole request a deadline and pass the remaining time down
 - **Exercise:** Work Within a Deadline, writing `plan_calls`. Approach: Carry the time left forward and check it before each step.
 - **Explain:** the pattern is Spend down a time budget. Why this pattern: The big idea: give the whole request a deadline and pass the time left down, so no step starts work it can't finish. Your code starts with all of `deadline_ms` as time left and goes through the steps in order. A step runs only if its time is at most the time left, and then its time is taken off. A step that doesn't fit is skipped, but a shorter one later may still fit. It is like spending pocket money: buy what you can afford, skip what you can't. What to say: "I pass the time left down the request. A step only runs if it fits in what remains, so nothing starts work it can't finish."
 
-### 149. Circuit breakers and fallbacks (`circuit_breaker`)
+### 150. Circuit breakers and fallbacks (`circuit_breaker`)
 
 When a service you depend on (a dependency, like a reranker or model endpoint) is down, calling it again and again makes everything slower and the outage worse.
 A circuit breaker stops calling after repeated failures, fails fast to a fallback (a cheaper model, a cached answer), and tries again after a cooldown. It has three states: closed (calls go through), open (calls are blocked) and half-open (after the cooldown, one trial call decides whether to close or open again).
@@ -2560,7 +2574,7 @@ A circuit breaker stops calling after repeated failures, fails fast to a fallbac
 - **Exercise:** Stop Calling a Failing Service, writing `circuit_breaker`. Approach: Keep two things as you go: failures in a row, and when the breaker opened. Decide each call from those.
 - **Explain:** the pattern is Remember failures and when it opened. Why this pattern: The big idea: when a service keeps failing, stop calling it for a while instead of making the outage worse. Your code remembers two things: how many failures in a row, and when the breaker opened, which is `None` while it is closed. A call during the cooldown is blocked and changes nothing. A working call resets the count and closes the breaker. A failed call adds 1, and reaching `threshold` opens the breaker at that time, like a fuse box switch that trips. What to say: "After enough failures in a row, the breaker opens and blocks calls for a while, so we fail fast to a fallback. One working call closes it again."
 
-### 150. SLOs and error budgets (`burn_rate`)
+### 151. SLOs and error budgets (`burn_rate`)
 
 An SLO (service level objective) is a reliability target, like 99.5% of requests succeeding. The other 0.5% is your error budget.
 Alert on how fast you're using up the budget (the burn rate), not on every error. That pages people (sends an urgent alert to whoever is on call) only when it matters.
@@ -2577,7 +2591,7 @@ Follow one request from YAML through the runbook and Spacelift to Azure Databric
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): Which repo do I change?; Upgrade a module through DEV, UAT and PROD.
 
-### 151. What happened to my YAML field? (`field_status`)
+### 152. What happened to my YAML field? (`field_status`)
 
 On a platform team, product teams don't write Terraform. They ask for what they need in YAML files kept in a shared repo, the config repo. A team's `clusters.yml`, for example, lists the clusters it wants.
 A field in that YAML goes past five stops before anything is built. The YAML says what the team wants. The check (written with Pydantic, a Python library) rejects fields it doesn't know and values of the wrong type. The runbook is Terraform code that reads the YAML and fills in anything left out. A module turns those settings into resources. The provider is the plugin that actually talks to Databricks or Azure.
@@ -2590,7 +2604,7 @@ Reviewers sum up a field in one word. SUPPORTED: it reaches the provider as writ
 - **Exercise:** Name What Happened, writing `field_status`. Approach: Ask the questions in a fixed order and return at the first one that fits.
 - **Explain:** the pattern is Follow the field all the way down. Why this pattern: The big idea: a field in YAML only matters if it reaches the provider. You follow it through five points: the YAML, the check, the runbook, the module and the provider, and give it one word for what happened. Your code asks the questions in a set order. Rejected by the check: INVALID. Any step not traced yet: UNKNOWN. Not passed on, or never reaching the provider: DROPPED. Left out and filled in by the runbook: DEFAULTED. Changed on the way: TRANSFORMED. Otherwise: SUPPORTED. It is like posting a parcel: it only counts if it is delivered, not if the label was filled in correctly. What to say: "Valid YAML isn't enough. I follow a field from the YAML through the runbook to the provider. If it never gets there, it's dropped, even though the YAML looks fine."
 
-### 152. Where did that access come from? (`folder_access`)
+### 153. Where did that access come from? (`folder_access`)
 
 A team's `team.yml` can name an `owner_group` and list `folder_grants`: other groups and the permission each should have on the team's workspace folder, like `CAN_EDIT`. A group is a named set of people or identities from Microsoft Entra ID.
 The runbook doesn't copy that list as it is. It adds access you didn't type: the owner group gets `CAN_MANAGE`, and every workspace user gets `CAN_READ` by default. Then it joins those with the explicit grants and hands the whole list to the module.
@@ -2603,7 +2617,7 @@ So when a plan shows `CAN_MANAGE` for a group that only asked for `CAN_EDIT`, Te
 - **Exercise:** Who Gets What on the Folder, writing `folder_permissions`. Approach: Start from the defaults, then add each grant, keeping the higher permission for a group seen before.
 - **Explain:** the pattern is Add what the runbook adds, keep the highest. Why this pattern: The big idea: the permissions in a plan are the YAML plus whatever the runbook adds. Your code starts with every workspace user at CAN_READ. If there is an owner group, it gets CAN_MANAGE. Then each explicit grant is added, and for a group that is already there it keeps whichever permission ranks higher. The ranks are a list in order, so the higher one is the one with the bigger position. It is like a guest list where the host is always on it, everyone gets in the lobby, and someone on the list twice gets the better of their two passes. What to say: "The plan can show access nobody typed. The runbook gives the owner group CAN_MANAGE and every user CAN_READ. If a group shows up twice, it keeps the higher permission."
 
-### 153. What will Terraform build from clusters.yml? (`cluster_from_yaml`)
+### 154. What will Terraform build from clusters.yml? (`cluster_from_yaml`)
 
 A team asks for a cluster in its own `clusters.yml`. Its `team.yml` only points to that file; `clusters.yml` is what describes the cluster: a name, the team's short code, its size and a cluster policy, the set of rules that limits what a cluster may be.
 The runbook changes some of it on the way. The final name is the code and the name joined with `_`, in lower case: `SALES` and `daily-report` become `sales_daily-report`. If no policy is named, it uses Personal Compute. It also gives the team's owner group permission to manage the cluster.
@@ -2622,7 +2636,7 @@ The workspace, Unity Catalog and who can see what, before any of it goes into co
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace, a metastore and a catalog; Private networking: VNet injection and Private Link.
 
-### 154. Who can read this table? (`can_read_table`)
+### 155. Who can read this table? (`can_read_table`)
 
 In Azure Databricks every table lives at a three-part address: catalog.schema.table, like `main.sales.orders`. Unity Catalog is the part of Databricks that keeps those addresses and decides who may use them. A catalog is the top folder, a schema is a folder inside it, and a table sits in a schema.
 To read a table you need a key at every level on the way down: `USE CATALOG` on the catalog, `USE SCHEMA` on the schema, and `SELECT` on the table. Missing any one of them, and the query fails, even if the other two are there.
@@ -2639,7 +2653,7 @@ Keys are given to principals: a person, a group, or a service principal (an iden
 
 Read a plan, keep state safe, and change infrastructure in the right order.
 
-### 155. What a Terraform plan really says (`summarize_plan`)
+### 156. What a Terraform plan really says (`summarize_plan`)
 
 `terraform plan` compares your code with state (what Terraform last applied) and reality, then lists what it will create, update, replace or destroy. A replacement (destroy the old one, then create it again) shows up in that summary as one add and one destroy, so the line never says "replace".
 `terraform show -json` gives the same plan as data. Spacelift policies and PR checks read this JSON, not the text.
@@ -2666,7 +2680,7 @@ Read a plan, keep state safe, and change infrastructure in the right order.
   # the 1 to destroy is the workspace itself: stop and fix it
   ```
 
-### 156. Spotting dangerous replacements (`find_replacements`)
+### 157. Spotting dangerous replacements (`find_replacements`)
 
 Some attributes can't change in place. Changing them forces replacement: Terraform destroys the resource and creates a new one.
 On an Azure Databricks workspace, that means a new URL and losing everything inside it. Always find every `-/+` (the plan's mark for a replacement) before approving.
@@ -2677,7 +2691,7 @@ On an Azure Databricks workspace, that means a new URL and losing everything ins
 - **Exercise:** Spot the Replacements, writing `find_replacements`. Approach: Filter: keep the entries that match a rule, in their original order.
 - **Explain:** the pattern is Keep changes with delete and create. Why this pattern: The big idea: a replacement destroys a resource and makes a new one, so on a Databricks workspace you must find every one before approving. Your code goes through the changes in order. For each one it asks whether `actions` has both `"delete"` and `"create"`. The `and` means both must be there, so a plain delete or a plain create is skipped. Matching addresses go into a list, which keeps them in the same order as the plan. What to say: "A replacement destroys a resource and makes a new one, so I find every one before approving. In the plan JSON it shows up as a change with both delete and create."
 
-### 157. State and locking (`lock_info`)
+### 158. State and locking (`lock_info`)
 
 State is Terraform's record of what it manages. Two runs writing it at once would corrupt it, so runs take a lock first.
 A crashed run can leave the lock behind. Before `terraform force-unlock`, check who holds it and whether that run is really dead. This stack keeps its state in an Azure storage account (the azurerm backend). A stack whose state Spacelift manages never shows this error: look at the stack's runs instead.
@@ -2688,7 +2702,7 @@ A crashed run can leave the lock behind. Before `terraform force-unlock`, check 
 - **Exercise:** Read a State Lock Error, writing `lock_info`. Approach: Find where the section starts, then split each line on the first colon only.
 - **Explain:** the pattern is Start reading at the heading. Why this pattern: The big idea: before you force-unlock state, read the lock error to see who holds the lock. Your code goes through the lines with a yes-or-no flag called `inside`, which starts at no. When it reaches `Lock Info:`, the flag turns to yes. Every line after that is cut at its first colon only, with `split(":", 1)`, so the `Created` time keeps its own colons. Both parts are trimmed with `strip` and stored in a dict, a lookup table from each key to its value. What to say: "Before I force-unlock, I read the lock error to see who holds the lock. If that run is still going, I wait for it."
 
-### 158. count vs for_each (`count_shift`)
+### 159. count vs for_each (`count_shift`)
 
 `count` names copies by position (`[0]`, `[1]`); `for_each` names them by key (`["bronze"]`).
 Remove the first item from a `count` list and every later item shifts position. Terraform sees changed names and replaces them, and for storage containers that deletes their data. Use `for_each`, and `moved` blocks to migrate.
@@ -2718,7 +2732,7 @@ Remove the first item from a `count` list and every later item shifts position. 
   }
   ```
 
-### 159. Dependencies and stacks (`apply_order`)
+### 160. Dependencies and stacks (`apply_order`)
 
 Terraform builds a dependency graph (a map of which resource needs which other one first) from references between resources and creates things in an order that respects it. A loop in that graph is `Error: Cycle`.
 A Databricks provider configured from a workspace that doesn't exist yet can't plan. Split the workspace and its contents into separate Spacelift stacks (a stack is one set of Terraform code with its own state, planned and applied on its own), with a stack dependency between them.
@@ -2745,7 +2759,7 @@ A Databricks provider configured from a workspace that doesn't exist yet can't p
   }
   ```
 
-### 160. Variables, outputs and modules (`variables_outputs`)
+### 161. Variables, outputs and modules (`variables_outputs`)
 
 A module is a folder of Terraform code you can use again, like a recipe. You hand it values through variables, so the same module builds a dev workspace and a prod one: only the values change.
 A module keeps its insides private. It hands values back through outputs, and the code that called it reads them as `module.<name>.<output>`. It can't reach past the outputs into the resources inside.
@@ -2757,7 +2771,7 @@ So when other code needs a value from a module, the module has to output it firs
 - **Exercise:** Find the Broken References, writing `bad_refs`. Approach: Cut each reference at its dots, then check each part in turn: the shape, the module, the output.
 - **Explain:** the pattern is Only outputs cross the wall. Why this pattern: The big idea: a module is a closed box. Values go in as variables and come out only as outputs, so the code around it can read `module.<name>.<output>` and nothing deeper. Your code cuts each reference at its dots. It is bad if it doesn't have exactly three parts starting with `module`, if no module has that name, or if that module has no output with that name. It is like a vending machine: you only get what comes out of the slot. What to say: "A module is a closed box. Values go in as variables and come out only as outputs, so anything I need from it has to be output first."
 
-### 161. Bringing existing resources under Terraform (`import_existing`)
+### 162. Bringing existing resources under Terraform (`import_existing`)
 
 Terraform only manages what is in its state. A storage account someone made by hand in the Azure portal isn't there, so as far as Terraform knows, it doesn't exist.
 Write a resource block for it and plan, and Terraform wants to create it: the apply fails because the name is taken. Instead, add an import block (Terraform 1.5 or later) with the resource's address and its Azure ID. The plan then says "1 to import", and nothing new is made.
@@ -2794,7 +2808,7 @@ Read the rest of that plan too. If your code doesn't match the real resource, th
   }
   ```
 
-### 162. Renaming without destroying (`moved_blocks`)
+### 163. Renaming without destroying (`moved_blocks`)
 
 Terraform knows each resource by its address, like `databricks_cluster.etl`. Rename it in the code to `databricks_cluster.sales_etl` and the plan sees one address gone and a new one: destroy the old cluster, create a new one.
 A moved block (Terraform 1.1 or later) says it's the same thing with a new name. Terraform updates the name in its state, and the plan shows nothing destroyed. It works for moving a resource into a module, and from `count` to `for_each`, too.
@@ -2828,7 +2842,7 @@ Keep moved blocks in the code afterwards. An environment that hasn't applied the
   }
   ```
 
-### 163. Pinning provider versions (`provider_versions`)
+### 164. Pinning provider versions (`provider_versions`)
 
 A provider is the plugin Terraform downloads to talk to Azure or Databricks. New versions come out often, and a new version can change defaults or how a resource is planned.
 In `required_providers` you write a version constraint. `~> 4.40` means 4.40 or newer, but not 5.0: only the last number you wrote may go up. `~> 1.90.0` is stricter: 1.90 bug fixes only. Breaking changes usually come with a new major version, so this keeps them out.
@@ -2867,7 +2881,7 @@ Stacks, runs and the policies that guard every change.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): Drift detection; Contexts and secrets; Testing a policy before it blocks.
 
-### 164. Reading a Spacelift run (`read_a_run`)
+### 165. Reading a Spacelift run (`read_a_run`)
 
 A run is one go of Terraform on a stack. A proposed run only previews: Spacelift starts one for a push to any branch that isn't the stack's tracked branch, plans, reports back to the pull request, and stops. A tracked run deploys: it plans, then applies. Most runs a reviewer sees are proposed.
 Read a run from the top. The header says which stack, which environment, which commit, and what state. *Finished* on a proposed run means planning worked. It never means anything was deployed.
@@ -2898,7 +2912,7 @@ A good review answer says what you saw, where it came from, what you still don't
   terraform init -upgrade
   ```
 
-### 165. What runs after a change? (`runs_after`)
+### 166. What runs after a change? (`runs_after`)
 
 In Spacelift, each piece of infrastructure lives in its own stack: one Terraform folder with its own state, run by Spacelift when its code changes. A platform is usually several stacks, like `network`, `workspace`, `catalogs` and `jobs`.
 Stacks can depend on each other. `workspace` depends on `network` because the workspace needs the network's subnets first. When `network` applies a change, Spacelift starts a run for every stack that depends on it, and for the stacks that depend on those, all the way downstream.
@@ -2911,7 +2925,7 @@ Stacks that don't depend on the change, directly or through another stack, don't
 - **Exercise:** Order the Downstream Runs, writing `runs_after`. Approach: Find everything downstream with a to-do list, then repeatedly take the first ready stack by name.
 - **Explain:** the pattern is Downstream, then in waiting order. Why this pattern: The big idea: when a stack changes, every stack downstream of it runs, and each one only after the stacks it waits for. Your code works in two steps. First it finds who runs: start from the changed stack, add every stack that waits for it, then every stack that waits for those, using a to-do list until nothing new turns up. Then it puts them in order: over and over, pick the stacks whose waits are all done (or not running at all), take the first by name, and add it to the order. It is like a relay race: a runner leaves only when every runner handing them the baton has arrived. What to say: "When one stack changes, every stack that uses it has to run again. I list those, then run them in an order where each one waits for the stacks it needs."
 
-### 166. Policies as guardrails (`guard_destroys`)
+### 167. Policies as guardrails (`guard_destroys`)
 
 A plan policy runs automatically on every Spacelift run and can warn or block based on the plan. It's code review that never gets tired.
 Start with the resources you can't rebuild: workspaces, storage accounts, metastores.
@@ -2940,7 +2954,7 @@ Start with the resources you can't rebuild: workspaces, storage accounts, metast
   }
   ```
 
-### 167. Policy as code (`plan_policy`)
+### 168. Policy as code (`plan_policy`)
 
 Last lesson you wrote one rule. Policy as code is a list of such rules that runs on every plan, as a Spacelift plan policy or a `terraform test`, so a review rule that lives in people's heads can't get skipped on a busy day. Add a second rule: never open workspaces or storage to the public internet. Each rule checks every change on its own, so one change can break two rules.
 A Spacelift plan policy can deny (block the run, in red) or warn (print in yellow and let it through). Roll a new rule out as a warning first, so you see what it would have blocked before it blocks anyone.
@@ -2957,7 +2971,7 @@ When a run fails: find the first error, trace it back, and ask for help well.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): What to send the platform owner.
 
-### 168. Why can't the plan find the service principal? (`lookup_failed`)
+### 169. Why can't the plan find the service principal? (`lookup_failed`)
 
 A service principal (SP) is an identity for a program, not a person: a job or a connector uses it to reach data. A common failed plan says `Cannot find service principal: sp-sales-etl-uat`. The word data in the error path means Terraform tried to look up something that should already exist; it was never going to create it.
 An SP has to pass several stages, in order, before a lookup works. It must exist in Microsoft Entra ID. It must be declared in the team's `service_principals.yml`. The Foundation stack must have been applied, which registers it in the Databricks account. Then the Service stack assigns it to the workspace.
@@ -2988,7 +3002,7 @@ So you check the stages in order and stop at the first one that isn't true. Befo
   }
   ```
 
-### 169. Getting unstuck with AI, safely (`ai_unstuck`)
+### 170. Getting unstuck with AI, safely (`ai_unstuck`)
 
 AI assistants like GitHub Copilot or an enterprise ChatGPT are good at three things here: explaining an unfamiliar term or error, tracing a name across files (YAML, then the runbook, then the module), and suggesting checks. They are not evidence. Anything they say is a lead until you've seen it yourself.
 A good prompt gives the AI what a person would need: the run (stack, environment, run link), the first error (a short excerpt, not the whole log), the repo and the commit the run used, and the rules: read-only, link every source, mark guesses as guesses, give one safe next check, and don't edit or deploy anything.
@@ -3005,7 +3019,7 @@ Never paste secrets, tokens, keys, state files or whole logs with credentials in
 
 Compute, runtimes, jobs, bundles, tags and what they cost.
 
-### 170. Which compute for which work (`pick_compute`)
+### 171. Which compute for which work (`pick_compute`)
 
 Compute is the machines that run your code. Databricks bills it in DBUs (Databricks Units): a unit of processing time. Your bill is the DBUs used times a price per DBU, and that price depends on the kind of compute.
 All-purpose compute is a cluster you start, share and work in from notebooks. Jobs compute is created for one job run and shut down when the run ends. It costs less per DBU than all-purpose. Both are classic compute: machines in your own cloud account that you size and manage yourself.
@@ -3019,7 +3033,7 @@ Serverless doesn't take init scripts (a script that sets up each machine as it s
 - **Exercise:** Pick the Compute, writing `pick_compute`. Approach: Walk the list once. For each item, an if / elif / else chain where the first rule that fits decides.
 - **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: the kind of work and its special needs decide the compute. Your code goes through the workloads one by one and asks questions in a fixed order. Is it SQL? Then a SQL warehouse, whatever else it needs. If not, does it need a GPU or an init script? Then classic compute: all-purpose for a notebook, jobs compute for a job. Anything left goes to serverless. The order matters: the first rule that fits decides. What to say: "I check SQL first and send it to a SQL warehouse, then special machine needs, and default the rest to serverless. For anything scheduled, jobs compute beats all-purpose."
 
-### 171. Databricks Runtime versions (`unsupported_runtimes`)
+### 172. Databricks Runtime versions (`unsupported_runtimes`)
 
 The Databricks Runtime (DBR) is the software image on the compute: Spark, Python and a set of libraries, each at a fixed version. You pick it when you create classic compute.
 LTS means long-term support: a version that gets fixes for about three years. Pick LTS for anything that runs on a schedule.
@@ -3033,7 +3047,7 @@ Serverless picks and upgrades its runtime for you. Some features need a newer ru
 - **Exercise:** Find Old Runtimes, writing `unsupported_runtimes`. Approach: Filter: split each string to get the key, then keep the ones not in the list.
 - **Explain:** the pattern is Cut out the key, then check membership. Why this pattern: The big idea: every cluster names its runtime in one string, so you can check a whole workspace against the supported list. Your code goes through the clusters in order. For each one it cuts the version out of `spark_version` by splitting the text at `".x"` and keeping the first piece. Then it asks one question: is that version in the supported list? If not, the cluster's name goes into the result. What to say: "I take the version from each cluster's spark_version, the part before .x, and flag every cluster whose version isn't on the supported list, so it can move to a current LTS runtime."
 
-### 172. Cluster policies (`policy_violations`)
+### 173. Cluster policies (`policy_violations`)
 
 A compute policy (older docs say cluster policy) limits what people can set when they create compute. Each rule targets one setting.
 A rule can fix a value, allow only values from an allowlist, or keep a number in a range. Typical targets are `autotermination_minutes`, `node_type_id` (the machine size) and `custom_tags.team`.
@@ -3045,7 +3059,7 @@ This keeps cost and tags in line without anyone checking by hand. Users need the
 - **Exercise:** Check Against the Policy, writing `policy_violations`. Approach: Go through the rules. For each, look up the setting, then pick the test by the rule's type.
 - **Explain:** the pattern is Look up each rule, check by its type. Why this pattern: The big idea: a policy is a set of rules, one per setting, and each rule type has its own simple test. Your code goes through the policy's rules in order. For each one it first looks up the setting in the cluster. Missing breaks the rule. Otherwise it checks by type: fixed means equal, allowlist means in the list, range means not below `minValue` and not above `maxValue`, checking only the limits that are given. What to say: "I check every policy rule against the cluster: a fixed value must match, an allowlist must contain it, and a range must hold it. A missing setting breaks the rule too."
 
-### 173. Jobs: tasks that depend on each other (`skipped_tasks`)
+### 174. Jobs: tasks that depend on each other (`skipped_tasks`)
 
 Lakeflow Jobs (formerly Databricks Workflows) run your work on a schedule. A job has tasks, and `depends_on` says which tasks must finish before a task starts.
 Each task has a Run if condition. The default is "all succeeded": run only if every task it depends on succeeded.
@@ -3058,7 +3072,7 @@ A repair run reruns only the failed tasks and the ones that were skipped because
 - **Exercise:** Find the Skipped Tasks, writing `skipped_tasks`. Approach: Keep a list of stopped tasks. Walk the tasks in order; any task that depends on a stopped one is skipped and becomes stopped too.
 - **Explain:** the pattern is Spread through a list in order. Why this pattern: The big idea: a failure spreads downstream, so you track which tasks are stopped. Your code starts a list of stopped tasks with only the failed one. Because each task comes after the tasks it depends on, one pass in order is enough. For each task it asks: does it depend on any stopped task? If yes, it is skipped. Add it to the result and to the stopped list, so the tasks after it see it too. What to say: "I keep a list of stopped tasks, starting with the failed one. Going in order, any task that depends on a stopped task is skipped and joins the list."
 
-### 174. Bundles: one source, many targets (`resolve_variables`)
+### 175. Bundles: one source, many targets (`resolve_variables`)
 
 Declarative Automation Bundles (called Databricks Asset Bundles until March 2026, still "DABs") describe jobs, pipelines and other resources as code, in a `databricks.yml` file. Only the name changed: same `databricks bundle` commands, same files.
 `databricks bundle validate` checks the files, `databricks bundle deploy -t dev` creates or updates the resources in the dev target, and `databricks bundle run` starts a job. Targets are places to deploy to, usually dev and prod.
@@ -3071,7 +3085,7 @@ Variables have defaults and are used as `${var.catalog}`. A target can set its o
 - **Exercise:** Fill In the Variables, writing `resolve_variables`. Approach: Go through the declared names, check the more specific source first, and collect what falls through.
 - **Explain:** the pattern is Layered lookup: specific value, then default. Why this pattern: The big idea: one set of files deploys to many places, and each place fills in its own values. Your code goes through the declared variables. For each name it asks in order: does the target set it? Use that. Is there a default? Use that. Neither? Then it's missing. The missing names are sorted at the end, so the error message is the same every time. What to say: "For each variable, the target value wins, then the default. Anything with neither is missing, and bundle validate should fail on it."
 
-### 175. Why tagging matters (`tag_coverage`)
+### 176. Why tagging matters (`tag_coverage`)
 
 Tags are key-value labels, like `team = data`. On Databricks they do four jobs.
 Cost. Compute `custom_tags`, and serverless budget policies (newer docs: serverless usage policies), are copied into `system.billing.usage.custom_tags`, so spend can be split by team or project. On Azure, classic compute tags also reach the virtual machines, so they show up in Azure Cost Management.
@@ -3085,7 +3099,7 @@ Databricks adds its own default tags too: Vendor, Creator, ClusterName and Clust
 - **Exercise:** Measure Tag Coverage, writing `tag_coverage`. Approach: Two running totals in one pass, then one division, guarded against a total of 0.
 - **Explain:** the pattern is Two running totals, then a share. Why this pattern: The big idea: tags only help if most of the spend carries them, so you measure coverage. Your code keeps two running totals. For each usage row it asks one question: does `custom_tags` have the key? Its cost goes into tagged or untagged. At the end the percent is tagged divided by the total, times 100. If the total is 0, the percent is 0, so you never divide by zero. What to say: "I add up tagged and untagged cost, and report the tagged share. Untagged spend is what nobody owns, so that is the number to drive down."
 
-### 176. Who spent what (`cost_by_tag`)
+### 177. Who spent what (`cost_by_tag`)
 
 `system.billing.usage` has one row per piece of usage: `usage_quantity` (how many DBUs), `sku_name` (what kind of compute, which sets the price), `custom_tags` (a map of tags) and `usage_date`.
 `system.billing.list_prices` has the list price per DBU for each SKU. It is the public price, not any discount you have agreed, so treat the result as a guide, not the invoice.
@@ -3097,7 +3111,7 @@ Join the two on `sku_name`, multiply DBUs by the price, and group by a tag to se
 - **Exercise:** Spend by Team, writing `cost_by_tag`. Approach: Group by a key in a dict: add to the total if the group is there, start it if not. Round at the end.
 - **Explain:** the pattern is Group and add up. Why this pattern: The big idea: spend only means something when you can say whose it is. Your code keeps a dict from tag value to dollars. For each usage row it finds the group: the tag value, or "untagged" if the row has no such tag. Then it works out the dollars, DBUs times the price for that SKU, and adds them to the group, starting it at the first dollars if it is new. At the end it rounds each total. What to say: "I group usage by the tag, price each row from its SKU, and add it up. Untagged gets its own line so it can't hide."
 
-### 177. Idle compute is the quiet bill (`idle_cost`)
+### 178. Idle compute is the quiet bill (`idle_cost`)
 
 A classic cluster bills for every minute it is running, busy or not. When nobody is using it, it keeps billing until auto-termination stops it.
 `autotermination_minutes` sets how long a cluster may sit idle before it stops. 0 means never: it runs until someone stops it.
@@ -3113,7 +3127,7 @@ SQL warehouses have auto stop (`auto_stop_mins`). Serverless compute stops quick
 
 Who can do what: Unity Catalog privileges, object permissions, credentials, connections and ABAC.
 
-### 178. Workspace objects have their own permissions (`missing_acls`)
+### 179. Workspace objects have their own permissions (`missing_acls`)
 
 Unity Catalog grants cover data: catalogs, schemas, tables, volumes, functions and models. Everything else in a workspace has its own access control list (ACL): a list of who may do what to that one object.
 Each object type has its own permission levels, from least to most. MLflow experiments: `CAN_READ` < `CAN_EDIT` < `CAN_MANAGE`. Clusters: `CAN_ATTACH_TO` < `CAN_RESTART` < `CAN_MANAGE`. Jobs: `CAN_VIEW` < `CAN_MANAGE_RUN` < `CAN_MANAGE`, plus `IS_OWNER`.
@@ -3127,7 +3141,7 @@ Experiments are the classic miss. You log runs and traces to an experiment in yo
 - **Exercise:** Find the Missing ACLs, writing `missing_acls`. Approach: Look up, then compare positions. `levels[kind].index(level)` turns a level name into a number you can compare.
 - **Explain:** the pattern is Compare positions in an ordered list. Why this pattern: The big idea: each object type has its levels in order, weakest first, so "is this level high enough?" becomes "does it sit at the same place or later in the list?". Your code goes through each need. It finds the object type from the name, looks up what the principal has on that object, and if they have nothing, the need is missing. Otherwise it compares positions with `list.index`: a smaller position means a weaker level, so the need is missing too. What to say: "For each need I look up the principal's current level on that object. No level, or a level earlier than the need, means the ACL is missing."
 
-### 179. Access connectors, storage credentials and external locations (`location_for_path`)
+### 180. Access connectors, storage credentials and external locations (`location_for_path`)
 
 On Azure, Unity Catalog reaches your storage through a chain of four links. Miss one and reads fail with a "permission denied" that is hard to trace.
 1. An access connector (`azurerm_databricks_access_connector`) is an Azure resource with a managed identity: an identity Azure looks after for you, so there is no password or secret to rotate. 2. In Azure, give that identity the Storage Blob Data Contributor role on the storage account.
@@ -3141,7 +3155,7 @@ External locations cannot overlap: Unity Catalog refuses one inside another. So 
 - **Exercise:** Which Location Covers This Path?, writing `location_for_path`. Approach: Go through the locations; return as soon as one covers the path. Return None after the loop.
 - **Explain:** the pattern is Prefix match on whole folders. Why this pattern: The big idea: a path is covered by a location when it is the location's path or sits in a folder under it. Your code goes through the locations and, for each, checks two things: is the path exactly the url, or does the path start with the url followed by "/"? Adding the "/" is what stops `sales` from matching `sales-archive`. Because locations cannot overlap, the first match is the answer. No match means no location covers it. What to say: "I look for the location whose url is the path or a parent folder of it, matching on a whole folder. Locations can't overlap, so at most one matches."
 
-### 180. Service credentials and connections (`pick_securable`)
+### 181. Service credentials and connections (`pick_securable`)
 
 Different targets need different Unity Catalog objects. Using the wrong one is a common reason "the permissions look right but nothing works".
 Files in cloud storage (`abfss://...`): a storage credential plus an external location (last lesson).
@@ -3155,7 +3169,7 @@ An outside web API: an HTTP connection, which agents can call as a tool; users n
 - **Exercise:** Pick the Right Object, writing `pick_securable`. Approach: One small function with if / elif in rule order, called for each target.
 - **Explain:** the pattern is Rules in order, first match wins. Why this pattern: The big idea: you choose the object by looking at where the target lives. Your code checks each target against simple rules in order: storage paths first, then Azure service hosts, then any other web address, then database addresses. The first rule that fits gives the answer, and anything unknown goes to a person. Checking the Azure hosts before the general "https://" rule matters, because both start the same way. What to say: "I route by target: storage paths to external locations, Azure service calls to service credentials, other web APIs to HTTP connections, and databases to federation connections."
 
-### 181. ABAC: policies that follow tags (`masked_columns`)
+### 182. ABAC: policies that follow tags (`masked_columns`)
 
 ABAC (attribute-based access control) means rules follow labels on the data, not a list of tables. You write the rule once and it covers every table that carries the label.
 The labels are governed tags: tags defined for the whole account with a fixed set of allowed values, like `pii` with values `email`, `phone`, `ssn`. Data stewards put them on columns or tables.
@@ -3169,7 +3183,7 @@ It needs serverless compute or Databricks Runtime 16.4 or above. Creating or cha
 - **Exercise:** Which Columns Are Masked?, writing `masked_columns`. Approach: Nested loops: for each column, try each policy. One policy that applies is enough to mask it.
 - **Explain:** the pattern is For each item, does any rule match?. Why this pattern: The big idea: a column is masked for you when some policy matches its tag and applies to you. Your code goes through the columns in order. For each one it tries every policy: does the column have that tag with that value? Are you in one of the "to" groups, or does "to" say everyone? Are you in none of the "except" groups? If one policy says yes to all three, the column goes in the list and you move on. What to say: "For each column I look for a policy whose tag and value match, that targets one of my groups, and that doesn't exempt any of my groups. One such policy is enough to mask it."
 
-### 182. Grant to groups, run as service principals (`grants_to_people`)
+### 183. Grant to groups, run as service principals (`grants_to_people`)
 
 Grant to groups, not to people. People move teams and leave; a grant to a person goes stale, while a group's membership is managed in one place.
 Groups usually come from Entra ID (Azure's sign-in and user directory), synced by SCIM provisioning (a standard way to copy users and groups between systems) or by automatic identity management.
@@ -3189,7 +3203,7 @@ The workspace, catalogs and network of an ML platform, kept in Terraform.
 
 Coming soon, not built yet (say so if asked; don't teach them as if they exist): A workspace in Terraform; Cluster policies as code; The metastore and catalogs as code; Service principals and their permissions.
 
-### 183. Tagging for cost and policy (`missing_tags`)
+### 184. Tagging for cost and policy (`missing_tags`)
 
 Azure tags drive cost allocation and Azure Policy. Missing tags mean spend nobody can attribute.
 The azurerm provider (Terraform's plugin for Azure) has no provider-wide default tags, so teams merge a shared `local.tags` into every resource, and check plans for gaps.
@@ -3201,7 +3215,7 @@ Only Azure resources carry Azure tags: anything from the azurerm provider, inclu
 - **Exercise:** Enforce Required Tags, writing `missing_tags`. Approach: Dict of results, filled only when something is missing.
 - **Explain:** the pattern is List the gaps per resource. Why this pattern: The big idea: tags decide who pays for what, and the azurerm provider has no default tags, so teams check every plan for gaps. Your code skips any resource with no `"tags"` key, since it can't be tagged. For every other resource, it goes through `required` in order and lists each name missing from its tags. If that list isn't empty, it goes into a dict, a lookup table from each address to its missing names. Resources with nothing missing are left out. What to say: "Tags decide who pays for what. I skip resources that can't be tagged, then list the required tags each one is missing."
 
-### 184. Unity Catalog grants (`grants_to_revoke`)
+### 185. Unity Catalog grants (`grants_to_revoke`)
 
 Unity Catalog controls who can use which data. `databricks_grants` is authoritative: on apply it makes the grants match the code exactly, removing anything else.
 Grants added by hand in Catalog Explorer disappear at the next apply. Put them in code, or use the non-authoritative `databricks_grant` for that principal (the user, group or service being given access).
@@ -3212,7 +3226,7 @@ Grants added by hand in Catalog Explorer disappear at the next apply. Put them i
 - **Exercise:** Predict Grant Drift, writing `grants_to_revoke`. Approach: For each principal, keep the live privileges that the code doesn't list. A principal missing from `code` loses everything.
 - **Explain:** the pattern is Live minus code, per principal. Why this pattern: The big idea: `databricks_grants` makes the live grants match the code exactly, so anything not in code is removed at the next apply. Your code goes through each principal in `live`. It finds that principal's privileges in `code` with `code.get(principal, [])`, which gives an empty list if the principal is missing, so they lose everything. Each live privilege not in that list is added to a list called `gone`. Principals who lose something are stored in a dict, a lookup table from name to list. What to say: "databricks_grants makes the live grants match the code exactly. So anything someone added by hand, that isn't in the code, gets removed on the next apply."
 
-### 185. Networking for Databricks (`overlapping_subnets`)
+### 186. Networking for Databricks (`overlapping_subnets`)
 
 VNet injection puts a Databricks workspace's clusters in your own virtual network, using a host and a container subnet (each a slice of the network's addresses). They must not overlap each other or anything they connect to.
 A subnet's addresses are written as a CIDR block, like `10.20.0.0/24`. The number after the slash sets the size: a smaller number means a bigger block.
@@ -3224,7 +3238,7 @@ Each node (one machine in a cluster) uses an address in each subnet, and Azure r
 - **Exercise:** Check VNet Injection Subnets, writing `overlapping_subnets`. Approach: Turn each CIDR into a [first, last] range. Two ranges overlap when each one's first is at or below the other one's last.
 - **Explain:** the pattern is Turn blocks into ranges, compare pairs. Why this pattern: The big idea: the host and container subnets must not overlap each other or anything they connect to. Your code uses `to_range` to turn each CIDR into its first and last address as plain numbers. Then a loop inside a loop compares every subnet with each one after it. A loop is code that repeats for each item. Two ranges overlap when each starts at or before the other ends, like two bookings that share a time. Checking every pair is fine for a handful of subnets. What to say: "I turn each CIDR into a first and last address, then compare every pair. Two ranges overlap when each starts at or before the other ends."
 
-### 186. Who gets capacity when it's scarce (`allocate_capacity`)
+### 187. Who gets capacity when it's scarce (`allocate_capacity`)
 
 When capacity is scarce, whoever sends the biggest burst wins. That might be a weekend experiment, while the help-center assistant that customers rely on gets error 429 ("too many requests"). So decide who comes first before it happens, by putting each app in a tier: a group with its own rule, served most important first.
 Azure AI Foundry (Microsoft's service that hosts the OpenAI models) is where these apps get their capacity. Once its traffic is steady, a critical app moves to provisioned throughput: reserved capacity, counted in PTUs (provisioned throughput units). You pay for it every hour, used or not, so it mostly buys guaranteed capacity, not a lower price: a 1-year reservation only works out cheaper when it is busy nearly all the time. Turn on spillover: when the PTU deployment is full, extra requests go to a pay-as-you-go deployment instead of failing.
@@ -3256,7 +3270,7 @@ Critical apps come first. Graduated apps split what is left evenly, and none tak
   }
   ```
 
-### 187. A shared space with fair limits (`check_limits`)
+### 188. A shared space with fair limits (`check_limits`)
 
 In a shared experiment space (the sandbox), one looping agent or eval run can use the whole limit, and everyone else gets error 429 ("too many requests"). A per-user rate limit stops that: each person gets a slice, well below the whole.
 The Databricks AI gateway (now called Unity Gateway) sets limits on a service (the whole space), a default for each user, and custom ones for a group. A group limit is one pool for all its members, used instead of their per-user limit. The service limit always wins, so a group limit at or above it protects nothing.
