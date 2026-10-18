@@ -232,10 +232,10 @@ CHECKS = {
                 "Confirm it once on the holdout set."),
         ask("Someone wants to test 50 prompt ideas against the baseline tomorrow. What's a guard you'd "
             "add while planning?",
-            ["Run all 50 on the holdout set", "Test fewer, with a stricter bar", "Run each idea once to save money"],
+            ["Run all 50 on the holdout set", "Test fewer, with a stricter threshold", "Run each idea once to save money"],
             answer=1,
             clue="Each comparison has a small chance of a fake winner, and those chances add up.",
-            why="Test fewer ideas, and use a stricter bar for each one. The holdout is only for "
+            why="Test fewer ideas, and use a stricter threshold for each one. The holdout is only for "
                 "confirming the winner once, at the end."),
     ],
     "clumpy_margin": [

@@ -11,14 +11,14 @@ lesson(MODULE, 'graduation_gate',
         '**Graduation** moves an app out of that space onto production capacity, with limits sized for it. An app that graduates on enthusiasm alone can hit rate limits, a surprise bill or quiet failures in its first week.',
         'So graduate on evidence. The **proof of concept** (POC, a small trial build) measures it, and the team keeps it in a **graduation pack**.',
         'The pack holds six things: a named owner; the eval pass rate; whether every must-pass question passes (ones it must never get wrong); the cost per success, in dollars (the cost of all runs, failed ones included, divided by the runs that passed); the tokens a minute it needs at its busiest; and monitoring (alerts that tell the owner when it breaks).',
-        "The **graduation gate** checks the pack against a bar (the limits it must meet), written down before the POC started. It lists every check that fails, not just the first, so the team can fix them all in one round. The platform team then sizes the app's capacity from the same numbers.",
+        "The **graduation gate** checks the pack against its **acceptance criteria** (the limits it must meet), written down before the POC started. It lists every check that fails, not just the first, so the team can fix them all in one round. The platform team then sizes the app's capacity from the same numbers.",
     ],
-    example=example('One pack, checked against the bar', """evidence = {
+    example=example('One pack, checked against its criteria', """evidence = {
   "owner": "ana",
-  "pass_rate": 0.86,        # bar 0.9
+  "pass_rate": 0.86,        # limit 0.9
   "must_pass_ok": True,
-  "cost_per_success": 0.12, # bar 0.1
-  "peak_tpm": 75000,        # bar 90000
+  "cost_per_success": 0.12, # limit 0.1
+  "peak_tpm": 75000,        # limit 90000
   "monitoring": True}
 # Not yet, for 2 reasons:
 # the pass rate is below 0.9,
@@ -84,14 +84,14 @@ evidence = {
         prompt="""Your function gets two things:
 
 - `evidence`: what the POC measured, like `{"owner": "ana", "pass_rate": 0.86, "must_pass_ok": True, "cost_per_success": 0.12, "peak_tpm": 75000, "monitoring": True}`. `cost_per_success` is the cost of all runs, failed ones included, divided by the runs that passed, in dollars. `peak_tpm` is the tokens a minute (tpm) it needs at its busiest, bursts included.
-- `bar`: the limits to meet, like `{"min_pass_rate": 0.9, "max_cost_per_success": 0.1, "capacity_tpm": 90000}`. `capacity_tpm` is the most tokens a minute the platform can give it.
+- `criteria`: the acceptance criteria, the limits to meet, like `{"min_pass_rate": 0.9, "max_cost_per_success": 0.1, "capacity_tpm": 90000}`. `capacity_tpm` is the most tokens a minute the platform can give it.
 
 Every rule that fails adds its reason:
 
 - `"no owner"`: the owner is `""`.
-- `"pass rate below the bar"`: `pass_rate` is below `min_pass_rate`.
+- `"pass rate below the minimum"`: `pass_rate` is below `min_pass_rate`.
 - `"a must-pass question fails"`: `must_pass_ok` is `False`.
-- `"cost per success above the bar"`: `cost_per_success` is above `max_cost_per_success`.
+- `"cost per success above the maximum"`: `cost_per_success` is above `max_cost_per_success`.
 - `"peak tokens a minute above capacity"`: `peak_tpm` is above `capacity_tpm`.
 - `"no monitoring"`: `monitoring` is `False`.
 
@@ -100,70 +100,70 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
         target='one check per rule, then one sort',
         realworld='A shared experiment space keeps trials cheap, but an app people rely on needs an owner, alerts and capacity sized for it. A written gate turns "is it ready?" into a list the team can work through, and the platform team sizes the app\'s capacity from the same numbers.',
         practice=practice(
-            intro='Check graduation packs the way the platform team does: every rule against the bar written before the trial, and every failure listed.',
-            explain='An app should graduate on evidence the trial measured, so you checked every rule against the bar and listed every one that fails, so the team can fix them all in one round. Exactly at a limit passes, even one over doesn\'t, and the bar stays where it was written before the trial.',
-            pattern='Every check against the bar set first',
+            intro='Check graduation packs the way the platform team does: every rule against the acceptance criteria written before the trial, and every failure listed.',
+            explain='An app should graduate on evidence the trial measured, so you checked every rule against the acceptance criteria and listed every one that fails, so the team can fix them all in one round. Exactly at a limit passes, even one over doesn\'t, and the acceptance criteria stay where they were written before the trial.',
+            pattern='Every check against criteria set first',
             realworld='When an app is ready to leave the shared experiment space, you bring its graduation pack to the platform team. The gate turns "is it ready?" into a list the team can fix in one round, and the same numbers size its capacity.',
             gotchas=[
                 ['Stopping at the first failure', 'Stop at the first reason and the team fixes one thing, comes back, and only then finds the next. List every reason at once.'],
-                ['Setting the bar after the results', 'Write the bar down before the POC runs. A bar picked after seeing the numbers tends to move to fit them.'],
+                ['Setting the criteria after the results', 'Write the acceptance criteria down before the POC runs. Criteria picked after seeing the numbers tend to move to fit them.'],
             ],
             asks=[
-                ask('What does the gate send back for this pack?', ['Just "no owner", the first problem it finds', 'All three: no owner, no monitoring, a must-pass fails', 'Nothing: the numbers all meet the bar'], answer=1,
+                ask('What does the gate send back for this pack?', ['Just "no owner", the first problem it finds', 'All three: no owner, no monitoring, a must-pass fails', 'Nothing: the numbers all meet the criteria'], answer=1,
                     evidence=evidence('code', title='A graduation pack', text="""evidence = {
   "owner": "",
-  "pass_rate": 0.93,        # bar 0.9
+  "pass_rate": 0.93,        # limit 0.9
   "must_pass_ok": False,
-  "cost_per_success": 0.07, # bar 0.1
+  "cost_per_success": 0.07, # limit 0.1
   "peak_tpm": 40000,        # capacity 75000
   "monitoring": False}"""),
                     clue='The gate checks every rule. Look past the numbers at the other three fields.',
                     why='The numbers are fine, but there\'s no owner, a must-pass question fails and nothing is watching it. The gate lists all three, so the team fixes them in one round.',
                     wrong=['The gate never stops early: the team would fix one thing, come back, and only then find the next.', None, 'The numbers are good, but three other rules fail.']),
-                ask('Does sam\'s app graduate?', ['Yes: each number is right on its limit', 'No: a pass rate of 0.9 isn\'t above the bar', 'No: the peak uses all of its capacity'], answer=0,
+                ask('Does sam\'s app graduate?', ['Yes: each number is right on its limit', 'No: a pass rate of 0.9 isn\'t above the minimum', 'No: the peak uses all of its capacity'], answer=0,
                     evidence=evidence('code', title='sam\'s pack', text="""evidence = {
   "owner": "sam",
-  "pass_rate": 0.9,         # bar 0.9
+  "pass_rate": 0.9,         # limit 0.9
   "must_pass_ok": True,
-  "cost_per_success": 0.1,  # bar 0.1
+  "cost_per_success": 0.1,  # limit 0.1
   "peak_tpm": 75000,        # capacity 75000
   "monitoring": True}"""),
-                    clue='Exactly at a limit is fine. Is any number below or above its bar?',
-                    why='Each number sits exactly on its bar, and exactly at a limit passes. The pack is complete, so it graduates.',
-                    wrong=[None, 'The bar is 0.9, and 0.9 is not below 0.9.', '75000 is the capacity itself, not above it.']),
+                    clue='Exactly at a limit is fine. Is any number below or above its limit?',
+                    why='Each number sits exactly on its limit, and exactly at a limit passes. The pack is complete, so it graduates.',
+                    wrong=[None, 'The minimum is 0.9, and 0.9 is not below 0.9.', '75000 is the capacity itself, not above it.']),
                 ask('ana\'s peak is one token a minute over capacity. Does it graduate?', ['Yes: one token is a rounding error', 'Not yet: its peak is above capacity'], answer=1,
                     evidence=evidence('code', title='ana\'s pack', text="""evidence = {
   "owner": "ana",
-  "pass_rate": 0.82,        # bar 0.8
+  "pass_rate": 0.82,        # limit 0.8
   "must_pass_ok": True,
-  "cost_per_success": 0.3,  # bar 0.5
+  "cost_per_success": 0.3,  # limit 0.5
   "peak_tpm": 30001,        # capacity 30000
   "monitoring": True}"""),
                     clue='Capacity is the most the platform can give it. What happens in its busiest minute?',
                     why='Above capacity is above capacity: in its busiest minute it would be rate limited on day one. Size the capacity up, or bring the peak down, then check again.',
                     wrong=['Capacity is a hard limit. Even one over means its busiest minute gets rate limited.', None]),
-                ask('What do you say?', ['Fine: 0.86 clears a bar of 0.85', 'Keep the bar at 0.9 and fix what fails', 'Drop the pass-rate rule for this app'], answer=1,
-                    evidence=evidence('claim', who='A teammate said', text='"We missed the pass-rate bar of 0.9 with 0.86. Let\'s move the bar to 0.85, since we\'re close."'),
-                    clue='When was the bar written down, and why then?',
-                    why='A bar picked after seeing the numbers tends to move to fit them. Keep 0.9 and fix what fails.',
-                    wrong=['Moving the bar to fit the result means the gate measures nothing.', None, 'Without a pass-rate rule, an app that is wrong half the time could graduate.']),
+                ask('What do you say?', ['Fine: 0.86 meets a minimum of 0.85', 'Keep the minimum at 0.9 and fix what fails', 'Drop the pass-rate rule for this app'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"We missed the pass-rate minimum of 0.9 with 0.86. Let\'s move it to 0.85, since we\'re close."'),
+                    clue='When were the acceptance criteria written down, and why then?',
+                    why='Criteria picked after seeing the numbers tend to move to fit them. Keep 0.9 and fix what fails.',
+                    wrong=['Moving the minimum to fit the result means the gate measures nothing.', None, 'Without a pass-rate rule, an app that is wrong half the time could graduate.']),
             ],
         ),
-        starter="""def graduation_gate(evidence, bar):
+        starter="""def graduation_gate(evidence, criteria):
     # your code here
     pass
 """,
-        solution="""def graduation_gate(evidence, bar):
+        solution="""def graduation_gate(evidence, criteria):
     reasons = []
     if evidence["owner"] == "":
         reasons.append("no owner")
-    if evidence["pass_rate"] < bar["min_pass_rate"]:
-        reasons.append("pass rate below the bar")
+    if evidence["pass_rate"] < criteria["min_pass_rate"]:
+        reasons.append("pass rate below the minimum")
     if not evidence["must_pass_ok"]:
         reasons.append("a must-pass question fails")
-    if evidence["cost_per_success"] > bar["max_cost_per_success"]:
-        reasons.append("cost per success above the bar")
-    if evidence["peak_tpm"] > bar["capacity_tpm"]:
+    if evidence["cost_per_success"] > criteria["max_cost_per_success"]:
+        reasons.append("cost per success above the maximum")
+    if evidence["peak_tpm"] > criteria["capacity_tpm"]:
         reasons.append("peak tokens a minute above capacity")
     if not evidence["monitoring"]:
         reasons.append("no monitoring")
@@ -174,7 +174,7 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
                 'owner': 'ana', 'pass_rate': 0.86, 'must_pass_ok': True,
                 'cost_per_success': 0.12, 'peak_tpm': 75000, 'monitoring': True,
             }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 90000},
-                expected=['cost per success above the bar', 'pass rate below the bar'], sample=True),
+                expected=['cost per success above the maximum', 'pass rate below the minimum'], sample=True),
             case({
                 'owner': 'li', 'pass_rate': 0.95, 'must_pass_ok': True,
                 'cost_per_success': 0.05, 'peak_tpm': 20000, 'monitoring': True,
@@ -191,10 +191,10 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
             }, {'min_pass_rate': 0.9, 'max_cost_per_success': 0.1, 'capacity_tpm': 75000},
                 expected=[
                     'a must-pass question fails',
-                    'cost per success above the bar',
+                    'cost per success above the maximum',
                     'no monitoring',
                     'no owner',
-                    'pass rate below the bar',
+                    'pass rate below the minimum',
                     'peak tokens a minute above capacity',
                 ]),
             case({
@@ -208,22 +208,22 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
             }, {'min_pass_rate': 0.8, 'max_cost_per_success': 0.5, 'capacity_tpm': 30000},
                 expected=['peak tokens a minute above capacity']),
         ],
-        guided="""def graduation_gate(evidence, bar):
+        guided="""def graduation_gate(evidence, criteria):
     # Replace every ___ with real code, then run the tests.
 
     # Check every rule. Each one that fails adds a reason.
     reasons = []
     if evidence["owner"] == "":
         reasons.append("no owner")
-    # Step 1: is pass_rate below the bar's min_pass_rate?
+    # Step 1: is pass_rate below criteria's min_pass_rate?
     if ___:
-        reasons.append("pass rate below the bar")
+        reasons.append("pass rate below the minimum")
     if not evidence["must_pass_ok"]:
         reasons.append("a must-pass question fails")
     # Step 2: is cost_per_success above max_cost_per_success?
     if ___:
-        reasons.append("cost per success above the bar")
-    if evidence["peak_tpm"] > bar["capacity_tpm"]:
+        reasons.append("cost per success above the maximum")
+    if evidence["peak_tpm"] > criteria["capacity_tpm"]:
         reasons.append("peak tokens a minute above capacity")
     if not evidence["monitoring"]:
         reasons.append("no monitoring")
@@ -231,8 +231,8 @@ Exactly at a limit is fine. Return the reasons sorted A to Z. An empty list mean
     return ___
 """,
         fills=[
-            'evidence["pass_rate"] < bar["min_pass_rate"]',
-            'evidence["cost_per_success"] > bar["max_cost_per_success"]',
+            'evidence["pass_rate"] < criteria["min_pass_rate"]',
+            'evidence["cost_per_success"] > criteria["max_cost_per_success"]',
             'sorted(reasons)',
         ],
         concepts=[
@@ -273,7 +273,7 @@ names.append("Ana")   # ["Ana"]""",
 # ["apple", "pear"]""",
             ],
         ],
-        byhand='The owner is "ana", so there is one. The pass rate 0.86 is below 0.9: add "pass rate below the bar". must_pass_ok is True: fine. The cost per success 0.12 is above 0.1: add "cost per success above the bar". The peak 75000 is not above 90000: fine. monitoring is True: fine. That makes two reasons. Sorted A to Z, "cost" comes before "pass". Return ["cost per success above the bar", "pass rate below the bar"].',
+        byhand='The owner is "ana", so there is one. The pass rate 0.86 is below 0.9: add "pass rate below the minimum". must_pass_ok is True: fine. The cost per success 0.12 is above 0.1: add "cost per success above the maximum". The peak 75000 is not above 90000: fine. monitoring is True: fine. That makes two reasons. Sorted A to Z, "cost" comes before "pass". Return ["cost per success above the maximum", "pass rate below the minimum"].',
         why='Six quick checks, then one sort of a short list.',
         gotchas=[
             [
@@ -281,8 +281,8 @@ names.append("Ana")   # ["Ana"]""",
                 'Return after the first reason and the team fixes one thing, comes back, and only then finds the next. List every reason at once.',
             ],
             [
-                'Setting the bar after the results',
-                'Write the bar down before the POC runs. A bar picked after seeing the numbers tends to move to fit them.',
+                'Setting the criteria after the results',
+                'Write the acceptance criteria down before the POC runs. Criteria picked after seeing the numbers tend to move to fit them.',
             ],
         ],
     ),
@@ -308,7 +308,7 @@ model = mlflow.pyfunc.load_model('models:/main.ml.churn@champion')"""),
     ),
     angle=angle(
         pattern='Keep the best so far',
-        text="The big idea: only promote a challenger when it beats the champion by a meaningful margin on the same data. Your code first works out the bar: the champion's score plus `min_gain`. Then it goes through the challengers, keeping the best so far, like holding the tallest card you have seen. A challenger takes over only if it clears the bar and scores higher than the current best. A tie is not higher, so the earlier version stays, and if nobody clears the bar the champion stays.",
+        text="The big idea: only promote a challenger when it beats the champion by a meaningful margin on the same data. Your code first works out the threshold: the champion's score plus `min_gain`. Then it goes through the challengers, keeping the best so far, like holding the tallest card you have seen. A challenger takes over only if it clears the threshold and scores higher than the current best. A tie is not higher, so the earlier version stays, and if nobody clears the threshold the champion stays.",
         say='"A challenger only replaces the [[champion|newest model|test data::The version running now.]] if it wins by at least the [[minimum gain|same score|one point::A tiny win could just be luck.]]. Among those, the highest score wins, and a tie goes to the [[earlier|later|cheaper::The one that came first stays.]] version."',
         classic='max_subarray',
     ),
@@ -327,13 +327,13 @@ MlflowClient(registry_uri="databricks-uc").set_registered_model_alias(
 - `min_gain`: how many points better a challenger must be, like `2`. It is always 1 or more.
 
 A challenger counts only if its score is at least the champion's score plus `min_gain`. Of the ones that count, pick the one with the highest score. If two tie, keep the earlier one. Return its `version`. If none counts, return the champion's `version`.""",
-        pattern='Keep the best so far, and let a challenger replace it only if it clears the bar.',
+        pattern='Keep the best so far, and let a challenger replace it only if it clears the threshold.',
         target='one pass over the challengers',
         realworld="MLflow's model registry uses aliases like `@champion` and `@challenger` for exactly this. Requiring a minimum gain stops you swapping models for noise-level differences, since every swap carries risk.",
         practice=practice(
             intro='Decide promotions the way a reviewer does: a challenger must beat the champion by the minimum gain, on the same data.',
-            explain='Only promote a challenger when it beats the champion by a meaningful margin on the same data. You worked out the bar from the champion\'s score and the minimum gain, kept the best challenger that cleared it, refused a score from a different test set, and rolled back by moving the alias.',
-            pattern='Clear the bar, then take the best',
+            explain='Only promote a challenger when it beats the champion by a meaningful margin on the same data. You worked out the threshold from the champion\'s score and the minimum gain, kept the best challenger that cleared it, refused a score from a different test set, and rolled back by moving the alias.',
+            pattern='Clear the threshold, then take the best',
             realworld='When a retrained model is ready, compare it with `@champion` on the same data, and move the alias only if it wins by the gain you set. If complaints spike afterwards, move the alias back.',
             asks=[
                 ask('Which version should get the `@champion` alias?', ['Version 3: keep the champion', 'Version 4', 'Version 6'], answer=2,
@@ -343,8 +343,8 @@ challengers:  version 4, score 84
               version 5, score 82
               version 6, score 86"""),
                     clue='A challenger must reach 81 plus 2. Of the ones that do, the highest score wins.',
-                    why='The bar is 83. Version 4 (84) and version 6 (86) clear it, version 5 (82) doesn\'t, and 86 is the highest.',
-                    wrong=['Two challengers clear the bar, so the champion is replaced.', 'Version 4 clears the bar, but version 6 scores higher.', None]),
+                    why='The threshold is 83. Version 4 (84) and version 6 (86) clear it, version 5 (82) doesn\'t, and 86 is the highest.',
+                    wrong=['Two challengers clear the threshold, so the champion is replaced.', 'Version 4 clears the threshold, but version 6 scores higher.', None]),
                 ask('Version 4 scores one point more than the champion. Promote it?', ['Yes: it scores higher than the champion', 'No: keep version 3, since 82 doesn\'t reach 83'], answer=1,
                     evidence=evidence('code', title='The registry', text="""champion:     version 3, score 81
 min_gain:     2
@@ -352,7 +352,7 @@ challengers:  version 4, score 82"""),
                     clue='Add the minimum gain to the champion\'s score.',
                     why='A one-point win can be noise, and every swap carries risk. It has to win by at least 2.',
                     wrong=['Better, but not by the minimum gain. A small win may vanish on new data.', None]),
-                ask('What do you do with version 8?', ['Promote it: 91 clears the bar by a long way', 'Score it on the same data as the champion first', 'Retrain version 3 on the new test set'], answer=1,
+                ask('What do you do with version 8?', ['Promote it: 91 clears the threshold by a long way', 'Score it on the same data as the champion first', 'Retrain version 3 on the new test set'], answer=1,
                     evidence=evidence('claim', who='A teammate said', text='"Version 8 scored 91! It was tested on last month\'s test set, but that\'s similar enough."'),
                     clue='Scores are only comparable when they come from the same data.',
                     why='A score on a different test set isn\'t comparable. Log the dataset version with every metric, then compare on the same one.',
@@ -369,11 +369,11 @@ challengers:  version 4, score 82"""),
     pass
 """,
         solution="""def promote_model(champion, challengers, min_gain):
-    bar = champion["score"] + min_gain
+    threshold = champion["score"] + min_gain
     best = champion
     for challenger in challengers:
         score = challenger["score"]
-        if score >= bar and score > best["score"]:
+        if score >= threshold and score > best["score"]:
             best = challenger
     return best["version"]
 """,
@@ -403,15 +403,15 @@ challengers:  version 4, score 82"""),
         guided="""def promote_model(champion, challengers, min_gain):
     # Replace every ___ with real code, then run the tests.
 
-    # Step 1: the bar is the champion's score plus min_gain.
-    bar = ___
+    # Step 1: the threshold is the champion's score plus min_gain.
+    threshold = ___
     # best starts as the champion (kept if none counts).
     best = champion
     for challenger in challengers:
         score = challenger["score"]
-        # Step 2: keep it only if it reaches the bar
+        # Step 2: keep it only if it reaches the threshold
         # and its score is higher than best["score"].
-        if score >= bar and ___:
+        if score >= threshold and ___:
             best = challenger
     return best["version"]
 """,
@@ -437,7 +437,7 @@ has_ticket = True
 age >= 18 and has_ticket   # True""",
             ],
         ],
-        byhand="The champion is version 3 with 81. The bar is 81 plus 2, so 83. Version 4 has 84. It reaches 83 and beats the best so far (81), so it becomes the best. Version 5 has 82. That is below 83, so skip it. Version 6 has 86. It reaches 83 and beats 84, so it becomes the best. Return 6.",
+        byhand="The champion is version 3 with 81. The threshold is 81 plus 2, so 83. Version 4 has 84. It reaches 83 and beats the best so far (81), so it becomes the best. Version 5 has 82. That is below 83, so skip it. Version 6 has 86. It reaches 83 and beats 84, so it becomes the best. Return 6.",
         why='One walk through the challengers.',
         gotchas=[
             [
@@ -813,7 +813,7 @@ votes["yes"] += 1   # {"yes": 1, "no": 0}""",
     return "pass"   # only if 50 or more""",
             ],
         ],
-        byhand='First count. old has 2 traces and 1 passed. new has 4 traces and 3 passed. Rule 1: new has 4 traces. 4 is not fewer than 4, so we can judge it. old: 1 of 2 passed, so 50 percent. new: 3 of 4 passed, so 75 percent. Rule 2: the bar is 50 plus 10, so 60. 75 is at least 60. Return "promote".',
+        byhand='First count. old has 2 traces and 1 passed. new has 4 traces and 3 passed. Rule 1: new has 4 traces. 4 is not fewer than 4, so we can judge it. old: 1 of 2 passed, so 50 percent. new: 3 of 4 passed, so 75 percent. Rule 2: the threshold is 50 plus 10, so 60. 75 is at least 60. Return "promote".',
         why='One walk through the traces, then a few comparisons.',
         gotchas=[
             [

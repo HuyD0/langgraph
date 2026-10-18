@@ -159,8 +159,8 @@ The path opens with the Frame stage, which decides whether an idea is worth buil
 use case down on one page, gathering requirements from everyone with a stake, splitting
 functional from non-functional requirements,
 reviewing the design against the Well-Architected pillars (Microsoft's five, plus
-Databricks' governance and interoperability), and deciding go, fix or stop against bars
-agreed before the pilot. **AI & ML foundations** then teaches how to measure it honestly,
+Databricks' governance and interoperability), and deciding go, fix or stop against
+acceptance criteria agreed before the pilot. **AI & ML foundations** then teaches how to measure it honestly,
 and **Pricing and sizing** works out the total cost of ownership, what it saves and how much
 capacity it needs, before you build; it goes with the cost and capacity lines of
 [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md).
