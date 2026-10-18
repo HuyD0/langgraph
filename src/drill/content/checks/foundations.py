@@ -68,7 +68,7 @@ CHECKS = {
     "calibration_table": [
         ask("You ask an LLM to rate how sure it is. It says 95% on most answers. Before you "
             "auto-approve those answers, what should you do?",
-            ["Check how often its 95% answers are right", "Trust it: the model knows itself", "Raise the threshold to 99% and ship"],
+            ["Check how often its 95% answers are right", "Trust it: the model knows itself", "Raise the threshold to 99% and release it"],
             answer=0,
             clue="LLMs that rate their own confidence are often too sure of themselves.",
             why="Calibration means checking that 95% really comes true about 95 times in 100. LLMs are "

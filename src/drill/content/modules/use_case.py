@@ -69,9 +69,9 @@ lesson(MODULE, 'use_case_score',
     title='Is this a good AI use case?',
     learn=[
         "Most AI projects that fail went wrong before any code: they started from the technology (\"we need an agent\") instead of a problem. So start from a **business problem**, as Microsoft's Cloud Adoption Framework does: work people repeat, or results that miss what was expected. Write the use case in one line, **\"Help [who] [do what] so [a number] improves\"**, and check the task happens often enough to matter.",
-        "Next come three **gates**. Fail any one, and the idea is shelved, however valuable it looks. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it.",
+        "Next come three **gates**: pass-or-fail checks an idea has to clear. Fail any one, and the idea is set aside (shelved), however valuable it looks. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it.",
         "Ideas that pass the gates go on a **map** with two axes, usually called a value-versus-feasibility map. **Value** is what the problem costs and how much the business cares. **Doable** (feasibility) means the data is ready, AI suits the task, and the team can change how it works. Keep the two axes apart: don't add them into one score.",
-        "The corner an idea lands in tells you what to do next. High value and doable: **accelerate** to a pilot. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Low on both: **shelve**.",
+        "The corner an idea lands in tells you what to do next. High value and doable: **accelerate** to a **pilot**, a small first trial with real users. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Low on both: **shelve**.",
         "Last, choose **automate or augment** for the ideas you keep. Automate means the AI does the task on its own; augment means it helps a person do it. Most good first projects augment: AI drafts, a person decides.",
     ],
     example=example('Six ideas on the map', """             not doable yet   doable
@@ -1147,7 +1147,7 @@ pilot    = {"quality": 0.78, "seconds": 4,
     angle=angle(
         pattern='Must-pass first, then count the misses',
         text='The big idea: decide fit for purpose against acceptance criteria written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their criteria, noting each one missed and whether the miss is close: quality within 0.05 of the criterion, speed or cost no more than 1.2 times the criterion. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
-        say='"I agree the acceptance criteria [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all criteria met means go, and one near miss means fix it and [[test again|ship it|give up::A near miss gets another try, not a pass.]]."',
+        say='"I agree the acceptance criteria [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all criteria met means go, and one near miss means fix it and [[test again|release it|give up::A near miss gets another try, not a pass.]]."',
         classic=None,
     ),
     exercise=exercise(
