@@ -39,7 +39,7 @@ CHECKS = {
             "drowning in false alarms. Which way should the threshold move?",
             ["Lower, so more payments get flagged", "Higher, so fewer payments get flagged", "Nowhere: thresholds don't change alarms"],
             answer=1,
-            clue="A stricter bar lets through only the cases the model is most sure about.",
+            clue="A stricter threshold lets through only the cases the model is most sure about.",
             why="A higher threshold flags fewer payments, and those are more often fraud: precision goes "
                 "up. The cost is missing some real fraud, so recall goes down."),
         ask("You tried thresholds on the validation set and picked 0.7. What do you do with the test set now?",
@@ -68,7 +68,7 @@ CHECKS = {
     "calibration_table": [
         ask("You ask an LLM to rate how sure it is. It says 95% on most answers. Before you "
             "auto-approve those answers, what should you do?",
-            ["Check how often its 95% answers are right", "Trust it: the model knows itself", "Raise the bar to 99% and ship"],
+            ["Check how often its 95% answers are right", "Trust it: the model knows itself", "Raise the threshold to 99% and ship"],
             answer=0,
             clue="LLMs that rate their own confidence are often too sure of themselves.",
             why="Calibration means checking that 95% really comes true about 95 times in 100. LLMs are "

@@ -1793,8 +1793,8 @@ const MINE_PANELS = {
   },
   fit_for_purpose: () => {
     const b = mine().bars || {};
-    return `<h3>Now your own bars</h3><p>Set them before any pilot. Add the pilot's results later and the page gives the call, by the rule from the exercise.</p>
-    <div class="mgrid">${field("bars.quality", "Quality bar, percent right", b.quality, "", 'inputmode="decimal" placeholder="80"')}${field("bars.seconds", "Speed bar, seconds", b.seconds, "", 'inputmode="decimal" placeholder="5"')}${field("bars.cost", "Cost bar, $ per finished task", b.cost, "", 'inputmode="decimal" placeholder="2"')}${field("bars.mustpass", "Must-pass cases", b.mustpass, "the dangerous cases it may never get wrong", 'placeholder="never give a wrong leave balance"')}</div>
+    return `<h3>Now your own acceptance criteria</h3><p>Set them before any pilot. Add the pilot's results later and the page gives the call, by the rule from the exercise.</p>
+    <div class="mgrid">${field("bars.quality", "Quality: at least this percent right", b.quality, "", 'inputmode="decimal" placeholder="80"')}${field("bars.seconds", "Speed: at most this many seconds", b.seconds, "", 'inputmode="decimal" placeholder="5"')}${field("bars.cost", "Cost: at most this many $ per finished task", b.cost, "", 'inputmode="decimal" placeholder="2"')}${field("bars.mustpass", "Must-pass cases", b.mustpass, "the dangerous cases it may never get wrong", 'placeholder="never give a wrong leave balance"')}</div>
     <h4>Pilot results, when you have them</h4>
     <div class="mgrid">${field("bars.rq", "Quality, percent right", b.rq, "", 'inputmode="decimal"')}${field("bars.rs", "Seconds", b.rs, "", 'inputmode="decimal"')}${field("bars.rc", "Cost, $ per task", b.rc, "", 'inputmode="decimal"')}${field("bars.rf", "Must-pass failures", b.rf, "", 'inputmode="numeric"')}</div>
     <div id="mineOut"></div>${PRIVATE}`;
@@ -1853,8 +1853,8 @@ function updateMine() {
     out.innerHTML = reqs.length ? `<div class="mcols">${col("What it must do", fn_)}${col("How well", nf)}</div>${noNum.length ? `<p class="meta">Give these a number: ${noNum.map(esc).join(" · ")}</p>` : ""}` : "";
   } else if (cur.id === "fit_for_purpose") {
     const b = m.bars || {}, has = k => String(b[k] || "").trim() !== "";
-    if (!["quality", "seconds", "cost"].every(has)) { out.innerHTML = `<p class="meta">Set the three numeric bars to see your rule written out.</p>`; return; }
-    let line = `<div class="callout"><b>Your bars</b><p>At least ${num(b.quality)} in 100 right, under ${num(b.seconds)} seconds, under $${num(b.cost)} per finished task${has("mustpass") ? `, and never: ${esc(b.mustpass)}` : ""}.</p></div>`;
+    if (!["quality", "seconds", "cost"].every(has)) { out.innerHTML = `<p class="meta">Set the three numbers to see your rule written out.</p>`; return; }
+    let line = `<div class="callout"><b>Your acceptance criteria</b><p>At least ${num(b.quality)} in 100 right, under ${num(b.seconds)} seconds, under $${num(b.cost)} per finished task${has("mustpass") ? `, and never: ${esc(b.mustpass)}` : ""}.</p></div>`;
     if (["rq", "rs", "rc"].every(has)) {
       const fails = num(b.rf), q = num(b.rq) / 100, Q = num(b.quality) / 100;
       let call, missed = [], close = true;
@@ -1866,7 +1866,7 @@ function updateMine() {
         call = !missed.length ? "go" : missed.length === 1 && close ? "fix" : "stop";
       }
       linkOutcome(call);
-      const why = fails > 0 ? `${fails} must-pass ${fails === 1 ? "case" : "cases"} failed.` : !missed.length ? "Every bar met." : `Missed: ${missed.join(", ")}${call === "fix" ? ", only just" : ""}.`;
+      const why = fails > 0 ? `${fails} must-pass ${fails === 1 ? "case" : "cases"} failed.` : !missed.length ? "Every criterion met." : `Missed: ${missed.join(", ")}${call === "fix" ? ", only just" : ""}.`;
       line += `<div class="verdict ${call === "go" ? "ok" : call === "stop" ? "no" : ""}"><b>${call === "go" ? "Go" : call === "fix" ? "Fix, then test again" : "Stop"}</b>${why} A person still makes the final call.</div>`;
     }
     out.innerHTML = line;
@@ -1914,7 +1914,7 @@ async function runSkill() {
     `Gates ticked: ${GATES.filter(([k]) => idea[k]).map(([, l]) => l).join("; ") || "none"}. Mode: ${idea.mode || "not chosen"}. Value ${idea.value || "?"}, doable ${idea.doable || "?"}.`,
     "Card:", reviewPromptFor(card).split("Use case card:")[1].split("\n## ")[0].trim(),
     `Requirements: ${(m.reqs || "not written").replace(/\n/g, "; ")}`,
-    `Bars they set: quality ${bars.quality || "?"} in 100, under ${bars.seconds || "?"} s, under $${bars.cost || "?"} a task, must-pass: ${bars.mustpass || "not written"}`, "",
+    `Acceptance criteria they set: quality ${bars.quality || "?"} in 100, under ${bars.seconds || "?"} s, under $${bars.cost || "?"} a task, must-pass: ${bars.mustpass || "not written"}`, "",
     "=== Output of scripts/tco.py for their numbers (report it as given; do not redo the sums) ===", tcoTable()].join("\n");
   const request = rid();
   btn.disabled = true; out.innerHTML = `<p class="meta">Running your skill…</p>`;

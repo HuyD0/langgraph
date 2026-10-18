@@ -8,7 +8,7 @@ the earlier idea, with a clue first, then the answer. Getting it right brightens
 card. It is practice only: it never changes the result card or the Check step.
 
 The ideas called back here are the foundations the course teaches once and then uses quietly:
-requirements (1.3), the well-architected pillars (1.4), the bars and must-pass cases (1.5), leakage,
+gathering requirements (1.3), functional and non-functional requirements (1.4), the well-architected pillars (1.5), the acceptance criteria and must-pass cases (1.6), leakage,
 precision and recall, the cost per finished task, tokens that grow every step, the baseline and the
 controls, deciding before the runs, luck or a real difference, reading a trace, prompt injection,
 never trusting model output, least privilege, retries, idempotent writes, and reading a Terraform
@@ -94,7 +94,7 @@ CALLBACKS = {
     ],
     'must_pass_gate': [
         callback('fit_for_purpose', phrase='the cases that can never get worse, chosen in the **Frame** stage', idea='Must-pass cases',
-                 here='You first set these as fit-for-purpose bars: one must-pass failure means stop, however high the average is.'),
+                 here='You first set these as fit-for-purpose acceptance criteria: one must-pass failure means stop, however high the average is.'),
     ],
     'judge_agreement': [
         callback('precision_recall', phrase='A judge that passes everything looks accurate when most answers are good, and catches nothing.', idea='Why accuracy lies',
@@ -118,8 +118,8 @@ CALLBACKS = {
     ],
     # ---- Ship and run
     'graduation_gate': [
-        callback('fit_for_purpose', phrase='written down before the POC started', idea='Fit-for-purpose bars',
-                 here='These are the bars from the start of the project: agreed before the trial, so nobody can move them to fit the result.'),
+        callback('fit_for_purpose', phrase='written down before the POC started', idea='Fit-for-purpose acceptance criteria',
+                 here='These are the acceptance criteria from the start of the project: agreed before the trial, so nobody can move them to fit the result.'),
     ],
     'promote_model': [
         callback('paired_verdict', phrase='only when it beats the champion by a meaningful margin on the same data', idea='Real win or luck',

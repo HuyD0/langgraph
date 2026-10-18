@@ -302,12 +302,12 @@ idea, ungraded:
 - **Functional and non-functional requirements**: your requirements, one per line, sorted live.
 - **A well-architected review**: "Ask the model to draft the review" sends your card (or the HR
   card, until you write yours) with a review prompt like the one you built.
-- **Is it fit for purpose?**: your bars, and later your pilot's results, with the go, fix or
+- **Is it fit for purpose?**: your acceptance criteria, and later your pilot's results, with the go, fix or
   stop call worked out by the exercise's rule.
 - **Turn your vetting into a skill** (the last lesson of Frame): the repository's Claude skill,
   `.claude/skills/vet-ai-use-case` (a `SKILL.md`, reference files and `scripts/tco.py`), in an
   editor checked against the skill rules as you type. "Run my skill on my use case" sends your
-  version, with your card, requirements, bars and the cost table worked out from your worksheet,
+  version, with your card, requirements, acceptance criteria and the cost table worked out from your worksheet,
   to the model. In Claude Code the skill runs as `/vet-ai-use-case`.
 - **Total cost of ownership**: a worksheet laid out like the bill of a RAG pipeline on Azure: LLM
   calls (answers and embeddings, pay as you go or provisioned), retrieval (Azure AI Search or
@@ -575,8 +575,9 @@ from the lesson's own example, so picture and text tell one story.
 
 ## Sticker callbacks
 
-The course teaches some foundations once, early, and then uses them quietly: requirements (1.3),
-the well-architected pillars (1.4), the bars and must-pass cases (1.5), leakage, precision and
+The course teaches some foundations once, early, and then uses them quietly: gathering requirements (1.3),
+functional and non-functional requirements (1.4), the well-architected pillars (1.5), the
+acceptance criteria and must-pass cases (1.6), leakage, precision and
 recall, cost per finished task, tokens that grow every step, the baseline and its controls,
 deciding before the runs, a real win or luck, reading a trace, prompt injection, never trusting
 model output, least privilege, retries, idempotent writes, reading a Terraform plan. Where a later lesson uses one, the sticker
