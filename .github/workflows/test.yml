@@ -39,9 +39,17 @@ jobs:
         # No Azure credentials are set, deliberately: the whole suite must pass
         # without them. If a test ever needs a live model it belongs behind the
         # needs_llm marker.
+        # DRILL_DENYLIST (a repository secret, one word per line, `re:` for a pattern) lets the scrub
+        # check your own names too; without it only the always-on shapes run, and the test says so.
         env:
           MLFLOW_DISABLE_AGENT_HINT: "1"
-        run: uv run --python ${{ env.PYTHON }} pytest -q
+          DRILL_DENYLIST: ${{ secrets.DRILL_DENYLIST }}
+        run: |
+          if [ -n "$DRILL_DENYLIST" ]; then
+            printf '%s\n' "$DRILL_DENYLIST" > "$RUNNER_TEMP/denylist.txt"
+            export DRILL_DENYLIST_FILE="$RUNNER_TEMP/denylist.txt"
+          fi
+          uv run --python ${{ env.PYTHON }} pytest -q
 
   notebooks-ship-unsolved:
     # Guards against committing a notebook with the exercises filled in, which

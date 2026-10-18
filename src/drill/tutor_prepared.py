@@ -25,6 +25,8 @@ import re
 from pathlib import Path
 from typing import Callable
 
+from drill import scrub
+
 DIR = Path(__file__).parent / "content" / "prepared"
 DRAFT_MODEL = "databricks-claude-opus-5-5"
 JUDGE_MODEL = "databricks-claude-sonnet-5-5"  # a different model from the drafter, so it isn't grading its own work
@@ -256,6 +258,11 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
     for attempt in range(2):
         note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if attempt and verdict.get("notes") else ""
         answer = draft(ask + note).strip()
+        leaked = scrub.find(answer)  # the model quotes the lesson it was given; at work that may name real things
+        if leaked:
+            verdict = {"pass": False, "notes": "the answer holds " + ", ".join(leaked) + ": not saved as written"}
+            answer = ""
+            break
         verdict = _verdict(judge(JUDGE.format(context=_context(data, lid), q=chip["q"], how=chip["how"], answer=answer,
                                               giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)))
         if verdict["pass"]:
