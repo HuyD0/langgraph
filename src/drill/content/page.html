@@ -1239,6 +1239,25 @@ let progress = { solved: {}, days: [], lessons: {}, gotchas: {}, current: null }
 let progressDoc = null;
 function loadLocal() { try { const raw = localStorage.getItem("drill-progress"); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch {} progress.lessons = progress.lessons || {}; progress.gotchas = progress.gotchas || {}; migrateAliases(); }
 function saveLocal() { try { localStorage.setItem("drill-progress", JSON.stringify(progress)); } catch {} }
+// Your progress from the account, merged with this device's. The account's copy arrives frozen (the
+// runtime freezes what it delivers), so it is cloned first: a frozen lesson would quietly ignore
+// every later change, such as moving on to the next check question or trying the check again.
+function mergeProgress(local, remote) {
+  const r = structuredClone(remote || {});
+  const lessons = Object.assign({}, r.lessons || {});
+  for (const [k, v] of Object.entries(local.lessons)) {
+    const o = lessons[k];
+    lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain, checks: v.checks || o.checks, first: o.first || v.first, again: v.again || o.again };
+  }
+  return {
+    solved: Object.assign({}, r.solved || {}, local.solved),
+    days: [...new Set([...(r.days || []), ...local.days])].sort(),
+    lessons, gotchas: Object.assign({}, r.gotchas || {}, local.gotchas), current: local.current || r.current || null,
+    focus: local.focus || r.focus || null, lastKind: local.lastKind || r.lastKind || null,
+    // your own use case and numbers: the newer copy wins
+    mine: ((local.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (local.mine || r.mine || {}) : r.mine,
+  };
+}
 async function saveProgress() { saveLocal(); if (progressDoc) { try { await progressDoc.set(progress); } catch {} } }
 let fxNewDay = false;  // the next renderTop lights today's dot
 function markDay() { const t = today(); if (!progress.days.includes(t)) { progress.days.push(t); progress.days = progress.days.slice(-400); fxNewDay = true; } }
@@ -3018,20 +3037,7 @@ goHome();
         const doc = db.doc("data/users/" + id + "/progress");
         const snap = await doc.get();
         if (snap.exists) {
-          const r = snap.data() || {};
-          const lessons = Object.assign({}, r.lessons || {});
-          for (const [k, v] of Object.entries(progress.lessons)) {
-            const o = lessons[k];
-            lessons[k] = !o ? v : { step: Math.max(o.step || 0, v.step || 0), checked: v.checked !== null ? v.checked : o.checked, done: !!(o.done || v.done), said: v.said || o.said, filled: Math.max(o.filled || 0, v.filled || 0), practice: v.practice || o.practice, explain: v.explain || o.explain, checks: v.checks || o.checks, first: o.first || v.first, again: v.again || o.again };
-          }
-          progress = {
-            solved: Object.assign({}, r.solved || {}, progress.solved),
-            days: [...new Set([...(r.days || []), ...progress.days])].sort(),
-            lessons, gotchas: Object.assign({}, r.gotchas || {}, progress.gotchas), current: progress.current || r.current || null,
-            focus: progress.focus || r.focus || null, lastKind: progress.lastKind || r.lastKind || null,
-            // your own use case and numbers: the newer copy wins
-            mine: ((progress.mine || {}).updatedAt || 0) >= ((r.mine || {}).updatedAt || 0) ? (progress.mine || r.mine || {}) : r.mine,
-          };
+          progress = mergeProgress(progress, snap.data());
         }
         migrateAliases();
         progressDoc = doc;
