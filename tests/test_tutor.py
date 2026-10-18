@@ -11,7 +11,7 @@ from drill.content.build import page_source
 
 def test_the_map_is_generated_from_the_content(tmp_path):
     """The map is not committed (every inserted lesson renumbered it): `uv run drill tutor map` writes it
-    from the lessons, and scripts/check.sh runs that, so a local copy is always fresh."""
+    from the lessons, and make check runs that, so a local copy is always fresh."""
     out = tutor.write_map(tmp_path / "CURRICULUM_MAP.md")
     assert out.read_text(encoding="utf-8") == tutor.curriculum_map() and "### 1. " in out.read_text(encoding="utf-8")
     assert "docs/tutor/CURRICULUM_MAP.md" in (tutor.PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8"), "the map is generated, never committed"

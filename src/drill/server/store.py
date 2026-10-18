@@ -2,13 +2,13 @@
 
 On claude.ai the Daily Drill page keeps your study list and your progress in the
 artifact's own database, addressed by path: ``study/<id>`` is one study item,
-``data/users/<id>/progress`` is your progress. When the page is served from this Mac
+``data/users/<id>/progress`` is your progress. When the page is served from this computer
 instead, the same documents land here, under the same paths.
 
 By default this is one SQLite file (``.drill/drill.db``): nothing to install, nothing to
 run, and easy to back up. ``DRILL_HOME`` moves it (and the MLflow file) out of the repo.
 
-Every row has an ``owner``: ``local`` on your own Mac, the person's work email when the
+Every row has an ``owner``: ``local`` on your own computer, the person's work email when the
 store is shared. A store only ever reads and writes its own owner's rows, so one
 database can hold a whole team.
 

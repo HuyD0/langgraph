@@ -156,7 +156,7 @@ its access: the same path as at work, which `drill cloud check` then confirms.
 
 ## Moving it to work
 
-**The short way:** `./scripts/port-to-workspace.sh` (see [PORTING.md](PORTING.md)), or one command. Sign in, then look at the plan (it changes nothing):
+**The short way:** `make setup` (see [PORTING.md](PORTING.md)), or one command. Sign in, then look at the plan (it changes nothing):
 
 ```bash
 databricks auth login --host https://adb-<id>.azuredatabricks.net --profile work

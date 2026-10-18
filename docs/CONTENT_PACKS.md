@@ -27,7 +27,7 @@ ids**, filled in. The shared slots stay slots in both copies.
 
 Three safeguards. `content-packs/PUBLIC` stays in **both** copies and makes the tests fail if any
 lesson in the shared packs stops being a slot or an asset appears there; don't delete it at work.
-The scrub (`tests/test_scrub.py`, run by `scripts/check.sh` and the pre-push hook) fails on real
+The scrub (`tests/test_scrub.py`, run by `make check` and the pre-push hook) fails on real
 names in any tracked file; in the work copy `content-packs/internal/` is exempt, since that is
 where they belong. And `app.yaml` already names `content-packs/internal` in `DRILL_CONTENT_PACKS`,
 so turning the pack on needs no edit to a file the public repository owns.
@@ -138,12 +138,12 @@ by anyone who opens it.
 
 ## Turn it on in an internal deployment
 
-The server loads the folders named in `DRILL_CONTENT_PACKS` (separate several with `:`), and a
+The server loads the folders named in `DRILL_CONTENT_PACKS` (separate several with `:`, or `;` on Windows), and a
 folder that isn't there is skipped. `app.yaml` already names `content-packs/internal`, in both
 copies, so there is nothing to edit: in the public repository the folder doesn't exist and
 nothing loads; in the work copy the pack is tracked, travels with the deploy and loads. Commit
 the pack and deploy as usual (`uv run drill cloud deploy --target work`, or
-`./scripts/port-to-workspace.sh`).
+`make setup`).
 The pack's lessons are part of the page the server sends, so **everyone who can open the app can
 read them**: who can use the app is the access control (`uv run drill cloud share`). Screenshots are
 served at `pack-assets/<pack>/<file>` by the same app, and only files a lesson names.

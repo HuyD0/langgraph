@@ -7,21 +7,17 @@ live in an overlay folder of the work copy ("Keeping the work copy in step", bel
 
 ## The quick way
 
-From a clone of this repository, on a Mac:
+From a clone of this repository, on a Mac, Windows (PowerShell or Windows Terminal) or Linux:
 
 ```bash
-./scripts/port-to-workspace.sh
+make setup        # or, without make: uv run drill cloud port --ask --target work
 ```
 
-On Windows, in PowerShell (it installs the tools with `winget` instead of Homebrew):
-
-```powershell
-.\scripts\port-to-workspace.ps1
-```
-
-It installs or upgrades the tools (git, uv, the Databricks CLI v1.20+), signs you in, asks
-four questions, shows the plan and asks before changing anything. Run it again any time; it
-only fills gaps. The same thing by hand:
+It checks the tools (git, uv, the Databricks CLI v1.20+, with the install command for your
+system if one is missing), signs you in, asks four questions, shows the plan and asks before
+changing anything. Answers can come from `DRILL_TARGET`, `DRILL_PROFILE`, `DRILL_HOST`,
+`DRILL_CATALOG`, `DRILL_MODEL`, `DRILL_MANAGERS` and `DRILL_LEARNERS` instead. Run it again any
+time; it only fills gaps. The same thing by hand:
 
 ```bash
 databricks auth login --host https://adb-<id>.azuredatabricks.net --profile work
@@ -129,9 +125,9 @@ today; nothing promises any of it yet.
 
 | Where | What runs |
 |---|---|
-| Before each commit | `scripts/check.sh`: `uv run drill build-page`, `uv run drill tutor map`, `uv run pytest -q -m "not slow"` (includes the scrub) |
+| Before each commit | `make check` (`uv run drill dev check`): builds the page, writes the tutor map, runs `pytest -q -m "not slow"` (includes the scrub) |
 | Before each push, once set up | `scripts/hooks/pre-push` (`git config core.hooksPath scripts/hooks`): `uv run pytest -q tests/test_scrub.py` |
-| CI, `.github/workflows/tests.yml` | `uv sync --dev`, then the full `uv run pytest -q` (with the `slow` notebook tests) on Python 3.12 with no cloud credentials; a job that fails if a `notebooks/m*.ipynb` has no `NotImplementedError` left |
+| CI, `.github/workflows/tests.yml` | `uv sync --dev`, then the full `uv run pytest -q` (with the `slow` notebook tests) on Python 3.12 with no cloud credentials; `make check` on Windows; a job that fails if a `notebooks/m*.ipynb` has no `NotImplementedError` left |
 | CI, `.github/workflows/codeql.yml` | CodeQL `security-and-quality` on Python and JavaScript, pull requests to `main` and weekly |
 | GitHub settings | Secret scanning and push protection are on |
 
@@ -207,7 +203,7 @@ fixed only at work. Security findings are the same: CodeQL and dependency alerts
 repository show up on code it did not write, so they are fixed here and flow down.
 
 1. Write it down as a note with no internal names: what, where, how to see it.
-2. In the public clone, make the change, run `scripts/check.sh` (`.\scripts\check.ps1` on Windows; it runs the
+2. In the public clone, make the change, run `make check` (it runs the
    scrub), open a pull request; the owner merges and tags a release.
 3. In the work copy, bring in that release as above.
 
@@ -232,7 +228,7 @@ merges it cleanly; if it conflicts, take upstream's version.
   a company, and every word in your denylist, `~/.config/daily-drill/denylist.txt` (one word per
   line: team codes, group and catalog names, repository names, people; `re:` starts a pattern). The
   file lives outside the repository on both machines, so it is never committed; without it the
-  test skips and says so. `scripts/check.sh` runs it with the other tests, and the pre-push hook
+  test skips and says so. `make check` runs it with the other tests, and the pre-push hook
   (`git config core.hooksPath scripts/hooks`, once per clone) runs it alone before every push. In
   the work copy, `content-packs/internal/` is exempt, since that is where the real names belong.
   In the work repository's Actions, `overlay.yml` runs it with the denylist kept as the

@@ -9,7 +9,7 @@ The knowledge files, all in this repository:
 
 - `docs/tutor/CURRICULUM_MAP.md`: every lesson (its Learn text, check question and answer,
   exercise, interview pattern, gotcha card), plus the practice sets, notebooks and glossary.
-  It is generated and git-ignored: `uv run drill tutor map` writes it (so does `scripts/check.sh`)
+  It is generated and git-ignored: `uv run drill tutor map` writes it (so does `make check`)
 - `docs/research/AGENT_PRACTICES.md`: current practice for agents, every claim checked against its source
 - `docs/research/LLM_COST_AND_SIZING.md`: how to price, size and judge the ROI of LLM work before building it, with a worked example
 - `docs/END_TO_END.md`, `docs/EXPERIMENT_PLAN.md`, `docs/CONCEPTS.md`, `docs/RAG_AUDIT.md`

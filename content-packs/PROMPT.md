@@ -61,7 +61,7 @@ Steps:
    time-off line" does).
 8. When I approve a lesson, set it to `ready`. `app.yaml` already points `DRILL_CONTENT_PACKS` at
    `content-packs/internal`, so don't edit it: commit the pack and deploy with
-   `uv run drill cloud deploy --target work` (or `./scripts/port-to-workspace.sh`).
+   `uv run drill cloud deploy --target work` (or `make setup`).
 9. Give the app's address to the learners with `uv run drill cloud share <email>`, and tell them
    their manager can see their progress, study list and questions.
 

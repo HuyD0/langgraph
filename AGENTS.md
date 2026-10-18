@@ -36,8 +36,9 @@ src/drill/content/modules/*.py  ──build.py──▶  one page: dist/daily-dr
 
 ```bash
 uv sync                                  # install
-scripts/check.sh                         # build the page + run the fast tests: run before every commit
-                                         #   (Windows, in PowerShell: .\scripts\check.ps1)
+make check                               # build the page + run the fast tests: run before every commit
+                                         #   (no make? uv run drill dev check; `make check` does the same)
+make help                                # every shortcut; each is one `uv run drill ...` line, so it works on Windows too
 uv run drill build-page                  # page only -> dist/daily-drill.html
 uv run pytest -q -m "not slow"           # fast tests (the full suite also runs notebooks)
 uv run drill tutor map                   # write docs/tutor/CURRICULUM_MAP.md (generated, git-ignored) for the tutor project
@@ -49,19 +50,19 @@ Preview the page (the raw file in `dist/` has no viewport tag, so use the server
 
 ```bash
 DRILL_PORT=8788 DRILL_DATABASE_URL=sqlite:///.drill/preview.db uv run drill-server
-# Windows PowerShell: $env:DRILL_PORT=8788; $env:DRILL_DATABASE_URL="sqlite:///.drill/preview.db"; uv run drill-server
+# or, on any system (PowerShell included): make preview
 ```
 
 The server **caches the page when it starts**: restart it after every `build-page`.
 
 CI (`.github/workflows/`) runs on every pull request: `tests.yml` runs the **full** suite
-(`uv run pytest -q`, including the slow notebook tests that `scripts/check.sh` skips) with no cloud
+(`uv run pytest -q`, including the slow notebook tests that `make check` skips) with no cloud
 credentials, and checks every `notebooks/m*.ipynb` still has its unsolved exercises; `codeql.yml`
 scans the Python and the JavaScript. GitHub's secret scanning and push protection are on.
 
 ## Done means
 
-1. `scripts/check.sh` passes.
+1. `make check` passes.
 2. You looked at the change in the preview at **375×812 (phone) and 1366×860 (desktop)**, in
    **Dusk and Light**. No sideways scroll. In Dusk, new
    boxes should look like the rest (glass, depth, a glow on what's current): if one looks flat, it
@@ -70,7 +71,7 @@ scans the Python and the JavaScript. GitHub's secret scanning and push protectio
 3. Docs that describe what you changed are updated (the table above says which). If the change
    is visible, retake the screen gallery (`node scripts/screenshots.mjs`, see
    [docs/screens/README.md](docs/screens/README.md)) so the pictures stay true.
-4. Content changes: the map is generated, not committed (`scripts/check.sh` writes it); when the
+4. Content changes: the map is generated, not committed (`make check` writes it); when the
    lessons change, re-upload it to the tutor project ([docs/tutor/README.md](docs/tutor/README.md)).
 5. Front-end changes: the beginner course [docs/course/inside-page-html.html](docs/course/inside-page-html.html)
    still tells the truth. It shows real lines from `page.html`, `tokens.css` and `build.py`;
@@ -117,7 +118,7 @@ scans the Python and the JavaScript. GitHub's secret scanning and push protectio
   `content-packs/internal/` with `prerequisites: [<core lesson id>]`, never an edit to the
   core module.
 - Never paste text from the work copy into the public one without the scrub:
-  `tests/test_scrub.py`, run by `scripts/check.sh` and the pre-push hook
+  `tests/test_scrub.py`, run by `make check` and the pre-push hook
   (`git config core.hooksPath scripts/hooks`). Its denylist lives outside the repository, in
   `~/.config/daily-drill/denylist.txt`.
 - **Changes that port well** (details in [docs/PORTING.md](docs/PORTING.md), "Writing changes that

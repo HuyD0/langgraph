@@ -1,6 +1,6 @@
 """The tutor's feedback, read back from MLflow: how often its answers worked, and the eval cases they make.
 
-    uv run drill tutor feedback                    # this Mac's traces from the last 7 days
+    uv run drill tutor feedback                    # this computer's traces from the last 7 days
     uv run drill tutor feedback --days 30 --dataset
     uv run drill tutor feedback --target work      # the deployed app's traces (Databricks)
 

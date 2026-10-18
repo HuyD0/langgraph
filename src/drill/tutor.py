@@ -12,7 +12,7 @@ Two outputs:
   where Finder shows it and git can't pick it up.
 
     uv run drill tutor map
-    uv run drill tutor snapshot                     # this Mac's progress only
+    uv run drill tutor snapshot                     # this computer's progress only
     uv run drill tutor snapshot --copy              # and put the text on the clipboard
     uv run drill tutor snapshot --progress .drill/export/data/users/me/progress.json --study .drill/export/study
 """
@@ -382,7 +382,7 @@ def write_snapshot(
     progress_file: Path | None = None,
     study_source: Path | None = None,
 ) -> Path:
-    """This Mac's progress and study list, merged with exported copies from claude.ai if given."""
+    """This computer's progress and study list, merged with exported copies from claude.ai if given."""
     from drill.server import study
     from drill.server.store import DocStore
 

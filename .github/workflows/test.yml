@@ -52,8 +52,9 @@ jobs:
           uv run --python ${{ env.PYTHON }} pytest -q
 
   windows:
-    # Work laptops run Windows: the same fast checks a commit must pass, through the Windows
-    # script (scripts/check.ps1), so file encodings, paths and line endings stay right there too.
+    # Work laptops run Windows: the same fast checks a commit must pass, through `make check` from
+    # PowerShell (each Makefile line is one `uv run drill ...` command), so file encodings, paths
+    # and line endings stay right there too.
     runs-on: windows-latest
     env:
       PYTHON: "3.12"
@@ -67,21 +68,20 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Install dependencies
+      - name: Install dependencies and make
+        shell: pwsh
         run: |
           uv python install ${{ env.PYTHON }}
           uv sync --dev --python ${{ env.PYTHON }}
+          if (-not (Get-Command make -ErrorAction SilentlyContinue)) { choco install make -y --no-progress }
 
-      - name: The Windows setup script parses
+      - name: make help
         shell: pwsh
-        run: |
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/scripts/port-to-workspace.ps1", [ref]$null, [ref]$errors) | Out-Null
-          if ($errors) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+        run: make help
 
-      - name: Build the page and run the fast tests
+      - name: make check (build the page and run the fast tests)
         shell: pwsh
-        run: .\scripts\check.ps1
+        run: make check
 
   notebooks-ship-unsolved:
     # Guards against committing a notebook with the exercises filled in, which
