@@ -342,6 +342,23 @@ idea, ungraded:
   `uv run drill tutor prepare --profile <name>` drafts what is missing (costs money);
   `uv run drill tutor prepared --sample 50` shows a spot-check sample, and `--check` / `--reject
   lesson_id/key` record your verdict.
+- **The judge's checklist, and the checks code does instead** (`drill.answer_quality`, `tutor_prepared.JUDGE2`):
+  five judges from three makers graded the same 301 prepared answers with checklist 1 and agreed 96 to 100%
+  on three checks (answers it, no giveaway, standalone) but split on "plain" (undefined) and "correct"
+  (written two ways at once). Checklist 2 says each thing once: "correct" becomes *no contradiction*
+  (must-pass) and *within the lesson* (reported; `WITHIN_LESSON_BLOCKS` decides whether it blocks),
+  "answers it" is tied to the question's own `how`, *concise* and *tone* are added, and "plain" leaves the
+  judge: code now measures it (a readability grade, fillers, repeated sentences, glossary terms used
+  unexplained, numbers and names the lesson doesn't contain). `prepare_one` runs the code checks before
+  the judge and redrafts with the reason; `drill tutor prepared-eval --judge-version 2` and `drill tutor
+  prepare --judge-version 2` grade with the candidate checklist, which the prompt registry holds as
+  `candidate` next to the `production` one. Each judge setup (checklist, model, provider, mode) is a version
+  of `tutor_judge` with `champion` and `challenger` aliases (`drill tutor judge-alias`).
+- **Does the drafter's own uncertainty predict a judge fail?** (`drill tutor uncertainty`): each sampled
+  question drafted several times on Foundry with every token's log probability, every draft judged, and
+  four code signals (mean log probability, least likely token, least likely risky token, disagreement
+  between the drafts) scored by a rank-based AUC against the verdict. If one predicts, it becomes a
+  drafting-time flag. The judging notebook's section 19 replays the run.
 - **Choosing a version of the tutor: cost, speed and quality** (`drill.tradeoff`,
   `notebooks/learning/cost_speed_quality.ipynb`): the experiment that compares ways of answering the
   standard questions (prepared answers, bigger or smaller models, and a **cacheable** prompt that puts
