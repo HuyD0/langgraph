@@ -8,3 +8,16 @@
 .asklesson .aa p { margin: 0; max-width: 65ch; }
 .asklesson .aa pre { margin: 0; font: 13px/1.5 var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; white-space: pre; overflow-x: auto; }
 .asklesson .linkbtn { padding: 2px 0; font-size: 14px; }
+/* the tutor's reply: his face beside it (hzCoach), a label that the words are generated, and the
+   learner's next step (Got it / Still stuck) with Save in one quiet row */
+.asklesson .ailab { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.asklesson .aatext { display: grid; gap: 8px; min-width: 0; }
+.asklesson .aafoot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.asklesson .aafoot .sep { flex: 1; }
+.asklesson .aafoot .chipbtn { min-height: 36px; }
+.asklesson .askgot { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+.asklesson .askgot .ic { width: 15px; height: 15px; color: var(--pass); }
+.asklesson .thinking { color: var(--muted); }
+.hface.thinking { animation: hz-think 1.4s ease-in-out infinite alternate; }
+@keyframes hz-think { from { box-shadow: var(--glow-current); opacity: .75; } to { box-shadow: 0 0 0 3px color-mix(in srgb, var(--fx-glow) 35%, transparent); opacity: 1; } }
+.asklesson .aafoot .chipbtn { background: var(--surface); border: 1px solid var(--line); }
