@@ -51,7 +51,7 @@ CHECKS = {
                 "in the same split together and can't leak."),
     ],
     "weighted_score": [
-        ask("Your weekly report shows one number: 90 percent. A manager asks if refund questions are "
+        ask("Your weekly report shows one number: 90 percent. The product manager asks if refund questions are "
             "working. What should the report have shown?",
             ["The same 90 percent, but in bold", "Last week's score next to it", "A score for each group, with its count"],
             answer=2,
