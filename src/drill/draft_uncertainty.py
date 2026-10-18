@@ -280,5 +280,5 @@ def run(deployment: str, draft_model: str, judge_deployment: str, judge_model: s
             "params": {"draft_model": draft_model, "judge_model": judge_model, "questions": len(questions), "samples": samples, "seed": seed},
             "metrics": metrics, "jobs": {"draft": draft_jobs, "judge": judge_jobs},
             "drafts": [{k: v for k, v in r.items() if k not in ("judge",)} | {"notes": r["judge"].get("notes", "")} for r in rows],
-        }, indent=1, ensure_ascii=False))
+        }, indent=1, ensure_ascii=False), encoding="utf-8")
     return {"run_id": run.info.run_id, "metrics": metrics, "questions": len(questions), "drafts": len(rows)}

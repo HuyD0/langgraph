@@ -60,7 +60,7 @@ def read_items(path: Path) -> list[dict]:
     files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
     items: list[dict] = []
     for file in files:
-        data = json.loads(file.read_text())
+        data = json.loads(file.read_text(encoding="utf-8"))
         if isinstance(data, dict) and isinstance(data.get("items"), list):
             data = data["items"]
         items.extend(data if isinstance(data, list) else [data])

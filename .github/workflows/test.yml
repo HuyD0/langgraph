@@ -51,6 +51,38 @@ jobs:
           fi
           uv run --python ${{ env.PYTHON }} pytest -q
 
+  windows:
+    # Work laptops run Windows: the same fast checks a commit must pass, through the Windows
+    # script (scripts/check.ps1), so file encodings, paths and line endings stay right there too.
+    runs-on: windows-latest
+    env:
+      PYTHON: "3.12"
+      MLFLOW_DISABLE_AGENT_HINT: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: |
+          uv python install ${{ env.PYTHON }}
+          uv sync --dev --python ${{ env.PYTHON }}
+
+      - name: The Windows setup script parses
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/scripts/port-to-workspace.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+
+      - name: Build the page and run the fast tests
+        shell: pwsh
+        run: .\scripts\check.ps1
+
   notebooks-ship-unsolved:
     # Guards against committing a notebook with the exercises filled in, which
     # would hand students the answers. Cheap enough to be its own job.

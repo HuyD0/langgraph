@@ -21,7 +21,7 @@ def test_the_prepared_questions_are_the_pages_own_words(data, tmp_path):
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
-    ask = (PAGE_TEMPLATE.parent / "page" / "ask.js").read_text()
+    ask = (PAGE_TEMPLATE.parent / "page" / "ask.js").read_text(encoding="utf-8")
     gotchas = tp._gotchas(data)
     probe = f"""
 const D = {json.dumps({"lessons": data["lessons"], "glossary": data["glossary"]}, ensure_ascii=False)};
@@ -43,7 +43,7 @@ for (const id of Object.keys(LESSONS)) {{
   out[id] = got.filter(c => c.key).map(c => [c.key, c.q]);
 }}
 console.log(JSON.stringify(out));"""
-    (tmp_path / "chips.js").write_text(probe)
+    (tmp_path / "chips.js").write_text(probe, encoding="utf-8")
     page = json.loads(subprocess.run([node, str(tmp_path / "chips.js")], capture_output=True, text=True, check=True).stdout)
     ours = {lid: [[c["key"], c["q"]] for c in items] for lid, items in tp.chips(data).items()}
     for lid, items in ours.items():
@@ -100,7 +100,7 @@ def test_a_packs_answers_live_inside_the_pack(tmp_path):
     core_dir = tmp_path / "core"
     tp.save(data, answers, directory=core_dir, packs=[pack])
     assert list((root / "prepared").glob("*.json")), "the pack's answers are written inside the pack"
-    assert not any(pack_lid in f.read_text() for f in core_dir.glob("*.json")), "and not in the curriculum's folder"
+    assert not any(pack_lid in f.read_text(encoding="utf-8") for f in core_dir.glob("*.json")), "and not in the curriculum's folder"
     assert tp.load(directory=core_dir, packs=[pack]) == answers
     served = tp.served(data, tp.load(directory=core_dir, packs=[pack]))
     assert core_lid in served and pack_lid in served

@@ -34,6 +34,8 @@ app = typer.Typer(
     help="An agentic coding-interview tutor built on LangGraph and MLflow.",
 )
 console = Console()
+# How to end pasted text at a terminal prompt
+END_OF_PASTE = "Ctrl-Z then Enter" if sys.platform == "win32" else "Ctrl-D"
 
 
 def _load_dotenv() -> None:
@@ -122,7 +124,7 @@ def edit_submission(problem: Problem, request: dict) -> str:
 
     editor = os.environ.get("EDITOR") or os.environ.get("VISUAL")
     if not editor or not sys.stdin.isatty():
-        console.print("[dim]Paste your solution, then Ctrl-D:[/dim]")
+        console.print(f"[dim]Paste your solution, then {END_OF_PASTE}:[/dim]")
         return sys.stdin.read()
 
     with tempfile.TemporaryDirectory(prefix="drill-edit-") as tmp:
@@ -131,7 +133,7 @@ def edit_submission(problem: Problem, request: dict) -> str:
         try:
             done = subprocess.run([*editor.split(), str(path)], check=False)
         except OSError:  # $EDITOR names a program that isn't installed
-            console.print(f"[yellow]Couldn't open your editor ({editor}). Paste your solution instead, then Ctrl-D.[/yellow]")
+            console.print(f"[yellow]Couldn't open your editor ({editor}). Paste your solution instead, then {END_OF_PASTE}.[/yellow]")
             return sys.stdin.read()
         if done.returncode != 0:
             console.print(f"[yellow]Your editor ({editor}) stopped with an error; using what was saved in the file.[/yellow]")
@@ -755,12 +757,19 @@ def tutor_snapshot_cmd(
     path = tutor.write_snapshot(out or tutor.SNAPSHOT_PATH, progress, study)
     console.print(f"Wrote {path}")
     if copy:
-        subprocess.run(["pbcopy"], input=path.read_text(), text=True, check=False)
-        console.print("Copied to the clipboard.")
+        # pbcopy on a Mac, clip on Windows, xclip on Linux
+        tool = {"darwin": ["pbcopy"], "win32": ["clip"]}.get(sys.platform, ["xclip", "-selection", "clipboard"])
+        try:
+            # clip needs UTF-16 with its byte-order mark to keep accents and dashes; the others take UTF-8
+            text = path.read_text(encoding="utf-8")
+            subprocess.run(tool, input=text.encode("utf-16" if sys.platform == "win32" else "utf-8"), check=False)
+            console.print("Copied to the clipboard.")
+        except OSError:
+            console.print(f"[yellow]Couldn't reach the clipboard ({tool[0]}); open {path} and copy it from there.[/yellow]")
     console.print("Next: in your tutor project's knowledge, remove last week's tutor-snapshot.md, then add this one.")
 
 
-experiment_app = typer.Typer(add_completion=False, help="Experiments on this Mac, each logged as MLflow runs you can rerun.")
+experiment_app = typer.Typer(add_completion=False, help="Experiments on this computer, each logged as MLflow runs you can rerun.")
 app.add_typer(experiment_app, name="experiment")
 
 
@@ -911,7 +920,7 @@ def study_export_cmd(out: Path = typer.Argument(..., help="JSON file to write.")
     from drill.server.store import open_store
 
     items = study.load(open_store())
-    out.write_text(json.dumps(items, indent=1))
+    out.write_text(json.dumps(items, indent=1), encoding="utf-8")
     console.print(f"Wrote {len(items)} study items to {out}")
 
 

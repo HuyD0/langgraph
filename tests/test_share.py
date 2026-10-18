@@ -17,7 +17,7 @@ def run_share(js: str, extra: str = "") -> object:
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
-    src = (PAGE_PARTS / "share.js").read_text()
+    src = (PAGE_PARTS / "share.js").read_text(encoding="utf-8")
     script = extra + "\n" + src + "\nconsole.log(JSON.stringify((() => { " + js + " })()));"
     out = subprocess.run([node, "-e", script], capture_output=True, text=True)
     assert out.returncode == 0, out.stderr[-800:]

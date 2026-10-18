@@ -13,6 +13,12 @@ From a clone of this repository, on a Mac:
 ./scripts/port-to-workspace.sh
 ```
 
+On Windows, in PowerShell (it installs the tools with `winget` instead of Homebrew):
+
+```powershell
+.\scripts\port-to-workspace.ps1
+```
+
 It installs or upgrades the tools (git, uv, the Databricks CLI v1.20+), signs you in, asks
 four questions, shows the plan and asks before changing anything. Run it again any time; it
 only fills gaps. The same thing by hand:
@@ -201,7 +207,7 @@ fixed only at work. Security findings are the same: CodeQL and dependency alerts
 repository show up on code it did not write, so they are fixed here and flow down.
 
 1. Write it down as a note with no internal names: what, where, how to see it.
-2. On the Mac, in the public clone, make the change, run `scripts/check.sh` (which runs the
+2. In the public clone, make the change, run `scripts/check.sh` (`.\scripts\check.ps1` on Windows; it runs the
    scrub), open a pull request; the owner merges and tags a release.
 3. In the work copy, bring in that release as above.
 

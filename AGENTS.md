@@ -37,6 +37,7 @@ src/drill/content/modules/*.py  ──build.py──▶  one page: dist/daily-dr
 ```bash
 uv sync                                  # install
 scripts/check.sh                         # build the page + run the fast tests: run before every commit
+                                         #   (Windows, in PowerShell: .\scripts\check.ps1)
 uv run drill build-page                  # page only -> dist/daily-drill.html
 uv run pytest -q -m "not slow"           # fast tests (the full suite also runs notebooks)
 uv run drill tutor map                   # write docs/tutor/CURRICULUM_MAP.md (generated, git-ignored) for the tutor project
@@ -48,6 +49,7 @@ Preview the page (the raw file in `dist/` has no viewport tag, so use the server
 
 ```bash
 DRILL_PORT=8788 DRILL_DATABASE_URL=sqlite:///.drill/preview.db uv run drill-server
+# Windows PowerShell: $env:DRILL_PORT=8788; $env:DRILL_DATABASE_URL="sqlite:///.drill/preview.db"; uv run drill-server
 ```
 
 The server **caches the page when it starts**: restart it after every `build-page`.

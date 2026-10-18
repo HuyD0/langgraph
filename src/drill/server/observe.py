@@ -79,12 +79,13 @@ def app_version() -> str:
     from drill.config import PROJECT_ROOT
 
     stamp = PROJECT_ROOT / ".drill-version"
-    if stamp.is_file() and stamp.read_text().strip():
-        return stamp.read_text().strip()
+    if stamp.is_file() and stamp.read_text(encoding="utf-8").strip():
+        return stamp.read_text(encoding="utf-8").strip()
     try:
         def git(*args: str) -> str:
             return subprocess.run(
-                ["git", *args], cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=3, check=True
+                ["git", *args], cwd=PROJECT_ROOT, capture_output=True, text=True, encoding="utf-8",
+                errors="replace", timeout=3, check=True
             ).stdout.strip()
 
         commit = git("rev-parse", "--short", "HEAD")

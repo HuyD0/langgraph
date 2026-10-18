@@ -77,7 +77,7 @@ uv run drill build-page    # the page as one HTML file, in dist/
 [docs/PAGE.md](docs/PAGE.md) is the content and how to add a lesson; [docs/SERVER.md](docs/SERVER.md)
 is the server, the phone, Claude Code and the cloud.
 [docs/DATABRICKS_APP.md](docs/DATABRICKS_APP.md) runs it as a Databricks App (`uv run drill cloud deploy`).
-To put it in a work workspace for a team, run `./scripts/port-to-workspace.sh` ([docs/PORTING.md](docs/PORTING.md)).
+To put it in a work workspace for a team, run `./scripts/port-to-workspace.sh` (`.\scripts\port-to-workspace.ps1` on Windows; [docs/PORTING.md](docs/PORTING.md)).
 The look (tokens, components, the Dusk and Light looks, motion) and how to change it: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 Optional private lessons (the internal IaC curriculum) as content packs: [docs/CONTENT_PACKS.md](docs/CONTENT_PACKS.md).
 

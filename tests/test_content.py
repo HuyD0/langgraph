@@ -74,7 +74,7 @@ def test_lesson_numbers_are_never_written_into_text():
     bracketed = re.compile(r"(?<![\w.(`$])\(P?[1-9]\.\d{1,2}\)")  # "(1.3)" in prose: a phase number, never 0.x
     hits = []
     for f in files:
-        for n, line in enumerate(f.read_text().splitlines(), 1):
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
             notes = f.name in ("callbacks.py", "trust.py", "diagrams.py")  # the notes files, where "(1.3)" crept in
             if written.search(line) or (notes and bracketed.search(line)):
                 hits.append(f"{f.relative_to(content.parent.parent.parent)}:{n}: {line.strip()[:80]}")
@@ -127,7 +127,7 @@ def test_page_embeds_the_design_tokens(data):
     from pathlib import Path
 
     here = Path(__file__).parent.parent / "src" / "drill" / "content"
-    tokens, page = (here / "tokens.css").read_text(), page_source()
+    tokens, page = (here / "tokens.css").read_text(encoding="utf-8"), page_source()
     defined = set(re.findall(r"(--[a-z][a-z0-9-]*)\s*:", tokens))
     used = set(re.findall(r"var\((--[a-z][a-z0-9-]*)", page))
     page_local = set(re.findall(r"(?<!var\()(--[a-z][a-z0-9-]*)", page))  # e.g. --toph, set by the script
@@ -194,7 +194,7 @@ def test_every_build_it_for_real_card_points_at_a_real_notebook_section():
     for lesson_id, (notebook, section, uses) in real.REAL.items():
         assert lesson_id in lessons, f"no lesson {lesson_id}"
         assert notebook in real.NOTEBOOKS and uses, lesson_id
-        cells = json.loads((root / f"{notebook}.ipynb").read_text())["cells"]
+        cells = json.loads((root / f"{notebook}.ipynb").read_text(encoding="utf-8"))["cells"]
         headings = {line[3:].strip() for c in cells if c["cell_type"] == "markdown" for line in "".join(c["source"]).splitlines() if line.startswith("## ")}
         assert section in headings, f"{lesson_id}: {notebook} has no section {section!r}"
 
@@ -244,7 +244,7 @@ def test_every_look_has_the_motion_tokens():
     """Effects read their colours from tokens, so each theme must define them (light, dark twice, dusk)."""
     from pathlib import Path
 
-    tokens = (Path(__file__).parent.parent / "src" / "drill" / "content" / "tokens.css").read_text()
+    tokens = (Path(__file__).parent.parent / "src" / "drill" / "content" / "tokens.css").read_text(encoding="utf-8")
     for name in ("--fx-core", "--fx-glow", "--fx-veil", "--fx-red", "--fx-mix", "--fx-cyan"):
         assert tokens.count(name + ":") == 4, name
     for name in ("--path", "--path-bg", "--path-line", "--path-ink"):
@@ -277,14 +277,14 @@ def test_the_phase_banner_follows_progress_and_stays_decorative(tmp_path):
     from drill.content.build import PAGE_TEMPLATE
 
     parts = PAGE_TEMPLATE.parent / "page"
-    css = (parts / "horizon.css").read_text()
+    css = (parts / "horizon.css").read_text(encoding="utf-8")
     assert not re.search(r"#[0-9a-fA-F]{3,8}\b", css), "the banner's colours are tokens"
     page = page_source()
     assert "${horizonHtml(nidx, pg.d, pg.n)}" in page and "horizonDraw(from)" in page
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
-    probe = (parts / "horizon.js").read_text() + """
+    probe = (parts / "horizon.js").read_text(encoding="utf-8") + """
 const n = s => (s.match(/class="eye"/g) || []).length;
 console.log(JSON.stringify({
   phases: [HZ.length, HZ_ENERGY.length, HZ_AT.length],
@@ -302,7 +302,7 @@ console.log(JSON.stringify({
   stages: [0, .5, .9].map(p => hzSorcerer(30, 90, 200, 60, p, 0).match(/data-stage="(\d)"/)[1]),
   face: [hzFace("answer").includes('class="h-eye-blue"'), hzFace("clue").includes('class="h-eye-blue"'), (hzCoach("answer", "x").match(/class="eye"/g) || []).length, hzTrackCurse(1).includes('class="body" d="M')],
 }));"""
-    (tmp_path / "hz.js").write_text(probe)
+    (tmp_path / "hz.js").write_text(probe, encoding="utf-8")
     out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, check=True).stdout)
     assert out["phases"] == [len(modules.LIFECYCLE)] * 3, "one scene, one energy layer and one spirit place per phase"
     assert all(w == 9 for w in out["whole"])
@@ -370,7 +370,7 @@ def test_picture_cards_use_icons_the_page_has(loaded):
             assert not unnamed, f"{entry['id']}: give {unnamed} a meaning in ICONS (model.py) and docs/PAGE.md"
             for c in cards:
                 assert c["picture"] is None or picture_text(c["picture"]), f"{entry['id']}: {c['heading']} has no words"
-    page_md = (Path(__file__).resolve().parents[1] / "docs" / "PAGE.md").read_text()
+    page_md = (Path(__file__).resolve().parents[1] / "docs" / "PAGE.md").read_text(encoding="utf-8")
     assert all(f"| `{k}` |" in page_md for k in ICONS), "docs/PAGE.md lists every icon and its meaning"
 
 
@@ -438,7 +438,7 @@ def test_trust_marks_are_wired_into_the_learn_step():
     from pathlib import Path
 
     root = Path(__file__).parent.parent / "src" / "drill" / "content"
-    page, tokens = page_source(), (root / "tokens.css").read_text()
+    page, tokens = page_source(), (root / "tokens.css").read_text(encoding="utf-8")
     learn = page.split("function learnPane()")[1].split("\n}")[0]
     assert "withTrust(cur.id, first" in learn and "withTrust(cur.id, p" in learn
     for name in ("--mark", "--mark-glow"):
@@ -512,15 +512,15 @@ def test_the_frontend_guide_and_screen_gallery_match_the_code():
 
     root = Path(__file__).resolve().parents[1]
     page = page_source()
-    guide = (root / "docs/FRONTEND.md").read_text()
+    guide = (root / "docs/FRONTEND.md").read_text(encoding="utf-8")
     table = guide.split("## Map of the script", 1)[1].split("\n## ", 1)[0]
     markers = [m for cell in re.findall(r"^\| `([^`]+)`(?: / `([^`]+)`)? \|", table, re.M) for m in cell if m]
     assert len(markers) >= 20
     for marker in markers:
         assert f"// ---------- {marker}" in page, f"docs/FRONTEND.md names a section page.html doesn't have: {marker}"
 
-    shots = re.findall(r'^\s*\["([a-z0-9-]+)",', (root / "scripts/screenshots.mjs").read_text(), re.M)
-    gallery = (root / "docs/screens/README.md").read_text()
+    shots = re.findall(r'^\s*\["([a-z0-9-]+)",', (root / "scripts/screenshots.mjs").read_text(encoding="utf-8"), re.M)
+    gallery = (root / "docs/screens/README.md").read_text(encoding="utf-8")
     assert len(shots) >= 10
     for name in shots:
         assert f"({name}.webp)" in gallery, f"docs/screens/README.md doesn't show {name}"
@@ -560,7 +560,7 @@ def test_the_page_script_parses(data, tmp_path):
         pytest.skip("node is not installed")
     html = build_page(data)
     script = max((part.split("</script>", 1)[0] for part in html.split("<script>")[1:]), key=len)  # the page's own code
-    (tmp_path / "page.js").write_text(script)
+    (tmp_path / "page.js").write_text(script, encoding="utf-8")
     result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-800:]
 
@@ -600,7 +600,7 @@ def test_new_components_get_dusk_from_surface_tokens_not_their_own_rules():
             if 'data-theme="dusk"' in part:
                 new.add(re.sub(r"\s+", " ", part.strip().split("]", 1)[1].strip()))
     assert not new - known, f"use the surface tokens (--card-bg, --aside-bg, --glow-current...) instead of Dusk-only rules for: {sorted(new - known)}"
-    tokens = (PAGE_TEMPLATE.parent / "tokens.css").read_text()
+    tokens = (PAGE_TEMPLATE.parent / "tokens.css").read_text(encoding="utf-8")
     for name in ("--card-bg", "--card-shadow", "--aside-bg", "--aside-blur", "--glow-current", "--glow-look"):
         assert tokens.count(name + ":") >= 2, f"{name} needs a default and a Dusk value in tokens.css"
 
@@ -656,7 +656,7 @@ def test_every_page_part_is_included_exactly_once():
     # vanish from the page; a part included twice would run twice.
 
     from drill.content.build import PAGE_PARTS, PAGE_TEMPLATE
-    template = PAGE_TEMPLATE.read_text()
+    template = PAGE_TEMPLATE.read_text(encoding="utf-8")
     included = re.findall(r"^/\*INCLUDE (page/[A-Za-z0-9_.-]+)\*/$", template, re.M)
     on_disk = sorted(f"page/{p.name}" for p in PAGE_PARTS.iterdir() if p.is_file())
     assert sorted(included) == on_disk, f"included {sorted(included)}, but page/ holds {on_disk}"
