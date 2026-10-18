@@ -46,6 +46,10 @@ KAPPA_GATE = 0.6  # "substantial" agreement: below it, the judge disagrees with 
 SPLITS = ("dev", "test", "holdout")
 SHARES = {"dev": .6, "test": .2, "holdout": .2}
 SPLITS_FILE = Path(__file__).parent / "content" / "prepared_splits.json"
+# The judge-tuning samples, frozen like the splits: {split: {str(n): [{"lesson_id", "key"}, ...]}}. A sample is drawn
+# once (every reference failure, passes spread by phase and kind) and then kept, so every judge run grades the same
+# answers and runs compare question by question. It changes only on --refresh-sample, which is a deliberate act.
+SAMPLE_FILE = Path(__file__).parent / "content" / "prepared_sample.json"
 _assigned: dict[str, str] | None = None
 
 
@@ -257,6 +261,26 @@ def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
     return rows
 
 
+def load_samples() -> dict[str, dict[str, list[dict]]]:
+    return json.loads(SAMPLE_FILE.read_text()) if SAMPLE_FILE.exists() else {}
+
+
+def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False) -> tuple[list[dict], dict]:
+    """The split's frozen sample of ``n`` answers, drawn once with :func:`stratified_sample` and kept in
+    ``prepared_sample.json``. Answers no longer served (a lesson changed) drop out and are reported; new
+    answers never join until ``refresh``. Returns the rows and a note of what happened."""
+    samples = load_samples()
+    kept = samples.get(split, {}).get(str(n))
+    by_key = {(r["inputs"]["lesson_id"], r["inputs"]["key"]): r for r in rows}
+    if kept is None or refresh:
+        chosen = stratified_sample(rows, n)
+        samples.setdefault(split, {})[str(n)] = [{"lesson_id": r["inputs"]["lesson_id"], "key": r["inputs"]["key"]} for r in chosen]
+        SAMPLE_FILE.write_text(json.dumps(samples, indent=1) + "\n")
+        return chosen, {"sample_state": "refreshed" if kept is not None else "frozen now", "sample_missing": 0}
+    found = [by_key[(k["lesson_id"], k["key"])] for k in kept if (k["lesson_id"], k["key"]) in by_key]
+    return found, {"sample_state": "frozen", "sample_missing": len(kept) - len(found)}
+
+
 def stratified_sample(rows: list[dict], n: int) -> list[dict]:
     """``n`` answers for tuning the judge: every answer the reference judge failed (they are rare, and the
     point is to see whether this judge catches them), then passed answers shared out across phase and kind
@@ -307,7 +331,7 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
 
 def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0,
              sample: int = 0, provider: str = "databricks", mode: str = "inline", deployment: str = "",
-             record: Path | None = None, purpose: str = "", judge_version: int = 1) -> dict:
+             record: Path | None = None, purpose: str = "", judge_version: int = 1, refresh_sample: bool = False) -> dict:
     """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers.
 
     ``provider="foundry"`` judges on a Microsoft Foundry deployment (``deployment``; sign in with ``az login`` and set
@@ -353,8 +377,9 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     rows = [r for r in every if split_of(r["inputs"]["lesson_id"]) == split]
     population = {"failed": sum(not r["expectations"]["reference_pass"] for r in rows), "passed": sum(r["expectations"]["reference_pass"] for r in rows)}
     eval_name = f"tutor_prepared_{split}"
-    if sample:  # its own registered dataset, so the next judge version is scored on exactly these answers
-        rows = stratified_sample(rows, sample)
+    sample_note: dict = {}
+    if sample:  # frozen in prepared_sample.json and its own registered dataset: every judge grades exactly these answers
+        rows, sample_note = frozen_sample(rows, split, sample, refresh=refresh_sample)
         eval_name = f"tutor_prepared_{split}_sample"
         datasets[eval_name] = dataset(mlflow, experiment.experiment_id, rows, commit, f"{split}_sample")
     seen: list[dict] = []
@@ -449,7 +474,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             f"**Question:** can {model_short} stand in as the judge of the tutor's prepared answers? "
             + (purpose or "A candidate judge, compared with the reference on the same answers."),
             f"**What ran:** {len(rows)} prepared answers from the {split} split"
-            + (" (a stratified sample: every reference failure, the rest spread by phase and kind)" if sample else "")
+            + (" (the frozen stratified sample: every reference failure, the rest spread by phase and kind; prepared_sample.json)" if sample else "")
             + f", judged by {judge_model} on {'Databricks' if provider == 'databricks' else 'Microsoft Foundry'}"
             + (" as batch jobs at half price" if mode == "batch" else ", one call per answer")
             + f", with checklist version {judge_version} of the registered judge prompt"
@@ -470,6 +495,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "judge_prompt": f"{prompts['tutor_prepared_judge'].name}/{prompts['tutor_prepared_judge'].version}",
             "dataset": mlflow_names.dataset_name(eval_name), "split": split, "records": len(rows), "sample": sample or "all",
             "split_rule": "lessons dealt 60/20/20 within each phase, frozen in prepared_splits.json", "git_commit": commit,
+            **({"sample_rule": "every reference failure + passes by phase and kind, frozen in prepared_sample.json", **sample_note} if sample else {}),
             "strata_missing": len(empty), "kappa_gate": KAPPA_GATE, "app_model": getattr(model, "name", ""),
             "price_per_mtok": ("{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?")))
                                if provider == "databricks" else "{}/{} input/output, {} (Azure retail prices)".format(

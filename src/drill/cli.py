@@ -607,6 +607,7 @@ def tutor_prepared_eval_cmd(
     record: Path = typer.Option(None, "--record", help="Also write the run's verdicts to this file, for a notebook to replay."),
     purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this candidate is being tried."),
     judge_version: int = typer.Option(1, "--judge-version", help="The checklist: 1 (in use) or 2 (correct split in two, plain moved to code, concise and tone added)."),
+    refresh_sample: bool = typer.Option(False, "--refresh-sample", help="Draw the sample again and freeze the new one (older runs then compare only on the answers both have)."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os
@@ -622,7 +623,7 @@ def tutor_prepared_eval_cmd(
         raise typer.Exit(1)
     console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
     result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample, provider=provider, mode=mode,
-                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version)
+                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version, refresh_sample=refresh_sample)
     n = result["numbers"]
     console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
     if result["strata_missing"]:
