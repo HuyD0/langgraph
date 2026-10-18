@@ -31,6 +31,21 @@ CHECKS = {
             why="Without past examples that have good answers, you can't test it. A missing test set "
                 "stops the project later anyway, so fix it first."),
     ],
+    "team_roles": [
+        ask("The assistant has been live for three months and nobody has looked at it since launch. "
+            "What is the most likely problem?",
+            ["Its answers have drifted unnoticed", "It has stopped using tokens", "Its code has rusted"],
+            answer=0,
+            clue="What changes after launch even when the code doesn't?",
+            why="The questions, the documents and even the model change after launch. With nobody "
+                "watching, answers drift or break and nobody notices until a user does."),
+        ask("The budget for model calls needs raising. In a RACI, who is usually Accountable?",
+            ["The product manager or finance owner", "Every engineer on the team", "Whoever notices first"],
+            answer=0,
+            clue="Accountable means the one person who makes the final call.",
+            why="One person makes the call on money, usually the product manager or the finance "
+                "owner, with engineers Responsible for the numbers and Consulted on the impact."),
+    ],
     "gather_requirements": [
         ask("You talked to the HR advisors and the owner, but not the privacy team. Which requirement are you most likely missing?",
             ["Where personal data may go", "Which questions it answers", "Who will use the assistant"],
