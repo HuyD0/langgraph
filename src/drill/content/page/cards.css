@@ -1,7 +1,7 @@
 /* ---------- picture cards (page/cards.js): a lesson's Learn step as short cards, one idea and one picture each.
    Surfaces come from the card and aside tokens, so Dusk gets its glass with no rule of its own. A "solid" tile
    is filled; a "dashed" one has a dashed edge with ruler ticks. Shape, never a new colour, tells two kinds
-   of thing apart. An open pillar (a question nobody answers yet) uses the hint colours: "look here". */
+   of thing apart: dashed is the measured kind (a how-well requirement or criterion), and nothing else. An open pillar (a question nobody answers yet) uses the hint colours: "look here". */
 .pcards { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .pcard { gap: 12px; padding: 16px; }
 .pcard > h3 { margin: 0; font: 800 21px/1.2 var(--head); letter-spacing: 0; text-transform: none; color: var(--fg); text-wrap: balance; }
@@ -27,14 +27,8 @@
 .pc-ph { display: grid; gap: 2px; }
 .pc-ph b { font: 800 16px var(--head); }
 .pc-ph span { font-size: 13px; line-height: 1.35; color: var(--muted); }
-.pc-key { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
-.pc-key span { display: inline-flex; align-items: center; gap: 6px; }
-.pc-key i { width: 12px; height: 10px; border-radius: 2px; }
-.pc-key i.solid { background: var(--fg); }
-.pc-key i.dashed { border: 1px dashed var(--muted); }
 
-/* a sort by one question (the question above, then each row's answer and pile), and the cross-out test (the line
-   struck through, what happens, and what that makes it) share the row */
+/* a sort by one question: the question above, then each row's answer and the pile it lands in */
 .pc-ask { font-weight: 600; }
 .pc-thing { font-weight: 600; }
 .pc-row { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); }
@@ -98,3 +92,10 @@
 .pc-steps.decide li:last-child .pc-dot { background: var(--fg); color: var(--bg); }
 .pc-steps li > div > b { display: block; }
 .pc-steps li > div > span { font-size: 14px; color: var(--muted); }
+
+/* a terms list: an icon, the term, what it means; no order and nothing judged */
+.pc-terms { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pc-terms li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); }
+.pc-terms .ic { width: 22px; height: 22px; margin-top: 1px; justify-self: center; color: var(--fg); }
+.pc-terms li > div > b { display: block; }
+.pc-terms li > div > span { font-size: 14px; color: var(--muted); }

@@ -1,4 +1,4 @@
-"""More Check questions for RAG with Vector Search (modules/rag.py). See checks/__init__.py."""
+"""More Check questions for RAG and search (modules/rag.py). See checks/__init__.py."""
 from drill.content.model import ask
 
 CHECKS = {
@@ -216,7 +216,7 @@ CHECKS = {
             clue="Look for the part that pulls files in on a schedule and prepares them for search.",
             why="Azure AI Search indexers pull the files in on a schedule, cut them into chunks and make "
                 "the embeddings for you."),
-        ask("Your team runs both: product tables in Databricks Vector Search, SharePoint files in Azure "
+        ask("Your team runs both: product tables in Databricks AI Search, SharePoint files in Azure "
             "AI Search. How do you compare them fairly?",
             ["Ask users which one they like", "Use one eval set for both", "Compare their monthly bills"],
             answer=1,

@@ -112,3 +112,19 @@ def allowed_to_look(split, looks_so_far, big_decision=False):
     if split == "test":
         return looks_so_far == 0
     return big_decision and looks_so_far == 0
+
+
+def rank_auc(scores, passed):
+    """The chance a passing draft scores higher than a failing one (ties count half)."""
+    pos = [s for s, p in zip(scores, passed) if p]
+    neg = [s for s, p in zip(scores, passed) if not p]
+    if not pos or not neg:
+        return None
+    wins = 0.0
+    for a in pos:
+        for b in neg:
+            if a > b:
+                wins += 1
+            elif a == b:
+                wins += 0.5
+    return wins / (len(pos) * len(neg))

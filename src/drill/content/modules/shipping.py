@@ -295,7 +295,7 @@ lesson(MODULE, 'promote_model',
              source('MLflow custom LLM judges', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/custom-judges/')],
     learn=[
         "A **model registry** (such as MLflow's on Databricks) stores every trained version with its metrics. **Aliases** like `@champion` point at the version serving traffic.",
-        'Promote a **challenger** (a newer version that wants the job) only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
+        'Promote a **challenger** (a newer version that wants the job), which means pointing the alias at it, only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
         "The **LLM judge** that scores your champion and challenger (a model that grades answers) needs the same care. A judge is really two things, its grading prompt and the model that runs it, and changing either can change any grade. So keep the pair together: save each prompt-and-model pair as one version in the **MLflow Prompt Registry**, with the model recorded on the version, and give the judge its own `@champion` and `@challenger`, separate from your model's. A new judge version is a challenger like any other: its score is how often it agrees with grades people gave, it earns `@challenger` by beating the champion judge by your minimum gain on the dev set, and it takes `@champion` only after one check on the test set.",
     ],
     example=example('Loading by alias with MLflow', """import mlflow

@@ -1,9 +1,9 @@
-"""RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
+"""RAG with Databricks AI Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
-                                 rewrite, sortby, sortrow, source, stack, steps)
+                                 rewrite, sortby, sortrow, source, stack, steps, terms)
 
-MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
+MODULE = module('rag', 'RAG and search', 'Chunking, indexing and retrieval on Databricks AI Search (formerly Vector Search) or Azure AI Search, then measuring which settings actually work.')
 
 lesson(MODULE, 'what_embeddings_are',
     title='What an embedding is: meaning as a place',
@@ -153,7 +153,7 @@ lesson(MODULE, 'chunk_text',
         say='"I cut the text into small [[chunks|tables|keys::These are the pieces you search and put in the prompt.]] that [[overlap|alternate|shrink::Each piece repeats the end of the one before.]] a little. That way a sentence cut at the edge still shows up [[whole|twice|shorter::You want the full sentence in at least one piece.]] in one of them."',
         classic='longest_unique_substring',
     ),
-    stack=stack('Databricks Vector Search: index a table of chunks', """vsc.create_delta_sync_index(
+    stack=stack('Databricks AI Search: index a table of chunks', """client.create_delta_sync_index(
     endpoint_name="vs-endpoint", index_name="main.support.docs_index",
     source_table_name="main.support.doc_chunks", pipeline_type="TRIGGERED",
     primary_key="chunk_id", embedding_source_column="text",
@@ -411,8 +411,8 @@ top = scored[:k]"""),
         say='"I give every document a [[score|label|summary::A number for how well it matches the question.]] and keep the best k. When two tie, the [[earlier|shorter|later::Look at where each document sits in the list.]] one wins, so I get the same results every time."',
         classic=None,
     ),
-    stack=stack('Databricks Vector Search: hybrid search', """from databricks.vector_search.client import VectorSearchClient
-index = VectorSearchClient().get_index(endpoint_name="vs-endpoint", index_name="main.support.docs_index")
+    stack=stack('Databricks AI Search: hybrid search', """from databricks.ai_search.client import AISearchClient
+index = AISearchClient().get_index(endpoint_name="vs-endpoint", index_name="main.support.docs_index")
 results = index.similarity_search(
     query_text=question, columns=["chunk_id", "text"],
     query_type="hybrid", num_results=5,
@@ -983,11 +983,11 @@ lesson(MODULE, 'embedding_blind_spots',
     cards=[
         card('Some text is harder to find',
              'An embedding model turns text into numbers so search can find similar meaning. It learned from public text, so some kinds of text match worse than others.',
-             picture=sortby('Where embedding models often stumble',
-                            sortrow('Jargon and codes', 'Product codes, policy numbers, internal names', 'Harder to match', icon='tag'),
-                            sortrow('Other languages', 'A question in French, documents in English, or a mix', 'Weaker', icon='chat'),
-                            sortrow('Very short or very long text', 'A one-line FAQ beside a ten-page policy', 'Uneven', icon='book'),
-                            sortrow('People', 'Names, genders and backgrounds linked to jobs or roles', 'Can be unfair', icon='people'))),
+             picture=terms(('tag', 'Jargon and codes', 'Product codes, policy numbers, internal names: harder to match'),
+                           ('chat', 'Other languages', 'A question in French, documents in English, or a mix: weaker'),
+                           ('book', 'Very short or very long text', 'A one-line FAQ beside a ten-page policy: uneven'),
+                           ('people', 'People', 'Names, genders and backgrounds linked to jobs or roles: can be unfair'),
+                           lead='Where embedding models often stumble:')),
         card('Test on your own hard questions',
              'An overall recall number can hide a group that fails.',
              picture=steps(('listcheck', 'Group your test questions', 'Plain, jargon and codes, other languages, about people.'),
@@ -1321,7 +1321,7 @@ gift-card       d40         (not in top 20)                        out of reach"
         say='"A reranker can only [[reorder|replace|find::It shuffles what is already there.]] what retrieval found. So first I count the questions where the right document was [[missing|ranked first|duplicated::No reranker can fix a document that never came back.]]. Then I count helped, hurt and no change."',
         classic=None,
     ),
-    stack=stack('Databricks Vector Search: retrieve wide, rerank, keep a few', """results = index.similarity_search(query_text=question, columns=["id", "text"], num_results=20)
+    stack=stack('Databricks AI Search: retrieve wide, rerank, keep a few', """results = index.similarity_search(query_text=question, columns=["id", "text"], num_results=20)
 candidates = [row[0] for row in results["result"]["data_array"]]
 reranked = rerank(question, candidates)          # your reranker: a model that scores each (question, chunk) pair, or an LLM
 mlflow.log_metric("out_of_reach", int(gold not in candidates))"""),
@@ -1840,7 +1840,7 @@ Return `[chunk_size, k]` from that row, or `None` if no row is fast enough.""",
             intro='Read the experiment results the way a reviewer does: drop what breaks the latency budget, then pick the best of the rest.',
             explain='You picked a config with the rule written down first: best answer quality within the latency budget. You dropped every row slower than the budget, kept the best quality of the rest, and broke a tie on cost. And you only trusted a comparison where one or two settings changed and everything else stayed fixed.',
             pattern='Fast enough, best quality, then cheapest',
-            realworld='When you tune a RAG app, a grid search gives you a table of configs. Settle the latency budget with the product owner first, cross out the slow rows, and ship the best quality that is left.',
+            realworld='When you tune a RAG app, a grid search gives you a table of configs. Settle the latency budget with the product manager first, cross out the slow rows, and ship the best quality that is left.',
             asks=[
                 ask('Which configs are too slow for the 1500 ms budget?', ['Only 1024, 5', 'Both 1024 rows', 'None of them'], answer=1,
                     evidence=evidence('code', title='Every combination of two settings', text="""budget: p95 under 1500 ms
@@ -2001,7 +2001,7 @@ fused:   d1, d3, d9, d7"""),
         say='"Keyword and vector scores can\'t be compared, so I merge the results by [[rank|score|length::Where a document sits in each list.]] instead. A document gets points from [[every list|the first list|the best score::Both searches count.]], so ones found by both rise to the top."',
         classic=None,
     ),
-    stack=stack('Databricks Vector Search: hybrid query', """results = index.similarity_search(
+    stack=stack('Databricks AI Search: hybrid query', """results = index.similarity_search(
     query_text="error E-4021 on checkout",
     columns=["chunk_id", "text"],
     query_type="hybrid",
@@ -2022,7 +2022,7 @@ In each list, a document gets `1 / (smoothing + rank)` points, where rank is its
 Return every document id, highest total first. If two totals are equal, put those ids in alphabetical order.""",
         pattern='Score by position, add across lists, sort by score with a tie-break.',
         target='one step per ranked item, then a sort',
-        realworld='Keyword search finds exact terms (error codes, product names); vector search finds meaning. Fusing them by rank avoids comparing scores on different scales. Databricks Vector Search does hybrid search with `query_type="hybrid"`.',
+        realworld='Keyword search finds exact terms (error codes, product names); vector search finds meaning. Fusing them by rank avoids comparing scores on different scales. Databricks AI Search does hybrid search with `query_type="hybrid"`.',
         starter="""def rrf(rankings, smoothing):
     # your code here
     pass
@@ -2118,13 +2118,13 @@ pairs.sort()
 )
 
 lesson(MODULE, 'vector_index_setup',
-    title='Databricks Vector Search: endpoints, indexes and sync',
+    title='Databricks AI Search: endpoints, indexes and sync',
     checked='2026-10-15',
     sources=[source('Create AI Search endpoints and indexes', 'https://docs.databricks.com/aws/en/ai-search/create-ai-search'), source('Databricks AI Search cost guide', 'https://docs.databricks.com/aws/en/ai-search/cost-management')],
     learn=[
-        'Databricks Vector Search (now called Databricks AI Search) has two parts. An **endpoint** is the serving compute: machines kept running to answer searches. An **index** is the searchable copy of your chunks, and it sits on an endpoint.',
+        'Databricks AI Search (called Databricks Vector Search until 2026) has two parts. An **endpoint** is the serving compute: machines kept running to answer searches. An **index** is the searchable copy of your chunks, and it sits on an endpoint.',
         'The index lives in **Unity Catalog**, Databricks\' catalog of data and who may use it. So it has a three-part name, like `main.support.docs_index`.',
-        'The Python library (the package you install) is now `databricks-ai-search`, used as `from databricks.ai_search.client import AISearchClient`. The code on this page still uses the older `databricks-vectorsearch` library and its `VectorSearchClient`. That one keeps working, but it is **deprecated**: kept only so old code does not break.',
+        'The Python library (the package you install) is `databricks-ai-search`, used as `from databricks.ai_search.client import AISearchClient`. The older `databricks-vectorsearch` library and its `VectorSearchClient` still work but are **deprecated**: kept only so old code does not break. You will meet both names in older code.',
         'There are two endpoint types. **Standard** answers in tens of milliseconds (thousandths of a second). **Storage-optimized** takes a few hundred milliseconds, but costs much less per vector when you have a lot of them. It is a good fit from around 10 million vectors.',
         'There are two index types. A **Delta Sync** index follows a Delta table (a Databricks table) and keeps itself up to date. A **Direct Vector Access** index has no source table: you write the vectors yourself through the SDK (the Python library) or the API.',
         'On a Standard endpoint, a Delta Sync index needs **Change Data Feed** turned on for its table. That setting keeps a log of which rows changed, so the index only updates those. Tables with **row tracking** (a stable id for every row) already have it.',
@@ -2153,16 +2153,16 @@ SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
     ),
     angle=angle(
         pattern='Rules checked in a fixed order',
-        text='The big idea: setting up Databricks Vector Search is four choices, and each one follows from a plain fact about your data. Your code asks the questions in order. Is the source a Delta table? Then Delta Sync, otherwise Direct Vector Access. Do you already have embeddings? Then self-managed, otherwise managed (and Direct Vector Access is always self-managed). Ten million vectors or more? Then storage-optimized. Last comes sync: none for Direct Vector Access, triggered on storage-optimized, and continuous only when the data must be fresh within 5 minutes. The order matters, because an earlier answer can rule out a later option.',
+        text='The big idea: setting up Databricks AI Search is four choices, and each one follows from a plain fact about your data. Your code asks the questions in order. Is the source a Delta table? Then Delta Sync, otherwise Direct Vector Access. Do you already have embeddings? Then self-managed, otherwise managed (and Direct Vector Access is always self-managed). Ten million vectors or more? Then storage-optimized. Last comes sync: none for Direct Vector Access, triggered on storage-optimized, and continuous only when the data must be fresh within 5 minutes. The order matters, because an earlier answer can rule out a later option.',
         say='"I pick the index type from where the data lives, the endpoint type from [[how many vectors|how many users|how long the text::Storage-optimized pays off around ten million of them.]] there are, and the sync mode from how fresh answers must be. [[Continuous|Triggered|Manual::The mode that runs all the time.]] sync only when minutes matter, because it [[costs more|is slower|loses data::A streaming job never stops.]]."',
         classic=None,
     ),
-    stack=stack('Databricks Vector Search: endpoint, index, sync', """from databricks.vector_search.client import VectorSearchClient
+    stack=stack('Databricks AI Search: endpoint, index, sync', """from databricks.ai_search.client import AISearchClient
 
-vsc = VectorSearchClient()
-vsc.create_endpoint(name="vs-endpoint", endpoint_type="STANDARD")
+client = AISearchClient()
+client.create_endpoint(name="vs-endpoint", endpoint_type="STANDARD")
 
-index = vsc.create_delta_sync_index(
+index = client.create_delta_sync_index(
     endpoint_name="vs-endpoint",
     index_name="main.support.docs_index",
     source_table_name="main.support.doc_chunks",
@@ -2189,12 +2189,12 @@ Return a list of four choices, in this order:
 4. **Sync**: `"none"` for direct access. `"triggered"` on a storage-optimized endpoint. Otherwise `"continuous"` if `fresh_within_minutes` is 5 or less, else `"triggered"`.""",
         pattern='A few if / else checks in a fixed order, where an earlier answer can decide a later one.',
         target='a few checks, the same however big the data is',
-        realworld='The four choices you make before creating a Databricks Vector Search index. Getting sync wrong is the usual cost surprise: Continuous runs a streaming job all day.',
+        realworld='The four choices you make before creating a Databricks AI Search index. Getting sync wrong is the usual cost surprise: Continuous runs a streaming job all day.',
         practice=practice(
-            intro='Plan a Databricks Vector Search index the way a reviewer does: read the facts about the data, then make the four choices in order.',
-            explain='Setting up Databricks Vector Search is four choices, and each one followed from a plain fact about the data: a Delta table means Delta Sync, no embeddings yet means managed, ten million vectors or more means storage-optimized. You chose sync last, because an earlier answer can rule an option out: storage-optimized only does Triggered, and Continuous is only worth its cost when minutes matter.',
+            intro='Plan a Databricks AI Search index the way a reviewer does: read the facts about the data, then make the four choices in order.',
+            explain='Setting up Databricks AI Search is four choices, and each one followed from a plain fact about the data: a Delta table means Delta Sync, no embeddings yet means managed, ten million vectors or more means storage-optimized. You chose sync last, because an earlier answer can rule an option out: storage-optimized only does Triggered, and Continuous is only worth its cost when minutes matter.',
             pattern='One fact decides each choice, in order',
-            realworld="Before you create a Databricks Vector Search index, you'll answer four questions: where the data lives, who makes the embeddings, how many vectors there are and how fresh answers must be. Getting the sync mode right keeps the bill from surprising you.",
+            realworld="Before you create a Databricks AI Search index, you'll answer four questions: where the data lives, who makes the embeddings, how many vectors there are and how fresh answers must be. Getting the sync mode right keeps the bill from surprising you.",
             asks=[
                 ask('The chunks sit in a Delta table. Which index type?', ['Delta Sync', 'Direct Vector Access'], answer=0,
                     evidence=evidence('code', title='main.support.doc_chunks', text="""needs = {
@@ -2231,10 +2231,10 @@ Return a list of four choices, in this order:
                     clue='Around ten million vectors, the cost of each vector matters more than speed.',
                     why='At ten million vectors or more, storage-optimized pays off: a search takes a few hundred milliseconds instead of tens, but each vector costs much less.',
                     wrong=['Standard is faster, but at this size it costs much more per vector.', None]),
-                ask('The index is on a storage-optimized endpoint, and the product owner wants answers fresh within 1 minute. Which sync mode?', ['Continuous: fresh within moments', 'Triggered: sync on a schedule', 'None: no sync needed'], answer=1,
+                ask('The index is on a storage-optimized endpoint, and the product manager wants answers fresh within 1 minute. Which sync mode?', ['Continuous: fresh within moments', 'Triggered: sync on a schedule', 'None: no sync needed'], answer=1,
                     alone=True,
                     clue='Check which sync modes a storage-optimized endpoint offers.',
-                    why='Storage-optimized endpoints only do Triggered, so Continuous is ruled out. Run sync often, and tell the product owner what is possible.',
+                    why='Storage-optimized endpoints only do Triggered, so Continuous is ruled out. Run sync often, and tell the product manager what is possible.',
                     wrong=['Continuous isn\'t offered on storage-optimized endpoints, however fresh the answers need to be.', None, 'None is only for Direct Vector Access, where there is no table to sync from.']),
             ],
         ),
@@ -2364,18 +2364,18 @@ else:
 )
 
 lesson(MODULE, 'pick_search_service',
-    title='Databricks Vector Search or Azure AI Search?',
+    title='Databricks AI Search or Azure AI Search?',
     checked='2026-10-12',
-    sources=[source('Azure AI Search agentic retrieval', 'https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-overview'), source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'), source('Create Vector Search endpoints and indexes', 'https://docs.databricks.com/aws/en/vector-search/create-vector-search')],
+    sources=[source('Azure AI Search agentic retrieval', 'https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-overview'), source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'), source('Create AI Search endpoints and indexes', 'https://docs.databricks.com/aws/en/ai-search/create-ai-search')],
     learn=[
-        'Many companies have both Databricks Vector Search and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now the engine under Foundry IQ, Microsoft\'s knowledge layer for agents). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
-        'Databricks Vector Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: Agent Bricks, Model Serving, or the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
+        'Many companies have both **Databricks AI Search** (formerly Databricks Vector Search) and **Azure AI Search**, Microsoft\'s search service (once called Azure Cognitive Search, and now the engine under Foundry IQ, Microsoft\'s knowledge layer for agents). Both can do vector, keyword and hybrid search. Neither is "the right one". The choice is mostly about **where the data lives and where the app runs**.',
+        'Databricks AI Search fits when the documents are already in Delta tables in Unity Catalog. You get Unity Catalog grants and **lineage** (a record of which table fed which index) on the index, and the index can sync straight from a table. It also fits when the agent runs on Databricks: Agent Bricks, Model Serving, or the ready-made MCP server for it. MCP (Model Context Protocol) is a standard way for an agent to call tools.',
         'Azure AI Search fits when the content sits in Azure Blob Storage, SharePoint or other Azure sources. Its **indexers** pull the files in on a schedule, cut them into chunks and make the embeddings for you (Microsoft calls this integrated vectorization). It also fits when the app runs outside Databricks, such as an Azure AI Foundry or Azure OpenAI app or a Copilot-style app, or when access must go through Microsoft Entra ID (Microsoft\'s sign-in service) and its role-based access control (RBAC: roles that say who may do what), or through private endpoints (a private network address, so traffic never crosses the public internet).',
         'Azure AI Search adds two extras. The **semantic ranker** is a reranker that re-scores the top results by meaning. **Agentic retrieval** splits a hard question into smaller searches and merges the results, using **knowledge bases**: these are generally available in REST API version 2026-04-01, while query planning is still in preview. Pricing is by tier, paid in **search units** (blocks of capacity), with a newer serverless option in preview. The semantic ranker and agentic retrieval are billed on top.',
-        'Running both is common: curated tables in Databricks Vector Search, SharePoint documents in Azure AI Search. Keep **one evaluation set** (see "Measuring retrieval") so you compare them on the same questions.',
+        'Running both is common: curated tables in Databricks AI Search, SharePoint documents in Azure AI Search. Keep **one evaluation set** (see "Measuring retrieval") so you compare them on the same questions.',
     ],
     example=example('Two common setups side by side', """curated tables in Unity Catalog
-  -> Databricks Vector Search -> agent on Model Serving
+  -> Databricks AI Search -> agent on Model Serving
 
 policy documents in SharePoint
   -> Azure AI Search indexer -> app in Azure AI Foundry
@@ -2383,17 +2383,17 @@ policy documents in SharePoint
 same eval questions -> compare recall@k for both"""),
     check=question(
         'The policy documents live in SharePoint and the chat app runs in Azure AI Foundry. Which service fits more naturally?',
-        ['Databricks Vector Search', 'Azure AI Search', 'Neither can do this'],
+        ['Databricks AI Search', 'Azure AI Search', 'Neither can do this'],
         answer=1,
         why='An Azure AI Search indexer can pull from SharePoint on a schedule, and the app already runs in Azure, so there is no copy into Delta tables to keep in step.',
     ),
     angle=angle(
         pattern='Count the points for each side, then compare',
-        text='The big idea: the choice follows where the data lives and where the app runs, not which tool is "better". Your code walks through the facts once. A fact on the Databricks list gives Databricks Vector Search a point, a fact on the Azure list gives Azure AI Search a point, and anything else is ignored. More points wins. A tie is an honest answer too: test both on the same eval set and let the numbers decide.',
-        say='"I put the index [[next to the data|in the cheapest place|where the model is::Where do the documents already live?]] and the app. Delta tables and agents on Databricks point to Databricks Vector Search; SharePoint, Blob and apps in Azure point to [[Azure AI Search|Genie|Lakebase::Microsoft\'s search service.]]. If it is close, I test both on [[one eval set|live traffic|a demo::The same questions for both.]]."',
+        text='The big idea: the choice follows where the data lives and where the app runs, not which tool is "better". Your code walks through the facts once. A fact on the Databricks list gives Databricks AI Search a point, a fact on the Azure list gives Azure AI Search a point, and anything else is ignored. More points wins. A tie is an honest answer too: test both on the same eval set and let the numbers decide.',
+        say='"I put the index [[next to the data|in the cheapest place|where the model is::Where do the documents already live?]] and the app. Delta tables and agents on Databricks point to Databricks AI Search; SharePoint, Blob and apps in Azure point to [[Azure AI Search|Genie|Lakebase::Microsoft\'s search service.]]. If it is close, I test both on [[one eval set|live traffic|a demo::The same questions for both.]]."',
         classic=None,
     ),
-    stack=stack('Same question, two services', """# Databricks Vector Search
+    stack=stack('Same question, two services', """# Databricks AI Search
 results = index.similarity_search(
     query_text="how many days of annual leave?",
     columns=["id", "text"],
@@ -2421,41 +2421,41 @@ results = search_client.search(
 
 - `facts`: a list of short strings about your project, like `["data in delta", "agent on databricks", "docs in sharepoint"]`.
 
-These facts give Databricks Vector Search a point each: `"data in delta"`, `"need uc grants"`, `"agent on databricks"`, `"sync from table"`.
+These facts give Databricks AI Search a point each: `"data in delta"`, `"need uc grants"`, `"agent on databricks"`, `"sync from table"`.
 
 These facts give Azure AI Search a point each: `"docs in sharepoint"`, `"docs in blob"`, `"app outside databricks"`, `"need semantic ranker"`, `"need entra rbac"`.
 
 Any other string is ignored.
 
-Return a list of three things: `[choice, databricks_points, azure_points]`. The choice is `"databricks vector search"` if Databricks has more points, `"azure ai search"` if Azure has more, and `"either: test both on your eval set"` if they are equal.""",
+Return a list of three things: `[choice, databricks_points, azure_points]`. The choice is `"databricks ai search"` if Databricks has more points, `"azure ai search"` if Azure has more, and `"either: test both on your eval set"` if they are equal.""",
         pattern='Count matches into two totals in one pass, then compare them.',
         target='one pass over the facts, then one comparison',
         realworld='A quick, honest way to frame the choice in a design review: list the facts, see which side they point to, and treat a tie as a reason to measure.',
         practice=practice(
-            intro='Weigh up Databricks Vector Search and Azure AI Search the way a design review does: see which side each fact points to, then decide.',
+            intro='Weigh up Databricks AI Search and Azure AI Search the way a design review does: see which side each fact points to, then decide.',
             explain='The choice followed where the data lives and where the app runs, not which tool is "better". You gave each fact to the side it points to, ignored the ones that point nowhere, and let the bigger side win. A tie, or a single shiny feature, was a reason to test both on one eval set.',
             pattern='Put the index where the data lives',
-            realworld="In a design review, someone will ask why you chose Databricks Vector Search or Azure AI Search. Point to where the documents live and where the app runs. If it's a tie, offer to test both on one eval set.",
+            realworld="In a design review, someone will ask why you chose Databricks AI Search or Azure AI Search. Point to where the documents live and where the app runs. If it's a tie, offer to test both on one eval set.",
             asks=[
-                ask('Which service does "docs in sharepoint" point to?', ['Databricks Vector Search', 'Azure AI Search'], answer=1,
+                ask('Which service does "docs in sharepoint" point to?', ['Databricks AI Search', 'Azure AI Search'], answer=1,
                     evidence=evidence('code', title='The project facts', text="""facts = [
   "data in delta",
   "agent on databricks",
   "docs in sharepoint",
 ]"""),
                     clue='Which service has indexers that pull files in from Microsoft sources on a schedule?',
-                    why='An Azure AI Search indexer can pull SharePoint files in, cut them into chunks and make the embeddings. Databricks Vector Search would need them copied into a Delta table first.',
+                    why='An Azure AI Search indexer can pull SharePoint files in, cut them into chunks and make the embeddings. Databricks AI Search would need them copied into a Delta table first.',
                     wrong=['It would need the files copied into a Delta table first. Which one reads SharePoint directly?', None]),
-                ask('Taking all three facts together, which service do they point to?', ['Databricks Vector Search', 'Azure AI Search', 'Either: test both on one eval set'], answer=0,
+                ask('Taking all three facts together, which service do they point to?', ['Databricks AI Search', 'Azure AI Search', 'Either: test both on one eval set'], answer=0,
                     evidence=evidence('code', title='The project facts', text="""facts = [
   "data in delta",
   "agent on databricks",
   "docs in sharepoint",
 ]"""),
                     clue='Two facts are about where data and agents already live; one is about SharePoint.',
-                    why='Delta tables and an agent on Databricks give Databricks Vector Search two points; SharePoint gives Azure AI Search one. Two beats one.',
+                    why='Delta tables and an agent on Databricks give Databricks AI Search two points; SharePoint gives Azure AI Search one. Two beats one.',
                     wrong=['SharePoint is one point for Azure, but the other two facts point the other way.', None, 'It is only a tie when both sides have the same number of points.']),
-                ask('A new project has these facts. What is the honest answer?', ['Databricks Vector Search, for the grants', 'Azure AI Search, for Entra ID access', 'Either: test both on one eval set'], answer=2,
+                ask('A new project has these facts. What is the honest answer?', ['Databricks AI Search, for the grants', 'Azure AI Search, for Entra ID access', 'Either: test both on one eval set'], answer=2,
                     evidence=evidence('code', title='Another project', text="""facts = [
   "need uc grants",
   "need entra rbac",
@@ -2467,7 +2467,7 @@ Return a list of three things: `[choice, databricks_points, azure_points]`. The 
                 ask('Back on the first project, what do you say?', ['Agree: the semantic ranker gives better results', 'Keep them in Databricks, where the agent runs too', 'Copy the tables into both services, to be safe'], answer=1,
                     evidence=evidence('claim', who='A teammate said', text='"Azure AI Search has the semantic ranker, so it\'s the better product. Let\'s move our curated Delta tables into it."'),
                     clue='The choice follows where the data lives and where the app runs, not which tool has the nicest feature.',
-                    why='A feature is one point, not the whole answer. Curated tables in Unity Catalog with an agent on Databricks point to Databricks Vector Search; if the ranker might matter, the eval set will show it.',
+                    why='A feature is one point, not the whole answer. Curated tables in Unity Catalog with an agent on Databricks point to Databricks AI Search; if the ranker might matter, the eval set will show it.',
                     wrong=['One feature is one point. Where do the tables live, and where does the agent run?', None, 'Two copies drift apart. Pick one home per source unless you are deliberately comparing.']),
             ],
         ),
@@ -2486,7 +2486,7 @@ Return a list of three things: `[choice, databricks_points, azure_points]`. The 
         elif fact in azure_signs:
             azure_points += 1
     if databricks_points > azure_points:
-        choice = "databricks vector search"
+        choice = "databricks ai search"
     elif azure_points > databricks_points:
         choice = "azure ai search"
     else:
@@ -2495,7 +2495,7 @@ Return a list of three things: `[choice, databricks_points, azure_points]`. The 
 """,
         cases=[
             case(['data in delta', 'agent on databricks', 'docs in sharepoint'],
-                 expected=['databricks vector search', 2, 1], sample=True),
+                 expected=['databricks ai search', 2, 1], sample=True),
             case(['docs in blob', 'app outside databricks', 'need semantic ranker'],
                  expected=['azure ai search', 0, 3]),
             case([], expected=['either: test both on your eval set', 0, 0]),
@@ -2522,7 +2522,7 @@ Return a list of three things: `[choice, databricks_points, azure_points]`. The 
 
     # Step 2: more points wins; equal points means test both.
     if ___:
-        choice = "databricks vector search"
+        choice = "databricks ai search"
     elif azure_points > databricks_points:
         choice = "azure ai search"
     else:
@@ -2561,12 +2561,12 @@ else:
     winner = 'tie'""",
             ],
         ],
-        byhand='The sample facts are "data in delta", "agent on databricks" and "docs in sharepoint". The first two are on the Databricks list, so Databricks has 2 points. "docs in sharepoint" is on the Azure list, so Azure has 1. 2 is more than 1, so return ["databricks vector search", 2, 1].',
+        byhand='The sample facts are "data in delta", "agent on databricks" and "docs in sharepoint". The first two are on the Databricks list, so Databricks has 2 points. "docs in sharepoint" is on the Azure list, so Azure has 1. 2 is more than 1, so return ["databricks ai search", 2, 1].',
         why='One look at each fact, then one comparison at the end.',
         gotchas=[
             [
                 'Say the full name',
-                'Always say "Azure AI Search" or "Databricks Vector Search". A bare "AI Search" could mean either company\'s product.',
+                'Always say "Azure AI Search" or "Databricks AI Search". A bare "AI Search" could mean either company\'s product.',
             ],
             [
                 'Check what is in preview',

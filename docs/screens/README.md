@@ -228,20 +228,25 @@ Tests check every gap.
 
 ![The well-architected review's pillars, with the HR assistant's requirements resting on them](learn-cards-phone-dusk.webp)
 ![The watch-or-measure test: three requirements, how you would check each, and which kind it is](learn-cards-phone-light.webp)
+![The people who decide and guard the HR assistant: a terms list, one role and its job per tile](learn-terms-phone-dusk.webp)
+![Fit for purpose: three vague verdicts crossed out and rewritten as acceptance criteria](learn-terms-phone-light.webp)
 
-**What the learner sees.** Lessons 1.3 (functional and non-functional requirements) and 1.4 (a
-well-architected review) teach Learn as short cards, one idea and one picture each: two piles of
-functional and non-functional requirements, the watch-or-measure test, a sentence cut in two, vague words rewritten, five pillars with
-the requirements resting on them (an empty one marked "?"), a see-saw for a trade-off, and the
-steps from a model's draft to a person's decision.
+**What the learner sees.** *What it does, and how well* (functional and non-functional
+requirements), *A well-architected review* and *Who moves the agent forward* teach Learn as short
+cards, one idea and one picture each: two piles of functional and non-functional requirements, the
+watch-or-measure test, a sentence cut in two, vague words rewritten, five pillars with the
+requirements resting on them (an empty one marked "?"), a see-saw for a trade-off, the steps from a
+model's draft to a person's decision, and a terms list (one named thing per tile, nothing judged)
+for the roles on the team.
 
 **What draws it.** `cardsLearnPane()` and `PC_PIC` (one function per kind of picture) in
 `page/cards.js`; styles `.pc-*` in `page/cards.css`. `learnPane()` hands over when the lesson has
 `cards`. The content is `cards=[card(...)]` in the lesson ([../PAGE.md](../PAGE.md), "Picture cards").
 
 **Change it safely.** Each picture is also written in words for the tutor and the MCP tools
-(`picture_text`), and a test fails if a card names an icon the page doesn't have. Tell two kinds
-apart by `look` (solid or dashed), never by a new colour.
+(`picture_text`), and a test fails if a card names an icon the page doesn't have or one with no
+meaning in `ICONS`. Dashed is the measured kind (a how-well requirement or criterion) and nothing
+else; a sort (`sortby`) is for things judged by one question, a list of definitions is `terms`.
 
 ## A walkthrough of a tool's screens
 

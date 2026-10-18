@@ -53,7 +53,7 @@ Then, if there is at least one token, spend it and send the request (`True`). If
 Return a list of these True/False values, one per request, in order.""",
         pattern='Keep two numbers: the tokens left and the time of the previous request. Before each request, top up for the time that passed, but never above the bucket size.',
         target='one pass over the requests',
-        realworld="Sending requests until the endpoint says 429 wastes calls and slows everyone down. A client-side limiter (LangChain's `InMemoryRateLimiter` is a token bucket) keeps you under the AI Gateway's limit in the first place, while still allowing short bursts.",
+        realworld="Sending requests until the endpoint says 429 wastes calls and slows everyone down. A client-side limiter (LangChain's `InMemoryRateLimiter` is a token bucket) keeps you under the gateway's limit (Unity Gateway, on Databricks) in the first place, while still allowing short bursts.",
         starter="""def token_bucket(request_times, rate, bucket_size):
     # your code here
     pass
