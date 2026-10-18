@@ -17,6 +17,7 @@ authorize_tool
 average_precision
 backoff_delays
 batch_items
+batch_leftovers
 best_run
 best_threshold
 better_option
@@ -52,6 +53,7 @@ decide_release
 dedupe_chunks
 deployment_types
 detect_loop
+disagreement
 dollars_per_success
 embedding_blind_spots
 embedding_cost
@@ -122,6 +124,7 @@ pick_compute
 pick_config
 pick_search_service
 pick_securable
+pick_vector_size
 plan_calls
 plan_gaps
 plan_policy
@@ -129,6 +132,7 @@ policy_violations
 precision_recall
 process_new
 promote_model
+prompt_cache
 prompt_rollout
 provider_versions
 ptu_or_paygo
@@ -137,6 +141,7 @@ recall_at_k
 redact_pii
 replay_tools
 rerank_check
+rescore_candidates
 resolve_prompt
 resolve_variables
 retrieve
@@ -181,6 +186,7 @@ unsupported_runtimes
 upsert_rows
 use_case_card
 use_case_score
+vague_checks
 validate_rows
 variables_outputs
 vector_index_setup
