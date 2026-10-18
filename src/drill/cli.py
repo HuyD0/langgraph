@@ -638,6 +638,29 @@ def tutor_prepared_eval_cmd(
         console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
 
 
+@tutor_app.command("judge-alias")
+def tutor_judge_alias_cmd(
+    alias: str = typer.Argument(..., help="challenger (passed the rule on dev) or champion (the judge in use)."),
+    run_id: str = typer.Option(..., "--run", help="The judge eval run that is the evidence: its judge version gets the alias."),
+    reason: str = typer.Option("", "--reason", help="One sentence: why, for the run's tag and the version's history."),
+    promote: bool = typer.Option(False, "--yes-promote", help="Confirm making it champion: only after its look at test and a person's grades."),
+) -> None:
+    """Point a judge alias (champion or challenger) at the tutor_judge version a judge run tested."""
+    import mlflow
+
+    from drill import tutor_prepared_eval as tpe
+
+    if alias not in ("challenger", "champion"):
+        console.print("[red]The alias is challenger or champion.[/red]")
+        raise typer.Exit(1)
+    if alias == "champion" and not promote:
+        console.print("[red]Promoting to champion replaces the judge in use. Add --yes-promote and a --reason, after its look at test.[/red]")
+        raise typer.Exit(1)
+    tpe.ensure_champion(mlflow)
+    version = tpe.set_judge_alias(mlflow, alias, run_id, reason)
+    console.print(f"{alias} -> {version} (evidence: run {run_id})")
+
+
 @tutor_app.command("prepared-compare")
 def tutor_prepared_compare_cmd(run_a: str = typer.Argument(..., help="The first eval run id."),
                                run_b: str = typer.Argument(..., help="The second eval run id.")) -> None:

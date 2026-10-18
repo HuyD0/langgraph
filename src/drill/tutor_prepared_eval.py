@@ -159,6 +159,69 @@ def register_prompts(mlflow) -> dict[str, Any]:
     return out
 
 
+# -- the judge in the prompt registry: champion and challenger -------------------------------------------
+# A judge is a prompt plus a model. Each judge setup is one version of the registered prompt ``tutor_judge``
+# (the judge prompt, with the model attached as its model config). Aliases say which is which:
+# ``champion`` is the judge in use; ``challenger`` a candidate that passed the rule on dev. A challenger is
+# promoted to champion only after its one look at test and a check against a person's grades.
+JUDGE_REGISTRY = "tutor_judge"
+
+
+def register_judge(mlflow, provider: str, model: str, mode: str = "inline", deployment: str = "", max_tokens: int = 2000):
+    """This judge setup as a version of ``tutor_judge`` (the existing version when nothing changed)."""
+    name, key = _name(JUDGE_REGISTRY), f"{provider}:{model}:{mode}"
+    client = mlflow.MlflowClient()
+    try:
+        found = client.search_prompt_versions(name)
+        for v in getattr(found, "prompt_versions", found) or []:
+            if (v.tags or {}).get("judge") == key and v.template == tp.JUDGE:
+                return v
+    except Exception:  # noqa: BLE001 - not registered yet
+        pass
+    v = mlflow.genai.register_prompt(name=name, template=tp.JUDGE, commit_message=f"judge {key}, from {git_commit()[:7]}",
+                                     model_config={"provider": provider, "model_name": model, "max_tokens": max_tokens})
+    for k, val in {"judge": key, "provider": provider, "mode": mode, "deployment": deployment or model}.items():
+        mlflow.genai.set_prompt_version_tag(name, v.version, k, val)
+    return v
+
+
+def ensure_champion(mlflow):
+    """The judge in use holds ``champion``: the one that judged the prepared answers, until a challenger is promoted."""
+    name = _name(JUDGE_REGISTRY)
+    try:
+        return mlflow.MlflowClient().get_prompt_version_by_alias(name, "champion")
+    except Exception:  # noqa: BLE001 - no champion yet
+        v = register_judge(mlflow, "databricks", tp.JUDGE_MODEL)
+        mlflow.genai.set_prompt_alias(name, "champion", int(v.version))
+        return v
+
+
+def link_judge(mlflow, run_id: str):
+    """Record on a judge run which ``tutor_judge`` version it tested (registering it if needed). Returns the version."""
+    run = mlflow.get_run(run_id)
+    p = run.data.params
+    if "judge_version" in p:
+        return mlflow.MlflowClient().get_prompt_version(_name(JUDGE_REGISTRY), p["judge_version"].rsplit("/", 1)[1])
+    v = register_judge(mlflow, p.get("provider", "databricks"), p["judge_model"], p.get("mode", "inline"), p.get("deployment", ""))
+    client = mlflow.MlflowClient()
+    client.log_param(run_id, "judge_version", f"{v.name}/{v.version}")
+    try:
+        client.link_prompt_version_to_run(run_id, v)
+    except Exception:  # noqa: BLE001 - older stores
+        pass
+    return v
+
+
+def set_judge_alias(mlflow, alias: str, run_id: str, reason: str = "") -> str:
+    """Point ``alias`` at the judge version a run tested, and note on the run why. Returns "name/version"."""
+    v = link_judge(mlflow, run_id)
+    mlflow.genai.set_prompt_alias(v.name, alias, int(v.version))
+    mlflow.genai.set_prompt_version_tag(v.name, v.version, f"{alias}_evidence", run_id)
+    client = mlflow.MlflowClient()
+    client.set_tag(run_id, f"alias_{alias}", f"{v.name}/{v.version}" + (f": {reason}" if reason else ""))
+    return f"{v.name}/{v.version}"
+
+
 def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
     """One record per prepared answer that still matches its lesson, in ``split`` (or all of them)."""
     phase = phases(data)
@@ -404,6 +467,9 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules],
                                        model_id=getattr(model, "model_id", None))
         numbers = summary(seen, population)
+        ensure_champion(mlflow)
+        judge_version = link_judge(mlflow, run.info.run_id)
+        mlflow.set_tag("judge_version", f"{judge_version.name}/{judge_version.version}")
         u = judge_chat["call"].usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
         spent = tp.cost(judge_model, u["input_tokens"], u["output_tokens"]) if provider == "databricks" else u["cost"]
         numbers.update({"judge_rate_limited": float(u["rate_limited"]), "judge_calls": float(u["calls"]), "judge_input_tokens": float(u["input_tokens"]),
@@ -426,7 +492,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         Path(record).write_text(json.dumps({
             "about": f"Prepared answers, {split} split, judged by {judge_model} ({provider}, {mode}): written by MLflow run "
                      f"{run.info.run_id} in experiment '{experiment.name}'. Endpoint and resource names are left out on purpose.",
-            "run_id": run.info.run_id, "params": params, "metrics": numbers,
+            "run_id": run.info.run_id, "run_name": run_name, "reproduce": command, "params": params, "metrics": numbers,
             "batch_jobs": getattr(judge_chat["call"], "jobs", []),
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
                          "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
