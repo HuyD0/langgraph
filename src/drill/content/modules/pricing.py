@@ -1,9 +1,9 @@
-"""Pricing and sizing: What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build, then packaged as a skill you can rerun."""
+"""Pricing and sizing: What an AI task really costs (tokens, embeddings, search, tools and people), what it saves, which deployment to buy and how much capacity it needs, worked out before you build and packaged as a skill you can rerun."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
                                  rewrite, seesaw, sortby, sortrow, source, stack, steps)
 
-MODULE = module('pricing', 'Pricing and sizing', 'What an AI task really costs, what it saves, and how much capacity it needs, worked out before you build, then packaged as a skill you can rerun.')
+MODULE = module('pricing', 'Pricing and sizing', 'What an AI task really costs (tokens, embeddings, search, tools and people), what it saves, which deployment to buy and how much capacity it needs, worked out before you build and packaged as a skill you can rerun.')
 
 lesson(MODULE, 'cost_per_finished_task',
     title='Cost per finished task',
@@ -313,6 +313,8 @@ steps += 300   # steps is now 800""",
 
 lesson(MODULE, 'total_cost',
     title='Total cost of ownership',
+    checked='2026-10-18',
+    sources=[source('Design principles for AI workloads on Azure: Cost Optimization', 'https://learn.microsoft.com/azure/well-architected/ai/design-principles#cost-optimization')],
     learn=[
         "The **total cost of ownership** (TCO) is everything it costs to have the system for its whole life, not just to call the model. It is the cost side of every business case, and the tokens are often the smallest part.",
         "Its variables fall into three groups. **Build**, paid once: people's time, preparing data, building the eval set, the security review. **Run**, paid every month: the model's tokens, hosting and compute, the vector search index, tracing and monitoring, and people checking and redoing answers. **Maintain** (keeping it working), also monthly: re-running evals when the model or prompt changes, updating prompts, and someone on call.",
@@ -857,6 +859,7 @@ lesson(MODULE, 'find_the_price',
     checked='2026-10-18',
     sources=[
         source('Azure pricing calculator', 'https://azure.microsoft.com/en-us/pricing/calculator/'),
+        source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing'),
         source('Databricks pricing', 'https://www.databricks.com/product/pricing'),
         source('Databricks GenAI pricing calculator', 'https://www.databricks.com/product/pricing/genai-pricing-calculator'),
         DBX_MODEL_PRICING,
@@ -870,7 +873,7 @@ lesson(MODULE, 'find_the_price',
                            ('coin', 'Turn it into one task', 'What one finished task uses, times the price of one unit.'),
                            ('pencil', 'Write the source and the date', 'So anyone can check it, and update it when the page changes.'))),
         card('DBUs into dollars',
-             'A **DBU** (Databricks Unit) is the measure Databricks bills by. Multiply the DBUs by the price of one DBU: for model serving, $0.07 in US East.',
+             'A **DBU** (Databricks Unit) is the measure Databricks bills by. Multiply the DBUs by the price of one DBU, which depends on the product, the cloud, the region and your tier: for model serving in US East, $0.07.',
              picture=sortby('What is it in dollars?',
                             sortrow('GTE large embeddings: 1.857 DBU a million tokens', '1.857 times $0.07', '$0.13 a million', icon='coin'),
                             sortrow('AI Search Standard: 4 DBU an hour', '4 times $0.07', '$0.28 an hour', icon='coin'))),
@@ -884,7 +887,7 @@ lesson(MODULE, 'find_the_price',
                             sortrow('Embeddings: $0.02 planned, $0.02 billed', 'On plan', 'Fine', icon='check'),
                             sortrow('Web search: $210 planned, $630 billed', '3 times the plan: check the traces', 'Look into it', look='dashed', icon='alert'))),
     ],
-    example=example('One task, priced from its pages', """# model: $2 in, $10 out per million
+    example=example('One task, priced from its pages', """# Claude Sonnet 5.5: $2 in, $10 out per million
 1800 * 2 / 1000000      # $0.0036 in
 300 * 10 / 1000000      # $0.003 out
 # web search: $14 per 1,000, half a search

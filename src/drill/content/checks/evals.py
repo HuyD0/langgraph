@@ -251,7 +251,7 @@ CHECKS = {
         ask("Kappa is 0.2 and AC1 is 0.25 for your judge against people. What is the honest reading?",
             ["They really disagree; both are low", "AC1 rescues it, so trust the judge", "The rare verdict is causing it"],
             answer=0,
-            clue="Is one number low and the other high, or are both low?",
+            clue="When does AC1 change the reading, and when does it not?",
             why="AC1 helps only when kappa is low but AC1 is high. Both low means the judge and the people really do "
                 "disagree."),
     ],
@@ -327,7 +327,7 @@ CHECKS = {
         ask("Your app runs on one model family. Which judge gives the fairest comparison with a rival app?",
             ["A judge from a third family", "A judge from your app's family", "A judge from the rival's family"],
             answer=0,
-            clue="Which judge has no family of its own in the race?",
+            clue="Would a judge favour answers that sound like its own?",
             why="A judge tends to favour its own family's style. One from neither family, or two judges "
                 "from different families, keeps the comparison fair."),
     ],

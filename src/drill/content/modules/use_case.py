@@ -665,7 +665,7 @@ Return a dict with one entry per person: the list of topics to ask them, in the 
 A topic missing from `owners` goes to `"owner"`, the person who decides, because someone still has to answer it.
 
 No topics gives `{}`.""",
-        pattern='Group items by a key, starting an empty list the first time you see the key.',
+        pattern='Group by a key; start its list the first time you meet it.',
         target='one pass over the topics',
         realworld='Before requirement interviews, teams list the open questions and who can answer each one, so every meeting has an agenda and nobody with a stake is forgotten.',
         practice=practice(
@@ -1366,7 +1366,7 @@ pilot    = {"quality": 0.82, "seconds": 5.5,
                     wrong=[None, 'Fix is for a missed criterion. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed criteria.']),
                 ask('What do you do?', ['Go: raise the cost criterion to $3, still cheaper than by hand', 'Fix: one criterion missed, so cut the cost and retest', 'Stop: it is far over the agreed cost criterion'], answer=2,
                     evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 cost criterion, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost criterion to $3 and call it a go."'),
-                    clue='A close miss on cost is at most 1.2 times its criterion: $2.40 here. And when were the criteria agreed?',
+                    clue='Use the same rule as for speed: how far over $2.00 may a near miss go? And when were the criteria agreed?',
                     why='$3.00 is well past $2.40, so it is not a near miss, and raising the criterion after seeing the result is moving it to fit. If the cost case really has changed, agree new acceptance criteria before the next pilot.',
                     wrong=['Change the criterion once you see the result and the criterion meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
             ],
