@@ -6,6 +6,7 @@ All offline: a SQLite store and LangChain's fake chat model standing in for the 
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import time
 
@@ -126,11 +127,13 @@ def test_the_note_prompt_fences_the_learners_words_and_counts_every_check_questi
 
 
 def test_weekly_note_is_written_once_and_refreshed_only_after_news(store, bank):
-    now = time.time()
+    # A Wednesday noon (UTC), so "a day later" below is still the same week: on a Sunday it wouldn't be,
+    # and a new week rightly gets a new note.
+    now = datetime.datetime(2026, 10, 14, 12, tzinfo=datetime.timezone.utc).timestamp()
     event(store, ANA, "lesson_done", bank.order()[0], now - 600)
     tutor = router(store, "Finished one lesson. Going well. Stuck on nothing yet. Ask what she found hard.", "second note")
     assert team.due(store, now) == [ANA]
-    assert asyncio.run(team.write_due(store, tutor, bank)) == 1
+    assert asyncio.run(team.write_due(store, tutor, bank, now)) == 1
     with store.engine.begin() as conn:
         row = conn.execute(select(summaries)).mappings().one()
     assert row["owner"] == ANA and row["week"] == team.iso_week(now) and row["summary"].startswith("Finished one lesson")

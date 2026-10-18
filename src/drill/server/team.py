@@ -273,13 +273,13 @@ async def write_summary(store: DocStore, router: Any, bank: Any, owner: str, now
     return note
 
 
-async def write_due(store: DocStore, router: Any, bank: Any) -> int:
+async def write_due(store: DocStore, router: Any, bank: Any, now: float | None = None) -> int:
     """One pass: a note for every learner who is due. Returns how many were written."""
     if not getattr(router, "available", False):
         return 0
     written = 0
-    for owner in due(store):
-        if await write_summary(store, router, bank, owner):
+    for owner in due(store, now):
+        if await write_summary(store, router, bank, owner, now):
             written += 1
     return written
 
