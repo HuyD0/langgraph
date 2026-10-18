@@ -330,8 +330,7 @@ def content_stale(
         for row in report["fresh"]:
             what = "content as of" if row.get("as_of") else "checked"
             console.print(f"[dim]fresh[/] {row['id']} ({row['module']}): {what} {row['checked']}")
-    sourced = sum(1 for r in report["fresh"] + report["due"] if r["sources"])
-    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {sourced} checked against sources")
+    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {len(report['never'])} with no sources, which do not age")
     raise typer.Exit(1 if report["due"] else 0)
 
 
@@ -499,13 +498,21 @@ def tutor_prepare_cmd(
     draft_model: str = typer.Option("", "--draft-model", help="Serving endpoint that drafts (default: the strongest Claude)."),
     judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
     workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
+    pack: list[Path] = typer.Option([], "--pack", help="A content pack folder whose lessons to prepare too (default: DRILL_CONTENT_PACKS); repeat for several. Its answers are saved inside the pack, <pack>/prepared/."),
 ) -> None:
-    """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks."""
-    from drill import tutor_prepared as tp
-    from drill.content.build import build_data
+    """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks.
 
-    data = build_data()
-    answers = tp.load()
+    The drafting and judging endpoints default to DRILL_PREPARE_DRAFT_MODEL and DRILL_PREPARE_JUDGE_MODEL.
+    """
+    from drill import tutor_prepared as tp
+    from drill.content import modules
+    from drill.content.build import build_data
+    from drill.content.packs import load_packs
+
+    loaded = modules.load()
+    packs = load_packs(dirs=pack or None, taken={lesson["id"] for m in loaded for lesson in m.lessons})
+    data = build_data(loaded, packs)
+    answers = tp.load(packs=packs)
     work = tp.todo(data, answers, module or None, lesson or None, redo)
     if limit:
         work = work[:limit]
@@ -563,7 +570,7 @@ def tutor_prepare_cmd(
                                "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
-        tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced,
+        tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,
                draft_model=draft_model, judge_model=judge_model)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
@@ -571,7 +578,8 @@ def tutor_prepare_cmd(
         if traced:
             mlflow.log_metrics({"passed": passed, "failed": failed, "pass_rate": passed / max(1, passed + failed), **spend,
                                 "cost_usd": total, "cost_per_answer_usd": total / max(1, len(work))})
-    console.print(f"Done: {passed} passed, {failed} failed. Saved in src/drill/content/prepared/. Rebuild the page to serve them.")
+    where = "src/drill/content/prepared/" + (" and each pack's prepared/" if packs else "")
+    console.print(f"Done: {passed} passed, {failed} failed. Saved in {where}. Rebuild the page to serve them.")
 
 
 @tutor_app.command("prepared")
@@ -579,12 +587,17 @@ def tutor_prepared_cmd(
     sample: int = typer.Option(0, "--sample", help="Show every failed answer and this many passed ones, for a spot check."),
     check: list[str] = typer.Option([], "--check", help="Mark lesson_id/key as checked by you (repeatable)."),
     reject: list[str] = typer.Option([], "--reject", help="Mark lesson_id/key as rejected: never served (repeatable)."),
+    pack: list[Path] = typer.Option([], "--pack", help="A content pack folder to count too (default: DRILL_CONTENT_PACKS); repeat for several."),
 ) -> None:
     """How many prepared answers are ready, failed or out of date; a spot-check sample; your verdicts."""
     from drill import tutor_prepared as tp
+    from drill.content import modules
     from drill.content.build import build_data
+    from drill.content.packs import load_packs
 
-    data, answers = build_data(), tp.load()
+    loaded = modules.load()
+    packs = load_packs(dirs=pack or None, taken={lesson["id"] for m in loaded for lesson in m.lessons})
+    data, answers = build_data(loaded, packs), tp.load(packs=packs)
     for verdict, items in (("checked", check), ("rejected", reject)):
         for item in items:
             lid, _, key = item.partition("/")
@@ -593,7 +606,7 @@ def tutor_prepared_cmd(
                 raise typer.Exit(1)
             tp.mark(answers, lid, key, verdict)
     if check or reject:
-        tp.save(data, answers)
+        tp.save(data, answers, packs=packs)
     counts = tp.status(data, answers)
     console.print(", ".join(f"{k}: {v}" for k, v in counts.items()))
     for lid, key, rec in tp.sample(answers, sample) if sample else []:

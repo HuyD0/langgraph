@@ -1,7 +1,7 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-about 170 lessons in 25 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
+about 190 lessons in 25 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
 going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
@@ -286,6 +286,16 @@ Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__
   workspace, access and platform modules. Each module stands on its own: opening a lesson further
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
+
+## The running example: the HR assistant
+
+One company runs through the lessons: staff ask an assistant about HR policy, an HR person
+answers the hard questions as tickets, and the same numbers follow it from the use case card to
+the production incident. They live in one place, `src/drill/content/running_example.py` (the story
+in plain words, then the `HR` dict), and `tests/test_running_example.py` fails when a lesson
+quotes a number that no longer matches, or when the sheet itself stops adding up. To change one:
+edit the dict, then every lesson `quotes()` lists for it, re-derive the exercise cases it feeds,
+and regenerate the prepared tutor answers.
 
 ## Your own use case
 
@@ -664,8 +674,10 @@ lesson(MODULE, 'masked_columns',
 
 The page shows "Checked against the docs on 12 Oct 2026" under Learn, with the sources one tap
 away. Lessons with no date of their own show "Content as of 12 Oct 2026", the day dates were
-first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days either note
-turns amber and says names and steps may have changed.
+first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days a sourced
+lesson's note turns amber and says names and steps may have changed. A lesson with no sources
+never ages: nothing in it was checked against a page, and the facts that go out of date live in
+the sourced lessons, so `drill content stale` lists only those.
 
 **To find what needs a look:**
 

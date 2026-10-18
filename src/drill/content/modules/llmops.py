@@ -6,6 +6,9 @@ MODULE = module('llmops', 'LLMOps', 'Cost and caching in production.')
 
 lesson(MODULE, 'token_cost',
     title='Tokens and cost',
+    checked='2026-10-18',
+    sources=[source('OpenAI: What are tokens and how to count them', 'https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them'),
+             source('OpenAI API pricing', 'https://developers.openai.com/api/docs/pricing')],
     learn=[
         'LLM providers bill per **token** (roughly three quarters of a word), with separate prices for input and output. Output usually costs several times more. Prices are quoted in dollars per million tokens.',
         'Track cost per model, per feature and per user from day one. When the bill jumps, that breakdown tells you why.',

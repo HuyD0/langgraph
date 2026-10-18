@@ -1,9 +1,9 @@
-"""Evals: Measuring whether a change made your AI better or worse."""
+"""Evals: Measuring whether a change made your AI better or worse: eval sets, must-pass gates, LLM judges you can trust, and what evals cost."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
                                  seesaw, sortby, sortrow, source, stack, steps)
 
-MODULE = module('evals', 'Evals', 'Measuring whether a change made your AI better or worse.')
+MODULE = module('evals', 'Evals', 'Measuring whether a change made your AI better or worse: eval sets, must-pass gates, LLM judges you can trust, and what evals cost.')
 
 lesson(MODULE, 'exact_match',
     title='Evaluating model answers',
@@ -1441,7 +1441,7 @@ Work out kappa in three steps:
 3. kappa: observed minus chance, divided by 1 minus chance.
 
 Return kappa rounded to 2 decimal places. You will never divide by zero.""",
-        pattern='Count agreements and passes in one walk through the labels, then a few lines of arithmetic.',
+        pattern='Count in one walk, then a few sums.',
         target='one walk through the labels',
         realworld='Before letting an LLM judge gate releases, teams label a sample by hand and check kappa. A judge with high agreement but low kappa is just echoing how often answers pass anyway.',
         starter="""def cohen_kappa(human, judge):
@@ -1849,7 +1849,7 @@ Work out AC1 in four steps:
 4. AC1: observed minus chance, divided by 1 minus chance.
 
 Return AC1 rounded to 2 decimal places. You will never divide by zero.""",
-        pattern='Count agreements and passes in one walk, then a few lines of arithmetic.',
+        pattern='Count in one walk, then a few sums.',
         target='one walk through the verdicts',
         realworld='Most answers from a good tutor pass, so failures are rare. Teams checking a judge on that kind of data report AC1 next to kappa, so a rare verdict does not make a good judge look bad.',
         starter="""def gwet_ac1(a, b):
@@ -2096,7 +2096,7 @@ lesson(MODULE, 'judge_cost',
                            pile('What it writes: output', ['The verdict', 'The reason for it', ('alert', 'Hidden thinking, on a reasoning model')]))),
         card('The calls multiply',
              'Count the calls first, then price the tokens.',
-             picture=steps(('listcheck', 'Examples times scorers times repeats', '500 examples, 3 scorers, each run twice: 3,000 calls.'),
+             picture=steps(('listcheck', 'Examples times scorers times repeats', '500 examples (200 golden, 300 from real traffic), 3 scorers, each run twice: 3,000 calls.'),
                            ('coin', 'Price the input', '3,000 times 2,000 tokens = 6,000,000 at $2 a million: $12.'),
                            ('coin', 'Price the output', '3,000 times 200 tokens = 600,000 at $10 a million: $6.'),
                            ('clock', 'Times the runs', '$18 a run. 20 runs a month: $360.')),
@@ -2133,7 +2133,7 @@ out = calls * 200 * 10 / 1000000
     angle=angle(
         pattern='Count the calls, then price the tokens',
         text='The big idea: an LLM judge is a model call per example, per scorer, per repeat, billed for its input tokens and its output tokens, so count the calls first and then price them. Your code multiplies examples, scorers and repeats to get the calls. It multiplies the calls by the input tokens and the input price, and by the output tokens and the output price, dividing each by a million because prices are per million tokens. It returns the calls and the cost, rounded to cents. It is like marking exams: papers, times questions per paper, times how many markers read each one.',
-        say='"A judge is a model [[call|rule|person::Billed like any other model use.]] for every example, every scorer and every repeat. I count the calls, price the input and the [[output|cache|batch::The verdict and its reason, the dearer tokens.]] tokens, and only switch to a cheaper judge once it passes the [[agreement|speed|price::The checks against itself and against people.]] checks."',
+        say='"A judge is a model [[call|rule|person::Billed like any other model use.]] for every example, scorer and repeat. I count the calls, price input and [[output|cache|batch::The verdict and its reason, the dearer tokens.]] tokens, and switch to a cheaper judge only after it passes the [[agreement|speed|price::The checks against itself and against people.]] checks."',
         classic=None,
     ),
     exercise=exercise(
