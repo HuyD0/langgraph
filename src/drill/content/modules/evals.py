@@ -1605,6 +1605,148 @@ Return AC1 rounded to 2 decimal places. You will never divide by zero.""",
     ),
 )
 
+lesson(MODULE, 'judge_biases',
+    title='Judges have biases too',
+    cards=[
+        card('Three biases to know',
+             'An LLM judge can lean one way for reasons that have nothing to do with the answer\'s quality.',
+             picture=sortby('What can tilt a judge?',
+                            sortrow('Position', 'It prefers whichever answer it reads first, or second', 'Order', icon='reset'),
+                            sortrow('Length', 'It prefers the longer, more detailed-looking answer', 'Verbosity', icon='listcheck'),
+                            sortrow('Same family', 'It prefers answers written by its own model family', 'Self-preference', icon='people'))),
+        card('Catch position bias: swap and score twice',
+             'Show the judge the same two answers in both orders.',
+             picture=steps(('flask', 'A first, then B', 'The judge picks A.'),
+                           ('reset', 'B first, then A', 'The same two answers, order swapped.'),
+                           ('check', 'Compare the two verdicts', 'The same winner both ways: trust it. It flipped: call it a tie, or look closer.'))),
+        card('Same family, same blind spots',
+             'When one model family writes the answers and also judges them, the scores come out flattering. This app does exactly that for the tutor\'s prepared answers: Claude Opus drafts, and Claude Sonnet judges.',
+             picture=piles(pile('Riskier', ['A judge from the app\'s own family', 'One judge only', 'Never checked against people']),
+                           pile('Safer', [('scale', 'A judge from a different family'), ('scale', 'Two judges from two families'), ('person', 'Checked against expert labels')])),
+             after='This app checks its judge against people\'s labels, and that check is what catches a flattering judge.'),
+        card('The fixes, in one place',
+             'None of these is expensive; the swap costs one more call per pair.',
+             picture=steps(('reset', 'Swap the order', 'Score both orders, and count a flip as a tie.'),
+                           ('pencil', 'Say length isn\'t quality', 'Put it in the rubric, and compare answers of similar length.'),
+                           ('scale', 'A judge from another family', 'Or two judges from two families, and read where they disagree.'),
+                           ('person', 'Check against people', 'The agreement checks from the last lessons.'))),
+    ],
+    example=example('Swapping the order', """# same two answers, both orders
+a_first = "A"   # winner when A is shown first
+b_first = "B"   # winner when B is shown first
+# different winners: the verdict
+# follows the order, not the answers,
+# so count it as a tie"""),
+    check=question(
+        'The judge picks answer A when A is shown first, and answer B when B is shown first. What is that?',
+        ['Position bias', 'Length bias', 'A rate limit'],
+        answer=0,
+        why='The answers didn\'t change, only their order, and the verdict followed the order. That is position bias: score both orders and count a flip as a tie.',
+    ),
+    angle=angle(
+        pattern='Score both orders, keep the pairs that flip',
+        text='The big idea: an LLM judge can favour the first answer, the longer answer, or answers from its own model family, so you test for each and fix it. Your code goes through pairs that were judged in both orders. A pair whose winner changed when the order changed has flipped, so its id goes on a list. It returns the list in order. It is like asking a friend which of two photos is better, then asking again with them swapped: if the answer changes, the order decided, not the photos.',
+        say='"An LLM judge can favour the first answer, the [[longer|newer|cheaper::More detailed-looking, not better.]] one, or answers from its own model [[family|budget|region::Same provider, same style.]]. So I swap the order, put length rules in the rubric, and check the judge against [[people|itself|speed::Expert labels.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Flipped Verdicts',
+        topic='evals',
+        difficulty='easy',
+        fn='flipped',
+        prompt="""Your function gets `pairs`, a list of dicts. Each has:
+
+- `"id"`: the pair's name
+- `"a_first"`: the winner (`"A"` or `"B"`) when answer A was shown first
+- `"b_first"`: the winner when answer B was shown first
+
+A pair has **flipped** if the two winners differ.
+
+Return a list of the ids that flipped, in the order they came. None flipped gives `[]`.""",
+        pattern='Compare two fields on each item, and keep the ones that differ.',
+        target='one pass over the pairs',
+        realworld='Teams that compare two versions with an LLM judge score every pair in both orders. Pairs that flip are counted as ties, and a high flip rate means the judge itself needs fixing before its verdicts mean anything.',
+        practice=practice(
+            intro='The team compares versions of the HR assistant with an LLM judge. Check whether the judge can be trusted.',
+            explain='The big idea: an LLM judge can favour the first answer, the longer answer, or answers from its own model family. You saw a verdict that followed the order, scores that followed the length while experts saw no difference, a same-family comparison that needed a judge from another family, and that agreement with expert labels is the strongest check of all.',
+            pattern='Test the judge before trusting it',
+            realworld='When someone at work says "the judge says version B is better", ask: were both orders scored, does the rubric say length isn\'t quality, is the judge from a different family than the app, and has it been checked against people?',
+            gotchas=[
+                ['Scoring one order only', 'A single order can hide position bias. Score both and count flips as ties.'],
+                ['A judge grading its own family', 'Same-family judges flatter. Use another family, or two judges.'],
+            ],
+            asks=[
+                ask('What do you conclude?', ['The verdict follows the order', 'Answer A is clearly better', 'Answer B is clearly better'], answer=0,
+                    evidence=evidence('code', title='The same pair, judged twice', text="""A shown first:  winner A
+B shown first:  winner B"""),
+                    clue='Did the answers change between the two runs?',
+                    why='Only the order changed, and the winner changed with it: position bias. Count this pair as a tie.',
+                    wrong=[None, 'A only won when it came first.', 'B only won when it came first.']),
+                ask('What is most likely going on?', ['The judge rewards length', 'Long answers are better', 'Short answers are wrong'], answer=0,
+                    evidence=evidence('code', title='Judge scores by answer length', text="""short answers (under 80 words):  3.1 of 5
+long answers (over 300 words):   4.4 of 5
+experts rated both groups about the same"""),
+                    clue='The experts saw no difference. What does the judge see that they don\'t?',
+                    why='Experts rated both groups the same, but the judge scored long answers higher: length bias. Tell the judge length isn\'t quality, and compare answers of similar length.',
+                    wrong=[None, 'The experts rated them the same, so length isn\'t making them better.', 'The experts rated short answers as good as long ones.']),
+                ask('What do you check before believing it?', ['Rerun with a judge from another family', 'Nothing: the judge chose clearly', 'The same judge, twice more'], answer=0,
+                    evidence=evidence('claim', who='A teammate said', text='"We compared our Claude app with a GPT version, using a Claude judge. Claude won easily."'),
+                    clue='Which family wrote the winning answers, and which family judged them?',
+                    why='A Claude judge may favour Claude-written answers. Rerun with a judge from another family, or two judges from two families, before trusting the result.',
+                    wrong=[None, 'A clear result can still be a flattering one.', 'The same judge would lean the same way again.']),
+                ask('Which is the strongest check that a judge isn\'t flattering your app?', ['Its agreement with expert labels', 'A longer, stricter rubric', 'A newer, bigger judge model'], answer=0,
+                    alone=True,
+                    clue='What does the judge have to match to be trusted?',
+                    why='Agreement with people who know the work is the real test. A stricter rubric or a bigger model can still be biased in ways only that comparison shows.',
+                    wrong=[None, 'A rubric helps, but only people\'s labels show whether the judge is right.', 'A bigger model can still favour its own family.']),
+            ],
+        ),
+        starter="""def flipped(pairs):
+    # your code here
+    pass
+""",
+        solution="""def flipped(pairs):
+    out = []
+    for pair in pairs:
+        if pair["a_first"] != pair["b_first"]:
+            out.append(pair["id"])
+    return out
+""",
+        cases=[
+            case([{"id": "q1", "a_first": "A", "b_first": "A"},
+                  {"id": "q2", "a_first": "A", "b_first": "B"},
+                  {"id": "q3", "a_first": "B", "b_first": "B"}], expected=["q2"], sample=True),
+            case([{"id": "q1", "a_first": "B", "b_first": "A"}], expected=["q1"]),
+            case([], expected=[]),
+        ],
+        guided="""def flipped(pairs):
+    # Replace every ___ with real code, then run the tests.
+    out = []
+    for pair in pairs:
+        # the winner changed when the order changed
+        if ___:
+            out.append(___)
+    return out
+""",
+        fills=['pair["a_first"] != pair["b_first"]', 'pair["id"]'],
+        concepts=[
+            [
+                '!= for "different"',
+                '`a != b` is True when the two values differ.',
+                '"A" != "B"   # True',
+            ],
+        ],
+        byhand='q1: A both times, steady. q2: A then B, flipped. q3: B both times, steady. Return ["q2"].',
+        why='Each pair is checked once.',
+        gotchas=[
+            [
+                'Treating a flip as a win',
+                'A flipped pair says nothing about which answer is better. Count it as a tie.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'judge_cost',
     title='The cost of an LLM judge',
     checked='2026-10-18',

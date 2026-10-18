@@ -1,6 +1,7 @@
 """RAG with Databricks Vector Search and Azure AI Search: Chunking, indexing and retrieval, then measuring which settings actually work."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack, source
+from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
+                                 rewrite, sortby, sortrow, source, stack, steps)
 
 MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
 
@@ -649,6 +650,145 @@ if not names:
             [
                 "Higher k isn't free",
                 'Raising k usually raises recall but adds tokens, cost and latency, and can bury the right chunk among wrong ones.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'embedding_blind_spots',
+    title='Embedding models have blind spots',
+    cards=[
+        card('Some text is harder to find',
+             'An embedding model turns text into numbers so search can find similar meaning. It learned from public text, so some kinds of text match worse than others.',
+             picture=sortby('Where embedding models often stumble',
+                            sortrow('Jargon and codes', 'Product codes, policy numbers, internal names', 'Harder to match', icon='tag'),
+                            sortrow('Other languages', 'A question in French, documents in English, or a mix', 'Weaker', icon='chat'),
+                            sortrow('Very short or very long text', 'A one-line FAQ beside a ten-page policy', 'Uneven', icon='book'),
+                            sortrow('People', 'Names, genders and backgrounds linked to jobs or roles', 'Can be unfair', icon='people'))),
+        card('Test on your own hard questions',
+             'An overall recall number can hide a group that fails.',
+             picture=steps(('listcheck', 'Group your test questions', 'Plain, jargon and codes, other languages, about people.'),
+                           ('search', 'Measure recall for each group', 'Did the right passage come back, group by group?'),
+                           ('alert', 'Look at the weakest group', 'That is where users will be let down.'))),
+        card('Choose on your data, not a public ranking',
+             'Public rankings of embedding models are measured on other people\'s text, mostly general English.',
+             picture=piles(pile('A public ranking', ['Other people\'s text', 'Mostly general English', 'Says nothing about your codes']),
+                           pile('Your own test', [('check', 'Your jargon and languages'), ('check', 'Your hard questions, by group'), ('check', 'Two models, side by side')]))),
+        card('Don\'t let one family check itself',
+             'If the same model family writes your test questions, embeds your documents and judges the answers, a weakness they share can pass every step unseen.',
+             picture=rewrite(('Every test question written by one model', 'Some written by the people who ask them'),
+                             ('One model family for everything', 'A different family for the judge'))),
+    ],
+    example=example('Recall by group', """# did the right passage come back?
+plain:     46 of 50  (92%)
+codes:      8 of 20  (40%)
+# overall 54 of 70 (77%) hides that
+# questions with codes mostly fail"""),
+    check=question(
+        'Retrieval finds the right passage for 92 in 100 questions overall, but only 40 in 100 questions that use product codes. What do you do?',
+        [
+            'Fix it for product codes before launch',
+            'Ship it: 92 in 100 overall is high',
+            'Drop product codes from the test set',
+        ],
+        answer=0,
+        why='The average hides a group that mostly fails, and people asking about product codes will be let down. Try another embedding model, add keyword search, or rewrite the codes, then measure that group again.',
+    ),
+    angle=angle(
+        pattern='Count per group, then find the lowest',
+        text='The big idea: embedding models match some kinds of text worse than others, so measure retrieval group by group and look at the weakest. Your code counts, for each group, how many questions there were and how many found their passage. Then it works out each group\'s share and keeps the group with the lowest share, the first one on a tie. It returns that group and its share, rounded to 2 places. It is like a teacher looking past the class average to the pupil who is struggling.',
+        say='"An embedding model can miss jargon, other languages or [[codes|summaries|titles::Like SKU-4471 or HR-114.]], so I measure recall for each [[group|day|model::Kind of question.]] of questions, not just the average, and look hardest at the [[weakest|biggest|newest::Where users are let down.]] one."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Weakest Group',
+        topic='rag',
+        difficulty='easy',
+        fn='weakest_group',
+        prompt="""Your function gets `results`, a list of dicts, one per test question, each with `"group"` (like `"plain"` or `"codes"`) and `"found"` (True if the right passage came back).
+
+For each group, its recall is the questions found divided by the questions in that group.
+
+Return `[group, recall]` for the group with the lowest recall, rounded to 2 decimal places. On a tie, the group seen first. No results gives `[None, 0]`.""",
+        pattern='Count per group in a dict, then find the lowest share.',
+        target='one pass to count, one pass over the groups',
+        realworld='Search teams report retrieval recall per slice of questions, like language or question type, because the overall number hides the slice that fails. They compare embedding models on those slices before choosing.',
+        starter="""def weakest_group(results):
+    # your code here
+    pass
+""",
+        solution="""def weakest_group(results):
+    total = {}
+    found = {}
+    for r in results:
+        g = r["group"]
+        total[g] = total.get(g, 0) + 1
+        found[g] = found.get(g, 0) + (1 if r["found"] else 0)
+    worst = None
+    worst_rate = 2
+    for g in total:
+        rate = found[g] / total[g]
+        if rate < worst_rate:
+            worst = g
+            worst_rate = rate
+    if worst is None:
+        return [None, 0]
+    return [worst, round(worst_rate, 2)]
+""",
+        cases=[
+            case([{"group": "plain", "found": True}, {"group": "plain", "found": True}, {"group": "codes", "found": False},
+                  {"group": "codes", "found": True}, {"group": "codes", "found": False}, {"group": "plain", "found": False}],
+                 expected=["codes", 0.33], sample=True),
+            case([{"group": "plain", "found": True}], expected=["plain", 1.0]),
+            case([], expected=[None, 0]),
+        ],
+        guided="""def weakest_group(results):
+    # Replace every ___ with real code, then run the tests.
+    total = {}
+    found = {}
+    for r in results:
+        g = r["group"]
+        # Step 1: count questions and finds for each group.
+        total[g] = total.get(g, 0) + 1
+        found[g] = ___
+    worst = None
+    worst_rate = 2
+    for g in total:
+        rate = found[g] / total[g]
+        # Step 2: keep the lowest so far.
+        if ___:
+            worst = g
+            worst_rate = rate
+    if worst is None:
+        return [None, 0]
+    return [worst, round(worst_rate, 2)]
+""",
+        fills=['found.get(g, 0) + (1 if r["found"] else 0)', 'rate < worst_rate'],
+        concepts=[
+            [
+                'Counting in a dict',
+                '`d.get(key, 0) + 1` adds one to a count, starting from 0 the first time.',
+                """d = {}
+d["codes"] = d.get("codes", 0) + 1   # 1""",
+            ],
+            [
+                'Starting above any real value',
+                'Recall is at most 1, so starting the lowest at 2 means the first real group always replaces it.',
+                """worst_rate = 2
+if 0.33 < worst_rate:
+    worst_rate = 0.33""",
+            ],
+        ],
+        byhand='plain: 3 questions, 2 found: 0.67. codes: 3 questions, 1 found: 0.33. The lowest is codes. Return ["codes", 0.33].',
+        why='One pass to count, then one look at each group.',
+        gotchas=[
+            [
+                'Trusting the overall recall',
+                'A good average can hide a group that mostly fails. Report recall per group.',
+            ],
+            [
+                'Choosing a model from a public ranking',
+                'Public rankings use other people\'s text. Compare models on your own groups.',
             ],
         ],
     ),
