@@ -692,20 +692,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does the RACI approach need extra care?**\n\n**1. A very small team.** One person may hold the R, the A and the C for the same decision. Then nobody checks their work, so borrow an outside reviewer, like an HR advisor, to be the Consulted person.\n\n**2. An emergency.** If the agent starts giving harmful answers at night, waiting for the product manager to approve a fix costs hours. Agree ahead of time that the platform engineer may roll back (switch to the last good version) alone. Write that as its own decision, with its own single Accountable person.\n\n**3. A much bigger system.** With many agents and teams, some parts are shared, like the model or the document pipeline (the steps that bring data in). Give each shared part one owning team, and keep exactly one Accountable per decision.\n\n**4. People change over time.** People leave or switch roles, so the table quietly goes out of date. Review it on a set schedule, like the weekly improve step, and fix any empty Accountable spot at once.",
+   "a": "**1. A tiny team, or one person doing everything.**\nWhen one person holds every role, the table says \"you\" in each box. The danger is that nobody checks your work. Keep the builder and the checker separate anyway. Ask a real HR advisor, or a teammate, to review the answers before a fix goes out.\n\n**2. Something breaks at 2 a.m.**\nAn incident means a live problem hurting users right now. The Accountable person may be asleep or away. Agree on a named backup ahead of time. Also agree on a few safe actions someone can take without asking first. For example, the platform engineer may roll back, meaning switch to the last version that worked.\n\n**3. A much bigger system shared across teams.**\nSeveral agents may share one model, one data pipeline or one budget. Other teams may own those pieces. Your table can't cover everything, and two teams may each think they decide. Give each shared piece its own single owner. Write down what each team promises the other where their work meets.",
    "step": "Learn",
    "fingerprint": "1e0dfe28ffb78b03",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
-    "answers_it": false,
+    "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It gives four situations when the brief asks for 2 or 3. The emergency item also hands the crisis call to the platform engineer without mentioning the lesson's executive sponsor, who has the last word in a crisis."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {

@@ -146,7 +146,7 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When the world moves after graduation.** The pack is a snapshot, so real traffic can outgrow the `peak_tpm` the POC measured, and new kinds of questions can pull the pass rate down. Keep running the evals and the gate on a schedule, and let monitoring alert the owner when a number drifts past its limit.\n\n**When the eval set is tiny.** With 20 questions, one answer moves the pass rate by 5 points, so 0.86 against a 0.9 limit may just be luck. Grow the eval set before trusting a near miss, and treat must-pass questions as hard rules no matter the size.\n\n**When the app is a multi-step agent.** An agent (an app that loops, calling the model and tools several times per question) can use far more tokens on hard questions than on easy ones. Measure cost per success and `peak_tpm` across the whole run, including retries and tool calls, so the platform team sizes capacity for the busiest real case.",
+   "a": "Here are three situations where the gate needs extra care.\n\n**Real traffic differs from the trial.** The `peak_tpm` (tokens a minute at the busiest time) came from a small trial group. Real users may arrive in bigger bursts or write longer questions. Watch real usage after launch, and ask the platform team to resize capacity when it drifts.\n\n**The eval set is tiny.** With only 20 test questions, one answer flipping moves the pass rate by 5 points. So 0.86 against a 0.9 limit may be noise, not a real gap. Grow the eval set, especially the must-pass questions, before trusting a close call.\n\n**The app changes after graduating.** A new model, prompt or document source can change quality and cost overnight. The old pack then describes an app that no longer exists. Rerun the evals, log a fresh pack and pass the gate again before each change goes live.",
    "step": "Learn",
    "fingerprint": "cf39ff8bbcb6870c",
    "status": "failed",
@@ -159,7 +159,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "The tiny-eval-set point ties the lesson's 0.86 pass rate to a 20-question set, but 20 questions can only give multiples of 0.05 (0.85 or 0.90), so the example is internally inconsistent and could confuse beginners."
+    "notes": "The tiny-eval-set example ties 20 questions to the lesson's 0.86 pass rate, but 20 questions can only give scores in 5-point steps (0.85 or 0.90), so 0.86 is impossible there."
    }
   },
   "learn:term": {

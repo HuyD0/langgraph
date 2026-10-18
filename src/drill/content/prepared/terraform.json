@@ -1310,20 +1310,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Surprise changes in a plan.** Spacelift's proposed plan (the preview of what Terraform will change) wants to update the `team-sales` cluster or `sp-sales-etl-dev`. Yet nobody touched `clusters.yml` or `service_principals.yml`. A new provider version may have changed a default.\n- **Same code, different plans.** Your laptop shows \"no changes.\" The Spacelift stack for the Service stage shows edits. Or DEV and UAT disagree on identical YAML.\n- **A shifting version in the logs.** The `terraform init` output says which provider version it installed. If that number changes between runs with no reviewed upgrade, the pin is not holding.\n- **The lock file keeps appearing as new.** `.terraform.lock.hcl` is missing from the config repo, or shows up as an uncommitted file after each run.\n- **Errors after an unplanned upgrade.** Messages like \"unsupported argument\" can appear once a newer provider is picked. This happens when the constraint is too loose or missing and the lock file was never committed.\n\n**Quickest check**\n\nOpen the latest Spacelift run's `terraform init` log. Note the `azurerm` and `databricks` versions it installed. Compare them with the versions in the committed `.terraform.lock.hcl`. Then confirm `required_providers` uses `~>` for both providers.",
+   "a": "## Warning signs\n\n**A plan shows changes nobody asked for.** The YAML for `team-sales` hasn't changed, yet the Spacelift plan for the Service stack wants to update a cluster or a grant. A new provider version may have changed a default (a value Terraform fills in when you leave it out).\n\n**Your laptop and Spacelift disagree.** Your local plan says \"no changes,\" but the Spacelift stack shows edits. You are probably running different provider versions.\n\n**DEV, UAT and PROD behave differently.** The same code plans cleanly in DEV but shows surprises in PROD a week later. A newer version slipped in between the runs.\n\n**Sudden errors after a quiet week.** You see \"unsupported argument\" or \"invalid block\" when no one touched the code. A breaking release, often a new major version like `azurerm` 5.0, got picked up.\n\n## Quickest check\n\nOpen the Spacelift run log and find the `terraform init` lines. They say which provider versions were installed. Compare those with the versions in `.terraform.lock.hcl` in the repo. If the lock file is missing, ignored by Git, or doesn't match the log, you've found the cause.",
    "step": "Learn",
    "fingerprint": "0f15a2e3916ca001",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says the lock file is missing from the \"config repo\", but in this setup the config repo holds only the YAML and the lock file belongs with the Terraform root code; the answer is also about 215 words, over the 200 limit."
+    "pass": true,
+    "notes": "No real problems. The 5.0 example only applies if the constraint was missing or loosened, since the lesson's `~> 4.40` keeps 5.0 out, but the answer does not contradict the lesson."
    }
   },
   "learn:stops": {

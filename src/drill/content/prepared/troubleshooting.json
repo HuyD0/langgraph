@@ -238,20 +238,20 @@
   },
   "check:1:1": {
    "q": "Why not “The SP must be added by hand in Databricks”?",
-   "a": "**Why \"The SP must be added by hand in Databricks\" is not the best answer**\n\nIt gets one thing right. The SP must already be registered before the plan can find it. Something earlier is missing.\n\nBut it misses the point of the question. The teammate thinks Terraform should create the SP. The real issue is that the error path says `data`. A `data` block is a **lookup**: it reads something that should already exist. It was never going to create anything. \"Add it by hand\" doesn't explain that.\n\nIt also jumps to a fix without finding the cause. The lesson says to check the stages in order and stop at the first gap:\n\n- Is it the same commit as the failed run?\n- Does the SP exist in Microsoft Entra ID?\n- Is it declared in `service_principals.yml`?\n- Has Foundation been applied?\n- Has Service assigned it to the workspace?\n\nIn the lesson's example, `sp-sales-etl-uat` was only named in `dbx_access_connector.yml`. Foundation never saw it. The fix is to declare it, not to add it by hand.\n\n**Why the other answer is better:** \"`data` means it only looks up what exists\" names the real mistake, and it points you to check which earlier stage isn't done.",
+   "a": "That option gets one thing right. The SP has to exist before the plan can find it, and Terraform is not going to make it here.\n\nBut it points to the wrong fix. In this platform, nobody adds SPs by hand in Databricks. Everything runs as code. The SP gets into Databricks by passing the stages in order:\n\n- It exists in Microsoft Entra ID.\n- It is declared in the team's `service_principals.yml`.\n- The Foundation stack is applied, which registers it in the Databricks account.\n- The Service stack assigns it to the workspace.\n\nAdding it by hand skips all of that. The config repo would no longer match what is really in Databricks. That mismatch is called **drift**. The next Foundation run might not know about the SP, or might clash with it. It also hides the real gap, such as a missing line in `service_principals.yml`.\n\nIt also doesn't answer the teammate. Their mistake is thinking Terraform should create the SP here.\n\n\"`data` means it only looks up what exists\" is the better answer. It explains exactly why Terraform won't create it: a `data` block only reads something an earlier stage should already have registered.",
    "step": "Check",
    "fingerprint": "37a76741ca8e0932",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
-    "no_giveaway": false,
+    "plain": true,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It lists the five stages in their fixed order with 'stop at the first gap', which is essentially the next_check solution. It also runs to about 230 words, over the 200 limit, and uses terms like SP and Foundation without explaining them."
+    "pass": true,
+    "notes": "No major problem. The drift and clash claims go beyond the lesson, though they are hedged and fit the setting, and the answer is right at the edge of the length limit."
    }
   },
   "check:2:0": {

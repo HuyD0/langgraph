@@ -728,20 +728,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. Cluster compute is billed through Databricks, not tagged in Azure.** The check skips `databricks_cluster` because it has no Azure `tags` field. But its virtual machines still cost money in Azure. Cost tags for clusters live in a separate field called `custom_tags`, which Databricks copies onto those machines. Check those in your clusters.yml (with Pydantic) or with a Databricks cluster policy, a rule that fixes cluster settings.\n\n**2. A tag can be present but useless.** The check only asks whether each required name exists. So `owner = \"\"` or `cost-center = \"TBD\"` passes, yet nobody can be billed. Add value rules too. For example, Pydantic can require `owner` to match a real Entra group like `grp-sales-dev-owners`, or a Spacelift policy can allow only known cost centers.\n\n**3. Changes made outside Terraform never show up.** The check reads the plan, so it only sees what Terraform manages. Someone removing a tag in the Azure portal, or creating a resource by hand, slips past. Back it up with Azure Policy, which can deny untagged resources or copy tags down from the resource group.",
+   "a": "**When does this stop working?**\n\n**1. Cluster spend that the check never sees.** A `databricks_cluster` has no Azure tags field, so the check skips it. But the cluster still starts Azure virtual machines, and those bills land on the subscription with no team named. Put the same `owner` and `cost-center` values in the cluster's `custom_tags`, which Databricks copies onto those machines. Then check `custom_tags` with a separate rule or a cluster policy (a Databricks rule set that limits how clusters can be set up).\n\n**2. Tags the plan can't read yet.** Sometimes a tag value comes from something not yet created, so the plan shows \"known after apply\" instead of a value. A plan check can't tell whether that tag will be filled in. Decide on purpose whether to count it as missing, and back it up with Azure Policy, which checks the real resource in Azure.\n\n**3. Something else also edits tags.** Azure Policy can add tags itself, or someone edits them in the portal. Terraform then sees drift, meaning the real tags no longer match the code, and the next plan tries to undo the change. Decide which tool owns each tag key, and tell the other one to leave it alone.",
    "step": "Learn",
    "fingerprint": "a97546e573bb5006",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The answer adds facts the lesson doesn't support (the `custom_tags` field copying onto VMs), and the portal tag-removal example is doubtful because a plan on a managed resource would show that drift. The heading 'not tagged in Azure' also sits oddly with the point that the VMs are billed in Azure."
+    "pass": true,
+    "notes": "No significant problems; the answer is about 200 words, so it is borderline on length, and the custom_tags point goes beyond the lesson without contradicting it."
    }
   },
   "learn:term": {

@@ -456,20 +456,20 @@
   },
   "check:2:2": {
    "q": "Why not “The whole job stops”?",
-   "a": "It's a fair guess. Something special does happen to the 8:50 event: it won't be counted. That part is right.\n\nBut a late event isn't an error. Late data is normal. Phones go offline, networks lag, and some events show up after their moment has passed. If every late event crashed the job, it would stop all the time, and none of the good, on-time events would get processed either.\n\nThe **watermark** (the cutoff time that decides how late is too late) is a filter, not an alarm. Think of a \"doors close at 9 am\" rule. Someone who turns up at 9:30 doesn't get in, but the event inside carries on for everyone else. In the same way, the 8:50 event is set aside quietly, and the job keeps working through the rest.\n\nIn the lesson's Spark code, `.withWatermark(\"event_time\", \"1 hour\")` works like this. Events older than the cutoff are dropped, and the stream keeps running.\n\n\"It's skipped as too late\" is better because it describes what a watermark actually does: it drops events that are older than the cutoff without stopping the job.",
+   "a": "\"The whole job stops\" treats a late event as an error. It isn't one. Late events are normal. Phones go offline, networks lag, and data shows up after the moment it describes.\n\nWhat the option gets right: something does go wrong for that one event. It arrived after the cutoff, so it can't be handled like the others.\n\nWhat it misses: the **watermark** exists so that late events *don't* cause trouble. A watermark is a time cutoff. It tells the job, \"anything stamped before 9 am no longer counts.\" When the 8:50 event shows up at 9:30, the job compares its time to the cutoff, sees it's too old, and leaves it out. Then it carries on with the rest of the events.\n\nIf one late event could halt everything, a nightly job would rarely finish. Real data always has a few stragglers. The whole point is to decide calmly what to do with them, not to crash.\n\n\"It's skipped as too late\" is better because it describes what a watermark actually does: it quietly drops events older than the cutoff while the job keeps running.",
    "step": "Check",
    "fingerprint": "ec58548d7d35c84a",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says the lesson's `.withWatermark(\"event_time\", \"1 hour\")` drops events older than the cutoff, but in the lesson's code the watermark only lets Spark forget old ids so late duplicate copies are dropped, which misdescribes the lesson's code."
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:interview": {

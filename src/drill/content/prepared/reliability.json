@@ -38,20 +38,20 @@
   },
   "check:1:1": {
    "q": "Why not “Small shares cost less to run”?",
-   "a": "It's true that a small share means less traffic touches the new version. But saving money isn't the reason the canary step exists. The reason is catching problems while they can only hurt a few people.\n\nA **canary** means sending a small share of real traffic to the fix first, then comparing its answers with the current version. The name comes from canaries that miners carried as an early warning.\n\nYour eval and must-pass cases only cover the questions someone thought to write down. Real users ask things nobody predicted. They phrase questions oddly, and they hit topics the test set missed. A prompt change can quietly break some of those, even when every test passes.\n\nThe canary runs before step 5, so `@production` still points at the old version. If the canary shows trouble, you don't move the pointer. Most users never saw the fix. That's what protects people, not a lower bill.\n\n\"Real traffic can show problems the eval missed\" is better because it names the actual purpose: finding the breakages your tests couldn't see, before everyone gets the fix.",
+   "a": "A **canary** means a small share of real traffic gets the fix first, and you compare its answers with everyone else's. The name comes from the canaries miners carried as an early warning.\n\n\"Small shares cost less to run\" misses the point of this step. The lesson never gives cost as the reason. The canary is about safety: finding out whether the fix breaks something before most users see it.\n\nHere is why that matters even after the eval passes. The eval only checks the cases someone wrote down. Real users ask questions nobody thought to write a case for. A prompt change can quietly shift those answers too.\n\nThe canary keeps that risk small. If the small share shows a problem, you hold the fix and go back to step 1. The `@production` pointer hasn't moved yet. That happens only in step 5, after the canary looks good. So most users never saw the fix at all.\n\n\"Real traffic can show problems the eval missed\" is better because it names the real job of a canary: catching what your test cases couldn't, while only a few users are exposed.",
    "step": "Check",
    "fingerprint": "4a55d217445687b8",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says the canary runs while @production still points at the old version, but the lesson never says how the canary routes traffic, so this is an unsupported detail; the miners' canary origin also comes from outside the lesson."
+    "pass": true,
+    "notes": ""
    }
   },
   "check:1:2": {

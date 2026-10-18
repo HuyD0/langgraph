@@ -566,20 +566,20 @@
   },
   "check:0:2": {
    "q": "Why not “Rerun the same benchmarks until the score goes …”?",
-   "a": "Rerunning gets one thing right: a rerun is how you check your work. It just needs a change to check first.\n\nThe key point from the lesson is that benchmarks only measure. Genie does not learn from them. A run asks each test question fresh. Then it compares the rows Genie got with the rows from your trusted **SQL** (the language for asking a database questions). Nothing about the agent changes during a run. So rerunning the same benchmarks gives the 3 failing questions no new help. Hoping the score climbs is like re-reading a thermometer to cure a fever.\n\nWhat changes Genie's answers is what the author gives it:\n\n- plain-text **instructions**\n- **example SQL queries**\n- **trusted assets**\n\nA trusted asset is an example query or SQL function you have checked yourself. It can have blanks, called **parameters**, that Genie fills in from the question. Answers that use one are marked as verified.\n\nThe better option is better because it fixes the actual causes of the 3 failures, and then the rerun measures whether those fixes worked.",
+   "a": "Rerunning gets one thing right. You do rerun benchmarks, but only to check whether a change worked.\n\nThe problem is that nothing has changed. Benchmarks only measure. Genie does not learn from them. Each run asks Genie every question fresh, with the same instructions, examples and tables as before. So the same gaps that caused the 3 failures are still there.\n\nThe score might wobble a little between runs, because Genie writes its SQL fresh each time. If it creeps up to 8 in 10, that is luck, not a better agent. Real users would still hit the same weak spots. Chasing a lucky run also hides what is actually broken.\n\nThe better path starts with the failures. Look at what each one got wrong. Maybe Genie misread \"last week,\" or picked the wrong table for refunds. Then give it what it was missing: a plain-text instruction, an example SQL query, or a trusted asset (a checked query or SQL function Genie can reuse, with its answers marked as verified).\n\nThe other option is better because it fixes the cause of each failure first, then reruns to prove the fix worked.",
    "step": "Check",
    "fingerprint": "dfd27fbfc4f693de",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It defines a trusted asset as 'an example query or SQL function you have checked yourself'; the lesson says trusted assets are example queries with parameters plus SQL functions, and nothing about the author checking them, so the plain example queries it lists separately are wrongly folded in."
+    "pass": true,
+    "notes": "Passes all checks; the only soft spot is the 'score might wobble between runs' point, which the lesson does not state but only hedges and does not contradict."
    }
   },
   "check:1:0": {

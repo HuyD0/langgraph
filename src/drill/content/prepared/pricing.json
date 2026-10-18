@@ -710,20 +710,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple sum (tokens times price) holds up well. A few situations need extra care.\n\n**Documents change, not just grow.** The monthly sum counts only new documents. If old documents get edited, each edited one must be embedded again, or the search returns outdated text. Count edited documents in your monthly tokens too.\n\n**Your token count is a guess.** The sum assumes every document is about 1,500 tokens. Real documents vary a lot. If you split them into overlapping chunks (pieces that share some text at their edges), the shared text gets embedded twice. Measure a sample of your real chunks before trusting the estimate.\n\n**The system gets much bigger.** At 2,000 documents, a full re-embedding costs pennies. At millions of documents, the one-off pass and any model swap become real money. Prices also differ by region and change over time, so recheck the pricing page. Put the full re-embedding in the budget before anyone changes the model.",
+   "a": "The rule \"tokens times price, once and every month\" holds up well. It needs extra care in a few places.\n\n**Documents that get edited.** The monthly sum only counts new documents. If HR updates policies often, each edited chunk must be embedded again. Add changed documents to the monthly token count, not just new ones.\n\n**Chunks that overlap.** Many RAG apps split text into chunks that share a few sentences with their neighbours, so search doesn't lose context at the edges. That means you embed more tokens than the documents contain. Count the tokens in the chunks, not in the original documents.\n\n**Agents that search more than once.** The lesson assumes one short question becomes one vector. An agent may rewrite a question into several searches, or include chat history, and each search is embedded. Multiply the question tokens by the searches per question.\n\nIn all three cases the bill usually stays small at these prices. The point is that your token count is wrong, so fix the count first.",
    "step": "Learn",
    "fingerprint": "ddc8cb216e1f58e6",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says \"the monthly sum counts only new documents\", but the lesson's monthly sum counts new documents and every question (900,000 tokens includes the 30,000 questions)."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
@@ -1838,20 +1838,20 @@
   },
   "learn:term": {
    "q": "What does “spillover” mean here?",
-   "a": "**Spillover** is a backup plan for when your reserved capacity is full.\n\nThink of a company car park with spaces kept just for your team. On a normal day, everyone fits. If the car park ever fills up, extra cars go to the public pay-per-hour lot next door. Nobody gets turned away. They just pay as they go for that visit.\n\nIn this lesson, the reserved spaces are your **PTU deployment**, the model capacity you pay for every hour. The public lot is a **pay-per-token deployment**, where you pay only for the tokens you use. With spillover turned on, when the PTU deployment is full, extra requests go to the pay-per-token deployment instead of failing.\n\nIn the lesson's example, you size from the busiest minute: 42,000 normalized tokens, which rounds up to 15 PTUs. Fifteen PTUs handle 15 × 3,000 = 45,000 a minute. If traffic ever goes past that, spillover sends the extra requests to pay per token. Those extra requests are billed per token on top of the PTU cost.",
+   "a": "Think of a restaurant where you've booked a private room. Your table is always waiting. If more friends show up than the room holds, the host seats them in the main dining room instead of sending them home. They still eat. They just order from the regular menu at regular prices.\n\nSpillover works the same way. Your PTU deployment is the private room: capacity kept just for you. A \"deployment\" means a model set up and ready to answer requests. When the PTU deployment is full, extra requests go to a pay-per-token deployment. They get answered instead of failing. You pay per token only for that overflow.\n\nIn the lesson's example, the busiest minute comes to 42,000 tokens once each output token is counted as 4 input tokens. Divided by 3,000 per PTU, that gives 14. That's under the minimum, so you buy 15.\n\nNow suppose a minute ever runs busier than those 15 PTUs can handle. Spillover sends the extra requests to pay per token. You get steady, reserved capacity for normal load, plus a safety net for surprise spikes.",
    "step": "Learn",
    "fingerprint": "8cd317f16012a706",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The car-park analogy calls the overflow lot 'pay-per-hour', but in the lesson hourly billing belongs to the PTU (reserved) side and the overflow is pay per token; the answer also uses 'normalized tokens' without explaining it and includes the arithmetic '15 × 3,000 = 45,000'."
+    "pass": true,
+    "notes": ""
    }
   }
  },
@@ -2366,7 +2366,7 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- The bill is a whole unit higher than you planned. Someone likely counted units as fractions, like 2.1. Services only sell whole units.\n- The bill jumps after a small data load. A few extra chunks pushed you just past one unit's limit.\n- You switched from `text-embedding-3-small` to `text-embedding-3-large`, and storage doubled without anyone planning for it.\n- An old endpoint still shows charges every month. An endpoint is the running search service. It bills every hour it exists, even if nobody searches it.\n- You shrank vectors to save space, and then answers got worse in real use. That means nobody tested quality on your eval set first. An eval set is your fixed list of test questions with known good answers.\n\n**Quickest check**\n\nOpen the search service's usage or billing page. Compare two things with your plan: the storage it reports and the number of units it bills.\n\nIf the storage is far off, check two inputs first. Check the dimension count, which is how many numbers each vector holds. Then check how many bytes each number takes. Those are the most common slips.",
+   "a": "**Warning signs**\n\n- **The bill is higher than you planned.** Your estimate said something like \"2.1 units\", and you budgeted for 2. Services only sell whole units. So you pay for 3.\n- **The bill jumps after a small change.** You added a few more documents, and the cost went up by a whole unit's price. That is the step pattern from the lesson. It means your plan sat close to a unit's edge.\n- **Cost doubled after a model swap.** Moving from `text-embedding-3-small` to `text-embedding-3-large` doubles the numbers per vector. That doubles the space too.\n- **Money spent with no traffic.** An endpoint (a running search service) that nobody queries still bills every hour.\n- **Answers got worse after shrinking vectors.** You cut the numbers per vector to save space, and retrieval quality quietly dropped.\n\n**Quickest check**\n\nOpen the billing or service page. Compare the units it shows with the units you planned. If they differ, redo your estimate and round to whole units.\n\nIf you shrank your vectors, run your eval set before and after. An eval set is a fixed list of test questions with known good answers. Then compare the scores.",
    "step": "Learn",
    "fingerprint": "9d36cb5dca4b25d8",
    "status": "failed",
@@ -2379,7 +2379,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": false,
-    "notes": "It overclaims: 'That means nobody tested quality' doesn't follow, since the lesson says quality may drop a little even after shrinking, and 'the most common slips' is not in the lesson."
+    "notes": "The 'Cost doubled after a model swap' bullet overreaches: the lesson says the space doubles, but billing moves in whole-unit steps, so the cost need not double, and a doubling after that swap is expected rather than a sign of error."
    }
   },
   "learn:stops": {
