@@ -1,7 +1,7 @@
 """Evals: Measuring whether a change made your AI better or worse."""
 
 from drill.content.model import (angle, ask, card, case, evidence, example, exercise, lesson, module, pile, piles, practice, question,
-                                 seesaw, sortby, sortrow, source, stack, steps)
+                                 seesaw, sortby, sortrow, source, stack, steps, terms)
 
 MODULE = module('evals', 'Evals', 'Measuring whether a change made your AI better or worse.')
 
@@ -1610,10 +1610,10 @@ lesson(MODULE, 'judge_biases',
     cards=[
         card('Three biases to know',
              'An LLM judge can lean one way for reasons that have nothing to do with the answer\'s quality.',
-             picture=sortby('What can tilt a judge?',
-                            sortrow('Position', 'It prefers whichever answer it reads first, or second', 'Order', icon='reset'),
-                            sortrow('Length', 'It prefers the longer, more detailed-looking answer', 'Verbosity', icon='listcheck'),
-                            sortrow('Same family', 'It prefers answers written by its own model family', 'Self-preference', icon='people'))),
+             picture=terms(('reset', 'Position bias', 'It prefers whichever answer it reads first, or second'),
+                           ('listcheck', 'Verbosity bias', 'It prefers the longer, more detailed-looking answer'),
+                           ('people', 'Self-preference bias', 'It prefers answers written by its own model family'),
+                           lead='What can tilt a judge?')),
         card('Catch position bias: swap and score twice',
              'Show the judge the same two answers in both orders.',
              picture=steps(('flask', 'A first, then B', 'The judge picks A.'),
@@ -1629,7 +1629,8 @@ lesson(MODULE, 'judge_biases',
              picture=steps(('reset', 'Swap the order', 'Score both orders, and count a flip as a tie.'),
                            ('pencil', 'Say length isn\'t quality', 'Put it in the rubric, and compare answers of similar length.'),
                            ('scale', 'A judge from another family', 'Or two judges from two families, and read where they disagree.'),
-                           ('person', 'Check against people', 'The agreement checks from the last lessons.'))),
+                           ('person', 'Check against people', 'The agreement checks from the last lessons.'),
+                           decide=True)),
     ],
     example=example('Swapping the order', """# same two answers, both orders
 a_first = "A"   # winner when A is shown first
@@ -1773,8 +1774,7 @@ lesson(MODULE, 'judge_cost',
                            ('pencil', 'Ask for a short verdict', 'A verdict and one sentence, with the output capped.'),
                            ('copy', 'Cache the rubric', 'It starts every call, so prompt caching reads it for a tenth of the price or less.'),
                            ('clock', 'Batch the runs', 'Eval runs can wait: batch processing halves the price.'),
-                           ('scale', 'A smaller judge, last', 'Only after it passes the agreement checks from the last lessons.'),
-                           decide=True)),
+                           ('scale', 'A smaller judge, last', 'Only after it passes the agreement checks from the last lessons.'))),
         card('Cheap, but can you trust it?',
              'This app\'s own tutor eval tried Claude Haiku as a judge, at a twentieth of Sonnet\'s price. It agreed with itself on only 77 in 100 answers, and with people barely beyond chance (kappa 0.05).',
              picture=seesaw(('Price', 'a twentieth of the bigger judge'), ('Trust', 'verdicts close to chance'), caption='A cheap verdict nobody can trust is not a saving.')),
@@ -2903,7 +2903,7 @@ lesson(MODULE, 'eval_cost',
              'After launch, a scorer reads real traces. The **sampling rate** is the share of them it scores. One score with Claude Sonnet 5.5, at 2,000 tokens in and 200 out, costs about $0.006.',
              picture=sortby('30,000 traces a month: how many do you score?',
                             sortrow('1 in 10', '3,000 scores times $0.006', '$18 a month', icon='activity'),
-                            sortrow('Every one', '30,000 scores times $0.006', '$180 a month', look='dashed', icon='alert'))),
+                            sortrow('Every one', '30,000 scores times $0.006', '$180 a month', icon='alert'))),
         card('Keep it affordable',
              'Spend where the decision is made.',
              picture=steps(('flask', 'A smoke set while you iterate', 'A few dozen examples for quick changes; the full eval only for the finalists.'),
