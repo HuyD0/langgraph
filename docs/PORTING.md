@@ -89,6 +89,55 @@ uv run drill cloud deploy --target work      # after merging changes to the app
 uv run drill cloud share <email> --target work
 ```
 
+## Writing changes that port well
+
+This part is for changes made **here**, in the public repository. The setup below is one way to
+run a downstream copy. A downstream may merge whole releases, pick single commits, or adapt a
+change to its own code, and this repository is not the source of truth for what it keeps
+privately. So write each change so that it still makes sense when taken on its own.
+
+**Which parts change how often.** This is a *proposal*, read from how the repository is built
+today; nothing promises any of it yet.
+
+| Kind | Paths | Why |
+|---|---|---|
+| Surfaces others rely on: change with care and say so | Lesson `id`s in `src/drill/content/modules/` and packs (progress is saved under them; pack lessons name core ids in `prerequisites`); the pack format and `content-packs/PUBLIC` ([CONTENT_PACKS.md](CONTENT_PACKS.md)); `/api/*` routes and MCP tools ([SERVER.md](SERVER.md)); `drill` commands and flags; variables in `app.yaml` and `databricks.yml`; `tests/test_scrub.py` and its denylist settings; `templates/enterprise/overlay.yml`; `scripts/hooks/pre-push` | A downstream copy, a deployed app or a learner's saved progress depends on the name or shape |
+| Generated: regenerate, never hand-edit | `dist/` and `docs/tutor/CURRICULUM_MAP.md` (both git-ignored), `requirements.txt` (`uv run drill cloud requirements`, from `uv.lock`), `docs/screens/` (`node scripts/screenshots.mjs`), `src/drill/content/prepared/` (`uv run drill tutor prepare`, which calls a paid model) | A downstream copy can regenerate them instead of merging them |
+| Examples and learning material | `notebooks/`, `ai-starter/`, `docs/course/`, `docs/proposals/`, `docs/research/` | Self-contained; safe to skip or take as they are |
+| Implementation details: expected to change often | `src/drill/content/page.html`, `page/`, `tokens.css`, lesson wording, server internals behind the routes | Change freely, as long as the surfaces above keep working |
+
+**Conventions** (the short list is in [AGENTS.md](../AGENTS.md), "Changes that port well"):
+
+- One topic per pull request and per commit. Keep refactors, renames and reformatting out of
+  behaviour changes, in pull requests of their own.
+- A behaviour change comes with a test that shows it; generated files are regenerated in the same
+  pull request.
+- The pull request description says which areas it touches (the table in AGENTS.md) and has a
+  **Compatibility** line: "none", or what breaks for someone who relied on a surface above and
+  how to move over. To rename a pack lesson's id, keep the old one in `aliases`
+  ([CONTENT_PACKS.md](CONTENT_PACKS.md)).
+- Nothing about a downstream copy goes into this repository: no names, addresses, paths, branch
+  names or code. The scrub (below) catches some of it, not all of it.
+
+**Checks that exist today:**
+
+| Where | What runs |
+|---|---|
+| Before each commit | `scripts/check.sh`: `uv run drill build-page`, `uv run drill tutor map`, `uv run pytest -q -m "not slow"` (includes the scrub) |
+| Before each push, once set up | `scripts/hooks/pre-push` (`git config core.hooksPath scripts/hooks`): `uv run pytest -q tests/test_scrub.py` |
+| CI, `.github/workflows/tests.yml` | `uv sync --dev`, then the full `uv run pytest -q` (with the `slow` notebook tests) on Python 3.12 with no cloud credentials; a job that fails if a `notebooks/m*.ipynb` has no `NotImplementedError` left |
+| CI, `.github/workflows/codeql.yml` | CodeQL `security-and-quality` on Python and JavaScript, pull requests to `main` and weekly |
+| GitHub settings | Secret scanning and push protection are on |
+
+**Releases are tags.** Each time `main` is published to the claude.ai page as version N, that commit
+is tagged `v0.N`, so a tag is a build someone has looked at. `git tag` lists them; the work copy merges
+tags, never `main`.
+
+**Not automated, on purpose.** A sync script, a path manifest or a workflow that labels pull
+requests by surface would need to know which paths each downstream actually takes, how it
+records the commit it last took, and which checks it runs. Those are not in this repository.
+The table above is a starting point for a manifest, once it has been agreed.
+
 ## Keeping the work copy in step
 
 The work copy is a **downstream** of this public repository, not a hand-made copy: it has the
@@ -104,18 +153,19 @@ never creates, so a merge is fast and conflict-free:
 | `UPSTREAM` | One line: the public commit the work copy was last merged with |
 | `README-internal.md` | Anything a colleague needs that cannot be said here |
 
-**Set it up once**, on the work laptop, from a release tag of this repository (releases are
-tagged `v0.x` here after a merge to `main`, so the work copy pins a known build):
+**Set it up once**, on the work laptop, from a release tag of this repository (each published
+build is tagged `v0.N`, N being the page's version, so the work copy pins a build someone has looked at;
+`git tag` lists them):
 
 ```bash
-git clone --branch v0.1 https://github.com/HuyD0/langgraph.git daily-drill && cd daily-drill
+git clone --branch v0.84 https://github.com/HuyD0/langgraph.git daily-drill && cd daily-drill
 git switch -c main
 git remote rename origin upstream                 # this repository is "upstream" from here on
 git remote add origin <the work repository's address>
 git rev-parse HEAD > UPSTREAM                     # the public commit this copy is built on
 cp templates/enterprise/overlay.yml .github/workflows/overlay.yml
 git add UPSTREAM .github/workflows/overlay.yml
-git commit -m "Daily Drill: downstream of the public repository at v0.1"
+git commit -m "Daily Drill: downstream of the public repository at v0.84"
 git push -u origin main
 ```
 
@@ -129,12 +179,12 @@ that touches a path outside the overlay.
 
 ```bash
 git fetch upstream --tags
-git switch -c upstream-sync-v0.2
-git merge --no-ff --no-commit v0.2                # stops before committing, so UPSTREAM goes in too
-git rev-parse v0.2 > UPSTREAM
+git switch -c upstream-sync-v0.85
+git merge --no-ff --no-commit v0.85               # stops before committing, so UPSTREAM goes in too
+git rev-parse v0.85 > UPSTREAM
 git add UPSTREAM
-git commit -m "Merge daily-drill v0.2"
-git push -u origin upstream-sync-v0.2             # then a PR labelled upstream-sync
+git commit -m "Merge daily-drill v0.85"
+git push -u origin upstream-sync-v0.85            # then a PR labelled upstream-sync
 ```
 
 `UPSTREAM` is the record: `git diff $(cat UPSTREAM) -- . ':!content-packs/internal'
@@ -178,7 +228,7 @@ merges it cleanly; if it conflicts, take upstream's version.
   (`git config core.hooksPath scripts/hooks`, once per clone) runs it alone before every push. In
   the work copy, `content-packs/internal/` is exempt, since that is where the real names belong.
   In the work repository's Actions, `overlay.yml` runs it with the denylist kept as the
-  repository secret `DRILL_DENYLIST`. Turn on GitHub secret scanning and push protection for this
+  repository secret `DRILL_DENYLIST`. GitHub secret scanning and push protection are on for this
   public repository too (free for public repositories).
 
 ## Taking it down
