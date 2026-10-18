@@ -282,22 +282,36 @@ def _verdict(text: str, version: int = 1) -> dict:
 
 
 def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], judge: Callable[[str], str],
-                draft_model: str = DRAFT_MODEL, judge_model: str = JUDGE_MODEL) -> dict:
-    """Draft one answer and judge it; one redraft with the judge's note if it fails."""
+                draft_model: str = DRAFT_MODEL, judge_model: str = JUDGE_MODEL, judge_version: int = 1) -> dict:
+    """Draft one answer, run the code checks, then judge it; one redraft with the reason if either fails.
+
+    The code checks (:mod:`drill.answer_quality`: the word limit, readability, repeated sentences) come first,
+    so the judge is never paid for a draft that could not be served anyway."""
+    from drill import answer_quality as aq
+
     fn = next((p.get("fn") for p in data["bank"] if p["id"] == lid), "") or ""
     giveaway = "" if chip["step"] == "Check" else ", and does not say which option of the lesson's Check questions is right"
     ask = prompt(data, lid, chip)
+    template, _, _ = JUDGES[judge_version]
+    lesson_text, terms = _context(data, lid), aq.glossary_terms(data)
     verdict: dict = {}
     answer = ""
+    quality: dict = {}
     for attempt in range(2):
         note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if attempt and verdict.get("notes") else ""
         answer = draft(ask + note).strip()
-        verdict = _verdict(judge(JUDGE.format(context=_context(data, lid), q=chip["q"], how=chip["how"], answer=answer,
-                                              giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)))
+        quality = aq.quality_checks(answer, lesson_text, terms, word_limit=200)
+        if quality["blocking"]:
+            verdict = {"pass": False, "notes": "The code checks failed: " + aq.why_blocked(quality) + "."}
+            continue
+        verdict = _verdict(judge(template.format(context=lesson_text, q=chip["q"], how=chip["how"], answer=answer,
+                                                 giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)), judge_version)
         if verdict["pass"]:
             break
     return {"q": chip["q"], "a": answer, "step": chip["step"], "fingerprint": fingerprint(data, lid, chip),
-            "status": "passed" if verdict["pass"] else "failed", "model": draft_model, "judge": {"model": judge_model, **verdict}}
+            "status": "passed" if verdict["pass"] else "failed", "model": draft_model,
+            "judge": {"model": judge_model, "version": judge_version, **verdict},
+            "quality": {k: quality.get(k) for k in ("grade", "fillers", "repeated", "unexplained_terms", "unknown_numbers", "unknown_names", "blocking")}}
 
 
 # List prices per million tokens (input, output), Anthropic's first-party rates, checked 2026-10-18 on the

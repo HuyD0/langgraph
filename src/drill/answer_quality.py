@@ -27,6 +27,12 @@ MAX_GRADE = 10.0
 FILLERS = ("great question", "good question", "excellent question", "certainly", "absolutely", "of course",
            "happy to help", "let's dive", "i hope this helps", "hope that helps", "sure thing")
 BLOCKING = ("over_word_limit", "hard_to_read", "repeated")
+# Product and project names the course uses, so they never count as names outside a lesson.
+COURSE_NAMES = ("Databricks", "MLflow", "LangGraph", "LangChain", "Azure", "Microsoft", "Foundry", "Python", "Terraform",
+                "Spacelift", "Unity", "Catalog", "Delta", "Spark", "OpenAI", "Claude", "GPT", "Lakebase", "Genie", "Postgres",
+                "Entra", "GitHub", "Copilot", "Ollama")
+PLAIN = {"over_word_limit": "over the word limit", "hard_to_read": "hard to read (long sentences or long words)",
+         "repeated": "a sentence is repeated"}
 _GLOSS = re.compile(r"\(|\bthat is\b|\bwhich means\b|\bmeans\b|\bcalled\b|\bin other words\b|: ", re.I)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 _WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
@@ -120,12 +126,12 @@ def unknown_names(text: str, lesson_text: str, allow: Iterable[str] = ()) -> lis
 
 
 def quality_checks(text: str, lesson_text: str = "", glossary_terms: Iterable[str] = (), word_limit: int = 200,
-                   allow_names: Iterable[str] = ()) -> dict:
+                   allow_names: Iterable[str] = COURSE_NAMES) -> dict:
     """Every code check at once. ``True`` on a rule means it was broken; lists hold what to read."""
     words = len(text.split())
     grade = readability_grade(text)
     checks = {
-        "words": words, "over_word_limit": words > word_limit, "grade": grade, "hard_to_read": grade > MAX_GRADE,
+        "words": words, "word_limit": word_limit, "over_word_limit": words > word_limit, "grade": grade, "hard_to_read": grade > MAX_GRADE,
         "fillers": filler_openers(text), "repeated": repeated_sentences(text) > 0,
         "unexplained_terms": unexplained_terms(text, glossary_terms, lesson_text) if lesson_text else [],
         "unknown_numbers": unknown_numbers(text, lesson_text) if lesson_text else [],
@@ -133,6 +139,16 @@ def quality_checks(text: str, lesson_text: str = "", glossary_terms: Iterable[st
     }
     checks["blocking"] = [name for name in BLOCKING if checks[name]]
     return checks
+
+
+def why_blocked(checks: dict) -> str:
+    """The blocking rules an answer broke, in plain words, for the drafter's second try."""
+    parts = []
+    for name in checks.get("blocking", []):
+        extra = f" ({checks['words']} words, limit {checks.get('word_limit', 200)})" if name == "over_word_limit" else \
+                f" (grade {checks['grade']}, keep it under {MAX_GRADE:.0f})" if name == "hard_to_read" else ""
+        parts.append(PLAIN[name] + extra)
+    return "; ".join(parts)
 
 
 def glossary_terms(data: dict) -> list[str]:

@@ -499,6 +499,7 @@ def tutor_prepare_cmd(
     draft_model: str = typer.Option("", "--draft-model", help="Serving endpoint that drafts (default: the strongest Claude)."),
     judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
     workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
+    judge_version: int = typer.Option(1, "--judge-version", help="The checklist the judge grades with: 1 (in use) or 2 (candidate)."),
 ) -> None:
     """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks."""
     from drill import tutor_prepared as tp
@@ -538,7 +539,7 @@ def tutor_prepare_cmd(
     try:
         mlflow.set_experiment(mlflow_names.experiment())
         mlflow.openai.autolog()
-        prompts = tpe.register_prompts(mlflow)
+        prompts = tpe.register_prompts(mlflow, judge_version)
         run_ctx = mlflow.start_run(run_name=f"tutor-prepare-{time.strftime('%Y-%m-%d')}-{tpe.git_commit()[:7]}")
         traced = True
     except Exception as exc:  # noqa: BLE001 - no MLflow: prepare anyway, untraced
@@ -548,12 +549,12 @@ def tutor_prepare_cmd(
         if traced:
             mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "tutor_prepare", "mlflow.source.git.commit": tpe.git_commit(),
                              "mlflow.note.content": f"Drafting and judging {len(work)} prepared tutor answers."})
-            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "answers": len(work), "module": module or "all",
-                               "lesson": lesson or "all", "redo": redo, "workers": workers,
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "judge_version": judge_version, "answers": len(work),
+                               "module": module or "all", "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced,
-               draft_model=draft_model, judge_model=judge_model)
+               draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
         console.print(f"Cost at list price: ${total:.2f} (${total / max(1, len(work)):.4f} an answer). The DBU charge is in system.billing.usage.")

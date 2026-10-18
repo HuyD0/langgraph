@@ -364,8 +364,7 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     from drill import answer_quality as aq
 
     glossary = aq.glossary_terms(data)
-    allow_names = ("Databricks", "MLflow", "LangGraph", "LangChain", "Azure", "Microsoft", "Foundry", "Python", "Terraform",
-                   "Spacelift", "Unity", "Catalog", "Delta", "Spark", "OpenAI", "Claude", "GPT", "Lakebase", "Genie", "Postgres")
+    allow_names = aq.COURSE_NAMES
     from drill import foundry_batch as fb
 
     judge_chat: dict[str, Any] = {"call": tp.databricks_chat(judge_model, profile) if provider == "databricks"
