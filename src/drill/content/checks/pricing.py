@@ -49,6 +49,66 @@ CHECKS = {
             why="Rerunning evals, updating prompts and being on call keep the system working, so they're "
                 "Maintain costs, paid every month."),
     ],
+    "embedding_cost": [
+        ask("A RAG app gets 300,000 questions a month of 25 tokens each, and embeddings cost $0.02 per "
+            "million tokens. What do the questions cost to embed each month?",
+            ["$0.15", "$1.50", "$150"],
+            answer=0,
+            clue="Count the tokens first, then use the price per million.",
+            why="300,000 times 25 = 7,500,000 tokens, times $0.02 divided by 1,000,000 = $0.15. Embedding is cheap; "
+                "the search service that holds the vectors is usually the bigger line."),
+        ask("Which embedding cost is easiest to forget when you plan a RAG app?",
+            ["Embedding everything again after a model change", "Embedding the documents the first time", "Embedding new documents each month"],
+            answer=0,
+            clue="Which one only happens if something changes later?",
+            why="Vectors from two models can't be compared, so a new embedding model means embedding "
+                "every document again. Put that one-off in the plan before anyone swaps the model."),
+    ],
+    "vector_storage": [
+        ask("You switch from 1,536 to 3,072 dimensions for the same 5 million chunks. What happens to "
+            "the space the vectors take?",
+            ["It doubles", "It stays the same", "It halves"],
+            answer=0,
+            clue="Which number in vectors times dimensions times 4 bytes changed?",
+            why="5,000,000 times 1,536 times 4 bytes is about 30.7 GB; with 3,072 dimensions it is about "
+                "61.4 GB, twice as much, and it may need another unit."),
+        ask("Nobody has searched your Databricks AI Search endpoint for a month. What does it cost?",
+            ["It still bills every hour it exists", "Nothing, because nobody searched", "Only the space the vectors take"],
+            answer=0,
+            clue="Is the endpoint billed for searches, or for being there?",
+            why="Endpoints are billed by the unit per hour while they exist, used or not. Delete "
+                "the ones nobody uses."),
+    ],
+    "paid_tools": [
+        ask("You need the text, not the tables, from 50,000 scanned pages. Read costs $1.50 per 1,000 "
+            "pages and Layout $10. What do you pay with the right one?",
+            ["$75", "$500", "$7.50"],
+            answer=0,
+            clue="Text only needs Read. Then pages times price divided by 1,000.",
+            why="50,000 times $1.50 divided by 1,000 = $75. Layout would be $500 for tables you don't need."),
+        ask("An agent's design says one web search per question, but the traces show 4. What happens "
+            "to the search bill?",
+            ["It is 4 times the plan", "It stays as planned", "It is a quarter of the plan"],
+            answer=0,
+            clue="The bill counts searches, not questions.",
+            why="Each search is billed, so 4 searches per question cost 4 times the plan. Take calls "
+                "per task from traces, and cap them."),
+    ],
+    "find_the_price": [
+        ask("An embedding model costs $0.02 per million tokens in a Global deployment and $0.022 in one "
+            "region. Why might you still pick the region?",
+            ["Your data must stay in that region", "One region is always faster", "Global prices change every day"],
+            answer=0,
+            clue="Where can a Global deployment process your data?",
+            why="A Global deployment can process data in any region. If your rules say data stays in "
+                "one place, the extra 10 percent pays for that."),
+        ask("Where do you look first for what your AI feature really cost last month on Databricks?",
+            ["The system.billing.usage table", "The pricing calculator", "The model's documentation"],
+            answer=0,
+            clue="Which one shows what was billed, not what would be?",
+            why="The calculator and the docs give estimates and list prices. The billing table shows "
+                "what you were actually charged."),
+    ],
     "payback_plan": [
         ask("The bot saves staff time, but the business owner says nobody will be hired less and no "
             "overtime is cut. What kind of saving is that?",

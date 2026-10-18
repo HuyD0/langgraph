@@ -161,8 +161,9 @@ functional from non-functional requirements,
 reviewing the design against the Well-Architected pillars (Microsoft's five, plus
 Databricks' governance and interoperability), and deciding go, fix or stop against
 acceptance criteria agreed before the pilot. **AI & ML foundations** then teaches how to measure it honestly,
-and **Pricing and sizing** works out the total cost of ownership, what it saves and how much
-capacity it needs, before you build; it goes with the cost and capacity lines of
+and **Pricing and sizing** works out the total cost of ownership (with the sums behind
+embeddings, vector search, tools billed per call or page, and where to find each real price),
+what it saves and how much capacity it needs, before you build; it goes with the cost and capacity lines of
 [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md).
 **Agent teams** starts with whether you need a team at all, then covers splitting the
 work, fanning out, hand-offs, checking, and what a team costs. It ends with the
