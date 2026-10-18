@@ -75,7 +75,7 @@ model_cost = sum(costs) / len(costs)
 - `model_cost`: the model's bill for one task, in dollars, like `0.13`.
 - `check_share`: the share of answers a person checks, like `0.3` (30 in 100).
 - `check_minutes`: the minutes one check takes, like `2`.
-- `hourly_rate`: what an hour of that person's time costs, like `45`.
+- `hourly_rate`: what an hour of that person's time costs, like `60`.
 - `fail_share`: the share of answers that fail and are done again by hand, like `0.15`.
 - `redo_cost`: what doing one task again by hand costs, like `8`.
 
@@ -103,7 +103,7 @@ Return the model cost plus checking plus failures, in dollars, rounded to 2 deci
     return round(total, 2)
 """,
         cases=[
-            case(0.13, 0.3, 2, 45, 0.15, 8, expected=1.78, sample=True),
+            case(0.13, 0.3, 2, 60, 0.15, 8, expected=1.93, sample=True),
             case(0.04, 0, 2, 60, 0, 8, expected=0.04),
             case(0.1, 1, 3, 40, 0.1, 6, expected=2.7),
             case(0.0123, 0.25, 1, 50, 0.05, 7, expected=0.57),
@@ -146,7 +146,7 @@ total = trip + 5      # 15.0""",
     return width * height""",
             ],
         ],
-        byhand='Model: 0.13 dollars. Checking: 0.3 times 2 is 0.6 minutes a task. Divided by 60 that is 0.01 hours, and times 45 dollars an hour that is 0.45. Failures: 0.15 times 8 is 1.20. Add them: 0.13 plus 0.45 plus 1.20 is 1.78. Return 1.78.',
+        byhand='Model: 0.13 dollars. Checking: 0.3 times 2 is 0.6 minutes a task. Divided by 60 that is 0.01 hours, and times 60 dollars an hour that is 0.60. Failures: 0.15 times 8 is 1.20. Add them: 0.13 plus 0.60 plus 1.20 is 1.93. Return 1.93.',
         why='A handful of multiplications and one sum, whatever the numbers.',
         gotchas=[
             [
@@ -322,21 +322,22 @@ lesson(MODULE, 'total_cost',
     ],
     example=example('Two years of the HR assistant', """build = {"build team": 60000, "eval set": 8000,
          "security review": 5000}      # 73000
-monthly = {"model": 900, "hosting": 1200,
-           "monitoring": 300, "checking": 3500}
-# 5900 a month for 24 months: 141600
-# total: 214600
-# biggest item: checking, 3500 x 24 = 84000,
-# more than the whole build team"""),
+monthly = {"model": 390, "hosting": 1200,
+           "evals": 1100, "people": 10800}
+# people: checking and redoing answers
+# 13490 a month for 24 months: 323760
+# total: 396760
+# biggest item: people, 10800 x 24 = 259200,
+# more than three times the whole build"""),
     check=question(
-        'Two years of an AI assistant cost $214,600. Which change cuts the most?',
+        'Two years of an AI assistant cost $396,760. Which change cuts the most?',
         [
             'A model that is half the price per token',
-            'Fewer answers that need a person to check them',
+            'Fewer answers for a person to check or redo',
             'A cheaper security review before launch',
         ],
         answer=1,
-        why='Checking costs $3,500 a month, $84,000 over two years. Halving the model saves about $10,800, and the security review is paid only once.',
+        why='People checking and redoing answers cost $10,800 a month, $259,200 over two years. Halving the model saves about $4,700, and the security review is paid only once.',
     ),
     angle=angle(
         pattern='One-off plus monthly times months',
@@ -352,7 +353,7 @@ monthly = {"model": 900, "hosting": 1200,
         prompt="""Your function gets three things:
 
 - `build`: a dict of one-off costs in dollars, like `{"build team": 60000}`.
-- `monthly`: a dict of costs paid every month, like `{"model": 900}`.
+- `monthly`: a dict of costs paid every month, like `{"model": 390}`.
 - `years`: how many years the system will run, like `2`.
 
 Over its life, a one-off cost counts once, and a monthly cost counts 12 times `years`.
@@ -386,8 +387,8 @@ Return `[total, biggest]`: the total over its life, rounded to a whole number, a
 """,
         cases=[
             case({"build team": 60000, "eval set": 8000, "security review": 5000},
-                 {"model": 900, "hosting": 1200, "monitoring": 300, "checking": 3500}, 2,
-                 expected=[214600, "checking"], sample=True),
+                 {"model": 390, "hosting": 1200, "evals": 1100, "people": 10800}, 2,
+                 expected=[396760, "people"], sample=True),
             case({"build team": 50000}, {"model": 100}, 1, expected=[51200, "build team"]),
             case({}, {"model": 250.5, "hosting": 300}, 3, expected=[19818, "hosting"]),
             case({"pilot": 12000}, {"on call": 1000}, 1, expected=[24000, "pilot"]),
@@ -419,9 +420,9 @@ Return `[total, biggest]`: the total over its life, rounded to a whole number, a
             [
                 'Looping over a dict',
                 '`for name in costs:` gives each key in turn; `costs[name]` is its value.',
-                """costs = {"model": 900}
+                """costs = {"model": 390}
 for name in costs:
-    print(name, costs[name])   # model 900""",
+    print(name, costs[name])   # model 390""",
             ],
             [
                 '+=',
@@ -435,7 +436,7 @@ total += 5   # 5""",
                 'round(19818.0)   # 19818',
             ],
         ],
-        byhand='24 months. Build: 60000 + 8000 + 5000 = 73000; biggest so far is the build team at 60000. Monthly: model 900 x 24 = 21600, hosting 28800, monitoring 7200, checking 3500 x 24 = 84000, now the biggest. Total 73000 + 141600 = 214600. Return [214600, "checking"].',
+        byhand='24 months. Build: 60000 + 8000 + 5000 = 73000; biggest so far is the build team at 60000. Monthly: model 390 times 24 = 9360, hosting 28800, evals 26400, people 10800 times 24 = 259200, now the biggest. Total 73000 + 323760 = 396760. Return [396760, "people"].',
         why='Each cost is looked at once, so the work grows with the number of items.',
         gotchas=[
             [
@@ -1024,17 +1025,17 @@ lesson(MODULE, 'payback_plan',
         'A task that saves money every time can still lose money overall. Running costs come every month, and the build has to be paid back. Three numbers tell you whether it is worth building.',
         '**Monthly net** is the saving per task times tasks a month, minus the fixed monthly costs (search, logging, monitoring). **Payback** is the build cost divided by the monthly net: how many months until the build has paid for itself. **Break-even** is the fixed monthly costs divided by the saving per task: how many tasks a month you need just to cover the running costs.',
         "Where the numbers come from: **saving per task** is today's cost, minus the cost per finished task, minus what mistakes nobody caught cost later. The business owner confirms the staff time saved is real money, a **hard saving**: fewer new hires or less overtime, not just quieter afternoons (a **soft saving**). They also guess tasks a month, and the POC checks that guess.",
-        'In the HR example, $8 today minus about $1.87 with AI, minus 50 cents for mistakes nobody caught, saves about $5.64 a ticket. With 6,000 tickets a month and $10,000 of fixed costs, a $150,000 build pays back in about 6.3 months.',
+        'In the HR example, $8 today minus about $1.87 with AI, minus 50 cents for mistakes nobody caught, saves about $5.64 a ticket. With the 6,000 tickets a month that HR answers by hand today, and $2,300 a month of fixed costs (hosting, evals and monitoring), the $73,000 build pays back in about 2.3 months.',
     ],
     example=example('The HR ticket plan', """saving = 5.635   # a ticket
 tasks = 6000     # a month
-fixed = 10000    # a month
-build = 150000   # once
+fixed = 2300     # a month
+build = 73000    # once
 net = saving * tasks - fixed
-# 23810 a month
-payback = build / net   # 6.3 months
-even = fixed / saving   # 1774.6
-# round up: 1775 tickets a month"""),
+# 31510 a month
+payback = build / net   # 2.3 months
+even = fixed / saving   # 408.2
+# round up: 409 tickets a month"""),
     check=question(
         'Your plan breaks even at 2,000 tasks a month, but the business only sends 1,500. What happens?',
         [
@@ -1057,13 +1058,13 @@ with mlflow.start_run(run_name="hr-bot-case"):
     mlflow.log_params({
         "saving_per_task": 5.635,
         "tasks_per_month": 6000,
-        "fixed_monthly": 10000,
-        "build_cost": 150000,
+        "fixed_monthly": 2300,
+        "build_cost": 73000,
     })
     mlflow.log_metrics({
-        "monthly_net": 23810,
-        "payback_months": 6.3,
-        "break_even_tasks": 1775,
+        "monthly_net": 31510,
+        "payback_months": 2.3,
+        "break_even_tasks": 409,
     })
 # Later, swap each guess for a
 # number the POC measured."""),
@@ -1076,14 +1077,14 @@ with mlflow.start_run(run_name="hr-bot-case"):
 
 - `saving_per_task`: real dollars saved on each task, like `5.635`. It is always above 0.
 - `tasks_per_month`: the tasks the AI handles in a month, like `6000`.
-- `fixed_monthly`: the running costs each month, like `10000`.
-- `build_cost`: what building it costs, paid once, like `150000`.
+- `fixed_monthly`: the running costs each month, like `2300`.
+- `build_cost`: what building it costs, paid once, like `73000`.
 
 Return a dict with three keys:
 
 - `"monthly_net"`: saving per task times tasks a month, minus the fixed costs, rounded to 2 decimal places.
 - `"payback_months"`: the build cost divided by the monthly net, rounded to 1 decimal place. If the monthly net is 0 or less, use `None`.
-- `"break_even_tasks"`: the fixed costs divided by the saving per task, rounded UP to a whole number. So 1774.6 becomes 1775, and 2000 stays 2000.""",
+- `"break_even_tasks"`: the fixed costs divided by the saving per task, rounded UP to a whole number. So 408.2 becomes 409, and 2000 stays 2000.""",
         pattern='Net first, divide only when it is above zero, and round break-even up.',
         target='a few sums, no loops',
         realworld='Whoever funds the build asks for payback and break-even first. Written down, they also become go or no-go gates for the pilot: if real volume stays below break-even, stop.',
@@ -1112,11 +1113,11 @@ Return a dict with three keys:
     }
 """,
         cases=[
-            case(5.635, 6000, 10000, 150000, expected={'monthly_net': 23810.0, 'payback_months': 6.3, 'break_even_tasks': 1775}, sample=True),
+            case(5.635, 6000, 2300, 73000, expected={'monthly_net': 31510.0, 'payback_months': 2.3, 'break_even_tasks': 409}, sample=True),
             case(2, 1000, 3000, 50000, expected={'monthly_net': -1000, 'payback_months': None, 'break_even_tasks': 1500}),
             case(5, 2000, 10000, 60000, expected={'monthly_net': 0, 'payback_months': None, 'break_even_tasks': 2000}),
             case(4, 500, 0, 12000, expected={'monthly_net': 2000, 'payback_months': 6.0, 'break_even_tasks': 0}),
-            case(2.535, 6000, 10000, 150000, expected={'monthly_net': 5210.0, 'payback_months': 28.8, 'break_even_tasks': 3945}),
+            case(2.535, 6000, 2300, 73000, expected={'monthly_net': 12910.0, 'payback_months': 5.7, 'break_even_tasks': 908}),
         ],
         guided="""def payback_plan(
         saving_per_task, tasks_per_month,
@@ -1132,7 +1133,7 @@ Return a dict with three keys:
     else:
         payback = None
     # Step 3: tasks to cover the fixed costs.
-    # int() drops the decimals: 1774.6 becomes 1774.
+    # int() drops the decimals: 408.2 becomes 408.
     even = int(fixed_monthly / saving_per_task)
     # If that many tasks save less than fixed, add 1.
     if ___:
@@ -1171,10 +1172,10 @@ if boxes * 6 < 25:
             [
                 'round',
                 '`round(x, 1)` keeps 1 decimal place.',
-                'round(6.2998, 1)   # 6.3',
+                'round(2.3167, 1)   # 2.3',
             ],
         ],
-        byhand='Saved a month: 5.635 times 6000 is 33810. Minus 10000 of fixed costs, the monthly net is 23810. That is above 0, so payback is 150000 divided by 23810, about 6.2999, which rounds to 6.3 months. Break-even: 10000 divided by 5.635 is about 1774.6. int() gives 1774, and 1774 tickets save only about 9996, less than 10000, so add 1: 1775. Return {"monthly_net": 23810, "payback_months": 6.3, "break_even_tasks": 1775}.',
+        byhand='Saved a month: 5.635 times 6000 is 33810. Minus 2300 of fixed costs, the monthly net is 31510. That is above 0, so payback is 73000 divided by 31510, about 2.3167, which rounds to 2.3 months. Break-even: 2300 divided by 5.635 is about 408.2. int() gives 408, and 408 tickets save only about 2299, less than 2300, so add 1: 409. Return {"monthly_net": 31510, "payback_months": 2.3, "break_even_tasks": 409}.',
         why='A few sums and one check, whatever the numbers.',
         gotchas=[
             [
@@ -1183,7 +1184,7 @@ if boxes * 6 < 25:
             ],
             [
                 'Payback ignores the slow start',
-                'People start using it slowly, which is called the **adoption ramp**. If the first 3 months run at half volume, the 6.3 months becomes about 8.4.',
+                'People start using it slowly, which is called the **adoption ramp**. If the first 3 months run at half volume, the 2.3 months becomes about 3.9.',
             ],
         ],
     ),
@@ -1194,14 +1195,14 @@ lesson(MODULE, 'biggest_swing',
     learn=[
         "Every business case rests on guesses, called **assumptions**: how many tasks, how often the AI is right, how much each one saves. If you don't know which guess matters most, the trial measures the easy things and misses the one that sinks the plan.",
         'A **sensitivity analysis** changes one guess at a time, from a bad value to a good one, and keeps the others at their expected values. The **swing** is how far the answer moves. The guess with the biggest swing is the one to measure hardest.',
-        'In the HR example, doubling the token price lowers the monthly value by only about $390. If the AI is right 50 in 100 times instead of 80, the value falls from about $23,600 to $11,000, as the example below works out.',
+        'In the HR example, doubling the token price lowers the monthly value by only about $390. If the AI is right 50 in 100 times instead of 80, the value falls from about $31,300 to $18,700, as the example below works out.',
         'Where the numbers come from: you and the business owner agree a bad, expected and good value for each guess (the **worst case**, **base case** and **best case**). Then measure the guesses with the biggest swings first. For example, try the prompt on 50 past tickets labelled by hand to see how often the AI is right: that share is the `success` guess in the example and the exercise.',
     ],
     example=example('One guess, low and high', """# value = tasks * success * saving - fixed
-# tasks 6000, saving 7, fixed 10000
+# tasks 6000, saving 7, fixed 2300
 # success: how often the AI is right
-low = 6000 * 0.5 * 7 - 10000    # 11000
-high = 6000 * 0.95 * 7 - 10000  # 29900
+low = 6000 * 0.5 * 7 - 2300     # 18700
+high = 6000 * 0.95 * 7 - 2300   # 37600
 swing = high - low              # 18900
 # Do the same for each other guess,
 # and compare the swings."""),
@@ -1242,7 +1243,7 @@ success = result.metrics["correctness/mean"]
         fn='biggest_swing',
         prompt="""Your function gets two things:
 
-- `base`: your expected value for each guess, like `{"tasks": 6000, "success": 0.8, "saving": 7, "fixed": 10000}`.
+- `base`: your expected value for each guess, like `{"tasks": 6000, "success": 0.8, "saving": 7, "fixed": 2300}`.
 - `ranges`: a low and a high value for some of the guesses, like `{"success": [0.5, 0.95]}`.
 
 The plan's monthly value is `tasks * success * saving - fixed`.
@@ -1277,8 +1278,8 @@ Return the name with the biggest swing. If two tie, return the one that comes fi
     return best
 """,
         cases=[
-            case({'tasks': 6000, 'success': 0.8, 'saving': 7, 'fixed': 10000}, {'tasks': [4000, 7000], 'success': [0.5, 0.95], 'fixed': [8000, 14000]}, expected='success', sample=True),
-            case({'tasks': 6000, 'success': 0.8, 'saving': 7, 'fixed': 10000}, {'fixed': [5000, 20000]}, expected='fixed'),
+            case({'tasks': 6000, 'success': 0.8, 'saving': 7, 'fixed': 2300}, {'tasks': [4000, 7000], 'success': [0.5, 0.95], 'fixed': [1500, 5000]}, expected='success', sample=True),
+            case({'tasks': 6000, 'success': 0.8, 'saving': 7, 'fixed': 2300}, {'fixed': [1000, 8000]}, expected='fixed'),
             case({'tasks': 1000, 'success': 0.9, 'saving': 2, 'fixed': 3000}, {'tasks': [900, 1100], 'fixed': [1000, 6000]}, expected='fixed'),
             case({'tasks': 100, 'success': 1, 'saving': 10, 'fixed': 0}, {'tasks': [50, 150], 'saving': [5, 15]}, expected='saving'),
             case({'tasks': 2000, 'success': 0.5, 'saving': 4, 'fixed': 1000}, {'success': [0.4, 0.6], 'tasks': [1500, 2500], 'saving': [1, 9]}, expected='saving'),
@@ -1351,7 +1352,7 @@ g["size"] = 5   # base["size"] is still 1""",
     return cost(km) + cost(km)""",
             ],
         ],
-        byhand='In alphabetical order. fixed: at 8000 the value is 6000 times 0.8 times 7, minus 8000: 25600. At 14000 it is 19600. The gap is 6000. success: at 0.5 the value is 11000, and at 0.95 it is 29900. The swing is 18900. tasks: at 4000 the value is 12400, and at 7000 it is 29200. The swing is 16800. The biggest swing is 18900, so return "success".',
+        byhand='In alphabetical order. fixed: at 1500 the value is 6000 times 0.8 times 7, minus 1500: 32100. At 5000 it is 28600. The gap is 3500. success: at 0.5 the value is 18700, and at 0.95 it is 37600. The swing is 18900. tasks: at 4000 the value is 20100, and at 7000 it is 36900. The swing is 16800. The biggest swing is 18900, so return "success".',
         why='One walk through the guesses in ranges, working out the value twice for each.',
         gotchas=[
             [
