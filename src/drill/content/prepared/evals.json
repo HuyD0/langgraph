@@ -1294,182 +1294,301 @@
  "eval_cost": {
   "check:0:1": {
    "q": "Why not “It stays at $18 a month”?",
-   "a": "\"It stays at $18 a month\" gets one thing right. $18 is the correct bill today, at 1 in 10. The price of a single score also stays the same, about $0.006, whatever you choose.\n\nWhat it misses is that monitoring is not a flat fee. You pay for every score. The bill is the traces, times the **sampling rate** (the share of traces the scorer reads), times the cost of one score.\n\nScoring every trace moves the sampling rate from 1 in 10 to all of them. That turns 3,000 scores into 30,000. Ten times the scores means ten times the bill:\n\n- 1 in 10: 30,000 × 0.1 × $0.006 = $18\n- Every one: 30,000 × 1 × $0.006 = $180\n\nThat is why the lesson calls the sampling rate \"the dial.\" Turning it up or down changes the cost in direct proportion. The usual advice is to score enough traces to catch problems, not every one.\n\n\"It goes from $18 to $180 a month\" is better because it shows that scoring ten times as many traces makes the bill ten times bigger.",
+   "a": "\"It stays at $18 a month\" gets one thing right. **$18 is the real bill today**, when you score 1 in 10 traces. And the price of a single score does not change. It is still about $0.006 each time.\n\nWhat it misses is that monitoring is not a flat fee. You pay **per score**. The bill is three numbers multiplied together:\n\n- the traces you get (30,000 a month)\n- the **sampling rate**, meaning the share of traces you score\n- the cost of one score ($0.006)\n\nAt 1 in 10, you score 3,000 traces. 3,000 × $0.006 = $18.\n\nIf you score every trace, the sampling rate jumps from 0.1 to 1. That is ten times more. Now you score 30,000 traces. 30,000 × $0.006 = $180.\n\nSo the sampling rate is the dial. Turn it up, and the monitoring line grows with it.\n\n\"It goes from $18 to $180 a month\" is better because it shows that scoring ten times as many traces makes the bill ten times bigger.",
    "step": "Check",
-   "fingerprint": "2a51a501c8df7712",
+   "fingerprint": "3b3bda390fb8b6fe",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “It goes from $18 to $36 a month”?",
-   "a": "The $36 answer gets two things right. It starts from the correct bill of $18 a month. And it knows that scoring more traces costs more. A trace is the record of one real conversation with the app.\n\nWhat it misses is *how much* more. $36 is just double. That would only be true if you went from scoring 1 in 10 traces to 2 in 10.\n\nThe **sampling rate** is the share of traces the scorer reads. Scoring every trace moves it from 1 in 10 to 10 in 10. That is ten times as many scores:\n\n- 1 in 10: 3,000 scores × $0.006 = $18\n- Every one: 30,000 scores × $0.006 = $180\n\nEach score still costs the same $0.006. So the bill grows exactly as fast as the number of scores. Ten times the scores means ten times the bill.\n\nThis is why the lesson calls the sampling rate \"the dial.\" A small change in the share you score can make a big change in the monthly cost.\n\n\"It goes from $18 to $180 a month\" is better because it multiplies by the true change in the sampling rate, which is tenfold, not double.",
+   "a": "\"$18 to $36\" gets two things right. The starting bill really is $18 a month. And scoring more traces really does make the bill go up.\n\nWhat it misses is how much it goes up. $36 is double $18. Doubling would fit a move from 1 in 10 to 2 in 10. But \"every trace\" is a much bigger jump than that.\n\nHere is the arithmetic, step by step:\n\n- **Now:** 1 in 10 of 30,000 traces is 3,000 scores. At $0.006 each, that is $18.\n- **Every trace:** all 30,000 traces get scored. That is 30,000 scores, ten times as many.\n- **The price of one score does not change.** It stays $0.006.\n- **So the bill grows ten times too:** 30,000 times $0.006 is $180.\n\nA trace is the record of one real request to the app. The sampling rate is the share of those traces you score. The bill grows in step with that share.\n\n\"$18 to $180\" is better because going from 1 in 10 to every one means ten times the scores at the same price each, so the bill is ten times bigger, not twice as big.",
    "step": "Check",
-   "fingerprint": "3962042444c4b241",
+   "fingerprint": "767248da3659f435",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Only a minor looseness: calling the sampling-rate change \"small\" is odd when the example goes from 1 in 10 to every trace, and the answer is close to the word limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 1.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “$60”?",
-   "a": "\"$60\" is the price of one hour of an expert's time. It is not the price of the whole labelling job.\n\n**What it gets right:** it uses the right rate. People cost money by the hour, and $60 is that hourly cost.\n\n**What it misses:** it never counts how many hours the work takes. The question gives you the size of the job, and that is the step \"$60\" skips.\n\nHere is the missing step:\n\n1. 200 examples at 3 minutes each is 600 minutes.\n2. 600 minutes is 10 hours.\n3. 10 hours at $60 an hour is $600.\n\nSo the rule is hours times what an hour costs. \"$60\" uses only the second half of that rule.\n\nThis is easy to slip on because the rate is the only dollar figure in the question. It feels like the answer. But the question asks for the cost of the whole golden set. (The golden set is the batch of examples with the correct answers marked by hand.)\n\n\"$600\" is better because it turns the work into hours first, then prices those hours.",
+   "a": "\"$60\" gets one thing right. It is the real price of an expert's time. But it is the price of **one hour**, not the price of the whole job.\n\nThe step it skips is counting the hours. Labelling means a person reads each example and writes down the correct answer, so the golden set has something to be checked against. That takes time, and time is the thing you are paying for.\n\nWalk through it:\n\n- 200 examples, 3 minutes each, is 600 minutes.\n- 600 minutes is 10 hours.\n- 10 hours at $60 an hour is $600.\n\nSo \"$60\" would only be right if the whole set took one hour. That would be about 20 examples, not 200.\n\nThis is the lesson's main point in miniature. The people line of the bill is always hours times what an hour costs. If you forget the hours, the people line looks tiny. Then you might wrongly decide the model is your biggest cost.\n\n\"$600\" is better because it multiplies the hourly rate by the 10 hours the labelling actually takes.",
    "step": "Check",
-   "fingerprint": "cae2db025f25658c",
+   "fingerprint": "c081d85f7b3c47d6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.8,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “$36,000”?",
-   "a": "\"$36,000\" comes from multiplying all three numbers together: 200 examples × 3 minutes × $60. The first part is right. 200 examples at 3 minutes each is 600 minutes of work.\n\nThe slip is in the units. The $60 is a price per **hour**, but the 600 is a count of **minutes**. Multiplying them treats every minute as if it cost a full hour's pay. That makes the answer 60 times too big.\n\nThe fix is to turn minutes into hours first:\n\n- 200 × 3 = 600 minutes\n- 600 ÷ 60 = 10 hours\n- 10 hours × $60 = $600\n\nA quick sense check also helps. Ten hours of an expert's time is about one long working day. Paying $36,000 for one day of labelling should feel wrong straight away.\n\n\"$600\" is better because it converts the minutes into hours before multiplying by the hourly rate, so the units match.",
+   "a": "\"$36,000\" comes from multiplying all three numbers together: 200 examples × 3 minutes × $60. That gets one thing right. The cost of people really is time multiplied by what that time costs. And the first step is fine: 200 examples at 3 minutes each is 600 minutes of work.\n\nWhat it misses is the units. The $60 is a price per **hour**, not per minute. Multiplying 600 *minutes* by $60 charges $60 for every minute. That makes the bill 60 times too big.\n\nThe fix is to turn minutes into hours before using the hourly rate:\n\n- 600 minutes ÷ 60 = 10 hours\n- 10 hours × $60 = $600\n\nYou can also think of it as $60 an hour being $1 a minute. Then 600 minutes cost $600.\n\nA good habit: when you multiply a time by a rate, check that both use the same unit first.\n\n\"$600\" is better because it turns the 600 minutes into 10 hours before applying the $60-an-hour rate, so the units match.",
    "step": "Check",
-   "fingerprint": "a322d20cb97f8175",
+   "fingerprint": "aabfff8dc20c0793",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Score half of each answer”?",
-   "a": "\"Score half of each answer\" does get one thing right. The judge reads fewer tokens, so each score costs a bit less. (A **token** is a small chunk of text, roughly part of a word. You pay per token.)\n\nBut it breaks what the eval is for. The judge only sees part of the answer. A wrong fact, a missing step, or a rude closing line could sit in the half it never read. The judge would pass an answer it should fail. Now its verdicts are less trustworthy, and that is exactly what the question asks you to protect.\n\nThe savings are also smaller than they sound. The judge still reads the question, the instructions and any context. Only the answer part shrinks, so the bill drops by much less than half.\n\nCompare that with sampling in production. Sampling skips whole traces, but every trace it does score gets read in full. Cutting each answer in half damages every single score.\n\n\"Batch the full runs, which can wait\" is better because the judge sees the same examples and the same full answers, so the results are just as trustworthy, but batch processing (sending the jobs to run later in bulk) halves the price.",
+   "a": "\"Score half of each answer\" does get one thing right. The judge (the model that grades each answer) would read fewer tokens, the chunks of text a model is billed by. So each score would cost less.\n\nBut it breaks the eval. The judge only sees part of the answer. A wrong fact, a missing step or a rude line in the unread half slips through. The verdict then says \"good\" about an answer it never fully read. You save money, but you can no longer trust the scores. That defeats the point of evaluating.\n\nCompare this with sampling in production. Sampling scores fewer answers, but each one is read in full. So every verdict is still honest. Cutting answers in half makes every verdict shaky.\n\n\"Batch the full runs, which can wait\" is better because it keeps the same examples, the same judge and the same full answers. Batch processing means sending the work in a bulk job that finishes later instead of right away, and it halves the price without changing a single verdict.",
    "step": "Check",
-   "fingerprint": "4fd1b40b744ddcb3",
+   "fingerprint": "c534caa6589de621",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The answer is sound, but the claim that the judge still reads the question, instructions and context so savings are small goes beyond the lesson, and at about 200 words it is right at the length limit."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Drop the must-pass cases”?",
-   "a": "**It does cut the bill.** Eval runs cost the examples times the price of one example, times every change you test. Fewer examples means a smaller runs line. So the option gets the cost part right.\n\n**But it fails the other half of the question.** The question asks for a cut that keeps the eval just as trustworthy. Must-pass cases are the examples your app has to get right, no matter what. Think of them as the non-negotiables. If you drop them, nothing checks those answers any more. A change could break exactly what matters most, and the eval would still look fine. The bill shrinks, but you can trust the eval less. That is the trade the question asked you to avoid.\n\n**Why batching is the better pick.** The full runs can wait for their results. So you can send them as a batch: a group of requests the provider handles later, at about half the price. You keep the same examples and the same judge.\n\nBatching the full runs halves the cost of each run without removing a single check, so the eval stays exactly as trustworthy.",
+   "a": "**Why not \"Drop the must-pass cases\"?**\n\nIt does get one thing right. Fewer examples means a smaller bill. In the lesson, a run costs the examples times the cost of one example. Remove some examples and that line shrinks.\n\nBut the question asks for a cut that keeps the eval **trustworthy**. Trustworthy here means you can rely on its result when you decide whether a change is good. Every example you drop is something the eval no longer checks. And these cases are labelled \"must-pass,\" which suggests someone thought they were important to check. If you remove them, the eval can say \"all good\" while that behaviour quietly breaks. You save money by testing less, and testing less is exactly what makes an eval less trustworthy.\n\n**Why batching is better**\n\nBatching runs the same examples through the same judge. It only waits for a slower, cheaper queue. The lesson says this halves the price. Eval runs don't need answers instantly, so the wait costs you little.\n\nIn one sentence: batching cuts the price of each check without removing any checks, so the eval tests exactly as much as before.",
    "step": "Check",
-   "fingerprint": "28450f438059b4c4",
+   "fingerprint": "f32a809473c2cede",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The definition of 'must-pass cases' is not in the lesson, but it is a reasonable reading and does not contradict anything."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:interview": {
    "q": "How do I explain “Price every line for a month, then find the big…” in an interview?",
-   "a": "**The 30-second answer**\n\n*The problem.* Teams often budget evals by the judge's token price. The judge is the model that grades answers. But it's only one cost, so the real bill surprises them.\n\n*The idea.* I split the bill into three lines and price each for a month. Runs: changes I test, times examples, times the cost of one example. People: hours spent labelling the golden set (hand-checked examples) and spot-checking the judge, times an hourly rate. Monitoring: real traces (records of live requests), times the share I score, times the cost of one score. Then I find the biggest line. Often it's people, not the model.\n\n*The trade-off.* Monitoring has a dial called the sampling rate. Scoring 1 in 10 traces is cheap but can miss rare failures. Scoring every one costs ten times more.\n\n**A likely follow-up**\n\n\"How would you cut this bill without losing trust in the results?\"\n\nHint: spend where the decision is made. Use a small smoke set (a few dozen examples) while iterating, and run the full eval only on finalists. Batch full runs, since they can wait. Sample in production.",
+   "a": "**A 30-second answer**\n\n*The problem.* Teams often think the eval bill is just the judge model. That misses most of the cost.\n\n*The idea.* I split the bill into three lines and price each for one month. Runs: examples times the cost of one example, times every change I test. People: hours spent labelling the golden set and spot-checking the judge, times what an hour costs. Monitoring: real traces after launch, times the share I score, times the cost of one score. A trace is the record of one real request. Then I look at the biggest line, because that's where savings matter. Often it's people, not the model.\n\n*The trade-off.* Monitoring has a dial: the sampling rate, the share of traces I score. Scoring 1 in 10 is cheap but can miss rare failures. Scoring every one catches more but costs ten times as much.\n\n**A likely follow-up**\n\n\"Your runs line is the biggest. How do you cut it?\"\n\n*Hint:* Use a smoke set, a few dozen quick-check examples, while you iterate. Run the full eval only on the finalists. Batch those full runs, since they can wait and batch pricing is about half.",
    "step": "Explain",
-   "fingerprint": "0b4fc4c17d7b0aa8",
+   "fingerprint": "4c47760e6fa7ab24",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the only small gap is that 'token price' is not explained for beginners."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The bill is far above your plan.** You probably priced only the judge. The full app answer plus the judge, on every example, on every change, adds up fast.\n- **The runs line jumps with each small tweak.** You may be running the full eval every time instead of a smoke set (a few dozen quick examples). Full runs at full price also mean batch processing was skipped. Batch means sending work to wait in a queue at half the price.\n- **Scores per month are close to traces per month.** Traces are records of real conversations. Monitoring cost rising with traffic is normal. But if 30,000 traces produce about 30,000 scores, the sampling rate is \"every one\" ($180), not \"1 in 10\" ($18).\n- **No hours appear anywhere.** Labelling the golden set and the weekly spot-checks were left out. These are often the biggest line. Or the spot-checks quietly stopped because nobody planned time for them.\n\n**Quickest check**\n\nPrice each line for one month: runs, people, monitoring. Compare each line to what you actually spent. Then look at the biggest one first.",
+   "a": "**Warning signs the eval bill was never priced properly**\n\n- **The model bill jumps after a busy week of changes.** Someone ran the full eval on every small tweak instead of a smoke set, meaning a small quick-check set of a few dozen examples.\n- **Monitoring cost climbs as traffic climbs.** The scorer is reading every trace, not a sample. A trace is the record of one real request.\n- **Nobody spot-checks the judge.** That costs no money, but there is a hidden price. Its scores look steady or too good, then users complain anyway. The judge drifted and no one noticed.\n- **The budget only lists tokens.** Labelling and review hours are missing, so the true cost is far higher than the plan says.\n- **Eval runs always run instantly.** No batching means paying full price for work that could wait.\n\n**Quickest check**\n\nWrite one monthly figure for each of the three lines: runs, people and monitoring. Count people in hours and turn them into dollars. Then circle the biggest line. If you can't fill one in, that line was skipped. If the biggest one surprises you, start saving there first.",
    "step": "Learn",
-   "fingerprint": "f1000f6459e9efc9",
-   "status": "passed",
+   "fingerprint": "4df4ab27f85101e1",
+   "status": "failed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
+    "version": 1,
+    "correct": false,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": true,
-    "notes": ""
+    "pass": false,
+    "notes": "The bullet 'Nobody spot-checks the judge. That costs no money' contradicts the lesson, which prices judge spot-checks as people time ($150 a week), and the claim that the judge 'drifted' is not in the lesson; the answer is also close to the 200-word limit.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "budget"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The monthly bill is a good habit. But the numbers, and which line is biggest, shift in a few common cases.\n\n**1. Much more traffic.** At 30 million traces a month, scoring 1 in 10 costs about $18,000, not $18. Monitoring then becomes the biggest line. Lower the sampling rate (the share of traces you score), use a cheaper judge model, or score only risky traces, like ones users flagged.\n\n**2. Agents with long, uneven traces.** A trace is the full record of one request. In a multi-step agent, one trace might be 2,000 tokens or 50,000, so a single \"cost of one example\" misleads. Run a small sample first, measure the real token counts, and price from the average and the worst case.\n\n**3. Data that changes over time.** If your users' questions or your HR policies change, the golden set (your hand-labelled answer key) goes stale. \"Label once\" becomes \"relabel every quarter.\" Add that as a recurring cost on the people line, not a one-off.\n\nIn each case the method still holds. Price every line, find the biggest, spend your effort there.",
+   "a": "The monthly bill works well for a steady app. Here are three places it needs extra care.\n\n**1. You test changes all day.**\nThe runs line grows with every change you test. If you test 100 changes a month instead of 20, runs can overtake people. Use a small smoke set (a few dozen quick examples) for most changes, and batch the full runs for the finalists.\n\n**2. Traffic grows a lot.**\nMonitoring grows with the number of traces, the records of real requests. At 3 million traces a month, \"1 in 10\" means 300,000 scores, about $1,800. Lower the sampling rate, or score a fixed number of traces per day.\n\n**3. Your users or data change over time.**\nThe golden set, your hand-checked examples with known good answers, stops matching what users really ask. Labelling then becomes a regular cost, not a one-time one. Budget for relabeling a slice each month, and price it as a monthly line.",
    "step": "Learn",
-   "fingerprint": "dc8852abe8b78b95",
+   "fingerprint": "9a2729691c81d322",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "budget",
+     "slice"
+    ],
+    "unknown_numbers": [
+     "1,800",
+     "100",
+     "300,000"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “sampling rate” mean here?",
-   "a": "The **sampling rate** is the share of real traffic your scorer actually checks. A **trace** is the record of one real request to your app: the question, the steps it took, and the answer.\n\nThink of a quality inspector at a bakery. Tasting every loaf would cost a lot of time and bread. So they taste 1 loaf in 10. That's often enough to notice if the oven is running too hot. Their sampling rate is 1 in 10, or `0.1`.\n\nYour eval scorer works the same way after launch. Real traces keep arriving. Each score costs money, because a judge model has to read the trace. So you pick a share to score.\n\nIn the lesson's HR assistant example, the monitoring line is:\n\n```python\nmonitor = 30000 * 0.1 * 0.006\n```\n\n- `30000` is the traces in a month.\n- `0.1` is the sampling rate, meaning 1 in 10.\n- `0.006` is the cost of one score in dollars.\n\nThat gives 3,000 scores, or $18 a month. Score every trace and it's $180. The sampling rate is the dial that sets this line of the bill.",
+   "a": "The **sampling rate** is the share of real traffic your scorer actually checks. A **trace** is the record of one real request to your app: the question, the steps it took, and its answer.\n\nThink of a food inspector at a bakery. They can't taste every loaf. So they taste 1 in 10. That \"1 in 10\" is their sampling rate. It's enough to notice if the bread goes wrong, without eating the whole day's batch.\n\nYour scorer works the same way after launch. Every trace it scores costs money, because a judge model reads it. So you choose what share to score.\n\nIn the lesson's example, it's the middle number on this line:\n\n```python\nmonitor = 30000 * 0.1 * 0.006\n```\n\n- `30000` is the traces in a month.\n- `0.1` is the sampling rate: 1 in 10, or 10%.\n- `0.006` is the cost of one score, in dollars.\n\nSo you score 3,000 traces for $18 a month. Scoring every one (a rate of `1.0`) would cost $180.\n\nThat's why the lesson calls it a dial. Turn it up for more coverage. Turn it down to spend less.",
    "step": "Learn",
-   "fingerprint": "f1af167340cf5b61",
+   "fingerprint": "8d4b3b0475e681cb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 2.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },
@@ -2586,182 +2705,319 @@
  "judge_cost": {
   "check:0:1": {
    "q": "Why not “Switch to a cheaper judge you never checked”?",
-   "a": "\"Switch to a cheaper judge you never checked\" gets one thing right. A smaller model really does cost less per call, and it can cut the bill far more than batching does.\n\nWhat it misses is trust. A judge is only useful if its verdicts match what careful people would say. This app's own tutor eval tried Claude Haiku as a judge at a twentieth of Sonnet's price. It agreed with itself on only 77 of 100 answers. Its agreement with people had a kappa of 0.05. Kappa is a score for how much two raters agree beyond pure luck, where 0 means no better than guessing. So those verdicts were close to coin flips. A cheap verdict nobody can trust is not a saving.\n\nThat is why the lesson puts \"a smaller judge\" last on the list. You only switch after the new judge passes the agreement checks from earlier lessons. This option skips those checks.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and simply waits for cheaper batch processing, halving the bill from $18 to $9 a run.",
+   "a": "It gets one thing right: a cheaper judge really does cut the bill. A smaller model can cost a twentieth of Sonnet's price.\n\nBut the question asks for two things: lower cost *and* verdicts you can trust. An unchecked judge only delivers the first. You have no idea whether its scores mean anything.\n\nThe lesson shows what can go wrong. This app's tutor eval tried Claude Haiku as a judge. It agreed with itself on only 77 in 100 answers. That means it scored the same answer differently on repeat runs. Its kappa with people was 0.05. Kappa is a score for how much two raters agree beyond lucky guessing, and 0.05 is barely above chance. A verdict that close to a coin flip can't tell you if your agent got better or worse.\n\nThat's why the smaller judge sits last on the list. You only use it after it passes the agreement checks.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and halves the price, from $18 to $9 a run, since eval runs can wait for slower batch processing.",
    "step": "Check",
-   "fingerprint": "5ae703b569ce2631",
+   "fingerprint": "cde76bf2cc057d6e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:0:2": {
    "q": "Why not “Add two more scorers to every answer”?",
-   "a": "Adding two more scorers makes the bill bigger, not smaller. Each scorer is its own model call on every answer. The calls are examples times scorers times repeats.\n\nWith 3 scorers you have 500 × 3 × 2 = 3,000 calls. With 5 scorers you have 500 × 5 × 2 = 5,000 calls. Every call still reads about 2,000 tokens and writes about 200. So the cost rises from $18 a run to about $30. At 20 runs a month, that is $600 instead of $360.\n\nWhat it gets right: more scorers can check more things about each answer. But the lesson's first tip points the other way. Score only what your acceptance criteria use. Your acceptance criteria are the checks you agreed decide whether the agent is good enough. Extra scorers you don't need are pure cost.\n\n\"Batch the runs\" is better because it keeps the same trusted judge and the same verdicts, and halves the price to $9 a run. Batch processing means sending the calls as a job that can wait, rather than needing answers right away.",
+   "a": "**Adding two more scorers makes the bill bigger, not smaller.**\n\nRemember how the calls multiply: examples times scorers times repeats. A **scorer** is one check the judge runs on each answer, like \"is it grounded?\" Every scorer is its own model call.\n\nGoing from 3 scorers to 5 changes the count like this:\n\n- Before: 500 × 3 × 2 = 3,000 calls, $18 a run.\n- After: 500 × 5 × 2 = 5,000 calls, $30 a run.\n\nThat is two-thirds more spending, every run. At 20 runs a month, it goes from $360 to $600.\n\nWhat it gets right: extra scorers can check more things about each answer. But the lesson's first tip points the other way. Score only what your **acceptance criteria** use. Those are the rules that decide whether the agent is good enough. Extra scorers beyond those add cost without helping that decision.\n\n**Why batching is better:** it keeps the exact same judge, so your verdicts stay just as trustworthy, while batch processing (sending the calls as a group that can wait) halves the price to $9 a run.",
    "step": "Check",
-   "fingerprint": "595e63b5b5c24135",
+   "fingerprint": "a747690563588e41",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent",
+     "grounded"
+    ],
+    "unknown_numbers": [
+     "30",
+     "5,000",
+     "600"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:1:1": {
    "q": "Why not “The cost per call barely moves”?",
-   "a": "\"The cost per call barely moves\" is a natural guess. The input really doesn't change: the judge still reads the same 2,000 tokens. And 800 output tokens is still fewer than 2,000 input tokens, so the change can look small.\n\nWhat it misses is the price. Output tokens cost five times as much as input tokens: $10 a million against $2. So a few hundred extra output tokens weigh far more than their count suggests.\n\nHere is the arithmetic for one call:\n\n- **Before:** input 2,000 × $2 / 1,000,000 = $0.004. Output 200 × $10 / 1,000,000 = $0.002. Total: $0.006.\n- **After:** input is still $0.004. Output 800 × $10 / 1,000,000 = $0.008. Total: $0.012.\n\nThat is exactly twice the cost. Across 3,000 calls a run, $18 becomes $36. That is why \"ask for a short verdict\" is on the list of savings.\n\n\"The cost per call doubles\" is better because it weighs each token by its price, not just its count. Output's higher price turns a modest token increase into twice the bill.",
+   "a": "That answer is tempting, and part of the reasoning is fair. The input doesn't change at all. The judge still reads the same 2,000 tokens. And 600 extra tokens sounds small next to 2,000.\n\nWhat it misses is that output is billed at five times the input rate: $10 a million against $2. So output tokens weigh far more on the bill than their count suggests.\n\nHere is one call, before and after:\n\n- **Before:** input is 2,000 × $2 / 1,000,000 = $0.004. Output is 200 × $10 / 1,000,000 = $0.002. The total is $0.006.\n- **After:** input is still $0.004. Output is 800 × $10 / 1,000,000 = $0.008. The total is $0.012.\n\nThe output part quadrupled, from $0.002 to $0.008. That pushes the whole call from $0.006 to $0.012. That's double, not \"barely moves.\" Across 3,000 calls a run and 20 runs a month, that doubling adds up fast.\n\n\"The cost per call doubles\" is better because it uses the higher output price on the extra tokens, which is exactly what the arithmetic shows.",
    "step": "Check",
-   "fingerprint": "3c276c8f7730c2de",
+   "fingerprint": "f4b06aab87a9051c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.3,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [
+     "600"
+    ],
+    "unknown_names": [
+     "Across"
+    ],
+    "blocking": []
    }
   },
   "check:1:2": {
    "q": "Why not “The cost per call halves”?",
-   "a": "\"The cost per call halves\" gets one thing right: the cost does change by a factor of two. But it gets the direction backwards.\n\nA longer reason means the judge writes *more* tokens, not fewer. Every token is billed. So adding tokens can never make a call cheaper. A **token** is a small chunk of text, roughly part of a word, and you pay for each one the model reads or writes.\n\nHere is the math for one call:\n\n- **Before:** input is 2,000 × $2 per million = $0.004. Output is 200 × $10 per million = $0.002. Total: **$0.006**.\n- **After:** input is still $0.004. Output is 800 × $10 per million = $0.008. Total: **$0.012**.\n\n$0.006 becomes $0.012. That is double.\n\nThis also shows why output matters so much. Output costs five times as much per token as input. So the 600 extra output tokens cost more than all 2,000 input tokens put together.\n\n\"The cost per call doubles\" is better because it follows the real numbers: more output tokens at the pricier output rate push each call from $0.006 to $0.012.",
+   "a": "\"The cost per call halves\" gets one thing right: the cost changes by a factor of two. But it gets the direction backwards. You added tokens and removed none, so the bill can only go up.\n\nWork it out per call. Prices are per million tokens, so divide by a million.\n\n**Before:**\n- Input: 2,000 tokens at $2 a million = $0.004\n- Output: 200 tokens at $10 a million = $0.002\n- Total: **$0.006**\n\n**After the long reason:**\n- Input: unchanged at $0.004\n- Output: 800 tokens at $10 a million = $0.008\n- Total: **$0.012**\n\nThat is twice the old cost.\n\nNotice the input didn't move. Only the output grew, from 200 tokens to 800, four times as many. Output tokens are the pricey ones, at five times the input price. So a longer reason costs far more than it looks. That's why the lesson says to ask for a short verdict.\n\n\"The cost per call doubles\" is better because $0.006 becomes $0.012 once the extra 600 output tokens are priced at $10 a million.",
    "step": "Check",
-   "fingerprint": "8166175a1fa610b0",
+   "fingerprint": "8dc6ce78fc71fd0f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.1,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "None"
+    ],
+    "unknown_numbers": [
+     "600"
+    ],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:1": {
    "q": "Why not “Switch now: cheaper is always better”?",
-   "a": "\"Switch now: cheaper is always better\" gets one thing right. Cost matters. A judge a twentieth of the price would shrink a $360 monthly bill to about $18. That is a real saving, and the lesson does list a smaller judge as one way to cut the bill.\n\nBut it misses the point of a judge. You pay a judge for verdicts you can trust. If the verdicts are wrong, you are paying for noise, however little you pay.\n\nThe lesson's own example shows this. This app's tutor eval tried Claude Haiku as a cheap judge. It gave the same verdict on the same answer only 77 times in 100. Its agreement with people was a kappa of 0.05. Kappa is a score for agreement that subtracts the agreement you would get by luck, so 0.05 is barely better than guessing.\n\nThat is also why a smaller judge sits last on the list. It goes after the safer savings like short verdicts, caching and batching, and only once it passes the agreement checks.\n\n\"Check it agrees with people and itself\" is better because it tells you whether the cheap verdicts are worth anything before you rely on them.",
+   "a": "\"Switch now\" gets one thing right. Price matters. A judge a twentieth of the price could shrink a $360 monthly bill a lot.\n\nWhat it misses is that a judge's job is to give verdicts you can trust. If the cheap judge scores answers badly, every number from your eval is wrong. You would then make decisions on bad data, and that costs far more than the bill you saved.\n\nThis app's own eval shows the risk. Claude Haiku, the cheaper judge, gave the same verdict on the same answer only 77 times in 100. Its agreement with people had a kappa of 0.05. Kappa is a score for agreement after removing lucky matches. Zero means pure chance, so 0.05 is barely better than guessing.\n\nThe lesson also puts \"a smaller judge\" last on its list. Safer savings come first: fewer scorers, short verdicts, caching the rubric, and batching.\n\n\"Check it agrees with people and itself\" is the better answer because it only lets you switch once you know the cheap judge's verdicts can be trusted.",
    "step": "Check",
-   "fingerprint": "f0c90c5af8573dd5",
+   "fingerprint": "b49dde77af3e5011",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "check:2:2": {
    "q": "Why not “Run it only on easy examples”?",
-   "a": "\"Run it only on easy examples\" gets one thing right. Fewer examples means fewer calls, and calls are what multiply the bill.\n\nBut it misses the real question. The team wants a judge at a twentieth of the price. Before you save anything, you need to know if that judge's verdicts can be trusted. Choosing which examples to score doesn't tell you that. It only changes what you measure.\n\nIt also weakens the eval itself. The lesson's set mixes 200 golden examples with 300 from real traffic. Keep only the easy ones and you're no longer testing your agent on the cases you chose to care about.\n\nThe lesson's own story shows the risk. This app tried Claude Haiku as a judge. It agreed with itself on only 77 in 100 answers. Its kappa with people was 0.05. Kappa is a score for agreement beyond lucky guessing, where 0 means pure chance. So its verdicts were close to chance.\n\n\"Check it agrees with people and itself\" is better because it tests the cheap judge's trustworthiness first, and a cheap verdict nobody can trust is not a saving.",
+   "a": "\"Run it only on easy examples\" gets one thing right. Fewer examples means fewer calls, and fewer calls means a smaller bill.\n\nBut it misses the real question. Your team wants to swap in a cheaper judge. Before you save money, you need to know if that judge's verdicts can be trusted. Running it on easy examples hides that.\n\nEasy examples are the ones almost any judge gets right. The hard, borderline answers are where a weak judge slips. Those are also where judging matters most. So you would see a judge that looks fine, while its real weakness goes untested.\n\nIt also skews your eval. If you score only the easy cases, your agent's results look better than they are. That is like marking only the simplest exam questions and calling it the grade.\n\nThe lesson's Haiku test shows the risk. It agreed with itself on only 77 in 100 answers. Its kappa with people was 0.05. Kappa measures agreement beyond chance, and 0 means pure chance.\n\n\"Check it agrees with people and itself\" is better because it tests whether the cheap judge can be trusted before you rely on it to save money.",
    "step": "Check",
-   "fingerprint": "479d799b0fb61490",
+   "fingerprint": "8a869f87a6819e59",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problem; the line about 'cases you chose to care about' is a mild inference beyond the lesson, and the kappa definition is correct but not stated in the lesson."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.0,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "explain:interview": {
    "q": "How do I explain “Count the calls, then price the tokens” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n*The problem.* An LLM judge is a model that scores another model's answers. Every score is a paid model call. People often guess the bill from the token price alone, and the real bill surprises them.\n\n*The idea.* So I count the calls first: examples, times scorers, times repeats. 500 examples, 3 scorers, each run twice, is 3,000 calls. Then I price the tokens, the small chunks of text the model reads and writes. Input and output are priced separately, and output costs more. At 2,000 tokens in and 200 out, that's $18 a run.\n\n*The edge case.* A reasoning model thinks before answering. That hidden thinking is billed as output. So I check real usage in the traces, the logged record of each call.\n\n**A likely follow-up**\n\n\"How would you cut that bill?\"\n\nHint: go from safest to riskiest. Drop scorers your acceptance criteria don't use. Ask for a short verdict, capped. Cache the rubric. Batch the runs to halve the price. Try a smaller judge last, and only if it agrees with people. A cheap verdict nobody trusts saves nothing.",
+   "a": "**A 30-second answer**\n\n*The problem:* An LLM judge is a model that scores your app's answers. Every score is a paid model call, so the bill can surprise you.\n\n*The idea:* Count the calls first. Multiply examples by scorers by repeats. Then price the tokens: calls times input tokens times the input price, plus calls times output tokens times the output price. Prices are per million tokens. So 500 examples, 3 scorers and 2 repeats make 3,000 calls, about $18 a run.\n\n*The edge case:* A reasoning model thinks before it answers. That hidden thinking is billed as output, the pricier side. So check real token counts in your traces.\n\n**A likely follow-up**\n\n\"How would you cut that bill?\"\n\nHint: go safest first. Drop scorers you don't need. Ask for a short verdict. The rubric is the judge's fixed marking instructions. Prompt caching lets the provider reuse that repeated text at a fraction of the price. Batching sends runs as a slower bulk job at half price. Try a smaller judge last, and only if it still agrees with people.",
    "step": "Explain",
-   "fingerprint": "a3a2e9759d5fd3a0",
+   "fingerprint": "3680b887f31d9aee",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes all checks; the only weak spot is the claim that people often guess the bill from the token price alone, which the lesson never says but which does not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 3.9,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "provider"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The bill is far above your estimate.** You budgeted around $18 a run, and the invoice says several times that. Usually you missed a multiplier: a forgotten scorer, an extra repeat, or more examples than you thought.\n- **Output tokens are much higher than you expected.** You asked for a verdict and one sentence, yet each call writes thousands of tokens. A reasoning model's hidden thinking is billed as output, at the higher price, even though you never see it.\n- **Long, rambling verdicts.** The judge writes paragraphs because nothing caps its output.\n- **Cheap judge, shaky scores.** After switching to a smaller judge, the same answer passes on one run and fails on the next. Or its verdicts stop matching what people decided. That is a cheap verdict nobody can trust.\n\n**Quickest check**\n\nOpen the traces for one eval run. A trace is the log of each model call. Count the judge calls and compare that number to examples times scorers times repeats. Then look at the input and output token counts on a few calls. Multiply them out and compare the result with your bill. The gap shows you where the money went.",
+   "a": "Here are the signs that the judge's cost was never counted, or was counted wrong.\n\n**The bill is far bigger than your estimate.** Usually a multiplier was missed. Maybe you counted examples but forgot scorers, repeats, or the 20 runs a month.\n\n**Output tokens are much higher than a short verdict needs.** A verdict and one sentence should be small. Big numbers mean the output was never capped. Or a reasoning model is doing hidden thinking, which is billed as output even though you never see it.\n\n**Input tokens stay high run after run.** The rubric may not be cached. Your traces would show few or no cached tokens on each call.\n\n**The bill dropped, but the scores got shaky.** You switched to a smaller judge too early. The same answer gets different verdicts on repeats. Its agreement with people sits near chance. Agreement is often measured by kappa, a score that removes the matches lucky guessing would give. A kappa near 0 means no better than guessing.\n\n**Quickest check:** open the traces for a few judge calls. Read the real input and output token counts. Multiply by your call count and the prices. Compare that with the bill.",
    "step": "Learn",
-   "fingerprint": "fa2d78caebe08836",
+   "fingerprint": "738df403b7769256",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems found; the answer is about 205 words, right at the length limit, and the kappa explanation goes slightly beyond the lesson but is accurate.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.7,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When the judge is a reasoning model.** Its hidden thinking is billed as output, and its length changes from call to call. A fixed guess like 200 output tokens can badly undercount. Read the real token counts from your traces, which are the logs of each call, and price from those.\n\n**When inputs vary a lot in size.** Some examples carry a few short documents, others carry long ones, so one average input size can mislead. Measure input tokens per example, and price the long ones separately if they dominate the bill.\n\n**When you add caching or batching.** A cached rubric is read for a tenth of the price or less, and a batch run is half price. One flat price per million tokens no longer fits. Split the tokens into parts, such as cached rubric and fresh question, and give each part its own price.\n\nThe core habit still holds in every case. Count the calls first, then price the tokens.",
+   "a": "The simple sum assumes every call costs about the same. Here are three places where that slips.\n\n**A reasoning judge.** A reasoning model \"thinks\" before it answers, and that hidden thinking is billed as output. So the 200 output tokens per call can turn into 2,000, and the number changes from answer to answer. Don't guess. Read the real token counts in your traces and price with those.\n\n**Long or uneven documents.** In a RAG app, short for retrieval-augmented generation (the app fetches documents to answer from), the judge reads those documents to check grounding. Some examples bring one short page. Others bring ten long ones. Look at the spread of input sizes in your traces, and budget for the long ones, not just the typical one.\n\n**Judging whole agent runs.** If the judge scores a full multi-step conversation instead of one answer, input grows with every step. The bill can jump fast as agents get longer. Score a sample of runs, or judge only the final answer, and cache the rubric.\n\nIn every case, recheck the price list too. Prices change.",
    "step": "Learn",
-   "fingerprint": "3f8fee787d1a02d0",
+   "fingerprint": "5967a4a3ff6d6541",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Nothing contradicts the lesson. The 2,000-token figure and the agent-run scenario are extrapolations, but both are hedged and sensible.",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 5.5,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent",
+     "budget"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
    "q": "What does “LLM judge” mean here?",
-   "a": "An **LLM judge** is a language model you ask to grade another model's answer. LLM stands for \"large language model\", like Claude.\n\nThink of a teacher marking exam papers. Your agent writes the answers. The judge is the marker. It reads the marking guide (the **rubric**), the question, the student's answer, and any source documents. Then it writes a grade and a short reason.\n\nThe catch is that every single marking is a separate model call. You pay for the tokens it reads and the tokens it writes. A **token** is a small chunk of text, roughly part of a word.\n\nIn the lesson's example, the judge shows up in this line:\n\n```python\ncalls = 500 * 3 * 2      # 3,000 calls\n```\n\nThat is 500 examples, 3 **scorers** (different things the judge checks, like grounding or tone), and each check run twice. Each of those 3,000 calls is the judge marking one answer. The next lines price what it read (`inp`) and what it wrote (`out`).\n\nSo \"LLM judge\" here means a grader you pay per paper marked.",
+   "a": "An **LLM judge** is a language model used as a marker. It doesn't answer the user's question. It grades an answer that your agent already gave.\n\nThink of a teacher marking exam papers. The teacher reads the marking guide, the question and the student's answer. Then they write a grade and a short comment. An LLM judge does the same job. Its marking guide is the **rubric**, the written rules for what a good answer looks like.\n\nThe key point for this lesson is that every grade is a separate model call, and every call costs money. The judge is billed for what it reads (input tokens) and what it writes (output tokens). A token is a small chunk of text, roughly part of a word.\n\nIn the example, the judge shows up in `calls = 500 * 3 * 2`. That means 500 answers, 3 scorers and 2 repeats, for 3,000 judge calls. Each call reads about 2,000 tokens and writes about 200. That's where the $18 per run comes from.",
    "step": "Learn",
-   "fingerprint": "0d77d8c3db88e1ee",
+   "fingerprint": "771ce2fe6c6331ee",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The 'grounding or tone' scorer examples are illustrative; tone is not named in the lesson but does not contradict it."
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 4.4,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "agent",
+     "chunk"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   }
  },

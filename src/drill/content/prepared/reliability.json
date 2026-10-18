@@ -146,20 +146,33 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The must-pass set is too small or out of date.**\nThe check only protects what it tests. If users ask things your cases don't cover, a clean pass can still hide a broken answer. Keep growing the set from real questions and from every incident.\n\n**2. The source documents change.**\nIn a RAG app (retrieval-augmented generation: the assistant looks up documents before answering), HR might update a policy page. An answer that was right last month is now wrong, so \"passed before\" means less. When documents change, have the SME update the expected answers. Version the documents too, so you know which set each check ran against.\n\n**3. Answers vary from run to run.**\nAn LLM (large language model) can word things differently each time, so a case might pass once and fail the next. Don't loosen the rule because of this. Make runs as repeatable as you can, for example by setting `temperature` (the model's randomness setting) to zero. Then treat any must-pass failure or anything that got worse as a reason to hold. A flaky case is a problem to investigate, not one to ignore.",
+   "a": "**1. The must-pass set is small or out of date.**\nPassing 40 cases only proves those 40 still work. If real questions have drifted, meaning users now ask different things than when the set was written, a fix can pass every check and still fail customers. Keep adding fresh cases from production traces (records of real requests), and have the SME review the set regularly.\n\n**2. The cause is not the prompt.**\nSometimes the HR policy documents changed, or the model provider updated the model underneath you. Moving `@production` back to an older prompt won't help then. Pin model versions, version the document index (the searchable store the assistant reads from), and re-run the eval whenever source data changes.\n\n**3. Answers vary from run to run.**\nAn LLM can give a slightly different answer each time. So a case might \"fail\" by chance. People call that a flaky case. Run important cases several times and judge them on a pass rate. Then a hold reflects a real break, not bad luck.",
    "step": "Learn",
    "fingerprint": "694be90434256aec",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
+    "version": 1,
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "Points 2 and 3 run to four and five sentences, over the requested two or three. The whole answer is right at the ~200-word limit, and \"SME\" is never explained."
+    "pass": true,
+    "notes": "",
+    "parsed": true
+   },
+   "quality": {
+    "grade": 6.2,
+    "fillers": [],
+    "repeated": false,
+    "unexplained_terms": [
+     "provider"
+    ],
+    "unknown_numbers": [],
+    "unknown_names": [],
+    "blocking": []
    }
   },
   "learn:term": {
