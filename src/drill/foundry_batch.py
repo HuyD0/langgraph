@@ -3,8 +3,10 @@
 A batch is a file of requests (one JSON object a line). You upload it, start a job, check on it
 until it's done, then download an output file and match each line back to its request by its
 ``custom_id`` (the output is not in the same order). It costs about half of a normal call, and
-comes back within 24 hours, usually much sooner. It suits work nobody is waiting for, like
-answering or judging an eval set; it can't measure how fast a model answers a person.
+aims to finish within 24 hours, usually much sooner. That's a target: on Foundry a late job keeps
+running until it finishes or you cancel it, and cancelling returns what already finished. It suits
+work nobody is waiting for, like answering or judging an eval set; it can't measure how fast a
+model answers a person.
 
 On Foundry, batch needs a deployment of type ``GlobalBatch`` (or ``DataZoneBatch``), and only
 OpenAI models offer it; Claude on Foundry has no batch deployments. Sign in with ``az login``:
