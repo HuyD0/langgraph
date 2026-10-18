@@ -6,7 +6,7 @@ from drill.content.model import (angle, ask, card, case, evidence, example, exer
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
 
-# Lesson 1.1's six ideas, one practice question each. ``bin`` is where it lands; ``value``,
+# The first lesson's (use_case_score) six ideas, one practice question each. ``bin`` is where it lands; ``value``,
 # ``doable`` and ``gate`` are the facts the Python exercise sorts by (a test checks they agree).
 WHERE = [
     ('gate', 'Stopped at a gate, so shelved'),
@@ -1293,7 +1293,7 @@ lesson(MODULE, 'fit_for_purpose',
                             sortrow('One criterion just missed, like 5.5 seconds against 5', 'Improve that one, then test again.', 'Fix', look='dashed', icon='reset'),
                             sortrow('A must-pass case failed, more than one criterion was missed, or a miss is far off', 'However good the averages look.', 'Stop', icon='x'))),
         card('The tools behind each criterion',
-             'The next lessons give you the tools behind each criterion. Foundations show how to measure quality honestly, Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
+             'The next lessons give you the tools behind each criterion. Foundations explain what an LLM is, then how to measure quality honestly; Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
     ],
     example=example('Pilot results against the acceptance criteria', """criteria = {"quality": 0.80, "seconds": 5,
             "cost": 2.00}

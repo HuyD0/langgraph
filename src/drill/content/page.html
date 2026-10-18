@@ -1783,7 +1783,7 @@ const MINE_PANELS = {
   well_architected: () => {
     const card = mine().card || {}, filled = CARD_FIELDS.some(([k]) => (card[k] || "").trim());
     return `<h3>Try it on ${filled ? "your use case" : "the HR assistant"}</h3>
-    <p>${filled ? "This sends your card from lesson 1.2 to the model with a review prompt like the one you built, with Databricks' governance pillar added." : "Write your own card in lesson 1.2 to review your own idea. Until then, this uses the HR assistant."}</p>
+    <p>${filled ? "This sends your card from lesson " + lessonNo("use_case_card") + " to the model with a review prompt like the one you built, with Databricks' governance pillar added." : "Write your own card in lesson " + lessonNo("use_case_card") + " to review your own idea. Until then, this uses the HR assistant."}</p>
     <details class="mprompt"><summary>See the prompt</summary><pre class="code">${esc(reviewPromptFor(filled ? card : Object.fromEntries(CARD_FIELDS.map(([k, , eg]) => [k, eg]))))}</pre></details>
     <button class="btn" data-mine-review ${sample ? "" : "disabled"}>${ic("sparkle")}Ask the model to draft the review</button>
     ${sample ? "" : `<p class="meta">This needs the AI tutor, which is off right now.</p>`}
