@@ -8,7 +8,8 @@ the earlier idea, with a clue first, then the answer. Getting it right brightens
 card. It is practice only: it never changes the result card or the Check step.
 
 The ideas called back here are the foundations the course teaches once and then uses quietly:
-gathering requirements (1.3), functional and non-functional requirements (1.4), the well-architected pillars (1.5), the acceptance criteria and must-pass cases (1.6), leakage,
+gathering requirements, functional and non-functional requirements, the well-architected pillars,
+the acceptance criteria and must-pass cases (all in Frame), leakage,
 precision and recall, the cost per finished task, tokens that grow every step, the baseline and the
 controls, deciding before the runs, luck or a real difference, reading a trace, prompt injection,
 never trusting model output, least privilege, retries, idempotent writes, and reading a Terraform
