@@ -62,8 +62,8 @@ Home shows the path as a sticker book, with the six phases always in view:
   "Earlier" or "Coming up" label, and what you come out with. The page is printed on the phase's
   own paper, matched to its shape: dots, graph paper, a lattice, ruled lines, hatching, dashes.
 - **Lesson pictures**: every lesson has its own small line drawing on its sticker, faded until you
-  get there. A new lesson needs one: put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` in
-  the sprite at the top of `page.html`, drawn as strokes on a 24 grid centred on 0, and make it
+  get there. A new lesson needs one: put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` on its own line in
+  `page/sprite.svg` (the sprite the build pastes into `page.html`), drawn as strokes on a 24 grid centred on 0, and make it
   look different from its neighbours. Until it has one, its sticker shows the module's icon and
   `tests/test_content.py` fails to remind you.
 - **Order**: each sticker carries its place, like 2.11 (phase 2, lesson 11), and a dotted trail

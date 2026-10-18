@@ -116,7 +116,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - This machine's shell may set `MLFLOW_EXPERIMENT_NAME`; run Databricks/MLflow commands with
   `env -u MLFLOW_EXPERIMENT_NAME -u MLFLOW_EXPERIMENT_ID ...`.
 - Unity Catalog trace outputs come back as JSON strings; UC datasets reject MLflow tags.
-- A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `page.html` (a test checks).
+- A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `src/drill/content/page/sprite.svg`,
+  one symbol per line (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
 - `dist/` is git-ignored; the page is built, never committed.
 - Some sections of `page.html` live in `src/drill/content/page/` and come back in at their
