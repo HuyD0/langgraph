@@ -391,6 +391,43 @@ idea, ungraded:
   `uv run drill tutor prepare --profile <name>` drafts what is missing (costs money);
   `uv run drill tutor prepared --sample 50` shows a spot-check sample, and `--check` / `--reject
   lesson_id/key` record your verdict.
+- **The judge's checklist, and the checks code does instead** (`drill.answer_quality`, `tutor_prepared.JUDGE2`):
+  five judges from three makers graded the same 301 prepared answers with checklist 1 and agreed 96 to 100%
+  on three checks (answers it, no giveaway, standalone) but split on "plain" (undefined) and "correct"
+  (written two ways at once). Checklist 2 says each thing once: "correct" becomes *no contradiction*
+  (must-pass) and *within the lesson* (reported; `WITHIN_LESSON_BLOCKS` decides whether it blocks),
+  "answers it" is tied to the question's own `how`, *concise* and *tone* are added, and "plain" leaves the
+  judge: code now measures it (a readability grade, fillers, repeated sentences, glossary terms used
+  unexplained, numbers and names the lesson doesn't contain). `prepare_one` runs the code checks before
+  the judge and redrafts with the reason; `drill tutor prepared-eval --judge-version 2` and `drill tutor
+  prepare --judge-version 2` grade with the candidate checklist, which the prompt registry holds as
+  `candidate` next to the `production` one. Each judge setup (checklist, model, provider, mode) is a version
+  of `tutor_judge` with `champion` and `challenger` aliases (`drill tutor judge-alias`).
+- **Does the drafter's own uncertainty predict a judge fail?** (`drill tutor uncertainty`): each sampled
+  question drafted several times on Foundry with every token's log probability, every draft judged, and
+  four code signals (mean log probability, least likely token, least likely risky token, disagreement
+  between the drafts) scored by a rank-based AUC against the verdict. If one predicts, it becomes a
+  drafting-time flag. The judging notebook's section 19 replays the run.
+- **Choosing a version of the tutor: cost, speed and quality** (`drill.tradeoff`,
+  `notebooks/learning/cost_speed_quality.ipynb`): the experiment that compares ways of answering the
+  standard questions (prepared answers, bigger or smaller models, and a **cacheable** prompt that puts
+  the lesson and rules first, marked for the model's prompt cache, as a version to test, not a change
+  to the live tutor). It scores every answer on pass rate, p95 time to first words and dollars per
+  1,000 answers with the cache counted. Then it applies a rule written first: no worse than the
+  baseline by more than 3 points, fast enough, then the cheapest. Today nothing is cached, because
+  the request doesn't ask for it. On the Claude 5.5 models (shortest cacheable start: 512 tokens), 152
+  of 174 lessons are already long enough, and all 174 with the rules moved up. On GPT models (1,024
+  tokens) it's 16, or 65 with the rules moved up. The minimums and cache-read rates are per model in
+  `drill.tradeoff`. The notebook teaches the method free on a labelled practice recording. Its section 10 runs
+  the same idea on Microsoft Foundry (`drill.foundry_batch`). A few **inline** calls are timed, since
+  only they can measure speed. The rest go as one **batch** job at about half price. A follow-up step
+  then picks the job up from its MLflow run (the batch id is a run tag) in any later session. It
+  matches output lines back to their requests by `custom_id`, logs the finished answers as an
+  evaluation, sends one judge batch, and attaches each verdict to its trace as feedback. Batch on
+  Foundry needs a `GlobalBatch` deployment, and only OpenAI models offer one. The section replays a
+  real recorded run (`content/prepared_eval/foundry_batch_demo.json`) unless `RUN_LIVE` is set. The
+  endpoint and deployment names come from the environment, never the repo. Its companion,
+  `notebooks/learning/evaluating_the_tutor.ipynb`, checks whether a cheaper judge can be trusted.
 - **Quiet signals on the tutor's answers** (`askSignal` in `page/ask.js`): with no buttons, the page
   notes what the learner did next and sends it as CODE feedback on the latest answer, once each,
   within half an hour on the same lesson: `saved` (to the study list), `asked_again` (nearly the

@@ -498,6 +498,7 @@ def tutor_prepare_cmd(
     draft_model: str = typer.Option("", "--draft-model", help="Serving endpoint that drafts (default: the strongest Claude)."),
     judge_model: str = typer.Option("", "--judge-model", help="Serving endpoint that judges (default: a different Claude)."),
     workers: int = typer.Option(6, "--workers", help="Answers drafted at the same time."),
+    judge_version: int = typer.Option(1, "--judge-version", help="The checklist the judge grades with: 1 (in use) or 2 (candidate)."),
     pack: list[Path] = typer.Option([], "--pack", help="A content pack folder whose lessons to prepare too (default: DRILL_CONTENT_PACKS); repeat for several. Its answers are saved inside the pack, <pack>/prepared/."),
 ) -> None:
     """Draft and judge answers to the tutor's standard questions, so Ask works with no model. Costs money on Databricks.
@@ -545,7 +546,7 @@ def tutor_prepare_cmd(
     try:
         mlflow.set_experiment(mlflow_names.experiment())
         mlflow.openai.autolog()
-        prompts = tpe.register_prompts(mlflow)
+        prompts = tpe.register_prompts(mlflow, judge_version)
         run_ctx = mlflow.start_run(run_name=f"tutor-prepare-{time.strftime('%Y-%m-%d')}-{tpe.git_commit()[:7]}")
         traced = True
     except Exception as exc:  # noqa: BLE001 - no MLflow: prepare anyway, untraced
@@ -555,12 +556,12 @@ def tutor_prepare_cmd(
         if traced:
             mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "tutor_prepare", "mlflow.source.git.commit": tpe.git_commit(),
                              "mlflow.note.content": f"Drafting and judging {len(work)} prepared tutor answers."})
-            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "answers": len(work), "module": module or "all",
-                               "lesson": lesson or "all", "redo": redo, "workers": workers,
+            mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "checklist": judge_version, "answers": len(work),
+                               "module": module or "all", "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,
-               draft_model=draft_model, judge_model=judge_model)
+               draft_model=draft_model, judge_model=judge_model, judge_version=judge_version)
         spend = {f"{who}_{k}": float(chat.usage[k]) for who, chat in (("draft", drafter), ("judge", judger)) for k in ("calls", "input_tokens", "output_tokens", "seconds")}
         total = sum(tp.cost(chat.model, chat.usage["input_tokens"], chat.usage["output_tokens"]) for chat in (drafter, judger))
         console.print(f"Cost at list price: ${total:.2f} (${total / max(1, len(work)):.4f} an answer). The DBU charge is in system.billing.usage.")
@@ -613,6 +614,13 @@ def tutor_prepared_eval_cmd(
     holdout_ok: bool = typer.Option(False, "--yes-holdout", help="Confirm a holdout run: once you change things because of it, it is no longer a holdout."),
     workers: int = typer.Option(4, "--workers", help="Answers judged at the same time (the workspace limits tokens per minute)."),
     sample: int = typer.Option(0, "--sample", help="A stratified sample of this many (every reference failure, the rest spread by phase and kind); 0: the whole split."),
+    provider: str = typer.Option("databricks", "--provider", help="databricks (a serving endpoint, --profile) or foundry (a Microsoft Foundry deployment; az login, AZURE_OPENAI_ENDPOINT)."),
+    mode: str = typer.Option("inline", "--mode", help="inline (one call per answer) or batch (Foundry only: batch jobs at half price, results within about a day)."),
+    deployment: str = typer.Option("", "--deployment", help="The Foundry deployment that judges (the model's name goes in --judge-model, for prices and the record)."),
+    record: Path = typer.Option(None, "--record", help="Also write the run's verdicts to this file, for a notebook to replay."),
+    purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this candidate is being tried."),
+    judge_version: int = typer.Option(1, "--judge-version", help="The checklist: 1 (in use) or 2 (correct split in two, plain moved to code, concise and tone added)."),
+    refresh_sample: bool = typer.Option(False, "--refresh-sample", help="Draw the sample again and freeze the new one (older runs then compare only on the answers both have)."),
 ) -> None:
     """Judge one split of the prepared answers as an MLflow evaluation: versioned datasets, registered prompts, traces, intervals, kappa."""
     import os
@@ -627,7 +635,8 @@ def tutor_prepared_eval_cmd(
         console.print("[red]The holdout is for big decisions only. Add --yes-holdout if this is one.[/red]")
         raise typer.Exit(1)
     console.print(f"MLflow: {mlflow.get_tracking_uri()}  split: {split}")
-    result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample)
+    result = tpe.evaluate(profile, judge_model or tpe.JUDGE_MODEL, split, workers, sample=sample, provider=provider, mode=mode,
+                          deployment=deployment, record=record, purpose=purpose, judge_version=judge_version, refresh_sample=refresh_sample)
     n = result["numbers"]
     console.print(f"Run {result['run_id']} (experiment {result['experiment_id']}): {result['records']} answers in {split}.")
     if result["strata_missing"]:
@@ -638,9 +647,74 @@ def tutor_prepared_eval_cmd(
         console.print(f"  Agreement re-weighted to the split's real mix: {n['weighted_agreement']:.1%}")
     console.print(f"  Pass rate in this sample: {n['passes_rate']:.1%} (95% interval {n['passes_ci_low']:.1%} to {n['passes_ci_high']:.1%})")
     console.print(f"  Cost: ${n['judge_cost_usd']:.2f} at list price ({n['judge_calls']:.0f} calls, {n['judge_rate_limited']:.0f} rate-limited)")
-    console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
-    for check in tpe.CHECKS:
-        console.print(f"    {check}: pass {n[check + '_rate']:.1%}, kappa {n.get(check + '_kappa', float('nan')):.2f}")
+    if record:
+        console.print(f"  Verdicts also written to {record}")
+    if "passes_agreement" in n:
+        console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
+    if n.get("judge_missing") or n.get("judge_unparsed"):
+        console.print(f"  [yellow]Verdicts missing: {n.get('judge_missing', 0):.0f} (the judge call failed); without JSON: {n.get('judge_unparsed', 0):.0f}. "
+                      "The numbers above exclude the missing ones.[/yellow]")
+    for check in tpe.tp.JUDGES[judge_version][1]:
+        console.print(f"    {check}: pass {n[check + '_rate']:.1%}" + (f", kappa {n[check + '_kappa']:.2f}" if check + "_kappa" in n else ""))
+    console.print(f"  Code checks: hard to read {n['quality_hard_to_read_rate']:.0%}, numbers or names outside the lesson "
+                  f"{max(n['quality_unknown_numbers_rate'], n['quality_unknown_names_rate']):.0%}, terms unexplained {n['quality_unexplained_terms_rate']:.0%}")
+
+
+@tutor_app.command("uncertainty")
+def tutor_uncertainty_cmd(
+    deployment: str = typer.Option(..., "--deployment", help="A Microsoft Foundry GlobalBatch deployment that drafts (az login, AZURE_OPENAI_ENDPOINT)."),
+    draft_model: str = typer.Option(..., "--draft-model", help="The model behind it, for prices and the record (for example gpt-5.4-mini)."),
+    judge_deployment: str = typer.Option(..., "--judge-deployment", help="A GlobalBatch deployment that judges every draft."),
+    judge_model: str = typer.Option(..., "--judge-model", help="The judge's model name (for example gpt-5.4)."),
+    sample: int = typer.Option(50, "--sample", help="How many dev questions to draft."),
+    samples: int = typer.Option(3, "--samples", help="How many times each question is drafted (for disagreement)."),
+    seed: int = typer.Option(7, "--seed", help="The sample's random seed, so the run can be repeated on the same questions."),
+    record: Path = typer.Option(None, "--record", help="Also write the run's drafts, signals and verdicts to this file, for a notebook to replay."),
+    purpose: str = typer.Option("", "--purpose", help="One sentence for the run's description: why this is being tried."),
+    provider: str = typer.Option("foundry", "--provider", help="Only foundry today (batch with token log probabilities)."),
+) -> None:
+    """Does the drafter's own uncertainty predict a judge fail? Drafts each question several times with token confidence, judges all, scores each signal."""
+    import mlflow
+
+    from drill import draft_uncertainty as du
+
+    if provider != "foundry":
+        console.print("[red]Only --provider foundry is supported: it needs batch jobs that return token log probabilities.[/red]")
+        raise typer.Exit(1)
+    console.print(f"MLflow: {mlflow.get_tracking_uri()}  {sample} questions x {samples} drafts, judged by {judge_model}. Two batch rounds; allow an hour.")
+    r = du.run(deployment, draft_model, judge_deployment, judge_model, sample=sample, samples=samples, seed=seed, record=record, purpose=purpose)
+    m = r["metrics"]
+    console.print(f"Run {r['run_id']}: {r['drafts']} drafts of {r['questions']} questions, {m['judged']:.0f} judged, pass rate {m['pass_rate']:.1%}.")
+    for s in du.SIGNALS:
+        if f"auc_{s}" in m:
+            console.print(f"  {s:16} AUC {m[f'auc_{s}']:.2f}   (0.5 = no signal, 1 = perfect)")
+    console.print(f"  Questions whose {samples} drafts all got the same verdict: {m['questions_with_unanimous_verdicts']:.0%}")
+    console.print(f"  Cost: drafts ${m['draft_cost_usd']:.2f}, judging ${m['judge_cost_usd']:.2f}")
+    if record:
+        console.print(f"  Recording written to {record}")
+
+
+@tutor_app.command("judge-alias")
+def tutor_judge_alias_cmd(
+    alias: str = typer.Argument(..., help="challenger (passed the rule on dev) or champion (the judge in use)."),
+    run_id: str = typer.Option(..., "--run", help="The judge eval run that is the evidence, by its id or its name: its judge version gets the alias."),
+    reason: str = typer.Option("", "--reason", help="One sentence: why, for the run's tag and the version's history."),
+    promote: bool = typer.Option(False, "--yes-promote", help="Confirm making it champion: only after its look at test and a person's grades."),
+) -> None:
+    """Point a judge alias (champion or challenger) at the tutor_judge version a judge run tested."""
+    import mlflow
+
+    from drill import tutor_prepared_eval as tpe
+
+    if alias not in ("challenger", "champion"):
+        console.print("[red]The alias is challenger or champion.[/red]")
+        raise typer.Exit(1)
+    if alias == "champion" and not promote:
+        console.print("[red]Promoting to champion replaces the judge in use. Add --yes-promote and a --reason, after its look at test.[/red]")
+        raise typer.Exit(1)
+    tpe.ensure_champion(mlflow)
+    version = tpe.set_judge_alias(mlflow, alias, run_id, reason)
+    console.print(f"{alias} -> {version} (evidence: run {run_id!r})")
 
 
 @tutor_app.command("prepared-compare")

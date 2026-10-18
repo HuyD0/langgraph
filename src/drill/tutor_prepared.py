@@ -177,6 +177,40 @@ Check each, using only the lesson above as the truth:
 Reply with JSON only: {{"correct": true|false, "answers_it": true|false, "plain": true|false, "no_giveaway": true|false, "standalone": true|false, "notes": "one sentence on the biggest problem, or empty"}}"""
 
 
+# Version 2 of the checklist: "correct" split into no_contradiction (must-pass) and within_lesson (reported;
+# WITHIN_LESSON_BLOCKS says whether it blocks), "plain" moved to code (drill.answer_quality), answers_it tied
+# to the question's own "how", and concise and tone added. Five judges from three makers disagreed on v1
+# mostly on "plain" (undefined) and "correct" (written two ways at once); v2 says each thing once.
+JUDGE2 = """You check a tutor's answer before it is shown to beginners. Be strict, and judge each check on its own.
+
+{context}
+
+The question the learner tapped: {q}
+How it should be answered: {how}
+
+The tutor's answer:
+---
+{answer}
+---
+
+Check each, using the lesson above as the truth:
+1. no_contradiction: nothing in the answer contradicts the lesson. Extra material the lesson does not mention is NOT a contradiction; judge that under within_lesson.
+2. within_lesson: every fact, number and name in the answer is in the lesson above. A true fact the lesson does not state counts as outside it.
+3. answers_it: it answers the question as asked, in the shape "How it should be answered" asks for (the number of parts or examples, the kind of answer).
+4. no_giveaway: it does not write or list the coding exercise's solution{giveaway}.
+5. standalone: it makes sense to anyone who taps the question (no "as you said", no request to reply).
+6. concise: no sentence repeats the question or another sentence, and there is no filler ("Great question", "Certainly").
+7. tone: encouraging but not gushing, and it never talks down to the learner.
+
+Reply with JSON only: {{"no_contradiction": true|false, "within_lesson": true|false, "answers_it": true|false, "no_giveaway": true|false, "standalone": true|false, "concise": true|false, "tone": true|false, "notes": "one sentence on the biggest problem, or empty"}}"""
+
+CHECKS1 = ("correct", "answers_it", "plain", "no_giveaway", "standalone")
+CHECKS2 = ("no_contradiction", "within_lesson", "answers_it", "no_giveaway", "standalone", "concise", "tone")
+MUST_PASS2 = ("no_contradiction", "answers_it", "no_giveaway", "standalone")
+WITHIN_LESSON_BLOCKS = False  # the owner's call: may a prepared answer add true material the lesson doesn't state?
+JUDGES = {1: (JUDGE, CHECKS1, CHECKS1), 2: (JUDGE2, CHECKS2, MUST_PASS2 + (("within_lesson",) if WITHIN_LESSON_BLOCKS else ()))}
+
+
 def fingerprint(data: dict, lid: str, chip: dict) -> str:
     """What the answer was written from: the lesson's text and the question. A change means draft it again."""
     lesson = data["lessons"][lid]
@@ -252,24 +286,40 @@ def status(data: dict, answers: dict | None = None, packs: list | None = None) -
 
 # -- drafting and judging --------------------------------------------------------------------------
 
-def _verdict(text: str) -> dict:
-    m = re.search(r"\{.*\}", text, re.S)
-    try:
-        v = json.loads(m.group(0)) if m else {}
-    except ValueError:
-        v = {}
-    checks = {k: bool(v.get(k)) for k in ("correct", "answers_it", "plain", "no_giveaway", "standalone")}
-    return {**checks, "pass": all(checks.values()), "notes": str(v.get("notes", ""))[:300]}
+def _verdict(text: str, version: int = 1) -> dict:
+    """The judge's JSON reply as checks plus ``pass`` (every must-pass check true) for that checklist version."""
+    v: dict = {}
+    for pattern in (r"\{.*\}", r"\{[^{}]*\}(?!.*\{)"):  # the whole span first; then the last brace-free object, for prose with braces
+        m = re.search(pattern, text, re.S)
+        if m:
+            try:
+                v = json.loads(m.group(0))
+                break
+            except ValueError:
+                continue
+    _, names, must = JUDGES[version]
+    if not v:  # no verdict at all: say so, rather than looking like a judge that failed every check
+        return {**{k: False for k in names}, "pass": False, "notes": "no JSON verdict in the judge's reply", "parsed": False}
+    checks = {k: bool(v.get(k)) for k in names}
+    return {**checks, "pass": all(checks[k] for k in must), "notes": str(v.get("notes", ""))[:300], "parsed": True}
 
 
 def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], judge: Callable[[str], str],
-                draft_model: str = DRAFT_MODEL, judge_model: str = JUDGE_MODEL) -> dict:
-    """Draft one answer and judge it; one redraft with the judge's note if it fails."""
+                draft_model: str = DRAFT_MODEL, judge_model: str = JUDGE_MODEL, judge_version: int = 1) -> dict:
+    """Draft one answer, run the code checks, then judge it; one redraft with the reason if either fails.
+
+    The code checks (:mod:`drill.answer_quality`: the word limit, readability, repeated sentences) come first,
+    so the judge is never paid for a draft that could not be served anyway."""
+    from drill import answer_quality as aq
+
     fn = next((p.get("fn") for p in data["bank"] if p["id"] == lid), "") or ""
     giveaway = "" if chip["step"] == "Check" else ", and does not say which option of the lesson's Check questions is right"
     ask = prompt(data, lid, chip)
+    template, _, _ = JUDGES[judge_version]
+    lesson_text, terms = _context(data, lid), aq.glossary_terms(data)
     verdict: dict = {}
     answer = ""
+    quality: dict = {}
     for attempt in range(2):
         note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if attempt and verdict.get("notes") else ""
         answer = draft(ask + note).strip()
@@ -278,19 +328,26 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
             verdict = {"pass": False, "notes": "the answer holds " + ", ".join(leaked) + ": not saved as written"}
             answer = ""
             break
-        verdict = _verdict(judge(JUDGE.format(context=_context(data, lid), q=chip["q"], how=chip["how"], answer=answer,
-                                              giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)))
+        quality = aq.quality_checks(answer, lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200)
+        if quality["blocking"]:
+            verdict = {"pass": False, "notes": "The code checks failed: " + aq.why_blocked(quality) + "."}
+            continue
+        verdict = _verdict(judge(template.format(context=lesson_text, q=chip["q"], how=chip["how"], answer=answer,
+                                                 giveaway=f" (`{fn}`)" + giveaway if fn else giveaway)), judge_version)
         if verdict["pass"]:
             break
     return {"q": chip["q"], "a": answer, "step": chip["step"], "fingerprint": fingerprint(data, lid, chip),
-            "status": "passed" if verdict["pass"] else "failed", "model": draft_model, "judge": {"model": judge_model, **verdict}}
+            "status": "passed" if verdict["pass"] else "failed", "model": draft_model,
+            "judge": {"model": judge_model, "version": judge_version, **verdict},
+            "quality": {k: quality.get(k) for k in ("grade", "fillers", "repeated", "unexplained_terms", "unknown_numbers", "unknown_names", "blocking")}}
 
 
-# List prices per million tokens (input, output), Anthropic's first-party rates as of 2026-09. Databricks bills
-# Claude in DBUs, so the exact charge can differ: system.billing.usage has it a few hours later.
+# List prices per million tokens (input, output), Anthropic's first-party rates, checked 2026-10-18 on the
+# prompt-caching page's price table (Haiku 5.5: prompts up to 100,000 tokens). Databricks bills Claude in DBUs,
+# so the exact charge can differ: system.billing.usage has it a few hours later.
 PRICES = {"databricks-claude-opus-5-5": (4.0, 20.0), "databricks-claude-sonnet-5-5": (2.0, 10.0),
           "databricks-claude-haiku-4-5": (1.0, 5.0),
-          "databricks-claude-haiku-5-5": (1.0, 5.0)}  # not in the price list yet: Haiku 4.5's rates as a stand-in
+          "databricks-claude-haiku-5-5": (0.10, 0.50)}
 
 
 def cost(model: str, input_tokens: int, output_tokens: int) -> float:
