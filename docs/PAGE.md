@@ -674,8 +674,10 @@ lesson(MODULE, 'masked_columns',
 
 The page shows "Checked against the docs on 12 Oct 2026" under Learn, with the sources one tap
 away. Lessons with no date of their own show "Content as of 12 Oct 2026", the day dates were
-first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days either note
-turns amber and says names and steps may have changed.
+first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days a sourced
+lesson's note turns amber and says names and steps may have changed. A lesson with no sources
+never ages: nothing in it was checked against a page, and the facts that go out of date live in
+the sourced lessons, so `drill content stale` lists only those.
 
 **To find what needs a look:**
 

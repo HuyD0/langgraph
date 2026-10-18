@@ -2246,12 +2246,13 @@ function learnPane() {
     ${askPanel()}`;
 }
 // Lessons about products that change often say when their facts were last checked, and against
-// what. After STALE_DAYS the note warns that names and steps may have moved on.
+// what. After STALE_DAYS that note warns that names and steps may have moved on. A lesson with no
+// sources is dated by the content and never ages: nothing in it was checked against a page.
 const STALE_DAYS = 180;
 function checkedNote(L) {
   if (!L.checked) return "";
   const [day, sources] = L.checked, when = new Date(day + "T00:00:00");
-  const age = Math.floor((Date.now() - when) / 864e5), old = age > STALE_DAYS;
+  const age = Math.floor((Date.now() - when) / 864e5), old = sources.length > 0 && age > STALE_DAYS;
   const nice = when.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const links = sources.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join("");
   // With sources, the facts were checked against them that day; without, it's the content's date.
