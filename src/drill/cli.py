@@ -550,7 +550,9 @@ def tutor_prepare_cmd(
         mlflow.set_experiment(mlflow_names.experiment())
         mlflow.openai.autolog()
         prompts = tpe.register_prompts(mlflow, judge_version)
-        run_ctx = mlflow.start_run(run_name=f"tutor-prepare-{time.strftime('%Y-%m-%d')}-{tpe.git_commit()[:7]}")
+        scope = f"lesson {lesson}" if lesson else f"module {module}" if module else "all missing"
+        run_ctx = mlflow.start_run(run_name=f"prepare answers · {scope} · draft {draft_model.removeprefix('databricks-')} "
+                                            f"· judge {judge_model.removeprefix('databricks-')} · {len(work)} answers")
         traced = True
     except Exception as exc:  # noqa: BLE001 - no MLflow: prepare anyway, untraced
         console.print(f"[yellow]MLflow unavailable ({str(exc)[:80]}): preparing without traces.[/yellow]")
@@ -558,10 +560,22 @@ def tutor_prepare_cmd(
     with run_ctx:
         if traced:
             mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": "tutor_prepare", "mlflow.source.git.commit": tpe.git_commit(),
-                             "mlflow.note.content": f"Drafting and judging {len(work)} prepared tutor answers."})
+                             "mlflow.note.content": (
+                                 f"**Question:** which of {len(work)} new prepared tutor answers ({scope}) are good enough to show "
+                                 "learners?\n\n"
+                                 f"**What ran:** {draft_model} drafted each answer from its lesson with the registered drafting prompt; "
+                                 f"{judge_model}, a different model, judged it against the five checks.\n\n"
+                                 "**How it's measured:** an answer is served only if every check passes (correct, answers it, plain, no "
+                                 "giveaway, standalone); pass rate and cost are logged. An out-of-date answer is judged again first and kept if it "
+                                 "still passes (kept_after_rejudge).\n\n"
+                                 f"**Reproduce:** `uv run drill tutor prepare --profile {profile or 'DEFAULT'}"
+                                 + (f" --lesson {lesson}" if lesson else f" --module {module}" if module else "")
+                                 + f" --draft-model {draft_model} --judge-model {judge_model}"
+                                 + (f" --judge-reasoning {judge_reasoning}" if judge_reasoning != "default" else "")
+                                 + (" --redraft-stale" if redraft_stale else "") + "` (git commit {tpe.git_commit()[:7]}).")})
             mlflow.log_params({"draft_model": draft_model, "judge_model": judge_model, "judge_reasoning": judge_reasoning,
-                               "rejudge_stale": not (redo or redraft_stale), "checklist": judge_version, "answers": len(work),
-                               "module": module or "all", "lesson": lesson or "all", "redo": redo, "workers": workers,
+                               "rejudge_stale": not (redo or redraft_stale), "checklist": judge_version, "answers": len(work), "module": module or "all",
+                               "lesson": lesson or "all", "redo": redo, "workers": workers,
                                **{f"{k}_prompt": f"{v.name}/{v.version}" for k, v in prompts.items()}})
         drafter, judger = tp.databricks_chat(draft_model, profile), tp.databricks_chat(judge_model, profile, judge_reasoning)
         tp.run(data, work, drafter, judger, answers, workers=workers, on_done=done, traced=traced, packs=packs,

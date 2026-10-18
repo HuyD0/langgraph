@@ -160,6 +160,10 @@ if best is None:
                 'Compare like with like',
                 "Runs evaluated on different eval sets or with different judges can't be compared. Log the eval set version as a parameter on every run.",
             ],
+            [
+                'Log a run others can rerun',
+                'If nobody can read a run or repeat it, someone will redo the work from scratch. Name each run by its settings, like `cs512-k5`. In its description (the note MLflow keeps with a run), write the question it answers, what you measured and how, and the command and code version to run it again.',
+            ],
         ],
     ),
 )
@@ -193,7 +197,7 @@ lesson(MODULE, 'plan_gaps',
     angle=angle(
         pattern='Tick off a checklist',
         text="The big idea: decide how you will judge an experiment before you see any results, so you can't talk yourself into an answer. Your code has a fixed list of the seven fields a plan needs. It looks up each one in the plan, which is a dict: a lookup table from a field's name to what you wrote. `plan.get(field)` gives `None` when a field is missing. Any field that is missing or empty goes on the list of gaps, like ticking off a packing list.",
-        say='"I write the plan and the rule that picks a winner [[before|after|while::Deciding once you\'ve seen results lets you talk yourself into anything.]] I run anything. Then I check no field is [[empty|long|new::A blank box is a gap.]], so I can\'t move the goalposts later."',
+        say='"I write the plan and the rule that picks a winner [[before|after|while::Deciding once you\'ve seen results lets you talk yourself into anything.]] I run anything. Then I check no field is [[empty|long|new::A blank box is a gap.]], so I can\'t change the rule once I\'ve seen the results."',
         classic=None,
     ),
     stack=stack('MLflow: log the plan with the run', """with mlflow.start_run(run_name="hints-a-vs-b"):
@@ -911,7 +915,7 @@ lesson(MODULE, 'examples_needed',
         'Your eval set gives a score. How far from the real score could it be? A pass rate measured on an eval set is a rough guess, not the truth, and how far off it could be, either way, is its **margin of error**.',
         'The fewer examples you test on (the smaller the **sample size**), the wider that margin. Score 70% on just 25 questions, and the real pass rate could easily be anywhere from 50% to 90%.',
         'Some round numbers. With 100 questions, a score of 70 could really be anywhere from about 60 to 80: about 10 **points** off either way (a point is one question in every 100). With 400 questions it is only about 5 points off. That range is called a **confidence interval**: worked out this way, it catches the real pass rate about 95 times in 100.',
-        'The rule of thumb: **halving the margin takes four times the examples**, not twice. Going from 100 questions to 400 takes you from about 10 points to about 5. The margin is widest when about half the answers pass, so treat these as safe planning numbers.',
+        'The quick rule: **halving the margin takes four times the examples**, not twice. Going from 100 questions to 400 takes you from about 10 points to about 5. The margin is widest when about half the answers pass, so treat these as safe planning numbers.',
         "Use it backwards before you run anything: if the improvement you hope to see is smaller than the margin, your eval set can't show it. Add examples first, or compare on the same examples (later in this module), which is more sensitive.",
         'For scores near none or near all (like 49 out of 50) this rule breaks down; statisticians use a **Wilson interval** there (two lessons from now).',
         'For scores with no simple rule, use the **bootstrap**: rebuild the eval set 1,000 times by drawing examples at random with repeats allowed, score each one, and keep the middle 95 in 100 of the scores.',
@@ -929,7 +933,7 @@ lesson(MODULE, 'examples_needed',
             "No: an eval can't compare two prompts",
         ],
         answer=1,
-        why='With 100 examples each score is only good to about plus or minus 10 points, so a 4-point gap is well inside the noise. Compare on the same examples, or use more of them.',
+        why='With 100 examples each score is only good to about plus or minus 10 points, so a 4-point gap is well inside that margin: it could be luck. Compare on the same examples, or use more of them.',
     ),
     angle=angle(
         pattern='Run the margin rule backwards',
@@ -955,7 +959,7 @@ Behind the lesson's table is a quick rule: the margin, in points, is about 100 d
 3. Return it as a whole number. If it has a decimal part, round up, because you cannot use part of an example. For example, 204.08 becomes 205.""",
         pattern='Work the rule backwards, then round up to a whole number.',
         target='a few arithmetic steps',
-        realworld='Sizing an eval set before building it saves you from labelling 50 examples, running the comparison, and only then discovering the result is noise.',
+        realworld='Sizing an eval set before building it saves you from labelling 50 examples, running the comparison, and only then discovering the result could be luck.',
         starter="""def examples_needed(margin_points):
     # your code here
     pass
@@ -1003,7 +1007,7 @@ int(5.0)   # 5, already whole""",
         why='A fixed handful of arithmetic steps, whatever the margin.',
         gotchas=[
             [
-                'It is a rule of thumb',
+                'It is a quick rule, not an exact one',
                 'This margin assumes a pass rate near 50%, where it is widest. It is a planning number, not a precise one.',
             ],
             [
@@ -1035,7 +1039,7 @@ holdout     100 questions    the one winner       once, the confirmation"""),
             'Drop it: a 2-question win is nothing',
         ],
         answer=1,
-        why='The smoke set only screens out clear losers. A 2-question gap on 40 is noise, so the real comparison happens on the dev set.',
+        why='The smoke set only screens out clear losers. A 2-question gap on 40 could be luck, so the real comparison happens on the dev set.',
     ),
     angle=angle(
         pattern='A few from each group',
@@ -1145,7 +1149,7 @@ lesson(MODULE, 'wilson_interval',
         'When almost every example passes, or almost none do, the quick margin rule from "How many examples do you need?" gives ranges that cannot be true.',
         'A worked example. 49 out of 50 passed, which is 98%. The quick rule says the real rate is 98% give or take about 14 points: anywhere from 84% to 112%. Nothing can pass more than 100% of the time. For 0 out of 30 it gives anywhere from minus 18% to 18%, and nothing passes less than 0% of the time.',
         'The **Wilson interval** is the standard fix for a pass rate. It always stays between 0% and 100%, and it stays honest with small samples and extreme rates. For 49 out of 50 it gives about 89.5% to 99.6%.',
-        'The rule of thumb: when a pass rate is close to 0% or 100%, use Wilson instead of the quick rule. You do not need to remember how it is worked out; the exercise gives you the steps.',
+        'When to use it: when a pass rate is close to 0% or 100%, use Wilson instead of the quick rule. You do not need to remember how it is worked out; the exercise gives you the steps.',
         'This matters most for safety checks. "0 failures in 30 tries" does not mean the failure rate is 0%: the Wilson range goes up to about 11%, roughly 1 in 9.',
     ],
     example=example('Simple rule against Wilson', """49 of 50 passed (98%)
@@ -1486,8 +1490,8 @@ lesson(MODULE, 'paired_verdict',
         'It is much more sensitive than comparing two overall scores, because a hard example is hard for both setups, so that difficulty cancels out.',
         'Where both pass, or both fail, an example tells you nothing about which is better. Only the **disagreements** count: the examples A passed and B failed, and the other way round. If they split about evenly, the difference is luck.',
         'A worked example. A and B disagree on 20 examples. If A wins 15 of them and B wins 5, the gap is 10. If A wins 12 and B wins 8, the gap is 4. For 20 disagreements the gap needs to be about 9 or more, so 15 to 5 is a real win and 12 to 8 is too close to call.',
-        "The standard check for pass/fail results is **McNemar's test**. Its rule of thumb: the more disagreements, the bigger the gap must be, but it grows slowly. 20 disagreements need a gap of about 9, 100 need about 20, and 400 need about 40. A gap that clears the line is **statistically significant**, meaning too big to be luck. The exercise gives you the exact steps.",
-        'With fewer than about 25 disagreements the rule of thumb is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.',
+        "The standard check for pass/fail results is **McNemar's test**. Its quick rule: the more disagreements, the bigger the gap must be, but it grows slowly. 20 disagreements need a gap of about 9, 100 need about 20, and 400 need about 40. A gap that clears the line is **statistically significant**, meaning too big to be luck. The exercise gives you the exact steps.",
+        'With fewer than about 25 disagreements the quick rule is a little too generous: 5 to 0 passes it, but the exact version of the test, which counts every possible split, says it could still be luck.',
         'This replaces the "ranges must not overlap" rule from the previous lesson whenever both setups ran on the same examples.',
     ],
     example=example('Only disagreements count', """example   A   B
@@ -1653,7 +1657,7 @@ lesson(MODULE, 'examples_per_group',
     title='Enough to notice a difference',
     learn=[
         "Before you run a comparison, ask: if version B really is better, would this test notice? The chance that it does is called the test's **power**. Most teams aim for about 80%. A test with low power often says \"no real difference\" when there was one: the difference was just too small to see with that many examples.",
-        'Small differences need many examples. A common rule of thumb for comparing two pass rates: you need about 16 times the rate times (1 minus the rate), divided by the difference times itself, examples in **each** group. For a pass rate near 70%, noticing a 5-point gain takes about 1,344 examples a group; a 10-point gain takes about 336.',
+        'Small differences need many examples. A common quick rule for comparing two pass rates: you need about 16 times the rate times (1 minus the rate), divided by the difference times itself, examples in **each** group. For a pass rate near 70%, noticing a 5-point gain takes about 1,344 examples a group; a 10-point gain takes about 336.',
         'So decide the smallest difference worth finding **before** you start, work out the examples you need, and if you can\'t get that many, only look for bigger differences. A paired comparison on the same examples, like in "Comparing on the same examples", usually needs fewer, because it counts only the examples where the two versions disagree.',
     ],
     example=example('How many examples in each group?', """pass rate about 70%
@@ -1673,7 +1677,7 @@ a 10-point gain: 336 in each group"""),
     ),
     angle=angle(
         pattern='Size the test before running it',
-        text="The big idea: a test can only notice differences bigger than its size allows, so you work out the size first. Your code uses the rule of thumb: 16 times the pass rate times one minus the pass rate, divided by the difference times itself. The answer is how many examples each version needs for a fair chance of noticing that difference.",
+        text="The big idea: a test can only notice differences bigger than its size allows, so you work out the size first. Your code uses the quick rule: 16 times the pass rate times one minus the pass rate, divided by the difference times itself. The answer is how many examples each version needs for a fair chance of noticing that difference.",
         say='"Before I compare two versions, I work out how many [[examples|prompts|models::The questions each version gets tested on.]] I need to notice the smallest gain that matters. A test that is too small just says it [[can\'t tell|is better|is worse::A real gain could hide in it.]]."',
         classic=None,
     ),
@@ -1693,7 +1697,7 @@ mlflow.log_param("examples_per_group", round(n))"""),
 - `rate`: the pass rate you expect, like `0.7` for 70%.
 - `difference`: the smallest gain you want to notice, like `0.05` for 5 points.
 
-Use the rule of thumb: 16 times `rate` times (1 minus `rate`), divided by `difference` times `difference`. Return the answer rounded to a whole number.""",
+Use the quick rule: 16 times `rate` times (1 minus `rate`), divided by `difference` times `difference`. Return the answer rounded to a whole number.""",
         pattern='One line of arithmetic, with brackets in the right places.',
         target='a fixed amount of arithmetic',
         realworld='Before an experiment, teams write down the smallest gain worth shipping and the examples needed to see it. If the eval set is too small, they grow it first, or only claim bigger gains.',
@@ -1933,7 +1937,7 @@ if reasons:
 )
 
 lesson(MODULE, 'biggest_gap',
-    title='Oracle tests: find the bottleneck',
+    title='Oracle tests: find the step worth fixing',
     learn=[
         'A RAG app (one that first looks up documents, the **retrieval** step, then answers from them) or an agent (a model that calls tools to get a job done) is a chain of steps, and a bad answer could come from any of them. An **oracle test** replaces one step with a perfect version and reruns the eval: hand the model the right documents instead of what retrieval found, or give the agent correct tool results.',
         "The gap between the oracle run and your current system is that step's **headroom**: the most you could gain by perfecting it. If perfect documents only lift you from 78% to 80%, retrieval isn't your problem, and tuning it is wasted effort. If they lift you to 91%, it is.",
@@ -1953,7 +1957,7 @@ oracle prompt (expert-written)         80%   → prompt headroom:     2 points
             'Nowhere: 70% is good enough',
         ],
         answer=1,
-        why='Perfect retrieval only adds 2 points, so most misses happen after the documents arrive: the prompt or the model is the bottleneck.',
+        why='Perfect retrieval only adds 2 points, so most misses happen after the documents arrive: the prompt or the model is the step worth fixing.',
     ),
     angle=angle(
         pattern='Find the step with most headroom',
@@ -2275,7 +2279,7 @@ lesson(MODULE, 'assign_group',
     learn=[
         'An offline eval says whether a change looks better on your test set. An **A/B test** checks whether it helps **real users**. Each user is put in group A (the current version) or group B (the new one), at random, and you compare what happens, like how often answers get a "Got it".',
         'Three rules keep it fair. Assign by **user**, not by request, so one person always sees the same version. Assign at **random**, so the two groups are alike in every other way. And keep it **fixed**: the same user must land in the same group every time they come back. A hash of their id does all three, just like "Splits that don\'t move".',
-        'Write down before you start: the main number you will compare, a **guardrail** (a number that must not get worse, like errors or cost), how many users you need ("Enough to notice a difference"), and when you will stop. Then don\'t stop early because it looks good: checking again and again is the same trap as "Testing many variants".',
+        'Write down before you start: the main number you will compare, a **guardrail metric** (a number that must not get worse, like errors or cost), how many users you need ("Enough to notice a difference"), and when you will stop. Then don\'t stop early because it looks good: checking again and again is the same trap as "Testing many variants".',
     ],
     example=example('Groups by a hash of the user id, B gets buckets 0 to 49', """u-1001   → bucket 13 → B
 u-1002   → bucket 86 → A

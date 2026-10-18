@@ -348,6 +348,142 @@ names.append('Ana')   # ['Ana']""",
     ),
 )
 
+lesson(MODULE, 'batch_leftovers',
+    title='Inline or batch?',
+    checked='2026-10-18',
+    sources=[source('Getting started with Azure OpenAI batch deployments', 'https://learn.microsoft.com/azure/foundry/openai/how-to/batch'),
+             source('Deployment types for Microsoft Foundry Models', 'https://learn.microsoft.com/azure/ai-foundry/openai/how-to/deployment-types')],
+    learn=[
+        'There are two ways to send work to a model. **Inline** is one call at a time while someone waits. A **batch** is many requests in one file, sent as one **job** that comes back later, at about **half the price**. On Microsoft Foundry the target is 24 hours, and it often takes minutes.',
+        "A batch suits work nobody is waiting for, like answering or judging an eval set. It can't measure speed: a batch answer waited in a queue, and that isn't what a person feels. So time a small **inline sample** for speed, and send the rest as a batch.",
+        "Each request carries a `custom_id`. Answers come back in **any order**, and some can fail. On Foundry, 24 hours is a target, not a deadline: a late job keeps running until you **cancel** it, and cancelling returns only what finished. So match every answer to its request by `custom_id`, then send the **leftovers** again as a new job.",
+    ],
+    example=example('One line of a batch file, and its answer', """# requests.jsonl: one request a line, each with its own custom_id
+{"custom_id": "q1", "method": "POST", "url": "/chat/completions",
+ "body": {"model": "my-batch-deployment", "messages": [...]}}
+
+# the output, later, in any order: match it by custom_id
+{"custom_id": "q1", "response": {"status_code": 200, "body": {...}}}"""),
+    check=question(
+        'You want the p95 time to first words for each model you are comparing. Can a batch job give you that?',
+        ['Yes: it times every request', 'No: batch answers waited in a queue first', 'Only if the job finishes within an hour'],
+        answer=1,
+        why="A batch answer's time includes waiting in a queue, which isn't what a person feels. Time a small inline sample for speed.",
+    ),
+    angle=angle(
+        pattern='Note what came back, then walk the requests',
+        text='The big idea: a batch answers many requests later and in any order, so you match answers by `custom_id` and send the leftovers again. Your code goes through the output lines once and notes every id that came back with an answer. Then it goes through the requests in order and keeps each id that was not noted: those failed, or never came back. Looking an id up in a set is instant, so this stays fast for a million requests.',
+        say='"A batch costs about [[half|double|the same::That\'s the reason to use it for work nobody waits for.]] and comes back later, in any order. I match every answer by its [[custom_id|position|length::Line one of the output isn\'t request one.]], then send the ones that failed or never came back as a new job."',
+        classic=None,
+    ),
+    stack=stack('Microsoft Foundry: a batch job with the OpenAI SDK', """f = client.files.create(file=open("requests.jsonl", "rb"), purpose="batch")
+job = client.batches.create(input_file_id=f.id, endpoint="/chat/completions",
+                            completion_window="24h")
+job = client.batches.retrieve(job.id)   # later: validating, in_progress, completed...
+lines = client.files.content(job.output_file_id).text.splitlines()"""),
+    exercise=exercise(
+        title='Send the Leftovers Again',
+        topic='models',
+        difficulty='easy',
+        fn='leftovers',
+        prompt="""You sent a batch job and its output has come back. Some requests were answered, some failed, and some never came back at all.
+
+Your function gets two things:
+
+- `request_ids`: the `custom_id` of every request you sent, in the order you sent them, like `["q1", "q2", "q3"]`.
+- `outputs`: the output lines, in any order. An answered line has a `text`, like `{"custom_id": "q1", "text": "..."}`. A failed line has an `error` instead, like `{"custom_id": "q2", "error": "rate limited"}`.
+
+Return the ids to send again, in the order they were sent: every request with no answered line. Ignore any output line whose id you never sent.""",
+        pattern='Note every id that came back with an answer, then keep the requests that were not noted.',
+        target='one pass over the outputs, then one over the requests',
+        realworld='Eval runs and nightly judging go through batch jobs at half the price. Matching by custom_id and resending the leftovers is how a run ends up complete instead of quietly missing answers.',
+        starter="""def leftovers(request_ids, outputs):
+    # your code here
+    pass
+""",
+        solution="""def leftovers(request_ids, outputs):
+    answered = set()
+    for line in outputs:
+        if "text" in line:
+            answered.add(line["custom_id"])
+    todo = []
+    for rid in request_ids:
+        if rid not in answered:
+            todo.append(rid)
+    return todo
+""",
+        cases=[
+            case(['q1', 'q2', 'q3', 'q4'], [
+                {'custom_id': 'q3', 'text': 'Because...'},
+                {'custom_id': 'q1', 'text': 'It means...'},
+                {'custom_id': 'q2', 'error': 'rate limited'},
+            ], expected=['q2', 'q4'], sample=True),
+            case([], [], expected=[]),
+            case(['a', 'b'], [], expected=['a', 'b']),
+            case(['a', 'b'], [{'custom_id': 'b', 'text': 'B'}, {'custom_id': 'a', 'text': 'A'}], expected=[]),
+            case(['a'], [{'custom_id': 'zzz', 'text': '?'}], expected=['a']),
+            case(['a', 'b'], [{'custom_id': 'a', 'error': 'timeout'}, {'custom_id': 'a', 'text': 'A'}], expected=['b']),
+        ],
+        guided="""def leftovers(request_ids, outputs):
+    # Replace every ___ with real code, then run the tests.
+
+    # Step 1: note every id that came back with an answer.
+    answered = set()
+    for line in outputs:
+        if "text" in line:
+            ___
+
+    # Step 2: walk the requests in the order they were sent,
+    # and keep each one that was not answered.
+    todo = []
+    for rid in request_ids:
+        if ___:
+            todo.append(rid)
+    return todo
+""",
+        fills=['answered.add(line["custom_id"])', 'rid not in answered'],
+        concepts=[
+            [
+                'A set',
+                'A set holds each value once. `s.add(x)` puts `x` in it, and `x in s` checks it instantly, however big the set is.',
+                """seen = set()
+seen.add('q1')
+'q1' in seen   # True
+'q2' in seen   # False""",
+            ],
+            [
+                'Is this key in the dict?',
+                '`"text" in line` is True when the dict `line` has a `"text"` key, whatever its value.',
+                """line = {'custom_id': 'q1', 'text': 'Hi'}
+'text' in line    # True
+'error' in line   # False""",
+            ],
+            [
+                'not in',
+                '`x not in s` is True when `s` does not hold `x`.',
+                """done = {'q1'}
+'q2' not in done   # True""",
+            ],
+        ],
+        byhand='First the outputs. q3 has a text, so note q3. q1 has a text, so note q1. q2 has an error, so it is not noted. Answered: q1 and q3. Now the requests in order. q1 was answered, skip it. q2 was not, keep it. q3 was answered, skip it. q4 never came back, so it was not noted: keep it. Return ["q2", "q4"].',
+        why='One pass over the outputs and one over the requests. Checking a set is instant, so this stays fast even for a million requests.',
+        gotchas=[
+            [
+                'One deployment per file',
+                'On Foundry every line of a batch file must name the same batch deployment. To try a second model, send a second file.',
+            ],
+            [
+                'Things change while you wait',
+                'A batch can take hours. Record what each request was built from, like the prompt version or the lesson it asks about, so a late answer is read against the right version.',
+            ],
+            [
+                'The queue has a limit',
+                "On Foundry a batch deployment's queue holds only so many tokens at once, counting every job that hasn't finished yet; the portal shows that limit as the deployment's capacity. A job that doesn't fit fails with the error code `token_limit_exceeded`. The limit is a setting on the deployment, and a change can take a while to apply, so split the request file into parts that each fit and send them one after another.",
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'better_option',
     title='Net value per month',
     learn=[

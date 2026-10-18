@@ -51,7 +51,7 @@ CHECKS = {
                 "in the same split together and can't leak."),
     ],
     "weighted_score": [
-        ask("Your weekly report shows one number: 90 percent. A manager asks if refund questions are "
+        ask("Your weekly report shows one number: 90 percent. The product manager asks if refund questions are "
             "working. What should the report have shown?",
             ["The same 90 percent, but in bold", "Last week's score next to it", "A score for each group, with its count"],
             answer=2,
@@ -105,13 +105,32 @@ CHECKS = {
             clue="Look only at the answers people marked as bad.",
             why="It failed only 2 of the 20 answers people failed. That share, its true negative rate, "
                 "is very low: most bad answers get through."),
-        ask("You want an LLM judge to grade 2,000 answers a week. What do you need before you trust "
-            "its scores?",
-            ["Human labels on some of the same answers", "A second judge to grade the first one", "A longer and stricter grading prompt"],
+        ask("Your team's answers come from one model, and the judge is a smaller, cheaper model from the "
+            "same maker, built on the same base. What guards against self-preference bias?",
+            ["A judge from a different model family", "A longer, stricter grading prompt", "Running the same judge a second time"],
             answer=0,
-            clue="The judge is a model too, so it can be wrong. What would you compare it with?",
-            why="Compare the judge with human labels on the same answers, passes and failures "
-                "separately, before trusting its scores."),
+            clue="The grader may go easy on answers that sound like its own, so who else could grade them?",
+            why="A judge goes easier on its own answers, and somewhat on its relatives' answers: that is "
+                "self-preference bias. A judge from another family, or human labels on the same answers, "
+                "shows whether it is being soft."),
+    ],
+    "vague_checks": [
+        ask("Your checklist has correct, no giveaway, plain and friendly tone. Which checks should be "
+            "must-pass gates, where one fail blocks the answer?",
+            ["Correct and no giveaway", "Plain and friendly tone", "All four, to be safe"],
+            answer=0,
+            clue="Ask which failures would hurt the person who got that answer, and which would just make "
+                 "it less nice to read.",
+            why="A wrong fact or a handed-out answer does real harm, so those two are gates. A stiff tone "
+                "or a long sentence just reads worse: those checks add up to a score instead."),
+        ask("Your checklist says an answer must use plain words, sound friendly and stay under 200 words. "
+            "Which part should code check instead of the judge?",
+            ["The word count", "Whether the words are plain", "Whether it sounds friendly"],
+            answer=0,
+            clue="Which part has one exact answer that a program gets the same way every time?",
+            why="Counting words is mechanical: code does it the same way every time and never argues. Code can "
+                "also score readability and spot unexplained terms, but whether the words are truly plain, or the "
+                "answer sounds friendly, still needs reading, so those stay with the judge, each with a definition."),
     ],
     "cohen_kappa": [
         ask("You check two judges against the same human labels. Judge A has a kappa of 0.75 and "
@@ -239,6 +258,22 @@ CHECKS = {
             clue="Only the order changed. Did the answers change?",
             why="The answers were the same; only the order moved, and the verdict moved with it. That is position bias, a "
                 "known habit of judges."),
+    ],
+    "disagreement": [
+        ask("Your app drafts an answer three times, and the three drafts give three different dates. "
+            "What should happen next?",
+            ["Send the judge the first draft", "Write it again or send it to a person", "Average the three dates"],
+            answer=1,
+            clue="This flag is raised before the judge ever sees the draft. Who or what fixes a shaky draft?",
+            why="Three drafts that disagree are a flag that the model is guessing. The flag belongs at drafting "
+                "time: the draft is written again or handed to a person before any judge sees it."),
+        ask("You score a confidence flag against the judge's verdicts and get a ROC-AUC of 0.52. The pass mark "
+            "you wrote beforehand was 0.7. What do you do?",
+            ["Add it: it is above 0.5", "Leave it out: it is barely better than guessing", "Lower the pass mark to 0.5 and add it"],
+            answer=1,
+            clue="What does 0.5 mean on this scale, and when was the pass mark set?",
+            why="0.5 means the flag cannot tell a passing draft from a failing one, so 0.52 is close to luck. "
+                "The pass mark was written first so the result could not talk you into moving it."),
     ],
     "gwet_ac1": [
         ask("Two judges both fail half the answers, and agree on 9 in 10. Kappa and AC1 come out almost the "

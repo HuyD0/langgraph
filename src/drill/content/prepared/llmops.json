@@ -363,12 +363,12 @@
    }
   }
  },
- "token_cost": {
+ "prompt_cache": {
   "check:0:0": {
-   "q": "Why not “The model's accuracy on last month's eval set”?",
-   "a": "Accuracy is a fair thing to care about. An **eval set** is a fixed list of test questions you run to check how well a model answers. Watching its score tells you if quality changed. So the instinct to \"check the model\" isn't silly.\n\nBut accuracy doesn't appear anywhere in the bill. You pay for tokens times price. Nothing more. A model can get more accurate or less accurate and cost exactly the same. Also, last month's eval is old news. It can't explain a jump that happened since.\n\nNow look at the clue in the question. Requests stayed the same, yet the bill doubled. So each request must cost more. That means each request is using more tokens. Maybe prompts got longer, or answers did. Output tokens usually cost several times more than input, so longer answers raise the bill fastest.\n\n**\"Tokens per request, especially output tokens\" is better because it looks straight at the thing you are actually billed for, and at the part that costs the most.**",
+   "q": "Why not “The instructions are too long to cache”?",
+   "a": "**\"Too long\" points the wrong way.** Length does matter for caching, so that option is on the right topic. But the rule is a *minimum*, not a maximum. The start must be at least 512 tokens on the Claude 5.5 models, or 1,024 on GPT models. (A token is a small chunk of text, often part of a word.) At 2,000 tokens, these instructions clear both bars easily. In fact, long fixed text is where caching saves the most money.\n\n**What it misses is the very first line.** The cache only matches when the next prompt begins with *exactly* the same text. Here, the prompt opens with a timestamp that changes every second. So by the second call, the first few tokens already differ. Nothing after that point can match, even though the 2,000 tokens of instructions never change. Every call writes a fresh cache and none read one, so the hit rate stays at 0.\n\nThe fix is to put the fixed instructions first and move the time to the end.\n\n**Why the other option is better:** \"The time changes, so each start differs\" names the real cause: the changing text sits at the front, so the start is never identical.",
    "step": "Check",
-   "fingerprint": "9969100744e79e26",
+   "fingerprint": "2084c748b8e5d982",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -383,10 +383,10 @@
    }
   },
   "check:0:2": {
-   "q": "Why not “The API's uptime, in case retries doubled the c…”?",
-   "a": "It's a reasonable instinct. Retries really can raise a bill. A **retry** is when your code sends the same request again because the first try failed. More failures, more retries, more tokens paid for. **Uptime** means how much of the time the API is working, so low uptime could cause more retries.\n\nBut the question gives you a key fact: the number of requests didn't change. If retries had doubled the calls, the request count would have gone up too. It stayed flat, so retries don't explain this bill.\n\nThat leaves the cost of each request. Since the count is the same, each request must cost more on average. Cost per request comes from its input tokens and output tokens, each times its price. Something like a longer prompt, a model that writes longer answers, or a switch to a pricier model would do it.\n\n\"Tokens per request, especially output tokens\" is better because it matches the clue: same number of requests means each one got more expensive, and output tokens cost several times more than input, so they're the likeliest cause.",
+   "q": "Why not “Caching only works on the user message”?",
+   "a": "\"Caching only works on the user message\" gets things backwards. The lesson says caching keeps the **start** of the prompt: instructions, a tool list, a document. That start usually sits in the system prompt, the fixed setup text sent before the user's question. The user message changes on every call, so the lesson puts it last, after the part you want cached. This option points at the wrong piece of the prompt.\n\nIt also doesn't explain the hit rate of 0. Your 2,000 tokens of instructions are well over the minimum length, so length isn't the issue.\n\nThe real problem is the timestamp. The lesson's first rule is that the start must be **identical** from one call to the next. Your start includes the time down to the second. The date part stays the same, but the clock part changes, so no two calls share exactly the same start. To fix it, put the fixed instructions first and the timestamp after them.\n\n\"The time changes, so each start differs\" is better because it names the rule that's actually broken: the start must be identical, and a changing clock in it means it never is.",
    "step": "Check",
-   "fingerprint": "67d40776ad2c090f",
+   "fingerprint": "f534354b0f028cad",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -397,14 +397,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems. The claim that retries would raise the request count is an assumption the lesson doesn't state, but it fits the question's logic."
+    "notes": "No real problems; the answer is about 200 words, right at the limit, and 'no two calls share the same start' slightly overstates it."
    }
   },
   "check:1:0": {
-   "q": "Why not “It stays the same, inputs didn't change”?",
-   "a": "That option gets one thing right. The questions are the same length, so the **input tokens** (the pieces of text you send to the model) haven't changed. The input part of the bill stays the same.\n\nBut it misses the other half of the bill. Providers charge for **output tokens** too. Those are the pieces of text the model writes back. The answers are now three times longer, so there are about three times as many output tokens.\n\nOutput is also usually priced several times higher than input. So output was often already a big share of the cost. Tripling it pushes the total up a lot, not just a little.\n\nHere is a quick example with made-up numbers. Say a call used to cost 1 cent for input and 4 cents for output, so 5 cents in total. Now output is 12 cents, and the total is 13 cents. That is more than double, even though nothing about the input changed.\n\n\"It rises a lot, output costs more\" is better because it counts both halves of the bill and notices that the half that grew is the expensive one.",
+   "q": "Why not “GPT models never cache prompts”?",
+   "a": "That option gets one thing right: in this case, the GPT cache really does not hit. But it gives the wrong reason.\n\nGPT models do cache prompts. They do it by themselves, without you asking. The lesson says so: \"GPT models cache by themselves.\" So \"never\" is simply not true.\n\nWhat matters is length. A cache only kicks in when the fixed start of the prompt (the part that stays the same every call) is long enough. Length is counted in tokens, the small chunks of text a model reads.\n\n- On Claude Sonnet 5.5, the minimum is 512 tokens.\n- On GPT models, the minimum is 1,024 tokens.\n\nYour fixed start is 700 tokens. That clears Claude's bar but falls short of GPT's. Make the start 1,024 tokens or more, and GPT would start reporting `cached_tokens` too.\n\n\"Each model has its own minimum length\" is the better answer because it explains why the same 700-token prompt hits on one model and misses on the other.",
    "step": "Check",
-   "fingerprint": "2802f720d3b735c9",
+   "fingerprint": "03a837152eb29079",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -419,10 +419,10 @@
    }
   },
   "check:1:2": {
-   "q": "Why not “It drops, long answers need fewer calls”?",
-   "a": "That option isn't silly. In real life, a fuller answer can sometimes save a follow-up question, and fewer calls would mean a smaller bill.\n\nBut the question gives no sign of that. The questions are the same, so you should assume the same number of calls. The option invents a saving the facts don't support.\n\nWhat did change is the size of each answer. Each call now produces three times as many **output tokens** (the tokens the model writes back). Output tokens are usually the expensive kind, often several times the price of **input tokens** (the tokens you send in). The input side stays the same, but the costlier side triples.\n\nA quick example with made-up prices:\n\n- Before: 500 input tokens and 300 output tokens per call.\n- After: still 500 input tokens, but 900 output tokens.\n- Output cost per call is now three times what it was.\n- Because output was already the bigger part of the cost, the total rises a lot.\n\n\"It rises a lot, output costs more\" is better because it focuses on what actually changed: more of the most expensive tokens on every call.",
+   "q": "Why not “Claude also caches the question”?",
+   "a": "**It notices something real.** The cache does hit on Claude here, so something about Claude is different. But the reason it gives is wrong.\n\n**Why it's wrong:** The question is the part that changes on every call. That's why it goes last. A cache read only happens when the next prompt starts with exactly the same text. A new question is new text, so caching it wouldn't help the next call. And on GPT, the cache misses before it even reaches the question.\n\n**What it misses:** Look at the numbers. The fixed start is 700 tokens. A token is a small chunk of text, roughly part of a word.\n\n- Claude Sonnet 5.5 needs at least 512 tokens. 700 is enough, so it can cache.\n- GPT models need at least 1,024 tokens. 700 is too short, so nothing gets cached at all.\n\nSame prompt, two different minimums. That alone explains the hit on one and the miss on the other.\n\n**Why \"Each model has its own minimum length\" is better:** it points to the actual rule, the minimum length, that a 700-token start passes on Claude and fails on GPT.",
    "step": "Check",
-   "fingerprint": "6e378f4483cdffa2",
+   "fingerprint": "178c1bdcb68e914f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -433,14 +433,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; the example says 'made-up prices' but gives none, so 'output was already the bigger part' depends on the lesson's 'several times more' price claim, which is acceptable."
+    "notes": ""
    }
   },
   "check:2:0": {
-   "q": "Why not “The total is probably counted wrong”?",
-   "a": "\"The total is probably counted wrong\" is a guess. Nothing in the question says the total is miscounted. It only says the bill jumped and you track one number for the whole company.\n\nIt does get one thing right. When a bill surprises you, checking the math is a sensible first step.\n\nBut it misses the real problem. Suppose you recount and get the same total. You still know only *that* spending went up, not *why*. One company-wide number mixes every model, feature and user together. If a new chatbot feature started sending long prompts, or one user ran thousands of calls, a single total hides it.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A \"breakdown\" just means splitting the total into smaller labelled piles. When the bill jumps, you look at the piles and see which one grew.\n\n\"You can't see which feature caused it\" is better because it names the actual gap: with only one total, you can't find what drove the jump.",
+   "q": "Why not “High: the start is the same”?",
+   "a": "\"High: the start is the same\" gets one thing right. An identical start is needed for a cache hit. If the instructions and lesson text come first, every question about that lesson begins with the same text.\n\nBut an identical start is only one of three conditions. The start must also be long enough, and the next call must come **soon**. The provider keeps the cached start for only about 5 minutes. After that it is thrown away.\n\nHere, questions arrive about once a day. That is far longer than 5 minutes. So each new question finds no cache waiting. The start has to be sent at full price again. On Claude, with `cache_control` set, that call even pays a quarter extra to write a new cache. That cache then expires before anyone uses it.\n\nYou would see this in the usage. `cache_read_input_tokens` stays at 0. `cache_creation_input_tokens` shows the start being written again each time.\n\n\"Near zero: the cache has gone\" is better because it accounts for timing: with a day between calls, the 5-minute cache has always expired, so almost no input is ever read from it.",
    "step": "Check",
-   "fingerprint": "178ff45142b2a1ea",
+   "fingerprint": "82a54ecc9102af10",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -454,11 +454,11 @@
     "notes": ""
    }
   },
-  "check:2:1": {
-   "q": "Why not “Bills often jump for no reason”?",
-   "a": "\"Bills often jump for no reason\" sounds reasonable, but it isn't true. A bill jumps because something changed. Maybe a feature got more users. Maybe a prompt got longer. Maybe someone switched to a pricier model. Maybe a bug started calling the model in a loop.\n\nWhat the option gets right: bills do jump, and it can feel random when you don't know the cause.\n\nWhat it misses: the feeling of \"no reason\" comes from the tracking, not the bill. With one company-wide total, you only see that spending went up. Every call is mixed into one number. You can't tell which part grew.\n\nIf you track cost per model, per feature and per user, the jump shows up in one row of that breakdown. For example, \"the support chatbot doubled its output tokens.\" Now you know where to look. (Output tokens are the words the model writes back, and they usually cost more than input.)\n\n\"You can't see which feature caused it\" is better because it names the real problem: a single total hides the cause, and a breakdown would reveal it.",
+  "check:2:2": {
+   "q": "Why not “About half of the calls”?",
+   "a": "\"About half of the calls\" gets one thing right. It notices that some calls write the cache and others could read it. If every call wrote a fresh start and the next call reused it, you might picture a split like that.\n\nThe timing breaks that picture. The cached start only lasts about 5 minutes. Learners ask about a lesson about once a day. So by the time the next question arrives, the cache is long gone. That call finds nothing to read. It pays to write a new cache instead, and that cache also expires before anyone uses it. Almost no tokens are ever read back.\n\nThere is a second slip too. The hit rate is not a share of calls. It is the share of all input tokens that were read from the cache. Even a call that hits still sends its changing part, like the question, at the normal price.\n\n\"Near zero: the cache has gone\" is better because a day-long gap is far beyond the 5-minute window, so nearly every call starts cold, with nothing in the cache to read.",
    "step": "Check",
-   "fingerprint": "5ad2bbfe4c14366f",
+   "fingerprint": "e0eb97de97d1fb8f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -469,14 +469,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems; the 'what it gets right' part is a charitable guess at the learner's reasoning, but it does not contradict the lesson."
    }
   },
   "explain:interview": {
-   "q": "How do I explain “Add up cost per model” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"LLM providers bill per token, which is a small chunk of text, about three quarters of a word. Input and output have separate prices, and output usually costs several times more. If you only see one total bill, you can't tell why it jumped.\"\n\n**The idea:** \"So for every call, I work out its cost from its input and output tokens and the model's prices. Then I add it to a running total for that model. I keep the totals in a dictionary, which is a lookup table from model name to a number. A model I haven't seen yet starts at zero.\"\n\n**An edge case:** \"Rounding. Small costs add up. If I round each call, the tiny errors pile up. So I keep full precision and round only once, at the end.\"\n\n**A follow-up an interviewer might ask**\n\n*\"What happens if a call uses a model that isn't in your price list?\"*\n\nHint for a strong answer: don't quietly count it as free. That hides real spend. Say you would flag it clearly, by logging a warning or raising an error, so someone adds the missing price.",
+   "q": "How do I explain “Add up as you go” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n*The problem:* \"Agents resend the same long start on every call. With prompt caching, that start is read back at a small share of the price. I want to measure how often that really happens.\"\n\n*The idea:* \"I walk through the calls once. I keep two running totals: tokens read from the cache, and all input tokens. At the end I divide the first by the second. That share is the hit rate.\"\n\nA \"running total\" is just a number you keep adding to as you go.\n\n*An edge case:* \"If a call has no count for something, I treat it as zero. If no input was sent at all, I return zero instead of dividing by zero, which would crash.\"\n\n**A likely follow-up**\n\n\"Your hit rate is low. Why might that be?\"\n\nHint for a strong answer: tie it to the three rules.\n- Something that changes sits near the start, like a timestamp. Then the start is no longer identical.\n- The fixed start is shorter than the minimum length.\n- Calls are more than about 5 minutes apart, so the cache has expired.\n\nThe usual fix is to put fixed text first and changing text last.",
    "step": "Explain",
-   "fingerprint": "1d7df283e48c4e14",
+   "fingerprint": "df5492bdd116fa8b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -492,9 +492,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **The bill jumps and nobody can say why.** You only have one total. You can't tell which model, feature or user caused it. That means tracking was skipped.\n- **Your numbers are wildly off.** A single call shows thousands of dollars. Or the whole month shows a fraction of a cent. That usually means the divide by one million was skipped or done twice.\n- **Your estimate sits well below the real bill.** Output tokens may be missing, or priced at the cheaper input rate. Output usually costs several times more, so this gap grows fast.\n- **A model's total never grows, or a model is missing.** Each call is replacing the running total instead of adding to it.\n- **Lots of calls show exactly zero.** Each call was rounded too early. Tiny costs became 0 before being added. Round only at the end.\n\n**Quickest check**\n\nPick one day. Get the token counts per model from `system.serving.endpoint_usage`, the Databricks table that logs each request to a served model. Multiply by the prices yourself. Compare that to your tracked totals and to the provider's invoice, which is the actual bill. If they match closely, your tracking is sound.",
+   "a": "**Warning signs**\n\n- **Reads stay at zero.** `cache_read_input_tokens` (Claude) or `cached_tokens` (GPT) is 0 on call after call. Your hit rate sits near nothing.\n- **Writes on every call.** `cache_creation_input_tokens` is big each time. On Claude that means you pay the quarter-extra write fee over and over and never get the cheap read. Your bill can go *up*, not down.\n- **Costs and speed don't change.** You turned caching on, but the bill and response times look the same as before.\n- **It works in testing, then fades.** Quick back-to-back test calls hit. Real users come minutes apart, so the cache (about 5 minutes) has expired.\n\n**Usual causes**\n\nSomething that changes sits near the start, such as a timestamp, the user's name or a reordered tool list. Or the fixed start is shorter than the minimum: 512 tokens on Claude 5.5, 1,024 on GPT.\n\n**Quickest check**\n\nSend the same question twice, a few seconds apart. Then compare the two usage reports. The second call should show a large cached count. If it doesn't, the start isn't identical or isn't long enough.",
    "step": "Learn",
-   "fingerprint": "31b4d89186698c66",
+   "fingerprint": "b8ab9210f42ec518",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -505,14 +505,52 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems; it is close to the 200-word limit and the description of the Databricks table goes slightly beyond the lesson, but neither is serious."
+    "notes": "No real problems. The only minor point is that 'response times' goes slightly beyond the lesson, which talks about price but not speed, though it does not contradict it."
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The simple rule (tokens times price, added up per model) works well for basic pay-per-token calls. Here is where it needs extra care.\n\n**Prices that aren't flat.** Some providers charge less for \"cached\" input, meaning text they have seen recently and stored. Reasoning models also bill hidden \"thinking\" tokens as output. Read each kind of token from the provider's usage report and give each its own price.\n\n**Prices that change over time.** Providers cut or raise prices, and you switch models. If you hard-code one price, last month's totals get recalculated wrongly. Store the price that applied with each call, or keep a dated price table.\n\n**Paying by the hour, not by the token.** On Databricks you can reserve \"provisioned throughput\", a dedicated endpoint you pay for per hour whether it is busy or idle. Here, tokens don't set the bill. Use the hourly cost, then split it across features or users by their share of the tokens.",
+   "a": "Prompt caching only pays off when its three conditions hold. Here are common cases where it quietly stops working.\n\n**Something changing sits near the start.** A timestamp, the user's name or RAG chunks (passages a search step pulls in for each question) placed before the fixed text make every start different. Then nothing matches and you get no cache reads. Move anything that changes to the end, and keep the fixed part in the same order every time. Even editing one word of the instructions or the tool list starts a fresh cache.\n\n**Calls are too far apart.** The cache lasts about 5 minutes. A quiet app with one question every ten minutes misses every time. On Claude it also pays the extra quarter to write the cache each time. Check the hit rate in the usage counts. If it stays near 0, turn `cache_control` off.\n\n**The fixed start is too short.** Below 512 tokens on Claude 5.5 or 1,024 on GPT, nothing is cached at all. A token is a small chunk of text, often part of a word. For short prompts, caching simply doesn't apply, and that's fine.",
    "step": "Learn",
-   "fingerprint": "e23e4a1f18c9ca08",
+   "fingerprint": "5c3703eaccd957d5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the first two situations run longer than the requested two or three sentences each, and the advice to turn cache_control off goes slightly beyond the lesson, but nothing contradicts it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Prompt caching” mean here?",
+   "a": "**Prompt caching** means the model provider remembers the opening part of your prompt for a few minutes. Then it doesn't have to process that part from scratch next time.\n\nHere's an everyday comparison. You phone a help desk, and each time you'd normally re-read your whole account history before asking a question. With caching, the agent says, \"I still have your file open from five minutes ago, just ask.\" You only pay full effort for the new question. The answer is still worked out fresh each time.\n\nIn the lesson's example, the fixed part goes first: `system = INSTRUCTIONS + LESSON_TEXT`. That text is the same for every question, so it can be cached. The learner's `question` goes last in `messages`, because it changes each call.\n\nThe `usage` dict shows the result. `cache_read_input_tokens: 900` means 900 tokens came from the cache at a small share of the normal price. Tokens are the small chunks of text the model counts and charges by. Only `input_tokens: 60`, the new question, were processed at full price.",
+   "step": "Learn",
+   "fingerprint": "c20bad48c10bf6b8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "token_cost": {
+  "check:0:0": {
+   "q": "Why not “The model's accuracy on last month's eval set”?",
+   "a": "Accuracy on an eval set tells you how good the answers are. An **eval set** is a fixed batch of test questions you use to grade a model. That is worth tracking. But it measures quality, not cost.\n\nYour bill comes from tokens times price. Accuracy is not part of that sum. A model can score the same and still cost twice as much. It can also score worse and cost less. So accuracy can't tell you where the extra money went.\n\nThere's a second problem. \"Last month's\" eval looks backward. The bill doubled recently, so you need to see what changed in recent calls.\n\nHere's the useful clue. The number of requests stayed the same. So each request must be costing more. That points straight at tokens per request. Maybe prompts got longer. Maybe the model started writing longer replies. Output tokens are usually priced several times higher than input tokens. So a jump in output length hits the bill hardest.\n\n\"Tokens per request, especially output tokens\" is better because it looks directly at the numbers the bill is built from.",
+   "step": "Check",
+   "fingerprint": "6e8cab7155a7f557",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -526,11 +564,11 @@
     "notes": ""
    }
   },
-  "learn:term": {
-   "q": "What does “token” mean here?",
-   "a": "A **token** is a small chunk of text. It's the unit a model reads and writes.\n\nThink of Lego bricks. The model doesn't see whole sentences. It sees a row of small pieces snapped together. A short, common word like \"cat\" is often one piece. A longer word like \"unbelievable\" may split into two or three. Spaces and punctuation count too. On average, one token is about three quarters of a word. So 100 words is roughly 130 tokens.\n\nProviders bill by the token, a bit like a taxi meter that ticks for each piece of text. The tokens you send in (your prompt) are **input tokens**. The tokens the model writes back are **output tokens**. Each kind has its own price, and output usually costs more.\n\nIn the lesson's example, `input_tokens` and `output_tokens` are simply counts of these pieces for one call. Each count is multiplied by its matching price.\n\nIn the Databricks query, `input_token_count` and `output_token_count` are the same kind of counts. Databricks records them for every request. The query adds them up for each `served_entity_id`, which identifies the model being served.",
-   "step": "Learn",
-   "fingerprint": "f708dd0c65cb9e50",
+  "check:0:2": {
+   "q": "Why not “The API's uptime, in case retries doubled the c…”?",
+   "a": "It's a reasonable instinct. Retries can raise your bill. A **retry** is when your code sends the same request again because the first try failed. **Uptime** is how much of the time the API is working. If the API was often down, your code might have retried a lot, and each retry costs money.\n\nBut look at the clue in the question: the number of requests didn't change. Retries would show up as *more* requests. So the facts already rule this out. Uptime also isn't something you're billed for. You pay for tokens, not for whether the service was up.\n\nRemember how the bill is built: tokens times price, added up over every call. If the call count stayed flat but the bill doubled, something inside each call must have grown. Maybe a longer prompt, or the model writing longer answers.\n\n**\"Tokens per request, especially output tokens\"** is better because it points straight at the part of the bill that can double without the request count changing, and output tokens cost several times more than input tokens.",
+   "step": "Check",
+   "fingerprint": "d6b924b21db31c0a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -541,7 +579,151 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The one soft spot is that 'served_entity_id identifies the model being served' goes slightly beyond the lesson, which only says tokens are tracked per endpoint."
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “It stays the same, inputs didn't change”?",
+   "a": "It's a fair instinct. And part of it is right: the input cost really does stay the same. The questions are the same length, so the number of input tokens hasn't changed. (A token is a small chunk of text, roughly three quarters of a word.)\n\nWhat it misses is that you pay for both sides of the conversation. The bill has two parts: input tokens times the input price, plus output tokens times the output price. Answers three times longer means about three times as many output tokens.\n\nThat alone would push the cost up. But output tokens are also the expensive ones. They often cost several times more per token than input. So you're tripling the pricier half of the bill.\n\nA quick example with made-up numbers. Say one call used to cost 1 cent for input and 4 cents for output, 5 cents total. Now output is 12 cents. The total is 13 cents, more than double.\n\n\"It rises a lot, output costs more\" is better because it counts both halves of the bill and notices that the half that grew is the expensive one.",
+   "step": "Check",
+   "fingerprint": "3cf93d1d21254693",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “It drops, long answers need fewer calls”?",
+   "a": "This option has one fair idea behind it. In real life, a fuller answer *might* save a follow-up question. But the question gives no sign of that. The same questions come in, so the number of calls stays the same.\n\nWhat changes is the size of each call. Every answer now has three times as many **output tokens**. Output tokens are the pieces of text the model writes back. Output is also the expensive side. It usually costs several times more per token than **input**, the text you send in.\n\nA quick example with made-up prices: $1 per million input tokens, $4 per million output tokens. Say each call sends 1,000 input tokens.\n\n- Before: 500 output tokens. That is (1,000 × 1 + 500 × 4) ÷ 1,000,000 = $0.003.\n- After: 1,500 output tokens. That is (1,000 × 1 + 1,500 × 4) ÷ 1,000,000 = $0.007.\n\nThe cost of each call more than doubles, and nothing offsets it.\n\n\"It rises a lot, output costs more\" is better because it focuses on the real change: three times the tokens on the priciest side of the bill.",
+   "step": "Check",
+   "fingerprint": "35fd198173745606",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The answer holds up. The only soft spot is that it assumes the number of calls stays the same, which the question implies but does not state."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “The total is probably counted wrong”?",
+   "a": "\"The total is probably counted wrong\" isn't a crazy thought. When a number surprises you, checking your math is a sensible first step.\n\nBut nothing in the question suggests the total is wrong. Bills usually jump for real reasons. A new feature might send longer prompts. One user might call the model far more than before. Someone might switch to a pricier model.\n\nThe real problem is what a single total hides. Imagine your one number is perfectly correct. You still only know *that* costs went up. You don't know *where* the extra tokens came from. So you can't fix it, because you don't know which part of your app to look at.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A breakdown like that is just the total split into labeled pieces. When one piece grows, you see it right away.\n\n\"You can't see which feature caused it\" is better because it names the actual gap: a single total can be accurate and still tell you nothing about the cause.",
+   "step": "Check",
+   "fingerprint": "9ceed64e6d6185a1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Bills often jump for no reason”?",
+   "a": "\"Bills often jump for no reason\" gets one thing right. Bills really can jump, and it often feels sudden and surprising.\n\nBut the \"no reason\" part is the mistake. A bill only goes up when something changed. Maybe a feature started sending longer prompts. Maybe it switched to a pricier model. Maybe one user started making thousands of calls. Or maybe answers got longer, and output tokens cost several times more than input tokens.\n\nThere is always a cause. The question is whether you can find it.\n\nWith one company-wide total, you only see a single number. It went up, and that's all it tells you. You can't tell which part of your product drove the jump. So you're stuck guessing.\n\nThat's why the lesson says to track cost per model, per feature and per user from day one. A \"breakdown\" just means splitting the total into smaller labelled pieces. Then, when the bill jumps, you look for the piece that grew.\n\n\"You can't see which feature caused it\" is better because it names the real problem: the jump has a cause, but one total hides it from you.",
+   "step": "Check",
+   "fingerprint": "828f0e6bb1d1bbb6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Add up cost per model” in an interview?",
+   "a": "**A 30-second spoken answer:**\n\n**The problem.** \"LLM providers bill per token, which is roughly three quarters of a word. Input and output have separate prices, and output usually costs several times more. If you only look at the total bill, you can't tell why it jumped.\"\n\n**The idea.** \"So for each call, I work out its cost: input tokens times the input price, plus output tokens times the output price. Prices are per million tokens, so I divide by one million. Then I add that cost to a running total for its model. I keep those totals in a dict, which is a lookup table from model name to number. A model I haven't seen yet starts at zero.\"\n\n**The edge case.** \"I round only at the very end. Each call's cost is tiny. Rounding every call would throw away small amounts, and over thousands of calls the total would drift.\"\n\n**Likely follow-up:** \"Is cost per model enough?\"\n\n*Hint:* Say it's a start. Per model shows *which* model got expensive. The lesson says to also track per feature and per user from day one. Those show *who or what* drove the jump.",
+   "step": "Explain",
+   "fingerprint": "88d4db85cde2d0de",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that cost tracking was skipped or done wrong:**\n\n- **The bill jumps and nobody can say why.** You only have one total. Nothing tells you which model, feature or user caused it.\n- **Your numbers are wildly off.** If a single call shows as thousands of dollars, the divide by one million was probably missed. Prices are quoted per million tokens.\n- **Your estimate is too low.** Output tokens were priced like input tokens. Output usually costs several times more, so the gap grows as answers get longer.\n- **Lots of calls show $0.0000.** Rounding happened on each tiny call instead of once at the end, so small costs vanished.\n- **A model is missing from your totals.** A new or renamed model never got its own running total.\n\n**Quickest check:** pick one recent week. Pull token counts per model from the Databricks Gateway usage table (`system.ai_gateway.usage`). Apply each model's input and output prices. Then compare the result to the provider's invoice for the same week. If the two are close, your tracking works. If they differ, look at the model with the biggest gap first.",
+   "step": "Learn",
+   "fingerprint": "6622a90fe5febf9d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When the simple cost rule needs extra care**\n\n**1. Not every token costs the same.** Some providers charge less for \"cached\" input. That is text, like a long system prompt, that you send again and again, so they store it and bill it at a discount. Batch jobs, which run slowly in the background, can also be cheaper. One flat input price would then overstate your cost. Keep a separate price for each kind of token.\n\n**2. One question triggers many calls.** An agent is a program where the model decides its own next steps. It might call the model five or ten times to answer a single user question. Cost per call then hides the real cost of a question. Give every call from the same question a shared label, then add up by label.\n\n**3. Prices and models change.** Providers change prices, and each model splits text into tokens differently. \"Three quarters of a word\" is only a rough guide. Use the token counts the provider reports, not word counts. Store prices with the date they applied, so old costs stay correct.",
+   "step": "Learn",
+   "fingerprint": "dae9b8b8da5edf8e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problems; the only slip is that each point runs 4-5 sentences instead of the requested two or three."
+   }
+  },
+  "learn:term": {
+   "q": "What does “token” mean here?",
+   "a": "Think of a token like a puzzle piece of text. The model doesn't read whole sentences. It chops text into small pieces and counts them. A piece might be a short word like \"cat\", part of a longer word (\"unbeliev\" + \"able\"), or a comma.\n\nOn average, one token is about three quarters of a word. So 100 words comes to roughly 130 tokens. Providers bill by counting these pieces, a bit like a taxi meter counting distance.\n\nIn the lesson's example, tokens show up in two places:\n\n- `input_tokens` is how many pieces you send to the model. That is your prompt and any context.\n- `output_tokens` is how many pieces the model writes back.\n\nEach count is multiplied by its own price: `input_price` or `output_price`. Prices are quoted per million tokens, which is why the sum is divided by `1000000` at the end. Output pieces usually cost several times more than input pieces.\n\nThe Databricks query reads those same two counts from the `system.ai_gateway.usage` table. It adds them up for each model over the last 7 days.",
+   "step": "Learn",
+   "fingerprint": "3c8556f0c2dfc8c8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
    }
   }
  }

@@ -40,6 +40,14 @@ CALLBACKS = {
                            clue='Which pillar asks what happens when something the app depends on breaks?',
                            why='Retrying keeps the app working when the endpoint is busy for a minute: that is Reliability. It costs some waiting, not more money or less safety.')),
     ],
+    'pick_vector_size': [
+        callback('embedding_cost', phrase='every chunk gets a new embedding', idea='Re-embedding, once',
+                 here='You priced this earlier: a new embedding model means every document again, a one-off as big as the first indexing. A new size is the same full pass, plus a rebuilt index.'),
+    ],
+    'rescore_candidates': [
+        callback('recall_at_k', phrase='a little recall for a lot of speed', idea='Recall@k',
+                 here='You measured this in Measuring retrieval: of the chunks that should be found, the share that made the top k. An approximate index gives a little of it up; your eval set says how much.'),
+    ],
     'agent_scorecard': [
         callback('cost_per_finished_task', phrase='which spreads the cost of failed runs over the successful ones', idea='Cost per finished task',
                  here='A task costs more than its own call: failed runs and redone work are part of the bill. Cost per success puts that whole bill on the runs that worked.'),
@@ -105,6 +113,14 @@ CALLBACKS = {
                            clue='Of the answers it should have failed, how many did it fail?',
                            why='It agrees with people 9 times in 10, so it looks accurate, but it fails nothing. That is why accuracy lies when one kind of answer is rare.')),
     ],
+    'vague_checks': [
+        callback('must_pass_gate', phrase='like your must-pass set', idea='Must-pass set',
+                 here='Your release gate holds the cases that can never get worse. A checklist splits the same way: a few checks are gates, and the rest add up to a score.'),
+    ],
+    'disagreement': [
+        callback('judge_consistency', phrase='judge three times and keep the majority', idea='Keep the majority',
+                 here='One unlucky run gets outvoted by three. The model that writes gets the same treatment: three drafts, and a disagreement between them is the flag.'),
+    ],
     'percentile': [
         callback('split_requirements', phrase='Compare models and configs (their settings) on p95.', idea='Non-functional requirement',
                  here='"Under 3 seconds for 95 in 100 requests" says how well, not what: you check it by measuring, with a stopwatch on many requests. p95 is how you write its number.',
@@ -112,6 +128,14 @@ CALLBACKS = {
                            ['Functional: what the system does', 'Non-functional: how well it does it', 'Neither: a design choice'], answer=1,
                            clue='How would you check it: watch it happen, or measure something?',
                            why='You check it by timing many requests, which is measuring, so it is non-functional. p95 gives it a number you can pass or fail.')),
+    ],
+    'batch_leftovers': [
+        callback('batch_items', phrase='many requests in one file', idea='Batching API calls',
+                 here='The batch is a file of many requests. If the deployment will not take it all at once, cut it into parts that each fit, and watch the last part: it is usually smaller and the easiest to lose.',
+                 again=ask('Your batch deployment takes at most 200,000 tokens in its queue at once, and your request file holds 450,000 tokens, so you cut it into parts that each fit. How many parts do you send?',
+                           ['One part', 'Two parts', 'Three parts'], answer=2,
+                           clue='Two full parts hold 400,000 tokens, so what happens to the other 50,000?',
+                           why='Two full parts hold 400,000 tokens, and the other 50,000 need a part of their own. That smaller last part is the easiest to lose, so count it and send it too.')),
     ],
     'pareto_models': [
         callback('best_run', phrase='run each candidate on the **same eval set**, with the **same judge**', idea='Controls held fixed',

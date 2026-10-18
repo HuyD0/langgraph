@@ -1,6 +1,6 @@
 """Shipping models and agents: Graduating, registering, promoting and canarying on Databricks."""
 
-from drill.content.model import angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
+from drill.content.model import source, angle, ask, case, evidence, example, exercise, lesson, module, practice, question, stack
 
 MODULE = module('shipping', 'Shipping models and agents', 'Graduating, registering, promoting and canarying on Databricks.')
 
@@ -290,9 +290,13 @@ names.append("Ana")   # ["Ana"]""",
 
 lesson(MODULE, 'promote_model',
     title='Model registry and promotion',
+    checked='2026-10-18',
+    sources=[source('MLflow Model Registry: aliases', 'https://mlflow.org/docs/latest/ml/model-registry/'),
+             source('MLflow custom LLM judges', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/custom-judges/')],
     learn=[
         "A **model registry** (such as MLflow's on Databricks) stores every trained version with its metrics. **Aliases** like `@champion` point at the version serving traffic.",
-        'Promote a **challenger** (a newer version that wants the job) only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
+        'Promote a **challenger** (a newer version that wants the job), which means pointing the alias at it, only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
+        "The **LLM judge** that scores your champion and challenger (a model that grades answers) needs the same care. A judge is really two things, its grading prompt and the model that runs it, and changing either can change any grade. So keep the pair together: save each prompt-and-model pair as one version in the **MLflow Prompt Registry**, with the model recorded on the version, and give the judge its own `@champion` and `@challenger`, separate from your model's. A new judge version is a challenger like any other: its score is how often it agrees with grades people gave, it earns `@challenger` by beating the champion judge by your minimum gain on the dev set, and it takes `@champion` only after one check on the test set.",
     ],
     example=example('Loading by alias with MLflow', """import mlflow
 model = mlflow.pyfunc.load_model('models:/main.ml.churn@champion')"""),
@@ -447,6 +451,10 @@ age >= 18 and has_ticket   # True""",
             [
                 'Promote by alias, roll back by alias',
                 'Pointing `@champion` at a new version is instant to undo, which is why aliases beat redeploying with a new model URI (the `models:/...` address your code loads).',
+            ],
+            [
+                'New model, new version',
+                "A prompt version's text never changes, but MLflow does let you change its model config (its record of which model runs it) after it is saved. If your judge loads its model from there, the version holding `@champion` could quietly start running on a different model. When the model changes, register a new version and move the alias instead.",
             ],
         ],
     ),
