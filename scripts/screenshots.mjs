@@ -39,6 +39,7 @@ const SHOTS = [
   ["learn-cards-phone-light", PHONE, "light", `openLesson("split_requirements", 0); at(".pcard:nth-of-type(2)");`],
   ["learn-terms-phone-dusk", PHONE, "dusk", `openLesson("team_roles", 0); at(".pcard:nth-of-type(3)");`],
   ["learn-terms-phone-light", PHONE, "light", `openLesson("fit_for_purpose", 0); at(".pcard:nth-of-type(1)");`],
+  ["learn-prices-phone-dusk", PHONE, "dusk", `openLesson("paid_tools", 0); at(".pcard:nth-of-type(1)");`],
   ["trust-mark-phone-dusk", PHONE, "dusk", `openLesson("redact_pii", 0); document.querySelector(".trustmark").click(); at(".trustpop");`],
   ["diagram-phone-light", PHONE, "light", `openLesson("slowest_chain", 0); at(".dgfig"); document.querySelectorAll(".grow, .pop, .late").forEach(e => e.getAnimations().forEach(a => a.finish()));`],
   ["callback-phone-dusk", PHONE, "dusk", `lp("well_architected").done = true; openLesson("backoff_delays", 0); document.querySelector(".cbmark").click(); at(".cbmark");`],

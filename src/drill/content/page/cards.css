@@ -93,6 +93,12 @@
 .pc-steps li > div > b { display: block; }
 .pc-steps li > div > span { font-size: 14px; color: var(--muted); }
 
+/* a price list: one column per group, the item on the left and its price on the right, so nothing wraps on a phone */
+.pc-pg { display: grid; }
+.pc-pgh { font: 800 16px var(--head); padding-bottom: 2px; }
+.pc-pr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 10px; min-height: 36px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.pc-pp { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+
 /* a terms list: an icon, the term, what it means; no order and nothing judged */
 .pc-terms { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .pc-terms li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--aside-bg); border: 1px solid var(--aside-line); box-shadow: var(--aside-shadow); }

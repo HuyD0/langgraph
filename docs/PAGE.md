@@ -215,6 +215,7 @@ in card text (`text`, `after` and `note` all go through `withTrust`).
 | Two piles | `piles(pile(title, items, sub=, look=), pile(...))` | Two columns of tiles, like functional and non-functional |
 | Sort by a question | `sortby(question, sortrow(text, answer, verdict, look=, icon=), ...)` | The same question asked of each thing, its answer, and the pile it lands in |
 | Terms | `terms((icon, term, meaning), ..., lead=)` | A short list of named things, nothing judged: roles, kinds of AI, a judge's biases |
+| Price list | `prices((title, [(item, price), ...]), ...)` | One column per group, the item on the left and its price on the right, so nothing wraps on a phone |
 | Cut a sentence | `split([part, part], [tile(...), ...])` | A sentence cut with scissors, then the lines it becomes |
 | Vague to checkable | `rewrite(("fast", "under 5 seconds"), ...)` | Each vague word crossed out and rewritten |
 | Pillars | `pillars(roof, pillar(name, icon, question, short=, chips=, open=), ...)` | A roof on 3 to 6 pillars; chips rest on them; an `open` pillar is the unanswered question |
