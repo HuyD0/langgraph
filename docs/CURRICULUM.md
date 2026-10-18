@@ -156,7 +156,8 @@ at any time.
 
 The path opens with the Frame stage, which decides whether an idea is worth building.
 **Use case and fit** comes first: judging whether an idea suits AI at all, writing the
-use case down on one page, splitting functional from non-functional requirements,
+use case down on one page, gathering requirements from everyone with a stake, splitting
+functional from non-functional requirements,
 reviewing the design against the Well-Architected pillars (Microsoft's five, plus
 Databricks' governance and interoperability), and deciding go, fix or stop against bars
 agreed before the pilot. **AI & ML foundations** then teaches how to measure it honestly,

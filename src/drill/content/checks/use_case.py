@@ -31,6 +31,18 @@ CHECKS = {
             why="Without past examples that have good answers, you can't test it. A missing test set "
                 "stops the project later anyway, so fix it first."),
     ],
+    "gather_requirements": [
+        ask("You talked to the HR advisors and the owner, but not the privacy team. Which requirement are you most likely missing?",
+            ["Where personal data may go", "Which questions it answers", "Who will use the assistant"],
+            answer=0,
+            clue="Which of these does the privacy team decide?",
+            why="Rules about personal data come from the privacy team. Skip them and that requirement turns up late, often just before launch."),
+        ask("The advisors describe the job one way, but you suspect it really works differently. What do you do?",
+            ["Sit with one of them while they work", "Send a survey to every advisor", "Trust what they told you"],
+            answer=0,
+            clue="How do you see the real steps, not the remembered ones?",
+            why="Watching someone do the job, called shadowing, shows the steps people forget to mention, like the three places they search before answering."),
+    ],
     "split_requirements": [
         ask("\"Translate each answer into Spanish when the user asks.\" What kind of requirement "
             "is that?",
