@@ -338,7 +338,7 @@ def screen(kind: str, *, caption: str, steps: list[str], tips: list[str] | None 
 # says the same thing in words, for the tutor map, the MCP tools, search and screen readers.
 # Two looks tell two kinds of thing apart by shape, never by a new colour: "solid" (a filled tile)
 # and "dashed" (a ruler-edged tile). Icons are names from page.html's sprite (a test checks).
-PICTURE_KINDS = ("piles", "sortby", "terms", "split", "rewrite", "pillars", "seesaw", "steps")
+PICTURE_KINDS = ("piles", "sortby", "terms", "prices", "split", "rewrite", "pillars", "seesaw", "steps")
 LOOKS = ("solid", "dashed")  # dashed is the measured kind: a how-well requirement or criterion, nothing else
 # What each icon means on a card, so one idea gets one picture everywhere. A test checks that every icon a
 # card uses is listed here and drawn in the sprite; docs/PAGE.md shows the same table.
@@ -394,6 +394,13 @@ def piles(*columns: dict) -> dict:
     """Two piles side by side, like functional and non-functional."""
     assert len(columns) == 2, "piles are drawn as two columns"
     return {"kind": "piles", "piles": list(columns)}
+
+
+def prices(*groups: tuple[str, list[tuple[str, str]]]) -> dict:
+    """A price list: one column per group ``(title, [(item, price), ...])``, the item on the left and its
+    price on the right, so nothing wraps on a phone. Two piles of prices did."""
+    assert groups and all(rows for _, rows in groups), "a price list needs groups with rows"
+    return {"kind": "prices", "groups": [{"title": t, "rows": [list(r) for r in rows]} for t, rows in groups]}
 
 
 def sortrow(text: str, answer: str, verdict: str, *, look: str = "solid", icon: str = "check") -> dict:
@@ -477,6 +484,8 @@ def picture_text(p: dict | None) -> str:
                         + "; ".join(t["text"] for t in c["items"]) + "." for c in p["piles"])
     if k == "sortby":
         return f"{p['question']} " + " ".join(f'"{r["text"]}": {r["then"]} ({r["verdict"]}).' for r in p["rows"])
+    if k == "prices":
+        return " ".join(f"{g['title']}: " + "; ".join(f"{i} {x}" for i, x in g["rows"]) + "." for g in p["groups"])
     if k == "terms":
         return (f"{p['lead']} " if p["lead"] else "") + " ".join(f"{t}: {x.rstrip('.')}." for _, t, x in p["items"])
     if k == "split":

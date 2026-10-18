@@ -230,14 +230,16 @@ Tests check every gap.
 ![The watch-or-measure test: three requirements, how you would check each, and which kind it is](learn-cards-phone-light.webp)
 ![The people who decide and guard the HR assistant: a terms list, one role and its job per tile](learn-terms-phone-dusk.webp)
 ![Fit for purpose: three vague verdicts crossed out and rewritten as acceptance criteria](learn-terms-phone-light.webp)
+![Paid tools: a price list, the service on the left and its price on the right](learn-prices-phone-dusk.webp)
 
 **What the learner sees.** *What it does, and how well* (functional and non-functional
 requirements), *A well-architected review* and *Who moves the agent forward* teach Learn as short
 cards, one idea and one picture each: two piles of functional and non-functional requirements, the
 watch-or-measure test, a sentence cut in two, vague words rewritten, five pillars with the
 requirements resting on them (an empty one marked "?"), a see-saw for a trade-off, the steps from a
-model's draft to a person's decision, and a terms list (one named thing per tile, nothing judged)
-for the roles on the team.
+model's draft to a person's decision, a terms list (one named thing per tile, nothing judged)
+for the roles on the team, and a price list (the item on the left, its price on the right) where
+two piles of prices used to wrap on a phone.
 
 **What draws it.** `cardsLearnPane()` and `PC_PIC` (one function per kind of picture) in
 `page/cards.js`; styles `.pc-*` in `page/cards.css`. `learnPane()` hands over when the lesson has
