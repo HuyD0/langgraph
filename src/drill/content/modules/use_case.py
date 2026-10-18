@@ -313,6 +313,7 @@ Return a list of the gap field names, in the order above. A complete card gives 
                     why='There is no owner line at all. Without someone who wants the result and will decide, a working pilot still goes nowhere.',
                     wrong=[None, 'data is there: 200 past questions to test on.', 'feedback is there: edits go into the eval set.']),
                 ask('`success` has words in it. Is it still a gap?', ['No: the box is filled in', 'Yes: there is no number in it'], answer=1,
+                    evidence=evidence('code', title='From the HR assistant\'s card', text='"success": "faster answers",'),
                     clue='Could a pilot measure "faster answers" and say yes or no?',
                     why='"Faster" can\'t be tested. Success needs a number and the cases you will check it on, like 80 in 100 approved unedited on last month\'s questions.',
                     wrong=['Filled in isn\'t enough for success: a pilot has to be able to count it.', None]),
@@ -736,6 +737,7 @@ Build a list of lines, then return them joined with `"\\n"`:
             realworld='Architecture reviews at work use these pillar names. Bring your requirements sorted under them; the empty pillar is your first question.',
             asks=[
                 ask('You want to ask "Can it handle the busiest minute?" Which pillar does it go under?', ['Reliability', 'Performance Efficiency', 'Cost Optimization'], answer=1,
+                    alone=True,
                     clue='One pillar is about staying fast as use grows.',
                     why='Performance Efficiency is about staying fast as use grows, and the busiest minute is exactly that test.',
                     wrong=['Reliability is about failures, like the model being down. This is about load.', None, 'Cost is what you pay. This is whether it keeps up.']),

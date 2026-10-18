@@ -133,8 +133,14 @@ def evidence(kind: str, **data: Any) -> dict:
 
 
 def ask(question: str, options: list[str], *, answer: int, clue: str, why: str,
-        evidence: dict | None = None, wrong: list[str | None] | None = None, pick: bool = False) -> dict:
+        evidence: dict | None = None, wrong: list[str | None] | None = None, pick: bool = False,
+        alone: bool = False) -> dict:
     """One practice question: one screen, one plain question about the evidence above it.
+
+    In a practice set each screen carries what it needs: the learner can't scroll back to the last
+    question's evidence, so a question that leans on it shows it again (or the part it asks about).
+    A practice question that needs nothing above it leaves ``evidence`` out and says so with
+    ``alone``; :func:`practice` checks every question does one or the other.
 
     A wrong pick shows its line from ``wrong`` (or a plain "not quite"); help is ``clue`` first,
     then the answer. ``why`` is shown once it's right. With ``pick``, the plan's own rows are the
@@ -147,7 +153,7 @@ def ask(question: str, options: list[str], *, answer: int, clue: str, why: str,
     assert right.lower() not in clue.lower(), f"{question[:40]}: the clue gives the answer away"
     assert wrong is None or len(wrong) == n, f"{question[:40]}: one wrong line per option"
     return {"question": question, "options": options, "answer": answer, "clue": clue, "why": why,
-            "evidence": evidence, "wrong": wrong, "pick": pick}
+            "evidence": evidence, "wrong": wrong, "pick": pick, **({"alone": True} if alone else {})}
 
 
 def fix(question: str, *, start: str, answer: str, rules: dict, goal: list[dict] | None = None,
@@ -171,6 +177,9 @@ def practice(*, intro: str, asks: list[dict], explain: str | None = None, patter
     ``explain`` is the big idea, and ``realworld`` is "Where you'll use this" in their job. ``gotchas``,
     when given, replace the exercise's gotchas in practice mode (for ones that only make sense in code)."""
     assert 2 <= len(asks) <= 6, "a practice set has two to six questions"
+    for a in asks:  # one screen each: what a question is about is on its own screen (see ask)
+        assert a.get("kind") == "fix" or a["evidence"] or a.get("alone"), \
+            f"{a['question'][:40]}: show its evidence again, or mark it alone=True if it needs none"
     return {"intro": intro, "asks": asks, "explain": explain, "pattern": pattern, "realworld": realworld, "gotchas": gotchas}
 
 

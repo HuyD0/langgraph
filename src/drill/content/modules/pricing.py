@@ -1035,6 +1035,7 @@ description:
                     why='"claude" may not appear in a name, and a description needs 1 to 1,024 characters. Listing both lets the author fix them in one go.',
                     wrong=['The description is empty too.', 'The name uses a reserved word too.', None]),
                 ask('All three of these load. Which description gets the skill used when someone asks about an AI idea?', ['A helpful assistant for all kinds of AI work: ideas, questions, projects and plans.', 'Vets a proposed AI use case. Use when someone asks whether an AI idea is worth doing.', 'I can help you work out whether your AI ideas are any good.'], answer=1,
+                    alone=True,
                     clue='Claude reads only the name and description up front. Which one says when to use it?',
                     why='Claude chooses a skill from its description alone, so it must say what the skill does and when to use it, in the third person.',
                     wrong=['Long, but vague: it never says what the skill does or when to use it, so Claude never will.', None, 'It is in the first person and never says when to use it. Write descriptions in the third person.']),
