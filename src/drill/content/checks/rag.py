@@ -187,4 +187,20 @@ CHECKS = {
             clue="To compare two things fairly, give them the same test.",
             why="Keep one evaluation set, so both are judged on the same questions."),
     ],
+    "what_embeddings_are": [
+        ask("You embed your documents with one model, then switch the questions to a newer model. "
+            "Search results turn to nonsense. Why?",
+            ["The two models' spaces don't match", "The newer model is broken", "The documents got too long"],
+            answer=0,
+            clue="Can vectors from two different models be compared?",
+            why="Each model places text in its own space. Questions and passages must be embedded by "
+                "the same model, or their closeness means nothing."),
+        ask("A two-line question matches a two-page passage with cosine similarity 0.9. Is the length "
+            "difference a problem?",
+            ["No: cosine compares direction, not length", "Yes: long passages always score low", "Yes: the question must be longer"],
+            answer=0,
+            clue="Does cosine look at how long the vectors are?",
+            why="Cosine compares the direction the vectors point, so a short question and a long "
+                "passage can match closely."),
+    ],
 }

@@ -4,6 +4,128 @@ from drill.content.model import angle, ask, case, evidence, example, exercise, l
 
 MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retrieval on Databricks Vector Search or Azure AI Search, then measuring which settings actually work.')
 
+lesson(MODULE, 'what_embeddings_are',
+    title='What an embedding is: meaning as a place',
+    learn=[
+        'An **embedding** turns a piece of text into a list of numbers, a **vector**. OpenAI\'s text-embedding-3-small gives 1,536 numbers for any text, short or long. Each position is a **dimension**, and nobody chose what each one means: the model learned them from huge amounts of text.',
+        'Think of each vector as a place in a space with 1,536 directions. Texts that mean similar things land close together, even with no words in common: "laptop broken" sits next to "computer won\'t start", and far from "broke the laptop budget".',
+        '**Cosine similarity** measures how close two vectors are by the direction they point: 1 means the same direction, 0 means unrelated. Length doesn\'t count, so a short question and a long passage can still match. Search ranks passages by it.',
+        'That is how retrieval works: the question is embedded the same way as the passages, the nearest passages come back first, and the LLM answers from them. It is also how it can miss: text the model never learned a meaning for, like an internal product code, may land nowhere useful.',
+    ],
+    example=example('Cosine similarity, with example numbers', """"parental leave" vs
+  "maternity leave"   0.91  same idea
+  "time off"          0.74  related
+  "expense claim"     0.12  unrelated
+# 1 = same direction, 0 = unrelated"""),
+    check=question(
+        'A question\'s cosine similarity is 0.95 with passage A and 0.10 with passage B. Which is more likely to help answer it?',
+        ['Passage A, at 0.95', 'Passage B, at 0.10', 'Neither: cosine measures length'],
+        answer=0,
+        why='Closer to 1 means the two point the same way: similar meaning. 0.10 is close to unrelated, and cosine ignores length; it compares direction.',
+    ),
+    angle=angle(
+        pattern='Dot product over the lengths, then keep the best',
+        text='The big idea: an embedding places text in a space where similar meanings land close together, and cosine similarity measures how close by direction. Your code works out the cosine between the question and each passage: multiply the numbers position by position and add them up, then divide by the two vectors\' lengths. It keeps the passage with the highest cosine and returns its id and the score, rounded to 2 places. It is like two arrows on a map: what matters is whether they point the same way, not how long they are.',
+        say='"An embedding turns text into a list of [[numbers|words|files::A vector.]]. Similar meanings land [[near each other|far apart|in order::On the map of meaning.]], and cosine similarity measures how close by [[direction|length|size::Where the vector points.]]: 1 is the same, 0 is unrelated."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Find the Nearest Passage',
+        topic='rag',
+        difficulty='medium',
+        fn='nearest',
+        prompt="""Your function gets two things:
+
+- `question`: a vector, a list of numbers.
+- `passages`: a list of dicts, each with `"id"` and `"vector"` (the same length as the question).
+
+The cosine similarity of two vectors a and b is:
+
+- the **dot product**: multiply a and b position by position and add it all up,
+- divided by (the length of a times the length of b), where a vector's length is the square root of the sum of its numbers squared.
+
+Return `[id, score]` for the passage with the highest cosine similarity, with the score rounded to 2 decimal places. On a tie, the first one. No passages gives `[None, 0]`.""",
+        pattern='Work out a score for each item, keep the best so far.',
+        target='one pass over the passages, one pass over each vector',
+        realworld='Vector search services do exactly this, over millions of vectors, with tricks to skip most of them. Knowing the sum behind it explains why the length of a passage doesn\'t matter and why direction does.',
+        starter="""def nearest(question, passages):
+    # your code here
+    pass
+""",
+        solution="""def nearest(question, passages):
+    def length(v):
+        return sum(x * x for x in v) ** 0.5
+    best = None
+    best_score = -2
+    for p in passages:
+        dot = 0
+        for i in range(len(question)):
+            dot = dot + question[i] * p["vector"][i]
+        score = dot / (length(question) * length(p["vector"]))
+        if score > best_score:
+            best = p["id"]
+            best_score = score
+    if best is None:
+        return [None, 0]
+    return [best, round(best_score, 2)]
+""",
+        cases=[
+            case([3, 4, 0], [{"id": "p1", "vector": [4, 3, 0]}, {"id": "p2", "vector": [0, 0, 5]}, {"id": "p3", "vector": [6, 8, 0]}],
+                 expected=["p3", 1.0], sample=True),
+            case([1, 0, 0], [{"id": "p1", "vector": [0, 1, 0]}, {"id": "p2", "vector": [1, 1, 0]}], expected=["p2", 0.71]),
+            case([1, 0, 0], [], expected=[None, 0]),
+        ],
+        guided="""def nearest(question, passages):
+    # Replace every ___ with real code, then run the tests.
+    def length(v):
+        return sum(x * x for x in v) ** 0.5
+    best = None
+    best_score = -2
+    for p in passages:
+        # Step 1: the dot product, position by position.
+        dot = 0
+        for i in range(len(question)):
+            dot = ___
+        # Step 2: divide by both lengths.
+        score = dot / (length(question) * length(p["vector"]))
+        # Step 3: keep the best so far.
+        if ___:
+            best = p["id"]
+            best_score = score
+    if best is None:
+        return [None, 0]
+    return [best, round(best_score, 2)]
+""",
+        fills=['dot + question[i] * p["vector"][i]', 'score > best_score'],
+        concepts=[
+            [
+                'The dot product',
+                'Multiply the two vectors position by position and add the results.',
+                """a = [3, 4, 0]
+b = [4, 3, 0]
+3*4 + 4*3 + 0*0   # 24""",
+            ],
+            [
+                'A vector\'s length',
+                'The square root of the sum of its numbers squared. `** 0.5` takes a square root.',
+                """(3*3 + 4*4 + 0*0) ** 0.5   # 5.0""",
+            ],
+        ],
+        byhand='The question [3, 4, 0] has length 5. p1 [4, 3, 0]: dot 24, length 5, cosine 24 divided by 25 = 0.96. p2 [0, 0, 5]: dot 0, cosine 0. p3 [6, 8, 0]: dot 50, length 10, cosine 50 divided by 50 = 1.0: the same direction, though twice as long. Return ["p3", 1.0].',
+        why='Each passage is scored once, and each score walks the vector once.',
+        gotchas=[
+            [
+                'Using distance instead of direction',
+                '[6, 8, 0] is farther from [3, 4, 0] than [4, 3, 0] is, yet it points the same way. Cosine compares direction, so it wins.',
+            ],
+            [
+                'Mixing two embedding models',
+                'Vectors from different models live in different spaces. Compare only vectors from the same model.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'chunk_text',
     title='Chunking documents',
     learn=[
