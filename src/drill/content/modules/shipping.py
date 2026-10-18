@@ -292,7 +292,7 @@ lesson(MODULE, 'promote_model',
     title='Model registry and promotion',
     learn=[
         "A **model registry** (such as MLflow's on Databricks) stores every trained version with its metrics. **Aliases** like `@champion` point at the version serving traffic.",
-        'Promote a **challenger** (a newer version that wants the job) only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
+        'Promote a **challenger** (a newer version that wants the job), which means pointing the alias at it, only when it beats the champion by a meaningful margin on the same data. Rolling back is just moving the alias back.',
     ],
     example=example('Loading by alias with MLflow', """import mlflow
 model = mlflow.pyfunc.load_model('models:/main.ml.churn@champion')"""),

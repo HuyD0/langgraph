@@ -135,7 +135,7 @@ lesson(MODULE, 'assign_splits',
     title='Dev, test and holdout sets',
     learn=[
         'An eval set for an LLM app is split three ways, and each part has one job. The **dev** set is for iterating: look at it as often as you like while you tune prompts. The **test** set is checked before a release, rarely, and you never tune against it. The **holdout** set is locked away for big decisions. Once you have looked at it and changed things because of what you saw, it is no longer honest, so replace it.',
-        'Build the examples from three places: a fixed **golden** set you checked by hand, a sample of **recent real traffic**, and **past failures** you never want to see again. Give every version a name, like `faq-v4`, so results stay comparable.',
+        'Build the examples from three places: a fixed **golden** set you checked by hand, a sample of **recent real traffic** (questions real users asked), and **past failures** you never want to see again. Give every version a name, like `faq-v4`, so results stay comparable.',
         "Then **stratify**: decide which groups behave differently (kinds of question, difficulty, questions that can't be answered, or for an agent, kinds of task) and deal each group's examples across the three sets. Every set then gets every group in the same proportions. A plain random split can leave a small group out of the test set altogether.",
         'Keep anything that must stay together, like all the questions from one user or about one document, inside a single set. That is the leakage rule from the Foundations module.',
     ],

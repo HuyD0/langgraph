@@ -55,7 +55,7 @@ CHECKS = {
             "answers read well. What's the risk?",
             ["The helpers have to run all over again", "A key fact, like a refund date, drops out", "The answers become far too long to read"],
             answer=1,
-            clue="Think of a game of telephone: what happens to a message passed along in new words?",
+            clue="What happens to a message passed from person to person, each time in new words?",
             why="The main agent sees only each helper's final message. Retelling it in new words can "
                 "lose the one fact that mattered, even when the answer reads well."),
         ask("Your team's final answers score well with the grader, but users say small facts the "
