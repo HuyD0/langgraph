@@ -330,8 +330,7 @@ def content_stale(
         for row in report["fresh"]:
             what = "content as of" if row.get("as_of") else "checked"
             console.print(f"[dim]fresh[/] {row['id']} ({row['module']}): {what} {row['checked']}")
-    sourced = sum(1 for r in report["fresh"] + report["due"] if r["sources"])
-    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {sourced} checked against sources")
+    console.print(f"{len(report['fresh'])} fresh, {len(report['due'])} due; {len(report['never'])} with no sources, which do not age")
     raise typer.Exit(1 if report["due"] else 0)
 
 
