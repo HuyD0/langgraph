@@ -425,6 +425,196 @@ for ch in "80 in 100":
     ),
 )
 
+lesson(MODULE, 'gather_requirements',
+    title='Gather the requirements',
+    cards=[
+        card('Requirements are gathered',
+             'Nobody hands you a finished list of requirements. You draw them out of people: the real name is **requirements elicitation**, and most teams just say gathering. Your use case card is the first set of questions; these steps fill in the rest.',
+             picture=steps(('people', 'Ask everyone with a stake', 'The users, the owner, and the teams who keep it safe and running.'),
+                           ('chat', 'Ask about today', 'How the job is done now, with real examples of it.'),
+                           ('listcheck', 'Ask the how-well questions', 'Reliable, secure, cheap, fast, and who runs it.'),
+                           ('check', 'Read it back, then sort it', 'Check what you heard, and agree what is a Must.'))),
+        card('Ask everyone with a stake',
+             'A **stakeholder** is anyone who uses the system, pays for it, or has to keep it safe and running. Each one owns different requirements.',
+             picture=sortby('Who would tell you?',
+                            sortrow('What it must do', 'The people who will use it', 'What it does', icon='people'),
+                            sortrow('What it may cost', 'The owner, who pays and decides', 'How well', look='dashed', icon='coin'),
+                            sortrow('Where personal data may go', 'The privacy team', 'How well', look='dashed', icon='lock'),
+                            sortrow('What happens if it is down', 'The platform team that runs it', 'How well', look='dashed', icon='power')),
+             after='The how-well requirements mostly come from people who are not in the first meeting. That is why teams forget them.'),
+        card('Ask about today, not wishes',
+             '"What would you like?" gets a wish list. Ask about a real time instead, or sit with someone while they do the job, which is called **shadowing**. Collect 20 to 50 real past examples while you are there: they become your test set.',
+             picture=rewrite(('What would you like it to do?', 'Walk me through the last time you did this'),
+                             ('Would AI help you?', 'Show me where it takes the longest'),
+                             ('It has to be fast', 'How long does it take today?')),
+             after='Today\'s number is your **baseline**: if an answer takes 15 minutes now, "under 5 seconds" is a target you can check.'),
+        card('Ask the how-well questions yourself',
+             'Users talk about what it should do. Ask the how-well questions yourself, one per area, or nobody will.',
+             picture=pillars('The HR assistant',
+                             pillar('Reliability', 'power', 'What happens if it is down for an hour?'),
+                             pillar('Security', 'lock', 'Who must not see this?'),
+                             pillar('Cost Optimization', 'coin', 'What is one answer worth to you?', short='Cost'),
+                             pillar('Operational Excellence', 'eye', 'Who notices and fixes it when it goes wrong?', short='Operations'),
+                             pillar('Performance Efficiency', 'gauge', 'How fast, and for how many people at once?', short='Performance')),
+             after='Add privacy too: where may personal data go? These five areas are the **pillars** of a well-architected review, two lessons on.'),
+        card('Read it back, then sort it',
+             'Write down what you heard and read it back to the people who said it. A gap is an **open question**, never a guess. Then sort by priority with **MoSCoW**: Must, Should, Could, and Won\'t this time. If everything is a Must, nothing is.',
+             picture=piles(pile('Must', ['Answer policy questions', ('clock', 'Under 5 seconds, 95 in 100'), ('lock', 'Personal data stays in the EU')]),
+                           pile('Could', ['Answer in Spanish', 'Summarise each policy'], look='dashed'))),
+    ],
+    example=example('Who to ask about the HR assistant', """# open question -> who answers
+"what it must do"  -> users
+"how fast"         -> users
+"cost per answer"  -> owner
+"where data goes"  -> privacy team
+"if it is down"    -> not listed:
+                      ask the owner"""),
+    check=question(
+        'A manager says: "We need a chatbot for HR." What do you ask first?',
+        [
+            'Which chatbot product should we buy?',
+            'What problem would it solve, and for whom?',
+            'How soon can it go live for staff?',
+        ],
+        answer=1,
+        why='"We need a chatbot" starts from the solution. Ask what job it does and for whom first: the requirements come from that, and so does whether it should be a chatbot at all.',
+    ),
+    angle=angle(
+        pattern='Group the questions by who answers them',
+        text='The big idea: requirements are gathered, not handed over, so before the interviews you list the open questions and who can answer each one. Your code makes an empty plan. For each open topic it looks up who answers it, or uses "owner" when nobody is listed, because someone still has to decide. The first time it meets a person it starts an empty list for them, then adds the topic. It returns the plan. It is like sorting post into pigeonholes by name: one hole per person, letters kept in the order they came.',
+        say='"I ask everyone with a [[stake|title|laptop::Anyone who uses it, pays for it, or has to keep it safe.]], not just the users. I ask how the job works [[today|someday|ideally::Wishes make a wish list; the last real time makes requirements.]], and every answer gets a [[number|name|colour::"Fast" can\'t pass or fail; "under 5 seconds" can.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Plan Who to Ask',
+        topic='use cases',
+        difficulty='easy',
+        fn='interview_plan',
+        prompt="""Your function gets `topics`, a list of open questions (strings), and `owners`, a dict saying who answers each topic.
+
+Return a dict with one entry per person: the list of topics to ask them, in the order the topics came.
+
+A topic missing from `owners` goes to `"owner"`, the person who decides, because someone still has to answer it.
+
+No topics gives `{}`.""",
+        pattern='Group items by a key, starting an empty list the first time you see the key.',
+        target='one pass over the topics',
+        realworld='Before requirement interviews, teams list the open questions and who can answer each one, so every meeting has an agenda and nobody with a stake is forgotten.',
+        practice=practice(
+            intro='Gather the HR assistant\'s requirements the way an analyst does: ask the right people about today, then read back what you heard.',
+            explain='The big idea: requirements are gathered, not handed over. You ask everyone with a stake about how the job is done today, and turn each answer into a number. You turned "make it fast" into a question about today\'s wait, found the privacy team missing from the first meeting, spotted the reliability question nobody had answered, and helped the owner pick real Musts instead of nine.',
+            pattern='Ask everyone, about today',
+            realworld='When you start an AI project, book short talks with the users, the owner, and the security, privacy and platform teams. Ask each about today, then send back what you heard for them to check.',
+            gotchas=[
+                ['Starting from the solution', '"We need a chatbot" skips the problem. Ask what job it does, for whom, and how it is done today.'],
+                ['Only asking the users', 'Users know what it must do. Cost, privacy, security and uptime come from the owner and the teams who keep it safe and running.'],
+                ['Everything is a Must', 'If all nine are Must, nothing can give when time runs short. Ask what the pilot could go live without.'],
+            ],
+            asks=[
+                ask('What do you ask next?', ['How long do people wait for an answer today?', 'Which model is the fastest one we can use?', 'Can security wait until after the pilot?'], answer=0,
+                    evidence=evidence('claim', who='The product owner said', text='"Make it fast, and it must be secure."'),
+                    clue='"Fast" compared with what? Find out where things stand now.',
+                    why='Today\'s wait is your baseline: if HR answers in 15 minutes now, "under 5 seconds" is a clear target. Then ask the same of "secure": secure against what, and for whom?',
+                    wrong=[None, 'That picks a solution before you know the target. First find out how fast is fast enough.', 'Security is a requirement, not an extra. Ask what "secure" means to them instead.']),
+                ask('You need to know where personal data may go. Who is missing?', ['The privacy team', 'More HR advisors', 'Nobody: the owner decides that'], answer=0,
+                    evidence=evidence('code', title='Invited to the first meeting', text="""HR advisors      will use it
+Head of HR ops   pays and decides"""),
+                    clue='Who in the company sets the rules for personal data?',
+                    why='Where personal data may go is the privacy team\'s call, and they are rarely in the first meeting. That is why privacy requirements turn up late, often just before launch.',
+                    wrong=[None, 'The advisors know the job, not the rules for personal data.', 'The owner decides on the use case, but the rules for personal data belong to the privacy team.']),
+                ask('Tomorrow you meet an HR advisor. Which question gets you real requirements?', ['What would you like the assistant to do?', 'Walk me through the last question you answered', 'Would an AI assistant help you in your job?'], answer=1,
+                    alone=True,
+                    clue='Which one gets a real story instead of a wish?',
+                    why='The last real time shows the steps, the pages they search and where it is slow. "What would you like?" gets a wish list, and "would AI help?" gets a polite yes.',
+                    wrong=['That gets a wish list. Ask about a real time it happened instead.', None, 'People say yes to be polite. It tells you nothing you can build or test.']),
+                ask('You asked the how-well questions one by one. Which one has no answer yet?', ['What if it is down for an hour', 'How fast an answer has to be', 'Where personal data may go'], answer=0,
+                    evidence=evidence('code', title='Your notes from the interviews', text="""how fast:       5 seconds, 95 in 100
+cost:           under $1 an answer
+personal data:  stays in the EU
+who sees it:    HR staff only
+at once:        200 people"""),
+                    clue='Go area by area: reliable, secure, cheap, fast, run well. Which has no line?',
+                    why='Nothing says what happens when it is down. That is the reliability question, and it is still open: write it down as one, and take it to the owner and the platform team.',
+                    wrong=[None, 'Speed is there: 5 seconds for 95 in 100.', 'That is there: personal data stays in the EU.']),
+                ask('What do you do?', ['Accept it: the owner decides the priorities', 'Ask which ones the pilot could go live without', 'Drop the last three to keep the pilot small'], answer=1,
+                    evidence=evidence('claim', who='The owner said', text='"All nine requirements are Must."'),
+                    clue='If every one is a Must, what gives when time runs short?',
+                    why='If everything is a Must, nothing is. Asking what the pilot could go live without finds the real Musts; the rest become Should or Could. That is MoSCoW at work.',
+                    wrong=['The owner does decide, but help them choose: if all nine are Must, nothing can give when time runs short.', None, 'Dropping lines yourself skips the owner. Ask them which ones can wait.']),
+            ],
+        ),
+        starter="""def interview_plan(topics, owners):
+    # your code here
+    pass
+""",
+        solution="""def interview_plan(topics, owners):
+    plan = {}
+    for topic in topics:
+        person = owners.get(topic, "owner")
+        if person not in plan:
+            plan[person] = []
+        plan[person].append(topic)
+    return plan
+""",
+        cases=[
+            case(["what it must do", "how fast", "cost per answer", "where data goes", "if it is down"],
+                 {"what it must do": "users", "how fast": "users", "cost per answer": "owner", "where data goes": "privacy team"},
+                 expected={"users": ["what it must do", "how fast"], "owner": ["cost per answer", "if it is down"], "privacy team": ["where data goes"]},
+                 sample=True),
+            case([], {}, expected={}),
+            case(["who must not see it"], {}, expected={"owner": ["who must not see it"]}),
+            case(["uptime", "speed", "backups"], {"uptime": "platform team", "speed": "users", "backups": "platform team"},
+                 expected={"platform team": ["uptime", "backups"], "users": ["speed"]}),
+        ],
+        guided="""def interview_plan(topics, owners):
+    # Replace every ___ with real code, then run the tests.
+    plan = {}
+    for topic in topics:
+        # Step 1: who answers it, or "owner" if nobody is listed.
+        person = ___
+        # Step 2: the first time you meet a person, start their list.
+        if person not in plan:
+            ___
+        # Step 3: add the topic to their list.
+        plan[person].append(topic)
+    return plan
+""",
+        fills=['owners.get(topic, "owner")', 'plan[person] = []'],
+        concepts=[
+            [
+                'get with a default',
+                '`owners.get(topic, "owner")` gives the person listed for the topic, and `"owner"` if the topic is not there.',
+                """owners = {"how fast": "users"}
+owners.get("cost", "owner")   # "owner\"""",
+            ],
+            [
+                'A dict of lists',
+                'Each person maps to a list. Start an empty list the first time you see them, then `append` to it.',
+                """plan = {}
+plan["users"] = []
+plan["users"].append("how fast")""",
+            ],
+            [
+                'Checking a key first',
+                '`person not in plan` is True the first time you meet that person, so you only start their list once.',
+                '"users" in {"users": []}   # True',
+            ],
+        ],
+        byhand='"what it must do": users, so start users\' list with it. "how fast": users again, add it. "cost per answer": owner, start the owner\'s list. "where data goes": privacy team, start theirs. "if it is down" is not in owners, so it goes to owner. Return {"users": ["what it must do", "how fast"], "owner": ["cost per answer", "if it is down"], "privacy team": ["where data goes"]}.',
+        why='Each topic is looked up and added once, so the work grows with the number of topics.',
+        gotchas=[
+            [
+                'Only asking the users',
+                'Users know what it must do. Cost, privacy, security and uptime come from the owner and the teams who keep it safe and running, so put them on the plan too.',
+            ],
+            [
+                'Starting the list every time',
+                '`plan[person] = []` on every topic throws away the topics already there. Start the list only when the person is new.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'split_requirements',
     title='Functional and non-functional requirements',
     cards=[
@@ -455,7 +645,13 @@ lesson(MODULE, 'split_requirements',
              'The HR assistant is an AI chatbot that answers staff questions about HR policy, like leave and expenses. Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. For AI the usual ones are speed, uptime, cost per answer, privacy (where personal data may go), security (who can see what) and how many people at once.',
              picture=piles(pile('Functional', ['R1 Answer policy questions', 'R3 Show the source page', 'R5 Hand hard questions to a person']),
                            pile('Non-functional', [('clock', 'R2 5 seconds, 95 in 100'), ('lock', 'R4 Personal data stays in the EU'),
-                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed')),
+                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed'))),
+        card('They choose the design',
+             'Features rarely decide how a system is built. The how-well numbers do: they pick the model, where it runs, and how much capacity you pay for.',
+             picture=sortby('What does it decide?',
+                            sortrow('R7 Under $1 an answer', 'A smaller, cheaper model, not the biggest', 'The model', look='dashed', icon='coin'),
+                            sortrow('R4 Personal data stays in the EU', 'Which region and model service you may use', 'Where it runs', look='dashed', icon='lock'),
+                            sortrow('R6 200 people at once', 'Pay per use, or capacity reserved in advance', 'Capacity', look='dashed', icon='people')),
              after='The next lesson puts each non-functional requirement under a pillar of a well-architected review.'),
     ],
     example=example('How would you check it? The HR assistant', """# how would you check it?
@@ -662,6 +858,11 @@ lesson(MODULE, 'well_architected',
                              pillar('Cost Optimization', 'coin', 'What makes the bill grow?', short='Cost'),
                              pillar('Operational Excellence', 'eye', 'Would you notice it going wrong, and can you test and release changes safely?', short='Operations'),
                              pillar('Performance Efficiency', 'gauge', 'Does it stay fast at the busiest minute?', short='Performance'))),
+        card('Why review before you build',
+             'A review happens while the design is still on paper, because that is when a gap is cheapest to fix.',
+             picture=steps(('pencil', 'Found on paper', 'A missing privacy rule costs a conversation.'),
+                           ('code', 'Found while building', 'It costs rework on what is already built.'),
+                           ('rocket', 'Found after launch', 'It costs a rebuild, or a privacy incident.'))),
         card('Requirements rest on the pillars',
              'Your non-functional requirements are the pillars\' targets: each one from the last lesson answers one pillar\'s question. A pillar with nothing on it is a question nobody has answered yet.',
              picture=pillars('HR assistant',
