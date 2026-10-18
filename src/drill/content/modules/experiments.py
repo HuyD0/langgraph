@@ -12,7 +12,7 @@ lesson(MODULE, 'best_run',
         'MLflow is the **ledger** that keeps that evidence. An **MLflow experiment** is a folder that groups related runs, often one per app, so you can compare them side by side. Each **run** is a permanent record of one attempt: its **parameters** (what you set), **metrics** (what you measured) and **artifacts** (files, like the eval results). For an LLM app, scoring one version on your eval set with `mlflow.genai.evaluate` makes an **evaluation run**.',
         'The metrics usually come from an **eval set**: a fixed list of test questions with known good answers. Each answer is often marked by an **LLM judge**, a model that grades answers.',
         'Write the decision rule down before you run anything, for example "highest quality at $2 or less per 1,000 requests". That\'s what turns an experiment into a decision, and a decision into return on the time spent.',
-        'This course follows one **lifecycle**, the strip at the top of the page: **Frame** (decide the question), **Design** (plan the runs and how you will judge them), **Build and trace**, **Evaluate** (score the runs and read the results against your plan), **Ship** and **Monitor**. This module is about Design.',
+        'This course follows one **lifecycle**, the strip at the top of the page: **Frame** (decide the question), **Design** (plan the runs and how you will judge them), **Build and trace**, **Evaluate** (score the runs and read the results against your plan), **Ship** (release it to real users) and **Monitor**. This module is about Design.',
     ],
     example=example('One run, logged', """import mlflow
 mlflow.set_experiment("/Shared/support-bot-rag")
@@ -1751,7 +1751,7 @@ lesson(MODULE, 'decide_release',
         'A real comparison has several outcomes: quality, the must-pass cases, cost and speed. Look at each one on its own and you can nearly always find one that favours the version you hoped would win. So write one **decision rule** over all of them, in a fixed order, before you run anything.',
         'A common order. First the **gates**, the things that must hold or the answer is no: every must-pass case passes, the cost per task is within budget, and the p95 latency (95 out of 100 requests are faster than this) is within budget. Check every gate and list each one that fails, not just the first, so the team can fix them all in one round.',
         'Only if every gate passes, look at **quality** with the paired check from "Comparing on the same examples": count the questions only the new version got right (its wins) and only the old one got right (its losses). The new version is clearly better if wins minus losses is at least twice the square root of wins plus losses, and clearly worse if losses minus wins is.',
-        'The decision is one of three: **ship** the new version, **keep the baseline**, or **too close to call**, which keeps the baseline for now and means more examples, or choosing on cost. Save the reasons with the decision. That list is what a reviewer reads, and what you will want to know in six months.',
+        'The decision is one of three: **ship** the new version (release it to users), **keep the baseline**, or **too close to call**, which keeps the baseline for now and means more examples, or choosing on cost. Save the reasons with the decision. That list is what a reviewer reads, and what you will want to know in six months.',
     ],
     example=example('A candidate against its budget', """must-pass failures: 0      ok
 cost per task: $0.80       ok (budget $1.00)

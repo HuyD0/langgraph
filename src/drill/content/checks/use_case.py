@@ -78,7 +78,7 @@ CHECKS = {
     "fit_for_purpose": [
         ask("The pilot gets 92 in 100 right, but fails one must-pass case: it told a customer to "
             "ignore a safety recall. What's the call?",
-            ["Go: 92 is well above its criterion", "Fix: change the prompt and ship it", "Stop: a must-pass case failed"],
+            ["Go: 92 is well above its criterion", "Fix: change the prompt and release it", "Stop: a must-pass case failed"],
             answer=2,
             clue="Must-pass cases are the ones it must never get wrong, whatever the overall score.",
             why="A must-pass failure means stop, even with a high score. Those are the dangerous cases, "
