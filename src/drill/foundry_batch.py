@@ -54,7 +54,9 @@ PRICES = {
 def cost(model: str, mode: str, usage: dict) -> float:
     """Dollars for one call from its usage block. OpenAI models cache by themselves: cached input and, on
     GPT-5.6 and later, input written to the cache are parts of ``prompt_tokens``, each at its own price."""
-    pin, pcached, pout, pwrite = PRICES.get((model, mode), (0.0, 0.0, 0.0, 0.0))
+    if (model, mode) not in PRICES:
+        raise ValueError(f"no price for {model} ({mode}): add it to drill.foundry_batch.PRICES before running, so no run is costed at $0")
+    pin, pcached, pout, pwrite = PRICES[(model, mode)]
     details = usage.get("prompt_tokens_details") or {}
     cached = details.get("cached_tokens", 0) or 0
     written = details.get("cache_write_tokens", 0) or 0
@@ -103,7 +105,7 @@ def chunks(rows: list[dict], limit_tokens: int = 150_000) -> list[list[dict]]:
             used = 0
         out[-1].append(r)
         used += size
-    return out
+    return [part for part in out if part]
 
 
 def jsonl(rows: list[dict]) -> bytes:
@@ -166,8 +168,12 @@ def parse_line(row: dict, failed: bool = False) -> dict:
         return {"error": err.get("message", str(err)) if isinstance(err, dict) else str(err)}
     body = resp.get("body") or {}
     choice = (body.get("choices") or [{}])[0]
-    out = {"text": (choice.get("message") or {}).get("content") or "", "finish": choice.get("finish_reason"),
-           "usage": body.get("usage") or {}}
+    text = (choice.get("message") or {}).get("content") or ""
+    if isinstance(text, list):  # some models answer in blocks: keep the text ones
+        text = "".join(b.get("text", "") for b in text if isinstance(b, dict) and b.get("type", "text") == "text")
+    if not text.strip():  # an empty reply is a missing verdict, not a verdict: it gets sent again, then counted as missing
+        return {"error": f"empty reply (finish_reason {choice.get('finish_reason')})", "usage": body.get("usage") or {}}
+    out = {"text": text, "finish": choice.get("finish_reason"), "usage": body.get("usage") or {}}
     tokens = ((choice.get("logprobs") or {}).get("content")) or []
     if tokens:  # each token's log probability, when the request asked for it
         out["logprobs"] = [(t.get("token", ""), t.get("logprob", 0.0)) for t in tokens]
@@ -223,9 +229,16 @@ def judge_requests(data: dict, questions: list[dict], answers: dict[str, str], l
         if answers.get(cid(q)):
             fn = next((p.get("fn") for p in data["bank"] if p["id"] == q["lesson_id"]), "") or ""
             prompt = template.format(context=tp._context(data, q["lesson_id"]), q=q["chip"]["q"], how=q["chip"]["how"],
-                                     answer=answers[cid(q)], giveaway=f" (`{fn}`)" if fn else "")
+                                     answer=answers[cid(q)], giveaway=giveaway_clause(q["chip"], fn))
             out.append((cid(q), [{"role": "user", "content": prompt}]))
     return out
+
+
+def giveaway_clause(chip: dict, fn: str) -> str:
+    """The judge's no_giveaway clause, the same for every judge: the exercise function, and before the Check
+    step is answered, which option of the lesson's Check questions is right."""
+    before_check = "" if chip.get("step") == "Check" else ", and does not say which option of the lesson's Check questions is right"
+    return (f" (`{fn}`)" if fn else "") + before_check
 
 
 def verdict(text: str, version: int = 1) -> dict:
@@ -312,11 +325,15 @@ def batched_chat(prompts: dict[str, str], deployment: str, model: str, api=None,
     rows = lines([(cid, [{"role": "user", "content": p}]) for cid, p in prompts.items()], deployment, max_tokens)
     results: dict[str, dict] = {}
     jobs: list[dict] = []
+    if not rows:
+        raise ValueError("nothing to judge: no prompts")
     for i, part in enumerate(chunks(rows, limit_tokens)):
         checks: list[dict] = []
         batch = wait(api, submit(api, part, note=f"{model} judge, part {i + 1}"), every=every, on_check=checks.append)
         got = read_output(api, batch)
         left = to_retry(part, got)
+        if len(left) == len(part):  # nothing came back: the job itself failed (refused, expired, cancelled). Don't resend the same part.
+            raise RuntimeError(f"batch {batch.id} ended {batch.status} with no usable output for any of its {len(part)} requests")
         if left:
             again = wait(api, submit(api, left, note=f"{model} judge, part {i + 1}, again"), every=every)
             got.update({k: v for k, v in read_output(api, again).items() if "text" in v})

@@ -42,3 +42,12 @@ def test_batch_lines_can_ask_for_logprobs_and_the_output_keeps_them():
         "choices": [{"message": {"content": "Hi"}, "finish_reason": "stop", "logprobs": {"content": [{"token": "Hi", "logprob": -0.2}]}}],
         "usage": {"prompt_tokens": 1, "completion_tokens": 1}}}})
     assert out["logprobs"] == [("Hi", -0.2)] and out["text"] == "Hi"
+
+
+def test_numbers_ignore_trailing_punctuation_and_empty_siblings_do_not_poison():
+    assert du.numbers_in("Keep the top 5.") == {"5"} and du.numbers_in("1,536 numbers, say.") == {"1536"}
+    same = "Keep the top 5 results."
+    d = du.disagreement([same, same, ""])
+    assert d[0]["disagreement"] == pytest.approx(0.0) and d[0]["numbers_differ"] == 0.0
+    assert math.isnan(d[2]["disagreement"]) and math.isnan(d[2]["numbers_differ"])
+    assert all(math.isnan(x["disagreement"]) for x in du.disagreement([same, ""]))   # one draft can't disagree with itself

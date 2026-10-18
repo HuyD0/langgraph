@@ -31,7 +31,6 @@ from __future__ import annotations
 
 import json
 import math
-import random
 import re
 import time
 from pathlib import Path
@@ -71,20 +70,23 @@ def content_words(text: str) -> set[str]:
 
 
 def numbers_in(text: str) -> set[str]:
-    return set(re.findall(r"\d[\d,.]*", text))
+    return {n.rstrip(".,").replace(",", "") for n in re.findall(r"\d[\d,.]*", text)}
 
 
 def disagreement(texts: list[str]) -> list[dict[str, float]]:
     """For each draft: 1 minus its mean word overlap with the others, and whether the drafts' numbers differ."""
-    words = [content_words(t) for t in texts]
-    nums = [numbers_in(t) for t in texts]
-    all_same_numbers = all(n == nums[0] for n in nums)
+    present = [i for i, t in enumerate(texts) if t and t.strip()]   # a draft that never came back says nothing about its siblings
+    words = {i: content_words(texts[i]) for i in present}
+    nums = {i: numbers_in(texts[i]) for i in present}
+    all_same_numbers = all(nums[i] == nums[present[0]] for i in present) if present else True
     out = []
-    for i, w in enumerate(words):
-        others = [x for j, x in enumerate(words) if j != i]
-        overlaps = [len(w & o) / len(w | o) if (w | o) else 1.0 for o in others]
-        out.append({"disagreement": 1 - (sum(overlaps) / len(overlaps) if overlaps else 1.0),
-                    "numbers_differ": 0.0 if all_same_numbers else 1.0})
+    for i, t in enumerate(texts):
+        if i not in words or len(present) < 2:
+            out.append({"disagreement": float("nan"), "numbers_differ": float("nan")})
+            continue
+        others = [words[j] for j in present if j != i]
+        overlaps = [len(words[i] & o) / len(words[i] | o) if (words[i] | o) else 1.0 for o in others]
+        out.append({"disagreement": 1 - sum(overlaps) / len(overlaps), "numbers_differ": 0.0 if all_same_numbers else 1.0})
     return out
 
 
@@ -104,7 +106,10 @@ def sample_questions(data: dict, n: int, seed: int) -> list[dict]:
     chips = tp.chips(data)
     splits = tpe.load_splits()
     dev = [{"lesson_id": lid, "key": c["key"], "chip": c} for lid, items in chips.items() if splits.get(lid) == "dev" for c in items]
-    return random.Random(seed).sample(dev, min(n, len(dev)))
+    # picked in seeded hash order, so the same seed picks the same questions even after other lessons join dev
+    import hashlib
+    dev.sort(key=lambda q: hashlib.sha256(f"{seed}:{fb.cid(q)}".encode()).hexdigest())
+    return dev[:n]
 
 
 def send_in_parts(api, rows: list[dict], note: str, on_job=None, every: float = 30) -> tuple[dict[str, dict], list[dict]]:
@@ -116,6 +121,8 @@ def send_in_parts(api, rows: list[dict], note: str, on_job=None, every: float = 
         batch = fb.wait(api, fb.submit(api, part, note=f"{note}, part {i + 1}"), every=every, on_check=checks.append)
         got = fb.read_output(api, batch)
         left = fb.to_retry(part, got)
+        if len(left) == len(part):
+            raise RuntimeError(f"batch {batch.id} ended {batch.status} with no usable output for any of its {len(part)} requests")
         if left:
             again = fb.wait(api, fb.submit(api, left, note=f"{note}, part {i + 1}, again"), every=every)
             got.update({k: v for k, v in fb.read_output(api, again).items() if "text" in v})
@@ -189,7 +196,7 @@ def run(deployment: str, draft_model: str, judge_deployment: str, judge_model: s
             q = by_cid[did.rsplit("#", 1)[0]]
             fn = fns.get(q["lesson_id"], "")
             prompt = template.format(context=tp._context(data, q["lesson_id"]), q=q["chip"]["q"], how=q["chip"]["how"], answer=text,
-                                     giveaway=f" (`{fn}`)" if fn else "")
+                                     giveaway=fb.giveaway_clause(q["chip"], fn))
             judge_rows.append((did, [{"role": "user", "content": prompt}]))
         verdicts, judge_jobs = send_in_parts(api, fb.lines(judge_rows, judge_deployment, max_tokens=2000), f"draft uncertainty judge {judge_model}",
                                              on_job=lambda j: mlflow.set_tag(f"judge_part_{j['part']}", f"{j['batch_id']} {j['status']}"))
@@ -233,6 +240,9 @@ def run(deployment: str, draft_model: str, judge_deployment: str, judge_model: s
             r = by_id[f"{inputs['lesson_id']}/{inputs['key']}#{inputs['sample']}"]
             return [Feedback(name=s, value=None if (isinstance(r[s], float) and math.isnan(r[s])) else float(r[s]), source=source_c) for s in SIGNALS]
 
+        if not rows or not any(r["text"] for r in rows):
+            raise RuntimeError("no drafts came back: nothing to judge or score")
+
         records = [{"inputs": {"lesson_id": r["lesson_id"], "key": r["key"], "sample": r["sample"]}} for r in rows if r["text"]]
         mlflow.genai.evaluate(data=records, predict_fn=draft_for, scorers=[judge, signals])
 
@@ -261,6 +271,7 @@ def run(deployment: str, draft_model: str, judge_deployment: str, judge_model: s
                         "predictive_power.json")
 
     if record is not None:
+        Path(record).parent.mkdir(parents=True, exist_ok=True)
         Path(record).write_text(json.dumps({
             "about": f"Drafter uncertainty vs the judge: {len(questions)} dev questions x {samples} drafts by {draft_model} on Microsoft "
                      f"Foundry (batch, with token log probabilities), judged by {judge_model}. Written by MLflow run {run.info.run_id} in "

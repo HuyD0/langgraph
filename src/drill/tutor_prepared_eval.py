@@ -197,12 +197,19 @@ def register_judge(mlflow, provider: str, model: str, mode: str = "inline", depl
     return v
 
 
+def _not_found(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(w in text for w in ("not found", "does not exist", "no alias", "resource_does_not_exist", "could not find"))
+
+
 def ensure_champion(mlflow):
     """The judge in use holds ``champion``: the one that judged the prepared answers, until a challenger is promoted."""
     name = _name(JUDGE_REGISTRY)
     try:
         return mlflow.MlflowClient().get_prompt_version_by_alias(name, "champion")
-    except Exception:  # noqa: BLE001 - no champion yet
+    except Exception as exc:  # noqa: BLE001
+        if not _not_found(exc):  # a store that is down must not get a new champion
+            raise
         v = register_judge(mlflow, "databricks", tp.JUDGE_MODEL)
         mlflow.genai.set_prompt_alias(name, "champion", int(v.version))
         return v
@@ -212,12 +219,18 @@ def link_judge(mlflow, run_id: str):
     """Record on a judge run which ``tutor_judge`` version it tested (registering it if needed). Returns the version."""
     run = mlflow.get_run(run_id)
     p = run.data.params
-    if "judge_version" in p:
-        return mlflow.MlflowClient().get_prompt_version(_name(JUDGE_REGISTRY), p["judge_version"].rsplit("/", 1)[1])
+    if run.data.tags.get("kind") != EXPERIMENT_KIND:
+        raise ValueError(f"run {run_id} is not a judge eval run (kind={run.data.tags.get('kind')!r}): only those test a judge version")
+    link = p.get("judge_link") or p.get("judge_version", "")
+    if "/" in link:  # already linked: tutor_judge/N
+        return mlflow.MlflowClient().get_prompt_version(_name(JUDGE_REGISTRY), link.rsplit("/", 1)[1])
+    # "checklist" is the prompt's version; runs made before 00a6067 logged it under "judge_version" as a bare number
+    checklist = int(p.get("checklist") or (link if link.isdigit() else 1))
     v = register_judge(mlflow, p.get("provider", "databricks"), p["judge_model"], p.get("mode", "inline"), p.get("deployment", ""),
-                       judge_version=int(p.get("checklist", 1)))   # "judge_version" is the tutor_judge/N link; "checklist" the prompt's version
+                       judge_version=checklist)
     client = mlflow.MlflowClient()
-    client.log_param(run_id, "judge_version", f"{v.name}/{v.version}")
+    # params can't be rewritten: a run that already holds a bare checklist number under judge_version gets judge_link
+    client.log_param(run_id, "judge_link" if "judge_version" in p else "judge_version", f"{v.name}/{v.version}")
     try:
         client.link_prompt_version_to_run(run_id, v)
     except Exception:  # noqa: BLE001 - older stores
@@ -250,7 +263,8 @@ def records(data: dict, answers: dict, split: str | None = None) -> list[dict]:
             rows.append({
                 "inputs": {"lesson_id": lid, "key": chip["key"], "step": chip["step"], "question": chip["q"],
                            "phase": phase.get(lid, ""), "kind": kind_of(chip["key"])},
-                "expectations": {"reference_pass": bool(ref.get("pass")), **{f"reference_{c}": bool(ref.get(c)) for c in CHECKS}},
+                "expectations": {"reference_pass": bool(ref.get("pass")),
+                                 **{f"reference_{c}": bool(ref[c]) for c in (*tp.CHECKS1, *tp.CHECKS2) if c in ref}},  # only the checks this reference judged
                 # labels to filter the dataset by in the UI; "source" follows the course's three kinds of
                 # example: golden (you checked it), past failure (the reference judge failed it), or prepared
                 "tags": {"split": split_of(lid) if _assigned else "", "phase": phase.get(lid, ""), "kind": kind_of(chip["key"]),
@@ -265,20 +279,26 @@ def load_samples() -> dict[str, dict[str, list[dict]]]:
     return json.loads(SAMPLE_FILE.read_text()) if SAMPLE_FILE.exists() else {}
 
 
-def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False) -> tuple[list[dict], dict]:
+def frozen_sample(rows: list[dict], split: str, n: int, refresh: bool = False,
+                  fingerprints: dict[tuple[str, str], str] | None = None) -> tuple[list[dict], dict]:
     """The split's frozen sample of ``n`` answers, drawn once with :func:`stratified_sample` and kept in
-    ``prepared_sample.json``. Answers no longer served (a lesson changed) drop out and are reported; new
-    answers never join until ``refresh``. Returns the rows and a note of what happened."""
+    ``prepared_sample.json`` with each answer's fingerprint. Answers no longer served (a lesson changed) drop
+    out and are counted; answers re-drafted since the freeze are counted too (``sample_changed``); new answers
+    never join until ``refresh``. Returns the rows and a note of what happened."""
     samples = load_samples()
     kept = samples.get(split, {}).get(str(n))
     by_key = {(r["inputs"]["lesson_id"], r["inputs"]["key"]): r for r in rows}
+    fps = fingerprints or {}
     if kept is None or refresh:
         chosen = stratified_sample(rows, n)
-        samples.setdefault(split, {})[str(n)] = [{"lesson_id": r["inputs"]["lesson_id"], "key": r["inputs"]["key"]} for r in chosen]
+        samples.setdefault(split, {})[str(n)] = [{"lesson_id": r["inputs"]["lesson_id"], "key": r["inputs"]["key"],
+                                                  "fingerprint": fps.get((r["inputs"]["lesson_id"], r["inputs"]["key"]), "")} for r in chosen]
         SAMPLE_FILE.write_text(json.dumps(samples, indent=1) + "\n")
-        return chosen, {"sample_state": "refreshed" if kept is not None else "frozen now", "sample_missing": 0}
+        return chosen, {"sample_state": "refreshed" if kept is not None else "frozen now", "sample_missing": 0, "sample_changed": 0}
     found = [by_key[(k["lesson_id"], k["key"])] for k in kept if (k["lesson_id"], k["key"]) in by_key]
-    return found, {"sample_state": "frozen", "sample_missing": len(kept) - len(found)}
+    changed = sum(1 for k in kept if (k["lesson_id"], k["key"]) in by_key and k.get("fingerprint")
+                  and fps.get((k["lesson_id"], k["key"])) not in (None, k["fingerprint"]))
+    return found, {"sample_state": "frozen", "sample_missing": len(kept) - len(found), "sample_changed": changed}
 
 
 def stratified_sample(rows: list[dict], n: int) -> list[dict]:
@@ -379,8 +399,9 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     eval_name = f"tutor_prepared_{split}"
     sample_note: dict = {}
     if sample:  # frozen in prepared_sample.json and its own registered dataset: every judge grades exactly these answers
-        rows, sample_note = frozen_sample(rows, split, sample, refresh=refresh_sample)
-        eval_name = f"tutor_prepared_{split}_sample"
+        fps = {(lid, key): rec.get("fingerprint", "") for lid, recs in answers.items() for key, rec in recs.items()}
+        rows, sample_note = frozen_sample(rows, split, sample, refresh=refresh_sample, fingerprints=fps)
+        eval_name = f"tutor_prepared_{split}_sample_{sample}"
         datasets[eval_name] = dataset(mlflow, experiment.experiment_id, rows, commit, f"{split}_sample")
     seen: list[dict] = []
     lock = threading.Lock()
@@ -423,12 +444,19 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     # another write, and a SQLite store takes one at a time. Its model, prompt version, tokens and time go
     # on the verdicts instead, which sit on the answer's trace. Agreement with the reference judge is a run
     # metric (kappa), not one verdict per answer.
+    missing: list[dict] = []  # answers whose judge call failed: counted, never silently dropped
+
     @scorer(name="judge")
     def judge(inputs, outputs, expectations):
-        """The five checks, from the judge prompt, and whether it passes overall."""
+        """The checks, from the judge prompt, and whether it passes overall."""
         lid = inputs["lesson_id"]
         chat = judge_chat["call"]
-        reply = chat(judge_text(lid, inputs["key"], outputs))
+        try:
+            reply = chat(judge_text(lid, inputs["key"], outputs))
+        except Exception as exc:
+            with lock:
+                missing.append({"lesson_id": lid, "key": inputs["key"], "error": str(exc)[:200]})
+            raise
         verdict, usage = tp._verdict(reply, judge_version), chat.last()
         chip_q = by_key[(lid, inputs["key"])]
         quality = aq.quality_checks(outputs, tp._context(data, lid) + "\n" + chip_q["q"] + "\n" + chip_q["how"], glossary, word_limit=200, allow_names=allow_names)
@@ -512,7 +540,10 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         # server after a few rows; its records as a list do not.)
         ds = datasets.get(eval_name, datasets[split])
         mlflow.log_params({"dataset_id": ds.dataset_id, "dataset_digest": ds.digest})
-        data_in = [{"inputs": r["inputs"], "expectations": r["expectations"]} for r in ds.to_df()[["inputs", "expectations"]].to_dict("records")]
+        # What is graded is ``rows`` (the split, or its frozen sample), never the registered dataset's contents: a
+        # dataset only ever grows (merge_records upserts), so reading it back would grade every sample ever drawn.
+        data_in = [{"inputs": r["inputs"], "expectations": r["expectations"]} for r in rows]
+        mlflow.log_param("graded", len(data_in))
         if limit:
             data_in = data_in[:limit]  # a quick check of the plumbing, not a result
             mlflow.set_tag("limited", str(limit))
@@ -526,13 +557,21 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules],
                                        model_id=getattr(model, "model_id", None))
         numbers = summary(seen, population, checks)
+        numbers["judge_missing"] = float(len(missing))          # verdicts that never came back (the numbers above exclude them)
+        numbers["judge_unparsed"] = float(sum(1 for x in seen if x["verdict"].get("parsed") is False))
+        if missing:
+            mlflow.log_table({"lesson_id": [m["lesson_id"] for m in missing], "key": [m["key"] for m in missing],
+                              "error": [m["error"] for m in missing]}, "missing_verdicts.json")
         for name in ("hard_to_read", "repeated"):
             numbers[f"quality_{name}_rate"] = sum(bool(x["quality"][name]) for x in seen) / max(1, len(seen))
         for name in ("unexplained_terms", "unknown_numbers", "unknown_names", "fillers"):
             numbers[f"quality_{name}_rate"] = sum(bool(x["quality"][name]) for x in seen) / max(1, len(seen))
-        ensure_champion(mlflow)
-        judge_link = link_judge(mlflow, run.info.run_id)   # the tutor_judge/N version this run tested (not the checklist number)
-        mlflow.set_tag("judge_version", f"{judge_link.name}/{judge_link.version}")
+        try:  # the registry is bookkeeping: a store that refuses it must not lose the paid-for results below
+            ensure_champion(mlflow)
+            judge_link = link_judge(mlflow, run.info.run_id)   # the tutor_judge/N version this run tested (not the checklist number)
+            mlflow.set_tag("judge_version", f"{judge_link.name}/{judge_link.version}")
+        except Exception as exc:  # noqa: BLE001
+            mlflow.set_tag("registry_error", str(exc)[:250])
         u = judge_chat["call"].usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
         spent = tp.cost(judge_model, u["input_tokens"], u["output_tokens"]) if provider == "databricks" else u["cost"]
         numbers.update({"judge_rate_limited": float(u["rate_limited"]), "judge_calls": float(u["calls"]), "judge_input_tokens": float(u["input_tokens"]),
@@ -551,12 +590,14 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                           "reference_pass": [bool(x["reference"].get("reference_pass")) for x in seen],
                           "notes": [x["verdict"]["notes"] for x in seen]}, "answers.json")
     if record is not None:  # the run's own results, for a notebook to replay; the run stays the record
-        params = mlflow.get_run(run.info.run_id).data.params
+        params = {k: v for k, v in mlflow.get_run(run.info.run_id).data.params.items() if k not in ("deployment",)}
+        Path(record).parent.mkdir(parents=True, exist_ok=True)
         Path(record).write_text(json.dumps({
             "about": f"Prepared answers, {split} split, judged by {judge_model} ({provider}, {mode}): written by MLflow run "
                      f"{run.info.run_id} in experiment '{experiment.name}'. Endpoint and resource names are left out on purpose.",
             "run_id": run.info.run_id, "run_name": run_name, "reproduce": command, "params": params, "metrics": numbers,
-            "batch_jobs": getattr(judge_chat["call"], "jobs", []),
+            "batch_jobs": [{k: v for k, v in j.items() if k != "batch_id"} for j in getattr(judge_chat["call"], "jobs", [])],
+            "missing": missing,
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
                          "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
                          "quality": x["quality"], **{c: x["verdict"][c] for c in checks}} for x in seen],

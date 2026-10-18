@@ -271,14 +271,20 @@ def status(data: dict, answers: dict | None = None) -> dict[str, int]:
 
 def _verdict(text: str, version: int = 1) -> dict:
     """The judge's JSON reply as checks plus ``pass`` (every must-pass check true) for that checklist version."""
-    m = re.search(r"\{.*\}", text, re.S)
-    try:
-        v = json.loads(m.group(0)) if m else {}
-    except ValueError:
-        v = {}
+    v: dict = {}
+    for pattern in (r"\{.*\}", r"\{[^{}]*\}(?!.*\{)"):  # the whole span first; then the last brace-free object, for prose with braces
+        m = re.search(pattern, text, re.S)
+        if m:
+            try:
+                v = json.loads(m.group(0))
+                break
+            except ValueError:
+                continue
     _, names, must = JUDGES[version]
+    if not v:  # no verdict at all: say so, rather than looking like a judge that failed every check
+        return {**{k: False for k in names}, "pass": False, "notes": "no JSON verdict in the judge's reply", "parsed": False}
     checks = {k: bool(v.get(k)) for k in names}
-    return {**checks, "pass": all(checks[k] for k in must), "notes": str(v.get("notes", ""))[:300]}
+    return {**checks, "pass": all(checks[k] for k in must), "notes": str(v.get("notes", ""))[:300], "parsed": True}
 
 
 def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], judge: Callable[[str], str],

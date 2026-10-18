@@ -42,7 +42,6 @@ def test_batch_is_half_price_and_cached_input_a_tenth():
     standard = fb.cost("gpt-5.4-mini", "standard", usage)
     assert standard == pytest.approx((600 * 0.75 + 400 * 0.075 + 200 * 4.5) / 1e6)
     assert fb.cost("gpt-5.4-mini", "batch", usage) == pytest.approx(standard / 2)
-    assert fb.cost("unknown", "batch", usage) == 0.0
 
 
 def test_the_tutor_and_judge_requests():
@@ -76,3 +75,57 @@ def test_chunks_stay_under_the_enqueued_limit():
     parts = fb.chunks(rows, limit_tokens=300)
     assert [r["custom_id"] for p in parts for r in p] == [r["custom_id"] for r in rows]
     assert len(parts) > 1 and all(sum(len(json.dumps(r["body"]["messages"])) // 4 + 1 for r in p) <= 300 for p in parts)
+
+
+def test_an_empty_reply_is_a_missing_verdict_not_a_fail():
+    line = {"custom_id": "a", "response": {"status_code": 200, "body": {
+        "choices": [{"message": {"content": None}, "finish_reason": "length"}], "usage": {"prompt_tokens": 9, "completion_tokens": 2000}}}}
+    out = fb.parse_line(line)
+    assert "text" not in out and "empty reply" in out["error"]
+    assert fb.to_retry([{"custom_id": "a"}], {"a": out}) == [{"custom_id": "a"}]
+
+
+def test_unknown_prices_refuse_rather_than_cost_nothing():
+    with pytest.raises(ValueError):
+        fb.cost("gpt-5.6-luna", "batch", {"prompt_tokens": 10, "completion_tokens": 1})
+    assert fb.chunks([]) == []
+
+
+class _FailingBatchApi:
+    """A Foundry whose batch job ends failed with no output file."""
+
+    class files:
+        @staticmethod
+        def create(file, purpose):
+            class F: id = "file-1"
+            return F()
+
+        @staticmethod
+        def content(file_id):
+            raise AssertionError("no output file should be read")
+
+    class batches:
+        @staticmethod
+        def create(**kw):
+            class B: id = "batch-1"
+            return B()
+
+        @staticmethod
+        def retrieve(bid):
+            class Counts: total, completed, failed = 3, 0, 3
+
+            class B:
+                id, status, output_file_id, error_file_id, request_counts = "batch-1", "failed", None, None, Counts()
+            return B()
+
+
+def test_a_part_the_queue_refused_is_not_resent_and_not_dropped():
+    with pytest.raises(RuntimeError, match="ended failed"):
+        fb.batched_chat({"a": "p1", "b": "p2", "c": "p3"}, "dep", "gpt-5.4", api=_FailingBatchApi(), every=0)
+
+
+def test_the_live_judge_prompt_exists_for_both_checklists():
+    for version in (1, 2):
+        live = fb.judge_prompt(live=True, version=version)
+        assert fb.LIVE_STANDALONE in live and fb.STRICT_STANDALONE not in live
+    assert fb.giveaway_clause({"step": "Learn"}, "f").endswith("is right") and fb.giveaway_clause({"step": "Check"}, "") == ""

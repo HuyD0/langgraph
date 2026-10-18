@@ -1,0 +1,1516 @@
+{
+ "dev": {
+  "300": [
+   {
+    "lesson_id": "smoke_set",
+    "key": "check:1:2",
+    "fingerprint": "e31c8d1a30031fcf"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "learn:term",
+    "fingerprint": "c73d4d257e1d1f00"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "learn:spot",
+    "fingerprint": "e5fd9d4e5c76d77b"
+   },
+   {
+    "lesson_id": "assign_group",
+    "key": "check:1:2",
+    "fingerprint": "c589b0d644159af7"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "explain:gotcha",
+    "fingerprint": "4df3a388aab6aee0"
+   },
+   {
+    "lesson_id": "resolve_prompt",
+    "key": "learn:spot",
+    "fingerprint": "4a26492185362076"
+   },
+   {
+    "lesson_id": "dedupe_chunks",
+    "key": "learn:stops",
+    "fingerprint": "d26a208ff638e3f4"
+   },
+   {
+    "lesson_id": "claim_gate",
+    "key": "check:1:0",
+    "fingerprint": "6f6859497ee7712d"
+   },
+   {
+    "lesson_id": "dollars_per_success",
+    "key": "learn:spot",
+    "fingerprint": "9ac3795e75a483db"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "learn:spot",
+    "fingerprint": "932eeff068d848c3"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "check:1:0",
+    "fingerprint": "e76cf828281583f5"
+   },
+   {
+    "lesson_id": "retry_wait",
+    "key": "check:0:2",
+    "fingerprint": "2423566c0ece2757"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "check:2:2",
+    "fingerprint": "ec58548d7d35c84a"
+   },
+   {
+    "lesson_id": "sweep_memory",
+    "key": "learn:stops",
+    "fingerprint": "e50c36acf7c809d6"
+   },
+   {
+    "lesson_id": "redact_pii",
+    "key": "learn:stops",
+    "fingerprint": "82b33e61c5d143cb"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:0:2",
+    "fingerprint": "1522892ca94ec1c5"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:1:2",
+    "fingerprint": "763388c80d203b06"
+   },
+   {
+    "lesson_id": "gwet_ac1",
+    "key": "learn:stops",
+    "fingerprint": "3e2291ff570dd0f6"
+   },
+   {
+    "lesson_id": "better_option",
+    "key": "check:1:0",
+    "fingerprint": "81c6c4d9634d8388"
+   },
+   {
+    "lesson_id": "route_request",
+    "key": "learn:stops",
+    "fingerprint": "fe6f10df909ccb82"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "learn:stops",
+    "fingerprint": "807393e19b5c0d5f"
+   },
+   {
+    "lesson_id": "can_read_table",
+    "key": "learn:spot",
+    "fingerprint": "b87391940e1baf0e"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "learn:spot",
+    "fingerprint": "a07f886b89ae9bd9"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "check:0:0",
+    "fingerprint": "e6e45999139ad512"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "explain:interview",
+    "fingerprint": "eacc4126e3a94cc5"
+   },
+   {
+    "lesson_id": "provider_versions",
+    "key": "learn:spot",
+    "fingerprint": "0f15a2e3916ca001"
+   },
+   {
+    "lesson_id": "lookup_failed",
+    "key": "check:1:1",
+    "fingerprint": "37a76741ca8e0932"
+   },
+   {
+    "lesson_id": "resolve_variables",
+    "key": "learn:spot",
+    "fingerprint": "bf4fa8a57c7d249f"
+   },
+   {
+    "lesson_id": "claim_gate",
+    "key": "check:1:1",
+    "fingerprint": "f4a288b17cd59e02"
+   },
+   {
+    "lesson_id": "next_action",
+    "key": "check:1:2",
+    "fingerprint": "0907be25bfdd85b8"
+   },
+   {
+    "lesson_id": "backoff_delays",
+    "key": "check:0:2",
+    "fingerprint": "d15b89c544cdc3c5"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:1:2",
+    "fingerprint": "87e420f15c506aff"
+   },
+   {
+    "lesson_id": "next_action",
+    "key": "check:2:2",
+    "fingerprint": "e00e11dd6c8996c9"
+   },
+   {
+    "lesson_id": "choose_brick",
+    "key": "check:0:2",
+    "fingerprint": "b1ffdad1e703b861"
+   },
+   {
+    "lesson_id": "managed_mcp_urls",
+    "key": "check:1:0",
+    "fingerprint": "1c51a8ea01881f5e"
+   },
+   {
+    "lesson_id": "validate_rows",
+    "key": "check:2:0",
+    "fingerprint": "27fbdc404616d536"
+   },
+   {
+    "lesson_id": "handoff_kept",
+    "key": "check:0:1",
+    "fingerprint": "cbb4d97e3eaf3fc0"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "check:1:1",
+    "fingerprint": "a2619a9e09cd0ab4"
+   },
+   {
+    "lesson_id": "choose_brick",
+    "key": "check:1:2",
+    "fingerprint": "df429b143bc25bab"
+   },
+   {
+    "lesson_id": "gather_results",
+    "key": "check:1:1",
+    "fingerprint": "bcb242769ad1cc30"
+   },
+   {
+    "lesson_id": "choose_brick",
+    "key": "check:1:1",
+    "fingerprint": "63f38495b3978667"
+   },
+   {
+    "lesson_id": "abstention_rates",
+    "key": "check:0:2",
+    "fingerprint": "db6941e936b7bb3f"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "check:1:2",
+    "fingerprint": "b93fb7c5c3e0469c"
+   },
+   {
+    "lesson_id": "resolve_prompt",
+    "key": "check:2:2",
+    "fingerprint": "e82857cbc88c44d2"
+   },
+   {
+    "lesson_id": "abstention_rates",
+    "key": "check:0:0",
+    "fingerprint": "4a5750a6b12f8196"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:0:0",
+    "fingerprint": "1bfff8d49734c3fb"
+   },
+   {
+    "lesson_id": "pick_config",
+    "key": "check:1:0",
+    "fingerprint": "16250ea7173a3291"
+   },
+   {
+    "lesson_id": "is_safe_sql",
+    "key": "check:1:1",
+    "fingerprint": "e9dbf9e3c560551f"
+   },
+   {
+    "lesson_id": "one_writer",
+    "key": "check:1:2",
+    "fingerprint": "dadebe16f628437c"
+   },
+   {
+    "lesson_id": "fact_history",
+    "key": "check:2:2",
+    "fingerprint": "486250a3ef06368e"
+   },
+   {
+    "lesson_id": "managed_mcp_urls",
+    "key": "check:1:2",
+    "fingerprint": "9f177f33c7e4260a"
+   },
+   {
+    "lesson_id": "pass_rates",
+    "key": "check:2:2",
+    "fingerprint": "1b9d14a6b94e9b8d"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:0:0",
+    "fingerprint": "dc50ac8111429f5e"
+   },
+   {
+    "lesson_id": "token_bucket",
+    "key": "check:0:0",
+    "fingerprint": "c613087eddc813e3"
+   },
+   {
+    "lesson_id": "handoff_kept",
+    "key": "check:1:2",
+    "fingerprint": "3392f45475f328f4"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:1:0",
+    "fingerprint": "8902f4d332e0e802"
+   },
+   {
+    "lesson_id": "backoff_delays",
+    "key": "check:1:1",
+    "fingerprint": "536a91b5718f794b"
+   },
+   {
+    "lesson_id": "vector_index_setup",
+    "key": "check:2:1",
+    "fingerprint": "0dafa044a33a838d"
+   },
+   {
+    "lesson_id": "claim_gate",
+    "key": "check:2:1",
+    "fingerprint": "8ae65823e403e47a"
+   },
+   {
+    "lesson_id": "dedupe_chunks",
+    "key": "check:0:0",
+    "fingerprint": "682e5f69d8a4d3ca"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:2:2",
+    "fingerprint": "c71b94031befbbfb"
+   },
+   {
+    "lesson_id": "managed_mcp_urls",
+    "key": "check:2:2",
+    "fingerprint": "e795a699d75a7d72"
+   },
+   {
+    "lesson_id": "tool_schema",
+    "key": "check:1:0",
+    "fingerprint": "261cea2b0cac6326"
+   },
+   {
+    "lesson_id": "gather_results",
+    "key": "check:0:2",
+    "fingerprint": "8a2e905ed27d7f24"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:0:2",
+    "fingerprint": "dd3719bf5dfaccf9"
+   },
+   {
+    "lesson_id": "choose_brick",
+    "key": "check:2:1",
+    "fingerprint": "710432a31c2aeb3e"
+   },
+   {
+    "lesson_id": "sweep_memory",
+    "key": "check:1:1",
+    "fingerprint": "0fe660d456cff1c6"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:1:2",
+    "fingerprint": "3a7ff3016abe9f40"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "check:1:1",
+    "fingerprint": "4976af926967f297"
+   },
+   {
+    "lesson_id": "is_safe_sql",
+    "key": "check:0:2",
+    "fingerprint": "33e0452ea059aebd"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "check:0:0",
+    "fingerprint": "ac68f46312787803"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:0:2",
+    "fingerprint": "f56c696ebda91b77"
+   },
+   {
+    "lesson_id": "ndcg_at_k",
+    "key": "check:0:2",
+    "fingerprint": "e2fafca8821a499a"
+   },
+   {
+    "lesson_id": "pass_rates",
+    "key": "check:0:0",
+    "fingerprint": "83f4db86136bd010"
+   },
+   {
+    "lesson_id": "compare_designs",
+    "key": "check:1:0",
+    "fingerprint": "cc9b88a318a9a41f"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "check:2:2",
+    "fingerprint": "777c663eefc60f72"
+   },
+   {
+    "lesson_id": "trajectory_match",
+    "key": "check:0:1",
+    "fingerprint": "8487db78edc9408a"
+   },
+   {
+    "lesson_id": "next_action",
+    "key": "check:1:0",
+    "fingerprint": "5322013ffd99ace8"
+   },
+   {
+    "lesson_id": "backoff_delays",
+    "key": "check:2:1",
+    "fingerprint": "d0702e7a52198f71"
+   },
+   {
+    "lesson_id": "retry_wait",
+    "key": "check:2:0",
+    "fingerprint": "4c1aef4d3246bda4"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "check:1:1",
+    "fingerprint": "990f7b09e64e2973"
+   },
+   {
+    "lesson_id": "upsert_rows",
+    "key": "check:2:0",
+    "fingerprint": "166f622822d1a560"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "check:2:1",
+    "fingerprint": "67caf928d0d76bd2"
+   },
+   {
+    "lesson_id": "pick_config",
+    "key": "check:2:0",
+    "fingerprint": "071b7746031dd481"
+   },
+   {
+    "lesson_id": "dedupe_chunks",
+    "key": "check:1:0",
+    "fingerprint": "5aeef2d90a1d46fd"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "check:1:2",
+    "fingerprint": "df8267c444bcc712"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "check:0:2",
+    "fingerprint": "df467546884ce23f"
+   },
+   {
+    "lesson_id": "managed_mcp_urls",
+    "key": "check:0:0",
+    "fingerprint": "2f54c506f7b39baa"
+   },
+   {
+    "lesson_id": "gather_results",
+    "key": "explain:gotcha",
+    "fingerprint": "ddce30822aa8b09c"
+   },
+   {
+    "lesson_id": "checker_loop",
+    "key": "explain:gotcha",
+    "fingerprint": "ae9dbf721dcfb122"
+   },
+   {
+    "lesson_id": "chunk_text",
+    "key": "explain:gotcha",
+    "fingerprint": "1d160d0f06f932bc"
+   },
+   {
+    "lesson_id": "gather_results",
+    "key": "explain:interview",
+    "fingerprint": "388b444baf58aeb6"
+   },
+   {
+    "lesson_id": "one_writer",
+    "key": "explain:interview",
+    "fingerprint": "9fcd409bc43d238b"
+   },
+   {
+    "lesson_id": "sweep_memory",
+    "key": "explain:interview",
+    "fingerprint": "b10e093560a8637f"
+   },
+   {
+    "lesson_id": "resolve_prompt",
+    "key": "explain:interview",
+    "fingerprint": "de4f937182ea604c"
+   },
+   {
+    "lesson_id": "redact_pii",
+    "key": "explain:interview",
+    "fingerprint": "0628a998f022445e"
+   },
+   {
+    "lesson_id": "rerank_check",
+    "key": "explain:interview",
+    "fingerprint": "268cfee558ab02af"
+   },
+   {
+    "lesson_id": "checker_loop",
+    "key": "explain:interview",
+    "fingerprint": "6c3f3d145cc4868d"
+   },
+   {
+    "lesson_id": "retry_wait",
+    "key": "explain:interview",
+    "fingerprint": "e1520931f9ed16c0"
+   },
+   {
+    "lesson_id": "compare_designs",
+    "key": "explain:interview",
+    "fingerprint": "18f788b15c62767f"
+   },
+   {
+    "lesson_id": "chunk_rows",
+    "key": "explain:interview",
+    "fingerprint": "e009d5717339e49e"
+   },
+   {
+    "lesson_id": "is_safe_sql",
+    "key": "learn:spot",
+    "fingerprint": "64f0bc8f860d3f78"
+   },
+   {
+    "lesson_id": "pass_rates",
+    "key": "learn:spot",
+    "fingerprint": "02e2f278aa2fc921"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "learn:spot",
+    "fingerprint": "92caf980b515560e"
+   },
+   {
+    "lesson_id": "validate_rows",
+    "key": "learn:spot",
+    "fingerprint": "14d7d6c5a753e4e9"
+   },
+   {
+    "lesson_id": "vector_index_setup",
+    "key": "learn:spot",
+    "fingerprint": "3ad9c6f021910df3"
+   },
+   {
+    "lesson_id": "managed_mcp_urls",
+    "key": "learn:spot",
+    "fingerprint": "f149365341e5e8f9"
+   },
+   {
+    "lesson_id": "fill_template",
+    "key": "learn:spot",
+    "fingerprint": "6ae9bac1e1a2dfb9"
+   },
+   {
+    "lesson_id": "backoff_delays",
+    "key": "learn:spot",
+    "fingerprint": "83b1f37f46bca83b"
+   },
+   {
+    "lesson_id": "handoff_kept",
+    "key": "learn:spot",
+    "fingerprint": "e160be2f982c94a4"
+   },
+   {
+    "lesson_id": "tool_schema",
+    "key": "learn:stops",
+    "fingerprint": "7629b10d3030462f"
+   },
+   {
+    "lesson_id": "backoff_delays",
+    "key": "learn:stops",
+    "fingerprint": "9a73d78381081f3f"
+   },
+   {
+    "lesson_id": "recall_at_k",
+    "key": "learn:stops",
+    "fingerprint": "bcb6984dd27f79b2"
+   },
+   {
+    "lesson_id": "choose_brick",
+    "key": "learn:stops",
+    "fingerprint": "452c93257ade8704"
+   },
+   {
+    "lesson_id": "gather_results",
+    "key": "learn:stops",
+    "fingerprint": "eaedc0d13502c73d"
+   },
+   {
+    "lesson_id": "tool_pairs",
+    "key": "learn:stops",
+    "fingerprint": "cda1d866fc8c917c"
+   },
+   {
+    "lesson_id": "pick_config",
+    "key": "learn:stops",
+    "fingerprint": "09a2baf2de4c81e5"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "learn:stops",
+    "fingerprint": "dc20ebbe2cc1e5d7"
+   },
+   {
+    "lesson_id": "checker_loop",
+    "key": "learn:stops",
+    "fingerprint": "408319e8f8dcdeaf"
+   },
+   {
+    "lesson_id": "gather_results",
+    "key": "learn:term",
+    "fingerprint": "fc250f098fca4360"
+   },
+   {
+    "lesson_id": "process_new",
+    "key": "learn:term",
+    "fingerprint": "0a25905a8d094fd9"
+   },
+   {
+    "lesson_id": "one_writer",
+    "key": "learn:term",
+    "fingerprint": "1b32c3731f6c42ac"
+   },
+   {
+    "lesson_id": "tool_schema",
+    "key": "learn:term",
+    "fingerprint": "7efee1978e109a66"
+   },
+   {
+    "lesson_id": "tool_call_scores",
+    "key": "learn:term",
+    "fingerprint": "949390583e571703"
+   },
+   {
+    "lesson_id": "callable_tools",
+    "key": "learn:term",
+    "fingerprint": "7fbf712dac9027b7"
+   },
+   {
+    "lesson_id": "dollars_per_success",
+    "key": "learn:term",
+    "fingerprint": "5c3507a3eafd8644"
+   },
+   {
+    "lesson_id": "optimistic_writes",
+    "key": "learn:term",
+    "fingerprint": "47ddceefa4b5bc57"
+   },
+   {
+    "lesson_id": "backoff_delays",
+    "key": "learn:term",
+    "fingerprint": "faa260be53526393"
+   },
+   {
+    "lesson_id": "validate_rows",
+    "key": "learn:term",
+    "fingerprint": "b23bcfea251340f4"
+   },
+   {
+    "lesson_id": "fluke_risk",
+    "key": "check:1:1",
+    "fingerprint": "4c72efa58b832763"
+   },
+   {
+    "lesson_id": "param_grid",
+    "key": "check:0:0",
+    "fingerprint": "5f6fd8c68e98331b"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "check:2:0",
+    "fingerprint": "6ce29fb40b32dc18"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "check:1:2",
+    "fingerprint": "035e5da7399db75c"
+   },
+   {
+    "lesson_id": "examples_needed",
+    "key": "check:1:0",
+    "fingerprint": "c59624560d31bbfd"
+   },
+   {
+    "lesson_id": "paired_verdict",
+    "key": "check:2:1",
+    "fingerprint": "adb5bf7e86474d39"
+   },
+   {
+    "lesson_id": "param_grid",
+    "key": "check:2:0",
+    "fingerprint": "5ce386b2d8f2ddc9"
+   },
+   {
+    "lesson_id": "wilson_interval",
+    "key": "check:2:0",
+    "fingerprint": "c93b71dbe82a5869"
+   },
+   {
+    "lesson_id": "clumpy_margin",
+    "key": "check:1:2",
+    "fingerprint": "f16c6c194b9946f2"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "check:2:0",
+    "fingerprint": "4606ac6764ff3d2e"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "check:0:0",
+    "fingerprint": "3239d897d54b57d7"
+   },
+   {
+    "lesson_id": "clumpy_margin",
+    "key": "check:0:0",
+    "fingerprint": "10d594f9554c9ba5"
+   },
+   {
+    "lesson_id": "assign_group",
+    "key": "check:2:1",
+    "fingerprint": "8de997b12e8d9eb9"
+   },
+   {
+    "lesson_id": "fluke_risk",
+    "key": "check:0:2",
+    "fingerprint": "010edf5996ae4279"
+   },
+   {
+    "lesson_id": "paired_verdict",
+    "key": "check:0:2",
+    "fingerprint": "9173aa5a9fe7d38a"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "check:1:2",
+    "fingerprint": "c0c5bf64e9abe7ae"
+   },
+   {
+    "lesson_id": "clumpy_margin",
+    "key": "check:2:2",
+    "fingerprint": "96e77f84762187e6"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "explain:interview",
+    "fingerprint": "f7a8187d14791147"
+   },
+   {
+    "lesson_id": "wilson_interval",
+    "key": "explain:interview",
+    "fingerprint": "804863ea5b4c715e"
+   },
+   {
+    "lesson_id": "examples_needed",
+    "key": "explain:interview",
+    "fingerprint": "1421ce1c373bafee"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "learn:spot",
+    "fingerprint": "7fa9a596d746ec31"
+   },
+   {
+    "lesson_id": "fluke_risk",
+    "key": "learn:spot",
+    "fingerprint": "d64d937bf7f4d171"
+   },
+   {
+    "lesson_id": "paired_verdict",
+    "key": "learn:spot",
+    "fingerprint": "8dc803e1ee3558bf"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "learn:stops",
+    "fingerprint": "b8c8532534d26f10"
+   },
+   {
+    "lesson_id": "ablation_report",
+    "key": "learn:stops",
+    "fingerprint": "e44a57f070c16092"
+   },
+   {
+    "lesson_id": "assign_group",
+    "key": "learn:stops",
+    "fingerprint": "98d0eeb385bf504e"
+   },
+   {
+    "lesson_id": "decide_release",
+    "key": "learn:term",
+    "fingerprint": "756ff0fa27a9340d"
+   },
+   {
+    "lesson_id": "examples_needed",
+    "key": "learn:term",
+    "fingerprint": "f8b198be4ec1f13d"
+   },
+   {
+    "lesson_id": "replay_tools",
+    "key": "learn:term",
+    "fingerprint": "61bf3974e1e0e7ec"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "check:1:0",
+    "fingerprint": "21077eab4e96c0a1"
+   },
+   {
+    "lesson_id": "mix_shift",
+    "key": "check:1:2",
+    "fingerprint": "a400a8962384f9f5"
+   },
+   {
+    "lesson_id": "gwet_ac1",
+    "key": "check:2:1",
+    "fingerprint": "12bc6adcaeb1c728"
+   },
+   {
+    "lesson_id": "pareto_models",
+    "key": "check:0:2",
+    "fingerprint": "1d7c784d8f59c5a2"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:2:0",
+    "fingerprint": "0334d17220560109"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "check:0:1",
+    "fingerprint": "4a0fe0f107beedc7"
+   },
+   {
+    "lesson_id": "must_pass_gate",
+    "key": "check:2:2",
+    "fingerprint": "493a4448451538fa"
+   },
+   {
+    "lesson_id": "review_queue",
+    "key": "check:2:1",
+    "fingerprint": "3f80799355bfe6cf"
+   },
+   {
+    "lesson_id": "gwet_ac1",
+    "key": "check:1:2",
+    "fingerprint": "f86e82c13205a5f4"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:2:2",
+    "fingerprint": "ee7ec933e932b7a9"
+   },
+   {
+    "lesson_id": "review_queue",
+    "key": "check:1:2",
+    "fingerprint": "5bd8cb939296b308"
+   },
+   {
+    "lesson_id": "sort_changes",
+    "key": "check:0:0",
+    "fingerprint": "c9300b5a0879a9cb"
+   },
+   {
+    "lesson_id": "better_option",
+    "key": "check:1:2",
+    "fingerprint": "d03e32471907ccad"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "check:0:2",
+    "fingerprint": "4cd8ebb532e4f9f9"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "check:1:0",
+    "fingerprint": "d62c9a88960320b1"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "check:1:1",
+    "fingerprint": "f777eb64a909e33c"
+   },
+   {
+    "lesson_id": "sort_changes",
+    "key": "check:2:0",
+    "fingerprint": "5242bb73757e278a"
+   },
+   {
+    "lesson_id": "gwet_ac1",
+    "key": "explain:interview",
+    "fingerprint": "6991c0827746c4c4"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "explain:interview",
+    "fingerprint": "e205c26b1b515460"
+   },
+   {
+    "lesson_id": "judge_agreement",
+    "key": "explain:interview",
+    "fingerprint": "b7c33a7c770d466f"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "learn:spot",
+    "fingerprint": "40283f47341791e0"
+   },
+   {
+    "lesson_id": "must_pass_gate",
+    "key": "learn:spot",
+    "fingerprint": "91ae0231c71fad38"
+   },
+   {
+    "lesson_id": "review_queue",
+    "key": "learn:spot",
+    "fingerprint": "5cedebbf3c6b2a8a"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "learn:stops",
+    "fingerprint": "efc102e66146b298"
+   },
+   {
+    "lesson_id": "first_bad_version",
+    "key": "learn:stops",
+    "fingerprint": "dbf530d23f9058ae"
+   },
+   {
+    "lesson_id": "stable_split",
+    "key": "learn:stops",
+    "fingerprint": "6ab619a6c6ffb427"
+   },
+   {
+    "lesson_id": "pareto_models",
+    "key": "learn:term",
+    "fingerprint": "d56c3d7f12eaeb89"
+   },
+   {
+    "lesson_id": "judge_agreement",
+    "key": "learn:term",
+    "fingerprint": "1d6bcb74c4503729"
+   },
+   {
+    "lesson_id": "checker_score",
+    "key": "learn:term",
+    "fingerprint": "9ab4faff7bf908af"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:0:1",
+    "fingerprint": "99debc02ee68fa75"
+   },
+   {
+    "lesson_id": "gather_requirements",
+    "key": "check:0:2",
+    "fingerprint": "989fd0b47d8091a4"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "check:2:1",
+    "fingerprint": "195e5fc70c4e164b"
+   },
+   {
+    "lesson_id": "gather_requirements",
+    "key": "check:2:2",
+    "fingerprint": "4a4cf3aa351bc4a3"
+   },
+   {
+    "lesson_id": "precision_recall",
+    "key": "check:0:1",
+    "fingerprint": "47f45cbd0bdcdff1"
+   },
+   {
+    "lesson_id": "gather_requirements",
+    "key": "check:1:2",
+    "fingerprint": "76b641d6d761cad3"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "check:0:2",
+    "fingerprint": "10e406993cd04a0e"
+   },
+   {
+    "lesson_id": "use_case_card",
+    "key": "check:0:1",
+    "fingerprint": "be0a3ff2f8bee750"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "check:0:1",
+    "fingerprint": "76d19beb61ae7bd7"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:2:1",
+    "fingerprint": "8e9a1153ef694895"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "check:2:2",
+    "fingerprint": "3707891e20c42cab"
+   },
+   {
+    "lesson_id": "peak_capacity",
+    "key": "check:1:0",
+    "fingerprint": "2833cf5b8f1439f4"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:1:0",
+    "fingerprint": "2848e51c673afa02"
+   },
+   {
+    "lesson_id": "precision_recall",
+    "key": "check:0:2",
+    "fingerprint": "f2c19ae108415fa8"
+   },
+   {
+    "lesson_id": "use_case_score",
+    "key": "check:1:1",
+    "fingerprint": "f13c7eadd317cad1"
+   },
+   {
+    "lesson_id": "biggest_swing",
+    "key": "check:0:0",
+    "fingerprint": "64356a01b4e900f0"
+   },
+   {
+    "lesson_id": "best_threshold",
+    "key": "check:0:2",
+    "fingerprint": "f23b375570b40af1"
+   },
+   {
+    "lesson_id": "peak_capacity",
+    "key": "explain:gotcha",
+    "fingerprint": "9c441471db2a8ed6"
+   },
+   {
+    "lesson_id": "use_case_card",
+    "key": "explain:interview",
+    "fingerprint": "e7b3bacdfea49c0d"
+   },
+   {
+    "lesson_id": "use_case_score",
+    "key": "explain:interview",
+    "fingerprint": "43c31c63275a05b8"
+   },
+   {
+    "lesson_id": "precision_recall",
+    "key": "explain:interview",
+    "fingerprint": "37b227a8fc7daaf2"
+   },
+   {
+    "lesson_id": "cost_per_finished_task",
+    "key": "learn:spot",
+    "fingerprint": "757f07303eeecd8e"
+   },
+   {
+    "lesson_id": "best_threshold",
+    "key": "learn:spot",
+    "fingerprint": "e3ee879b53ab7faa"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "learn:spot",
+    "fingerprint": "868b694f8a33256a"
+   },
+   {
+    "lesson_id": "calibration_table",
+    "key": "learn:stops",
+    "fingerprint": "f0d1ba45fa7b613f"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "learn:stops",
+    "fingerprint": "f738129b9a516ce2"
+   },
+   {
+    "lesson_id": "use_case_score",
+    "key": "learn:stops",
+    "fingerprint": "ec45e310dabfe30b"
+   },
+   {
+    "lesson_id": "peak_capacity",
+    "key": "learn:term",
+    "fingerprint": "6bb28a945d720fe6"
+   },
+   {
+    "lesson_id": "run_tokens",
+    "key": "learn:term",
+    "fingerprint": "1d8814442487d55a"
+   },
+   {
+    "lesson_id": "best_threshold",
+    "key": "learn:term",
+    "fingerprint": "e7d3e339627b7151"
+   },
+   {
+    "lesson_id": "circuit_breaker",
+    "key": "check:0:2",
+    "fingerprint": "0fa4c576a962f585"
+   },
+   {
+    "lesson_id": "burn_rate",
+    "key": "check:2:0",
+    "fingerprint": "afbf9a913c7ecb14"
+   },
+   {
+    "lesson_id": "token_cost",
+    "key": "check:0:2",
+    "fingerprint": "67d40776ad2c090f"
+   },
+   {
+    "lesson_id": "plan_calls",
+    "key": "check:1:2",
+    "fingerprint": "75a3e0389e99614a"
+   },
+   {
+    "lesson_id": "token_cost",
+    "key": "check:1:2",
+    "fingerprint": "6e378f4483cdffa2"
+   },
+   {
+    "lesson_id": "burn_rate",
+    "key": "check:0:2",
+    "fingerprint": "1bbba8aa57e57bd1"
+   },
+   {
+    "lesson_id": "plan_calls",
+    "key": "check:0:0",
+    "fingerprint": "ed1b66be18c9b2bb"
+   },
+   {
+    "lesson_id": "failure_counts",
+    "key": "check:2:1",
+    "fingerprint": "be5f4007f1ace9df"
+   },
+   {
+    "lesson_id": "token_cost",
+    "key": "check:0:0",
+    "fingerprint": "9969100744e79e26"
+   },
+   {
+    "lesson_id": "circuit_breaker",
+    "key": "check:1:0",
+    "fingerprint": "1272076c32cf177f"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "check:2:0",
+    "fingerprint": "60ec6e0250cd777a"
+   },
+   {
+    "lesson_id": "token_cost",
+    "key": "check:2:1",
+    "fingerprint": "5ad2bbfe4c14366f"
+   },
+   {
+    "lesson_id": "failure_counts",
+    "key": "check:1:0",
+    "fingerprint": "6fbb74c78b238845"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "explain:interview",
+    "fingerprint": "5ff9d5d64e6f1123"
+   },
+   {
+    "lesson_id": "burn_rate",
+    "key": "explain:interview",
+    "fingerprint": "7320a5438f651d9c"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "learn:spot",
+    "fingerprint": "14345aedef9941ff"
+   },
+   {
+    "lesson_id": "slowest_chain",
+    "key": "learn:spot",
+    "fingerprint": "f6f313bbd44cb757"
+   },
+   {
+    "lesson_id": "failure_counts",
+    "key": "learn:stops",
+    "fingerprint": "2064b39481679292"
+   },
+   {
+    "lesson_id": "slowest_chain",
+    "key": "learn:stops",
+    "fingerprint": "79ec79babc7650d6"
+   },
+   {
+    "lesson_id": "circuit_breaker",
+    "key": "learn:term",
+    "fingerprint": "af1d70903a65dc4a"
+   },
+   {
+    "lesson_id": "summary_recall",
+    "key": "learn:term",
+    "fingerprint": "f8e22f98f55a94ba"
+   },
+   {
+    "lesson_id": "tag_coverage",
+    "key": "check:2:0",
+    "fingerprint": "5693c356adf7c109"
+   },
+   {
+    "lesson_id": "resolve_variables",
+    "key": "check:2:0",
+    "fingerprint": "7dca4aa768217e47"
+   },
+   {
+    "lesson_id": "pick_securable",
+    "key": "check:1:2",
+    "fingerprint": "ef99388cd6d7819e"
+   },
+   {
+    "lesson_id": "field_status",
+    "key": "check:1:2",
+    "fingerprint": "3f44b8f074ce3fd6"
+   },
+   {
+    "lesson_id": "location_for_path",
+    "key": "check:1:2",
+    "fingerprint": "c31531d1bc133409"
+   },
+   {
+    "lesson_id": "lock_info",
+    "key": "check:0:0",
+    "fingerprint": "314eec778868ebe0"
+   },
+   {
+    "lesson_id": "runs_after",
+    "key": "check:0:0",
+    "fingerprint": "7955c936c3387f1c"
+   },
+   {
+    "lesson_id": "provider_versions",
+    "key": "check:0:0",
+    "fingerprint": "b54ae197c7ce2183"
+   },
+   {
+    "lesson_id": "lock_info",
+    "key": "check:0:2",
+    "fingerprint": "13b844c4c22c83b8"
+   },
+   {
+    "lesson_id": "location_for_path",
+    "key": "check:1:0",
+    "fingerprint": "a797a0cb307f45cc"
+   },
+   {
+    "lesson_id": "ai_unstuck",
+    "key": "check:1:0",
+    "fingerprint": "62ddeb8ceb539edf"
+   },
+   {
+    "lesson_id": "count_shift",
+    "key": "check:1:2",
+    "fingerprint": "7d9eeeea1374586b"
+   },
+   {
+    "lesson_id": "count_shift",
+    "key": "check:2:1",
+    "fingerprint": "6a9c3c607df139bf"
+   },
+   {
+    "lesson_id": "cost_by_tag",
+    "key": "check:0:2",
+    "fingerprint": "47e6e66a8ddbf29d"
+   },
+   {
+    "lesson_id": "plan_policy",
+    "key": "check:0:2",
+    "fingerprint": "ce356249ed2cd325"
+   },
+   {
+    "lesson_id": "pick_securable",
+    "key": "check:0:1",
+    "fingerprint": "342c82d4a5a6ebfd"
+   },
+   {
+    "lesson_id": "location_for_path",
+    "key": "check:0:2",
+    "fingerprint": "973848ab518dad4f"
+   },
+   {
+    "lesson_id": "guard_destroys",
+    "key": "check:0:0",
+    "fingerprint": "e82088bb31209d92"
+   },
+   {
+    "lesson_id": "can_read_table",
+    "key": "check:0:0",
+    "fingerprint": "673fce8dbef3e9e8"
+   },
+   {
+    "lesson_id": "count_shift",
+    "key": "check:0:2",
+    "fingerprint": "d911473179249d83"
+   },
+   {
+    "lesson_id": "runs_after",
+    "key": "check:1:2",
+    "fingerprint": "11682564e7673b56"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "check:1:0",
+    "fingerprint": "e0d0b9fe15b13766"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "check:2:1",
+    "fingerprint": "ec9ae82b7d610496"
+   },
+   {
+    "lesson_id": "lookup_failed",
+    "key": "check:0:2",
+    "fingerprint": "a4ee43364beef85b"
+   },
+   {
+    "lesson_id": "provider_versions",
+    "key": "check:2:0",
+    "fingerprint": "be8404d60135a337"
+   },
+   {
+    "lesson_id": "policy_violations",
+    "key": "check:2:0",
+    "fingerprint": "7826185a185efd47"
+   },
+   {
+    "lesson_id": "idle_cost",
+    "key": "check:0:2",
+    "fingerprint": "c2ff49bd6d15ef36"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "check:0:0",
+    "fingerprint": "ed2afeacde9c8abf"
+   },
+   {
+    "lesson_id": "grants_to_people",
+    "key": "check:2:2",
+    "fingerprint": "a0a6d93a19ae9e1d"
+   },
+   {
+    "lesson_id": "grants_to_people",
+    "key": "check:1:1",
+    "fingerprint": "ba478d5d92989c86"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "check:2:2",
+    "fingerprint": "31264192f4c4f6b3"
+   },
+   {
+    "lesson_id": "cost_by_tag",
+    "key": "check:2:0",
+    "fingerprint": "af17548d82f92540"
+   },
+   {
+    "lesson_id": "ai_unstuck",
+    "key": "check:2:1",
+    "fingerprint": "efb84a6ceacf33e9"
+   },
+   {
+    "lesson_id": "resolve_variables",
+    "key": "check:0:2",
+    "fingerprint": "03e4685412317845"
+   },
+   {
+    "lesson_id": "provider_versions",
+    "key": "explain:gotcha",
+    "fingerprint": "37ad63ad156ba37f"
+   },
+   {
+    "lesson_id": "skipped_tasks",
+    "key": "explain:interview",
+    "fingerprint": "f8034f5d9a753063"
+   },
+   {
+    "lesson_id": "lock_info",
+    "key": "explain:interview",
+    "fingerprint": "ed988611cdc417cd"
+   },
+   {
+    "lesson_id": "location_for_path",
+    "key": "explain:interview",
+    "fingerprint": "fc26ebc62362f893"
+   },
+   {
+    "lesson_id": "grants_to_revoke",
+    "key": "explain:interview",
+    "fingerprint": "49553664850733cd"
+   },
+   {
+    "lesson_id": "grants_to_people",
+    "key": "explain:interview",
+    "fingerprint": "1a8b29659de4e15c"
+   },
+   {
+    "lesson_id": "idle_cost",
+    "key": "explain:interview",
+    "fingerprint": "0bf165b98dfdd6df"
+   },
+   {
+    "lesson_id": "guard_destroys",
+    "key": "learn:spot",
+    "fingerprint": "3af7d3388017c6c6"
+   },
+   {
+    "lesson_id": "find_replacements",
+    "key": "learn:spot",
+    "fingerprint": "2b4d5e3dd5c773e9"
+   },
+   {
+    "lesson_id": "tag_coverage",
+    "key": "learn:spot",
+    "fingerprint": "06028605db869a37"
+   },
+   {
+    "lesson_id": "field_status",
+    "key": "learn:spot",
+    "fingerprint": "1cc8393a51c89995"
+   },
+   {
+    "lesson_id": "lock_info",
+    "key": "learn:spot",
+    "fingerprint": "99e6124782c318ff"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "learn:stops",
+    "fingerprint": "ca2eb1aac29b9f41"
+   },
+   {
+    "lesson_id": "guard_destroys",
+    "key": "learn:stops",
+    "fingerprint": "45b2f1ac7f37f00e"
+   },
+   {
+    "lesson_id": "cost_by_tag",
+    "key": "learn:stops",
+    "fingerprint": "252c769a6dd04c6c"
+   },
+   {
+    "lesson_id": "plan_policy",
+    "key": "learn:stops",
+    "fingerprint": "19824789e90d6dda"
+   },
+   {
+    "lesson_id": "grants_to_people",
+    "key": "learn:stops",
+    "fingerprint": "bb42610fd64b63e6"
+   },
+   {
+    "lesson_id": "can_read_table",
+    "key": "learn:stops",
+    "fingerprint": "e7e01b9763d8b66c"
+   },
+   {
+    "lesson_id": "field_status",
+    "key": "learn:term",
+    "fingerprint": "b529755c07ae5cc0"
+   },
+   {
+    "lesson_id": "apply_order",
+    "key": "learn:term",
+    "fingerprint": "cf8a020c39d73d33"
+   },
+   {
+    "lesson_id": "ai_unstuck",
+    "key": "learn:term",
+    "fingerprint": "1105b4f38e78e4c8"
+   },
+   {
+    "lesson_id": "cost_by_tag",
+    "key": "learn:term",
+    "fingerprint": "d14c867f76efaba4"
+   },
+   {
+    "lesson_id": "grants_to_revoke",
+    "key": "learn:term",
+    "fingerprint": "70693a8a4d3c53b8"
+   },
+   {
+    "lesson_id": "idle_cost",
+    "key": "learn:term",
+    "fingerprint": "a47b1a0c94dd7493"
+   },
+   {
+    "lesson_id": "prompt_rollout",
+    "key": "check:1:0",
+    "fingerprint": "59d80f3c6e71920e"
+   },
+   {
+    "lesson_id": "prompt_rollout",
+    "key": "check:1:1",
+    "fingerprint": "9aa9c762b1c030bc"
+   },
+   {
+    "lesson_id": "route_request",
+    "key": "check:0:2",
+    "fingerprint": "aa2835a8a83eaedd"
+   },
+   {
+    "lesson_id": "prompt_rollout",
+    "key": "explain:interview",
+    "fingerprint": "f928510f69c0c9e3"
+   },
+   {
+    "lesson_id": "prompt_rollout",
+    "key": "learn:spot",
+    "fingerprint": "6bfb60c3f4b5f29b"
+   },
+   {
+    "lesson_id": "route_request",
+    "key": "learn:term",
+    "fingerprint": "a695811f56b78796"
+   }
+  ]
+ }
+}

@@ -21,9 +21,15 @@ def store(tmp_path, monkeypatch):
     mlflow.set_tracking_uri(None)
 
 
-def judge_run(model, provider="foundry", mode="batch", checklist=1):
+def judge_run(model, provider="foundry", mode="batch", checklist=1, kind=tpe.EXPERIMENT_KIND, legacy_number=None):
     with mlflow.start_run() as run:
-        mlflow.log_params({"judge_model": model, "provider": provider, "mode": mode, "deployment": f"{model}-dep", "checklist": checklist})
+        mlflow.set_tag("kind", kind)
+        params = {"judge_model": model, "provider": provider, "mode": mode, "deployment": f"{model}-dep"}
+        if legacy_number is None:
+            params["checklist"] = checklist
+        else:
+            params["judge_version"] = legacy_number   # how runs before 00a6067 logged the checklist number
+        mlflow.log_params(params)
     return run.info.run_id
 
 
@@ -83,3 +89,25 @@ def test_a_checklist_two_run_links_to_a_checklist_two_judge_version(store):
     assert v.template == tp.JUDGE2 and (fresh.tags or {}).get("checklist") == "2"
     assert mlflow.get_run(rid).data.params["judge_version"] == f"{v.name}/{v.version}"   # the link, not the checklist number
     assert tpe.link_judge(mlflow, rid).version == v.version                               # a second call reads the link back
+
+
+def test_only_judge_eval_runs_can_be_linked_and_legacy_numbers_are_read(store):
+    tpe.ensure_champion(mlflow)
+    with pytest.raises(ValueError):
+        tpe.link_judge(mlflow, judge_run("gpt-5.4", kind="draft_uncertainty"))
+    v = tpe.link_judge(mlflow, judge_run("gpt-5.4-mini", mode="inline", legacy_number="2"))
+    assert v.template == tp.JUDGE2
+
+
+def test_a_store_that_is_down_does_not_get_a_new_champion(store, monkeypatch):
+    champion = tpe.ensure_champion(mlflow)
+
+    class Down:
+        def get_prompt_version_by_alias(self, *a):
+            raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(mlflow, "MlflowClient", lambda: Down())
+    with pytest.raises(RuntimeError):
+        tpe.ensure_champion(mlflow)
+    monkeypatch.undo()
+    assert mlflow.MlflowClient().get_prompt_version_by_alias(champion.name, "champion").version == champion.version

@@ -54,3 +54,15 @@ def test_labels_bullets_and_the_questions_own_words_are_not_strangers():
     assert aq.unknown_names(text, LESSON) == ["Ana"]                      # Hint, Likely, Open and Say start lines, not names
     assert aq.unknown_numbers(text, LESSON + "\nGive a 30-second spoken answer") == []
     assert aq.unknown_numbers(text, LESSON) == ["30"]
+
+
+def test_fillers_only_count_as_openers():
+    assert aq.filler_openers("This is almost certainly stale, of course not always.") == []
+    assert aq.filler_openers("Great question! The cache key matters. Certainly the user id belongs in it.") == ["great question", "certainly"]
+
+
+def test_a_verdict_is_parsed_even_with_braces_in_the_prose_and_says_when_there_is_none():
+    v = tp._verdict('I think {the answer} is fine. {"correct": true, "answers_it": true, "plain": true, "no_giveaway": true, "standalone": true, "notes": ""}')
+    assert v["pass"] is True and v["parsed"] is True
+    none = tp._verdict("Sorry, I cannot grade this.")
+    assert none["pass"] is False and none["parsed"] is False and "no JSON" in none["notes"]

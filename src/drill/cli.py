@@ -636,7 +636,11 @@ def tutor_prepared_eval_cmd(
     console.print(f"  Cost: ${n['judge_cost_usd']:.2f} at list price ({n['judge_calls']:.0f} calls, {n['judge_rate_limited']:.0f} rate-limited)")
     if record:
         console.print(f"  Verdicts also written to {record}")
-    console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
+    if "passes_agreement" in n:
+        console.print(f"  Agreement with the reference judge: {n['passes_agreement']:.1%}, kappa {n.get('passes_kappa', float('nan')):.2f}")
+    if n.get("judge_missing") or n.get("judge_unparsed"):
+        console.print(f"  [yellow]Verdicts missing: {n.get('judge_missing', 0):.0f} (the judge call failed); without JSON: {n.get('judge_unparsed', 0):.0f}. "
+                      "The numbers above exclude the missing ones.[/yellow]")
     for check in tpe.tp.JUDGES[judge_version][1]:
         console.print(f"    {check}: pass {n[check + '_rate']:.1%}" + (f", kappa {n[check + '_kappa']:.2f}" if check + "_kappa" in n else ""))
     console.print(f"  Code checks: hard to read {n['quality_hard_to_read_rate']:.0%}, numbers or names outside the lesson "

@@ -67,8 +67,9 @@ def readability_grade(text: str) -> float:
 
 
 def filler_openers(text: str) -> list[str]:
-    low = text.lower()
-    return [f for f in FILLERS if f in low]
+    """Fillers that open the answer or a sentence ("Great question! ..."), not the words inside other phrases."""
+    starts = [s.lower() for s in sentences(text)]
+    return [f for f in FILLERS if any(re.match(rf"{re.escape(f)}\b", s) for s in starts)]
 
 
 def repeated_sentences(text: str) -> int:
