@@ -1127,6 +1127,188 @@
    }
   }
  },
+ "gwet_ac1": {
+  "check:0:1": {
+   "q": "Why not “A bigger model to replace both judges”?",
+   "a": "Swapping in a bigger model treats the low kappa as proof that the judges are bad. That is the part it gets wrong.\n\n**What it gets right:** If two judges truly disagreed, a stronger judge might help. Wanting a better judge is a fair instinct.\n\n**What it misses:** Nothing here says the judges are bad. They agree on 97 of 100 answers. The low kappa (0.3) most likely comes from the **kappa paradox**. When almost every answer passes, kappa assumes a lot of that agreement could happen by luck. It then subtracts all of it, so the score drops even though the judges agree.\n\nA bigger model doesn't fix that. You would test the new judge with kappa too, and you would hit the same paradox. You would also pay more and still not know what went wrong.\n\nThe right next step is to find the cause first. Compute a second agreement score that isn't fooled by a rare verdict. Then check passes and failures separately.\n\n**Why \"AC1, which stays fair when a verdict is rare\" is better:** AC1 counts luck in a way that doesn't blow up when one verdict is rare, so it tells you whether these judges really agree before you replace anything.",
+   "step": "Check",
+   "fingerprint": "3710afa679805439",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Nothing more: 0.3 means they disagree”?",
+   "a": "That option takes kappa at face value. It gets one thing right: a low kappa is worth noticing. You shouldn't ignore it.\n\nBut look at the raw numbers. The judges agree on 97 of 100 answers. That is not what disagreement looks like. Something else is pulling kappa down.\n\nThat something is the **kappa paradox**. When almost every answer passes, kappa assumes two judges would agree a lot just by luck. Think of two people who both say \"pass\" nearly every time. They would match often even if they never read the answers. Kappa subtracts all of that expected luck. Very little is left, so the score lands near 0.3 even though real agreement is high.\n\nSo \"nothing more\" stops too early. It reads 0.3 as \"they disagree\" when the low score may only reflect how rare failures are. You'd risk throwing out a judge that actually works.\n\nThe better answer is **AC1, which stays fair when a verdict is rare**. It counts luck in a way that doesn't blow up when one verdict dominates, so it shows whether the 97% agreement is real. Either way, still check passes and failures separately.",
+   "step": "Check",
+   "fingerprint": "8401e921e76e15f5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Kappa and AC1 always give the same number”?",
+   "a": "\"Kappa and AC1 always give the same number\" gets one thing right. In this question, the two numbers really do come out almost the same.\n\nBut \"always\" is the problem. The lesson's own example shows they can be far apart. When 96 and 98 of 100 answers passed, kappa was about 0.66 and AC1 was about 0.98. So they do not always match.\n\nWhat the option misses is *why* they match here. Both scores ask the same thing: how much better than luck do the judges agree? The only difference is how each one guesses the luck part.\n\nWhen both judges fail half the answers, pass and fail are equally common. In that balanced case, kappa and AC1 make the same guess about luck. Both say luck alone would give agreement about half the time. Same luck guess, same agreement of 9 in 10, so nearly the same score.\n\nThey only split apart when one verdict becomes rare. Then kappa guesses luck too high, and its score drops.\n\n\"AC1 only differs when one verdict is rare\" is better because it names the exact condition that makes the two scores split, instead of claiming they never do.",
+   "step": "Check",
+   "fingerprint": "a568af480b13c317",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Half and half breaks both measures”?",
+   "a": "\"Half and half breaks both measures\" gets one thing right. The half-and-half split really is the reason the two numbers match. But it gets the effect backwards. Nothing breaks here.\n\nThink about what each measure does. Both start from how often the judges agree. Then each one takes away the agreement you would expect by luck alone. The only difference between them is how they count that luck.\n\nWhen passes and fails are split evenly, the two ways of counting luck give the same answer. Each one says luck alone would make the judges agree about half the time. So both measures take away the same amount, and they land on the same score.\n\nThat score is also a fair one. The judges agree on 9 in 10, well above the half you would expect from luck, and both numbers show that. An even split is actually the easiest case for both measures. The trouble starts when one verdict becomes rare. That is where kappa's luck count balloons and the two measures drift apart.\n\n\"AC1 only differs when one verdict is rare\" is better because it names the real cause: the two measures count luck the same way at an even split and only part ways when one verdict is uncommon.",
+   "step": "Check",
+   "fingerprint": "f86e82c13205a5f4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The answer is about 210 words, slightly over the ~200 guide, and the 'easiest case for both measures' line goes a little beyond the lesson but does not contradict it."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “AC1 rescues it, so trust the judge”?",
+   "a": "\"AC1 rescues it\" gets one thing right. Checking AC1 is the correct move when kappa is low. AC1 is there to catch the kappa paradox. That is when kappa looks bad only because one verdict is rare, even though the judges agree almost every time.\n\nBut look at the actual number. AC1 is 0.25. That is barely higher than kappa's 0.2, and both are low. AC1 only \"rescues\" a judge when it comes out **high** while kappa stays low, like the lesson's example of 0.98 against 0.66. Here, counting luck the fairer way still shows weak agreement. So the low kappa is not a side effect of a rare verdict. It reflects real disagreement between your judge and the people.\n\nTrusting the judge here would mean shipping something that often gives a different verdict than a human would. You would still want to check passes and failures separately to see where it goes wrong.\n\n\"They really disagree; both are low\" is better because it reads both numbers honestly. When neither one is high, there is no paradox to explain away.",
+   "step": "Check",
+   "fingerprint": "12bc6adcaeb1c728",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; the closing explanation runs to two sentences where the brief asked for one, and 'often gives a different verdict' goes slightly beyond the lesson, but neither makes it wrong."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The rare verdict is causing it”?",
+   "a": "\"The rare verdict is causing it\" gets one thing right. A rare verdict really can drag kappa down. That is the kappa paradox: when almost every answer passes, kappa assumes a lot of the agreement is just luck, so it can score two judges low even when they agree almost every time.\n\nBut that explanation only fits one pattern: **kappa low, AC1 high**. AC1 (Gwet's AC1) exists for this exact case. It counts luck in a way that stays fair when one verdict is rare. So if the rare verdict were the only problem, AC1 would come out high and show that the judges mostly agree.\n\nHere AC1 is 0.25. That is nearly as low as kappa's 0.2. The measure built to see past the rare-verdict effect still finds poor agreement. Blaming the rare verdict would explain away a real problem with your judge.\n\n\"They really disagree; both are low\" is better because when even AC1, which corrects for the rare verdict, stays low, the low score reflects real disagreement and not a quirk of the math.",
+   "step": "Check",
+   "fingerprint": "fa5f29fd9758ce0f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count luck another way” in an interview?",
+   "a": "**A 30-second spoken answer**\n\n**The problem:** \"When almost every answer passes, Cohen's kappa can come out low even when two judges agree nearly every time. That's the kappa paradox. Kappa assumes the judges would agree by luck very often, then subtracts all of that. In one example, they agree 98 times out of 100, but kappa is only about 0.66.\"\n\n**The idea:** \"Gwet's AC1 asks the same question: how much better than luck? But it counts luck differently, so a rare verdict doesn't inflate it. In that same example, luck drops from about 0.94 to about 0.06, and AC1 comes out around 0.98. I log both in MLflow. Low kappa with high AC1 means the judges mostly agree. Both low means they really disagree.\"\n\n**The trade-off:** \"A high AC1 can still hide misses on the rare verdict. So I also check passes and failures separately.\"\n\n**A likely follow-up**\n\n*\"Why not just report raw agreement?\"*\n\nHint for a strong answer: raw agreement ignores luck completely. A lazy judge that says \"pass\" every time would still score 96% here. You need a score that removes luck. AC1 just removes it more fairly when one verdict is rare.",
+   "step": "Explain",
+   "fingerprint": "6991c0827746c4c4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The one point to watch is the follow-up hint's 'lazy judge scores 96%', which follows from judge A's 96 passes but is not stated in the lesson."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs it's going wrong**\n\n- **A low kappa next to near-perfect agreement.** Your MLflow run shows `judge_kappa` around 0.6, but the two judges agree on 98 of 100 answers. If you only looked at kappa, you might throw out a judge that works fine.\n- **Almost every verdict is the same.** Pass rates of 95% or more are where the kappa paradox (kappa looking bad even when judges agree) shows up.\n- **A high AC1 hiding real trouble.** AC1 can look great while the judges still disagree on most of the few failures. Rare fails are often the cases you care about most.\n- **`judge_ac1` looks odd.** It comes out above 1, or it barely differs from kappa on lopsided data. That points to a mistake in how luck was counted.\n\n**Quickest check**\n\nWork out three plain numbers by hand: how often the judges agree, and each judge's pass rate.\n\n- High agreement plus lopsided pass rates explains a low kappa.\n- Then run your `gwet_ac1` on the lesson's example. You should get about 0.98, and kappa about 0.66.\n- Finally, look at the failures on their own. Do the judges agree on those?",
+   "step": "Learn",
+   "fingerprint": "324c1253a3cf1514",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**Very little data.** With only 20 or 30 labelled answers, one changed verdict can swing both kappa and AC1 a lot. Gather more labelled answers before trusting either score, and read each disagreement yourself.\n\n**More than two verdicts.** The lesson's luck formula, 2 × q × (1 − q), only works when there are exactly two verdicts, pass and fail. If your judge gives grades like pass, partial and fail, use the general form of AC1, which counts luck across every grade.\n\n**Pass rates that drift over time.** As your app improves, failures can become rarer. Then kappa can sink even though the judge hasn't changed. Recompute both numbers on each new batch of answers. If kappa falls while AC1 holds steady, that points to rarer failures, not a worse judge. Still check passes and failures separately, as the lesson says.",
+   "step": "Learn",
+   "fingerprint": "3e2291ff570dd0f6",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The answer writes the formula \"2 × q × (1 − q)\" in maths notation without defining q, which breaks the plain-words rule; the rest is accurate and on topic."
+   }
+  },
+  "learn:term": {
+   "q": "What does “kappa paradox” mean here?",
+   "a": "A \"paradox\" is a result that seems to contradict itself. Here, two judges agree almost every time, yet kappa gives them a mediocre score.\n\n**An everyday comparison.** Picture two weather forecasters in a desert. Both say \"no rain\" nearly every day, so they agree nearly every day. A strict grader says: \"Of course you agree. Anyone guessing 'no rain' would.\" The grader treats most of their agreement as luck and gives them little credit, even though they really do see the weather the same way.\n\n**Where it shows up in the lesson's example.**\n\n- Judge A passes 96 of 100 answers. Judge B passes 98.\n- They agree on 98 of 100. That's 98% agreement.\n- Because \"pass\" is so common, kappa assumes they'd agree about 94% of the time by luck alone.\n- Kappa only gives credit for agreement above that luck level. The gap from 94% up to 98% is small, so kappa comes out around 0.66.\n\nThat's the paradox. Agreement is 98%, but kappa looks only so-so.\n\nGwet's AC1 counts luck more gently when one verdict is rare. It puts luck at about 6%, so AC1 lands around 0.98.",
+   "step": "Learn",
+   "fingerprint": "86ffe9ae74597c56",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
  "judge_agreement": {
   "check:0:0": {
    "q": "Why not “Yes: 92 in 100 is high enough to trust its scor…”?",
@@ -1306,6 +1488,188 @@
     "standalone": true,
     "pass": true,
     "notes": "No real problems; at about 200 words it sits right at the length limit."
+   }
+  }
+ },
+ "judge_consistency": {
+  "check:0:0": {
+   "q": "Why not “The answers changed between the two runs”?",
+   "a": "The question says the judge looked at the **same 300 answers** both times. Nothing about the answers changed. That's the whole point of a consistency check. You hold the input fixed on purpose, so any difference in the output must come from the judge.\n\nWhat this option gets right: something really did change between the two runs. It just points at the wrong thing. The answers stayed put. The **verdicts** moved.\n\nThink of it like weighing the same bag of flour twice. If the scale shows two different numbers, you don't blame the flour. You blame the scale.\n\nHere, 70 out of 300 is a flip rate of about 0.23. Roughly 1 verdict in 4 changed with no change to the answer. That's far above the \"few percent\" the lesson treats as acceptable.\n\n\"Many of its verdicts are partly luck\" is better because it puts the blame on the judge, which is the only thing that could have varied, and it says what that means for trusting any single score.",
+   "step": "Check",
+   "fingerprint": "ad612de7ae5051ac",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “It gets stricter the second time round”?",
+   "a": "\"It gets stricter the second time round\" gets one thing right. It notices that the verdicts changed between runs. That part is real.\n\nWhat it misses is direction. A flip count only tells you *how many* verdicts changed. It doesn't say *which way* they changed. Some of those 70 could have gone from pass to fail, and others from fail to pass. Look at the lesson's example: answer 2 went pass to fail, but answer 5 went fail to pass. That's not stricter. That's just unsteady.\n\nTo claim \"stricter,\" you'd need to show that the number of passes dropped. You'd also need more than one pair of runs to call it a pattern. A count of 70 on its own can't tell you that.\n\nWhat the count does tell you is size. 70 out of 300 is a flip rate of about 0.23. That means nearly a quarter of the verdicts changed. That's far above the \"few percent\" you'd want from a steady judge.\n\n\"Many of its verdicts are partly luck\" is better because it says exactly what a flip rate measures: how often the same answer gets a different verdict, whatever the direction.",
+   "step": "Check",
+   "fingerprint": "ee0c1190456cb367",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The final sentence says 'partly luck' describes what a flip rate measures, when it is really the conclusion drawn from the flip rate. This is minor and does not contradict the lesson. The answer is also close to the 200-word limit."
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Three runs cost less than one”?",
+   "a": "\"Three runs cost less than one\" is simply not true. Each run means asking the judge about every answer again. So three runs on 200 answers is 600 judge calls instead of 200. That costs roughly three times as much, not less.\n\nThe one thing it gets right is that cost matters. Every judge call is a paid request to a model. Judging three times is a real expense, and it's fair to weigh it.\n\nBut cost isn't why the trick helps. The point is steadier verdicts. The judge sometimes flips on the same answer just by chance. If you ask once, that one unlucky verdict is the one you keep. If you ask three times and keep the **majority** (the verdict that shows up at least twice), one stray result can't decide the outcome alone.\n\nSo you pay more to get verdicts that depend less on luck.\n\n\"One odd verdict gets outvoted\" is the better answer because it names the real benefit: a single chance flip loses to the other two runs that agree.",
+   "step": "Check",
+   "fingerprint": "5a647cc562200580",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “The judge learns from its own runs”?",
+   "a": "\"The judge learns from its own runs\" sounds reasonable, but it isn't what happens.\n\nAn LLM judge doesn't change between calls. Its **weights** (the numbers inside the model that decide its answers) stay fixed. Each run starts fresh. Run two has no memory of run one. So nothing is learned, and the judge doesn't get any better at judging.\n\nThe option does get one thing right: running the judge several times *is* what helps. It just gives the wrong reason.\n\nThe real reason is luck. A judge sometimes gives an odd verdict by chance. If it says pass, fail, pass on the same answer, that one \"fail\" is probably the fluke. Keeping the verdict that appears at least twice is called a **majority vote**. It lets the two steady verdicts win. A single random slip no longer decides the result.\n\n\"One odd verdict gets outvoted\" is better because it names the actual effect: the judge is unchanged, and the majority vote simply cancels out a one-off chance flip.",
+   "step": "Check",
+   "fingerprint": "f39909c4c428b2d9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The second answer is really better”?",
+   "a": "The test changed only one thing: the order. The two answers stayed word for word the same. So whatever moved the verdict, it wasn't the quality of either answer.\n\nIf the second answer were really better, the judge would pick it in both orders. It didn't. In one order it picked one answer, and after the swap it picked the other. The only thing those two picks have in common is position. Each time, the judge chose whichever answer it saw first.\n\n\"The second answer is really better\" does get one thing right: it's possible that one answer truly is better. But this test can't tell you which one. The judge's preference just followed the order, so its verdicts here say nothing about quality.\n\nThat's the point of the lesson's method. Change one thing and see if the verdict moves. If it moves, that one thing is steering the judge. This habit is called **position bias**, meaning a leaning toward an answer because of where it appears.\n\n\"The judge favours whatever comes first\" is better because it names the one thing you changed, the order, as the cause of the flip.",
+   "step": "Check",
+   "fingerprint": "70adadbd69814c93",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; it overstates slightly by saying the verdicts 'say nothing about quality', and it uses the term 'position bias', which the lesson doesn't name, though it defines it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The judge is broken and must go”?",
+   "a": "\"The judge is broken and must go\" gets one thing right. Something is off: the verdict moved when the quality of the answers didn't change at all.\n\nBut it jumps too far. You changed only one thing, the order. So the useful finding is about that one thing, not a blanket ruling that the whole judge is useless. Preferring the answer shown first is one of the known habits the lesson lists. Naming the habit tells you what to look into next. \"Broken\" tells you nothing.\n\nThere's also a caution. A judge can change its verdict on the same answer just by chance. So one swap is a clue, not proof. To be confident, swap the order on many pairs. Then check whether the preference follows the position far more often than its normal flip rate would explain. The flip rate is the share of answers whose verdict changes between two runs.\n\n\"The judge favours whatever comes first\" is better because it names the specific habit your one-change test points to. That gives you something concrete to confirm and deal with, instead of throwing the judge away.",
+   "step": "Check",
+   "fingerprint": "457858a0c18b6681",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Ask twice, count the flips” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"An LLM judge is a model that grades other models' answers. It can give a different verdict on the very same answer if you ask it twice. So any single score might be partly luck.\"\n\n*The idea:* \"Before trusting it, I run the judge twice on the same answers. Then I check what share of verdicts changed. That's the flip rate. Zero means perfectly steady. Much above a few percent means I fix it. I'd write clearer instructions, ask the judge to quote what it's judging, or judge each answer three times and keep the majority.\"\n\n*Trade-off:* \"Majority voting gives steadier verdicts. But it triples the cost and time of judging.\"\n\n**A likely follow-up**\n\n\"Your flip rate is near zero. So the judge is good, right?\"\n\n*Hint:* Steady isn't the same as correct. A judge can be wrong in the same way every time. It might always favour longer answers, or whichever answer comes first. So next you'd compare its verdicts with human labels. Then you'd test each habit by changing one thing, like the order, and seeing if the verdict moves.",
+   "step": "Explain",
+   "fingerprint": "086a4d42b332bb1a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The 'triples the cost and time' claim is a mild inference beyond the lesson, since majority voting need not triple time if the runs are done in parallel."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that the judge isn't steady**\n\n- **The score moves when nothing changed.** You rerun the same judge on the same answers and get a different pass count. If the answers are identical, the judge's verdicts are partly luck.\n- **The judge can't match people well.** A judge can't agree with human reviewers more reliably than it agrees with itself. Weak agreement with people may mean it isn't even steady on its own.\n- **Verdicts follow habits, not quality.** Longer answers keep passing. When it compares two answers, the one shown first keeps winning. Answers from a model like the judge get favoured.\n\n**Quickest check**\n\nRun the same judge twice on the same answers. Line up each answer's two verdicts and count the ones that changed. Divide by the number of answers. That share is the **flip rate**. 0 means perfectly steady. Anything much above a few percent means you shouldn't trust single verdicts yet.\n\nFor a habit, change only that one thing, such as the order, and see whether the verdict moves.\n\nIf it flips, try clearer instructions. Ask the judge to quote the part it's judging. Or judge each answer three times and keep the **majority**, meaning the verdict that comes up most often.",
+   "step": "Learn",
+   "fingerprint": "cfcadecfb0219dc5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it runs to about 200 words, and the quickest-check paragraph describes the flip-rate steps in prose (as the lesson does) without any code."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The judge is steady but wrong.** If you set temperature (the model's randomness dial) to 0, or the system caches (saves and reuses) old replies, the flip rate can hit 0 without the judge being any good. Steadiness is only the first test. After it passes, compare the judge's verdicts with a set of human labels.\n\n**2. Very few answers.** With six answers, one flip moves the rate by 0.17. That's too jumpy to trust. Use at least a hundred or so answers, and include tricky borderline ones, since that's where flips hide.\n\n**3. The judge model changes under you.** Providers update models quietly. Your prompt can also drift as you edit it. A flip rate you measured last month may no longer hold. Pin the exact model version where you can. Rerun the consistency check after any change to the model, the prompt, or the scoring scale.\n\nA related case: on a 1–10 scale, a 7 becoming an 8 counts as a \"flip.\" There, measure how far scores move instead.",
+   "step": "Learn",
+   "fingerprint": "89c1db4a805936b3",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No check fails. Minor: the tutor adds outside claims (temperature 0, caching, a hundred answers, 1–10 scales) that the lesson does not state, and item 3 runs longer than 2–3 sentences."
+   }
+  },
+  "learn:term": {
+   "q": "How is “longer” different from “first”?",
+   "a": "Both are habits a judge has that have nothing to do with quality. They differ in *what* sways it.\n\n**\"Longer\"** is about the answer itself. The judge leans toward the answer with more words, even if the extra words add nothing. Think of a teacher who gives higher marks to the thicker essay.\n\n**\"First\"** is about how answers are shown. When the judge compares two answers side by side, it leans toward whichever one it reads first. Think of a talent show judge who favors whoever performs first, no matter who is better.\n\nSo one habit comes from the content. The other comes from the order.\n\n**How they work together:** they can mix up your results. Say the longer answer is also shown first. If the judge picks it, you can't tell which habit caused that. That's why the lesson says to change only one thing at a time.\n\n**Testing each one:** use the same idea as the lesson's example. There, comparing two runs showed verdicts flipping on answers 2 and 5. To test \"first,\" swap the order and rerun. To test \"longer,\" change only the length. If verdicts flip, that habit is at work.",
+   "step": "Learn",
+   "fingerprint": "be0aad19dbe95ec5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the lesson's example flips come from run-to-run inconsistency, not from a habit, so linking them to testing 'longer' and 'first' could blur the point. Otherwise it is accurate and about 200 words."
    }
   }
  },

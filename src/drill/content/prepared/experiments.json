@@ -181,6 +181,188 @@
    }
   }
  },
+ "assign_group": {
+  "check:0:0": {
+   "q": "Why not “Users who ask more questions get B more often”?",
+   "a": "It's a reasonable guess, but it doesn't hold up.\n\n**What it gets partly right:** a person who asks 40 questions will see version B more *times* than someone who asks 4. But they also see version A more times. Each question is a fair coin flip, so heavy users still get about half A and half B. Nobody is pushed toward B. The split stays fair in that sense.\n\n**What it misses:** the real problem isn't who gets B more. It's that almost everyone gets *both*. A user might get a version B answer, then a version A answer, then B again. Their experience is a blend.\n\nWhen you later count \"Got it\" clicks, you can't cleanly say \"this person was helped by B.\" Their reaction to one answer may be shaped by the other version's answers. Your two groups stop being two separate groups. That is why the lesson says to assign by **user**, not by **request** (a single question).\n\n**Why the other option is better:** \"One person sees both versions, so the groups mix\" names the actual flaw. Per-question picking breaks the clean separation between A and B that a fair comparison depends on.",
+   "step": "Check",
+   "fingerprint": "885cc01ce81736e8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Random picks are too slow to work out each time”?",
+   "a": "\"Random picks are too slow\" points at the wrong problem. Picking a random A or B is almost instant. It costs far less than the model call that answers the question. So speed is not what breaks this setup.\n\nWhat it gets right, a little: there *is* a better tool, a hash of the user id. But the hash wins because it gives the same answer every time, not because it is faster.\n\nThe real problem is fairness. If you pick per question, one person might get A on Monday and B on Tuesday. Their \"Got it\" clicks then land in both groups. If B confuses them and they give up on A too, A's numbers suffer for something B did. The two groups are no longer cleanly separate, so you can't tell which version caused what. It is also odd for the user, whose assistant keeps changing its style.\n\n\"One person sees both versions, so the groups mix\" is better because it names the actual flaw: per-question picks break the \"assign by user, keep it fixed\" rule, so the comparison stops being fair.",
+   "step": "Check",
+   "fingerprint": "d40e9eb8b7c18ce4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that a random pick costs far less than a model call comes from outside the lesson, and 'gets right a little: a better tool exists' is a stretch, but neither contradicts the lesson."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “A fresh random 10%”?",
+   "a": "\"A fresh random 10%\" gets one thing right. It is **random**, so the users who get the new version are like everyone else. That part keeps the test fair.\n\nWhat it misses is the **fixed** rule. A fresh draw means rolling the dice again. If you pick a new random group each time, a user's version depends on luck, not on who they are.\n\nSo next week, when you widen to 50%, you'd draw again. Only about half of last week's 10% would land in the new 50% by chance. The other half would lose the new version. They saw B, then suddenly see A. Their experience flips, and your results get muddled, because you can't tell which version caused what they did.\n\nA hash bucket avoids this. The same user id always gives the same bucket, every day. Bucket 13 stays bucket 13.\n\n\"Everyone in buckets 0 to 9\" is better because buckets 0 to 9 sit inside buckets 0 to 49, so every user who had the new version at 10% still has it at 50%.",
+   "step": "Check",
+   "fingerprint": "88d47eb900263082",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Nobody: everyone is reassigned”?",
+   "a": "\"Nobody: everyone is reassigned\" gets one worry right. If you drew groups fresh at random each week, some users would lose the new version. Whether any one person kept it would be pure luck. Users would flip between versions, which is confusing for them and muddles your results.\n\nBut a hash bucket is not a fresh draw. The hash turns a user's id into the same number every time, so each user's bucket (a number from 0 to 99) never changes. Only the cutoff moves.\n\nAt 10%, buckets 0 to 9 get the new version. At 50%, buckets 0 to 49 do. Anyone in buckets 0 to 9 is still below 49, so they stay in the new group. Nobody is moved out. Buckets 10 to 49 simply join them.\n\n```\nu-1001 → bucket 7  → new at 10%, still new at 50%\nu-1002 → bucket 30 → old at 10%, new at 50%\nu-1003 → bucket 86 → old at 10%, still old at 50%\n```\n\n\"Everyone in buckets 0 to 9\" is better because a fixed bucket with a rising cutoff guarantees that early users keep the new version as the rollout grows.",
+   "step": "Check",
+   "fingerprint": "c589b0d644159af7",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The example table uses made-up buckets for u-1001 (7) and u-1002 (30), which contradict the lesson's own example (u-1001 is bucket 13, u-1002 is bucket 86); this would confuse beginners."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “One day is long enough to be sure”?",
+   "a": "\"One day is long enough to be sure\" sounds reasonable. A day of real traffic is real data, and a 4-point gap is a real number in that data. But it misses the actual risk.\n\n**The problem is not the clock. It is the reason for stopping.** The team wants to stop *because* B looks ahead. Early results swing up and down a lot by pure chance, since few users have been counted yet. If you keep checking and stop the moment B looks good, you will often catch a lucky swing, not a true win. This is the same trap as \"Testing many variants\": every extra look is another chance for luck to fool you.\n\nOne day also has two smaller gaps:\n- You probably haven't reached the number of users you planned (\"Enough to notice a difference\").\n- One day can't show weekly patterns, like weekend users behaving differently.\n\n\"Stopping early on a good day finds lucky wins\" is the better answer because it names the real danger: stopping when the numbers look good picks out chance highs. The fix is to follow the stop rule you wrote down before the test started.",
+   "step": "Check",
+   "fingerprint": "8de997b12e8d9eb9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problems. The weekly-patterns point isn't in the lesson, but it is true and doesn't contradict it. The answer is also close to the 200-word limit."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Group A will feel left out”?",
+   "a": "\"Group A will feel left out\" sounds kind, but it isn't the real risk.\n\n**What it gets right:** caring about users is good. If one version were clearly harmful, you would want to know.\n\n**What it misses:** Group A gets the *current* version, the same one everyone had before the test. They lose nothing. The real danger is about the *numbers*, not feelings.\n\nAfter one day, a 4-point lead may just be luck. Small groups bounce around. Some days B will look ahead, some days A will. If you check every day and stop the first time B looks good, you are giving luck many chances to fool you. That is the same trap as \"Testing many variants\": the more times you look, the more likely one look shows a \"win\" that isn't real.\n\nThat is why you write down, before you start, how many users you need and when you will stop. Then you stick to it, even when the early numbers look exciting.\n\n**\"Stopping early on a good day finds lucky wins\"** is the better answer because it names the actual problem: you might ship a change that only *looked* better by chance.",
+   "step": "Check",
+   "fingerprint": "50b222a8608b24cb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Hash the user, not the request” in an interview?",
+   "a": "**The 30-second answer**\n\n*The problem:* \"If I split by request, one person might see version A at 9:00 and version B at 9:05. Their experience is mixed. Their 'Got it' clicks get counted in both groups, so the comparison gets muddy.\"\n\n*The idea:* \"So I hash the user id. A hash is a function that turns the id into a big number, and it gives the same number every time. I keep the remainder after dividing by 100 to get a bucket from 0 to 99. Then I give a fixed range of buckets to B. Each user lands in one group at random and stays there, even when they come back tomorrow.\"\n\n*A trade-off:* \"I get fewer separate data points. A thousand requests from fifty heavy users is really fifty users. So I plan for enough users, not just enough traffic.\"\n\n**A likely follow-up**\n\n\"What happens if you run a second test next week with the same hash?\"\n\n*Hint for a strong answer:* the same users would land in B again, so the two tests overlap. A fix is to add a \"salt\" before hashing. A salt is an extra string, like the test name, mixed into the id. That gives each test a fresh random shuffle.",
+   "step": "Explain",
+   "fingerprint": "f64ecb271d9e7141",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The salt idea in the follow-up hint is not in the lesson, but it is accurate and does not contradict it."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "A few warning signs tell you the A/B test wasn't set up fairly.\n\n**One person sees both versions.** Look at the traces for a single user id. If some are tagged `ab_group` A and others B, you assigned by request, not by user. That user's \"Got it\" clicks then count for both sides and blur the result.\n\n**The groups are the wrong size.** You planned a 50/50 split but got 60/40. That usually means the assignment isn't truly random, or some users drop out of one group. A lopsided split often hides other differences between the groups too.\n\n**Users switch groups between visits.** The same id lands in B today and A tomorrow. The assignment isn't fixed.\n\n**The win fades after launch.** B looked great, you stopped early, and then real-world numbers came back flat. That's the \"checking again and again\" trap.\n\n**A guardrail quietly got worse.** Errors or cost went up while everyone watched only the main number.\n\n**Quickest check:** group your traces by user id. Count how many users carry more than one `ab_group` tag. It should be zero. Then confirm the group sizes match your planned split.",
+   "step": "Learn",
+   "fingerprint": "9656324d29fc7e40",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No clear fault. The group-size sign and its causes (not random, users dropping out) go beyond what the lesson says, and 'guardrail' is used without being explained."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "The hash-the-user rule is solid, but a few situations need extra care.\n\n**No stable user id.** If people aren't logged in, or one person uses a phone and a laptop, the \"same user\" can show up with different ids. Then one person may see both versions. Use the most stable id you have, like an account id. If you only have a browser cookie (a small id the browser stores), accept that some mixing will happen.\n\n**Users affect each other.** In a team workspace, or a RAG app (one that looks up documents before answering) where users share the same documents, one group's changes can leak into the other's results. Assign whole teams or workspaces to a group instead of single people.\n\n**Running many tests with the same hash.** If every test hashes only the user id, the same people always land in B. One test's effects then pile onto the next. Mix the test's name into what you hash, so each test splits people a fresh way.",
+   "step": "Learn",
+   "fingerprint": "98d0eeb385bf504e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No hard failure. The RAG 'leak' claim in the second point is vague, and the team-level and test-name hashing advice goes beyond the lesson without contradicting it."
+   }
+  },
+  "learn:term": {
+   "q": "How is “A/B test” different from “real users”?",
+   "a": "They aren't two rival things. **Real users** are *who* you test with. An **A/B test** is *how* you test with them.\n\n**Real users** are the actual people using your app. An offline eval checks a change against a fixed test set you prepared. Real users ask messier, surprising questions, so they show whether a change truly helps.\n\n**An A/B test** is a fair way to learn from those users. You split them at random into group A (the current version) and group B (the new one). Then you compare a number, like how often each group clicks \"Got it\".\n\n**How they work together:** real users supply the honest signal. The A/B test makes the comparison fair. Each person stays in one group, and the groups are alike in every other way.\n\n**Everyday comparison:** a bakery tries a new bread recipe. Real users are the customers. The A/B test is the plan: some regulars get the new loaf, the others get the old one, and you compare who comes back.\n\nIn the lesson's example, `u-1001` lands in bucket 13, so B. Tomorrow it's still bucket 13, still B.",
+   "step": "Learn",
+   "fingerprint": "eece0cfd06b0bf93",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
  "best_run": {
   "check:0:0": {
    "q": "Why not “More setups, to find a cheaper one”?",
@@ -745,6 +927,188 @@
    }
   }
  },
+ "clumpy_margin": {
+  "check:0:0": {
+   "q": "Why not “The one that counts the 400 questions”?",
+   "a": "Counting the 400 questions is not wrong as a starting point. It gives you one end of the range. That number is the smallest, most hopeful margin you could claim. (A margin is how far your score might wobble just by luck.)\n\nWhat it misses is the clumping. The quick rule assumes every question is separate, like 400 unrelated coin flips. Here they are not. Ten questions about one document usually pass or fail together. Once you know how the first one went, the other nine tell you little that is new. So those ten behave more like one example than like ten.\n\nThat means the 400 questions carry far less information than their count suggests. A margin built on 400 comes out too narrow. It makes your score look more certain than it really is. If you compared two versions of your app, you might call a difference real when it is just luck.\n\n\"Close to the one that counts the 40 documents\" is better because the questions behave alike within each document, so the honest margin sits nearer the group count than the question count.",
+   "step": "Check",
+   "fingerprint": "10d594f9554c9ba5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Neither: margins only work for coin flips”?",
+   "a": "That option starts from a real point. The quick margin rule does assume every example is separate, like unrelated coin flips. Here that assumption breaks, because questions about one document tend to pass or fail together.\n\nBut a broken assumption doesn't mean we give up on margins. It means we fix how we count. A margin (the \"plus or minus\" around your score) still matters. Without it, you can't tell a real improvement from luck.\n\nThe fix is to treat each group as the unit. Your 400 questions behave more like 40 separate pieces of evidence, since each document's 10 questions mostly agree. So you work out the margin from the 40 groups instead. For a more careful answer, you can use a **bootstrap by group**. That means you build many new samples by picking whole documents at random, then see how much the score moves between them.\n\nSo \"Neither\" spots the problem but throws away a tool that still works once adjusted.\n\n\"Close to the one that counts the 40 documents\" is better because it treats the documents as the real unit of evidence, which gives an honest, wider margin.",
+   "step": "Check",
+   "fingerprint": "ad26a2a1d2f83ef1",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “100 more about documents you have”?",
+   "a": "Adding 100 more questions about documents you already have is not useless. Your example count goes up, so the margin worked out by counting examples gets a little narrower. You may also catch a few new kinds of questions about those documents.\n\nThe problem is the clumping. New questions about an old document tend to pass or fail the same way as the questions already there. If the model misreads `doc-7`, a fourth question about `doc-7` will likely fail too. So each extra question tells you only a little that you didn't already know.\n\nThe number of groups also stays exactly the same. You still have 100 documents. The margin worked out by counting groups barely moves. Since the honest margin sits nearer that group count when answers in a group behave alike, your real uncertainty hardly shrinks.\n\nIt's like asking the same 100 people more survey questions instead of asking new people. You learn more about those people, not more about everyone.\n\n**Why new documents win:** each new document is a fresh group, so it adds information that doesn't overlap with what you already have. That shrinks the honest margin much more.",
+   "step": "Check",
+   "fingerprint": "d82505e4ffd7893d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor only: it asserts \"You still have 100 documents\", which the lesson's 100-lesson example does not state for this question. It also says the groups-based margin \"barely moves\" right after saying the group count stays exactly the same."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “100 rewordings of old questions”?",
+   "a": "Rewordings feel like 100 new questions. But they are not 100 new pieces of evidence.\n\n**What it gets right.** Rewordings do test something real. They check whether the system copes when the same thing is asked in different words. That is called *robustness*, meaning it doesn't break when the input changes a little. So they add *some* information.\n\n**What it misses.** A rewording asks about the same document as the original question. So it joins a clump that already exists. If the system misreads that document, it will likely fail the original and the rewording together. If it understands the document, it will likely pass both. The two answers mostly repeat each other.\n\nThink back to the two margins. Counting examples, you now have 100 more. Counting groups (documents), you have zero more. The honest margin sits nearer the group count, so it barely shrinks. You've grown the count without growing the evidence much.\n\n**Why new documents win:** each question about a new document starts a fresh group, so it adds evidence that doesn't lean on anything you already have.",
+   "step": "Check",
+   "fingerprint": "f16c6c194b9946f2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Whether 900 is a round enough number”?",
+   "a": "Whether 900 is \"round\" doesn't matter. The margin depends on how much real information the answers carry, not on how tidy the count looks. The option does point at something real: the number of examples feeds into the margin. But it treats the 900 as 900 separate coin flips, and that's the mistake.\n\nThose 900 answers are about only 30 products. Answers about the same product tend to pass or fail together. Maybe one product has confusing docs, so most of its answers fail. That makes the answers **clustered**: they come in clumps that behave alike. Clumps carry less information than their raw count suggests.\n\nRun the quick rule both ways:\n\n- Counting answers (900): about 3 points, which is what the report says.\n- Counting products (30): about 18 points.\n\nThe honest margin sits somewhere between 3 and 18 points. It lands nearer 18 if answers within a product behave very alike. So \"give or take 3\" could be badly overconfident.\n\n\"Whether answers about one product move together\" is better because it checks the exact thing that decides whether you should count 900 answers or 30 products.",
+   "step": "Check",
+   "fingerprint": "47a3843c8e251a12",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The 3 and 18 point figures are not in the lesson. They are scaled from its 300-answer example, which is acceptable, but they ignore the 92% pass rate."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Whether 92% is above last month's”?",
+   "a": "Comparing with last month is a fair question to ask eventually. A report is more useful when you know if things got better or worse.\n\nBut that comparison leans on the margin. \"Give or take 3 points\" decides whether a change from last month is real or just noise. If the margin is wrong, the comparison is wrong too.\n\nAnd here the margin is suspect. The 3 points comes from counting all 900 answers as if each were separate, like unrelated coin flips. But they cover only 30 products. If answers about one product tend to pass or fail together, you really have something closer to 30 pieces of evidence than 900. Counted by products, the margin could be several times wider than 3 points.\n\nWith a margin that wide, a gap from last month might mean nothing. So you check the clumps first, then compare.\n\n\"Whether answers about one product move together\" is better because it tests whether the \"3 points\" can be trusted at all, and every later conclusion, including any month-to-month comparison, depends on that.",
+   "step": "Check",
+   "fingerprint": "96e77f84762187e6",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Count the clumps” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"Margin rules assume every test example is separate, like unrelated coin flips. But three questions about the same document tend to pass or fail together. Examples grouped like that are called clustered.\"\n\n*The idea:* \"Clumps carry less information than their count suggests. 300 answers about 100 documents are worth somewhere between 100 and 300 separate ones. So I work out the margin, the plus-or-minus around my score, twice. Once I count examples, and once I count groups. The honest margin sits between the two. It sits nearer the groups' margin when examples in a group behave alike.\"\n\n*The trade-off:* \"Two margins give a quick range, not one exact number. For a sharper answer, I'd bootstrap by group. That means building many new samples from whole groups picked at random, then seeing how much the score moves.\"\n\n**Likely follow-up**\n\n\"What if every example is its own group?\"\n\n*Hint at a strong answer:* Then the two counts match, so both margins agree. Clustering only widens the margin when groups hold several examples. You can also link this to leakage, the rule that keeps a whole group in one data split. In both cases, the unit that matters is the group.",
+   "step": "Explain",
+   "fingerprint": "e7c8c35d547b07c4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs the clumps were ignored**\n\n- **Reruns jump more than your margin allows.** You report \"pass rate 80%, give or take 6 points.\" Then a fresh test set of new documents lands at 68%. A margin is meant to cover normal wobble. If new samples keep landing outside it, it was too narrow.\n- **Failures bunch up.** Open your results or MLflow traces (the step-by-step records of each run). If most failures come from a handful of documents or users, your examples are not separate coin flips.\n- **A \"win\" that won't repeat.** Model B beat model A by 5 points, inside a margin you thought was safe. On new data the gap vanishes or flips.\n- **Real use disappoints.** The score looked solid in testing, then drops once real users bring documents you never tested.\n\n**Quickest check**\n\nCount how many different groups you have, not just how many examples. Then redo the margin using the group count. If it widens a lot, say from 6 points to 10, your old margin was overconfident. Report the range between the two, not the smaller number.",
+   "step": "Learn",
+   "fingerprint": "36ecf528a54202b5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'win inside a margin you thought was safe' bullet is worded ambiguously, but nothing contradicts the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule needs extra care.\n\n**Very few groups.** With only five or six documents, a bootstrap by group has very little to shuffle. Its range can come out narrower than the truth. Collect more groups if you can. If not, report the wider \"counting groups\" margin and say plainly that the sample is small.\n\n**Two kinds of clumps at once.** In a chat or RAG app (an app that looks up documents before answering), one answer can share a document with some answers and a user with others. These groups overlap. Picking whole documents ignores the clumping by user. Decide which grouping matters most for your question. When unsure, trust the wider of the two margins.\n\n**Groups of very different sizes.** Say one document has 200 answers and the rest have two each. That one document mostly decides the overall score. Check group sizes before trusting any margin. Consider scoring each group on its own, then averaging those group scores. That way one giant group cannot drown out the rest.",
+   "step": "Learn",
+   "fingerprint": "5736351d4541c11b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “clustered” mean here?",
+   "a": "**Clustered** means your examples arrive in groups, and examples in the same group tend to behave alike.\n\nHere's an everyday comparison. You want to know how many people in a town like a new café, so you ask 30 people. If they are 30 strangers, you hear 30 separate opinions. But if they are 10 families of 3, each family probably visited together and agrees. You really heard something closer to 10 opinions, not 30.\n\nThat family is a clump. The count looks big, but much of it repeats the same view.\n\nIn the lesson's example, there are 300 answers about 100 lessons, so each lesson has about 3 answers. If one lesson is confusing, its answers tend to fail together. So those 300 answers carry less information than 300 unrelated ones would.\n\nThat is why the margin is worked out twice. The margin is the \"give or take\" around the pass rate. Counting answers gives about 5.8 points. Counting lessons gives 10 points. The honest statement is \"about 6 to 10 points.\"\n\nIn the code, `lesson_id` is the label that tells you which clump each answer belongs to.",
+   "step": "Learn",
+   "fingerprint": "d4f205f20e0463e5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
  "cv_folds": {
   "check:0:1": {
    "q": "Why not “B: it reaches 0.95 on one fold”?",
@@ -1277,6 +1641,188 @@
    "a": "**Margin of error** is how far your measured score could be from the real score, in either direction.\n\nThink of tasting soup. One spoonful gives you a rough idea of how salty the whole pot is. But that spoonful might have a bit more or less salt than average. Taste more spoonfuls and your guess gets closer to the truth.\n\nYour eval set works the same way. The questions you test on are a sample of all the questions your agent could ever face. The pass rate you get is a guess about the real pass rate, not the truth itself.\n\nIn the lesson's example:\n\n- Test on 100 questions and score 70%. The margin is about 10 **points** (a point is one question in every 100). So the real pass rate is probably somewhere from 60% to 80%.\n- With 400 questions, the margin shrinks to about 5 points. Now the range is 65% to 75%.\n- With only 25 questions, it's about 20 points. That's a very wide range.\n\nThat's why the MLflow snippet logs `margin_points` next to each score. A score only means much when you know how far off it could be.",
    "step": "Learn",
    "fingerprint": "f8b198be4ec1f13d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "examples_per_group": {
+  "check:0:0": {
+   "q": "Why not “The new prompt is no better than the old one”?",
+   "a": "\"The new prompt is no better than the old one\" gets one thing right: the test did not show a difference. That part is true.\n\nWhat it misses is **power**, the chance that a test notices a real difference when there is one. With only 40 examples, power is low. A real gain could easily slip by unseen.\n\nYou can see this with the lesson's rule of thumb run backwards. If the pass rate is near 70%, 40 examples a group can only reliably notice a gain of about 29 points. A real 5- or 10-point improvement would look like \"no difference\" almost every time.\n\nSo \"no real difference\" here means \"we couldn't tell,\" not \"there's nothing there.\" Dropping the idea treats a blurry photo as proof the room is empty. The honest next step is to size the test first. Decide the smallest gain worth finding, then get enough examples to notice it, or use a paired comparison on the same examples.\n\n\"40 examples may be too few to notice a gain\" is better because it reads the result for what it is: a test too small to answer the question, not evidence that the prompt failed.",
+   "step": "Check",
+   "fingerprint": "cecbc5da815131dc",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The 29-point figure checks out (16*0.7*0.3/40 = 0.084, whose square root is about 0.29). The claim that a 5- or 10-point gain would be missed 'almost every time' is a bit loose, since the lesson doesn't give that figure."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The old prompt is better and should stay”?",
+   "a": "That answer reads more into the result than the test can support.\n\n**What it gets right:** keeping the old prompt for now can be a sensible practical choice. You have no evidence the new one is better, so there's no strong reason to switch yet.\n\n**What it misses:** \"no real difference\" is not the same as \"the old one wins.\" The test didn't show the old prompt doing better. It just didn't see a clear gap either way. With only 40 examples, the test has low **power**, meaning a low chance of noticing a real gain even if one exists.\n\nUsing the lesson's rule of thumb at a pass rate near 70%, 40 examples per group can only reliably notice a gap of roughly 29 points. A real 5- or 10-point gain would slip by unseen. So \"old is better\" draws a strong conclusion from a test too small to judge.\n\n**Why \"40 examples may be too few to notice a gain\" is better:** it honestly says the test couldn't have spotted a modest improvement, so the idea isn't disproven, just untested at the right size.",
+   "step": "Check",
+   "fingerprint": "e8c38e2f03a8520b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Any gain at all, even 1 point”?",
+   "a": "Wanting to catch any improvement sounds sensible. A small gain is still real, and you'd like to know about it. That part is fair.\n\nThe problem is what your test can actually see. With about 340 examples in each group, a 1-point gain is far too small to notice. The lesson's rule of thumb says that at a 70% pass rate, spotting a 1-point gain needs about 33,600 examples in each group. You have roughly a hundredth of that.\n\nSo the test would have very low **power**. Power is the chance the test notices a gain that is really there. Most of the time it would say \"no real difference,\" and you might wrongly decide version B didn't help. The gain wasn't missing. The test was just too small to see it.\n\nThe lesson's advice is to pick a gain your number of examples can detect. At 70%, a 10-point gain needs about 336 examples a group, which matches what you have.\n\n\"A gain of about 10 points or more\" is better because it's the smallest gain your 340 examples give you a fair chance (about 80%) of noticing.",
+   "step": "Check",
+   "fingerprint": "faea987e1bd7ec28",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “A gain of about 5 points”?",
+   "a": "A 5-point gain is a reasonable thing to *want* to find. Small improvements add up, so caring about them makes sense.\n\nThe problem is the number of examples. Using the lesson's rule of thumb at a 70% pass rate, noticing a 5-point gain takes about 1,344 examples in each group. You only have about 340, roughly a quarter of that.\n\nWith that few examples, the test has low **power**. Power is the chance the test notices a difference that is really there. For a 5-point gain with 340 per group, that chance is only about 3 in 10, far below the usual 80% target. So even if version B truly is 5 points better, the test will usually say \"no real difference.\" You would likely walk away believing a false result.\n\nThe lesson's advice is to decide what you can detect *before* you start. If you can't get enough examples for a small difference, look only for bigger ones.\n\n\"A gain of about 10 points or more\" is better because 340 examples per group is almost exactly the 336 the rule of thumb says you need to notice a 10-point gain with a fair chance.",
+   "step": "Check",
+   "fingerprint": "fe7842a03a909b42",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The 'about 3 in 10' power figure is not in the lesson, though it is consistent with it and works out to about right."
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “About twice as many”?",
+   "a": "\"About twice as many\" gets one thing right: a smaller gain does need more examples. Small differences are harder to see, so you need a bigger test to notice them.\n\nWhat it misses is how the rule of thumb works. The bottom of the formula is the difference **times itself**. When you halve the difference, that bottom part doesn't just halve. It shrinks to a quarter. For example, half times half is one quarter.\n\nDividing by something four times smaller gives an answer four times bigger. The top of the formula (16 times the rate times one minus the rate) stays about the same, because the pass rate hasn't changed.\n\nYou can see this in the lesson's own numbers. At a 70% pass rate:\n\n- A 10-point gain needs about 336 examples per group.\n- A 5-point gain needs about 1,344 examples per group.\n\nThat's exactly four times as many, not twice.\n\n\"About four times as many\" is better because the difference is multiplied by itself in the formula, so halving it multiplies the examples you need by four.",
+   "step": "Check",
+   "fingerprint": "c3aa065a1c38762c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “About the same number”?",
+   "a": "\"About the same number\" gets one thing right. Part of the rule of thumb really doesn't change. The top of the formula, 16 times the pass rate times (1 minus the pass rate), depends only on the pass rate. If you're still near 70%, that part stays put.\n\nWhat it misses is the bottom of the formula. You divide by the difference times itself. So when the difference gets smaller, the bottom shrinks much faster than you might expect. Halve the difference, and the difference times itself becomes a quarter of what it was. Dividing by something four times smaller gives an answer four times bigger.\n\nYou can see this in the lesson's own numbers. Noticing a 10-point gain at 70% takes about 336 examples per group. Noticing a 5-point gain, half the size, takes about 1,344. That's four times as many, not the same.\n\nKeeping the same number would leave your test with low power. Power is the chance your test notices a real difference. With too few examples, it would often report \"no real difference\" even when version B is better.\n\n\"About four times as many\" is better because the difference is multiplied by itself in the formula, so halving it multiplies the examples you need by four.",
+   "step": "Check",
+   "fingerprint": "931a382ce537da88",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems; it runs to roughly 200 words, which is borderline but acceptable."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Size the test before running it” in an interview?",
+   "a": "**A 30-second answer**\n\n*The problem:* \"If I compare two versions on too few examples, a real improvement can hide in the noise. The test says 'no difference' when there actually was one.\"\n\n*The idea:* \"So before running anything, I pick the smallest gain worth finding and work out how many examples I need. I aim for about 80% power, meaning an 80% chance of noticing that gain if it's real. Near a 70% pass rate, spotting a 5-point gain takes about 1,344 examples per version. A 10-point gain takes about 336.\"\n\n*The trade-off:* \"Halving the gain I want to see roughly quadruples the examples needed. If I can't get that many, I only look for bigger gains. Or I use a paired test, which runs both versions on the same examples. It usually needs fewer.\"\n\n**Likely follow-up**\n\n\"Your test found no difference. Does that mean the two versions are equal?\"\n\n*Hint:* No. With low power, \"no difference found\" only means the test couldn't see a gain that small. A strong answer states the smallest gain the test could have caught.",
+   "step": "Explain",
+   "fingerprint": "4458a123ecba3cf5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **\"No real difference\" keeps coming back.** You try several prompt or model changes on a small eval set, maybe 100 examples, and every comparison ends in a shrug. Often the test was just too weak to see anything.\n- **Results flip when you rerun.** Version B wins by 4 points today and loses by 2 points tomorrow on a fresh sample. That wobble means the gap is smaller than the noise.\n- **A \"win\" that fades in real use.** A small gain on a small set looks great, then vanishes once real traffic arrives.\n- **The target was picked afterward.** Nobody wrote down the smallest gain worth finding before the run. Or your MLflow run has no `examples_per_group` param.\n\n**Quickest check**\n\nTake your current pass rate and the smallest gain you care about. Plug them into the lesson's rule of thumb to get the examples needed in each group. Then compare that to how many you actually ran.\n\nIf you ran far fewer, a result of \"no difference\" really means \"couldn't tell.\" Either collect more examples, or only claim you can spot bigger gains.",
+   "step": "Learn",
+   "fingerprint": "5f490a189eff112a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The 'win that fades in real use' sign goes slightly beyond what the lesson states, but it does not contradict it."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Pass rates near 0% or 100%, or tiny gains.** The rule of thumb is a shortcut, and it gets less accurate at the extremes, like a 98% pass rate. There, use the exact calculation from `statsmodels`, as in the lesson's stack, instead of the quick formula.\n\n**2. An LLM or RAG app that answers differently each run.** The same question can pass once and fail the next time, so random noise hides real differences and you need more examples than the formula says. Run each example a few times, or turn down the randomness setting (often called temperature), and use a paired comparison on the same examples.\n\n**3. Data that changes over time.** Your sizing depends on the pass rate you plugged in, and that rate can drift as users ask new kinds of questions. Re-check the pass rate on recent examples and redo the sizing before each new comparison. Run both versions on examples from the same time period so neither gets an easier batch.",
+   "step": "Learn",
+   "fingerprint": "ede7466edc01a449",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the extremes-accuracy and temperature points go slightly beyond the lesson but don't contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "What does “before” mean here?",
+   "a": "Here, \"before\" means **before you run the comparison and look at any results**.\n\nThink of buying a ruler to measure a crack in a wall. You first ask how small a crack you care about. If you care about 1 millimetre cracks, a ruler marked only in centimetres won't do. You pick the right ruler first, then measure. Picking it after you've looked at the wall is too late.\n\nThe test works the same way. Before running anything, you:\n\n1. Decide the smallest gain worth finding, such as 5 points.\n2. Work out how many examples each group needs to notice it.\n3. If you can't get that many, settle for looking only for bigger gains.\n\nIn the lesson's example, that planning happens first. The pass rate is about 70%. The team chooses a 5-point gain as the target, and the sum says 1,344 examples per group. In the statsmodels code, `proportion_effectsize(0.75, 0.70)` sets that 5-point target. Then `mlflow.log_param` saves the planned size, so there's a record of the plan made before the results came in.\n\nChoosing the target after seeing results invites fooling yourself.",
+   "step": "Learn",
+   "fingerprint": "b65b958e02754e14",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
