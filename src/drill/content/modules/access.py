@@ -1017,6 +1017,10 @@ data-engineers                         MODIFY     sales.crm
                     why='bo@example.com is a person, and MANAGE on a whole schema is a lot to hang on one person. Ask for a group, so it keeps working when Bo moves.',
                     wrong=['ml-team is a group: the right shape for a grant.', None, 'That id is a service principal, an identity for software. Fine for a scoring job.']),
                 ask('Ana still needs to read `sales.crm.accounts`. What do you do with her grant?', ['Revoke it now: grants to people are not allowed', "Grant a group she's in, then revoke hers", 'Leave it: she still works on this team'], answer=1,
+                    evidence=evidence('code', title='Grants on sales.crm', text="""principal                              privilege  on
+ana@example.com                        SELECT     sales.crm.accounts
+data-engineers                         MODIFY     sales.crm
+6f1c2a3e-1d4b-4c8e-9a0f-2b7e5d3c9a10   SELECT     sales.crm"""),
                     clue='Grants go to groups. How do you swap without cutting her off?',
                     why='Move the grant to a group she is in, like analysts, then revoke the one to her. She keeps access today, and it follows the group when people move.',
                     wrong=['Grants to people are allowed, just fragile. Revoking first cuts her off before the group grant exists.', None, 'It works today, and breaks the day she moves team.']),

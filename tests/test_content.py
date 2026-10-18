@@ -596,6 +596,21 @@ def test_practice_sets_can_be_drawn_and_answered():
             assert 0 <= a["answer"] < n and a["clue"] and a["why"], pid
 
 
+def test_each_practice_question_shows_what_it_asks_about():
+    """One screen per question, and no scrolling back: a question about the last screen's card
+    or plan shows it again. model.practice refuses one with no evidence unless it's marked alone."""
+    from drill.content.model import ask, evidence, practice
+
+    card = evidence("code", text='"success": "faster answers",')
+    leaning = ask("Is it still a gap?", ["No", "Yes"], answer=1, clue="Could a pilot count it?", why="It has no number.")
+    with pytest.raises(AssertionError, match="show its evidence"):
+        practice(intro="x", asks=[ask("Which box?", ["a", "b"], answer=0, clue="c", why="w", evidence=card), leaning])
+    practice(intro="x", asks=[leaning | {"evidence": card}, leaning | {"alone": True}])
+    for pid, pr in [(p["id"], p["practice"]) for p in build_data()["bank"] if p.get("practice")]:
+        for a in pr["asks"]:
+            assert a.get("kind") == "fix" or a["evidence"] or a.get("alone"), f"{pid}: {a['question'][:50]}"
+
+
 def test_every_fix_the_yaml_question_starts_broken_and_can_be_fixed():
     """The starting YAML must fail the check (else there's nothing to fix) and the model answer
     must pass it, goals included. content/yaml_rules.py runs the same checks as the page."""

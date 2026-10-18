@@ -615,6 +615,7 @@ deny contains msg if {
                     why='The rule matches the type exactly. `azurerm_storage_container` isn\'t `azurerm_storage_account`, so the run goes ahead and the data goes with it. List every type whose loss you can\'t undo.',
                     wrong=['A container is a different type from the account it lives in. The rule only matches exact types.', None]),
                 ask('You\'ve written a new rule that blocks deleting any `databricks_catalog`. How do you roll it out?', ['As a deny rule straight away, on every stack', 'As a warn rule first, then switch it to deny', 'As a deny rule on dev stacks only, for good'], answer=1,
+                    alone=True,
                     clue='Spacelift plan policies can do more than block.',
                     why='A warn rule prints in yellow and lets the run through, so you see what it would have stopped before it stops anyone. Then switch it to deny.',
                     wrong=['A rule nobody has seen in action can block real work on day one.', None, 'Prod is where a lost catalog hurts most. Dev is a place to try it, not to leave it.']),

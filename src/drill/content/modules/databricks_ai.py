@@ -743,6 +743,13 @@ support-bots  EXECUTE      main.hr.leave_balance_v2"""),
                     why='USE CATALOG and USE SCHEMA on main are fine, but EXECUTE is on leave_balance_v2, a different function, and main.support doesn\'t cover main.hr. A grant must name the exact object or a place above it.',
                     wrong=['Close isn\'t the same: grants match whole names.', None]),
                 ask('Which grant lets the deployed agent call `main.hr.leave_balance`?', ['GRANT EXECUTE ON FUNCTION main.hr.leave_balance TO `support-bots`', 'GRANT EXECUTE ON FUNCTION main.hr.leave_balance TO `support-agents`', 'GRANT SELECT ON FUNCTION main.hr.leave_balance TO `support-bots`'], answer=0,
+                    evidence=evidence('code', title='The agent\'s grants, after a change', text="""agent counts as: order-bot, support-bots
+
+principal     privilege    on
+support-bots  USE CATALOG  main
+support-bots  USE SCHEMA   main
+support-bots  EXECUTE      main.support
+support-bots  EXECUTE      main.hr.leave_balance_v2"""),
                     clue='Grant to a name the agent counts as, and use the privilege for calling a function.',
                     why='support-bots is a group the agent is in, and EXECUTE is the privilege to call a function. With USE CATALOG and USE SCHEMA already on main, that completes all three.',
                     wrong=[None, 'support-agents is the people\'s group. The agent isn\'t in it.', 'SELECT is for reading tables. Calling a function needs EXECUTE.']),

@@ -161,6 +161,9 @@ keep the Python Build. [CURRICULUM.md](CURRICULUM.md) has the rule as a table. T
 `ask` is one screen: evidence above (`evidence("code" | "chain" | "plan" | "claim" | "prompt", ...)`),
 one plain question, three or so options, a plain line for each wrong one, a clue first and then
 the answer. With `pick=True` the plan's own rows are the options: tap the change you'd stop on.
+Each screen carries what it needs, because the learner can't scroll back: a question about the
+last screen's card or plan shows it again (or just the line it asks about). A question that needs
+nothing above it says so with `alone=True`; `practice()` refuses one that does neither.
 The Python exercise stays one tap away ("Rather write it in Python?"). After practice, the Explain
 step describes what the learner did, not the Python they didn't see: `practice(pattern=...)` is the
 heading under "How you worked it out" (the way of thinking, like "Watch it, or measure it?"),

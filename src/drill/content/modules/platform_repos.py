@@ -100,6 +100,13 @@ Return one word, asking in this order:
                     why='The runbook reads name, code, policy_name and the worker counts. `autotermination_minutes` isn\'t one of them, so it stops here.',
                     wrong=['Check the snippet again: which fields does it read from `c`?', None]),
                 ask('So what happened to `autotermination_minutes`?', ['SUPPORTED', 'DROPPED', 'INVALID'], answer=1,
+                    evidence=evidence('chain', stops=[
+                        {'label': 'clusters.yml', 'sub': 'autotermination_minutes: 30', 'state': 'ok', 'tag': 'IN YAML'},
+                        {'label': 'Pydantic check', 'sub': 'a known number field: allowed', 'state': 'ok', 'tag': 'VALID'},
+                        {'label': 'The runbook', 'sub': 'doesn\'t read it', 'state': 'now', 'tag': 'STOPS'},
+                        {'label': 'Workspace module', 'state': 'later'},
+                        {'label': 'Provider', 'state': 'later'},
+                    ]),
                     clue='It passed the check, then went no further.',
                     why='Allowed by the check, never passed on: dropped. It looks fine in the YAML and does nothing, so nobody should rely on it.',
                     wrong=['Supported means it reaches the provider as written. Did it?', None, 'Invalid means the check rejects it. The check allowed this field.']),
@@ -109,6 +116,7 @@ Return one word, asking in this order:
                     why='Left out, and the runbook filled in Personal Compute: defaulted.',
                     wrong=['The team never wrote it, so it can\'t reach the provider as written.', None, 'Something still reaches the provider: the runbook\'s fallback.']),
                 ask('The team writes `name: Daily-Report` with `code: SALES`, and the plan creates `sales_daily-report`. What happened to `name`?', ['SUPPORTED', 'TRANSFORMED', 'DEFAULTED'], answer=1,
+                    alone=True,
                     clue='Compare what was typed with what was built.',
                     why='The runbook put the code in front and lowered the case: transformed. Search the plan for the new name, not the one in the YAML.',
                     wrong=['It reached the provider, but not as written.', None, 'The team did write a name, so nothing was filled in for them.']),
@@ -292,6 +300,7 @@ Return a dict from group name to permission.""",
                     why='The runbook gives the owner group CAN_MANAGE, even though the YAML only names it as owner.',
                     wrong=['The YAML isn\'t the whole story: the runbook adds access for the owner.', None, 'Nobody typed CAN_EDIT for the owners. What does the runbook add?']),
                 ask('Which group gets access that nobody typed at all?', ['users', 'grp-sales-dev-analysts', 'Nobody'], answer=0,
+                    evidence=evidence('code', title='team.yml', text='# config/DEV/team-sales/team.yml\nteam:\n  owner_group: grp-sales-dev-owners\n  folder_grants:\n    - group_name: grp-sales-dev-analysts\n      privilege: CAN_EDIT'),
                     clue='Think of everyone in the workspace.',
                     why='The runbook adds `users` with CAN_READ to every team folder.',
                     wrong=[None, 'The analysts were typed in folder_grants.', 'Look again: the runbook adds a default for everyone.']),
@@ -512,6 +521,11 @@ Otherwise return the cluster the runbook would build:
                     why='lower("SALES" + "_" + "daily-report"): sales_daily-report.',
                     wrong=['The runbook changes the name on the way.', None, 'Close, but the runbook lowers the case too.']),
                 ask('Which policy will it use?', ['Personal Compute', 'Shared Compute - Standard', 'None: the plan fails'], answer=0,
+                    evidence=evidence('code', title='config/DEV/team-sales/clusters.yml', text="""clusters:
+  - name: daily-report
+    code: SALES
+    min_workers: 1
+    max_workers: 4"""),
                     clue='No policy is named, so the runbook falls back to its default.',
                     why='`try(c.policy_name, "Personal Compute")`: with no policy_name, Personal Compute.',
                     wrong=[None, 'Nobody named that policy here.', 'Leaving it out is allowed; the runbook fills it in.']),
