@@ -348,9 +348,11 @@ idea, ungraded:
   the lesson and rules first, marked for the model's prompt cache, as a version to test, not a change
   to the live tutor). It scores every answer on pass rate, p95 time to first words and dollars per
   1,000 answers with the cache counted. Then it applies a rule written first: no worse than the
-  baseline by more than 3 points, fast enough, then the cheapest. Measured from the real prompts, a
-  lesson's fixed start is often shorter than the minimum a model will cache, so today nothing is
-  cached. The notebook teaches the method free on a labelled practice recording. Its section 10 runs
+  baseline by more than 3 points, fast enough, then the cheapest. Today nothing is cached, because
+  the request doesn't ask for it. On the Claude 5.5 models (shortest cacheable start: 512 tokens), 152
+  of 174 lessons are already long enough, and all 174 with the rules moved up. On GPT models (1,024
+  tokens) it's 16, or 65 with the rules moved up. The minimums and cache-read rates are per model in
+  `drill.tradeoff`. The notebook teaches the method free on a labelled practice recording. Its section 10 runs
   the same idea on Microsoft Foundry (`drill.foundry_batch`). A few **inline** calls are timed, since
   only they can measure speed. The rest go as one **batch** job at about half price. A follow-up step
   then picks the job up from its MLflow run (the batch id is a run tag) in any later session. It

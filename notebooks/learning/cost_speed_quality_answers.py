@@ -9,7 +9,8 @@ from drill import tutor_prepared as tp
 def answer_cost(model, input_tokens, output_tokens, cache_read=0, cache_write=0):
     """Dollars for one answer, with the prompt cache counted."""
     pin, pout = tp.PRICES.get(model, (0.0, 0.0))
-    return (input_tokens * pin + cache_read * pin * t.CACHE_READ + cache_write * pin * t.CACHE_WRITE + output_tokens * pout) / 1e6
+    read = t.cache_read_rate(model)
+    return (input_tokens * pin + cache_read * pin * read + cache_write * pin * t.CACHE_WRITE + output_tokens * pout) / 1e6
 
 
 def hit_rate(rows):

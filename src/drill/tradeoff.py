@@ -26,13 +26,27 @@ from drill import tutor_prepared as tp
 
 INTRO = "You are a patient tutor helping with one lesson of an AI engineering course. "
 
-# Reading a cached start costs a tenth of normal input; writing it the first time costs a quarter more.
-CACHE_READ = 0.1
+# Writing a cached start the first time costs a quarter more than normal input (Claude's 5-minute cache);
+# reading it back costs a share of normal input that depends on the model. From Anthropic's prompt-caching
+# page, checked 2026-10-18: reads cost 0.05x on Sonnet 5.5 and Opus 5.5, 0.1x on the others here.
 CACHE_WRITE = 1.25
 CACHE_MINUTES = 5
-# The shortest start a model will cache. It differs by model and some need more: check the provider's
-# prompt-caching page for the model you test, and pass its number in.
+CACHE_READ = 0.1
+READ_RATE = {"sonnet-5-5": 0.05, "opus-5-5": 0.05}
+# The shortest start a model will cache, by the same page and Azure's: 512 tokens on the Claude 5.5 models,
+# 1,024 on GPT models (and on some older Claude models). Check the provider's page for any other model.
 MIN_CACHEABLE = 1024
+MIN_BY_MODEL = {"claude-sonnet-5-5": 512, "claude-opus-5-5": 512, "claude-haiku-5-5": 512}
+
+
+def cache_read_rate(model: str) -> float:
+    """What reading a cached token costs, as a share of the model's normal input price."""
+    return next((r for name, r in READ_RATE.items() if name in model), CACHE_READ)
+
+
+def min_cacheable(model: str) -> int:
+    """The shortest prompt start this model will cache, in tokens."""
+    return next((n for name, n in MIN_BY_MODEL.items() if name in model), MIN_CACHEABLE)
 
 
 def estimate_tokens(text: str) -> int:
@@ -105,7 +119,8 @@ def answer_cost(model: str, input_tokens: int, output_tokens: int, cache_read: i
     """Dollars for one answer. ``input_tokens`` is the input that was neither read from nor written to the
     cache, as Claude's usage block counts it."""
     pin, pout = tp.PRICES.get(model, (0.0, 0.0))
-    return (input_tokens * pin + cache_read * pin * CACHE_READ + cache_write * pin * CACHE_WRITE + output_tokens * pout) / 1e6
+    read = cache_read_rate(model)
+    return (input_tokens * pin + cache_read * pin * read + cache_write * pin * CACHE_WRITE + output_tokens * pout) / 1e6
 
 
 def hit_rate(rows: Iterable[dict]) -> float:

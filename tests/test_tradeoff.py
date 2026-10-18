@@ -41,7 +41,9 @@ def test_answer_cost_counts_the_cache():
     full = t.answer_cost("databricks-claude-sonnet-5-5", 2000, 300)
     cached = t.answer_cost("databricks-claude-sonnet-5-5", 200, 300, cache_read=1800)
     assert full == pytest.approx((2000 * 2 + 300 * 10) / 1e6)
-    assert cached == pytest.approx((200 * 2 + 1800 * 2 * 0.1 + 300 * 10) / 1e6)
+    assert cached == pytest.approx((200 * 2 + 1800 * 2 * 0.05 + 300 * 10) / 1e6)  # Sonnet 5.5 reads at 0.05x
+    assert t.answer_cost("databricks-claude-haiku-5-5", 200, 300, cache_read=1800) == pytest.approx(
+        (200 * 1 + 1800 * 1 * 0.1 + 300 * 5) / 1e6)
     assert t.answer_cost("databricks-claude-sonnet-5-5", 200, 300, cache_write=1800) > full
     assert t.answer_cost("a-local-model", 2000, 300) == 0.0
 
@@ -90,3 +92,11 @@ def test_choose_applies_the_rule_in_order():
     assert out["choice"] == "cheaper"
     assert out["dropped"] == {"cheap-but-worse": "quality", "cheap-and-slow": "speed"}
     assert t.choose(vs[1:3], margin=0.03, p95_limit=5)["choice"] is None
+
+
+def test_each_model_has_its_own_minimum_and_read_rate():
+    assert t.min_cacheable("databricks-claude-sonnet-5-5") == 512
+    assert t.min_cacheable("databricks-claude-haiku-5-5") == 512
+    assert t.min_cacheable("gpt-5.4-mini") == 1024
+    assert t.cache_read_rate("databricks-claude-opus-5-5") == 0.05
+    assert t.cache_read_rate("databricks-claude-haiku-5-5") == 0.1
