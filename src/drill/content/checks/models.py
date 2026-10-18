@@ -34,6 +34,22 @@ CHECKS = {
             why="Run every model on the same eval set with the same judge. Otherwise a higher score "
                 "may just mean an easier test."),
     ],
+    "batch_leftovers": [
+        ask("Your batch job on Foundry is 30 hours old and still running. 700 of its 1,000 requests "
+            "are done. What do you do?",
+            ["Wait: it will expire on its own", "Cancel it, keep the 700, send the 300 again", "Send all 1,000 again as a new job"],
+            answer=1,
+            clue="On Foundry, 24 hours is a target, not a deadline.",
+            why="A late job keeps running until you cancel it. Cancelling returns the 700 that finished, "
+                "and you pay only for those. Then send the 300 leftovers as a new job."),
+        ask("The output file lists the answers in a different order from your requests. How do you "
+            "match each answer to its request?",
+            ["By position: line 1 is request 1", "By each line's custom_id", "By the length of each answer"],
+            answer=1,
+            clue="Each request carried its own label.",
+            why="Answers come back in any order, so the custom_id on each line is the only safe way "
+                "to find its request."),
+    ],
     "better_option": [
         ask("Your manager says: pick the model that's cheapest per call, that saves money. "
             "What does that leave out?",

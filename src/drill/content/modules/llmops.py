@@ -463,3 +463,135 @@ elif len(q) == 2:
         ],
     ),
 )
+
+lesson(MODULE, 'prompt_cache',
+    title='Prompt caching',
+    checked='2026-10-18',
+    sources=[source('Prompt caching (Claude)', 'https://platform.claude.com/docs/en/build-with-claude/prompt-caching'),
+             source('Prompt caching (Microsoft Foundry)', 'https://learn.microsoft.com/azure/foundry/openai/how-to/prompt-caching')],
+    learn=[
+        'Agents and tutors send the same long start again and again: instructions, a tool list, a document. **Prompt caching** lets the model provider keep that start for a few minutes. When the next prompt begins with exactly the same text, that part is a **cache read**, at a small share of the input price: a tenth on most models, less on some. This is different from caching whole answers: the model still writes a new answer every time.',
+        "Three things decide whether it hits. The start must be **identical**, so put what never changes first and what changes last. It must be **long enough**: at least 512 tokens on the Claude 5.5 models, 1,024 on GPT models. And the next call must come **soon**, within about 5 minutes. On Claude you ask for it with `cache_control`, and the first call pays a quarter extra to write the cache. GPT models cache by themselves.",
+        "Each call's usage says what happened. Claude reports `cache_read_input_tokens` and `cache_creation_input_tokens`; GPT reports `cached_tokens`. The **hit rate** is the share of all input tokens that were read from the cache.",
+    ],
+    example=example('What changes goes last', """# the same for every question about a lesson: first
+system = INSTRUCTIONS + LESSON_TEXT
+# what changes: last
+messages = [{"role": "user", "content": question}]
+
+# one call's usage (Claude): 900 of 960 input tokens came from the cache
+usage = {"input_tokens": 60, "cache_read_input_tokens": 900,
+         "cache_creation_input_tokens": 0, "output_tokens": 240}"""),
+    check=question(
+        'Your system prompt starts with "Today is 2026-10-18 09:41:07." and then 2,000 tokens of instructions that never change. Your cache hit rate is 0. Why?',
+        ['The instructions are too long to cache', 'The time changes, so each start differs', 'Caching only works on the user message'],
+        answer=1,
+        why='A cache hit needs an identical start. The time changes every second, so every prompt starts differently. Move it to the end, after the fixed part.',
+    ),
+    angle=angle(
+        pattern='Add up as you go',
+        text='The big idea: a cached start is read back at a small share of the price, and the hit rate is the share of all input that came from the cache. Your code walks through the calls once, adding up two totals: the tokens read from the cache, and all input tokens (normal, read and written). A missing count means 0. At the end it divides one by the other, and returns 0 when nothing was sent.',
+        say='"Put what never changes [[first|last|in the middle::The cache only matches an identical start.]] and what changes last. The hit rate is the tokens read from the cache divided by [[all input tokens|the output tokens|the number of calls::Normal, read and written input together.]]."',
+        classic=None,
+    ),
+    stack=stack('Claude: ask for caching, then read the usage', """reply = client.messages.create(
+    model="claude-sonnet-5-5", max_tokens=1024,
+    cache_control={"type": "ephemeral"},   # cache the longest fixed start
+    system=INSTRUCTIONS + LESSON_TEXT,
+    messages=[{"role": "user", "content": question}])
+reply.usage.cache_read_input_tokens       # how much came from the cache"""),
+    exercise=exercise(
+        title='Work Out the Cache Hit Rate',
+        topic='llmops',
+        difficulty='easy',
+        fn='cache_hit_rate',
+        prompt="""Your app's calls report how their input tokens were counted. `calls` is a list of dicts, one per call, like `{"input_tokens": 60, "cache_read": 900}`:
+
+- `input_tokens`: input that was read normally.
+- `cache_read`: input read back from the cache.
+- `cache_write`: input stored in the cache for the first time.
+
+A key that is missing means 0.
+
+Return the hit rate as a whole-number percent: the tokens read from the cache, divided by all input tokens (the three added together), times 100, rounded. If there was no input at all, return 0.""",
+        pattern='Add up two totals in one walk, then divide once at the end.',
+        target='one walk through the calls',
+        realworld='Agents re-send a long, growing context on every step, so most of their input has been seen before. The hit rate says whether the prompt is laid out so the provider can reuse it, and a drop to 0 after a change usually means something that changes moved to the top.',
+        starter="""def cache_hit_rate(calls):
+    # your code here
+    pass
+""",
+        solution="""def cache_hit_rate(calls):
+    read = 0
+    total = 0
+    for call in calls:
+        read += call.get("cache_read", 0)
+        total += (call.get("input_tokens", 0) + call.get("cache_read", 0)
+                  + call.get("cache_write", 0))
+    if total == 0:
+        return 0
+    return round(100 * read / total)
+""",
+        cases=[
+            case([
+                {'input_tokens': 100, 'cache_write': 900},
+                {'input_tokens': 100, 'cache_read': 900},
+                {'input_tokens': 100, 'cache_read': 900},
+            ], expected=60, sample=True),
+            case([], expected=0),
+            case([{'input_tokens': 500}, {'input_tokens': 700}], expected=0),
+            case([{'cache_read': 1}, {'input_tokens': 2}], expected=33),
+            case([{'input_tokens': 0, 'cache_read': 0, 'cache_write': 0}], expected=0),
+        ],
+        guided="""def cache_hit_rate(calls):
+    # Replace every ___ with real code, then run the tests.
+    read = 0
+    total = 0
+    for call in calls:
+        # Step 1: add what came from the cache. A missing key means 0.
+        ___
+        # Step 2: add all the input: normal, read and written.
+        total += (call.get("input_tokens", 0) + call.get("cache_read", 0)
+                  + call.get("cache_write", 0))
+    # Step 3: no input at all means no hits.
+    if total == 0:
+        return 0
+    # Step 4: the share read from the cache, as a whole-number percent.
+    return ___
+""",
+        fills=['read += call.get("cache_read", 0)', 'round(100 * read / total)'],
+        concepts=[
+            [
+                'get with a default',
+                '`d.get(key, 0)` gives the value for `key`, or `0` when the dict has no such key.',
+                """usage = {'input_tokens': 60}
+usage.get('cache_read', 0)   # 0""",
+            ],
+            [
+                'A running total',
+                '`total += n` adds `n` to `total`. Start at 0 before the loop.',
+                """total = 0
+for n in [3, 4]:
+    total += n   # 7""",
+            ],
+            [
+                'round',
+                '`round(x)` gives the nearest whole number.',
+                """round(33.3)   # 33
+round(66.7)   # 67""",
+            ],
+        ],
+        byhand='Call 1: read 0, all input 100 + 900 = 1000. Call 2: read 900, all input 100 + 900 = 1000. Call 3: the same, read 900 and 1000 in all. Read: 0 + 900 + 900 = 1800. All input: 3000. 1800 divided by 3000 is 0.6, times 100 is 60. Return 60.',
+        why='One walk through the calls, adding as it goes, and one division at the end.',
+        gotchas=[
+            [
+                'The timestamp that kills the cache',
+                'A date or time at the top of the system prompt makes every prompt start differently, so the cache never hits. Put anything that changes after the fixed part.',
+            ],
+            [
+                'A minimum per model',
+                'The same prompt can cache on one model and not at all on another: a 700-token start is enough for Claude 5.5 (512) but too short for GPT (1,024). Look up the minimum for the model you use.',
+            ],
+        ],
+    ),
+)
