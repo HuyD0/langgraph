@@ -7,6 +7,8 @@ MODULE = module('rag', 'RAG with Vector Search', 'Chunking, indexing and retriev
 
 lesson(MODULE, 'what_embeddings_are',
     title='What an embedding is: meaning as a place',
+    checked='2026-10-18',
+    sources=[source('OpenAI: Embeddings', 'https://platform.openai.com/docs/guides/embeddings')],
     learn=[
         'An **embedding** turns a piece of text into a list of numbers, a **vector**. OpenAI\'s text-embedding-3-small gives 1,536 numbers for any text, short or long. Each position is a **dimension**, and nobody chose what each one means: the model learned them from huge amounts of text.',
         'Think of each vector as a place in a space with 1,536 directions. Texts that mean similar things land close together, even with no words in common: "laptop broken" sits next to "computer won\'t start", and far from "broke the laptop budget".',
