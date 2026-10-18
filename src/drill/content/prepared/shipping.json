@@ -184,9 +184,9 @@
  "promote_model": {
   "check:0:0": {
    "q": "Why not “To save storage in the registry”?",
-   "a": "**Why \"To save storage in the registry\" is not the answer**\n\nIt does get one thing right. A registry does hold a lot. Every trained version is kept, along with its metrics.\n\nBut the minimum gain has nothing to do with storage. The registry keeps every version whether you promote it or not. Promoting just moves the `@champion` alias. An alias is only a label that points at one version, like a sticky note. Moving a sticky note costs nothing, and nothing gets deleted or saved.\n\nWhat this option misses is the real risk: **noise**. Noise means small random wobbles in a score. Run the same model on a slightly different batch of data, and the score shifts a little. If you promote on any tiny gain, you might swap in a model that is not actually better. It may just have gotten lucky on that test. You could also end up flip-flopping between versions for no real reason.\n\n**Why \"A tiny gain is often just noise\" is better:** it names the actual danger, mistaking a lucky wobble for real improvement, and that danger is what the `min_gain` threshold protects against.",
+   "a": "\"To save storage in the registry\" sounds sensible, but it does not match how a registry works.\n\nThe registry keeps every trained version anyway, whether you promote it or not. That is the point: you can always look back or roll back. Promoting a challenger does not add or delete anything. It just moves the `@champion` alias, which is a label pointing at a version number. Moving a label costs no extra storage. So the minimum gain has nothing to do with disk space.\n\nWhat the option misses is the real risk: being fooled by chance. Scores on an evaluation set wobble a little from run to run. A challenger might score slightly higher just because of which examples happened to be in the data, not because it is truly better. If you promote on every tiny bump, you keep swapping models for no real benefit, and you might even swap in a worse one.\n\n\"A tiny gain is often just noise\" is the right answer because the minimum gain makes sure a challenger wins by enough that the improvement is likely real, not luck.",
    "step": "Check",
-   "fingerprint": "62be0cc7d3fe2227",
+   "fingerprint": "38e3d604b26a1dd3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -202,9 +202,9 @@
   },
   "check:0:2": {
    "q": "Why not “MLflow refuses a smaller gain”?",
-   "a": "\"MLflow refuses a smaller gain\" sounds plausible, but MLflow doesn't work that way.\n\n**What it gets right:** there really is a rule that blocks small gains. Something does say \"not good enough, keep the champion.\"\n\n**What it misses:** that rule lives in *your* code, not in MLflow. The registry is just storage plus labels. It keeps every version and its metrics. When you call `set_registered_model_alias`, it moves `@champion` to whatever version you name. It never compares scores. It never says no. So the `min_gain` check is a decision you make before you move the alias.\n\n**Why you make that decision:** scores wobble. Run the same model on a slightly different sample of data and its score shifts a little. That random wobble is called **noise**. A challenger that wins by a hair may not be truly better. It may just have been lucky on this test. Swapping models also carries risk, so you only want to switch for a real improvement.\n\n\"A tiny gain is often just noise\" is the better answer because it gives the actual reason for the rule: small score differences can be luck, not real progress.",
+   "a": "\"MLflow refuses a smaller gain\" sounds reasonable, but MLflow doesn't do that. The registry has no idea which version is \"better.\" It stores versions and their metrics. An alias like `@champion` is just a pointer. `set_registered_model_alias` will move that pointer to any version you name, even a worse one.\n\nWhat the option gets right: something does block small gains. But that something is **your** rule, written in your own code as `min_gain`. It's a team policy, not a tool limit.\n\nIt also misses the real question: **why** have the rule at all? Saying \"the tool forces it\" gives no reason. And if you think the tool protects you, you might skip writing the check yourself.\n\nHere is the reason. Scores wobble. Run the same model on a slightly different set of examples, or have an LLM judge grade it twice, and the number shifts a little. A challenger that wins by a hair may not be better at all. It may just have had a lucky run.\n\n\"A tiny gain is often just noise\" is better because it gives the actual reason: a small edge can come from random wobble rather than real improvement.",
    "step": "Check",
-   "fingerprint": "60a988fca1b01ce1",
+   "fingerprint": "16bd08ea07c7cbdd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -215,14 +215,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claim that swapping models carries risk, and that MLflow never refuses a promotion, goes slightly beyond the lesson text, but neither contradicts it."
+    "notes": "No significant problems. The noise explanation (scores shifting between runs or judge gradings) goes slightly beyond the lesson but does not contradict it, and the length is just under 200 words."
    }
   },
-  "check:1:1": {
-   "q": "Why not “The challenger takes over”?",
-   "a": "\"The challenger takes over\" gets one thing right. The challenger did score higher: 81 beats 80. If the only rule were \"higher wins,\" it would be the right answer.\n\nBut that wasn't the rule. You agreed the challenger must be at least 2 points better. So the bar is the champion's score plus the margin: 80 + 2 = 82. The challenger scored 81. That's below 82, so it doesn't clear the bar.\n\nWhy have a margin at all? A 1-point gap is often just noise. Noise means small random wobbles in the score, from things like which examples happened to be in the test data. A tiny lead might vanish on tomorrow's data. Swapping models also has a cost. Every promotion is a change to what serves real users, and each change is a chance for something to break. The margin makes sure you only take that risk for a real improvement.\n\nSo nothing moves. The `@champion` alias keeps pointing at the current version.\n\n\"The champion stays\" is better because 81 falls short of the agreed bar of 82, and being slightly higher is not the same as being meaningfully better.",
+  "check:1:0": {
+   "q": "Why not “As the same judge: the prompt defines it”?",
+   "a": "That option gets one thing right. The prompt matters a lot. It holds the grading instructions, so it shapes how the judge thinks about a \"good\" answer.\n\nWhat it misses is that a judge is two things: the prompt and the model that runs it. Swap the model and you have a different judge, even with the same words. A cheaper model might read the prompt more loosely or more strictly. It might miss details the old model caught. Any grade can shift.\n\nYour champion judge earned `@champion` by agreeing often with grades people gave. That score belongs to the old prompt-and-model pair. It says nothing about the new pair. Keeping the old alias would trust a judge nobody has checked.\n\nSo save the new pair as its own version in the MLflow Prompt Registry, with the model recorded on it. Then let it compete. It earns `@challenger` by beating the champion judge by your minimum gain on the dev set. It takes `@champion` only after one check on the test set.\n\n\"As a new version that must earn its aliases\" is better because changing the model changes the judge, so the new pair has to prove itself like any other challenger.",
    "step": "Check",
-   "fingerprint": "5656646d263c7ef0",
+   "fingerprint": "fe367157bbcbf6ec",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -234,6 +234,24 @@
     "standalone": true,
     "pass": true,
     "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “As a new version that keeps @champion”?",
+   "a": "That option gets one thing right. Swapping the model really does make a new judge. A judge is its grading prompt plus the model that runs it, so changing either half gives you a new pair. Saving it as a new version in the MLflow Prompt Registry, with the model recorded on it, is correct.\n\nWhat it misses is the alias. `@champion` is a label that says \"this is the judge we trust right now.\" Moving it to the new version straight away means you trust the cheaper model before testing it. A cheaper model may grade more harshly, more loosely, or less consistently. Every score it gives your model's champion and challenger could shift, and you would not know.\n\nA new judge version is a challenger like any other. First it must agree with human grades more often than the current champion judge, by at least your minimum gain, on the dev set (the data you compare versions on). That earns it `@challenger`. Then it needs one check on the test set (data held back for a final confirmation) before it takes `@champion`.\n\n\"As a new version that must earn its aliases\" is better because it records the change honestly and still makes the cheaper judge prove itself before anyone relies on its grades.",
+   "step": "Check",
+   "fingerprint": "a0554b5ea4c76ca2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; it is about 210 words, slightly over the target length, but still acceptable."
    }
   },
   "check:1:2": {
@@ -256,9 +274,9 @@
   },
   "check:2:0": {
    "q": "Why not “Retrain version 5 overnight”?",
-   "a": "\"Retrain version 5 overnight\" gets one thing right. Version 5 has a problem, and someday you will want a better model to replace it. Retraining (running the training again to make a new version) is a fair long-term step.\n\nBut it misses the urgent part. Your users are getting bad answers *right now*. Retraining takes hours, so the broken model keeps serving traffic all night. You also don't know yet *why* version 5 went wrong. A fresh run could repeat the same mistake.\n\nRemember what the registry gives you. Every version is still stored, including version 4. The `@champion` alias is just a label pointing at one version. Moving the label is instant. Nothing needs to be rebuilt.\n\nIn the lesson's Databricks setup, rolling back is one call:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\n\"Point `@champion` back to version 4\" is better because it restores a known-good model in seconds, and you can investigate version 5 calmly afterward.",
+   "a": "\"Retrain version 5 overnight\" has one good instinct. Version 5 is broken, and at some point you will want to find out why and build a better version.\n\nBut it misses the urgent part. Your users are getting bad answers right now. Retraining takes hours, so they keep getting bad answers all night. Retraining also might not fix the problem, since you don't yet know what went wrong. And whatever comes out is a brand-new version. It would have to start as a challenger and beat the champion on the same data before it could be promoted. So it is not a quick fix at all.\n\n\"Point `@champion` back to version 4\" is better because version 4 is still sitting in the registry, already proven, and moving an alias (a name tag pointing at one version) takes seconds.\n\nOn Databricks, that rollback is one call:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\nAnything loading `@champion` now gets version 4. Then you can investigate version 5 calmly.",
    "step": "Check",
-   "fingerprint": "90d3744f3021e026",
+   "fingerprint": "7570bf84aa9eca13",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -274,9 +292,9 @@
   },
   "check:2:2": {
    "q": "Why not “Delete version 5 from the registry”?",
-   "a": "Deleting version 5 gets one thing right: it stops you from using the bad model. But it causes new problems.\n\n**It doesn't put a good model back.** Your app loads whatever `@champion` points to. If you delete version 5, the alias has nothing to point at. Anything loading `models:/...@champion` now fails instead of falling back to version 4. You've traded bad answers for no answers.\n\n**It throws away evidence.** The registry keeps every version with its metrics so you can study what went wrong. Once version 5 is gone, you can't compare it with version 4 or figure out why it failed.\n\n**It can't be undone.** If the problem turns out to be something else, like bad input data, you can't bring version 5 back with one step.\n\nMoving the alias is one quick step, and it is easy to reverse:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\n\"Point `@champion` back to version 4\" is better because it restores the last known good model right away while keeping version 5 around to investigate.",
+   "a": "Deleting version 5 gets one thing right. You want version 5 to stop answering questions. That instinct is sound.\n\nBut it misses three things.\n\n**It doesn't bring version 4 back.** The alias `@champion` is just a label pointing at one version. If you delete the version it points to, the label is left pointing at nothing. Anything that loads `@champion` now fails instead of getting good answers.\n\n**It throws away evidence.** The registry keeps every version with its metrics so you can study it. If version 5 is gone, you can't dig into why it gave bad answers, or compare it with version 4.\n\n**It can't be undone.** Deleting is permanent. Moving an alias is a small change you can make again at any time.\n\nSo deleting can come later, as cleanup, if you ever decide version 5 has no use.\n\nThe fix is one line that moves the label back:\n\n```python\nfrom mlflow import MlflowClient\nMlflowClient(registry_uri=\"databricks-uc\").set_registered_model_alias(\n    \"main.support.support_agent\", \"champion\", version=4)\n```\n\nPointing `@champion` back to version 4 is better because it restores the known-good model in seconds and keeps version 5 safe for investigation.",
    "step": "Check",
-   "fingerprint": "df756a00c3d78791",
+   "fingerprint": "768f691006f8dd33",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -287,14 +305,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. Claims like deletion being permanent and the alias dangling go beyond the lesson but don't contradict it, and the length is borderline at about 200 words."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Keep the best so far” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem.** \"We retrain often, so we end up with several new versions, called challengers. The champion is the version serving real traffic right now. We want to replace it only when a challenger is truly better, not just lucky on noise.\"\n\n**The idea.** \"First I set a bar: the champion's score plus a minimum gain. Then I walk through the challengers once, holding the best one so far. It's like keeping the tallest card you've seen. A challenger takes over only if it clears the bar and beats my current best. All scores come from the same evaluation data, so the comparison is fair.\"\n\n**The edge case.** \"A tie doesn't count as higher, so the earlier version stays. That keeps the result predictable. If nobody clears the bar, the champion stays. Rolling back is cheap, because the `@champion` alias is just a name tag we can move back.\"\n\n**A likely follow-up**\n\n*\"How would you choose `min_gain`?\"*\n\nHint for a strong answer: base it on how much scores normally wobble. For example, re-run the evaluation a few times and see how far the numbers drift. Then weigh how costly a bad swap would be.",
+   "a": "**Your 30-second answer**\n\n*The problem:* \"We have a champion model serving live traffic and a few newer challengers. Swapping models for a tiny score bump adds risk without real benefit.\"\n\n*The idea:* \"First I set a bar: the champion's score plus a minimum gain. Then I walk through the challengers once and hold onto the best one so far, like keeping the tallest card you've seen. A challenger takes over only if it clears the bar and also beats the current best.\"\n\n*The edge case:* \"A tie is not a win, so the earlier version stays. If nobody clears the bar, the champion keeps the job.\"\n\n**Likely follow-up:** \"How do you know the scores are fair to compare?\"\n\n*Hint at a strong answer:* Say every version is scored on the same data by the same judge. The judge is a model that grades answers. It is versioned too, as one grading prompt plus the model that runs it. It has its own `@champion`, separate from your model's. (An alias is a movable name tag pointing at one version.) Then add that rollback is easy: you just move the `@champion` alias back to the old version.",
    "step": "Explain",
-   "fingerprint": "6a1963048579d16c",
+   "fingerprint": "7b8ffb96513ee229",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -310,9 +328,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs the promotion step went wrong:**\n\n- **Quality drops right after a promotion.** The new `@champion` looked better in testing, but real users get worse answers. This often means its \"win\" was tiny, just luck or noise (random wiggle in scores), not a real improvement.\n- **The alias keeps flipping.** If `@champion` moves to a new version almost every run and then gets rolled back, you are promoting on gains too small to trust.\n- **Scores that aren't comparable.** The challenger was scored on a different or easier test set than the champion. Its number looks great, but it's an unfair race.\n- **A surprising version is serving.** Logs or traces show traffic going to a version nobody expected, or ties being won by the newer model when the older one should have stayed.\n\n**Quickest check:** Open the registry in Databricks. Look at the model's versions and their logged metrics side by side. Confirm two things: both scores came from the same evaluation dataset, and the winner's gain is bigger than your chosen `min_gain`. Then confirm `@champion` points at the version you think it does.",
+   "a": "**Warning signs**\n\n- **The champion keeps flipping.** `@champion` moves every few days on tiny gains. That usually means noise (random ups and downs) is being treated as real progress.\n- **Scores were measured on different data.** One version was tested on easy examples and another on hard ones. The newer one looks better, then drops in real use.\n- **Every score jumps at once.** Old and new versions all improve overnight. Often the judge changed, not the models. Someone edited the grading prompt or swapped its model without saving a new version.\n- **Complaints rise after a promotion.** The dashboard looks fine, but real users notice worse answers.\n- **Rollback is unclear.** Nobody knows which version `@champion` pointed to before, so moving it back is guesswork.\n\n**Quickest check**\n\nPick the current champion and the version it replaced. Score both again on the same fixed dataset, using the same judge version. Here \"judge version\" means the prompt-and-model pair saved together. Is the gap still bigger than your `min_gain`? If not, the promotion was not earned. Move the alias back.",
    "step": "Learn",
-   "fingerprint": "607aab5ceefcb989",
+   "fingerprint": "78547409bc6ea1a2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -328,9 +346,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "The rule \"promote only if the challenger beats the champion by a margin on the same data\" holds up well, but these cases need extra care.\n\n**An LLM or agent app instead of a trained model.** Scores often come from an LLM grading answers, and the same version can score differently on each run. Run the evaluation several times and compare averages. Have a person spot-check some answers before moving `@champion`.\n\n**Data that changes over time.** This is called *drift*, meaning real inputs slowly stop looking like your test set. A margin measured on old data may not hold today. Refresh the evaluation set regularly, and keep watching the new champion after promotion so you can move the alias back quickly.\n\n**Very little evaluation data.** With only a few dozen examples, a small win can be pure luck. Gather more test examples, or demand a bigger `min_gain` before promoting. You can also re-score on random resamples of the data and check that the challenger keeps winning.",
+   "a": "**1. Your data changes over time.** Real questions drift, meaning they slowly stop looking like your old test data. A champion's old score may no longer reflect today. Refresh your evaluation set now and then, and score champion and challenger on that same refreshed set before comparing.\n\n**2. You have very little data.** With only a few dozen examples, a small win can be pure luck. Raise your `min_gain`, collect more examples, or run the comparison several times before trusting a margin.\n\n**3. Your app is an LLM scored by a judge.** Editing the judge's prompt or swapping its model can shift every grade. So treat a new judge as a challenger in its own right. It must beat the champion judge by your minimum gain on agreement with human grades on the dev set. Then it gets one check on the test set before it takes the judge's `@champion`. Until then, keep using the current champion judge. Always grade champion and challenger models with that same judge.",
    "step": "Learn",
-   "fingerprint": "a251ab10b78eac41",
+   "fingerprint": "fe0b1457ad00c94c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -346,9 +364,9 @@
   },
   "learn:term": {
    "q": "What does “model registry” mean here?",
-   "a": "Think of a library that keeps every edition of a book. Old editions stay on the shelf, each with a note on how reviewers rated it. One edition wears a sticky note saying \"recommended.\" Moving that note is easy, and nothing gets thrown away.\n\nA **model registry** works the same way. It is a central store for your trained models. Each time you train, it saves a new numbered **version** along with its **metrics**, which are scores such as accuracy. An **alias** is a named label, like the sticky note, that points at one version.\n\nIn the lesson's first example, `main.ml.churn` is the model's name in the registry. The `@champion` part is the alias. So `models:/main.ml.churn@champion` means \"load whichever version currently has the champion label.\" Your code never needs the version number.\n\nIn the Databricks snippet, `set_registered_model_alias` moves the `champion` label to version 4 of `main.support.support_agent`. The setting `databricks-uc` means the registry lives in Unity Catalog, Databricks' shared place for managing data and models.\n\nRolling back is just moving the label to an older version.",
+   "a": "A **model registry** is a shared, organised store for trained models. It keeps every version you have saved, along with its scores (called **metrics**).\n\nThink of a library's catalogue for one book series. Every edition sits on the shelf with a note about it. A sticky label saying \"current edition\" marks the one readers should borrow. If the new edition has a problem, you just move the label back to the old one. Nothing gets thrown away.\n\nIn the lesson, the sticky label is an **alias**, like `@champion`. It points at the version serving real traffic.\n\nYou can see the registry in the example's address:\n\n```python\nmlflow.pyfunc.load_model('models:/main.ml.churn@champion')\n```\n\n- `models:/` means \"look in the model registry.\"\n- `main.ml.churn` is the registered model's name. It works like the series title.\n- `@champion` is the alias, so you get whichever version currently wears that label.\n\nOn Databricks, the registry lives in **Unity Catalog**, which is Databricks' central place for data and models. That's why the second example uses `registry_uri=\"databricks-uc\"`. Moving `champion` to `version=4` is just moving the sticky label.",
    "step": "Learn",
-   "fingerprint": "68c491564dd2f23e",
+   "fingerprint": "8f90621cbfac9dff",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

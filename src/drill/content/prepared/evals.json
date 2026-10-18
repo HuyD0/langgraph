@@ -1109,6 +1109,188 @@
    }
   }
  },
+ "disagreement": {
+  "check:0:0": {
+   "q": "Why not “The source must be out of date”?",
+   "a": "It's a fair instinct. Sources do go stale, and if you truly suspect that, a person should check it. So the option isn't silly. It just isn't the honest reading of the facts in front of you.\n\nThe problem is what it trusts. The only reason to doubt the source here is that the model sounded sure. But a 98 in 100 chance only tells you how strongly the model preferred the word \"1536\" over other candidates. It says nothing about whether 1536 is true. Chat models are trained to sound sure, so high confidence is cheap.\n\nPicking this option flips the lesson's rule. Confidence is a flag, never a verdict. The source, or a person, settles what's true. And numbers are exactly where made-up facts (hallucinations) tend to show up, so a number that contradicts the source deserves extra suspicion, not extra trust.\n\n\"The model was confidently wrong\" is better because it takes the source as the judge of truth and treats the 98 as just how sure the model sounded, not proof.",
+   "step": "Check",
+   "fingerprint": "b330e93ba0391cf8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “High confidence means it checked”?",
+   "a": "\"High confidence means it checked\" gets one thing right. The 98 in 100 is real. While writing, the model gave the word `1536` a very high chance of coming next, so it strongly favored that word.\n\nBut that number is not a check. Confidence only measures how much the model preferred one word over the other candidates. It never looked at the source. It is a guess about what usually comes next in text like this, not a lookup of the facts.\n\nSo a high score can sit right next to a wrong fact. Chat models are also trained to sound sure, which makes this more common. And numbers, names and dates are exactly where made-up facts tend to appear.\n\nThat is why confidence is only a flag. A low score can warn you to redraft or ask a person. A high score never proves the fact is true. Only the source, or a person, settles that.\n\n\"The model was confidently wrong\" is the better answer because it names both facts honestly: the model was very sure, and the source shows it was wrong.",
+   "step": "Check",
+   "fingerprint": "011190457c53f82c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:0": {
+   "q": "Why not “Send the judge the first draft”?",
+   "a": "Sending the first draft to the judge gets one thing right: the draft still goes through a check later. Nothing reaches the learner unexamined.\n\nBut it ignores the warning you just got. Three drafts with three different dates is a failed **self-consistency** check, meaning the model gave different answers to the same question. That is a sign it is unsure. Dates are also one of the risky spots where **hallucinations** (made-up facts) tend to cluster.\n\nThe first draft is just one of those three guesses. Nothing makes it more trustworthy than the other two. Picking it hides the disagreement.\n\nThe lesson places this flag at drafting time, before the judge. The flag doesn't decide whether the date is true. Only the source, or a person, can do that. What the flag decides is the next step. Here it says this draft isn't ready to move on.\n\n\"Write it again or send it to a person\" is better because it acts on the warning at the right moment, instead of passing a known-shaky guess along as if nothing happened.",
+   "step": "Check",
+   "fingerprint": "7c49d6228f07a360",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Average the three dates”?",
+   "a": "Averaging feels sensible. It uses all three drafts instead of trusting just one, and combining several tries is a real idea. The last lesson did something similar by judging three times and keeping the majority.\n\nBut averaging misses what the disagreement is telling you. Three different dates is a **flag**, an early warning that the model is guessing. It is not a puzzle to solve with arithmetic.\n\nHere is the problem. Say the drafts give 1492, 1503 and 1520. The average is 1505. No draft said 1505, and the source probably doesn't either. You have made up a brand-new date, which is a **hallucination** (a made-up fact). And it now looks calm and certain, so the warning is hidden.\n\nAveraging also can't tell which date is true. Maybe one draft was right and the other two were wrong. Only the source, or a person, can settle that.\n\n\"Write it again or send it to a person\" is better because it treats the disagreement as a reason to check, and leaves the truth to the source or a human.",
+   "step": "Check",
+   "fingerprint": "c8322ea5f5817232",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Add it: it is above 0.5”?",
+   "a": "\"Add it: it is above 0.5\" gets one thing right. A ROC-AUC of 0.52 is a little higher than 0.5, so the flag is not pure guessing. As a reminder, ROC-AUC here is the chance that a passing draft looked more confident than a failing one. 0.5 means guessing, and 1 means perfect.\n\nWhat it misses is the bar. The test was never \"beat 0.5\". You wrote the pass mark, 0.7, before you saw the result. That way the result cannot tempt you into lowering the bar afterwards. Comparing against 0.5 instead quietly swaps your bar for a much easier one.\n\nIt also misses what the flag would do. The flag decides whether a draft gets written again or sent to a person. At 0.52, it would pick those drafts almost as if by chance. That adds work without catching the failing drafts much better than guessing would.\n\n\"Leave it out: it is barely better than guessing\" is better because it sticks to the 0.7 bar you set in advance and admits that 0.52 is close to guessing.",
+   "step": "Check",
+   "fingerprint": "41c1737894dc2027",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The only small quibble is that 'not pure guessing' sits a little awkwardly beside 'close to guessing' at the end."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Lower the pass mark to 0.5 and add it”?",
+   "a": "That option gets one thing right. 0.5 is the guessing line, and 0.52 is technically above it. So the flag is not *worse* than guessing.\n\nBut it misses two things.\n\n**First, it moves the goalposts.** You wrote 0.7 *before* the run on purpose. That way the result can't talk you into a lower bar. Lowering it after you see 0.52 undoes that protection. Any flag could \"pass\" if you set the mark after seeing its score.\n\n**Second, a pass mark of 0.5 means nothing.** ROC-AUC is the chance that a passing draft looked more confident than a failing one. At 0.52, that is close to a coin flip. A flag that weak would send drafts to be rewritten, or to a person, almost at random. It would cost time and money and catch hardly any made-up facts.\n\nRemember, a flag only earns its place if it sorts good drafts from bad ones much better than chance.\n\n\"Leave it out: it is barely better than guessing\" is better because it keeps the pass mark you set in advance and admits that a flag at 0.52 can't tell good drafts from bad ones.",
+   "step": "Check",
+   "fingerprint": "1bb234f5fa41e423",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Unsure is a flag, not a verdict” in an interview?",
+   "a": "**30-second answer**\n\n*The problem.* Chat models are trained to sound sure. So an answer can be confidently wrong: it sounds certain, yet contradicts the source. Made-up facts, called hallucinations, cluster in numbers, names and dates.\n\n*The idea.* Doubt is still a useful early warning. Two signs flag a draft: low confidence on a risky word, or three drafts that disagree. The flag only picks the next step: redraft, or send it to a person. Only the source, or a person, settles whether a fact is true.\n\n*The trade-off.* A flag costs extra model calls, so test it before adding it. Score it with ROC-AUC: the chance that a passing draft looked more confident than a failing one. 0.5 is guessing, 1 is perfect. Write the pass mark, say 0.7, before the run.\n\n**A likely follow-up**\n\n\"What if your flag scores below the pass mark?\"\n\n*Hint:* Don't add it. This app tested three flags. The best scored 0.62, so it added none. Saying so shows you trust the test over a hunch.",
+   "step": "Explain",
+   "fingerprint": "a9f50d1024133b74",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No blocking problem. The line 'A flag costs extra model calls' is not stated in the lesson and does not hold for confidence read from word chances, but it does not contradict the lesson."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the idea was skipped.** Wrong numbers, names or dates reach users even though the judge passed the drafts. The answers sound fluent and sure, yet they contradict the source. That is \"confidently wrong\", and nothing caught it early.\n\n**Signs the flag was done wrong.**\n- The flag is treated as a verdict. Correct answers get thrown out just because confidence was low. Wrong ones get through because confidence was high.\n- Confidence is averaged over every word, not the risky ones. Filler words score high and hide a shaky number.\n- The redraft rate climbs, and so does cost, but the pass rate doesn't improve. The flag is firing at random.\n- The pass mark was chosen after seeing the result. A 0.6 quietly became \"good enough\".\n\n**Quickest check.** Take the drafts your judge already scored. Compute ROC-AUC between the verdicts and the flag's scores. ROC-AUC is the chance that a passing draft looked more confident than a failing one. Compare it to the pass mark you wrote down first. Near 0.5 means the flag is guessing. Then spot-check a few flagged drafts against the source by hand.",
+   "step": "Learn",
+   "fingerprint": "7f1c6aa874225840",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**When does this stop working?**\n\n**1. The model is wrong the same way every time.** If the source is out of date, or the model learned an old fact, all three drafts can agree on the same wrong number with high confidence. Agreement only shows the model is steady, not right. Keep checking risky numbers, names and dates against the source, or have a judge or a person compare them.\n\n**2. Your endpoint doesn't give word chances.** Some models return the chance of each word. The lesson notes that GPT models on Microsoft Foundry do this, but the Claude endpoints don't. Without those chances there is no confidence score. Use self-consistency instead: write several drafts and compare them.\n\n**3. You only have a few drafts to test with.** ROC-AUC measures how well a flag separates good drafts from bad ones. With only a small test set, that score can jump around by chance. A flag might look like it passes 0.7, or fails it, by luck alone. Collect more judged drafts before you decide. And write your pass mark first, before you see any results.",
+   "step": "Learn",
+   "fingerprint": "f1e5abaa91bcea66",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “ROC-AUC” mean here?",
+   "a": "**ROC-AUC** is one number that says how well a score sorts good from bad.\n\n**An everyday comparison.** Picture a teacher who guesses, before marking, which students passed, just from how confident each one looked. Pick one student who passed and one who failed, at random. How often did the one who passed look more confident? Do that for many pairs. The share of times the guess was right is the ROC-AUC.\n\n- 0.5 means the teacher might as well flip a coin.\n- 1 means the teacher was right every time.\n\nIt works \"across every threshold\" because you never pick one cutoff line, like \"above 80% confidence counts as sure.\" It checks the ordering as a whole.\n\n(The name comes from a chart: ROC is the curve, AUC is the \"area under the curve.\")\n\n**In the lesson's example.** The judge marked each of 150 drafts pass or fail. Each flag gave every draft a score. \"Confidence on numbers and names\" got 0.61. So a passing draft looked more confident than a failing one only 61% of the time. That is better than a coin, but below the 0.7 pass mark set beforehand. So no flag was added.",
+   "step": "Learn",
+   "fingerprint": "70941960db3c5773",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
  "eval_cost": {
   "check:0:1": {
    "q": "Why not “It stays at $18 a month”?",
@@ -1858,9 +2040,9 @@
  "judge_agreement": {
   "check:0:0": {
    "q": "Why not “Yes: 92 in 100 is high enough to trust its scor…”?",
-   "a": "It's a fair instinct. 92 in 100 sounds strong, and overall agreement is a real number worth knowing. The problem is what it hides.\n\nOverall agreement mixes passes and failures into one score. If most answers are good, a judge can score high just by saying \"pass\" to almost everything.\n\nPicture this: humans passed 92 answers and failed 8. A lazy judge passes all 100. It agrees with humans 92 times in 100, the exact score in the question. Yet it caught none of the 8 bad answers. Those bad answers are the bugs you built the judge to find.\n\nSo \"92 in 100\" can't tell a useful judge from a useless one. You need two separate shares:\n\n- **True positive rate (TPR):** of the answers humans passed, how many the judge also passed.\n- **True negative rate (TNR):** of the answers humans failed, how many the judge also failed.\n\nThe lazy judge above scores 100% TPR but 0% TNR. That zero is the warning sign.\n\n\"Not until you check passes and failures separately\" is the better answer because only those two separate shares show whether the judge actually catches failures.",
+   "a": "\"92 in 100\" sounds high, and it is a real measure of how often the judge and the humans match. That part is fine. The trouble is what the number hides.\n\nOverall agreement mixes passes and failures into one score. Most answers in a test set are usually good. Suppose 92 of the 100 answers really are good. A judge that simply passes everything would agree with humans 92 times in 100. It would look trustworthy. Yet it would catch none of the 8 bad answers, and catching bad answers is the main job of a judge.\n\nSo you need two separate shares. The **true positive rate** (TPR) is the share of human passes the judge also passed. The **true negative rate** (TNR) is the share of human failures the judge also failed. A lazy judge scores perfectly on the first and zero on the second. The overall 92 never shows that gap.\n\nAlso, \"high enough\" depends on the job and on how often two people agree. You should write that pass mark down before looking at the results.\n\n\"Not until you check passes and failures separately\" is the right answer because only the two separate shares reveal whether the judge actually catches failures.",
    "step": "Check",
-   "fingerprint": "e193bc87c3168b45",
+   "fingerprint": "d9281a208af2d44e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1871,14 +2053,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. It runs to about 200 words, right at the limit, and 'catching bad answers is the main job of a judge' is a mild overstatement the lesson does not state."
    }
   },
   "check:0:2": {
    "q": "Why not “No: a judge needs to agree 100 times in 100”?",
-   "a": "**What it gets right:** it doesn't trust the 92 blindly. And a perfect 100 in 100 would mean the judge matched humans on every pass and every failure.\n\n**What it misses:** the lesson's point is that a judge is a model, so it can be wrong. Demanding zero mistakes sets a bar almost no judge would meet, and it skips the real question. It also answers \"No\" without enough information. The 92 alone can't tell you whether this judge is good or bad.\n\nWhy not? It depends on where the 8 misses fall. Suppose 92 of the 100 answers are good. A judge that passes everything also scores 92, yet it catches no failures at all. A different judge with 92 could catch most failures and be quite useful. Same overall number, very different judges.\n\nSo split the check. Look at the share of human passes the judge also passed. This is the **true positive rate**. Then look at the share of human failures the judge also failed. This is the **true negative rate**.\n\n\"Not until you check passes and failures separately\" is better because those two shares show what the single 92 hides: whether the judge actually catches bad answers.",
+   "a": "This option gets one thing right. It refuses to trust \"92 in 100\" at face value. That doubt is healthy.\n\nBut it misses two things.\n\n**First, 100 in 100 is an impossible bar.** Two people checking the same answers never agree on every one. A judge can't be asked to agree with one person more than two people agree with each other. That human-to-human agreement is the ceiling. Demanding perfection means rejecting every judge, including good ones.\n\n**Second, it still trusts a single overall number.** \"Agrees 92 times in 100\" mixes passes and failures together. Suppose 92 of the 100 answers were good. A judge that passes everything would also score 92, and it would catch zero bugs. Raising the overall target doesn't fix that blind spot.\n\nThe right pass mark depends on the job. A judge that blocks answers must catch nearly every failure. One that only reports can miss more. Write that mark down before you look at the results.\n\n\"Not until you check passes and failures separately\" is better because the overall score can hide a judge that never fails anything, and only the two separate shares reveal it.",
    "step": "Check",
-   "fingerprint": "da3afe38bdcf6b5e",
+   "fingerprint": "b3a721e953a52516",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1889,14 +2071,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claim that a perfect score is a bar almost no judge would meet goes slightly beyond the lesson, and the answer is right at the edge of the 200-word limit."
+    "notes": ""
    }
   },
   "check:1:0": {
    "q": "Why not “It agrees with humans well”?",
-   "a": "\"It agrees with humans well\" is tempting for one reason. If most answers are good and the judge passes them, the judge will match the humans most of the time overall. A single overall score can look high.\n\nBut the question isn't about the good answers. It only tells you about the 20 answers humans **failed**. On those, the judge agreed just 2 times out of 20. That's 10%. This number is the **true negative rate**: of the answers humans failed, the share the judge also failed.\n\nSo on the side that matters for finding bugs, the judge mostly disagrees with humans. The other 18 bad answers got a pass from the judge. Calling that \"agrees well\" mixes up the two sides. It lets the easy passes hide the missed failures. That's exactly the trap the lesson warns about.\n\n\"It lets most bad answers through\" is better because it names what the numbers actually show: on human failures, the judge missed 18 of 20, so it catches very few real problems.",
+   "a": "\"It agrees with humans well\" sounds reasonable. On the answers humans passed, the judge may well agree most of the time. And if most answers in your set are good, the overall agreement number can look high. That is the trap the lesson warns about.\n\nBut this question only tells you about the 20 answers humans failed. The judge failed just 2 of them. That is 2 out of 20, or 10%. This share is the judge's **true negative rate** (TNR): how often it catches a failure that a human caught.\n\nSo on failures, the judge agrees with humans only 1 time in 10. The other 18 bad answers got a pass. A judge like that looks fine on good answers and misses almost every bug. \"Agrees well\" hides this because it blends passes and failures into one number. That is why you check the two sides separately.\n\n\"It lets most bad answers through\" is the better answer because it names exactly what the numbers show: the judge passed 18 of the 20 answers that humans failed.",
    "step": "Check",
-   "fingerprint": "a68c76385f9cf25c",
+   "fingerprint": "fb39f588118e79d1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1907,32 +2089,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems; the only soft spot is that 'looks fine on good answers' assumes something the 20-failure question doesn't show, though the earlier hedge ('may well') covers it."
    }
   },
   "check:1:1": {
    "q": "Why not “It is too strict on good ones”?",
-   "a": "\"It is too strict on good ones\" points the wrong way, and it talks about answers the question never shows you.\n\nLook at what the question gives you. All 20 answers are ones the humans **failed**. These are the bad answers. So the numbers tell you nothing about good answers. You can't judge strictness on good answers without knowing how the judge treated the answers humans passed.\n\nThe direction is also backwards. \"Too strict\" would mean the judge fails too much. Here it failed only 2 of the 20 bad answers. That means it passed the other 18. That's too lenient, not too strict.\n\nThe one thing the option gets right is that it notices the judge disagrees with the humans. But it describes the disagreement on the wrong side and in the wrong direction.\n\nIn the lesson's terms, this is the judge's **true negative rate**. That is the share of human failures the judge also failed. Here it is 2 out of 20, which is 10%. That is very low.\n\n\"It lets most bad answers through\" is better because it matches the numbers exactly: 18 of the 20 bad answers slipped past the judge as passes.",
+   "a": "\"It is too strict on good ones\" points the wrong way, and it looks at the wrong group of answers.\n\n**Wrong group.** The question only covers the 20 answers that humans *failed*. Those are the bad ones. It says nothing about good answers. So you cannot judge how the judge treats good ones from these numbers. That would need the human passes, which feed the **true positive rate** (TPR), the share of human passes the judge also passed.\n\n**Wrong direction.** \"Too strict\" means failing answers that deserved to pass. Here the judge did the opposite. Of 20 bad answers, it failed only 2 and passed the other 18. That is too *lenient* (too easy-going), not too strict.\n\nThe option does get one thing right. The judge clearly disagrees with the humans. It just misreads how.\n\nThe number that matters is the **true negative rate** (TNR), the share of human failures the judge also failed. Here that is 2 out of 20, or 10%. The judge misses 9 bad answers in every 10.\n\n\"It lets most bad answers through\" is better because it describes exactly what that 10% shows: 18 of the 20 failures slipped past the judge.",
    "step": "Check",
-   "fingerprint": "4f4f17a354f8a948",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problem; the claim that the option 'notices the judge disagrees' is a slightly generous reading, and the answer is close to the 200-word limit."
-   }
-  },
-  "check:2:1": {
-   "q": "Why not “A second judge to grade the first one”?",
-   "a": "A second judge sounds sensible. It gets one thing right: if the two judges disagree on an answer, that disagreement is a useful hint that something is off.\n\nBut a second judge is still a model, so it can be wrong too. Worse, two models often share the same blind spots. They may be trained on similar data, or prompted in similar ways. Both might pass a bad answer, and their agreement would look like proof when it isn't.\n\nThere's also a loop problem. If you need a second judge to check the first, who checks the second? You never reach solid ground.\n\nWhat's missing is **ground truth**, meaning answers you know are right because a careful person decided. Without it, you can't measure how often the judge passes what humans passed (its true positive rate) or fails what humans failed (its true negative rate). That second number is what catches a judge that just passes everything.\n\n\"Human labels on some of the same answers\" is better because it gives you a trusted reference to measure the judge against, on passes and failures separately.",
-   "step": "Check",
-   "fingerprint": "e58a6445b30cad2f",
+   "fingerprint": "3606659618474595",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1946,11 +2110,29 @@
     "notes": ""
    }
   },
-  "check:2:2": {
-   "q": "Why not “A longer and stricter grading prompt”?",
-   "a": "A longer, stricter grading prompt isn't a bad idea. Clear instructions often help a judge grade better. A \"prompt\" is just the text you give the model telling it what to do.\n\nBut a better prompt is still a guess. You change the wording and *hope* the scores improved. Nothing tells you if they did.\n\nIt can also backfire. A stricter prompt might push the judge to fail good answers. Then its **true positive rate** drops. That is the share of human passes the judge also passes. A looser prompt might do the opposite and miss real failures. That lowers its **true negative rate**, the share of human failures it also fails. From the prompt alone, you can't see either problem.\n\nAnd at 2,000 answers a week, nobody reads every score. A quiet mistake would spread through all of them.\n\nSo the prompt is something you tune. It is not proof the judge works.\n\n\"Human labels on some of the same answers\" is the right choice. It gives you a known-correct answer key, so you can actually measure how often the judge agrees on passes and on failures.",
+  "check:2:1": {
+   "q": "Why not “A longer, stricter grading prompt”?",
+   "a": "A longer, stricter grading prompt sounds sensible. It can help in one way: clearer rules may make the judge more careful, and it may fail more weak answers overall.\n\nBut it doesn't touch the cause of self-preference bias. The bias comes from *who* is judging, not from the instructions. Your judge and your answer model share a maker and a base, so they are in the same **model family**. Answers from a relative tend to \"sound right\" to the judge, because they match the style and phrasing it would produce itself. A stricter prompt makes the judge harsher on everything. It is still softer on its relatives than on outsiders. The bias is still there, just at a stricter level.\n\nAlso, \"stricter\" is not \"more accurate.\" A judge that fails too much loses agreement on passes, just as one that passes too much loses agreement on failures.\n\n**A judge from a different model family** is better because it doesn't share the answer model's habits, so it has no built-in reason to go easy. Where the two judges disagree, you know which answers need a closer look.",
    "step": "Check",
-   "fingerprint": "cceb2190cf4879fb",
+   "fingerprint": "dc8d981f558d9c1c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The 'sounds right because of matching style and phrasing' explanation and the claim that a stricter prompt leaves the judge softer on relatives go beyond the lesson but do not contradict it."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Running the same judge a second time”?",
+   "a": "Running the same judge twice does check one thing: whether it is **consistent**. LLMs have some randomness. The same question can get a slightly different score on a second run. Rerunning shows you whether its scores wobble.\n\nBut self-preference bias is not a wobble. It is a steady lean. Here the judge comes from the same maker and the same base as the model that wrote the answers. So it shares that model's habits and tastes. It will go easy on those answers on the first run, and it will go easy again on the second run.\n\nSo the two runs will mostly agree. That agreement feels reassuring, but it proves nothing. A judge agreeing with itself is like asking a proud parent twice whether their child's drawing is good. You get the same kind answer both times.\n\nA judge from a different model family does not share that lean. When the two judges disagree, that disagreement points straight at the answers where the bias may be hiding.",
+   "step": "Check",
+   "fingerprint": "daeea74da410ffb3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1966,9 +2148,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Count passes and fails separately” in an interview?",
-   "a": "**A 30-second spoken answer**\n\n**The problem:** \"An LLM judge is a model, so it can be wrong. If most answers are good, a judge that passes everything still looks accurate overall, but it catches no bugs.\"\n\n**The idea:** \"So I compare the judge with human labels on the same answers and score each side separately. Of the answers humans passed, what share did the judge pass? That's the true positive rate. Of the answers humans failed, what share did the judge fail? That's the true negative rate. A pass-everything judge scores 100% on the first and 0% on the second, which exposes it right away.\"\n\n**The trade-off:** \"Failures are often rare. With only two human failures, one disagreement swings the fail share by 50 points. So I make sure the labeled set includes enough real failures before I trust that number.\"\n\n**A likely follow-up**\n\n*\"Which of the two rates matters more?\"*\n\nHint for a strong answer: it depends on the cost of each mistake. If the judge exists to find bugs, the fail side matters most, because a missed failure ships to users. A false alarm only costs a human a second look.",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"An LLM judge can look accurate while catching nothing. Say 8 of 10 answers are good and the judge passes all 10. It agrees with humans 80% of the time, yet it missed both failures.\"\n\n*The idea.* \"So I check each side separately. Of the answers humans passed, what share did the judge also pass? That's the true positive rate. Of the answers humans failed, what share did the judge also fail? That's the true negative rate. The always-pass judge scores 100% and 0%, which exposes it.\"\n\n*The trade-off.* \"The pass mark depends on the job. A judge that blocks answers must catch nearly every failure. One that only reports can miss more. And I can't expect a judge to agree with one person more than two people agree with each other. I write the mark down before I look.\"\n\n**Likely follow-up:** \"What if the judge is the same model that wrote the answers?\"\n\n*Hint:* Name self-preference bias. Judges go easier on their own answers, and somewhat on answers from their model family (same maker, same base). The fix is to check against human labels, or add a second judge from a different family and see if they agree.",
    "step": "Explain",
-   "fingerprint": "b7c33a7c770d466f",
+   "fingerprint": "ad875cff1e233ae9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1984,27 +2166,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs your judge isn't being checked properly**\n\n- **The pass rate looks too good.** The judge passes almost everything, say 95% or more. Then users report broken answers the judge marked as fine.\n- **Only one number is reported.** Someone says \"the judge agrees with humans 90% of the time.\" That single figure hides which side it gets wrong. If most answers are good, a judge that passes everything still scores high.\n- **The judge rarely says \"fail.\"** Scan its labels. If fails almost never appear, it may not be catching anything.\n- **Too few failures to test on.** Your human-labelled set has only one or two failures. Then the fail agreement rests on almost nothing, and one lucky guess makes it look perfect.\n- **Scores don't move when you break things.** You make the agent worse on purpose, and the judge's score barely changes.\n\n**Quickest check**\n\nTake a batch of answers that humans have labelled, with a fair number of failures in it. Split them into human passes and human failures. For each group, work out the share the judge labelled the same way. A healthy judge scores well on both. A high pass share with a low fail share means it's missing bugs.",
+   "a": "**Warning signs your judge check was skipped or done wrong:**\n\n- **The judge almost never fails anything.** If nearly every answer gets a pass, it may be passing everything, not finding good answers.\n- **One big \"accuracy\" number and nothing else.** When most answers are good, a judge that passes everything still looks accurate. If you never split passes from failures, you can't see this.\n- **Scores look great, then users complain.** Bugs slip through in real use because the judge never caught them.\n- **The judge is kind to its own kind.** It scores answers from its own model, or its **model family** (same maker, same base), higher than other answers. That is **self-preference bias**.\n- **The pass mark came after the results.** If you picked \"good enough\" after seeing the numbers, it's easy to fool yourself.\n\n**Quickest check:** have a person label a small batch of answers, including some failures. Then compare. Of the human failures, how many did the judge also fail? If that share is low, the judge isn't catching bugs.\n\nYou can also add a second judge from a different family. If the two often disagree, at least one is off. Human labels tell you which.",
    "step": "Learn",
-   "fingerprint": "24910f714a092efa",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problems. The 'scores don't move when you break things' sign and the '95% pass rate' figure go beyond the lesson, though they fit its idea, and the answer is right at about 200 words."
-   }
-  },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "Here are three situations where checking the judge needs extra care.\n\n**Very few human failures.** If humans failed only 2 answers, one judge mistake swings the fail agreement by 50 points. Gather more failing examples before you trust that number, even by writing some bad answers on purpose.\n\n**Things change over time.** A new prompt, a new model behind your app, or new kinds of user questions can make the judge's old scores stale. Re-check it against a fresh batch of human labels after each big change, and on a regular schedule.\n\n**Humans disagree with each other.** If two people label the same answer differently, there is no single \"right\" label for the judge to match. First measure how often your human labelers agree, then write clearer pass and fail rules until they mostly do.\n\nIn each case the core idea still holds: check passes and failures separately. The extra care is about making sure the human labels behind those two numbers are plentiful, current, and consistent.",
-   "step": "Learn",
-   "fingerprint": "33dcb8ddce5801f9",
+   "fingerprint": "3b0f361ae5dde82b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2018,11 +2182,11 @@
     "notes": ""
    }
   },
-  "learn:term": {
-   "q": "How is “true positive rate” different from “true negative rate”?",
-   "a": "Both rates compare the judge with human labels. The difference is which answers each one looks at.\n\n**True positive rate (TPR)** looks only at answers the humans passed. It asks: of these good answers, what share did the judge also pass?\n\n**True negative rate (TNR)** looks only at answers the humans failed. It asks: of these bad answers, what share did the judge also fail?\n\nSo TPR tells you whether the judge is too harsh. TNR tells you whether it is too soft. You need both, because one can look perfect while the other is terrible.\n\n**Everyday comparison:** think of a guard checking concert tickets. TPR is \"lets in people with real tickets.\" TNR is \"stops people without tickets.\" A guard who waves everyone in scores perfectly on the first and zero on the second.\n\n**The lesson's example:** humans passed 8 answers and failed 2. The judge passed all 10.\n\n- TPR: 8 of 8 good answers passed, so 100%.\n- TNR: 0 of 2 bad answers failed, so 0%.\n\nOverall the judge agrees with humans on 8 of 10 answers, which is 80%. That sounds good. But it never caught a single failure, so it is useless for finding bugs.",
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Very few failures in your sample.** If humans failed only 2 answers, one judge mistake swings the failure share from 100% to 50%. That number is too shaky to trust. Collect more failing answers on purpose, for example by keeping known bad outputs or writing tricky test questions, until each side has a decent count.\n\n**2. Things change over time.** A judge checked last month may drift. Your app's answers change when you edit prompts or swap models. The judge model itself may be updated by its maker. Re-label a fresh small batch by hand now and then, and re-check both shares after any big change.\n\n**3. The task is fuzzy, so humans disagree.** For things like tone or helpfulness, two people may disagree often. Then one person's labels are a weak yardstick. Have two or more people label the same answers. Measure how often they agree with each other first, and set the judge's pass mark no higher than that.",
    "step": "Learn",
-   "fingerprint": "1d6bcb74c4503729",
+   "fingerprint": "8ef9c03a1bd190eb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2033,7 +2197,25 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; at about 200 words it sits right at the length limit."
+    "notes": "Minor: points 2 and 3 run to four and five sentences, over the two-to-three limit, but the content matches the lesson and breaks no criterion."
+   }
+  },
+  "learn:term": {
+   "q": "How is “true positive rate” different from “true negative rate”?",
+   "a": "Both are shares, but each one looks at a different group of answers.\n\n**True positive rate (TPR)** looks only at answers a human passed. It asks: of these, how many did the judge pass too? It tells you whether the judge recognizes good answers.\n\n**True negative rate (TNR)** looks only at answers a human failed. It asks: of these, how many did the judge fail too? It tells you whether the judge catches bad answers.\n\nThink of a ticket checker at a concert. TPR is how often they let in people with real tickets. TNR is how often they stop people without one. A checker who waves everyone through scores perfectly on the first and zero on the second.\n\nThe lesson's example works the same way. Humans passed 8 answers and failed 2. The judge passed all 10.\n\n- TPR: the judge passed 8 of the 8 human passes, so 100%.\n- TNR: the judge failed 0 of the 2 human failures, so 0%.\n\nOverall, it agreed on 8 of 10 answers, which sounds fine. But it caught no failures. That's why you check both shares. Either one alone hides half the story.",
+   "step": "Learn",
+   "fingerprint": "31781bc918a4fa55",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
    }
   }
  },
@@ -2222,9 +2404,9 @@
  "judge_consistency": {
   "check:0:0": {
    "q": "Why not “The answers changed between the two runs”?",
-   "a": "The question says the judge looked at the **same 300 answers** both times. Nothing about the answers changed. That's the whole point of a consistency check. You hold the input fixed on purpose, so any difference in the output must come from the judge.\n\nWhat this option gets right: something really did change between the two runs. It just points at the wrong thing. The answers stayed put. The **verdicts** moved.\n\nThink of it like weighing the same bag of flour twice. If the scale shows two different numbers, you don't blame the flour. You blame the scale.\n\nHere, 70 out of 300 is a flip rate of about 0.23. Roughly 1 verdict in 4 changed with no change to the answer. That's far above the \"few percent\" the lesson treats as acceptable.\n\n\"Many of its verdicts are partly luck\" is better because it puts the blame on the judge, which is the only thing that could have varied, and it says what that means for trusting any single score.",
+   "a": "That option notices something real: the results did differ between the two runs. But it puts the blame in the wrong place.\n\nThe whole point of this test is that the answers stay **exactly the same**. You hand the judge the same 300 answers both times. Nothing about them changes. So the answers can't be what moved.\n\nThe only thing that could differ is the judge itself. An LLM judge doesn't always produce the same output for the same input. A little randomness is built into how it picks its words. That randomness can tip a borderline call from pass to fail.\n\nSo the 70 changes are about the judge, not the answers. That's a flip rate of 70 divided by 300, about 0.23. Roughly 1 verdict in 4 flipped. That's far above the \"few percent\" the lesson says to aim for.\n\n\"Many of its verdicts are partly luck\" is better because it points at the true source of the change, the judge, and says what that means: you can't fully trust any single verdict it gives.",
    "step": "Check",
-   "fingerprint": "ad612de7ae5051ac",
+   "fingerprint": "8a2ce572543957a8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2240,9 +2422,9 @@
   },
   "check:0:2": {
    "q": "Why not “It gets stricter the second time round”?",
-   "a": "\"It gets stricter the second time round\" gets one thing right. It notices that the verdicts changed between runs. That part is real.\n\nWhat it misses is direction. A flip count only tells you *how many* verdicts changed. It doesn't say *which way* they changed. Some of those 70 could have gone from pass to fail, and others from fail to pass. Look at the lesson's example: answer 2 went pass to fail, but answer 5 went fail to pass. That's not stricter. That's just unsteady.\n\nTo claim \"stricter,\" you'd need to show that the number of passes dropped. You'd also need more than one pair of runs to call it a pattern. A count of 70 on its own can't tell you that.\n\nWhat the count does tell you is size. 70 out of 300 is a flip rate of about 0.23. That means nearly a quarter of the verdicts changed. That's far above the \"few percent\" you'd want from a steady judge.\n\n\"Many of its verdicts are partly luck\" is better because it says exactly what a flip rate measures: how often the same answer gets a different verdict, whatever the direction.",
+   "a": "\"It gets stricter the second time round\" is a guess about **direction**. The number 70 doesn't tell you direction.\n\nA flip is any answer whose verdict changed between the two runs. Some of those 70 could have gone from pass to fail. Others could have gone from fail to pass. The count alone can't tell you which. In the lesson's six-answer example, answer 2 went pass → fail, but answer 5 went fail → pass.\n\nWhat the option gets right: it notices that the verdicts changed. That's the real signal. But it reads a pattern into it that isn't there. There's also nothing special about \"the second time\". Swap which run you call first, and you get the same 70 flips.\n\nWhat 70 out of 300 does tell you is the **flip rate**: the share of answers whose verdict changed. Here that's about 0.23, nearly 1 in 4. That's far above the few percent you'd want.\n\n\"Many of its verdicts are partly luck\" is better because it says exactly what a high flip rate means: a single verdict from this judge can't be fully trusted.",
    "step": "Check",
-   "fingerprint": "ee0c1190456cb367",
+   "fingerprint": "d81db94c3d5e1364",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2253,14 +2435,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The final sentence says 'partly luck' describes what a flip rate measures, when it is really the conclusion drawn from the flip rate. This is minor and does not contradict the lesson. The answer is also close to the 200-word limit."
+    "notes": ""
    }
   },
   "check:1:0": {
    "q": "Why not “Three runs cost less than one”?",
-   "a": "\"Three runs cost less than one\" is simply not true. Each run means asking the judge about every answer again. So three runs on 200 answers is 600 judge calls instead of 200. That costs roughly three times as much, not less.\n\nThe one thing it gets right is that cost matters. Every judge call is a paid request to a model. Judging three times is a real expense, and it's fair to weigh it.\n\nBut cost isn't why the trick helps. The point is steadier verdicts. The judge sometimes flips on the same answer just by chance. If you ask once, that one unlucky verdict is the one you keep. If you ask three times and keep the **majority** (the verdict that shows up at least twice), one stray result can't decide the outcome alone.\n\nSo you pay more to get verdicts that depend less on luck.\n\n\"One odd verdict gets outvoted\" is the better answer because it names the real benefit: a single chance flip loses to the other two runs that agree.",
+   "a": "\"Three runs cost less than one\" gets the cost backwards. Each run sends every answer to the judge model again, and you pay for each of those calls. Judging 200 answers three times means 600 calls instead of 200. So three runs cost about three times as much as one, not less.\n\nThe only thing it touches on is that cost is worth thinking about. Majority voting really is more expensive, and that is the trade-off you accept. But saving money is not why it helps.\n\nIt helps because a single run can land on an unlucky verdict. Picture one answer judged three times: pass, fail, pass. The odd \"fail\" was probably luck. Keeping the verdict that shows up at least twice, the **majority**, lets the two steady verdicts win. You pay more and get a verdict that depends less on chance.\n\n\"One odd verdict gets outvoted\" is the better answer because it names the real reason: with three votes, a single random flip can't change the final verdict.",
    "step": "Check",
-   "fingerprint": "5a647cc562200580",
+   "fingerprint": "6933040abe22253a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2276,9 +2458,9 @@
   },
   "check:1:2": {
    "q": "Why not “The judge learns from its own runs”?",
-   "a": "\"The judge learns from its own runs\" sounds reasonable, but it isn't what happens.\n\nAn LLM judge doesn't change between calls. Its **weights** (the numbers inside the model that decide its answers) stay fixed. Each run starts fresh. Run two has no memory of run one. So nothing is learned, and the judge doesn't get any better at judging.\n\nThe option does get one thing right: running the judge several times *is* what helps. It just gives the wrong reason.\n\nThe real reason is luck. A judge sometimes gives an odd verdict by chance. If it says pass, fail, pass on the same answer, that one \"fail\" is probably the fluke. Keeping the verdict that appears at least twice is called a **majority vote**. It lets the two steady verdicts win. A single random slip no longer decides the result.\n\n\"One odd verdict gets outvoted\" is better because it names the actual effect: the judge is unchanged, and the majority vote simply cancels out a one-off chance flip.",
+   "a": "It's a natural guess. Running the judge three times does make the final verdict more reliable, so it can feel like the judge is \"getting better.\" That part is right: repeating helps.\n\nBut the judge doesn't learn anything between runs. Each call to the model starts fresh. It has no memory of its earlier verdicts. Its weights don't change either. Weights are the numbers inside the model that shape its answers. Run three is not wiser than run one. It's just another roll of the same dice.\n\nSo the help must come from somewhere else, and it's the vote. Most of the time the judge gives the same verdict. Now and then it flips by chance. If you keep whichever verdict shows up at least twice out of three, one random flip can't change the outcome. The two steady verdicts win.\n\nThat's why \"One odd verdict gets outvoted\" is the better answer: it names the real mechanism, where a majority vote cancels out a single lucky or unlucky verdict, without the judge changing at all.",
    "step": "Check",
-   "fingerprint": "f39909c4c428b2d9",
+   "fingerprint": "dd3b8778e9de26ea",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2294,9 +2476,9 @@
   },
   "check:2:1": {
    "q": "Why not “The second answer is really better”?",
-   "a": "The test changed only one thing: the order. The two answers stayed word for word the same. So whatever moved the verdict, it wasn't the quality of either answer.\n\nIf the second answer were really better, the judge would pick it in both orders. It didn't. In one order it picked one answer, and after the swap it picked the other. The only thing those two picks have in common is position. Each time, the judge chose whichever answer it saw first.\n\n\"The second answer is really better\" does get one thing right: it's possible that one answer truly is better. But this test can't tell you which one. The judge's preference just followed the order, so its verdicts here say nothing about quality.\n\nThat's the point of the lesson's method. Change one thing and see if the verdict moves. If it moves, that one thing is steering the judge. This habit is called **position bias**, meaning a leaning toward an answer because of where it appears.\n\n\"The judge favours whatever comes first\" is better because it names the one thing you changed, the order, as the cause of the flip.",
+   "a": "The option \"The second answer is really better\" sounds reasonable, but the test can't support it.\n\nThink about what you changed. The two answers stayed exactly the same, word for word. Only their order moved. Yet the judge's pick moved with the order.\n\nIf one answer were truly better, the judge should pick that same answer no matter where it appears. Before the swap, it picked one answer. After the swap, it picked the other. Both can't be the \"really better\" one. So the verdict isn't telling you about quality at all.\n\nWhat it gets right: one of the answers might genuinely be better. But this experiment gives you no evidence either way. The judge's choice followed the position, not the content.\n\nThat's the point of changing just one thing. If only the order changed and the verdict flipped, the order caused the flip. This is called **position bias**: a habit of favouring an answer because of where it sits.\n\n\"The judge favours whatever comes first\" is better because it blames the only thing you changed, the order, for the change in verdict.",
    "step": "Check",
-   "fingerprint": "70adadbd69814c93",
+   "fingerprint": "30bea0a72469705c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2307,14 +2489,32 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; it overstates slightly by saying the verdicts 'say nothing about quality', and it uses the term 'position bias', which the lesson doesn't name, though it defines it."
+    "notes": "No blocking problem. Minor overreach: 'the verdict isn't telling you about quality at all' and 'the order caused the flip' are stated more firmly than one swap allows, since the lesson says a judge can also flip from run-to-run inconsistency."
    }
   },
   "check:2:2": {
    "q": "Why not “The judge is broken and must go”?",
-   "a": "\"The judge is broken and must go\" gets one thing right. Something is off: the verdict moved when the quality of the answers didn't change at all.\n\nBut it jumps too far. You changed only one thing, the order. So the useful finding is about that one thing, not a blanket ruling that the whole judge is useless. Preferring the answer shown first is one of the known habits the lesson lists. Naming the habit tells you what to look into next. \"Broken\" tells you nothing.\n\nThere's also a caution. A judge can change its verdict on the same answer just by chance. So one swap is a clue, not proof. To be confident, swap the order on many pairs. Then check whether the preference follows the position far more often than its normal flip rate would explain. The flip rate is the share of answers whose verdict changes between two runs.\n\n\"The judge favours whatever comes first\" is better because it names the specific habit your one-change test points to. That gives you something concrete to confirm and deal with, instead of throwing the judge away.",
+   "a": "\"The judge is broken and must go\" gets one thing right. Something really is wrong. The answers didn't change, only their order did, yet the verdict flipped. So that verdict wasn't about quality.\n\nBut \"broken\" is too vague, and \"must go\" goes too far. You changed exactly one thing, the order, and the verdict moved. That points to one specific habit, called **position bias**. That means a preference for whatever is shown first. Most LLM judges have this habit to some degree. So a replacement judge would likely show it too.\n\nA named habit is also something you can work around. For example, you can judge each pair in both orders. Then you only count a win when the judge picks the same answer both times. Throwing the judge away gives up a useful tool and teaches you nothing.\n\n\"The judge favours whatever comes first\" is better because it names the exact bias your one-change test revealed, and that tells you how to fix it.",
    "step": "Check",
-   "fingerprint": "457858a0c18b6681",
+   "fingerprint": "7660646efe39f787",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The both-orders fix goes beyond the lesson, which only mentions majority voting, but it doesn't contradict anything in the lesson."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Ask twice, count the flips” in an interview?",
+   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"An LLM judge is a model that grades other answers. Ask it twice about the very same answer, and it can give a different verdict. So any single score might be partly luck.\"\n\n**The idea.** \"Before I trust it, I run the judge twice on the same answers. I line up the two runs and count how many verdicts changed. That share is the flip rate. Zero means perfectly steady. Anything much above a few percent means single verdicts aren't reliable yet.\"\n\n**A trade-off.** \"To steady it, I can judge each answer three times and keep the majority. That helps, but it triples the cost and the wait.\"\n\n**A follow-up an interviewer might ask:** \"Your judge never flips. Is it a good judge now?\"\n\n**Hint at a strong answer:** Not necessarily. Steady is not the same as correct. A judge can be wrong in the same way every time, for example by always preferring longer answers. Explain how you'd test each habit: change only one thing, like length or order, and see whether the verdict moves. Then add that a judge can't agree with people more reliably than it agrees with itself.",
+   "step": "Explain",
+   "fingerprint": "8fae63882062e1e4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2328,29 +2528,11 @@
     "notes": ""
    }
   },
-  "explain:interview": {
-   "q": "How do I explain “Ask twice, count the flips” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem:* \"An LLM judge is a model that grades other models' answers. It can give a different verdict on the very same answer if you ask it twice. So any single score might be partly luck.\"\n\n*The idea:* \"Before trusting it, I run the judge twice on the same answers. Then I check what share of verdicts changed. That's the flip rate. Zero means perfectly steady. Much above a few percent means I fix it. I'd write clearer instructions, ask the judge to quote what it's judging, or judge each answer three times and keep the majority.\"\n\n*Trade-off:* \"Majority voting gives steadier verdicts. But it triples the cost and time of judging.\"\n\n**A likely follow-up**\n\n\"Your flip rate is near zero. So the judge is good, right?\"\n\n*Hint:* Steady isn't the same as correct. A judge can be wrong in the same way every time. It might always favour longer answers, or whichever answer comes first. So next you'd compare its verdicts with human labels. Then you'd test each habit by changing one thing, like the order, and seeing if the verdict moves.",
-   "step": "Explain",
-   "fingerprint": "086a4d42b332bb1a",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problems. The 'triples the cost and time' claim is a mild inference beyond the lesson, since majority voting need not triple time if the runs are done in parallel."
-   }
-  },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs that the judge isn't steady**\n\n- **The score moves when nothing changed.** You rerun the same judge on the same answers and get a different pass count. If the answers are identical, the judge's verdicts are partly luck.\n- **The judge can't match people well.** A judge can't agree with human reviewers more reliably than it agrees with itself. Weak agreement with people may mean it isn't even steady on its own.\n- **Verdicts follow habits, not quality.** Longer answers keep passing. When it compares two answers, the one shown first keeps winning. Answers from a model like the judge get favoured.\n\n**Quickest check**\n\nRun the same judge twice on the same answers. Line up each answer's two verdicts and count the ones that changed. Divide by the number of answers. That share is the **flip rate**. 0 means perfectly steady. Anything much above a few percent means you shouldn't trust single verdicts yet.\n\nFor a habit, change only that one thing, such as the order, and see whether the verdict moves.\n\nIf it flips, try clearer instructions. Ask the judge to quote the part it's judging. Or judge each answer three times and keep the **majority**, meaning the verdict that comes up most often.",
+   "a": "**Warning signs that the judge isn't steady:**\n\n- **Scores wobble with no change.** You rerun `mlflow.genai.evaluate` on the same dataset and the same app, and the pass rate moves. Say 82% one day and 74% the next. Nothing changed but the judge's mood.\n- **Small fixes look like big wins.** A tiny prompt tweak seems to lift the score by several points. Part of that \"win\" may just be luck.\n- **Agreement with people stays low.** When you compare the judge to human labels, it never matches well. A judge can't agree with people more often than it agrees with itself.\n- **Habits show up.** Longer answers almost always pass. When you compare two answers, the one shown first keeps winning. Swap the order and the winner changes.\n- **Vague reasons.** The judge's explanations don't point to any specific part of the answer.\n\n**The quickest check:** run the same judge twice on the same answers. Line up the two verdicts for each answer and count how many changed. Divide by the number of answers. That share is the flip rate. Near 0 is good. Anything much above a few percent means single verdicts aren't trustworthy yet.",
    "step": "Learn",
-   "fingerprint": "cfcadecfb0219dc5",
+   "fingerprint": "04532601af0e2ab7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2361,14 +2543,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems; it runs to about 200 words, and the quickest-check paragraph describes the flip-rate steps in prose (as the lesson does) without any code."
+    "notes": "Minor: the 'vague reasons' sign and 'small fixes look like big wins' go slightly beyond the lesson but don't contradict it. The check is described in plain words, with no code."
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The judge is steady but wrong.** If you set temperature (the model's randomness dial) to 0, or the system caches (saves and reuses) old replies, the flip rate can hit 0 without the judge being any good. Steadiness is only the first test. After it passes, compare the judge's verdicts with a set of human labels.\n\n**2. Very few answers.** With six answers, one flip moves the rate by 0.17. That's too jumpy to trust. Use at least a hundred or so answers, and include tricky borderline ones, since that's where flips hide.\n\n**3. The judge model changes under you.** Providers update models quietly. Your prompt can also drift as you edit it. A flip rate you measured last month may no longer hold. Pin the exact model version where you can. Rerun the consistency check after any change to the model, the prompt, or the scoring scale.\n\nA related case: on a 1–10 scale, a 7 becoming an 8 counts as a \"flip.\" There, measure how far scores move instead.",
+   "a": "Here are three situations where the simple \"ask twice, count the flips\" check needs extra care.\n\n**1. Very few answers.** With six answers, one flip moves the rate by about 0.17. That is mostly noise. Run the check on at least a hundred answers before trusting the number.\n\n**2. The judge never varies at all.** Some setups set temperature to 0 (a setting that makes the model pick its most likely words) or reuse saved responses, called caching. Then two runs can match perfectly even if the judge is shaky. Also test small changes, like rewording the instructions or swapping the order, and see whether verdicts move.\n\n**3. The judge model changes over time.** Providers sometimes update the model behind the same name. A flip rate measured last month may no longer hold. Pin the exact model version where you can, and rerun the consistency check after any judge or prompt change. Log each result in MLflow so you can compare runs.",
    "step": "Learn",
-   "fingerprint": "89c1db4a805936b3",
+   "fingerprint": "05554accb19e215d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2379,14 +2561,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No check fails. Minor: the tutor adds outside claims (temperature 0, caching, a hundred answers, 1–10 scales) that the lesson does not state, and item 3 runs longer than 2–3 sentences."
+    "notes": "No real problems. The 'hundred answers' figure is not from the lesson, and item 3 runs to four sentences instead of two or three, but neither contradicts the lesson."
    }
   },
   "learn:term": {
    "q": "How is “longer” different from “first”?",
-   "a": "Both are habits a judge has that have nothing to do with quality. They differ in *what* sways it.\n\n**\"Longer\"** is about the answer itself. The judge leans toward the answer with more words, even if the extra words add nothing. Think of a teacher who gives higher marks to the thicker essay.\n\n**\"First\"** is about how answers are shown. When the judge compares two answers side by side, it leans toward whichever one it reads first. Think of a talent show judge who favors whoever performs first, no matter who is better.\n\nSo one habit comes from the content. The other comes from the order.\n\n**How they work together:** they can mix up your results. Say the longer answer is also shown first. If the judge picks it, you can't tell which habit caused that. That's why the lesson says to change only one thing at a time.\n\n**Testing each one:** use the same idea as the lesson's example. There, comparing two runs showed verdicts flipping on answers 2 and 5. To test \"first,\" swap the order and rerun. To test \"longer,\" change only the length. If verdicts flip, that habit is at work.",
+   "a": "Both are habits a judge has that have nothing to do with quality. They come from different places, though.\n\n**Longer** is about the answer itself. The judge tends to favor answers with more words, even when the extra words add nothing.\n\n**First** is about where an answer sits. When the judge compares two answers, it tends to favor whichever one it is shown first. This one only shows up when two answers are side by side.\n\nPicture a teacher grading essays. A \"longer\" habit means thicker essays get better marks. A \"first\" habit means the essay on top of the pile wins when two are compared.\n\nThe lesson tests both the same way. Change only that one thing and see whether the verdict moves. For order, swap which answer comes first. For length, make an answer longer without making it better.\n\nThe six-answer example is a different check. Nothing was changed there. The same judge simply ran twice, and answers 2 and 5 still flipped. That is a consistency check. The habit tests borrow its idea of comparing two runs, but change one thing on purpose.",
    "step": "Learn",
-   "fingerprint": "be0aad19dbe95ec5",
+   "fingerprint": "ddbce634e756f294",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2397,7 +2579,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the lesson's example flips come from run-to-run inconsistency, not from a habit, so linking them to testing 'longer' and 'first' could blur the point. Otherwise it is accurate and about 200 words."
+    "notes": ""
    }
   }
  },
@@ -3679,6 +3861,188 @@
    "a": "They answer two different questions.\n\n**\"Id alone\"** is the rule. It says *what* decides a question's split: only its id. Not its position in the list, not how many questions exist, not when it was added. Since nothing else feeds in, adding new questions can't move an old one.\n\n**A hash** is the tool. It is a function that turns text like `\"ticket-1001\"` into a big number. The same text always gives the same number. Then `% 100` (the remainder after dividing by 100) shrinks that number to a bucket from 0 to 99.\n\nHow they fit: the rule says \"use only the id.\" The hash is how you turn that id into a bucket, and the bucket picks the split.\n\nEveryday comparison: a post office sorts letters by the last two digits of the house number. \"Look only at the address\" is the rule. \"Read the last two digits\" is the method. A new street built nearby doesn't change where your letter goes.\n\nIn the lesson's example, `\"ticket-1001\"` lands in bucket 72, so it goes to test. A month and 500 new questions later, it's still 72, still test.",
    "step": "Learn",
    "fingerprint": "ff9ad463796ac0b2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  }
+ },
+ "vague_checks": {
+  "check:0:0": {
+   "q": "Why not “The judges that disagree are faulty”?",
+   "a": "It's a fair first guess. When judges disagree, some of their verdicts must be off. And a judge really can be faulty.\n\nBut look at where the disagreement shows up. The same five judges agree on four checks. That tells you they read and grade well. A broken judge would tend to go wrong on many checks, not just one.\n\nThe split sits on one check only: \"helpful\". So the problem most likely lives in that check, not in the judges. \"Helpful\" has no definition. Each judge has to draw its own line, and five judges draw five different lines. That's what happened with \"plain\" in the lesson.\n\nBlaming the judges also leads to the wrong fix. If you swap in a new judge, it will still have to guess what \"helpful\" means. Your results stay shaky. Rewording the check, then re-checking the new judge against your human labels, fixes the actual cause.\n\n\"The wording of 'helpful' is vague\" is better because it explains why the split happens on one check and nowhere else.",
+   "step": "Check",
+   "fingerprint": "ba7787da82b7164f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem; the only soft spot is that it states flatly that \"helpful\" has no definition, which the question only implies."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The answers got harder to judge”?",
+   "a": "It's a fair thought. Some answers really are harder to judge than others, so the option isn't silly. But it doesn't fit the clue in the question.\n\nLook at what the judges agreed on. They graded the **same answers** with all five checks. On four checks they mostly agreed. If the answers themselves were hard to judge, that trouble would show up on every check, not just one. An answer that's confusing to read stays confusing whether you're asking \"is it correct?\" or \"is it helpful?\"\n\nSo the problem has to sit in the one thing that differs: the words of the \"helpful\" check. The lesson saw the same pattern with \"plain\". It had no definition, so each judge drew its own line. One failed more than half the answers, another almost none. That's why the lesson says to blame the wording, not the judges, when one check splits far more than the rest.\n\n\"The wording of \"helpful\" is vague\" is better because it explains why the split shows up on that one check and nowhere else.",
+   "step": "Check",
+   "fingerprint": "3b8c9c37109097cd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Plain and friendly tone”?",
+   "a": "\"Plain and friendly tone\" gets one thing right. Those checks do matter. A good tutor answer should be easy to read and kind.\n\nBut a **must-pass gate** is a check where one fail throws the whole answer away. That only works if the check is sharp, meaning judges agree on what pass and fail look like. \"Plain\" was the check the judges split on most. One failed more than half the answers, another almost none, because \"plain\" had no definition. \"Friendly tone\" is even fuzzier. Put them in the gate and a good, correct answer could be thrown out over one judge's taste.\n\nThe harm is also small. A slightly stiff answer still helps the learner. So these belong in the **scored checks**, where a wrong verdict costs a point, not the whole answer. Some parts of \"plain\" can also go to plain code, like the word cap and the jargon list.\n\n\"Correct and no giveaway\" is better because failing either one does real harm. Those are the only checks worth gating on, once each is worded to mean one thing, as \"correct\" had to be rewritten to do.",
+   "step": "Check",
+   "fingerprint": "536c958938ae06a8",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the claim that \"friendly tone\" is \"even fuzzier\" than \"plain\" is the tutor's own inference, not something the lesson states, but it does not contradict the lesson."
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “All four, to be safe”?",
+   "a": "\"All four, to be safe\" gets one thing right. It cares about every part of a good answer. That instinct is fine.\n\nWhat it misses is that a must-pass gate is only as safe as its wording. A **gate** here means a check where one fail throws the whole answer away. \"Plain\" and \"friendly tone\" are soft checks. Their words leave room, so different judges draw the line in different places. You saw this in the lesson: on \"plain,\" one judge failed more than half the answers and another failed almost none.\n\nMake a soft check a gate, and that disagreement turns into thrown-away answers. A good answer can fail just because one judge read \"friendly\" more strictly. That is less fair, not more safe.\n\nAlso, a slightly stiff tone does little real harm. A wrong fact or a leaked exercise answer does real damage. So soft checks work better as **scored checks**. A shaky verdict there costs a point, not the answer.\n\n\"Correct and no giveaway\" is better because those two checks are sharply worded and their failures cause real harm, so a fail on them really should block the answer.",
+   "step": "Check",
+   "fingerprint": "32b99e1a69e22f6d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “Whether the words are plain”?",
+   "a": "It's a fair guess. Part of \"plain\" can be checked by code. The lesson lists a readability score (a number built from sentence and word length) and a scan for words from your jargon list that appear with no explanation. Those pieces have exact answers, so code can handle them.\n\nBut \"plain\" as a whole is not one exact thing. Whether a sentence actually reads easily, or whether an explanation of a jargon word really helps, takes reading. That is the judge's job. It's also the check the five judges split on wildly, because nobody had defined it. Handing it to code wouldn't fix that. It needs a clear definition first, and then the judge keeps the reading part.\n\n\"Sound friendly\" is the same story. It's a matter of tone, so it needs a reader.\n\n\"Under 200 words\" is different. Count the words and compare to 200. Anyone who counts gets the same result, every time, with no judgment involved.\n\n**\"The word count\" is better because it has one exact answer, so plain code can check it more reliably and cheaply than a judge.**",
+   "step": "Check",
+   "fingerprint": "6fc88c88bbc0e259",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Whether it sounds friendly”?",
+   "a": "\"Whether it sounds friendly\" is a fair thing to want in an answer. You may also have noticed it's the vaguest part of the checklist. That instinct is good: vague wording is exactly where judges split.\n\nBut the question asks which part *code* should check. Code can only check things that have one exact answer. Friendliness doesn't have one. Two careful people could read the same answer and disagree. There's no rule a program can count or match to decide it. It needs reading and judgment, so it stays with the judge.\n\nThe fix for a vague check like this isn't moving it to code. It's giving it a clear definition, so it means one thing. It also fits better as a **scored check**: one that costs a point when it fails, not the whole answer.\n\n\"The word count\" is better because \"under 200 words\" has one exact answer, so plain code gets it right every time, with no judgment needed.",
+   "step": "Check",
+   "fingerprint": "387062976c51289b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that friendliness is 'the vaguest part of the checklist' goes beyond the lesson, which names 'plain' as the check judges split on, but it doesn't contradict it."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Compare judges check by check” in an interview?",
+   "a": "**The 30-second answer**\n\n*The problem:* \"Two AI judges grade the same answers with the same checklist, and they disagree. One overall agreement number hides where they split.\"\n\n*The idea:* \"So I line them up check by check. For each check, I count the answers where both judges gave the same verdict (pass or fail), then divide by the number of answers. Any check under a floor, meaning a minimum agreement I set, gets flagged. Low agreement usually means the check's wording leaves room, so I fix the words, not the judges. In one project, 'plain' had no definition, and the judges split wildly on it.\"\n\n*A trade-off:* \"Agreement is not accuracy. Two judges could agree and still both be wrong. So I also compare against a reference judge, one already checked against human labels. And once I reword a check, it's a new judge, so I re-check it.\"\n\n**A likely follow-up**\n\n\"What if a check stays fuzzy even after rewording?\"\n\n*Hint:* Make it a scored check, not a must-pass check, so a wrong verdict costs a point, not the whole answer. Move any part with one exact answer, like a word cap, into plain code.",
+   "step": "Explain",
+   "fingerprint": "93ba6198766b7fe5",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs that a check is vague:**\n\n- **Pass rates swing when you swap judges.** One judge fails half the answers on a check, another fails almost none. The answers didn't change, so the wording is the problem.\n- **One check is far below the rest.** Most checks get near-perfect agreement between judges, but one sits way lower.\n- **The reasons cite different rules.** Each verdict comes with a written reason. On a vague check, one judge says \"too long\" and another says \"used jargon\" for the same answer.\n- **Good answers fail a must-pass check.** For example, an answer that adds a true fact gets failed on \"correct.\" If that check is must-pass, good answers get thrown out, and your overall score drops for no real reason.\n- **The judge disagrees with your human labels on one check only.** It matches people on most checks but not that one.\n\n**Quickest check:** Run two judges on the same answers. For each check, count how often they gave the same verdict. Then read the reasons on the lowest check. If they apply different standards, rewrite that check so it means one thing. Then re-check the rewritten judge against your human labels.",
+   "step": "Learn",
+   "fingerprint": "4657506850a26a9a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Very few graded answers.** With only 10 or 20 answers, two judges can agree or split by chance, so one odd answer swings the rate a lot. Gather more answers before you blame a check's wording. Then read the judges' reasons on the answers where they split, to see if the wording is the cause.\n\n**2. A check that almost always passes.** If 95 out of 100 answers pass, two judges agree a lot just by both saying \"pass.\" High agreement then hides a vague check. Look only at the answers either judge failed, and see whether the judges failed the same ones.\n\n**3. Judges that think alike.** Two judges built on the same model (the AI underneath) can share a blind spot. They may agree perfectly and both be wrong. Agreement shows the wording is read the same way, not that the verdict is right. So keep checking each judge against your human labels, which are answers people graded by hand.",
+   "step": "Learn",
+   "fingerprint": "b83c61c457d70243",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “checklist” mean here?",
+   "a": "Think of a driving test. The examiner doesn't just write \"good driving.\" They hold a sheet of small checks, like \"signals before turning\" and \"stops at the line.\" Each one gets a tick or a cross. That sheet is a checklist.\n\nHere, the examiner is an AI judge: a model that grades another model's answers. Its checklist is its rubric (its grading guide), written as pass-or-fail checks. Each check gets its own verdict, pass or fail, plus a short reason.\n\nIn the lesson's example, the checklist has five checks: `correct`, `answers it`, `plain`, `no giveaway` and `standalone`. Each has a name and a line of wording that tells the judge what to look for.\n\nThat wording matters most. A check should mean one thing. The `correct` check says two things at once. So a true extra fact passes under one line and fails under the other. The `plain` check has no definition, so each judge drew its own line.\n\nIn the MLflow code, each check becomes its own `Guidelines` scorer. That way, each verdict stands on its own.",
+   "step": "Learn",
+   "fingerprint": "4f7a403d63ce8477",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

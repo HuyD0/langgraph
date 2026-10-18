@@ -1491,6 +1491,188 @@
    }
   }
  },
+ "pick_vector_size": {
+  "check:0:1": {
+   "q": "Why not “Grow to 3,072 numbers to be safe”?",
+   "a": "\"Grow to 3,072 numbers to be safe\" has one fair point. More numbers per vector can sometimes lift quality a little. But here quality is not the problem.\n\n**Recall is already high.** Recall@5 is 0.88, which means the right document shows up in the top 5 results for 88% of your eval questions. The lesson's rule is to grow only when recall is too low. Any gain might be tiny, like 0.86 to 0.87 in the lesson's example.\n\n**Cost is the problem, and growing makes it worse.** Doubling from 1,536 to 3,072 numbers means one endpoint unit holds about half as many vectors. So you need about twice the units, and the bill was already too big.\n\n**Speed gets worse too.** Every comparison has more numbers to walk through.\n\n**It goes through a one-way door.** A new size means every chunk gets a new embedding and the index is rebuilt. That is a big job, and it is spent in the wrong direction.\n\n\"Shrink the vector and re-check recall\" is better because it attacks the real problem, cost, and your eval set tells you whether recall stays high enough.",
+   "step": "Check",
+   "fingerprint": "529ad8492e7d0a93",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "It uses 'endpoint unit', 'eval set' and 'embedding' without explaining them, and at about 200 words it is right at the length limit; it also treats the rebuild as a cost of growing only, though shrinking needs one too."
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “Keep 1,536: size never moves the bill”?",
+   "a": "**What it gets right:** 1,536 is this model's default size, and the lesson says to start with the default. It also respects the fact that changing size is a one-way door, a change that is costly to undo. A new size means every chunk gets a new embedding and the index is rebuilt.\n\n**What it misses:** the claim itself is false. Size does move the bill. The endpoint (the machines kept running to answer searches) is sold in units. Halve the numbers per vector and one unit holds about twice as many vectors. On Databricks AI Search, one Standard unit holds 1 million vectors at 1,536 numbers, or 2 million at 768.\n\nHere, the endpoint is the big line on the bill, and recall@5 is already 0.88. That is exactly the case where the lesson's rule says to shrink. If your model offers a `dimensions` setting, a shorter vector is cheap to try. If not, plan the change as a full re-indexing.\n\n**Why \"Shrink the vector and re-check recall\" is better:** it goes after the real cost, then uses your own eval set to confirm quality still holds before you commit.",
+   "step": "Check",
+   "fingerprint": "070232bd41cfc12e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes all checks. Minor nit: it says keeping 1,536 'respects' the one-way door, which is a mild stretch, and recall@5 and index go unexplained."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “It works: search handles mixed sizes”?",
+   "a": "That answer feels reasonable. The new model's vectors are perfectly good on their own. The trouble is mixing them with the old ones.\n\nIt misses two things.\n\nFirst, an index has one fixed size. Yours was built for 1,536 numbers per vector. A 768-number vector does not fit. Search has no slot for it, so it does not \"handle\" the mix at all.\n\nSecond, even if the sizes matched, the vectors still could not be compared. Each model places meaning in its own way. Think of two maps drawn with different grids: the same coordinates point to different places. Comparing a new-model vector to an old-model vector gives a number that means nothing. Searches would return junk.\n\nSo \"just for the new documents\" is not possible. Switching models is the one-way door from the lesson. It is a big one-off job, about as large as the first indexing of all 5 million chunks.\n\n\"Every chunk must be embedded again\" is better because it names the real cost: one model and one size across the whole index means re-embedding everything and rebuilding.",
+   "step": "Check",
+   "fingerprint": "8cea87a9756e618a",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Only the new chunks need a bigger k”?",
+   "a": "This option treats the problem as a search-tuning issue. It isn't one.\n\nHere, `k` means how many results a search hands back, the same `k` as in recall@k. Asking for a bigger `k` just fetches more of the closest matches. That helps when the right document sits just outside the top few. It can't fix vectors that don't fit together.\n\nThe option does sense that the switch isn't free. That part is right. But it misses two facts from the lesson:\n\n- **Vectors from two models can't be compared.** Each model puts meaning in its own positions. A 768-number vector from the new model and a 1,536-number one from the old model don't measure the same things. Their \"closeness\" means nothing, however many results you pull back.\n- **An index has one fixed size.** This index was built for 1,536 numbers. A 768-number vector can't even go in.\n\nSo a bigger `k` never comes into play.\n\n\"Every chunk must be embedded again\" is better because changing the model or size means all 5 million chunks get new vectors and the index is rebuilt. That is a one-off job as big as the first indexing.",
+   "step": "Check",
+   "fingerprint": "6d5d2de0cacf4ac2",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: saying the option 'senses the switch isn't free' is a guess about what the option means, and the answer runs close to the 200-word limit, but nothing contradicts the lesson."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “The 3,072 model: bigger finds more”?",
+   "a": "The idea has a grain of truth. A model with more numbers per vector *can* capture finer shades of meaning, and topping a public leaderboard shows it does well on someone's test documents.\n\nBut your eval set is the honest judge, and it says the two tie. Recall@5 is the share of your questions whose right document shows up in the top 5 results. Both models score 0.86. So on your own documents, bigger did not find more.\n\nWhat the bigger size does bring is cost and slowness. A 3,072-number vector is four times as long as a 768-number one. One endpoint unit holds about a quarter as many of them, so the same chunks need roughly four times the units. Every search also compares four times as many numbers, so it runs slower.\n\nAnd picking it is a one-way door. Switching back later means re-embedding every chunk and rebuilding the index.\n\n\"The 768 model: same recall, less cost\" is better because when quality ties on your own eval set, the cheaper and faster option wins.",
+   "step": "Check",
+   "fingerprint": "24996f9df6bd8ae4",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'finer shades of meaning' is not in the lesson, and the one-way door applies to either model, not only the 3,072 one, but nothing contradicts the lesson."
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “The 3,072 model: the leaderboard says so”?",
+   "a": "It gets one thing right. A leaderboard is real evidence: the model did well on public test questions. That's a fair reason to try it.\n\nWhat it misses is that those questions aren't yours. Your eval set is questions about your own documents, with the right answers marked by hand. On it, both models score 0.86 recall@5. Both find the right chunk in their top 5 results 86 times in 100. On your data, the 3,072 model gains nothing.\n\nIt still costs more. Each vector holds four times as many numbers. So you pay for about four times the search machines to hold the same documents. Each search also compares more numbers, so it runs slower.\n\nSwitching later is also a one-way door. Vectors from different models can't be compared. So changing back means new vectors for every chunk and rebuilding the index (the searchable store of vectors).\n\n\"The 768 model: same recall, less cost\" is better because when quality ties on your own eval set, the cheaper, faster option wins.",
+   "step": "Check",
+   "fingerprint": "e0488faed3db813d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Clear the recall floor, then the cheapest” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"Vector size drives cost and speed. Twice the numbers per vector means about twice the endpoint units, and slower searches. But a bigger vector doesn't always find better documents on our own data.\"\n\n*The idea.* \"So I set a recall floor first. That's the lowest recall@k we'll accept. Recall@k means how often the right document shows up in the top k results, measured on our hand-marked eval set. Any size below the floor is out. Among the sizes that pass, I take the cheapest. If two cost the same, I take the faster one.\"\n\n*The trade-off.* \"Changing size later is a one-way door. Every chunk gets a new embedding and the index is rebuilt. So I decide this up front, with measured numbers, not guesses.\"\n\n**A likely follow-up:** \"How do you choose the floor?\"\n\n*Hint at a strong answer:* tie it to the product. Ask what a missed document costs the user. Contract search may need a higher floor than an internal FAQ. Then confirm the winning size still clears the floor on fresh questions, not just the ones you tuned on.",
+   "step": "Explain",
+   "fingerprint": "01c7c6c102031035",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Signs the size choice went wrong**\n\n- **The bill grew but quality didn't.** You pay for twice the endpoint units, yet recall@5 is barely higher than a smaller size would give. Recall@5 means how often the right document lands in the top 5 results.\n- **Searches feel slow.** The p95 is high. That is the time that 95 out of 100 searches beat. The extra numbers per vector are not earning their keep.\n- **A leaderboard picked the model, not your data.** Nobody can show recall on your own eval set, the hand-marked questions and answers.\n- **Shrinking quietly hurt.** Someone lowered `dimensions` to save money. Real users then started missing documents.\n- **Mixed vectors.** The model changed, but only some chunks were re-embedded. Results turn odd or dimension-mismatch errors appear. Vectors from two models can't be compared.\n\n**Quickest check**\n\nRun your eval set at the current size and at one smaller size. Compare recall and units side by side. Then confirm two things. The index's `embedding_dimension` should match your vector length. Every chunk should come from the same model.",
+   "step": "Learn",
+   "fingerprint": "c0cb9d8d43af0fcd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems: the answer matches the lesson, stays under 200 words, and gives no solution code. 'Endpoint units' is not explained, but this is minor."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. Your eval set is small or out of date.**\nWith only 20 questions, a gap like 0.86 against 0.87 is likely just noise. One lucky question flips it. And if your documents change over time, last year's questions may not reflect today's content. Grow the eval set and refresh it before you trust a size decision.\n\n**2. Your model has no `dimensions` setting.**\n`text-embedding-ada-002` always gives 1,536 numbers. So \"just shrink it\" is not cheap here. It means switching to a different model, which is the full one-way door: every chunk is re-embedded and the index is rebuilt. Try the new model on your eval set first, then plan the switch as a project.\n\n**3. The system gets very big.**\nAt hundreds of millions of chunks, re-indexing takes days and costs real money. Build the new index alongside the old one. Switch searches over only once it scores well on your eval set. Also consider quantization (storing each number with less precision). It cuts storage without changing the model, but check recall again afterwards.",
+   "step": "Learn",
+   "fingerprint": "f9b766a3a38dfe58",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Passes all checks. The only weak spot is that the 'takes days' claim in point 3 goes beyond the lesson, but it does not contradict it."
+   }
+  },
+  "learn:term": {
+   "q": "How is “endpoint” different from “units”?",
+   "a": "An **endpoint** is the thing that does the work. It is a set of machines kept running just to answer searches. Your index (the searchable collection of vectors) lives there, and your app sends its questions to it.\n\nA **unit** is how much of it you have. It measures the endpoint's capacity, meaning how many vectors it can hold. It is also how you are charged. More units means more room, and a bigger bill.\n\nSo the endpoint is *what* answers your searches. Units are *how big* it is.\n\nThink of a storage building. The building is the endpoint: the one place you go to store and fetch things. Units are the lockers you rent inside it. More stuff means more lockers, not a new building.\n\nVector size matters because bigger vectors take more room. In the lesson's example, one Standard unit holds 2 million vectors of 768 numbers, but only 1 million of 1,536. With 1.8 million chunks, 768 numbers fits in 1 unit. 1,536 numbers needs 2 units. It is the same endpoint and the same documents, at double the cost.",
+   "step": "Learn",
+   "fingerprint": "cf9a8b015437c5d9",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "The only soft spot is that the lesson never says the index lives on the endpoint; that claim is plausible and does not contradict the lesson."
+   }
+  }
+ },
  "recall_at_k": {
   "check:0:0": {
    "q": "Why not “The prompt”?",
@@ -1676,9 +1858,9 @@
  "rerank_check": {
   "check:0:0": {
    "q": "Why not “Yes: a better reranker brings in documents retr…”?",
-   "a": "That answer gets one thing right. A better reranker can change which documents reach the model. It might lift the right document from position 15 into the top 3. That is the \"helped\" pile.\n\nBut it can only do that if the document is already on the list. A reranker never searches. It gets the retriever's top 20 candidates and puts them in a new order. In the lesson's code, `rerank(question, candidates)` only sees `candidates`. If the right document isn't in those 20, the reranker has no way to know it exists.\n\nSo these questions are **out of reach**. A smarter reranker, even an LLM (a large language model), just reorders the same 20 wrong documents more cleverly.\n\nThe fix belongs earlier, in retrieval:\n- **Chunking**: how documents are split into pieces.\n- **Embeddings**: the number lists that capture a chunk's meaning, used to find similar text.\n- **Hybrid search**: combining meaning-based search with keyword search.\n\n\"No: a reranker only reorders the candidates it's given\" is better because it names the real limit: a reranker can't bring back what retrieval never found.",
+   "a": "That answer mixes up two different jobs.\n\n**What it gets right:** a better reranker really can rescue some misses. If the right document is sitting at position 15 of the 20 candidates, a smarter reranker can lift it into the top few. That is the \"helped\" pile.\n\n**What it misses:** a reranker only sees the list the retriever hands it. It reads each (question, chunk) pair and gives it a score. It never searches the full index. So if the right document is not in the top 20, the reranker never sees it. No reranker, however clever, can score a chunk it was never given. Those questions are **out of reach**, meaning retrieval missed the document entirely.\n\nIn this question, half the misses are out of reach. Spending effort on the reranker leaves all of them unsolved. The fix belongs earlier, in retrieval itself: how documents are split into chunks, which embedding model you use, or adding keyword search alongside vector search (called hybrid search).\n\n\"No: a reranker only reorders the candidates it's given\" is better because it names the real limit and points you to retrieval as the place to fix these misses.",
    "step": "Check",
-   "fingerprint": "5d93a005a7c277e7",
+   "fingerprint": "625f1ddbd28a3aa1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1694,9 +1876,9 @@
   },
   "check:0:2": {
    "q": "Why not “Only if you rerank the top 3 instead of the top…”?",
-   "a": "That option gets one thing right. It knows a reranker works on a fixed list of candidates, the documents retrieval handed back. But it misses the key fact about these questions.\n\nFor these misses, the right document is not anywhere in the top 20. So it is not in the top 3 either, because the top 3 is just the first part of that same list. Shrinking the pile you rerank does not add anything new to it. The right document is still missing, and the question is still **out of reach**.\n\nOut of reach means retrieval never found the document. That is a retrieval miss. Changing how many candidates you rerank happens after retrieval, so it cannot undo that miss. The fix belongs in retrieval itself: how you split documents into chunks, your embeddings (the number lists that capture a text's meaning), or hybrid search (mixing keyword and meaning-based search).\n\n\"No: a reranker only reorders the candidates it's given\" is better because it names the real limit. A reranker can only shuffle what retrieval found, so no reranker setting can bring back a document that was never found.",
+   "a": "That option has one good instinct. It senses that what you hand the reranker matters. But it moves in the wrong direction.\n\nThe top 3 is just the first three of the top 20. If the right document isn't anywhere in the top 20, it can't be in the top 3 either. Shrinking the pool to 3 gives the reranker fewer chances, not more. These questions stay **out of reach**: the right document never came back from retrieval (the step that fetches candidate chunks).\n\nA reranker only shuffles the list it receives. It never goes back to search for new documents. So no choice of how many to rerank can rescue a document that retrieval never returned.\n\nThe real fix lives in retrieval itself:\n\n- **Chunking**: how documents are cut into pieces.\n- **Embeddings**: the number lists that capture a chunk's meaning.\n- **Hybrid search**: mixing keyword matching with meaning-based matching.\n\n\"No: a reranker only reorders the candidates it's given\" is better because it names the actual limit. A reranker can't add what's missing, so these misses point you to retrieval.",
    "step": "Check",
-   "fingerprint": "69412be140c6c016",
+   "fingerprint": "a72011139cf1f09c",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1707,14 +1889,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No significant problems; the answer is accurate to the lesson and sits near the length limit (about 200 words)."
+    "notes": ""
    }
   },
   "check:1:0": {
    "q": "Why not “Helped”?",
-   "a": "\"Helped\" doesn't fit, because the document moved the wrong way.\n\nStart with `k`. It is how many documents from the top of the list actually reach the model. Here `k` is 5, so only positions 1 to 5 count.\n\nBefore reranking, the right document was 3rd. That is inside the top 5, so the model would have seen it. After reranking, it is 8th. That is outside the top 5, so the model never sees it.\n\n\"Helped\" has one thing right. The reranker clearly did something to this question, so \"no change\" would be wrong too. But \"helped\" means the right document *entered* the top `k`. Here it started inside and ended outside. The reranker took a good result and made it unusable.\n\nA quick way to sort any question is to ask two yes-or-no questions. Was it in the top `k` before? Is it in the top `k` after? Here the answers are \"yes\" then \"no.\"\n\n\"Hurt\" is the better answer because it names exactly what happened: the right document was in the top `k` before reranking and was pushed out after.",
+   "a": "\"Helped\" doesn't fit because the reranker moved the right document the wrong way.\n\nLook at where it sat compared to `k`. Here `k` is 5, so only the top 5 chunks reach the model. Before reranking, the right document was 3rd. That is inside the top 5, so the model would have seen it. After reranking, it dropped to 8th. That is outside the top 5, so the model no longer sees it.\n\n\"Helped\" only gets one thing right: the document was found by retrieval, so this question is not \"out of reach.\" The reranker had a real chance to act. But \"helped\" means the right document *entered* the top `k` because of reranking. Here the opposite happened. It started inside and ended outside.\n\nA useful habit is to ask two yes-or-no questions. Was it in the top `k` before? Yes. Is it in the top `k` after? No. That pattern is the signature of harm.\n\n\"Hurt\" is better because the reranker pushed a document the model would have seen out of its view, so this answer actually got worse.",
    "step": "Check",
-   "fingerprint": "2253ded77ef8136a",
+   "fingerprint": "73301718ceb58fc0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1725,14 +1907,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No blocking problem; the one soft spot is that 'what Helped gets right' (the reranker did something) is weak, since that is true of Hurt too."
+    "notes": ""
    }
   },
   "check:1:2": {
    "q": "Why not “Out of reach”?",
-   "a": "\"Out of reach\" has a specific meaning in this lesson. It means retrieval never returned the right document at all. It wasn't anywhere in the candidate list, say the top 20. In that case the reranker never had a chance, and the fix belongs in retrieval.\n\nThat's not what happened here. The right document *was* in the candidates. Before reranking it sat 3rd. After reranking it sat 8th. Retrieval did its job. The reranker had the document in hand.\n\nWhat \"Out of reach\" gets right: after reranking, the document is outside the top 5. So the model won't see it, and in everyday English it might feel \"out of reach.\"\n\nWhat it misses is the cause. Calling this out of reach would send you to fix chunking or embeddings, which were fine. The real problem is the reranker's new order. Mislabeling it would also hide a case where the reranker made things worse.\n\n\"Hurt\" is better because the document was inside the top `k` before reranking and the reranker pushed it out.",
+   "a": "\"Out of reach\" gets one thing right. After reranking, the right document sits 8th, outside the top 5, so the model never sees it. From the model's side, that looks the same as missing.\n\nBut \"out of reach\" names a specific cause. It means retrieval never returned the right document at all. It wasn't anywhere in the candidate list, the roughly 20 results the search sent back. Here it clearly was. It sat 3rd before reranking, which is inside the top 5.\n\nThat difference matters because each pile points to a different fix. An out-of-reach question tells you to work on retrieval: how you split documents into chunks, your embeddings (the number lists used to compare meaning), or hybrid search. This question tells you something else. Retrieval did its job, and the reranker undid it. Sorting it as out of reach would send you to fix the wrong part.\n\n\"Hurt\" is better because the right document was in the top `k` before reranking and the reranker pushed it out.",
    "step": "Check",
-   "fingerprint": "ea87f58328fa08eb",
+   "fingerprint": "7a6b4c78e164bbf3",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1748,9 +1930,9 @@
   },
   "check:2:1": {
    "q": "Why not “The reranker needs at least 50 candidates”?",
-   "a": "The \"50 candidates\" answer points at the wrong problem. Nothing in the lesson says a reranker needs 50 candidates. The example uses 20, and that works fine. How many candidates you pull is a tuning choice, not a rule.\n\nIt does touch on one real idea. If the candidate list is too short, the right document may never show up, and that question is out of reach. But that is a retrieval issue. It is not what's wrong in this teammate's test.\n\nThe real flaw is the two different lists. The \"before\" top 5 came from one set of candidates. The \"after\" top 5 came from another. So if the right document moves in or out of the top 5, you can't tell why. Maybe the reranker reordered it. Maybe it simply wasn't in one of the lists. The two changes are tangled together.\n\nA fair test changes only one thing. You keep the candidates the same and just reorder them.\n\nThat's why \"It no longer shows what the reranker did\" is the better answer: with different candidate lists, any difference could come from retrieval, so the comparison stops measuring the reranker at all.",
+   "a": "\"The reranker needs at least 50 candidates\" sounds plausible, but it points at the wrong problem.\n\n**What it gets partly right:** the size of the candidate list does matter a little. A reranker can only reorder what retrieval found. If you fetch more candidates, there is a better chance the right document is in the pile. That is why the lesson says \"retrieve wide.\"\n\n**What it misses:** there is no rule that says 50. The lesson's own example uses 20, and that works fine. More importantly, the teammate's mistake has nothing to do with how many candidates there are. The problem is that the \"before\" and \"after\" lists came from different candidate sets.\n\nWhen the inputs differ, any change in the top 5 could come from retrieval returning different documents, not from the reranker. You can't tell the two causes apart. A fair test keeps one thing different, the reranking step, and holds everything else the same.\n\n\"It no longer shows what the reranker did\" is the better answer because it names the real flaw: with different candidate lists, the comparison can't isolate the reranker's effect.",
    "step": "Check",
-   "fingerprint": "38685db5f715486c",
+   "fingerprint": "b60bcb083bb587c4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1766,9 +1948,9 @@
   },
   "check:2:2": {
    "q": "Why not “Nothing, as long as k stays at 5”?",
-   "a": "Keeping `k` at 5 does get one thing right. Both sides are judged by the same yardstick: the top 5. If one side used top 5 and the other top 10, the comparison would be lopsided.\n\nBut `k` is not the only thing that has to match. The reranker's job is to reorder a list it is handed. To see what that reordering did, both \"before\" and \"after\" must start from the very same candidates.\n\nWith two different candidate lists, a change in the top 5 has two possible causes. The reranker may have moved things. Or retrieval may simply have returned different documents. For example, say the right document shows up in the \"after\" top 5. Maybe the reranker lifted it. Or maybe it was never in the \"before\" list at all. You can't tell which. So your helped, hurt and no-change counts stop meaning anything.\n\n\"It no longer shows what the reranker did\" is the better answer because it names the real problem: with different inputs, you can't separate the reranker's effect from changes in retrieval.",
+   "a": "Keeping `k` at 5 does get one thing right. Both sides show the same number of results, so neither side gets extra chances to include the right document. That part is fair.\n\nBut `k` is not the only thing that has to match. The reranker can only reorder the candidates it is given. If the \"before\" and \"after\" runs start from different candidate lists, a change in the top 5 might come from the lists themselves, not from the reranking.\n\nFor example, say the right document `d12` shows up in the \"after\" top 5. Maybe the reranker lifted it. Or maybe `d12` was never in the \"before\" list at all, and only the second retrieval found it. You can't tell which. The same goes for \"hurt\": a document might drop out because the second list never contained it.\n\nSo the comparison mixes two causes together: what retrieval returned, and what the reranker did. To see the reranker's effect alone, feed it the exact same candidates and compare only the order.\n\n\"It no longer shows what the reranker did\" is better because it names the real problem: with different inputs, any change can't be credited to the reranker.",
    "step": "Check",
-   "fingerprint": "35564da5567a83fb",
+   "fingerprint": "d8c7bdc8caea0c2a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1784,9 +1966,27 @@
   },
   "explain:interview": {
    "q": "How do I explain “Sort each question into four piles” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* \"A reranker reorders the retriever's top 20 so the best few reach the model. It adds time to every request, so I want proof it earns that cost.\"\n\n*The idea.* \"I sort each test question into one of four piles. Out of reach: the right document never came back from retrieval, so no reranker could save it. Helped: reranking moved it into the top `k`, meaning the first few results the model sees. Hurt: reranking pushed it out. No change: it stayed in, or stayed out.\"\n\n*The trade-off.* \"If most misses are out of reach, the reranker isn't the problem. I'd spend effort on retrieval instead: chunking, embeddings, or hybrid search, which mixes keyword matching with meaning-based matching.\"\n\n**A likely follow-up**\n\n\"Why compare before and after on the same candidate lists?\"\n\n*Hint:* If the candidates differ between runs, you can't tell whether a change came from the reranker or the retriever. Keeping the input fixed tests one thing at a time. For a stronger answer, add that \"helped\" minus \"hurt\" is your net gain. You then weigh that gain against the extra delay on every request.",
+   "a": "**A 30-second answer**\n\n*The problem.* \"A reranker re-sorts the retriever's results. It adds time to every request, so I want proof it helps. One average score can hide what really happened.\"\n\n*The idea.* \"I sort each question into four piles. First I ask: was the right document among the candidates at all? If not, it's out of reach. That's a retrieval problem, and no reordering can fix it. For the rest, I compare the top k, meaning the few results that reach the model, before and after reranking, on the same candidates. Either the right document moved into the top k (helped), got pushed out (hurt), or nothing changed.\"\n\n*The edge case.* \"If most misses are out of reach, a better reranker won't help. I'd work on retrieval instead: chunking, embeddings, or hybrid search, which mixes keyword and vector search.\"\n\n**A likely follow-up**\n\n\"What if helped and hurt come out about equal?\"\n\n*Hint:* Say the reranker isn't earning its cost yet. Then say what you'd do. Read the hurt questions to see why they lost. Weigh the added latency, meaning extra waiting time per request. Then try a different reranker, or drop it.",
    "step": "Explain",
-   "fingerprint": "c11346519292b02f",
+   "fingerprint": "c4f2a6774edc2faf",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'chunking', 'embeddings' and 'retriever' are not explained, though 'hybrid search' is. The answer is about 193 words, so it stays under the limit."
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Slower, but not better.** You added a reranker. Each request now takes longer. Yet answers look about the same. Often the right document was never in the candidates, so there was nothing to reorder.\n- **Swapping rerankers changes nothing.** You try a stronger reranker model and the misses stay put. That points to retrieval misses, not a ranking problem.\n- **A good average hiding losses.** Overall quality ticks up a little. But some questions that used to work now fail. Those are \"hurt\" cases, where the right document got pushed out of the top `k`. An average blends them away.\n- **An unfair comparison.** Before and after were run on different candidate lists, for example after re-indexing. The difference you see may come from retrieval, not the reranker.\n\n**Quickest check**\n\nPick a handful of failing questions. For each one, ask a single thing: was the right document anywhere in the 20 candidates? If most answers are no, those questions are out of reach. Spend your effort on retrieval: chunking, embeddings, hybrid search. Leave the reranker alone for now.",
+   "step": "Learn",
+   "fingerprint": "bf63a806ae7cbe9d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1800,29 +2000,11 @@
     "notes": ""
    }
   },
-  "learn:spot": {
-   "q": "How would I spot it going wrong?",
-   "a": "**Warning signs to look for:**\n\n- **Slower, but no better.** You added a reranker, each request takes longer, and answers barely improve. Often the right document never came back from retrieval, so the reranker had nothing useful to reorder.\n- **One happy average.** Your eval shows a single \"quality went up\" number. An average can hide questions the reranker *hurt*, where the right document was in the top `k` (the few results the model sees) and got pushed out.\n- **Unfair comparison.** The before and after numbers came from separate runs that retrieved different candidates. Then you are comparing two retrievals, not measuring the reranker.\n- **Swapping rerankers changes nothing.** That usually points to retrieval misses, not a weak reranker.\n- **Traces show the gap.** A trace is the logged record of one request. In failing traces, the right document is often missing from the 20 candidates.\n\n**Quickest check:** Take a small set of questions where you know the right document. First, check whether it appears in the candidates at all. Sort the rest into helped, hurt or no change, using the same candidate lists. If \"out of reach\" is the biggest pile, fix retrieval first.",
-   "step": "Learn",
-   "fingerprint": "5b0cf5bf69738ce0",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "Minor: \"biggest pile\" loosely paraphrases the lesson's \"most misses are out of reach\", and \"eval\" is not explained. Neither is serious."
-   }
-  },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does this stop working?**\n\n**1. A question needs more than one document.** Some answers are spread across two or three chunks (pieces of a document). A single \"right doc\" label then misses the point, because the reranker might pull one in and push another out. Instead, label every needed chunk and count how many land in the top `k`, before and after.\n\n**2. You have very few test questions.** With 15 questions, one question moving piles changes the picture a lot. That could be noise, not a real effect. Gather more questions, and read the \"hurt\" cases yourself before trusting the counts.\n\n**3. Your documents or chunking change.** If you re-chunk or re-index, the IDs like `d12` may no longer point to the same text. Your answer labels go stale, and \"out of reach\" counts can jump for reasons unrelated to the reranker. Re-label after any rebuild, and compare before and after on the same snapshot of the index.\n\nAlso note: \"out of reach\" depends on how wide you retrieve. Changing `num_results` from 20 to 50 changes that pile, so keep it fixed when comparing.",
+   "a": "**1. A question has more than one right document.** Often several chunks answer the same question, so \"the right doc entered the top k\" stops being a yes or no. Label every right chunk, then count how many of them land in the top `k` before and after reranking.\n\n**2. You only have a handful of test questions.** With ten questions, one question flipping from helped to hurt swings your result by a lot. Gather more labeled questions (questions where you know the right document) before deciding, and read the hurt cases one by one to see why they moved.\n\n**3. Your documents or index change over time.** If you re-chunk or add documents, retrieval returns different candidates, so old and new results are no longer the same lists. Save the candidate lists with each run, for example in MLflow, and rerun the whole check, including out of reach, after every index change.",
    "step": "Learn",
-   "fingerprint": "f84b40084d715ad8",
+   "fingerprint": "6071f9f2ccf39c12",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1838,9 +2020,9 @@
   },
   "learn:term": {
    "q": "How is “out of reach” different from “helped”?",
-   "a": "Both labels describe what happened to one question. The difference is where the right document was.\n\n**Helped** means the right document was among the 20 candidates but sat outside the top k. The reranker moved it up into the top k. In the example, `return-label` needed `d12`. Before reranking, the top 3 were `d4 d9 d1`. After, `d12` came first.\n\n**Out of reach** means the right document never came back from retrieval. For `gift-card`, `d40` wasn't in the top 20. A reranker only reorders what it's given, so it never had a chance. This is a retrieval miss. The fix belongs in retrieval: chunking, embeddings or hybrid search.\n\nPicture a librarian choosing the best 3 books from a cart of 20. If the right book is on the cart but buried, a good librarian brings it to the top. That's helped. If the book never made it onto the cart, no librarian can pick it. That's out of reach.\n\nTogether they show where to spend effort. Lots of \"helped\" means the reranker earns its time cost. Lots of \"out of reach\" means you should fix retrieval first.",
+   "a": "Both labels describe where the right document ended up. But they point at different parts of the system.\n\n**Helped** means the reranker did its job. The right document was among the candidates but outside the top k (the few results kept for the model). Reranking lifted it in. In the example, `return-label` needed `d12`. Before: `d4 d9 d1`. After: `d12 d4 d9`.\n\n**Out of reach** means the reranker never had a chance. The right document wasn't among the 20 candidates at all. For `gift-card`, `d40` never came back from retrieval, so no reordering could surface it. That's a retrieval miss.\n\nThink of a shop assistant arranging a shelf. If the item is in the box of new stock, arranging it to the front means the assistant **helped**. If it was never delivered, no arranging can help. It's **out of reach**. You fix the delivery, not the shelf.\n\nThey work together because you check out of reach first. Only questions whose right document made it into the candidates can be helped, hurt or unchanged. If most misses are out of reach, spend effort on retrieval: chunking, embeddings, hybrid search.",
    "step": "Learn",
-   "fingerprint": "f6246ca972872e0a",
+   "fingerprint": "171f8d76fd35a5bd",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1851,7 +2033,189 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: it never defines 'reranker' or 'top k' for a beginner, but everything it says matches the lesson and it stays under 200 words."
+    "notes": ""
+   }
+  }
+ },
+ "rescore_candidates": {
+  "check:0:1": {
+   "q": "Why not “A bug: a search must compare every vector”?",
+   "a": "That option gets one thing right. A search that compares the question with every stored vector never misses. Azure offers exactly that as exhaustive KNN (\"k nearest neighbours\").\n\nBut \"must\" is where it goes wrong. Nothing is broken here. Look at the clues: 40 million vectors, fast answers, and only an occasional miss. Comparing every vector at that size would be slow. Fast results mean the index is using approximate nearest neighbour search (ANN), almost certainly HNSW.\n\nHNSW walks a web of links, always stepping to whichever neighbour is closer to the question. Sometimes the walk stops at a spot where every link looks worse, while the true closest chunk sits elsewhere in the web. That is the small recall you trade for speed. \"Recall\" means how many of the true closest vectors you actually get back.\n\nIf those misses matter, you can raise `efSearch` or `m`. That means fewer misses, but slower searches. Or you can switch to exhaustive search when a miss costs more than the wait.\n\n\"Approximate search: a little recall for speed\" is better because it names the deliberate trade the index is making, rather than calling expected behaviour a fault.",
+   "step": "Check",
+   "fingerprint": "7e7f326c91ca5939",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:0:2": {
+   "q": "Why not “The vectors are too short for the index”?",
+   "a": "**Why not \"The vectors are too short for the index\"?**\n\nThis option touches something real. The last lesson showed that how many numbers a vector holds is a lever. Shorter vectors can capture less meaning, so the chunk that is closest may not be the most useful one.\n\nBut that is not what the question describes. It says the *true closest* chunk is sometimes missing. \"Closest\" here means closest by the index's own distance measure.\n\nVector length cannot explain that. With short vectors or long ones, an exact search compares the question with every stored vector. So it would still find the true closest chunk every time.\n\nThe clues point elsewhere. There are 40 million vectors. Searches are fast. Misses are rare. That pattern fits approximate search, such as HNSW. The search walks a web of links and looks at only part of the index. Now and then the walk stops at a spot where every link looks worse, even though a closer vector sits elsewhere in the web.\n\n\"Approximate search: a little recall for speed\" is better because it explains all three clues: the size, the speed, and the rare miss.",
+   "step": "Check",
+   "fingerprint": "08933f3bbd82a463",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Ask for more results and re-score them”?",
+   "a": "\"Ask for more results and re-score them\" is a real technique from this lesson, so it's a fair guess. But it doesn't shrink anything.\n\nThat technique is **oversampling**. You ask the fast index for more candidates than you need. Then you score that short list exactly, using the full-size vectors. Its job is to win back **recall**, the share of true closest matches you actually find. It only makes sense after you've made the numbers smaller, because shrinking is what costs recall in the first place.\n\nIt doesn't save room either. Re-scoring needs full-size vectors to compare against. In Azure, the `preserveOriginals` setting keeps them. That copy is as big as the original vectors, and it sits on disk. Oversampling itself adds search work, not size: more candidates to check on each query.\n\nSo it's a partner to the right answer, not the answer.\n\n\"Store each number in fewer bits\" is better because it is the lever that actually shrinks the index in memory: going from 32 bits to 16, 8 or 1 makes each vector smaller, even after you've cut how many numbers it holds as far as the model allows.",
+   "step": "Check",
+   "fingerprint": "caf186a0a9634764",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Switch to exhaustive search”?",
+   "a": "\"Switch to exhaustive search\" sounds sensible, but it answers a different problem.\n\n**What it gets right:** exhaustive search compares the question with every stored vector, so it never misses. If misses were the worry, it would help.\n\n**What it misses:** the problem here is size. The index no longer fits its endpoint, which is the server that holds and searches it. Exhaustive search changes *how the index looks* through its vectors, not *how much room* they take. Every vector is still stored at full size, so the index is just as big. It is also slower, because it walks through every vector on each search.\n\nThe question also says you have already shrunk the vectors as far as the model allows. That was the last lesson's lever: how many numbers each vector holds. So the remaining lever must shrink each number.\n\n**Why \"Store each number in fewer bits\" is better:** it cuts the room each number takes, from 32 bits down to 16, 8 or even 1, so the index itself gets smaller, at the cost of a little recall (the share of true closest matches you find), which oversampling and re-scoring win some of back.",
+   "step": "Check",
+   "fingerprint": "cf20adfcf48adc7e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: 'the index is just as big' is a slight overstatement, since HNSW links add some size that exhaustive search would not have, but the main point is sound."
+   }
+  },
+  "check:2:1": {
+   "q": "Why not “HNSW: check a small part, fast”?",
+   "a": "HNSW gets one thing right: it is fast. It walks a web of links and checks only a small part of the index. For most apps, that is a great deal.\n\nBut look at what this team needs. One missed clause is one too many. HNSW is approximate. Its walk can stop at a spot where every link looks worse, while a closer vector sits somewhere else in the web. That vector never comes back. Settings like `m` (links per vector) and `efSearch` (candidates kept during the walk) make misses rarer, but never impossible.\n\nSo HNSW would buy speed this team doesn't need, and pay for it with the chance of a miss they can't accept. Their searches are rare and nobody minds waiting, so the speed is worth almost nothing to them. A miss costs a lot.\n\nExhaustive search (`exhaustiveKnn` on Azure AI Search) is better because it compares the question with every stored vector, so it never misses the true closest ones, and here a miss costs far more than the wait.",
+   "step": "Check",
+   "fingerprint": "f5c6dfe37d638fbd",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:2": {
+   "q": "Why not “Binary quantization: 1 bit a number”?",
+   "a": "Binary quantization rounds every number in a vector down to a single bit, a 0 or a 1. That is the biggest memory saving on the list, and it is a real option in Azure AI Search. So the option is not made up. It just solves the wrong problem.\n\nThe legal team does not care about memory or speed. Searches are rare and nobody minds waiting. What they care about is never missing a clause. Binary quantization goes the other way. Squeezing each number into 1 bit throws away the most detail, so it loses the most recall. Recall means how many of the truly closest vectors the search actually finds.\n\nOversampling and rescoring win some of that back by re-checking a shortlist with the full-size vectors. But they can only re-check what made the shortlist. If the right clause never got onto it, rescoring cannot rescue it.\n\n\"Exhaustive: compare every vector\" is better because it checks the question against every stored vector at full size, so it never misses, and the slowness it costs is exactly what this team said they can live with.",
+   "step": "Check",
+   "fingerprint": "23c5e085f33ab00f",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No real problems. The claim that exhaustive search compares at full size goes slightly beyond the lesson, but it is consistent with it. The answer is about 187 words."
+   }
+  },
+  "explain:interview": {
+   "q": "How do I explain “Shortlist fast, then score the shortlist exactly” in an interview?",
+   "a": "**Your 30-second answer**\n\n*The problem.* \"Comparing a question with every stored vector is exact, but slow once there are millions. Full-size vectors also take a lot of memory.\"\n\n*The idea.* \"So the index takes two shortcuts. It walks a web of links (HNSW) instead of checking everything. It also stores each number in fewer bits, say 8 instead of 32. That gives a fast, rough shortlist, a few times bigger than I need. Then I re-score just that shortlist with the full-size vectors and keep the best k.\"\n\n*The trade-off.* \"The shortlist can still miss a true neighbour. A bigger oversampling factor (how many extra candidates I ask for) catches more, but means more re-scoring. I'd check recall, meaning how many of the true top results we find, on an eval set: test questions with known right answers.\"\n\n**A likely follow-up**\n\n\"Isn't that just a reranker?\"\n\nHint: no, they do different jobs. Re-scoring only reruns the exact vector comparison on a short list, so it is cheap. A reranker is a second model that re-reads the text. It is slower but understands meaning better. You can use both: re-score first, then rerank.",
+   "step": "Explain",
+   "fingerprint": "4fc48c5c95566d2d",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:spot": {
+   "q": "How would I spot it going wrong?",
+   "a": "**Warning signs**\n\n- **Known-good documents go missing.** You know a passage answers the question, but it isn't in the top results. The fast search may have stopped early in its web of links.\n- **Results got worse after shrinking the numbers.** Quality dipped right after you turned on int8 or binary quantization. Maybe rescoring is off, oversampling is too low, or the full-size vectors weren't kept.\n- **Odd ordering after rescoring.** The top result doesn't have the highest exact score, tied results swap places between runs, or you get more than `k` back.\n- **Slow \"rescoring.\"** Your traces show a model reading each candidate's text. That's a reranker, not rescoring. Rescoring is only the exact comparison on a short list.\n\n**Quickest check**\n\nTake a few questions from your eval set. Run each one twice: once with the exact `exhaustiveKnn` search and once with your fast, compressed profile. Compare the two top-`k` lists. The share they have in common is your **recall**, meaning how many of the truly closest vectors the fast search found. If it's low, raise `efSearch` or oversampling and measure again.",
+   "step": "Learn",
+   "fingerprint": "8955267e110765ca",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. A small index, or a miss that really matters.** With a few thousand vectors, comparing against every one is already quick, so the approximate walk saves you almost nothing. The same goes for legal or medical lookups, where one missed document costs more than the wait. Use exhaustive search there (`exhaustiveKnn` in Azure).\n\n**2. Data that changes a lot.** Many adds and deletes can leave the web of links patchy, so the walk stops early more often. Quantization levels chosen from older data may also fit new data badly. Re-run your eval set on a schedule, and rebuild the index when recall drops.\n\n**3. Very aggressive shrinking.** Binary quantization keeps only 1 bit per number, so the fast first round can leave out the true best match. Re-scoring only reorders the shortlist. It cannot bring back a vector that never made the list. Raise `oversampling` (how many extra candidates you ask for), or step back to int8 (8 bits per number), and check recall on your eval set.",
+   "step": "Learn",
+   "fingerprint": "3aa2ae0f445c46bb",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "learn:term": {
+   "q": "What does “reranker” mean here?",
+   "a": "Think of hiring. A quick screen picks twenty CVs by keywords. Then a manager actually reads those twenty and decides who fits best. That second, careful reader is like a **reranker**.\n\nIn this lesson, a reranker means **a second model that re-reads the text** of each result and puts the results in a new order. It understands the words, not just the numbers in the vectors. The course covers it later, in \"Did the reranker help?\".\n\nIn this lesson, the reranker appears only as a contrast, to show what oversampling is *not*. Rescoring works like this:\n\n- The fast index returns a shortlist, such as 4 times k candidates (`\"defaultOversampling\": 4`).\n- Each candidate gets re-scored with its full-size vector (`\"enableRescoring\": True`).\n- The best k are returned.\n\nNo model reads any text in those steps. The same distance comparison simply runs again, using the exact numbers instead of the rounded ones, and only on the short list.\n\nSo the two ideas are different:\n\n- **Rescoring:** the same maths, done more precisely.\n- **Reranker:** a different judge that reads the text itself.",
+   "step": "Learn",
+   "fingerprint": "479aa586aaa3da1c",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
    }
   }
  },
@@ -2058,81 +2422,9 @@
  "rrf": {
   "check:0:0": {
    "q": "Why not “A bigger embedding model for the same index”?",
-   "a": "A bigger embedding model does get one thing right. It usually understands meaning better. An embedding is a list of numbers that captures what a piece of text is about. A stronger model makes those numbers more precise, so searches by meaning improve.\n\nBut meaning is not the problem here. An error code like \"E-4021\" has almost no meaning on its own. It is an exact string of characters. To an embedding model, \"E-4021\" and \"E-4012\" look almost the same, because they are about the same kind of thing. So even a bigger model may return chunks about similar errors and miss the one with the exact code. Making the model bigger does not change how vector search works. It still matches by closeness in meaning, never by exact characters.\n\nThere is also a practical cost. A new model means re-embedding every chunk in the index, which takes time and compute, and the exact-match gap would still be there.\n\nHybrid search is the better answer because it adds keyword matching, which looks for the exact characters \"E-4021\", while vector search still handles the meaning of the rest of the query.",
+   "a": "A bigger embedding model gets one thing right. It can get better at matching by meaning. An embedding is a list of numbers that captures what a piece of text is about, and a stronger model may capture that more sharply. For questions phrased in everyday words, that can help.\n\nBut it doesn't fix the real problem here. Vector search, however good the model, still matches by meaning. \"E-4021\" is not really a meaning. It's an exact string, and the user needs the chunk that contains exactly that code. Swapping in a bigger model keeps the same approach that missed it.\n\nKeyword search is built for this case. It scores with BM25. That formula gives a word more weight when it's rare across the documents and sits in a short chunk. An error code is about as rare as words get, so a chunk with \"E-4021\" scores high.\n\n\"Hybrid search: add keyword matching\" is better because it adds the tool made for exact terms, while vector search keeps handling the meaning of the rest of the question.",
    "step": "Check",
-   "fingerprint": "c06fc46231495b03",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No significant problems. The claims about similar-looking codes and re-embedding go beyond the lesson but don't contradict it, and the answer is about 190 words."
-   }
-  },
-  "check:0:2": {
-   "q": "Why not “Returning more results from vector search”?",
-   "a": "It's a reasonable instinct. If the right document is somewhere in the vector results, asking for more might pull it in. Sometimes that works.\n\nBut it doesn't fix the real problem. Vector search compares **embeddings**, which are lists of numbers that capture a text's meaning. An error code like \"E-4021\" has almost no meaning to capture. To the embedding, it looks a lot like \"E-4012\" or \"E-3021.\" So the right document may not rank high at all, or may not show up even in a longer list.\n\nReturning more results also adds noise. You get more chunks that are about checkout errors in general, not about this exact code. Anything that reads those results later, like a language model writing an answer, now has more wrong material to sort through.\n\nSo you're paying more to search in the same weak way. You're hoping the right document turns up, not making sure it does.\n\nHybrid search is better because keyword matching finds the exact string \"E-4021\" directly, and rank fusion then merges those hits with the vector results so you keep both exact matches and meaning matches.",
-   "step": "Check",
-   "fingerprint": "6545134a7a712984",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The claim that the embedding makes E-4021 look like E-4012 goes beyond the lesson, but it is plausible and doesn't contradict it. Length is about 185 words."
-   }
-  },
-  "check:1:1": {
-   "q": "Why not “Sorting that many scores takes too long”?",
-   "a": "\"Sorting that many scores takes too long\" points at the wrong problem.\n\n**What it gets right:** nothing important. Sorting isn't slow here. A hybrid search returns a short list, like the 10 results in the lesson's example. And reciprocal rank fusion (RRF) sorts too. It sorts the final point totals at the end. So sorting can't be what's wrong.\n\n**What it misses:** the real trouble is *what* you'd be sorting. The 12 comes from keyword search. The 0.83 comes from vector search, which matches by embeddings (lists of numbers that capture meaning). Each search makes its scores in its own way. So 12 and 0.83 aren't on the same scale. Putting them in one sorted list would treat them as if they meant the same kind of thing, and they don't.\n\nThat's why hybrid search ignores the raw scores. It uses each document's **rank**, meaning its place in each list. First place means the same thing in both lists, so ranks can be added up fairly.\n\n**Why the other option is better:** \"The two kinds of score can't be compared\" names the real reason, which is that the scores don't share a scale, so merging must use ranks instead.",
-   "step": "Check",
-   "fingerprint": "806c3af381789b4d",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. It runs about 200 words, right at the length limit, and says 'ranks can be added up' where the lesson adds points based on rank."
-   }
-  },
-  "check:1:2": {
-   "q": "Why not “Vector scores are always more accurate”?",
-   "a": "\"Vector scores are always more accurate\" has a grain of truth. Vector search is very good at meaning. It can match \"payment failed\" to \"checkout error\" even when the words differ.\n\nBut the word \"always\" is the problem. Keyword search wins on exact terms. For a query like `error E-4021 on checkout`, the exact code `E-4021` matters most. A keyword match on it is often the best result. Vector search might instead return chunks about errors in general.\n\nThe answer also misses the real issue. Even if one search were better, that still wouldn't make 12 and 0.83 comparable. The two numbers come from different scales. A keyword score can run into the tens. A vector similarity (how close two embeddings are) usually sits between 0 and 1. If you sorted them together, keyword results would almost always come out on top. That's only because the numbers are bigger, not because those documents are better.\n\n\"The two kinds of score can't be compared\" is better because it names the actual problem: different scales. That's why hybrid search merges by place in each list instead of by raw score.",
-   "step": "Check",
-   "fingerprint": "d4f021bf7158f558",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems. The score ranges and the claim that keyword results would 'almost always' come out on top go slightly beyond the lesson but don't contradict it."
-   }
-  },
-  "check:2:0": {
-   "q": "Why not “Doc B, because 1st place wins”?",
-   "a": "\"Doc B, because 1st place wins\" gets one thing right. A 1st place does earn more points than a 2nd place in the same list. So Doc B's one result is strong.\n\nWhat it misses is how rank fusion works. Fusion doesn't pick the single best place. It gives each document points from every list it appears in, then adds them up.\n\nDoc B appears in only one list, so it collects points once.\n\nDoc A appears in both lists, so it collects points twice. It gets points for 1st in keyword search and points for 2nd in vector search. Its 2nd place is worth a little less than Doc B's 1st, but two sets of points beat one.\n\nRank fusion also adds a fixed number to every place before scoring. That keeps 1st from counting far more than 2nd. So the gap between Doc A's 2nd and Doc B's 1st is small. Doc A's keyword points easily cover it.\n\n\"Doc A, as both lists give it points\" is better because fusion rewards agreement: a document found by both searches adds up points from each list and rises to the top.",
-   "step": "Check",
-   "fingerprint": "eb4cba44e9b8160d",
+   "fingerprint": "b3055d283eac50c7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2146,11 +2438,83 @@
     "notes": ""
    }
   },
+  "check:0:2": {
+   "q": "Why not “Returning more results from vector search”?",
+   "a": "It's a fair instinct. If the right chunk sits just outside the top results, asking for more might pull it in. So it can help a little, sometimes.\n\nThe problem is *why* vector search missed it. Vector search matches by meaning. It turns text into an embedding, a list of numbers that captures what the text is about. An error code like \"E-4021\" carries almost no meaning. Its embedding looks a lot like \"E-4012\" or any other error code. So the right chunk may not rank near the top at all.\n\nReturning more results just digs deeper into the same list. The match might be at place 40, or not there at all. You also pull in many wrong chunks, which adds noise for the model that reads them.\n\nKeyword search with BM25 works differently. It rewards rare words in short chunks. \"E-4021\" is rare, so the chunk containing it scores high and lands near the top.\n\n**Hybrid search is better because it adds keyword matching, which catches the exact code directly, while vector search still covers the meaning of the rest of the query.**",
+   "step": "Check",
+   "fingerprint": "8b860acc43082f94",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems. The claim that E-4021's embedding resembles E-4012 goes beyond the lesson but does not contradict it, and the answer is about 185 words."
+   }
+  },
+  "check:1:1": {
+   "q": "Why not “Sorting that many scores takes too long”?",
+   "a": "\"Sorting that many scores takes too long\" points at the wrong problem.\n\n**What it gets slightly right:** sorting does take some work. If you had millions of results, speed would matter.\n\n**What it misses:** hybrid search only merges a short list from each search, often 10 or 20 results. Sorting that is almost instant. Rank fusion sorts too! Its last step sorts the added-up points from highest to lowest. So avoiding sorting can't be the reason we use it.\n\n**The real problem is the numbers themselves.** A BM25 score of 12 comes from word counts and how rare the words are. It has no fixed top value. A vector score of 0.83 measures how close two meanings are, usually on a scale that tops out at 1. Sorting them together would put the keyword result first just because its number looks bigger, not because it's a better match.\n\nThat's why \"The two kinds of score can't be compared\" is the better answer: the scores are on different scales, so hybrid search ignores them and uses each document's place in each list instead.",
+   "step": "Check",
+   "fingerprint": "dc29381a66899d8b",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:1:2": {
+   "q": "Why not “Vector scores are always more accurate”?",
+   "a": "That option has a grain of truth. Vector search, which matches by meaning using embeddings (lists of numbers that capture what text is about), is very good when the words differ but the idea is the same.\n\nBut \"always\" is the problem. Keyword search wins on exact terms. Think of a query like `error E-4021`. Vector search may return chunks about errors in general. BM25, the keyword scoring formula, rewards that rare exact code and finds the right chunk. That is why hybrid search runs both.\n\nThe bigger miss is that this answer doesn't touch the real question. Even if one search were more accurate, 12 and 0.83 still sit on different scales. A BM25 score can grow with rare words and has no fixed top. A vector similarity score usually sits in a small range, often near 0 to 1. A 12 is not \"better\" than 0.83. They measure different things, like comparing kilograms to degrees.\n\n\"The two kinds of score can't be compared\" is better because it names the real reason we merge by rank, each document's place in its list, instead of by raw score.",
+   "step": "Check",
+   "fingerprint": "4e42c8709632e3e0",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
+   }
+  },
+  "check:2:0": {
+   "q": "Why not “Doc B, because 1st place wins”?",
+   "a": "\"Doc B, because 1st place wins\" gets one thing right. In a single list, 1st place does earn the most points. So Doc B scores well in the vector list.\n\nWhat it misses is that rank fusion adds up points from **every** list. It doesn't pick a winner list by list. Doc B shows up in only one list, so it gets points only once. Being missing from the keyword list gives it nothing there.\n\nDoc A collects points twice: once for 1st in keyword and once for 2nd in vector.\n\nThe fixed number added to every place matters here too. It keeps 1st from being worth far more than 2nd. So the gap between Doc B's 1st and Doc A's 2nd in the vector list is small. Doc A's extra keyword points easily cover that gap.\n\nThis is the whole point of hybrid search. A document that both searches agree on is usually a safer bet than one that only a single search liked.\n\n**Why \"Doc A, as both lists give it points\" is better:** fusion rewards agreement, and two strong finishes add up to more than one top finish alone.",
+   "step": "Check",
+   "fingerprint": "75936b1c3846d9d7",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No significant problems; the closing line 'two strong finishes add up to more than one top finish alone' is slightly over-general but holds for this example."
+   }
+  },
   "check:2:2": {
    "q": "Why not “They tie, as both reach 1st place”?",
-   "a": "\"They tie, as both reach 1st place\" gets one thing right. Each document does sit in 1st place somewhere. Doc A is 1st in keyword search, and Doc B is 1st in vector search. First place earns the most points a single list can give.\n\nWhat it misses is that rank fusion doesn't just look at a document's best place. It **adds up** points from every list. Doc A gets first-place points from keyword search, and then more points from vector search for its 2nd place. Doc B gets first-place points from vector search, but nothing from keyword search, because it isn't there.\n\nSo Doc A has two helpings of points and Doc B has one. Second place earns only a little less than first, because a fixed number is added to every place. That means Doc A's extra helping easily puts it ahead.\n\nThis is the whole point of hybrid search. A document that both searches agree on is a safer bet than one only a single search found.\n\n\"Doc A, as both lists give it points\" is better because fusion totals points across lists, and appearing in both beats a single first place.",
+   "a": "It's true that both documents have a 1st place somewhere. In rank fusion, 1st place earns the same points no matter which list it comes from. So if you compared only their best places, they would look equal.\n\nBut rank fusion doesn't stop at the best place. It **adds up** points from every list.\n\n- **Doc A** gets points for 1st in keyword search. It also gets points for 2nd in vector search. That's two helpings.\n- **Doc B** gets points for 1st in vector search. It's missing from keyword search, so it gets nothing there. That's one helping.\n\nSecond place earns a bit less than first. That's because of the fixed number added to each place, which keeps the gap small. But a bit less is still far more than zero. So Doc A's total is clearly higher.\n\nThis is the whole point of hybrid search. A document that both searches agree on is a safer bet than one only a single search found.\n\n\"Doc A, as both lists give it points\" is better because rank fusion sums points across lists, and only Doc A collects from both.",
    "step": "Check",
-   "fingerprint": "ea3632087f54e5dc",
+   "fingerprint": "7ae3f683d1c4a28a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2166,9 +2530,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Add up points by place, then sort” in an interview?",
-   "a": "Here's a 30-second answer you could say out loud.\n\n**The problem.** \"Hybrid search runs keyword search and vector search together. Keyword search catches exact terms like error codes. Vector search catches meaning. But their scores sit on different scales, so I can't compare them directly.\"\n\n**The idea.** \"So I ignore the scores and use rank, meaning each document's place in each list. Each list gives a document points, more for a higher place. A fixed number is added to every place, so first doesn't count far more than second. I add up each document's points across lists, then sort from highest to lowest. A document found by both searches collects points twice and rises. One found by only one search still gets some points.\"\n\n**A trade-off.** \"Rank throws away *how much* better one result was. A near-perfect first place counts the same as a barely-better first place.\"\n\n**Likely follow-up:** \"What does that fixed number actually change?\"\n\nHint for a strong answer: call it a smoothing knob. A bigger number shrinks the gap between places, so doing well in both lists matters more than topping just one. A smaller number rewards top spots more heavily.",
+   "a": "Here's a 30-second answer you can say out loud.\n\n**The problem.** \"Hybrid search runs two searches at once. Keyword search finds exact terms, like error codes. Vector search finds matching meaning. But their scores are on different scales. A keyword score from BM25, the classic word-matching formula, can't be fairly added to a vector similarity score.\"\n\n**The idea.** \"So I ignore the raw scores and use each document's place in each list. A document earns points from every list it appears in, more for a higher place. I add up the points, then sort from highest to lowest. Documents that rank well in both lists rise to the top. A document found by only one search still gets some points.\"\n\n**Trade-off.** \"Using place throws away how big the gap was. If the top keyword hit is far better than the second, fusion can't see that. A fixed number added to every place keeps first from counting far more than second.\"\n\n**Likely follow-up:** \"What happens with ties?\"\n\nHint: Name a fixed rule, such as alphabetical order by document id. Then explain why it matters. The same query should always return the same order, which makes testing and debugging easier.",
    "step": "Explain",
-   "fingerprint": "75df827d35b7f32b",
+   "fingerprint": "891ddab70145b386",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2184,9 +2548,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Exact terms get lost.** Someone searches \"error E-4021\" and gets chunks that are only loosely about checkout. The doc with that exact code is missing or buried. That points to the keyword side being dropped or drowned out.\n- **Reworded questions miss.** A user asks the same thing in different words and the obvious doc never shows up. That points to the vector side (matching by meaning) being dropped.\n- **One list always wins.** The hybrid results look exactly like one search's list, every time. This often means raw scores were added together instead of places. One search's scores may simply be bigger numbers.\n- **Shared hits don't rise.** A doc found near the top by both searches sits below a doc only one search found.\n- **Good tests, poor real use.** Your test questions all happen to be phrased one way, so results look great. Then quality drops once real users type codes and product names.\n\n**Quickest check**\n\nPick three or four real queries, including one with an exact code. Run keyword alone, vector alone, then hybrid. Put the three lists side by side. A doc that is high in both lists should be at or near the top of the hybrid list.",
+   "a": "**Warning signs**\n\n- **Exact terms go missing.** A search for `E-4021` or a product name returns chunks that are \"about checkout\" but never mention the code. That suggests only vector search is running.\n- **Rephrased questions fail.** \"Payment won't go through\" finds nothing, while the exact wording works. That suggests only keyword search is running.\n- **The fused list copies one input.** If your merged results nearly always match the keyword list, or the vector list, the merge is probably using raw scores. One search's numbers are simply bigger, so it drowns out the other.\n- **Shared hits don't rise.** A document near the top of both lists should land near the top of the fused list. If it sits in the middle, the points aren't being added up across lists.\n- **One-list finds vanish.** A strong result from just one search should still appear somewhere in the merged list.\n\n**Quickest check**\n\nPick a few test queries. Include one with an exact code and one written in plain words. Print the keyword list, the vector list and the fused list side by side. You should see shared documents move up, and both kinds of query should find their right chunk near the top.",
    "step": "Learn",
-   "fingerprint": "078a447d40dba720",
+   "fingerprint": "1d3131e2611a37fe",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2202,9 +2566,27 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three situations where hybrid search with reciprocal rank fusion needs extra care.\n\n**One search is much weaker for your questions.** Rank fusion treats both lists as equally trustworthy. If your users mostly type exact error codes, the vector list may add noise that pushes good keyword hits down. Test on a set of real questions, and give the stronger list more weight, or skip hybrid for that kind of query.\n\n**You need to know how confident a match is.** Fusing by place throws away the original scores. A near-perfect match and a barely related one can look the same if they sit at the same place. Add a reranker on the fused top results. A reranker is a model that rereads the question and each chunk, then scores how well they fit.\n\n**Your data changes often.** New documents may reach the keyword index before the vector index, or the other way round. Then a fresh document shows up in only one list and earns fewer points. Make sure both indexes refresh together, and check how recently each was synced.",
+   "a": "Rank fusion works well most of the time, but watch for these three situations.\n\n**One search is much weaker than the other.** Fusion gives both lists an equal say, so a poor list can push good results down. Test each search alone on real questions, and if one is clearly worse, give its points less weight or drop it.\n\n**Your documents change over time.** The keyword index and the vector index are built separately, so after an edit one can hold the new text while the other still holds the old. Whenever a chunk's text changes, redo its embedding at the same moment. An embedding is the list of numbers vector search compares. Updating both together means both searches see the same version.\n\n**You have very few documents.** BM25 decides which words are rare by counting across all chunks, and with only a handful that count is unreliable. With a small set, vector search alone often does just as well. Add a simple exact-match filter for codes like `E-4021`.",
    "step": "Learn",
-   "fingerprint": "f6666f34df9b01b1",
+   "fingerprint": "44d6f81b98898ae6",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": false,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "The staleness point assumes the keyword and vector indexes are built separately and need manual re-embedding, but the lesson's stack uses one hybrid index and one query; the claim that vector search alone does as well on small sets is also not in the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "What does “Hybrid search” mean here?",
+   "a": "**Hybrid search** means running two kinds of search on the same question and combining what they find.\n\nThink of looking for a book in a library. You could type the exact title into the catalog. That only works if you know the precise words. Or you could ask the librarian for \"something about saving money for kids,\" and they understand what you mean. Hybrid search does both and merges the answers.\n\nIn this lesson, the two searches are:\n\n- **Keyword search**, scored with BM25. It matches exact words, like the error code `E-4021`.\n- **Vector search**, which compares embeddings (lists of numbers that capture meaning). It finds chunks (small pieces of documents) that mean the same thing, even if they use different words.\n\nIn the example, keyword search returns `d3, d1, d7` and vector search returns `d1, d9, d3`. Hybrid search merges both lists by place into one: `d1, d3, d9, d7`.\n\nIn the Databricks code, `query_type=\"hybrid\"` tells the index to run both searches for you. The query \"error E-4021 on checkout\" suits it well because it has an exact code and a meaning.",
+   "step": "Learn",
+   "fingerprint": "9e1d42db3f549a3b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -2216,24 +2598,6 @@
     "standalone": true,
     "pass": true,
     "notes": ""
-   }
-  },
-  "learn:term": {
-   "q": "What does “Hybrid search” mean here?",
-   "a": "**Hybrid search** means running two kinds of search on the same question and combining what they find.\n\nThink of asking two librarians for help. One checks the catalog for the exact words you said. The other understands what you mean and suggests books on that topic, even if the wording is different. Together they catch more than either one alone.\n\n**Keyword search** is the first librarian. It's great at exact terms, like the error code `E-4021`. **Vector search** is the second. It compares embeddings, which are lists of numbers that capture a text's meaning. So it finds chunks that say the same thing in other words.\n\nIn the lesson's example, keyword search returns `d3, d1, d7` and vector search returns `d1, d9, d3`. Hybrid search keeps both lists. Then it merges them by each document's place in each list, not by raw scores, since the two kinds of scores can't be compared. That's why `d1`, which ranks high in both lists, ends up first.\n\nIn the Databricks snippet, `query_type=\"hybrid\"` is the setting that tells `similarity_search` to run both searches for you.",
-   "step": "Learn",
-   "fingerprint": "9851d2fb28384e67",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No substantive problems. It opens with a one-line definition before the librarian comparison, which is a minor ordering quibble and does not change the verdict."
    }
   }
  },
