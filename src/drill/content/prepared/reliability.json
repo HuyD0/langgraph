@@ -2,9 +2,9 @@
  "answer_incident": {
   "check:0:1": {
    "q": "Why not “Nothing: the bad answer is fixed”?",
-   "a": "\"Nothing: the bad answer is fixed\" gets one thing right. The parental-leave answer really is better now. That part of the fix worked.\n\nWhat it misses is everything else. A prompt is shared by every question the assistant answers. Change it to fix one answer, and hundreds of other answers can shift too. Some may quietly get worse. That is called a regression: something that used to work and now doesn't. You won't see it by looking only at the answer you fixed.\n\nShipping on \"the bad answer is fixed\" is how one incident becomes two. Picture a mechanic who fixes your brakes and hands back the keys without checking the lights. The brakes are fine. The lights might not be.\n\nThe must-pass set is a list of questions with known right answers that must always be correct. The eval is a wider test that reports what got better and what got worse.\n\n\"Run the must-pass set and the eval\" is better because it checks the fix against everything that already worked, so you catch new breakage before customers do.",
+   "a": "\"Nothing: the bad answer is fixed\" gets one thing right. The parental-leave answer really is better now. That matters.\n\nWhat it misses is everything else. A prompt change doesn't only touch one question. The assistant reads the same prompt for every question it answers. So a change that fixes one answer can quietly change hundreds of others. A refund answer or a travel answer might now be wrong, and nobody would notice until a customer did. A fix that breaks other answers is called a regression. A rushed fix is how one incident becomes two.\n\nThe lesson's example shows this. The bad leave answer improved, but `refund-07` and `travel-12` got worse. Skipping the check would have shipped those new mistakes to everyone.\n\nThink of a mechanic who fixes your brakes. Before you drive off, they still check the lights and steering.\n\n\"Run the must-pass set and the eval\" is the right answer. The must-pass set is the list of questions the assistant must always get right. The eval is a scored test run that lists what got better and what got worse. Together they prove the fix helped without quietly breaking what already worked.",
    "step": "Check",
-   "fingerprint": "8535c6da58e438a6",
+   "fingerprint": "738ca07393e95128",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -20,9 +20,9 @@
   },
   "check:0:2": {
    "q": "Why not “Wait for the next monthly release”?",
-   "a": "\"Wait for the next monthly release\" gets one thing right. It refuses to rush. The lesson warns that a rushed fix can turn one incident into two.\n\nBut waiting misses two things.\n\nFirst, waiting is not checking. A month passing does not tell you whether the prompt change quietly broke other answers. The fix could still break something like `refund-07` on release day.\n\nSecond, it leaves the fix stuck for weeks. The switches, like turning the feature off or handing hard questions to a person, stop the harm quickly. They are stopgaps, though. Users still lack correct parental-leave answers. The lesson's whole point is to keep prompts apart from the monthly release. The app loads them by a named version, `@production`, so a checked fix can go out in hours.\n\nTwo terms to know. The must-pass set is the list of questions that must always get the right answer. The eval is a scored test run that lists what got better and what got worse.\n\n\"Run the must-pass set and the eval\" is the right option because it actually proves the fix works without breaking anything else, and it does that in hours, not a month.",
+   "a": "\"Wait for the next monthly release\" gets one thing right. It refuses to rush. A rushed prompt fix can quietly break hundreds of other answers, so caution is a good instinct.\n\nBut it misses two things.\n\nFirst, waiting doesn't check anything. A month on the calendar doesn't tell you whether the parental-leave fix broke the refund or travel answers. The fix would ship just as untested, only later.\n\nSecond, it ties the fix to the wrong clock. In this lesson, the prompt is versioned on its own. The app loads whichever version the `@production` pointer (a label naming the live version) points at. So the AI part can change in hours. Meanwhile, the rest of the app keeps shipping monthly. Waiting a month leaves a known wrong answer in place, or leaves the feature switched off, for no reason.\n\n\"Run the must-pass set and the eval\" is the right option. The must-pass set is the questions that must always be answered correctly. The eval is a scored test run showing what got better and what got worse. Together they prove the fix works and nothing else broke, so it can go out fast and safely.",
    "step": "Check",
-   "fingerprint": "a824dcc5e2aa401d",
+   "fingerprint": "0acd3c66b6773144",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -33,14 +33,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor overstatements (\"the lesson's whole point\", \"proves the fix works\"), and the answer is close to the 200-word limit, but nothing contradicts the lesson."
+    "notes": "No real problems. Minor: it calls the eval a 'scored' run, which the lesson doesn't say, and the final 'what makes it better' point takes several sentences, not one."
    }
   },
   "check:1:1": {
-   "q": "Why not “Small shares cost less to run”?",
-   "a": "A **canary** means a small share of real traffic gets the fix first, and you compare its answers with everyone else's. The name comes from the canaries miners carried as an early warning.\n\n\"Small shares cost less to run\" misses the point of this step. The lesson never gives cost as the reason. The canary is about safety: finding out whether the fix breaks something before most users see it.\n\nHere is why that matters even after the eval passes. The eval only checks the cases someone wrote down. Real users ask questions nobody thought to write a case for. A prompt change can quietly shift those answers too.\n\nThe canary keeps that risk small. If the small share shows a problem, you hold the fix and go back to step 1. The `@production` pointer hasn't moved yet. That happens only in step 5, after the canary looks good. So most users never saw the fix at all.\n\n\"Real traffic can show problems the eval missed\" is better because it names the real job of a canary: catching what your test cases couldn't, while only a few users are exposed.",
+   "q": "Why not “A small share is cheaper to run for a week”?",
+   "a": "The option sounds sensible, but it gives the wrong reason for a canary. A canary means sending a small share of real users to the new version first, then comparing it with the old one.\n\n**What it gets right:** a canary does use a small share of traffic. That part is true.\n\n**What it misses:** cost isn't the point. Everyone still gets an answer, from either the old version or the new one. So the canary saves almost nothing. And \"run for a week\" doesn't fit either. A canary is a short step before you move `@production`, not a long trial.\n\nThe real reason is risk. Your eval (the set of test questions you score the assistant on) only covers questions you thought to write down. Real users ask things you never pictured. A small share limits how many people see a problem if one slips through. It also gives you real evidence before everyone gets the fix.\n\n**Why \"Real traffic shows what the eval missed\" is better:** it names the real job of a canary, which is catching the problems your tests couldn't see while only a few users are exposed.",
    "step": "Check",
-   "fingerprint": "4a55d217445687b8",
+   "fingerprint": "b6872831977701d4",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -51,14 +51,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No major problem. The claims that the canary 'saves almost nothing' and is 'a short step' are not in the lesson, but they do not contradict it."
    }
   },
   "check:1:2": {
-   "q": "Why not “The eval is only a formality”?",
-   "a": "\"The eval is only a formality\" gets one small thing right. Passing the eval does not prove the fix is safe everywhere. But it draws the wrong conclusion from that.\n\nThe eval is not a formality. It is a real gate. If any must-pass case fails, or anything got worse, the fix is held. It is not waved through. In the lesson's example, `refund-07` failing stops the release, even though the bad answer (`leave-03`) improved.\n\nWhat the option misses is *why* you still run a canary. A canary means a small share of real users gets the new version first, and you compare it with the old one. You do this because the eval only covers the questions someone thought to write down. Real users ask things nobody planned for. They phrase questions strangely and mix topics. A prompt change can shift answers to those questions too, and the eval would never see it.\n\nSo the canary adds to the eval. It does not replace it.\n\n\"Real traffic can show problems the eval missed\" is better because it names the actual gap: the eval tests a fixed list, while real traffic tests everything else.",
+   "q": "Why not “The eval is only a formality before launch”?",
+   "a": "\"The eval is only a formality before launch\" gets one small thing right. The eval does happen before launch. Everything else about it is off.\n\nFirst, the eval is not a formality. It is a real check. It runs the fix against every must-pass case and lists what got better and what got worse. If any must-pass case fails, or anything got worse, the fix is held. That is a gate, not a box to tick.\n\nSecond, this option does not answer the question. The question asks why the fix goes to a small share of traffic first. That step is called a canary: a few real users get the fix, and you compare their results with everyone else's. Calling the eval a formality says nothing about why the canary helps.\n\nThe real reason is that the eval only covers questions someone thought to write down. Real users ask things nobody predicted. The canary lets you catch those surprises while only a few people see them.\n\n\"Real traffic shows what the eval missed\" is better because it names the actual gap: the eval only tests the questions you wrote, and the canary tests the fix on the questions real users ask.",
    "step": "Check",
-   "fingerprint": "231094304649c900",
+   "fingerprint": "847e39636bc2b0c6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -69,14 +69,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The 'gets one small thing right' point is a slightly charitable reading of the option, and the 'phrase strangely' detail goes beyond the lesson but does not contradict it."
+    "notes": "No real problems. It is right at the 200-word limit, and the 'gets one small thing right' point (the eval happens before launch) is thin."
    }
   },
   "check:2:1": {
-   "q": "Why not “Anyone who sees a bad answer”?",
-   "a": "\"Anyone who sees a bad answer\" gets one thing right. Speed matters, and anyone can spot harm. Spotting a problem should be everyone's job.\n\nBut flipping the switch is a different job. Here is what that option misses:\n\n- **One bad answer isn't always an emergency.** Someone has to judge whether it's a real pattern or a one-off. The lesson gives that call to the product manager.\n- **Turning the feature off has a cost.** Every user loses the assistant, not just the one who saw the mistake. That trade-off needs a decision, not a reflex.\n- **Nobody owns it.** If everyone can act, people assume someone else already did. Or several people act at once and nobody knows the current state.\n- **Access is risky.** Giving everyone the switch means more chances to flip it by accident.\n\nSo anyone should *report* a bad answer quickly. The named person *acts* on it.\n\n\"Someone named before launch, like platform\" is better because a known person already has the access and the practice, so the switch gets flipped in minutes, on purpose, by one accountable person.",
+   "q": "Why not “Anyone who notices a bad answer”?",
+   "a": "\"Anyone who notices a bad answer\" gets one thing right. Spotting trouble fast matters, and anyone should be able to raise the alarm.\n\nBut raising the alarm is not the same as flipping the switch. Turning off a business-critical assistant is a big decision. One odd answer might be a fluke, not a real problem. If anyone can switch it off, the feature could go dark over a false alarm. Two people might also act at once and undo each other.\n\nThe bigger gap is ownership. When \"anyone\" is responsible, people often assume someone else will act. So in a real emergency, nobody does. Precious minutes slip by while people ask, \"Who's allowed to do this?\"\n\nThe lesson splits the job clearly. The product manager decides whether to stop the harm. The platform engineer, who looks after the systems the app runs on, flips the switch. Both are agreed before launch, so there is no debate in the moment.\n\n\"Someone named before launch\" is better because a known person with the right access can make the call and act within minutes, without confusion or delay.",
    "step": "Check",
-   "fingerprint": "a52b285a6d4f65a7",
+   "fingerprint": "9ed78813585bee59",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -87,14 +87,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Passes all checks. The reasons about accidental flips and bystanders assuming someone else acted go beyond the lesson but do not contradict it, and the product manager decides / platform engineer flips split is kept."
+    "notes": "No real problems. The claim that two people might undo each other's switch-flips is not in the lesson, but it is reasoning and does not contradict it."
    }
   },
   "check:2:2": {
-   "q": "Why not “Nobody: it must stay on”?",
-   "a": "\"Nobody: it must stay on\" gets one thing right. The assistant is business-critical. People rely on it, so switching it off has a real cost. You don't want it turned off casually.\n\nBut it misses the bigger risk. A feature that stays on while giving confident wrong answers keeps doing harm every minute. Customers act on those answers. A wrong answer said with confidence is often worse than no answer at all.\n\nWith no off switch, your only option is to fix the cause. That means waiting for a release, or rushing a fix. A rushed fix can quietly break other answers, and one incident becomes two.\n\n\"Off\" also doesn't have to mean gone. The lesson lists gentler switches: hand hard questions to a person, or fall back to a safe answer like \"please check the policy page.\" Staying useful and staying safe can both happen.\n\n\"Someone named before launch, like platform\" is better because a known person, here the platform engineer, can stop the harm in minutes on the product manager's call, instead of the team scrambling to decide who is allowed to act.",
+   "q": "Why not “Nobody: it must stay on no matter what”?",
+   "a": "\"Nobody: it must stay on no matter what\" gets one thing right. The assistant is business-critical, so switching it off has a real cost. People rely on it, and you shouldn't flip it off on a whim.\n\nBut it misses the bigger risk. A confident wrong answer can be worse than no answer. Picture the assistant telling staff the wrong leave policy. Every minute it stays on, more people act on bad advice. With no one allowed to stop it, the harm keeps going until a fix ships. That could be days, or the next monthly release.\n\nIt also misses that \"off\" is not the only switch. The lesson lists gentler ones that keep the service useful:\n\n- Send hard questions to a person instead of answering.\n- Fall back to a safe answer, like \"please check the policy page\" with a link.\n\nThese protect users while the team builds a proper fix through the checks.\n\n\"Someone named before launch\" is better because the product manager decides and the platform engineer flips the switch in minutes, with no scramble to find out who's allowed.",
    "step": "Check",
-   "fingerprint": "9193b4ff311f6db6",
+   "fingerprint": "44ae0ff1f0ea78fa",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -110,9 +110,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Hold on a must-pass failure or anything that go…” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* A prompt change that fixes one bad answer can quietly break others. Under pressure, teams rush the fix out, and one incident becomes two.\n\n*The idea.* Before release, I compare every test case before and after the fix. I hold the release if any must-pass case fails. Those are questions the assistant must always get right. I also hold if any case that passed before now fails. That's called a regression: something that used to work and now doesn't. I only ship when both checks are clean.\n\n*The trade-off.* Holding slows the fix down. But the harm is already stopped by a switch or a safe fallback answer. So waiting a few hours costs little. Shipping a broken fix costs much more.\n\n**A likely follow-up**\n\n\"What if the fix improves ten answers but breaks one?\"\n\nHint: still hold. Gains don't cancel a break, because the broken answer might matter more than all ten. Fix that case too, rerun the checks, then ship. Bonus point: add the original bad question to the must-pass set so it can't come back unnoticed.",
+   "a": "**Your 30-second answer**\n\n*The problem:* A fix for one wrong answer can quietly break other answers. Under pressure, teams ship it anyway. That is how one incident becomes two.\n\n*The idea:* Before release, I compare every test case before and after the fix. I hold the release if any must-pass case fails. A must-pass case is a question the assistant must always get right. I also hold if anything that worked before now fails. That is called a regression. Only a clean result ships.\n\n*The trade-off:* Holding feels slow during an incident. But the harm is already stopped by a switch, a hand-over to a person, or a safe fallback answer. So I can afford a short wait for a fix that breaks nothing.\n\n**A likely follow-up**\n\n\"What if the fix improves ten answers but breaks one?\"\n\n*Hint for a strong answer:* Still hold. Ten wins don't cancel out one broken answer that users relied on. Fix that case too, then run the checks again. You can add that the \"improved\" list shows the fix worked. The \"broken\" list shows whether it is safe to ship.",
    "step": "Explain",
-   "fingerprint": "241997857b72f0f8",
+   "fingerprint": "2874029a44e90510",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -128,27 +128,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Bad answers kept flowing for days.** Your logs show the wrong answer still going out long after it was reported. That means no switch was ready, and the fix waited for a release.\n- **The fix \"worked,\" then new complaints appeared.** The reported question is now right, but your eval (your scored test set) shows other topics slipping. Or users start reporting problems in areas nobody touched. That is a regression: something that worked before and now doesn't.\n- **A customer found it first.** No alert fired. Your traces (the step-by-step record of each answer) show the problem for a while before anyone noticed.\n- **The same mistake came back.** Weeks later, traces show the old wrong answer again. The failing question was never added to the must-pass set.\n- **Rolling back meant redeploying the whole app**, not moving `@production` back.\n\n**Quickest check**\n\nPut the eval results from before and after the fix side by side, case by case. Look for any case that passed before and fails now. Then confirm the original failing question is in the must-pass set.",
+   "a": "**Warning signs this lesson was skipped:**\n\n- **The harm runs for days.** Wrong answers keep going out while everyone waits for the next release. No off switch or hand-over to a person was ready.\n- **Complaints move instead of stopping.** The bad answer is fixed, but new complaints appear on other topics a day later. A rushed fix quietly broke something else.\n- **The eval shows only wins.** An eval is a test run over saved questions. If it lists what improved but has no \"got worse\" list, nobody compared before and after.\n- **Rolling back is slow.** Going back needs a full app redeploy. It should only mean moving `@production`, a named label that points at one prompt version.\n- **The same mistake comes back.** Months later, the old wrong answer shows up again in traces. Traces are the step-by-step records of each answer.\n\n**Quickest check:** take the question that caused the incident. Is it in the must-pass set, the cases that must always pass? Then ask how long it takes to point `@production` back to the old version. Minutes means you're in good shape. Weeks means the setup needs fixing first.",
    "step": "Learn",
-   "fingerprint": "a3ab25f2278f246e",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "Minor: the quickest check restates the before/after comparison idea behind release_check, but it gives no code, hold rule or ordering, so it is not a giveaway."
-   }
-  },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "**When does this stop working?**\n\n**1. The \"right answers\" themselves change.** Policies, prices and rules change over time. A must-pass case written last year may now expect an out-of-date answer. Then \"passed before, fails after\" might mean the fix is correct and the test is stale. Have the subject-matter expert (SME, the person who knows the business rules) review must-pass cases whenever a policy changes, and retire old ones.\n\n**2. The model changes without you touching it.** If you use a hosted model, the provider may update it. Your `@production` pointer stays put, but answers drift anyway. Pin an exact model version where you can. Also run your eval on a schedule, not only when you ship a fix.\n\n**3. The same question gets different answers.** LLMs (large language models) can answer a little differently each run. A case might flip from pass to fail by chance, which looks like a regression (something that used to work and now doesn't). Run shaky cases a few times before calling them broken. Lower randomness settings where possible.",
-   "step": "Learn",
-   "fingerprint": "e4ee32ac6dd196dc",
+   "fingerprint": "8c2be6b2a40a9cbc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -162,11 +144,29 @@
     "notes": ""
    }
   },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "**1. The must-pass set is too small or out of date.**\nThe check only protects what it tests. If users ask things your cases don't cover, a clean pass can still hide a broken answer. Keep growing the set from real questions and from every incident.\n\n**2. The source documents change.**\nIn a RAG app (retrieval-augmented generation: the assistant looks up documents before answering), HR might update a policy page. An answer that was right last month is now wrong, so \"passed before\" means less. When documents change, have the SME update the expected answers. Version the documents too, so you know which set each check ran against.\n\n**3. Answers vary from run to run.**\nAn LLM (large language model) can word things differently each time, so a case might pass once and fail the next. Don't loosen the rule because of this. Make runs as repeatable as you can, for example by setting `temperature` (the model's randomness setting) to zero. Then treat any must-pass failure or anything that got worse as a reason to hold. A flaky case is a problem to investigate, not one to ignore.",
+   "step": "Learn",
+   "fingerprint": "694be90434256aec",
+   "status": "failed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": false,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": false,
+    "notes": "Points 2 and 3 run to four and five sentences, over the requested two or three. The whole answer is right at the ~200-word limit, and \"SME\" is never explained."
+   }
+  },
   "learn:term": {
    "q": "Why does this matter?",
-   "a": "Because AI mistakes reach real people fast, and rushed fixes often make things worse.\n\nPicture an HR assistant that starts telling staff they get 30 days of leave when the policy says 20. People book holidays on that answer. Without a ready switch, the team argues about a fix while wrong answers keep going out all afternoon.\n\nThen someone rushes a prompt change. A prompt is the instructions the model reads before answering. The leave answer is now right. But the new wording also changes how the assistant handles refunds and travel claims, and nobody checked. One incident has become two.\n\nThis lesson's habits stop that chain:\n\n- **Stop the harm first.** Turn the feature off, hand hard questions to a person, or give a safe answer. This takes minutes.\n- **Fix through the fast lane.** Re-run the must-pass cases, the questions that must always be answered right. Try the fix on a small share of traffic first, called a canary.\n- **Keep the AI separate.** The app loads the prompt by a named version, `@production`. Rolling back just means pointing that name at the old version again.\n- **Close the gap.** The failing question becomes a new must-pass case, so the same mistake can't come back unnoticed.",
+   "a": "Picture an HR assistant that starts telling staff they get 12 weeks of parental leave. The real policy says 16. People are planning their lives around that answer.\n\nWithout this lesson's habits, three things go wrong.\n\n**The harm keeps going.** There's no switch to turn the assistant off or hand questions to a person. So wrong answers keep going out for hours while the team hunts for the cause.\n\n**The fix breaks something else.** Someone rushes a prompt change. The leave answer is now right. But nobody re-ran the must-pass set, the questions that must always be answered correctly. Quietly, travel and refund answers go wrong too. One incident has become two.\n\n**Undoing it is slow.** The prompt was baked into the monthly app release. Rolling back means redeploying the whole app, or waiting weeks.\n\nWith the habits in place, someone flips a switch in minutes. The fix goes through quick checks first. Then it reaches a small share of users, called a \"canary.\" Going live just means moving the `@production` label to the new version. If something slips through, you move the label back in one step.",
    "step": "Learn",
-   "fingerprint": "c97250a330670780",
+   "fingerprint": "3b94aa302f4fe610",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {

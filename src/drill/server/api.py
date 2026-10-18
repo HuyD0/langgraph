@@ -117,10 +117,12 @@ class BodyLimit:
     async def __call__(self, scope, receive, send):
         limit = self.limit_for(scope.get("path", "")) if scope["type"] == "http" else None
         if limit is None:
-            return await self.app(scope, receive, send)
+            await self.app(scope, receive, send)
+            return
         stated = dict(scope.get("headers") or []).get(b"content-length")
         if stated is not None and stated.isdigit() and int(stated) > limit:
-            return await self._too_big(send, limit)
+            await self._too_big(send, limit)
+            return
         # No length given (or a short one): read the body here, counting, then hand it on.
         chunks, size = [], 0
         while True:
@@ -129,7 +131,8 @@ class BodyLimit:
                 return  # the client went away: nothing to answer
             size += len(message.get("body", b""))
             if size > limit:
-                return await self._too_big(send, limit)
+                await self._too_big(send, limit)
+                return
             chunks.append(message.get("body", b""))
             if not message.get("more_body"):
                 break

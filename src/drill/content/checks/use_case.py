@@ -68,11 +68,11 @@ CHECKS = {
                 "functional. Non-functional requirements are the ones you measure: speed, cost, uptime, security."),
         ask("Your team is writing the cost requirement for the HR assistant. Which version could "
             "the pilot actually test?",
-            ["It should be cheap to run", "Under 50 cents per answer", "Cheaper than most other AI tools"],
+            ["It should be cheap to run", "Under $2 per answer", "Cheaper than most other AI tools"],
             answer=1,
             clue="Look for the one you could check against the bill at the end of the pilot.",
             why="A number turns a wish into a test: after the pilot you work out the cost of each "
-                "answer and see if it's under 50 cents."),
+                "answer and see if it's under $2."),
     ],
     "well_architected": [
         ask("At lunchtime the model your app uses runs out of quota, and the app just shows an error. "

@@ -8,7 +8,7 @@ learn:
   text: [EXERCISE_CONTENT_TODO]
 check:
   question: Placeholder?
-  options: [Yes, No]
+  options: ["Yes", "No"]
   answer: 0
   why: Drafts may still hold placeholders.
 practice:

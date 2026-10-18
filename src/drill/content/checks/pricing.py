@@ -169,7 +169,7 @@ CHECKS = {
             ["$100 a month", "$10 a month", "$1,000 a month"],
             answer=0,
             clue="The difference per million, times how many millions.",
-            why="$2.20 minus $2.00 is $0.20 per million, and 500 times $0.20 = $100 a month."),
+            why="$2.20 minus $2.00 is $0.20 per million, and 500 times $0.20 = $100 a month: the price of keeping requests inside the EU."),
     ],
     "ptu_or_paygo": [
         ask("Your PTU deployment sits unused all weekend. What do you pay for those hours?",

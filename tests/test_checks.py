@@ -53,3 +53,19 @@ def test_question_one_is_not_answered_by_option_length():
             if len(right) > limit:
                 too_long.append(f"{lesson['id']}: right {len(right)} chars, longest wrong {max(map(len, wrong))}: {check['options']}")
     assert not too_long, "the right option gives itself away by length:\n" + "\n".join(too_long)
+
+
+def test_no_checks_file_lists_a_lesson_twice():
+    """Two branches appending to the same checks file merge by union (.gitattributes), which could leave
+    the same lesson id in one CHECKS dict twice; a Python dict literal would silently keep the last."""
+    import ast
+    from pathlib import Path
+
+    for path in sorted((Path(__file__).resolve().parents[1] / "src" / "drill" / "content" / "checks").glob("*.py")):
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Dict):
+                keys = [k.value for k in node.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)]
+                dupes = sorted({k for k in keys if keys.count(k) > 1})
+                assert not dupes, f"{path.name}: listed twice: {dupes}"
+

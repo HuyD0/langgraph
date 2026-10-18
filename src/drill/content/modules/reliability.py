@@ -424,7 +424,7 @@ improved:    leave-03 (the bad answer)
     angle=angle(
         pattern='Hold on a must-pass failure or anything that got worse',
         text='The big idea: when an AI feature goes wrong, you stop the harm in minutes, then ship the fix through a fast lane that still checks it against everything that already worked. Your code compares each case before and after the fix. A case that passed before and fails after is broken, so it goes on a list. The fix is held if any must-pass case fails after the fix, or if anything broke. Otherwise it ships. It returns the decision and the broken cases in A-to-Z order. It is like a mechanic fixing your brakes: before you drive off, they check the lights and steering still work.',
-        say='"When the assistant goes wrong I first stop the [[harm|team|release::The wrong answers reaching people.]], then fix it as a new version, check the [[must-pass|newest|cheapest::The cases that may never break.]] cases and the eval, and move the pointer, so going back is one [[step|month|release::Point back at the last good version.]]."',
+        say='"When the assistant goes wrong I stop the [[harm|team|release::The wrong answers reaching people.]] first, fix it as a new version, run the [[must-pass|newest|cheapest::The cases that may never break.]] cases and the eval, then move the pointer, so going back is one [[step|month|release::Point back at the last good version.]]."',
         classic=None,
     ),
     exercise=exercise(

@@ -21,7 +21,7 @@ learn:
         - {x: 11.0, y: 84.1, w: 14.8, h: 3.8, title: The checks, text: "**Plan checks are GO** means the policies passed. It still hasn't been applied."}
 check:
   question: The run says Finished and Proposed. Has the change been applied?
-  options: [Yes, it finished, "No: it planned and stopped", Only half of it]
+  options: ["Yes, it finished", "No: it planned and stopped", "Only half of it"]
   answer: 1
   why: Proposed means planned, waiting; applying is a separate step.
 practice:
