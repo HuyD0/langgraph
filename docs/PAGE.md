@@ -287,6 +287,16 @@ Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
 
+## The running example: the HR assistant
+
+One company runs through the lessons: staff ask an assistant about HR policy, an HR person
+answers the hard questions as tickets, and the same numbers follow it from the use case card to
+the production incident. They live in one place, `src/drill/content/running_example.py` (the story
+in plain words, then the `HR` dict), and `tests/test_running_example.py` fails when a lesson
+quotes a number that no longer matches, or when the sheet itself stops adding up. To change one:
+edit the dict, then every lesson `quotes()` lists for it, re-derive the exercise cases it feeds,
+and regenerate the prepared tutor answers.
+
 ## Your own use case
 
 The graded exercises in Use case and fit, and Total cost of ownership, use the HR assistant, so

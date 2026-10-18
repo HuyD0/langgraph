@@ -119,6 +119,8 @@ The server **caches the page when it starts**: restart it after every `build-pag
 - A lesson's sticker picture is a sprite symbol `s-<lesson id>` in `src/drill/content/page/sprite.svg`,
   one symbol per line (a test checks).
 - Lesson text lives in Python strings: escape apostrophes in single-quoted strings.
+- The HR assistant is the running example: its numbers live in `src/drill/content/running_example.py`,
+  and `tests/test_running_example.py` fails when a lesson drifts from them.
 - `dist/` is git-ignored; the page is built, never committed.
 - Some sections of `page.html` live in `src/drill/content/page/` and come back in at their
   `/*INCLUDE page/<file>*/` line. Search both places, read the page through `build.page_source()`,
