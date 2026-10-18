@@ -317,6 +317,9 @@ def check_lesson(data: dict, path: Path, root: Path, ids: set[str]) -> list[str]
     if check:
         _need(check, ("question", "options", "why"), f"{w}: check", problems)
         opts = check.get("options") or []
+        for o in opts:
+            if not isinstance(o, str):  # YAML reads an unquoted Yes, No, On or Off as true/false, and a comma splits a flow list
+                problems.append(f"{w}: check.options must be text; quote it in YAML (got {o!r})")
         if not isinstance(check.get("answer"), int) or not 0 <= check["answer"] < len(opts):
             problems.append(f"{w}: check.answer must be the index of one of the {len(opts)} options (from 0)")
 

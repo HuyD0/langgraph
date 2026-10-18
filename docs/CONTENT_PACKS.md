@@ -161,6 +161,16 @@ Progress is saved under each lesson's `id`, so:
 - **To retire a lesson**, set it back to `slot` rather than deleting it, so its id stays taken.
 - Bump `version` in `pack.yaml` when lessons change; it travels with the evidence.
 
+## Prepared tutor answers for a pack
+
+The tutor's standard questions ("Ask about this lesson") have answers written ahead and checked
+(`uv run drill tutor prepare`). For a pack's lessons they live **inside the pack**, in `<pack>/prepared/`,
+one file per module, so in the work copy they stay in the overlay: `uv run drill tutor prepare --pack
+content-packs/internal` (or set `DRILL_CONTENT_PACKS`, as `app.yaml` does) drafts and judges them, and
+`build-page --pack` and the server serve them. Where the default Claude endpoints don't exist, set
+`DRILL_PREPARE_DRAFT_MODEL` and `DRILL_PREPARE_JUDGE_MODEL` to two different services of your gateway.
+Every drafted answer is scrubbed for real-looking names before it is saved.
+
 ## What's deferred until real content exists
 
 - No connection to real repositories, plan runs or deployment systems: views and exercises read
