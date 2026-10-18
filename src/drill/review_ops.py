@@ -57,7 +57,7 @@ def _mlflow():
 
 
 def _reviewer(mlflow) -> str:
-    """Who is labelling: your Databricks user name there, ``DRILL_OWNER`` (or ``local``) on your Mac."""
+    """Who is labelling: your Databricks user name there, ``DRILL_OWNER`` (or ``local``) on your own computer."""
     from drill.config import databricks_user, is_databricks_uri
 
     uri = mlflow.get_tracking_uri()

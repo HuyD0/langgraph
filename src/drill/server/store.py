@@ -25,7 +25,7 @@ and the tables go in their own schema (``DRILL_DB_SCHEMA``, ``drill`` in the app
 service principal creates and owns. One app serves everyone, so each request reads and
 writes as the signed-in person (:meth:`DocStore.for_owner`).
 
-If Lakebase cannot be reached when the server starts on your Mac, it keeps going on the
+If Lakebase cannot be reached when the server starts on your own computer, it keeps going on the
 local SQLite file and says so; ``drill store push`` sends that work up later. In a
 Databricks App it keeps trying for a couple of minutes and then refuses to start: the
 app's disk is wiped on every restart, so a local file there would quietly lose work.
@@ -422,7 +422,7 @@ def in_databricks_app() -> bool:
 def open_store(make_login: Callable[[str], LakebaseLogin] = LakebaseLogin, wait: float | None = None) -> DocStore:
     """The store the settings ask for. Lakebase when ``DRILL_LAKEBASE_ENDPOINT`` is set.
 
-    When Lakebase can't be reached: on your Mac, fall back to the local SQLite file (with
+    When Lakebase can't be reached: on your own computer, fall back to the local SQLite file (with
     ``fallback`` set) so practice goes on and ``drill store push`` sends it up later. In a
     Databricks App, keep trying for ``wait`` seconds (Lakebase may still be waking up) and
     then raise, because the app's local disk is wiped on restart and the work would be lost.
