@@ -503,8 +503,8 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         for name in ("unexplained_terms", "unknown_numbers", "unknown_names", "fillers"):
             numbers[f"quality_{name}_rate"] = sum(bool(x["quality"][name]) for x in seen) / max(1, len(seen))
         ensure_champion(mlflow)
-        judge_version = link_judge(mlflow, run.info.run_id)
-        mlflow.set_tag("judge_version", f"{judge_version.name}/{judge_version.version}")
+        judge_link = link_judge(mlflow, run.info.run_id)   # the tutor_judge/N version this run tested (not the checklist number)
+        mlflow.set_tag("judge_version", f"{judge_link.name}/{judge_link.version}")
         u = judge_chat["call"].usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
         spent = tp.cost(judge_model, u["input_tokens"], u["output_tokens"]) if provider == "databricks" else u["cost"]
         numbers.update({"judge_rate_limited": float(u["rate_limited"]), "judge_calls": float(u["calls"]), "judge_input_tokens": float(u["input_tokens"]),
