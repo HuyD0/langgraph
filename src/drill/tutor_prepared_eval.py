@@ -234,8 +234,17 @@ def dataset(mlflow, experiment_id: str, rows: list[dict], commit: str, split: st
 
 
 def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "dev", workers: int = 10, limit: int = 0,
-             sample: int = 0) -> dict:
-    """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers."""
+             sample: int = 0, provider: str = "databricks", mode: str = "inline", deployment: str = "",
+             record: Path | None = None, purpose: str = "") -> dict:
+    """Judge one split's prepared answers again, as one MLflow evaluation run. Returns the run id and the numbers.
+
+    ``provider="foundry"`` judges on a Microsoft Foundry deployment (``deployment``; sign in with ``az login`` and set
+    ``AZURE_OPENAI_ENDPOINT``), ``mode="batch"`` as batch jobs at half price, sent inside the run before the scorers
+    look the replies up. ``record`` also writes the run's verdicts to a file a notebook can replay."""
+    if provider not in ("databricks", "foundry") or mode not in ("inline", "batch") or (provider == "databricks" and mode == "batch"):
+        raise ValueError("provider is databricks (inline) or foundry (inline or batch)")
+    if provider == "foundry" and not deployment:
+        raise ValueError("a Foundry run needs --deployment")
     import mlflow
     from mlflow.entities import AssessmentSource, Feedback, SpanType  # noqa: F401
     from mlflow.genai.scorers import scorer
@@ -277,8 +286,18 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     lock = threading.Lock()
     prompts = register_prompts(mlflow)
     fns = {p["id"]: p.get("fn") or "" for p in data["bank"]}
-    chat = tp.databricks_chat(judge_model, profile)
+    from drill import foundry_batch as fb
+
+    judge_chat: dict[str, Any] = {"call": tp.databricks_chat(judge_model, profile) if provider == "databricks"
+                                  else fb.foundry_chat(deployment, judge_model) if mode == "inline" else None}
     by_key = {(lid, c["key"]): c for lid, items in tp.chips(data).items() for c in items}
+
+    def judge_text(lid: str, key: str, answer: str) -> str:
+        """The judge prompt for one answer, exactly as the scorer sends it."""
+        chip, fn = by_key[(lid, key)], fns.get(lid, "")
+        giveaway = "" if chip["step"] == "Check" else ", and does not say which option of the lesson's Check questions is right"
+        return tp.JUDGE.format(context=tp._context(data, lid), q=chip["q"], how=chip["how"], answer=answer,
+                               giveaway=(f" (`{fn}`)" if fn else "") + giveaway)
 
     @mlflow.trace(name="tutor.prepared_answer", span_type=SpanType.CHAIN)
     def prepared_answer(lesson_id: str, key: str, step: str, question: str, phase: str = "", kind: str = "") -> str:
@@ -303,11 +322,9 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
     @scorer(name="judge")
     def judge(inputs, outputs, expectations):
         """The five checks, from the judge prompt, and whether it passes overall."""
-        lid, chip = inputs["lesson_id"], by_key[(inputs["lesson_id"], inputs["key"])]
-        fn = fns.get(lid, "")
-        giveaway = "" if chip["step"] == "Check" else ", and does not say which option of the lesson's Check questions is right"
-        reply = chat(tp.JUDGE.format(context=tp._context(data, lid), q=chip["q"], how=chip["how"], answer=outputs,
-                                     giveaway=(f" (`{fn}`)" if fn else "") + giveaway))
+        lid = inputs["lesson_id"]
+        chat = judge_chat["call"]
+        reply = chat(judge_text(lid, inputs["key"], outputs))
         verdict, usage = tp._verdict(reply), chat.last()
         with lock:
             seen.append({"lesson_id": lid, "key": inputs["key"], "phase": inputs.get("phase", ""), "kind": inputs.get("kind", ""),
@@ -327,12 +344,28 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                         metadata={"words": str(checks["words"])})
 
     model = mlflow.set_active_model(name=f"daily-drill-{app_version()}")  # results show on the app version too
-    with mlflow.start_run(run_name=f"tutor-prepared-{split}-{judge_model.removeprefix('databricks-')}-{commit[:7]}") as run:
-        mlflow.set_tag("mlflow.note.content", (
-            f"Prepared tutor answers, {split} split ({len(rows)} answers), judged again by {judge_model}. "
-            f"Reference verdicts from {tp.JUDGE_MODEL}. Pass rates carry Wilson 95% intervals; agreement with the "
-            f"reference is Cohen's kappa. Gate: kappa >= {KAPPA_GATE} for this judge to be trusted for monitoring. "
-            "Splits: lessons dealt 60/20/20 within each phase, frozen in content/prepared_splits.json."))
+    model_short = judge_model.removeprefix("databricks-")
+    data_name = f"{split}-sample-{len(rows)}" if sample else f"{split}-{len(rows)}"
+    # readable at a glance in the runs list: what was judged, by whom, where and how, on what
+    run_name = f"judge {model_short} · {provider} {mode} · prepared answers {data_name}"
+    command = (f"uv run drill tutor prepared-eval --split {split}" + (f" --sample {sample}" if sample else "")
+               + (f" --profile {profile or 'DEFAULT'} --judge-model {judge_model}" if provider == "databricks"
+                  else f" --provider foundry --mode {mode} --judge-model {judge_model} --deployment {deployment}"))
+    with mlflow.start_run(run_name=run_name) as run:
+        mlflow.set_tag("mlflow.note.content", "\n\n".join([
+            f"**Question:** can {model_short} stand in as the judge of the tutor's prepared answers? "
+            + (purpose or "A candidate judge, compared with the reference on the same answers."),
+            f"**What ran:** {len(rows)} prepared answers from the {split} split"
+            + (" (a stratified sample: every reference failure, the rest spread by phase and kind)" if sample else "")
+            + f", judged by {judge_model} on {'Databricks' if provider == 'databricks' else 'Microsoft Foundry'}"
+            + (" as batch jobs at half price" if mode == "batch" else ", one call per answer")
+            + f", with the registered judge prompt. Reference: {tp.JUDGE_MODEL}'s verdicts from the drafting run.",
+            ("**How it's measured:** pass rates with Wilson 95% intervals; catch and keep rates against the reference, "
+             f"re-weighted to the split's real mix; Cohen's kappa per check. Gate: kappa >= {KAPPA_GATE} to monitor with it. "
+             "Splits: lessons dealt 60/20/20 within each phase, frozen in content/prepared_splits.json."),
+            f"**Reproduce:** `{command}` (git commit {commit[:7]}).",
+        ]))
+        mlflow.set_tags({"question": "judge stand-in", "reproduce": command, "judge_model": judge_model})
         mlflow.set_tags({**mlflow_names.context_tags(app_version()), "kind": EXPERIMENT_KIND, "split": split,
                          "mlflow.source.git.commit": commit})
         draft_models = sorted({r.get("model", "") for recs in answers.values() for r in recs.values() if r.get("model")})
@@ -343,8 +376,13 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
             "dataset": mlflow_names.dataset_name(eval_name), "split": split, "records": len(rows), "sample": sample or "all",
             "split_rule": "lessons dealt 60/20/20 within each phase, frozen in prepared_splits.json", "git_commit": commit,
             "strata_missing": len(empty), "kappa_gate": KAPPA_GATE, "app_model": getattr(model, "name", ""),
-            "price_per_mtok": "{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?"))),
+            "price_per_mtok": ("{}/{} (list price; Databricks bills in DBUs)".format(*tp.PRICES.get(judge_model, ("?", "?")))
+                               if provider == "databricks" else "{}/{} input/output, {} (Azure retail prices)".format(
+                                   *[fb.PRICES.get((judge_model, "batch" if mode == "batch" else "standard"), (0, 0, 0, 0))[i] for i in (0, 2)], mode)),
+            "provider": provider, "mode": mode, "deployment": deployment or judge_model,
+            **({"api_version": fb.API_VERSION, "judge_max_tokens": 2000} if provider == "foundry" else {}),
         })
+        mlflow.set_tag("provider", provider)
         mlflow.log_table({"phase": [k[0] for k in table], "kind": [k[1] for k in table],
                           **{sp: [table[k][sp] for k in table] for sp in SPLITS}}, "strata.json")
         # The records are read out of the split's dataset, and the run names that dataset and its digest:
@@ -356,14 +394,23 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
         if limit:
             data_in = data_in[:limit]  # a quick check of the plumbing, not a result
             mlflow.set_tag("limited", str(limit))
+        if provider == "foundry" and mode == "batch":  # every verdict first, as batch jobs; the scorer then looks them up
+            prompts = {f"{r['inputs']['lesson_id']}/{r['inputs']['key']}": judge_text(r["inputs"]["lesson_id"], r["inputs"]["key"],
+                                                                                        answers[r["inputs"]["lesson_id"]][r["inputs"]["key"]]["a"])
+                       for r in data_in}
+            judge_chat["call"] = fb.batched_chat(prompts, deployment, judge_model,
+                                                 on_job=lambda j: mlflow.set_tag(f"batch_part_{j['part']}", f"{j['batch_id']} {j['status']}"))
+            mlflow.log_dict({"jobs": judge_chat["call"].jobs, "queue_limit_tokens_per_part": 120_000}, "batch_jobs.json")
         result = mlflow.genai.evaluate(data=data_in, predict_fn=prepared_answer, scorers=[judge, rules],
                                        model_id=getattr(model, "model_id", None))
         numbers = summary(seen, population)
-        u = chat.usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
+        u = judge_chat["call"].usage  # what the judge cost (list price; the DBU charge is in system.billing.usage)
+        spent = tp.cost(judge_model, u["input_tokens"], u["output_tokens"]) if provider == "databricks" else u["cost"]
         numbers.update({"judge_rate_limited": float(u["rate_limited"]), "judge_calls": float(u["calls"]), "judge_input_tokens": float(u["input_tokens"]),
                         "judge_output_tokens": float(u["output_tokens"]), "judge_seconds": float(u["seconds"]),
-                        "judge_cost_usd": tp.cost(judge_model, u["input_tokens"], u["output_tokens"]),
-                        "judge_cost_per_answer_usd": tp.cost(judge_model, u["input_tokens"], u["output_tokens"]) / max(1, u["calls"])})
+                        "judge_cost_usd": spent, "judge_cost_per_answer_usd": spent / max(1, u["calls"])})
+        if u.get("served_model"):
+            mlflow.log_param("served_model", u["served_model"])  # the exact model version that answered
         # the course's must-pass gate: is this judge close enough to the reference to monitor with?
         numbers["judge_gate_passed"] = float(numbers.get("passes_kappa", -1.0) >= KAPPA_GATE)
         mlflow.log_metrics({k: v for k, v in numbers.items() if isinstance(v, float)})
@@ -374,6 +421,16 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                           "passes": [x["verdict"]["pass"] for x in seen],
                           "reference_pass": [bool(x["reference"].get("reference_pass")) for x in seen],
                           "notes": [x["verdict"]["notes"] for x in seen]}, "answers.json")
+    if record is not None:  # the run's own results, for a notebook to replay; the run stays the record
+        params = mlflow.get_run(run.info.run_id).data.params
+        Path(record).write_text(json.dumps({
+            "about": f"Prepared answers, {split} split, judged by {judge_model} ({provider}, {mode}): written by MLflow run "
+                     f"{run.info.run_id} in experiment '{experiment.name}'. Endpoint and resource names are left out on purpose.",
+            "run_id": run.info.run_id, "params": params, "metrics": numbers,
+            "batch_jobs": getattr(judge_chat["call"], "jobs", []),
+            "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],
+                         "reference_pass": bool(x["reference"].get("reference_pass")), "notes": x["verdict"]["notes"],
+                         **{c: x["verdict"][c] for c in CHECKS}} for x in seen]}, indent=1, ensure_ascii=False))
     return {"run_id": run.info.run_id, "experiment_id": experiment.experiment_id, "records": len(rows), "split": split,
             "numbers": numbers, "strata_missing": empty, "metrics": dict(result.metrics)}
 

@@ -241,3 +241,100 @@ def ask_inline(api, deployment: str, messages: list[dict], max_tokens: int = 400
             usage = chunk.usage.model_dump()
     return {"text": "".join(parts), "first_words_s": round(first if first is not None else time.monotonic() - t0, 3),
             "total_s": round(time.monotonic() - t0, 3), "usage": usage}
+
+
+# -- as an MLflow evaluation's judge -----------------------------------------------------------------
+# Both return a function with the same shape as drill.tutor_prepared.databricks_chat: call(text) -> reply,
+# with ``.usage`` (running totals) and ``.last()`` (this thread's latest call), so the prepared answers'
+# evaluation (drill.tutor_prepared_eval.evaluate) can judge on Foundry, logged as the same kind of run.
+
+def _totals() -> dict:
+    return {"calls": 0, "input_tokens": 0, "output_tokens": 0, "seconds": 0.0, "rate_limited": 0, "cost": 0.0, "served_model": ""}
+
+
+def foundry_chat(deployment: str, model: str, api=None, max_tokens: int = 2000) -> Callable[[str], str]:
+    """Judge inline on a Foundry deployment, one call per answer, waiting and trying again when rate limited."""
+    import threading
+
+    import openai
+
+    api = api or client()
+    lock, local = threading.Lock(), threading.local()
+
+    def call(text: str) -> str:
+        t0 = time.monotonic()
+        for attempt in range(8):
+            try:
+                reply = api.chat.completions.create(model=deployment, messages=[{"role": "user", "content": text}],
+                                                    max_completion_tokens=max_tokens)
+                break
+            except openai.RateLimitError:
+                if attempt == 7:
+                    raise
+                with lock:
+                    call.usage["rate_limited"] += 1
+                time.sleep(min(60, 5 * 2 ** attempt))
+        u = reply.usage.model_dump() if reply.usage else {}
+        last = {"model": model, "served_model": reply.model, "input_tokens": u.get("prompt_tokens", 0),
+                "output_tokens": u.get("completion_tokens", 0), "seconds": round(time.monotonic() - t0, 2),
+                "cost": cost(model, "standard", u)}
+        local.last = last
+        with lock:
+            for k in ("input_tokens", "output_tokens", "seconds", "cost"):
+                call.usage[k] += last[k]
+            call.usage["calls"] += 1
+            call.usage["served_model"] = reply.model
+        return reply.choices[0].message.content or ""
+
+    call.usage = _totals()
+    call.last = lambda: getattr(local, "last", {})
+    call.model = model
+    return call
+
+
+def batched_chat(prompts: dict[str, str], deployment: str, model: str, api=None, max_tokens: int = 2000,
+                 limit_tokens: int = 120_000, every: float = 30, on_job: Callable[[dict], None] | None = None) -> Callable[[str], str]:
+    """Judge every prompt now, as batch jobs that each fit the deployment's queue, sent one after another and
+    followed up (what failed is sent once more). Then return a judge that looks each reply up by its prompt."""
+    import threading
+
+    api = api or client()
+    rows = lines([(cid, [{"role": "user", "content": p}]) for cid, p in prompts.items()], deployment, max_tokens)
+    results: dict[str, dict] = {}
+    jobs: list[dict] = []
+    for i, part in enumerate(chunks(rows, limit_tokens)):
+        checks: list[dict] = []
+        batch = wait(api, submit(api, part, note=f"{model} judge, part {i + 1}"), every=every, on_check=checks.append)
+        got = read_output(api, batch)
+        left = to_retry(part, got)
+        if left:
+            again = wait(api, submit(api, left, note=f"{model} judge, part {i + 1}, again"), every=every)
+            got.update({k: v for k, v in read_output(api, again).items() if "text" in v})
+        jobs.append({"part": i + 1, "batch_id": batch.id, "requests": len(part), "status": batch.status,
+                     "seconds": checks[-1]["after_s"] if checks else 0, "sent_again": len(left),
+                     "statuses": [c["status"] for j, c in enumerate(checks) if j == 0 or checks[j - 1]["status"] != c["status"]]})
+        if on_job:
+            on_job(jobs[-1])
+        results.update(got)
+    by_prompt = {p: results.get(cid, {}) for cid, p in prompts.items()}
+    lock, local = threading.Lock(), threading.local()
+
+    def call(text: str) -> str:
+        r = by_prompt.get(text) or {}
+        if "text" not in r:
+            raise RuntimeError(f"no batch reply for this answer: {r.get('error', 'missing')}")
+        u = r.get("usage", {})
+        last = {"model": model, "input_tokens": u.get("prompt_tokens", 0), "output_tokens": u.get("completion_tokens", 0),
+                "seconds": 0.0, "cost": cost(model, "batch", u)}
+        local.last = last
+        with lock:
+            for k in ("input_tokens", "output_tokens", "cost"):
+                call.usage[k] += last[k]
+            call.usage["calls"] += 1
+        return r["text"]
+
+    call.usage = _totals()
+    call.last = lambda: getattr(local, "last", {})
+    call.model = model
+    call.jobs = jobs
+    return call
