@@ -197,7 +197,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
     from drill import tutor_prepared
 
     # The tutor's answers to its standard questions, written ahead and checked, so Ask works with no model.
-    data["prepared"] = tutor_prepared.served(data)
+    data["prepared"] = tutor_prepared.served(data, packs=packs)  # a pack's own answers come from inside the pack
     return data
 
 
