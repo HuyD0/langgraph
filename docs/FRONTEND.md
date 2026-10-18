@@ -144,7 +144,8 @@ as one page.
 | 4 | walkthrough, trust marks, sticker callbacks, lesson diagrams, spot the gotcha | `walkthrough.js`, `trust.js`, `callbacks.js`, `diagrams.js`, `gotcha.js` and a `.css` for each | **Done.** Each draws one kind of thing in a step |
 | 5 | content packs | `packs.js`, `packs.css` | **Done.** Only used when a pack is loaded |
 | 6 | ask about this lesson, backends | `ask.js`, `ask.css`, `backends.js` | **Done**, with a live check: saving, the study list and asking a real model all work on `drill-server` |
-| 7 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |
+| 7 | the SVG sprite: aura filters, icons, lesson stickers | `sprite.svg` | **Done.** One `<symbol>` per line, so lesson pull requests stop colliding on one 20,000-character line |
+| 8 | motion, home, views, step panes, events, boot | stay in `page.html` for now | The spine everything else hangs on |
 
 ## Recipes
 
@@ -166,7 +167,7 @@ handler, change state, call the render function. Keep one primary button per scr
 **Add an effect.** [PAGE.md](PAGE.md), "Motion". Only through `fxScreen` / `fxOn` / `fxMove`.
 
 **Add a module or a track.** A module file plus its place in `PATH` or `TRACKS` in
-`modules/__init__.py`; a sprite `s-<lesson id>` for each lesson's sticker; `MOD_ICON` for the
+`modules/__init__.py`; a sprite symbol `s-<lesson id>` in `page/sprite.svg` for each lesson's sticker; `MOD_ICON` for the
 module's icon. [PAGE.md](PAGE.md), "Tracks".
 
 ## Before you call it done

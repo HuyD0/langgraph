@@ -95,7 +95,6 @@ def test_diagrams_are_wired_into_the_learn_step():
     live = page.split("const LIVE = {")[1].split("\n};")[0]
     for lesson_id, d in DIAGRAMS.items():
         assert (f"\n  {lesson_id}: " in live) == bool(d.get("live")), f"{lesson_id}: live diagrams need a drawing in LIVE, and only they"
-    build = page.split("function loadProblem(")[1] if "function loadProblem(" in page else page
     assert 'id="livepic"' in page and "livePic(p, gotJson.v" in page
     css = page.split("lesson diagrams (content/diagrams.py")[1]
     assert ".dg-co circle { fill: var(--hint); }" in css and "fill: var(--bg); }" in css, "callout numbers use the walkthrough's amber-on-background pair, readable in Light too"

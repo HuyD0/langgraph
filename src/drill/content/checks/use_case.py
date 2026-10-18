@@ -31,6 +31,21 @@ CHECKS = {
             why="Without past examples that have good answers, you can't test it. A missing test set "
                 "stops the project later anyway, so fix it first."),
     ],
+    "team_roles": [
+        ask("The assistant has been live for three months and nobody has looked at it since launch. "
+            "What is the most likely problem?",
+            ["Its answers have drifted unnoticed", "It has stopped using tokens", "Its code has rusted"],
+            answer=0,
+            clue="What changes after launch even when the code doesn't?",
+            why="The questions, the documents and even the model change after launch. With nobody "
+                "watching, answers drift or break and nobody notices until a user does."),
+        ask("The budget for model calls needs raising. In a RACI, who is usually Accountable?",
+            ["The product manager or finance owner", "Every engineer on the team", "Whoever notices first"],
+            answer=0,
+            clue="Accountable means the one person who makes the final call.",
+            why="One person makes the call on money, usually the product manager or the finance "
+                "owner, with engineers Responsible for the numbers and Consulted on the impact."),
+    ],
     "gather_requirements": [
         ask("You talked to the HR advisors and the owner, but not the privacy team. Which requirement are you most likely missing?",
             ["Where personal data may go", "Which questions it answers", "Who will use the assistant"],
@@ -53,11 +68,11 @@ CHECKS = {
                 "functional. Non-functional requirements are the ones you measure: speed, cost, uptime, security."),
         ask("Your team is writing the cost requirement for the HR assistant. Which version could "
             "the pilot actually test?",
-            ["It should be cheap to run", "Under 50 cents per answer", "Cheaper than most other AI tools"],
+            ["It should be cheap to run", "Under $2 per answer", "Cheaper than most other AI tools"],
             answer=1,
             clue="Look for the one you could check against the bill at the end of the pilot.",
             why="A number turns a wish into a test: after the pilot you work out the cost of each "
-                "answer and see if it's under 50 cents."),
+                "answer and see if it's under $2."),
     ],
     "well_architected": [
         ask("At lunchtime the model your app uses runs out of quota, and the app just shows an error. "
@@ -78,17 +93,17 @@ CHECKS = {
     "fit_for_purpose": [
         ask("The pilot gets 92 in 100 right, but fails one must-pass case: it told a customer to "
             "ignore a safety recall. What's the call?",
-            ["Go: 92 is well above the bar", "Fix: change the prompt and ship it", "Stop: a must-pass case failed"],
+            ["Go: 92 is well above its criterion", "Fix: change the prompt and release it", "Stop: a must-pass case failed"],
             answer=2,
             clue="Must-pass cases are the ones it must never get wrong, whatever the overall score.",
             why="A must-pass failure means stop, even with a high score. Those are the dangerous cases, "
                 "so one miss matters more than the average."),
-        ask("Halfway through the pilot the quality score looks low, so someone wants to lower the bar "
+        ask("Halfway through the pilot the quality score looks low, so someone wants to lower the quality criterion "
             "from 80 to 70. Why is that a bad idea?",
-            ["It changes the test to fit the result", "70 is too hard to measure", "Bars only apply to cost"],
+            ["It changes the test to fit the result", "70 is too hard to measure", "Criteria only apply to cost"],
             answer=0,
-            clue="Think about when the bars were written down, and why.",
-            why="The bars were agreed before the trial so the test stays honest. Moving them to fit "
+            clue="Think about when the acceptance criteria were written down, and why.",
+            why="The acceptance criteria were agreed before the trial so the test stays honest. Moving them to fit "
                 "the result means the trial can't fail, so it tells you nothing."),
     ],
 }

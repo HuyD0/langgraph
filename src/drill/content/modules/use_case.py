@@ -6,7 +6,7 @@ from drill.content.model import (angle, ask, card, case, evidence, example, exer
 MODULE = module('use-case', 'Use case and fit', 'Pick an AI use case worth doing, write it down, and decide whether it is fit for purpose.')
 
 
-# Lesson 1.1's six ideas, one practice question each. ``bin`` is where it lands; ``value``,
+# The first lesson's (use_case_score) six ideas, one practice question each. ``bin`` is where it lands; ``value``,
 # ``doable`` and ``gate`` are the facts the Python exercise sorts by (a test checks they agree).
 WHERE = [
     ('gate', 'Stopped at a gate, so shelved'),
@@ -69,9 +69,9 @@ lesson(MODULE, 'use_case_score',
     title='Is this a good AI use case?',
     learn=[
         "Most AI projects that fail went wrong before any code: they started from the technology (\"we need an agent\") instead of a problem. So start from a **business problem**, as Microsoft's Cloud Adoption Framework does: work people repeat, or results that miss what was expected. Write the use case in one line, **\"Help [who] [do what] so [a number] improves\"**, and check the task happens often enough to matter.",
-        "Next come three **gates**. Fail any one, and the idea is shelved, however valuable it looks. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it.",
+        "Next come three **gates**: pass-or-fail checks an idea has to clear. Fail any one, and the idea is set aside (shelved), however valuable it looks. If a fixed rule can do the job, write the rule: it is cheaper and never wrong. If there are no past examples with right answers, you cannot test it. If a wrong answer causes real harm and nobody checks, AI must not decide it.",
         "Ideas that pass the gates go on a **map** with two axes, usually called a value-versus-feasibility map. **Value** is what the problem costs and how much the business cares. **Doable** (feasibility) means the data is ready, AI suits the task, and the team can change how it works. Keep the two axes apart: don't add them into one score.",
-        "The corner an idea lands in tells you what to do next. High value and doable: **accelerate** to a pilot. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Low on both: **shelve**.",
+        "The corner an idea lands in tells you what to do next. High value and doable: **accelerate** to a **pilot**, a small first trial with real users. High value, not doable yet: **research**, usually fixing the data first. Doable but small: **incubate**, a safe way to learn. Low on both: **shelve**.",
         "Last, choose **automate or augment** for the ideas you keep. Automate means the AI does the task on its own; augment means it helps a person do it. Most good first projects augment: AI drafts, a person decides.",
     ],
     example=example('Six ideas on the map', """             not doable yet   doable
@@ -248,7 +248,7 @@ lesson(MODULE, 'use_case_card',
   "task": "answer policy questions",
   "decision": "a draft answer from the policy pages",
   "action": "HR approves or edits it before sending",
-  "today": "15 minutes by hand, $8",
+  "today": "8 minutes by hand, $8",
   "success": "80 in 100 approved unedited",
   "wrong_answer": "HR catches it before sending",
   "data": "last month's 200 questions",
@@ -303,7 +303,7 @@ Return a list of the gap field names, in the order above. A complete card gives 
   "task": "answer policy questions",
   "decision": "a draft answer from the policy pages",
   "action": "HR approves or edits it before sending",
-  "today": "15 minutes, $8",
+  "today": "8 minutes, $8",
   "success": "faster answers",
   "wrong_answer": "",
   "data": "200 past questions",
@@ -362,8 +362,8 @@ Return a list of the gap field names, in the order above. A complete card gives 
     return gaps
 """,
         cases=[
-            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it before sending', 'today': '15 minutes, $8', 'success': 'faster answers', 'wrong_answer': '', 'data': '200 past questions', 'feedback': 'edits are logged and added to the eval set'}, expected=['success', 'wrong_answer', 'owner'], sample=True),
-            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it', 'today': '15 minutes, $8', 'success': '80 in 100 approved', 'wrong_answer': 'HR checks first', 'data': '200 past questions', 'feedback': 'edits go into the eval set', 'owner': 'Head of HR'}, expected=[]),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it before sending', 'today': '8 minutes, $8', 'success': 'faster answers', 'wrong_answer': '', 'data': '200 past questions', 'feedback': 'edits are logged and added to the eval set'}, expected=['success', 'wrong_answer', 'owner'], sample=True),
+            case({'user': 'HR team', 'task': 'answer policy questions', 'decision': 'a draft answer from the policy pages', 'action': 'HR approves or edits it', 'today': '8 minutes, $8', 'success': '80 in 100 approved', 'wrong_answer': 'HR checks first', 'data': '200 past questions', 'feedback': 'edits go into the eval set', 'owner': 'Head of HR'}, expected=[]),
             case({}, expected=['user', 'task', 'decision', 'action', 'today', 'success', 'wrong_answer', 'data', 'feedback', 'owner']),
             case({'user': '  ', 'task': 'triage tickets', 'decision': 'which team gets the ticket', 'action': 'the ticket is routed; the team can bounce it back', 'today': '2 minutes each', 'success': '90 in 100 routed right', 'wrong_answer': 'rerouted by hand', 'data': '', 'feedback': 'bounced tickets are relabelled', 'owner': 'IT lead'}, expected=['user', 'data']),
         ],
@@ -425,6 +425,174 @@ for ch in "80 in 100":
     ),
 )
 
+lesson(MODULE, 'team_roles',
+    title='Who moves the agent forward',
+    cards=[
+        card('An AI feature is never finished',
+             'Ordinary features can be shipped and left until the next release. An AI feature can\'t: the model, the questions people ask, your documents and the prices keep changing, even when your code doesn\'t.',
+             picture=piles(pile('Set and forget', ['Ship it, then move on', 'Change it at the next release', 'Test it once']),
+                           pile('Run and tend', [('activity', 'Watch it every week'), ('reset', 'Fix it within hours when it goes wrong'), ('flask', 'Test every change, every time')]))),
+        card('The people who build and run it',
+             'An AI feature needs several kinds of work. Each kind has an owner.',
+             picture=sortby('Who owns what?',
+                            sortrow('AI engineer', 'Prompts, model, tools, evals and cost per task', 'Builds it', icon='code'),
+                            sortrow('Software engineer', 'Fits it into the app: APIs and error handling', 'Connects it', icon='puzzle'),
+                            sortrow('Data engineer', 'The data: pipelines, quality, personal data', 'Feeds it', icon='layers'),
+                            sortrow('Platform engineer', 'Capacity, rollout, alerts and incidents', 'Runs it', icon='power'))),
+        card('The people who decide and guard it',
+             'Others decide what it is for, what a good answer is, and what it may never do.',
+             picture=sortby('Who owns what?',
+                            sortrow('Product manager', 'The problem, and whether it ships', 'Decides', icon='target'),
+                            sortrow('Subject-matter expert', 'What a right answer is: rubrics, labels, checking the judge', 'Defines good', icon='person'),
+                            sortrow('Security and privacy', 'Who may see what, and where data may go', 'Guards it', icon='lock'),
+                            sortrow('Finance', 'The budget, and the alerts when cost runs high', 'Budgets it', icon='coin'),
+                            sortrow('Executive sponsor', 'Fit with the business, risk, the last word in a crisis', 'Backs it', icon='briefcase')),
+             after='A **subject-matter expert** (SME) is someone who knows the work itself, like an HR advisor for the HR assistant. On a small team one person may hold several of these roles. What matters is that every kind of work has an owner.'),
+        card('They work together the whole way',
+             'The loop goes round fast and often, so nobody can hand their part over once and walk away.',
+             picture=steps(('target', 'Frame', 'Product manager, sponsor and SME agree the problem and what success is.'),
+                           ('layers', 'Data', 'Data engineer, with security and privacy, gets the data ready.'),
+                           ('code', 'Build and evaluate', 'AI engineer builds; the SME defines good and checks the answers.'),
+                           ('rocket', 'Ship and monitor', 'Platform engineer rolls it out and watches; the product manager decides.'),
+                           ('reset', 'Improve, every week', 'AI engineer and SME fix what the traces show, then round again.'))),
+        card('One decider per decision',
+             'A **RACI** table says, for each decision, who is **R**esponsible (does the work), who is **A**ccountable (makes the final call: exactly one person), who is **C**onsulted (asked first) and who is **I**nformed (told after).',
+             picture=sortby('A quick fix to a prompt',
+                            sortrow('AI engineer', 'Makes the change', 'Responsible', icon='code'),
+                            sortrow('Product manager', 'Says it can go out', 'Accountable', icon='target'),
+                            sortrow('Subject-matter expert', 'Checks the answers are right', 'Consulted', icon='person'),
+                            sortrow('Platform engineer', 'Knows it is coming', 'Informed', icon='power'))),
+    ],
+    example=example('A RACI for the HR assistant', """# decision: ship a prompt fix
+raci = {"AI engineer": "R",
+        "product manager": "A",
+        "HR advisor (SME)": "C",
+        "platform engineer": "I"}
+# exactly one A: one person decides"""),
+    check=question(
+        'The HR assistant starts giving a wrong answer about parental leave. Who confirms the fix gives the right answer?',
+        [
+            'An HR policy expert, the SME',
+            'The platform engineer',
+            'The finance team',
+        ],
+        answer=0,
+        why='The subject-matter expert knows the policy, so they say what a right answer is. The platform engineer rolls the fix out, and finance watches the cost, but neither can judge the answer.',
+    ),
+    angle=angle(
+        pattern='Exactly one Accountable, at least one Responsible',
+        text='The big idea: an AI feature is never finished, so many people keep working on it together, and a RACI table makes clear who does the work and who decides. Your code goes through each decision in the table. It counts the people marked "A" and the people marked "R". A decision with anything other than exactly one "A", or with no "R", is a problem, so it adds that decision\'s name to a list. It returns the list in the order the decisions came. It is like a relay team: each leg needs exactly one runner holding the baton.',
+        say='"An AI feature is never [[finished|started|tested::It keeps changing after launch.]], so the AI engineer, the subject-matter expert, platform, security and the product manager keep working on it [[together|in turn|alone::Not one after another.]], and every decision has exactly one person who [[decides|codes|watches::The Accountable one.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Check the RACI',
+        topic='use cases',
+        difficulty='easy',
+        fn='raci_problems',
+        prompt="""Your function gets `raci`, a dict. Each key is a decision, like `"ship a prompt fix"`. Each value is a dict of person to letter: `"R"` (does the work), `"A"` (makes the final call), `"C"` (asked first) or `"I"` (told after).
+
+A decision is a problem if it doesn't have exactly one `"A"`, or if it has no `"R"`.
+
+Return a list of the decisions that are problems, in the order they came. No problems gives `[]`.""",
+        pattern='Count the letters for each decision, then test the rules.',
+        target='one pass over the decisions and their people',
+        realworld='Teams that build AI features write a light RACI for the decisions that matter, like shipping a fix or raising the budget, and revisit it as the team changes. Two people who both think they decide is a common cause of a slow, messy incident.',
+        practice=practice(
+            intro='Set up the team around the HR assistant: who owns what, who decides, and why nobody can walk away after launch.',
+            explain='The big idea: an AI feature is never finished, so the people who build, run, decide and guard it keep working on it together, and each decision has exactly one person who makes the call. You saw that moving the team on after launch leaves nobody watching, that a team with no subject-matter expert can\'t say what a right answer is, that a RACI names one Accountable person, and that a small team can hold several roles as long as each has an owner.',
+            pattern='Every kind of work has an owner',
+            realworld='When an AI project starts at work, list the roles, put a name next to each, and write a short RACI for the decisions that matter. Check it again whenever someone joins or leaves.',
+            gotchas=[
+                ['Moving the team on after launch', 'An AI feature drifts and breaks as the world changes. Someone has to keep watching it and fixing it.'],
+                ['No subject-matter expert', 'Engineers can build it, but only someone who knows the work can say what a right answer is.'],
+                ['Two people who both decide', 'Name exactly one Accountable person for each decision, or an urgent fix waits while two people argue.'],
+            ],
+            asks=[
+                ask('What is the risk?', ['Nobody watches it as its answers drift', 'None: it passed its evals at launch', 'The next release grows too big'], answer=0,
+                    evidence=evidence('claim', who='A manager said', text='"The assistant is live. Let\'s move the team onto the next project and look at it again at the next release."'),
+                    clue='What keeps changing after launch, even if the code doesn\'t?',
+                    why='The model, the questions and the documents keep changing, so answers drift or break. Someone has to watch it weekly and be ready to fix it within hours.',
+                    wrong=[None, 'Passing at launch says nothing about next month, when the questions and documents have changed.', 'The size of the next release isn\'t the risk. An unwatched assistant is.']),
+                ask('Who is missing before anyone can say what a right answer is?', ['A subject-matter expert', 'Another AI engineer', 'The finance team'], answer=0,
+                    evidence=evidence('code', title='Invited to the kickoff', text="""Product manager
+AI engineer
+Platform engineer"""),
+                    clue='Who knows the HR policies themselves?',
+                    why='Only someone who knows the work, here an HR advisor, can say whether an answer is right. Without them the evals measure nothing real.',
+                    wrong=[None, 'More engineers can build more, but none of them knows the HR policies.', 'Finance sets the budget, not what a right answer is.']),
+                ask('Two people each think they make the final call on whether a fix ships. What does a RACI change?', ['It names one Accountable person', 'It lets both of them decide', 'It removes the decision'], answer=0,
+                    alone=True,
+                    clue='How many people may be Accountable for one decision?',
+                    why='Each decision has exactly one Accountable person. The other can be Consulted first, so an urgent fix doesn\'t wait while two people argue.',
+                    wrong=[None, 'Two deciders is the problem a RACI exists to fix.', 'The decision still has to be made. A RACI says who makes it.']),
+                ask('What do you say?', ['Fine: one person can hold several roles', 'We must hire one person per role', 'Then skip the roles nobody holds'], answer=0,
+                    evidence=evidence('claim', who='The team lead said', text='"We are five people. We don\'t need all these roles."'),
+                    clue='Is a role a person, or a kind of work that needs an owner?',
+                    why='A small team can have one person as AI engineer and platform engineer. What matters is that each kind of work has an owner: skip security and privacy, and nobody owns where the data goes.',
+                    wrong=[None, 'Roles are kinds of work, not head count. One person can hold several.', 'Skipping a role leaves its work with nobody. Give it to someone.']),
+            ],
+        ),
+        starter="""def raci_problems(raci):
+    # your code here
+    pass
+""",
+        solution="""def raci_problems(raci):
+    problems = []
+    for decision in raci:
+        letters = list(raci[decision].values())
+        if letters.count("A") != 1 or "R" not in letters:
+            problems.append(decision)
+    return problems
+""",
+        cases=[
+            case({"ship a prompt fix": {"AI engineer": "R", "product manager": "A", "SME": "C", "platform engineer": "I"},
+                  "raise the budget": {"product manager": "A", "finance": "A", "AI engineer": "C"},
+                  "pick the model": {"AI engineer": "R", "product manager": "C"}},
+                 expected=["raise the budget", "pick the model"], sample=True),
+            case({"ship a prompt fix": {"AI engineer": "R", "product manager": "A"}}, expected=[]),
+            case({}, expected=[]),
+        ],
+        guided="""def raci_problems(raci):
+    # Replace every ___ with real code, then run the tests.
+    problems = []
+    for decision in raci:
+        # Step 1: everyone's letters for this decision.
+        letters = list(raci[decision].values())
+        # Step 2: exactly one A, and at least one R.
+        if ___ or ___:
+            problems.append(decision)
+    return problems
+""",
+        fills=['letters.count("A") != 1', '"R" not in letters'],
+        concepts=[
+            [
+                'values() of a dict',
+                '`d.values()` gives every value; `list(...)` turns it into a list you can count.',
+                """d = {"Ana": "R", "Bo": "A"}
+list(d.values())   # ["R", "A"]""",
+            ],
+            [
+                'count',
+                '`letters.count("A")` says how many times "A" appears in the list.',
+                '["A", "C", "A"].count("A")   # 2',
+            ],
+        ],
+        byhand='"ship a prompt fix": one A and an R: fine. "raise the budget": two A\'s, and no R: a problem. "pick the model": an R but no A: a problem. Return ["raise the budget", "pick the model"].',
+        why='Each person in each decision is looked at once, so the work grows with the size of the table.',
+        gotchas=[
+            [
+                'Two Accountable people',
+                'If two people both make the call, nobody does when it is urgent. Exactly one A per decision.',
+            ],
+            [
+                'Nobody Responsible',
+                'A decision with someone to approve it but nobody to do the work never happens. Give every decision an R.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'gather_requirements',
     title='Gather the requirements',
     cards=[
@@ -447,7 +615,7 @@ lesson(MODULE, 'gather_requirements',
              picture=rewrite(('What would you like it to do?', 'Walk me through the last time you did this'),
                              ('Would AI help you?', 'Show me where it takes the longest'),
                              ('It has to be fast', 'How long does it take today?')),
-             after='Today\'s number is your **baseline**: if an answer takes 15 minutes now, "under 5 seconds" is a target you can check.'),
+             after='Today\'s number is your **baseline**: if HR takes 8 minutes to answer now, "under 5 seconds" is a target you can check.'),
         card('Ask the how-well questions yourself',
              'Users talk about what it should do. Ask the how-well questions yourself, one per area, or nobody will.',
              picture=pillars('The HR assistant',
@@ -497,7 +665,7 @@ Return a dict with one entry per person: the list of topics to ask them, in the 
 A topic missing from `owners` goes to `"owner"`, the person who decides, because someone still has to answer it.
 
 No topics gives `{}`.""",
-        pattern='Group items by a key, starting an empty list the first time you see the key.',
+        pattern='Group by a key; start its list the first time you meet it.',
         target='one pass over the topics',
         realworld='Before requirement interviews, teams list the open questions and who can answer each one, so every meeting has an agenda and nobody with a stake is forgotten.',
         practice=practice(
@@ -514,7 +682,7 @@ No topics gives `{}`.""",
                 ask('What do you ask next?', ['How long do people wait for an answer today?', 'Which model is the fastest one we can use?', 'Can security wait until after the pilot?'], answer=0,
                     evidence=evidence('claim', who='The product owner said', text='"Make it fast, and it must be secure."'),
                     clue='"Fast" compared with what? Find out where things stand now.',
-                    why='Today\'s wait is your baseline: if HR answers in 15 minutes now, "under 5 seconds" is a clear target. Then ask the same of "secure": secure against what, and for whom?',
+                    why='Today\'s wait is your baseline: if HR takes 8 minutes to answer now, "under 5 seconds" is a clear target. Then ask the same of "secure": secure against what, and for whom?',
                     wrong=[None, 'That picks a solution before you know the target. First find out how fast is fast enough.', 'Security is a requirement, not an extra. Ask what "secure" means to them instead.']),
                 ask('You need to know where personal data may go. Who is missing?', ['The privacy team', 'More HR advisors', 'Nobody: the owner decides that'], answer=0,
                     evidence=evidence('code', title='Invited to the first meeting', text="""HR advisors      will use it
@@ -529,7 +697,7 @@ Head of HR ops   pays and decides"""),
                     wrong=['That gets a wish list. Ask about a real time it happened instead.', None, 'People say yes to be polite. It tells you nothing you can build or test.']),
                 ask('You asked the how-well questions one by one. Which one has no answer yet?', ['What if it is down for an hour', 'How fast an answer has to be', 'Where personal data may go'], answer=0,
                     evidence=evidence('code', title='Your notes from the interviews', text="""how fast:       5 seconds, 95 in 100
-cost:           under $1 an answer
+cost:           under $2 an answer
 personal data:  stays in the EU
 who sees it:    HR staff only
 at once:        200 people"""),
@@ -636,7 +804,7 @@ lesson(MODULE, 'split_requirements',
         card('Give it a number',
              '"Fast" can\'t pass or fail, but a number can. If you can\'t say yes or no after measuring, rewrite the requirement.',
              picture=rewrite(('fast', 'under 5 seconds, for 95 in 100 answers'), ('always up', 'working 99.9% of office hours, its **uptime**'),
-                             ('cheap', 'under $1 per answer'), ('secure', 'only HR staff can see the answers'))),
+                             ('cheap', 'under $2 per answer'), ('secure', 'only HR staff can see the answers'))),
         card('One sentence can hold both',
              'People often write both kinds in one line. Cut it in two, so each half can be checked on its own: one by watching, one by measuring.',
              picture=split(['Answer time-off questions', 'within 5 seconds'],
@@ -645,11 +813,11 @@ lesson(MODULE, 'split_requirements',
              'The HR assistant is an AI chatbot that answers staff questions about HR policy, like leave and expenses. Non-functional requirements are the ones teams forget, and they decide whether a working demo can go live. For AI the usual ones are speed, uptime, cost per answer, privacy (where personal data may go), security (who can see what) and how many people at once.',
              picture=piles(pile('Functional', ['R1 Answer policy questions', 'R3 Show the source page', 'R5 Hand hard questions to a person']),
                            pile('Non-functional', [('clock', 'R2 5 seconds, 95 in 100'), ('lock', 'R4 Personal data stays in the EU'),
-                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $1 an answer')], look='dashed'))),
+                                                   ('people', 'R6 200 people at once'), ('coin', 'R7 Under $2 an answer')], look='dashed'))),
         card('They choose the design',
              'Features rarely decide how a system is built. The how-well numbers do: they pick the model, where it runs, and how much capacity you pay for.',
              picture=sortby('What does it decide?',
-                            sortrow('R7 Under $1 an answer', 'A smaller, cheaper model, not the biggest', 'The model', look='dashed', icon='coin'),
+                            sortrow('R7 Under $2 an answer', 'A smaller, cheaper model, not the biggest', 'The model', look='dashed', icon='coin'),
                             sortrow('R4 Personal data stays in the EU', 'Which region and model service you may use', 'Where it runs', look='dashed', icon='lock'),
                             sortrow('R6 200 people at once', 'Pay per use, or capacity reserved in advance', 'Capacity', look='dashed', icon='people')),
              after='The next lesson puts each non-functional requirement under a pillar of a well-architected review.'),
@@ -715,7 +883,7 @@ R3  Show the source page for every answer
 R4  Personal data never leaves the EU
 R5  Hand hard questions to a person
 R6  Serve 200 users at once
-R7  Cost under $1 per answer"""),
+R7  Cost under $2 per answer"""),
                     clue='How would you check R4: by watching the assistant do something, or by checking where the data is stored?',
                     why='A user never sees where their data is stored, so you can\'t watch it. You check it by inspecting where the data lives, which is measuring. Where personal data may go is privacy: non-functional.',
                     wrong=['You can\'t watch this happen in the app. You check it by inspecting where the data is stored.', None]),
@@ -770,7 +938,7 @@ R7  Cost under $1 per answer"""),
                 {"id": "R4", "text": "Personal data never leaves the EU"},
                 {"id": "R5", "text": "Hand hard questions to a person"},
                 {"id": "R6", "text": "Serve 200 users at once"},
-                {"id": "R7", "text": "Cost under $1 per answer"},
+                {"id": "R7", "text": "Cost under $2 per answer"},
             ], expected=[
                 [{"id": "R1", "text": "Answer policy questions from the HR pages"},
                  {"id": "R3", "text": "Show the source page for every answer"},
@@ -778,7 +946,7 @@ R7  Cost under $1 per answer"""),
                 [{"id": "R2", "text": "Reply within 5 seconds for 95 in 100 questions"},
                  {"id": "R4", "text": "Personal data never leaves the EU"},
                  {"id": "R6", "text": "Serve 200 users at once"},
-                 {"id": "R7", "text": "Cost under $1 per answer"}],
+                 {"id": "R7", "text": "Cost under $2 per answer"}],
             ], sample=True),
             case([], expected=[[], []]),
             case([{"id": "A", "text": "99.9 percent UPTIME"}, {"id": "B", "text": "Encrypt every stored answer"}],
@@ -868,7 +1036,7 @@ lesson(MODULE, 'well_architected',
              picture=pillars('HR assistant',
                              pillar('Reliability', 'power', 'So the review\'s first question is: what does the assistant do when the model is down?', open=True),
                              pillar('Security', 'lock', 'R4: personal data stays in the EU.', chips=['R4 EU']),
-                             pillar('Cost Optimization', 'coin', 'R7: under $1 per answer.', short='Cost', chips=['R7 $1']),
+                             pillar('Cost Optimization', 'coin', 'R7: under $2 per answer.', short='Cost', chips=['R7 $2']),
                              pillar('Operational Excellence', 'eye', 'R10: a record of every answer.', short='Operations', chips=['R10 log']),
                              pillar('Performance Efficiency', 'gauge', 'R2: 5 seconds for 95 in 100. R6: 200 people at once.', short='Performance', chips=['R2 5 s', 'R6 200']),
                              list_questions=False)),
@@ -891,7 +1059,7 @@ Reliability: model down?
 Security: who sees what?
   -> R4: data stays in the EU
 Cost: what grows the bill?
-  -> R7: under $1 an answer
+  -> R7: under $2 an answer
 Operations: would we notice?
   -> R10: every answer kept
 Performance: busiest minute?
@@ -1109,45 +1277,45 @@ lesson(MODULE, 'fit_for_purpose',
     title='Is it fit for purpose?',
     cards=[
         card('Good enough, measured',
-             '**Fit for purpose** means good enough for this job, measured on real examples, against **bars** agreed before the trial. A bar is the line a result has to reach to pass, like the pass mark in an exam; the industry term is **acceptance criteria**. Not perfect, and not "it looked good in the demo".'),
-        card('Each bar checks a requirement',
-             'Set four bars when you write the card, and agree each one with the people who own it. Each bar checks one of your requirements.',
+             '**Fit for purpose** means good enough for this job, measured on real examples, against **acceptance criteria** agreed before the trial: the lines a result has to reach to pass, like the pass mark in an exam. Not perfect, and not "it looked good in the demo".'),
+        card('Each criterion checks a requirement',
+             'Set four acceptance criteria when you write the card, and agree each one with the people who own it. Each one checks one of your requirements.',
              picture=sortby('What does it check, and who sets it?',
                             sortrow('Quality: 80 in 100 answers right', 'R1 Answer policy questions. The owner and the users agree it.', 'Functional', icon='check'),
                             sortrow('Must-pass: the dangerous cases it must never get wrong', 'The card\'s wrong-answer box, like showing one person\'s data to another. The owner, privacy and security agree them.', 'Functional', icon='lock'),
                             sortrow('Speed: how many seconds a person will wait', 'R2 5 seconds, 95 in 100: the Performance Efficiency pillar. The users say how long they will wait.', 'Non-functional', look='dashed', icon='gauge'),
-                            sortrow('Cost: the cost per finished task must beat today\'s', 'R7 Under $1 an answer: the Cost Optimization pillar. The owner, who pays.', 'Non-functional', look='dashed', icon='coin')),
+                            sortrow('Cost: the cost per finished task must beat today\'s', 'R7 Under $2 an answer: the Cost Optimization pillar. The owner, who pays.', 'Non-functional', look='dashed', icon='coin')),
              after='Speed and cost are non-functional requirements, each resting on a pillar from the review. Quality and must-pass are different: they measure the functional requirement itself, because an AI does its job right only some of the time. With ordinary software you watch a feature work once; with AI, even what it does has to be measured.'),
         card('Go, fix or stop',
-             'After the pilot, the call, often called a go/no-go decision, is one of three. Writing the bars down first stops anyone from moving them to fit the result.',
+             'After the pilot, the call, often called a go/no-go decision, is one of three. Writing the acceptance criteria down first stops anyone from moving them to fit the result.',
              picture=sortby('What is the call?',
-                            sortrow('Every bar met', 'Go: it does the job well enough.', 'Go', icon='check'),
-                            sortrow('One bar just missed, like 5.5 seconds against 5', 'Improve that one, then test again.', 'Fix', look='dashed', icon='reset'),
-                            sortrow('A must-pass case failed, more than one bar was missed, or a miss is far off', 'However good the averages look.', 'Stop', icon='x'))),
-        card('The tools behind each bar',
-             'The next lessons give you the tools behind each bar. Foundations show how to measure quality honestly, Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
+                            sortrow('Every criterion met', 'Go: it does the job well enough.', 'Go', icon='check'),
+                            sortrow('One criterion just missed, like 5.5 seconds against 5', 'Improve that one, then test again.', 'Fix', look='dashed', icon='reset'),
+                            sortrow('A must-pass case failed, more than one criterion was missed, or a miss is far off', 'However good the averages look.', 'Stop', icon='x'))),
+        card('The tools behind each criterion',
+             'The next lessons give you the tools behind each criterion. Foundations explain what an LLM is, then how to measure quality honestly; Pricing works out the cost, and Evaluate later repeats this check on every new version.'),
     ],
-    example=example('Pilot results against the bars', """bars = {"quality": 0.80, "seconds": 5,
-        "cost": 2.00}
-pilot = {"quality": 0.78, "seconds": 4,
-         "cost": 1.20, "must_pass_failures": 0}
+    example=example('Pilot results against the acceptance criteria', """criteria = {"quality": 0.80, "seconds": 5,
+            "cost": 2.00}
+pilot    = {"quality": 0.78, "seconds": 4,
+            "cost": 1.87, "must_pass_failures": 0}
 # cost and speed met; quality 2 points short
-# and within 5 points of the bar: fix it,
+# and within 5 points of its criterion: fix it,
 # then test again"""),
     check=question(
-        'The pilot scores 86 in 100 against a bar of 80, passes every must-pass case and costs less than its bar, but takes 5.5 seconds against a 5-second bar. What is the honest call?',
+        'The pilot scores 86 in 100 against a criterion of 80, passes every must-pass case and costs less than its criterion, but takes 5.5 seconds against a 5-second criterion. What is the honest call?',
         [
             'Go: half a second is close enough',
             'Fix: speed it up, then test again',
-            'Stop: it missed the speed bar',
+            'Stop: it missed the speed criterion',
         ],
         answer=1,
-        why='Only one bar is missed, and only just: half a second over. That is worth improving and testing again. Calling it a go would quietly move the bar after seeing the result.',
+        why='Only one criterion is missed, and only just: half a second over. That is worth improving and testing again. Calling it a go would quietly move the criterion after seeing the result.',
     ),
     angle=angle(
         pattern='Must-pass first, then count the misses',
-        text='The big idea: decide fit for purpose against bars written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their bars, noting each one missed and whether the miss is close: quality within 0.05 of the bar, speed or cost no more than 1.2 times the bar. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
-        say='"I agree the bars [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all bars met means go, and one near miss means fix it and [[test again|ship it|give up::A near miss gets another try, not a pass.]]."',
+        text='The big idea: decide fit for purpose against acceptance criteria written down before the trial, and treat a failed must-pass case as an automatic stop. Your code first returns "stop" if any must-pass case failed. Then it checks quality, speed and cost against their criteria, noting each one missed and whether the miss is close: quality within 0.05 of the criterion, speed or cost no more than 1.2 times the criterion. No misses means "go". Exactly one close miss means "fix". Anything else means "stop". It is like a driving test: one serious fault fails you, a small slip means practise and retake.',
+        say='"I agree the acceptance criteria [[before|after|during::Setting them once you see results lets you move them.]] the pilot. A failed must-pass case means [[stop|a warning|a retest::Must-pass means exactly that.]], all criteria met means go, and one near miss means fix it and [[test again|release it|give up::A near miss gets another try, not a pass.]]."',
         classic=None,
     ),
     exercise=exercise(
@@ -1158,71 +1326,71 @@ pilot = {"quality": 0.78, "seconds": 4,
         prompt="""Your function gets two dicts:
 
 - `results`: the pilot's numbers, with `"quality"` (share right, like `0.78`), `"seconds"` (time per answer), `"cost"` (dollars per finished task) and `"must_pass_failures"` (how many must-pass cases it got wrong).
-- `bars`: the agreed bars, with `"quality"`, `"seconds"` and `"cost"`.
+- `criteria`: the agreed acceptance criteria, with `"quality"`, `"seconds"` and `"cost"`.
 
 Decide like this:
 
 1. If `"must_pass_failures"` is more than 0, return `"stop"`.
-2. A bar is missed if quality is below its bar, or seconds or cost is above its bar.
-3. A miss is close if quality is at most 0.05 below its bar, or seconds or cost is at most 1.2 times its bar.
-4. No bars missed: return `"go"`. Exactly one bar missed, and that miss is close: return `"fix"`. Otherwise return `"stop"`.""",
+2. Quality misses its criterion if it is below it. Seconds or cost miss theirs if they are above them.
+3. A miss is close if quality is at most 0.05 below its criterion, or seconds or cost are at most 1.2 times theirs.
+4. No criteria missed: return `"go"`. Exactly one criterion missed, and that miss is close: return `"fix"`. Otherwise return `"stop"`.""",
         pattern='Stop on a must-pass failure, then count the misses.',
         target='a few checks, no loops',
-        realworld='Pilots are usually judged go, fix or stop against bars agreed up front. Writing the rule in code keeps the decision the same however the results make people feel.',
+        realworld='Pilots are usually judged go, fix or stop against acceptance criteria agreed up front. Writing the rule in code keeps the decision the same however the results make people feel.',
         practice=practice(
-            intro='Judge four pilots against the bars agreed before they started: go, fix or stop.',
-            explain='The big idea: decide fit for purpose against bars written down before the trial, and a failed must-pass case is an automatic stop. Pilot 1 had great averages and one must-pass failure: stop. Pilot 2 missed only speed, by half a second: fix and retest. Pilot 3 met every bar exactly: go, because meeting a bar is meeting it. Pilot 4 was $1 over the cost bar, and raising the bar to fit it would be deciding after the result.',
-            pattern='Must-pass first, then the agreed bars',
-            realworld='At the end of a pilot you\'ll be in the go, fix or stop meeting. Check the must-pass cases first, then each bar exactly as it was written before the trial, so the call stays the same however the results feel.',
+            intro='Judge four pilots against the acceptance criteria agreed before they started: go, fix or stop.',
+            explain='The big idea: decide fit for purpose against acceptance criteria written down before the trial, and a failed must-pass case is an automatic stop. Pilot 1 had great averages and one must-pass failure: stop. Pilot 2 missed only speed, by half a second: fix and retest. Pilot 3 met every criterion exactly: go, because meeting a criterion is meeting it. Pilot 4 was $1 over the cost criterion, and raising the criterion to fit it would be deciding after the result.',
+            pattern='Must-pass first, then the agreed acceptance criteria',
+            realworld='At the end of a pilot you\'ll be in the go, fix or stop meeting. Check the must-pass cases first, then each criterion exactly as it was written before the trial, so the call stays the same however the results feel.',
             asks=[
                 ask('Pilot 1 looks great on quality, speed and cost. What\'s the call?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=2,
-                    evidence=evidence('code', title='Pilot 1 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
-         "cost": 2.00}
-pilot = {"quality": 0.95, "seconds": 2,
-         "cost": 0.50, "must_pass_failures": 1}"""),
+                    evidence=evidence('code', title='Pilot 1 against the acceptance criteria', text="""criteria = {"quality": 0.80, "seconds": 5,
+            "cost": 2.00}
+pilot    = {"quality": 0.95, "seconds": 2,
+            "cost": 0.50, "must_pass_failures": 1}"""),
                     clue='Read must_pass_failures before you look at the averages.',
                     why='A must-pass case is one it must never get wrong. One failure ends the pilot on its own, however good the averages look.',
-                    wrong=['Great averages can hide one dangerous mistake. Look at must_pass_failures.', 'Fix is for a near miss on a bar. A failed must-pass case is not a near miss.', None]),
+                    wrong=['Great averages can hide one dangerous mistake. Look at must_pass_failures.', 'Fix is for a near miss on a criterion. A failed must-pass case is not a near miss.', None]),
                 ask('What\'s the call for pilot 2?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=1,
-                    evidence=evidence('code', title='Pilot 2 against the bars', text="""bars  = {"quality": 0.80, "seconds": 5,
-         "cost": 2.00}
-pilot = {"quality": 0.82, "seconds": 5.5,
-         "cost": 1.00, "must_pass_failures": 0}"""),
-                    clue='Only one bar is missed. A miss on speed is close if it is no more than 1.2 times the bar: 6 seconds here.',
+                    evidence=evidence('code', title='Pilot 2 against the acceptance criteria', text="""criteria = {"quality": 0.80, "seconds": 5,
+            "cost": 2.00}
+pilot    = {"quality": 0.82, "seconds": 5.5,
+            "cost": 1.00, "must_pass_failures": 0}"""),
+                    clue='Only one criterion is missed. A miss on speed is close if it is no more than 1.2 times the criterion: 6 seconds here.',
                     why='Speed is the only miss, and 5.5 seconds is within 6, so it is close. Make it faster, then test again.',
-                    wrong=['5.5 seconds is over the 5-second bar, so one bar is missed.', None, 'It is one bar, and only just missed. That is worth another try.']),
+                    wrong=['5.5 seconds is over the 5-second criterion, so one criterion is missed.', None, 'It is one criterion, and only just missed. That is worth another try.']),
                 ask('What\'s the call for pilot 3?', ['Go: roll it out', 'Fix: improve and retest', 'Stop: end the pilot'], answer=0,
                     evidence=evidence('claim', who='A teammate said', text='"Pilot 3: quality exactly 0.80, exactly 5 seconds, $1.20 a task, no must-pass failures. That only just scrapes through, so let\'s call it a fix to be safe."'),
-                    clue='A bar is missed only when quality falls under it, or speed or cost is above it. Is any number past its bar?',
-                    why='Meeting a bar exactly is meeting it. Calling it a fix would quietly move the bar after seeing the result, just upwards this time.',
-                    wrong=[None, 'Fix is for a missed bar. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed bars.']),
-                ask('What do you do?', ['Go: raise the bar to $3, still cheaper than by hand', 'Fix: one bar missed, so cut the cost and retest', 'Stop: it is far over the agreed cost bar'], answer=2,
-                    evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 bar, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost bar to $3 and call it a go."'),
-                    clue='A close miss on cost is at most 1.2 times its bar: $2.40 here. And when were the bars agreed?',
-                    why='$3.00 is well past $2.40, so it is not a near miss, and raising the bar after seeing the result is moving it to fit. If the cost case really has changed, agree new bars before the next pilot.',
-                    wrong=['Change the bar once you see the result and the bar meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
+                    clue='A criterion is missed only when quality falls under it, or speed or cost is above it. Is any number past its criterion?',
+                    why='Meeting a criterion exactly is meeting it. Calling it a fix would quietly move the criterion after seeing the result, just upwards this time.',
+                    wrong=[None, 'Fix is for a missed criterion. Which one did it miss?', 'Nothing failed: no must-pass failures and no missed criteria.']),
+                ask('What do you do?', ['Go: raise the cost criterion to $3, still cheaper than by hand', 'Fix: one criterion missed, so cut the cost and retest', 'Stop: it is far over the agreed cost criterion'], answer=2,
+                    evidence=evidence('claim', who='The sponsor said', text='"Pilot 4 costs $3.00 a task against the $2.00 cost criterion, but quality and speed are well inside, and it\'s still cheaper than doing it by hand. Raise the cost criterion to $3 and call it a go."'),
+                    clue='Use the same rule as for speed: how far over $2.00 may a near miss go? And when were the criteria agreed?',
+                    why='$3.00 is well past $2.40, so it is not a near miss, and raising the criterion after seeing the result is moving it to fit. If the cost case really has changed, agree new acceptance criteria before the next pilot.',
+                    wrong=['Change the criterion once you see the result and the criterion meant nothing.', 'Fix is for a near miss. $3.00 is far past $2.40.', None]),
             ],
         ),
-        starter="""def pilot_verdict(results, bars):
+        starter="""def pilot_verdict(results, criteria):
     # your code here
     pass
 """,
-        solution="""def pilot_verdict(results, bars):
+        solution="""def pilot_verdict(results, criteria):
     if results["must_pass_failures"] > 0:
         return "stop"
     missed = []
     close = True
-    if results["quality"] < bars["quality"]:
+    if results["quality"] < criteria["quality"]:
         missed.append("quality")
-        if results["quality"] < bars["quality"] - 0.05:
+        if results["quality"] < criteria["quality"] - 0.05:
             close = False
-    if results["seconds"] > bars["seconds"]:
+    if results["seconds"] > criteria["seconds"]:
         missed.append("seconds")
-        if results["seconds"] > bars["seconds"] * 1.2:
+        if results["seconds"] > criteria["seconds"] * 1.2:
             close = False
-    if results["cost"] > bars["cost"]:
+    if results["cost"] > criteria["cost"]:
         missed.append("cost")
-        if results["cost"] > bars["cost"] * 1.2:
+        if results["cost"] > criteria["cost"] * 1.2:
             close = False
     if len(missed) == 0:
         return "go"
@@ -1231,7 +1399,7 @@ pilot = {"quality": 0.82, "seconds": 5.5,
     return "stop"
 """,
         cases=[
-            case({"quality": 0.78, "seconds": 4, "cost": 1.2, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="fix", sample=True),
+            case({"quality": 0.78, "seconds": 4, "cost": 1.87, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="fix", sample=True),
             case({"quality": 0.86, "seconds": 3, "cost": 1.5, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="go"),
             case({"quality": 0.95, "seconds": 2, "cost": 0.5, "must_pass_failures": 1}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
             case({"quality": 0.7, "seconds": 4, "cost": 1.0, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
@@ -1239,27 +1407,27 @@ pilot = {"quality": 0.82, "seconds": 5.5,
             case({"quality": 0.78, "seconds": 5.5, "cost": 1.0, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
             case({"quality": 0.9, "seconds": 3, "cost": 3.0, "must_pass_failures": 0}, {"quality": 0.8, "seconds": 5, "cost": 2.0}, expected="stop"),
         ],
-        guided="""def pilot_verdict(results, bars):
+        guided="""def pilot_verdict(results, criteria):
     # Replace every ___ with real code, then run the tests.
     # Step 1: any must-pass failure stops it.
     if results["must_pass_failures"] > 0:
         return "stop"
     missed = []
     close = True
-    # Step 2: quality below its bar is a miss.
-    if results["quality"] < bars["quality"]:
+    # Step 2: quality below its criterion is a miss.
+    if results["quality"] < criteria["quality"]:
         missed.append("quality")
-        if results["quality"] < bars["quality"] - 0.05:
+        if results["quality"] < criteria["quality"] - 0.05:
             close = False
     # Step 3: too slow is a miss.
-    if results["seconds"] > bars["seconds"]:
+    if results["seconds"] > criteria["seconds"]:
         missed.append("seconds")
-        if results["seconds"] > bars["seconds"] * 1.2:
+        if results["seconds"] > criteria["seconds"] * 1.2:
             close = False
     # Step 4: too costly is a miss.
     if ___:
         missed.append("cost")
-        if results["cost"] > bars["cost"] * 1.2:
+        if results["cost"] > criteria["cost"] * 1.2:
             close = False
     # Step 5: decide.
     if len(missed) == 0:
@@ -1268,7 +1436,7 @@ pilot = {"quality": 0.82, "seconds": 5.5,
         return "fix"
     return "stop"
 """,
-        fills=['results["cost"] > bars["cost"]', 'len(missed) == 1 and close'],
+        fills=['results["cost"] > criteria["cost"]', 'len(missed) == 1 and close'],
         concepts=[
             [
                 'A flag',
@@ -1289,12 +1457,12 @@ if 9 > 5 * 1.2:
 len([1]) == 1 and False   # False""",
             ],
         ],
-        byhand='No must-pass failures. Quality 0.78 is below 0.80: missed, and 0.78 is not below 0.75, so still close. Seconds 4 is not above 5. Cost 1.20 is not above 2.00. One miss, and it is close: return "fix".',
+        byhand='No must-pass failures. Quality 0.78 is below 0.80: missed, and 0.78 is not below 0.75, so still close. Seconds 4 is not above 5. Cost 1.87 is not above 2.00. One miss, and it is close: return "fix".',
         why='A handful of comparisons, whatever the numbers.',
         gotchas=[
             [
-                'Moving the bar after the results',
-                'If 78 in 100 suddenly becomes "good enough" once you see it, the bar meant nothing. Write the bars on the card before the pilot starts.',
+                'Moving the criteria after the results',
+                'If 78 in 100 suddenly becomes "good enough" once you see it, the criterion meant nothing. Write the acceptance criteria on the card before the pilot starts.',
             ],
             [
                 'Averaging away a dangerous mistake',

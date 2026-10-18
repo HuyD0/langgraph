@@ -274,9 +274,9 @@ def run(deployment: str, draft_model: str, judge_deployment: str, judge_model: s
         Path(record).parent.mkdir(parents=True, exist_ok=True)
         Path(record).write_text(json.dumps({
             "about": f"Drafter uncertainty vs the judge: {len(questions)} dev questions x {samples} drafts by {draft_model} on Microsoft "
-                     f"Foundry (batch, with token log probabilities), judged by {judge_model}. Written by MLflow run {run.info.run_id} in "
+                     f"Foundry (batch, with token log probabilities), judged by {judge_model}. Written by the MLflow run '{run_name}' in "
                      f"experiment '{experiment.name}'. Endpoint and resource names are left out on purpose.",
-            "recorded": time.strftime("%Y-%m-%d"), "run_id": run.info.run_id, "run_name": run_name, "reproduce": command,
+            "recorded": time.strftime("%Y-%m-%d"), "run_name": run_name, "reproduce": command,
             "params": {"draft_model": draft_model, "judge_model": judge_model, "questions": len(questions), "samples": samples, "seed": seed},
             "metrics": metrics, "jobs": {"draft": draft_jobs, "judge": judge_jobs},
             "drafts": [{k: v for k, v in r.items() if k not in ("judge",)} | {"notes": r["judge"].get("notes", "")} for r in rows],

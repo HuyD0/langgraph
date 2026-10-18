@@ -147,7 +147,7 @@ teaching constructs that do not exist in `src/drill/` at all.
 uv run drill-server             # then open http://localhost:8787
 ```
 
-Or use the published page on claude.ai. Either way the path is the same: about 170 lessons in
+Or use the published page on claude.ai. Either way the path is the same: about 190 lessons in
 25 modules, and the page keeps track of which lessons are done. One lesson is 15 to 30
 minutes. "How the path is organised", on the home page, groups the modules by
 stage of the ML lifecycle (frame, design, build and trace, evaluate, ship, monitor).
@@ -159,10 +159,12 @@ The path opens with the Frame stage, which decides whether an idea is worth buil
 use case down on one page, gathering requirements from everyone with a stake, splitting
 functional from non-functional requirements,
 reviewing the design against the Well-Architected pillars (Microsoft's five, plus
-Databricks' governance and interoperability), and deciding go, fix or stop against bars
-agreed before the pilot. **AI & ML foundations** then teaches how to measure it honestly,
-and **Pricing and sizing** works out the total cost of ownership, what it saves and how much
-capacity it needs, before you build; it goes with the cost and capacity lines of
+Databricks' governance and interoperability), and deciding go, fix or stop against
+acceptance criteria agreed before the pilot. **AI & ML foundations** then teaches which kind of AI fits, how an LLM works and why it gets
+things wrong, and how to measure it honestly,
+and **Pricing and sizing** works out the total cost of ownership (with the sums behind
+embeddings, vector search, tools billed per call or page, and where to find each real price),
+what it saves and how much capacity it needs, before you build; it goes with the cost and capacity lines of
 [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md).
 **Agent teams** starts with whether you need a team at all, then covers splitting the
 work, fanning out, hand-offs, checking, and what a team costs. It ends with the

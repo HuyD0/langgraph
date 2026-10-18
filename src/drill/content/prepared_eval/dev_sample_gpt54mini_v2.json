@@ -1,6 +1,5 @@
 {
- "about": "Prepared answers, dev split, judged by gpt-5.4-mini (foundry, inline): written by MLflow run 47c509070f9e43ee9ad1f941e131c363 in experiment 'daily-drill'. Endpoint and resource names are left out on purpose.",
- "run_id": "47c509070f9e43ee9ad1f941e131c363",
+ "about": "Prepared answers, dev split, judged by gpt-5.4-mini (foundry, inline): written by the MLflow run 'judge gpt-5.4-mini · foundry inline · prepared answers dev-sample-302 · checklist v2' in experiment 'daily-drill'. Endpoint and resource names are left out on purpose.",
  "run_name": "judge gpt-5.4-mini · foundry inline · prepared answers dev-sample-302 · checklist v2",
  "reproduce": "uv run drill tutor prepared-eval --split dev --sample 300 --provider foundry --mode inline --judge-model gpt-5.4-mini --deployment gpt-5.4-mini --judge-version 2",
  "params": {
@@ -26,7 +25,6 @@
   "must_pass": "no_contradiction,answers_it,no_giveaway,standalone",
   "api_version": "2025-04-01-preview",
   "judge_max_tokens": "2000",
-  "dataset_id": "d-93f366c29ebc46228d4880baf12f0544",
   "dataset_digest": "d04dd938",
   "judge_version": "tutor_judge/3",
   "served_model": "gpt-5.4-mini-2026-03-17"

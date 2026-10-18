@@ -1,7 +1,6 @@
 {
- "about": "Drafter uncertainty vs the judge: 50 dev questions x 3 drafts by gpt-5.4-mini on Microsoft Foundry (batch, with token log probabilities), judged by gpt-5.4. Written by MLflow run 7c4bf038f6e04fce8a9998f06cd561b2 in experiment 'daily-drill'. Endpoint and resource names are left out on purpose.",
+ "about": "Drafter uncertainty vs the judge: 50 dev questions x 3 drafts by gpt-5.4-mini on Microsoft Foundry (batch, with token log probabilities), judged by gpt-5.4. Written by the MLflow run 'draft uncertainty · gpt-5.4-mini x3 · foundry batch · judge gpt-5.4 · dev-50' in experiment 'daily-drill'. Endpoint and resource names are left out on purpose.",
  "recorded": "2026-10-18",
- "run_id": "7c4bf038f6e04fce8a9998f06cd561b2",
  "run_name": "draft uncertainty · gpt-5.4-mini x3 · foundry batch · judge gpt-5.4 · dev-50",
  "reproduce": "uv run drill tutor uncertainty --provider foundry --deployment gpt-5.4-mini-batch --draft-model gpt-5.4-mini --judge-deployment gpt-5.4-batch --judge-model gpt-5.4 --sample 50 --samples 3 --seed 7",
  "params": {

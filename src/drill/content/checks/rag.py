@@ -187,4 +187,36 @@ CHECKS = {
             clue="To compare two things fairly, give them the same test.",
             why="Keep one evaluation set, so both are judged on the same questions."),
     ],
+    "what_embeddings_are": [
+        ask("You embed your documents with one model, then switch the questions to a newer model. "
+            "Search results turn to nonsense. Why?",
+            ["The two models' spaces don't match", "The newer model is broken", "The documents got too long"],
+            answer=0,
+            clue="Can vectors from two different models be compared?",
+            why="Each model places text in its own space. Questions and passages must be embedded by "
+                "the same model, or their closeness means nothing."),
+        ask("A two-line question matches a two-page passage with cosine similarity 0.9. Is the length "
+            "difference a problem?",
+            ["No: cosine compares direction, not length", "Yes: long passages always score low", "Yes: the question must be longer"],
+            answer=0,
+            clue="Does cosine look at how long the vectors are?",
+            why="Cosine compares the direction the vectors point, so a short question and a long "
+                "passage can match closely."),
+    ],
+    "embedding_blind_spots": [
+        ask("Your HR assistant's staff write in English and Spanish, but every test question is in "
+            "English. What is the risk?",
+            ["Spanish questions may fail unseen", "The index will cost more to run", "English recall will drop"],
+            answer=0,
+            clue="Which questions does the test never ask?",
+            why="Embedding models can match some languages worse. Without Spanish questions in the "
+                "test, a weak spot there stays invisible until staff hit it."),
+        ask("Two embedding models: A tops a public ranking; B does better on your own test questions "
+            "with product codes. Which do you pick?",
+            ["B: it does better on your own data", "A: it tops the public ranking", "Whichever is newer"],
+            answer=0,
+            clue="Whose questions will the app actually get?",
+            why="Public rankings use other people's text. Your own hard questions, here product "
+                "codes, are what your users will ask."),
+    ],
 }

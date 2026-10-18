@@ -111,3 +111,22 @@ def test_a_store_that_is_down_does_not_get_a_new_champion(store, monkeypatch):
         tpe.ensure_champion(mlflow)
     monkeypatch.undo()
     assert mlflow.MlflowClient().get_prompt_version_by_alias(champion.name, "champion").version == champion.version
+
+
+def test_a_judge_run_can_be_named_instead_of_its_id(tmp_path, monkeypatch):
+    """Recordings in the public repo keep a run's name, not its id, so judge-alias must find it by name."""
+    import mlflow
+
+    from drill import tutor_prepared_eval as tpe
+
+    monkeypatch.setenv("DRILL_MLFLOW_EXPERIMENT", "judge-names")
+    mlflow.set_tracking_uri(f"sqlite:///{tmp_path / 'm.db'}")
+    mlflow.set_experiment("judge-names")
+    with mlflow.start_run(run_name="judge x · foundry batch · prepared answers dev-sample-3", tags={"kind": tpe.EXPERIMENT_KIND}) as run:
+        pass
+    with mlflow.start_run(run_name="not a judge run"):
+        pass
+    assert tpe.find_judge_run(mlflow, "judge x · foundry batch · prepared answers dev-sample-3") == run.info.run_id
+    assert tpe.find_judge_run(mlflow, run.info.run_id) == run.info.run_id
+    with pytest.raises(ValueError, match="0 judge eval runs"):
+        tpe.find_judge_run(mlflow, "not a judge run")

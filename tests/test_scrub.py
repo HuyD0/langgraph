@@ -22,46 +22,20 @@ scripts/hooks/pre-push runs it alone before every push.
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Iterator
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DENYLIST = "~/.config/daily-drill/denylist.txt"
+from drill.scrub import GENERIC, _company_email, _real_org, _real_workspace, denylist_patterns, denylist_path, find
 
-# Domains the lessons, tests and fixtures use for made-up people and shops.
-PLACEHOLDER_DOMAINS = {"example.com", "example.org", "example.net", "corp.com", "corp.io", "shop.com", "onlineshop.com"}
-# The lessons' made-up workspace: the digits in order, which no real workspace id is.
-FAKE_WORKSPACE_IDS = {"1234567890123456"}
+ROOT = Path(__file__).resolve().parents[1]
 IMAGE_SUFFIXES = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".pdf"}
 # Where real names may live in the work copy only.
 OVERLAY = ("content-packs/internal/", "README-internal.md")
 WORK_COPY = (ROOT / "UPSTREAM").is_file()
-
-
-def _real_workspace(m: re.Match) -> bool:
-    digits = m.group(1)
-    return digits not in FAKE_WORKSPACE_IDS and len(set(digits)) > 1
-
-
-def _company_email(m: re.Match) -> bool:
-    domain = m.group(1).lower()
-    # in JSON, a code example's escaped line break followed by a decorator (backslash, n, at-sign) is not an address
-    escaped_break = m.string[max(0, m.start() - 1):m.start() + 1] in ("\\n", "\\t", "\\r") and "@" == m.string[m.start() + 1]
-    # container@account.dfs.core.windows.net is a storage path, not a person
-    return domain not in PLACEHOLDER_DOMAINS and not domain.endswith(".windows.net") and not escaped_break
-
-
-GENERIC: list[tuple[str, re.Pattern, Callable[[re.Match], bool]]] = [
-    ("an Azure Databricks workspace address", re.compile(r"adb-(\d{10,})\.\d+\.azuredatabricks\.net"), _real_workspace),
-    ("a 32-character application id", re.compile(r"\b[0-9a-f]{32}\b"), lambda m: True),
-    # the domain must end in letters: `skulpt@1.2.0/dist` in a CDN address is a version, not a person
-    ("an email address at a company", re.compile(r"[A-Za-z0-9._%+-]+@((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})\b"), _company_email),
-]
 
 
 def tracked_text_files() -> Iterator[tuple[str, Path]]:
@@ -85,16 +59,6 @@ def lines_of(path: Path) -> Iterator[tuple[int, str]]:
     return enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1)
 
 
-def denylist_patterns(path: Path) -> list[tuple[int, re.Pattern]]:
-    patterns = []
-    for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        patterns.append((n, re.compile(line[3:].strip() if line.startswith("re:") else re.escape(line), re.I)))
-    return patterns
-
-
 def test_no_tracked_file_holds_a_real_workspace_id_or_company_email():
     hits = []
     for name, path in tracked_text_files():
@@ -108,7 +72,7 @@ def test_no_tracked_file_holds_a_real_workspace_id_or_company_email():
 
 
 def test_no_tracked_file_holds_a_word_from_your_denylist():
-    path = Path(os.getenv("DRILL_DENYLIST_FILE") or DEFAULT_DENYLIST).expanduser()
+    path = denylist_path()
     if not path.is_file():
         pytest.skip(f"no denylist at {path}: put your company's names there, one per line (or set DRILL_DENYLIST_FILE)")
     patterns = denylist_patterns(path)
@@ -138,3 +102,21 @@ def test_the_lessons_made_up_names_are_still_allowed():
     assert not list(email.finditer("https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js")), "a package version is not an address"
     real_email = "someone@" + "a-real-company.co.uk"
     assert [m.group(1) for m in email.finditer(real_email) if _company_email(m)] == ["a-real-company.co.uk"]
+
+
+def test_the_newer_shapes_catch_real_things_and_pass_the_lessons_placeholders():
+    labels = {what: rx for what, rx, _ in GENERIC}
+    token = labels["a Databricks personal access token"]
+    assert not token.search("dapi0123456789abcdef"), "the lessons' short placeholder token"
+    assert token.search("dapi" + "0123456789abcdef" * 2)
+    host = labels["a Databricks workspace address"]
+    assert not host.search("https://dbc-7f3e.cloud.databricks.com") and not host.search("dbc-1.cloud.databricks.com")
+    assert host.search("https://dbc-" + "a1b2c3d4" + "-e5f6.cloud.databricks.com")
+    sub = labels["an Azure resource id with a subscription"]
+    assert sub.search("/subscriptions/" + "12345678-1234-1234-1234-" + "123456789abc" + "/resourceGroups/rg")
+    org = labels["an organisation's address at a SaaS provider"]
+    assert not any(_real_org(m) for m in org.finditer("https://example.atlassian.net/wiki and https://dev.azure.com/your-org/project"))
+    assert [m for m in org.finditer("https://" + "northwind-ltd" + ".atlassian.net/") if _real_org(m)]
+    assert find("Ask " + "someone@" + "a-real-company.co.uk" + " for it") == ["an email address at a company"]
+    assert find("plain text about the HR assistant at ana@example.com") == []
+

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import pytest
 
@@ -60,6 +61,26 @@ def test_every_module_has_an_icon_for_its_stickers():
     assert not missing, f"MOD_ICON has no icon for {missing}"
 
 
+def test_lesson_numbers_are_never_written_into_text():
+    """A lesson's number (1.2, P3.1) moves whenever a lesson is inserted before it, which happened twice
+    in one week. So learner-facing text and the content's own notes name a lesson by title or id, and
+    the page works the number out from the id (lessonNo) when it has to show one."""
+    from drill.content.build import PAGE_PARTS, PAGE_TEMPLATE
+
+    content = Path(modules.__file__).parent
+    files = sorted(content.glob("*.py")) + sorted((content.parent / "checks").glob("*.py")) + [PAGE_TEMPLATE] + sorted(PAGE_PARTS.glob("*.js"))
+    files += [content.parent / name for name in ("callbacks.py", "trust.py", "diagrams.py")]
+    written = re.compile(r"\b(?:[Ll]essons?|[Rr]evisit)\s+P?\d+\.\d+\b")
+    bracketed = re.compile(r"(?<![\w.(`$])\(P?[1-9]\.\d{1,2}\)")  # "(1.3)" in prose: a phase number, never 0.x
+    hits = []
+    for f in files:
+        for n, line in enumerate(f.read_text().splitlines(), 1):
+            notes = f.name in ("callbacks.py", "trust.py", "diagrams.py")  # the notes files, where "(1.3)" crept in
+            if written.search(line) or (notes and bracketed.search(line)):
+                hits.append(f"{f.relative_to(content.parent.parent.parent)}:{n}: {line.strip()[:80]}")
+    assert not hits, "name the lesson, not its number (numbers move):\n" + "\n".join(hits)
+
+
 def test_every_lesson_picture_belongs_to_a_real_lesson():
     # A lesson's own sticker picture is a sprite symbol "s-<lesson id>"; a typo would silently fall back.
     page = page_source()
@@ -69,7 +90,7 @@ def test_every_lesson_picture_belongs_to_a_real_lesson():
     assert len(pictures) == len(set(pictures)), "a lesson has two pictures"
     assert not set(pictures) - lessons, f"pictures for lessons that don't exist: {set(pictures) - lessons}"
     missing = sorted(lessons - set(pictures))
-    assert not missing, f"lessons without a sticker picture (add a s-<id> symbol to page.html): {missing}"
+    assert not missing, f"lessons without a sticker picture (add a s-<id> symbol line to page/sprite.svg): {missing}"
 
 
 def test_every_lesson_has_an_exercise_and_every_classic_is_real(data):
@@ -518,7 +539,9 @@ def test_fast_changing_lessons_say_when_they_were_checked():
     assert f"const STALE_DAYS = {STALE_DAYS};" in page, "the page and drill content stale agree on when to warn"
     later = freshness(modules.load(), datetime.date(2030, 1, 1))
     total = sum(len(m.lesson_ids) for m in modules.load())
-    assert not later["fresh"] and len(later["due"]) == total, "every lesson comes due as time passes"
+    assert not later["fresh"] and later["due"] and len(later["due"]) + len(later["never"]) == total, "every sourced lesson comes due as time passes"
+    assert all(r["sources"] for r in later["due"]) and not any(r["sources"] for r in later["never"]), "only lessons with sources age"
+    assert "old = sources.length > 0 && age > STALE_DAYS" in page, "the page warns only on sourced lessons"
     data = build_data(modules.load())
     assert data["lessons"]["masked_columns"]["checked"][1][0][1].startswith("https://")
     assert all(lesson["checked"][0] for lesson in data["lessons"].values()), "every lesson has a date on the page"

@@ -1,8 +1,6 @@
 {
- "about": "Section 10 of notebooks/learning/cost_speed_quality.ipynb, run live: GPT-5.4 mini on Microsoft Foundry, 5 inline calls, then 20 questions as one batch, then one GPT-5.4 judge batch (fitted to live answers). Written by MLflow runs 80e4084b5273418b83562a9c8f012597 and caa1863b9cb54ac9bf2cf0f8696de730. Endpoint and resource names are left out on purpose.",
+ "about": "Section 10 of notebooks/learning/cost_speed_quality.ipynb, run live: GPT-5.4 mini on Microsoft Foundry, 5 inline calls, then 20 questions as one batch, then one GPT-5.4 judge batch (fitted to live answers). Written by the MLflow runs 'answer gpt-5.4-mini · foundry inline · tutor Ask · dev-5' and 'answer gpt-5.4-mini · foundry batch · tutor Ask · dev-20'. Endpoint and resource names are left out on purpose.",
  "recorded": "2026-10-18",
- "inline_run_id": "80e4084b5273418b83562a9c8f012597",
- "batch_run_id": "caa1863b9cb54ac9bf2cf0f8696de730",
  "inline_model": "gpt-5.4-mini",
  "batch_model": "gpt-5.4-mini",
  "judge_model": "gpt-5.4",
@@ -1207,5 +1205,7 @@
    "retried": 0,
    "minutes": 8.1
   }
- }
+ },
+ "inline_run_name": "answer gpt-5.4-mini · foundry inline · tutor Ask · dev-5",
+ "batch_run_name": "answer gpt-5.4-mini · foundry batch · tutor Ask · dev-20"
 }

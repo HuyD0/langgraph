@@ -232,10 +232,10 @@ CHECKS = {
                 "Confirm it once on the holdout set."),
         ask("Someone wants to test 50 prompt ideas against the baseline tomorrow. What's a guard you'd "
             "add while planning?",
-            ["Run all 50 on the holdout set", "Test fewer, with a stricter bar", "Run each idea once to save money"],
+            ["Run all 50 on the holdout set", "Test fewer, with a stricter threshold", "Run each idea once to save money"],
             answer=1,
             clue="Each comparison has a small chance of a fake winner, and those chances add up.",
-            why="Test fewer ideas, and use a stricter bar for each one. The holdout is only for "
+            why="Test fewer ideas, and use a stricter threshold for each one. The holdout is only for "
                 "confirming the winner once, at the end."),
     ],
     "clumpy_margin": [
@@ -278,7 +278,7 @@ CHECKS = {
                 "to 49."),
         ask("Group B looks 4 points ahead after one day, so the team wants to stop and ship. What is the "
             "risk?",
-            ["Stopping early on a good day finds lucky wins", "One day is long enough to be sure", "Group A will feel left out"],
+            ["Stopping early rewards a lucky day", "One day is long enough to be sure of it", "Group A will feel left out of the change"],
             answer=0,
             clue="If you check every day, how many chances do you give luck?",
             why="Checking again and again and stopping when it looks good is like testing many variants: luck "

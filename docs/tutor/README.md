@@ -8,7 +8,8 @@ the same curriculum and know where you are.
 The knowledge files, all in this repository:
 
 - `docs/tutor/CURRICULUM_MAP.md`: every lesson (its Learn text, check question and answer,
-  exercise, interview pattern, gotcha card), plus the practice sets, notebooks and glossary
+  exercise, interview pattern, gotcha card), plus the practice sets, notebooks and glossary.
+  It is generated and git-ignored: `uv run drill tutor map` writes it (so does `scripts/check.sh`)
 - `docs/research/AGENT_PRACTICES.md`: current practice for agents, every claim checked against its source
 - `docs/research/LLM_COST_AND_SIZING.md`: how to price, size and judge the ROI of LLM work before building it, with a worked example
 - `docs/END_TO_END.md`, `docs/EXPERIMENT_PLAN.md`, `docs/CONCEPTS.md`, `docs/RAG_AUDIT.md`
@@ -53,10 +54,10 @@ uv run drill tutor snapshot --copy
 
 ## When the lessons change
 
-The map is generated from the lessons, so it can't drift. After lessons change, run
-`uv run drill tutor map` (the tests fail until you do), then commit, push and merge to
-`main`. In the project's knowledge, select **Sync now** on the repository, or re-upload the
-file.
+The map is generated from the lessons, so it can't drift, and it isn't committed (every
+inserted lesson renumbered the whole file, which made every pull request conflict). After lessons
+change, run `uv run drill tutor map` on `main` and re-upload `docs/tutor/CURRICULUM_MAP.md` to the
+project's knowledge.
 
 ## Things to say to it
 

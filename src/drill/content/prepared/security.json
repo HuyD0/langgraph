@@ -1074,20 +1074,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "Here are three places where the simple word-by-word method needs extra care.\n\n**Phone numbers written differently.** \"416 555 0199\" splits into three words, so no single word has 10 digits. \"+1-416-555-0199\" has 11 digits. Both slip through. Use a pattern-matching tool that knows many phone formats, or Databricks' `ai_mask`, which reads the whole sentence.\n\n**Personal data with no fixed shape.** Names and street addresses have no `@` and no digit count to check. \"Ana Silva, 12 King St\" passes through untouched. For these you need a model that understands meaning, often called an NER model (named entity recognition, which spots names, places and similar things in text). `ai_mask` uses this kind of approach.\n\n**A bigger system with many entry points.** Text can arrive from chat, uploaded files and tool results. The model's replies can also repeat personal data. Mask at every boundary, including outputs, not just one input. Limit who can read traces anyway, because no masker catches everything.",
+   "a": "Here are three places where the simple word-by-word rule needs extra care.\n\n**1. Messy formats.** People don't type phone numbers neatly. `416 555 0199` splits into three words, so no single word is 10 digits. `(416) 555-0199` or `416-555-0199,` with brackets or a trailing comma also slip past. Test on real samples, and use a well-tested detection tool for anything that matters.\n\n**2. Personal data with no clear pattern.** Names and street addresses have no `@` and no fixed digit count, so a word-by-word check can't spot them. Check which data types your masking tool actually supports. Add a step built for the gaps. Keep limiting who can read traces, since no masking is perfect.\n\n**3. More than one way in.** In a RAG app, personal data can also arrive inside retrieved documents (RAG means the app fetches text from a store and adds it to the prompt). Tool results and the model's own replies can carry it too. Mask at every boundary where text enters a prompt, log or trace, not just the user's message.",
    "step": "Learn",
    "fingerprint": "82b33e61c5d143cb",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The lesson only shows ai_mask masking emails, phones and credit cards, so the claims that it 'reads the whole sentence' and 'uses this kind of approach' (an NER model that finds names and addresses) are not supported by the lesson."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
@@ -1656,20 +1656,20 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**When does this stop working?**\n\n**1. Memories leak into other places.** Facts can get copied into chat logs, debugging traces or summaries the agent wrote. Deleting the namespace (the user's own folder in the store) leaves those copies behind. List every place memory can flow, and include each one in the forget step and the nightly clean-up.\n\n**2. The label on a memory is wrong.** The rules trust each memory's `kind`. But a memory saved as a \"preference\" might quietly mention a health detail, so it gets kept for a year. Keep the write-time guard from the last lesson strict, and spot-check stored text now and then.\n\n**3. The store gets very large.** A clean-up that walks through every memory each night can start running for hours. Save each memory's expiry day when you write it. Then the clean-up only fetches memories already past that day, in batches (small groups at a time).",
+   "a": "**1. Copies live outside the store.** Deleting a namespace only clears the memory store. The same facts may also sit in logs (saved records of each conversation, kept for fixing bugs), caches (quick-access copies), or a search index built from memories. List every place a memory can land. Give each place the same lifetimes and the same \"forget this person\" step.\n\n**2. The kind label is wrong.** The rules trust each memory's `kind`. If the agent saves a health detail and labels it `preference`, it keeps for a year instead of being deleted. Check the content before saving, not just the label. Also scan saved memories now and then for things that look like card numbers or medical terms.\n\n**3. The store gets very big.** A nightly sweep that walks through every memory one by one gets slow with millions of them. Deleting one item at a time also means a separate trip to the database for each. Instead, save an expiry date on each memory when it is written. Then the database can remove everything past that date in one bulk delete.",
    "step": "Learn",
    "fingerprint": "e50c36acf7c809d6",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "Point 3 says the clean-up should fetch only memories already past their stored expiry day, which would skip the lesson's stronger rules: a forgotten user's newer memories, and memories of a kind with no lifetime (which would have no expiry day at all)."
+    "pass": true,
+    "notes": ""
    }
   },
   "learn:term": {
@@ -1748,20 +1748,20 @@
   },
   "check:1:1": {
    "q": "Why not “A PAT that never expires”?",
-   "a": "\"A PAT that never expires\" is actually the **worst** choice here, not a close second. The only thing it has going for it is convenience: it keeps working, so nothing breaks. That same fact is what makes a leak so bad.\n\nThink about what happens after it lands in a public chat. Anyone who copies it can use it, from anywhere. The lesson names three problems with PATs, and this one has all of them at full strength:\n\n- **It lives long.** \"Never expires\" is the longest life possible. The leaked copy stays useful until someone notices and revokes it (cancels it by hand).\n- **It is tied to a person.** It keeps working with their access even after they change teams or leave.\n- **It usually carries all of that person's access.** So a stranger gets everything they could do, not just one job's worth.\n\nNothing about it limits the damage on its own. Every bit of safety depends on a human spotting the leak.\n\n\"An OAuth token that lasts an hour\" is better because its short TTL (time to live) means a leaked copy stops working on its own within the hour, even if nobody notices.",
+   "a": "\"A PAT that never expires\" is actually the most harmful choice, not the least. It gets nothing right on safety.\n\nThink about what happens once it lands in a public chat. Anyone who copies it can use it, from anywhere. A PAT works for whoever holds it. No sign-in is needed.\n\n\"Never expires\" makes this worse. A short-lived token would stop working on its own. This one keeps working until someone notices the leak and revokes it, which means switching it off by hand. That could take days or never happen.\n\nIt has the other PAT problems too. It is tied to one person, so it carries their access even after they change teams. And it usually carries **all** of that person's access, not just what one job needs. So the attacker gets a wide key that never runs out.\n\n\"An OAuth token that lasts an hour\" is better because its TTL (time to live: how long it works) is about an hour, so even if nobody notices the leak, the token dies on its own.",
    "step": "Check",
    "fingerprint": "d4b0205732cfd95e",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says a leaked PAT 'keeps working with their access even after they ... leave' and that its upside is 'nothing breaks', but the lesson says the job breaks when the owner leaves; it also calls this option the 'worst' without knowing the other options."
+    "pass": true,
+    "notes": "No significant problems. The claims match the lesson, and the answer is about 175 words, so it is under the limit."
    }
   },
   "check:2:0": {
@@ -1820,20 +1820,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs that PATs crept back in**\n\n- **A job breaks the week someone leaves.** That is the classic sign. The job was signing in with that person's PAT, so their departure took the job down with it.\n- **A token or password is pasted into a notebook, a job or an agent's settings.** The lesson calls this one of the commonest ways data leaks.\n- **Credentials that last months.** A PAT valid for 2160 hours (about 90 days) means a leaked copy stays useful for weeks.\n- **A job can do far more than it needs.** If it can reach data it never touches, it is probably borrowing a person's full access.\n- **An audit that reports one problem per credential.** Some credentials break several rules at once. Stopping at the first fault hides the rest.\n\n**Quickest check**\n\nList every credential your jobs and agents use. For each one, ask three questions:\n\n1. Is it a PAT?\n2. Does it live longer than a day?\n3. Has its owner left?\n\nAny \"yes\" needs fixing.\n\nThen confirm the guardrails. Are admins blocking new PATs and capping how long a token can live? Do jobs sign in as service principals (accounts for software, not people) with OAuth?",
+   "a": "**Warning signs that PATs crept in**\n\n- **A job breaks the day someone leaves.** It suddenly gets \"401\" or \"403\" errors (the API saying \"who are you?\" or \"you're not allowed\"). That means it was running on that person's token.\n- **The audit logs name a person, not the job.** Audit logs are the platform's record of who did what. If a nightly job's calls show up as \"ana@example.com\", it borrowed a human's access.\n- **Calls come from odd places or times.** A token used from an unknown IP address (a computer's network address), or at 3 a.m. when nothing is scheduled, may have leaked.\n- **Secrets sit in plain sight.** Databricks PATs start with `dapi`. Finding that text in a notebook, a Git repo or an agent's config is a red flag.\n\n**Quickest check**\n\nAsk an admin to open the token list in the workspace settings. For each token, look at three things: how long it lasts, who owns it, and when it was last used. Anything that lasts months, belongs to someone who has left, or is a PAT used by a job needs replacing.",
    "step": "Learn",
    "fingerprint": "a6e56bf1e43b5d1d",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
     "plain": true,
-    "no_giveaway": false,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The 'Quickest check' lists the exercise's three audit rules (PAT, lives longer than a day, owner left), and the last warning sign hints at checking every rule rather than stopping at the first. Together these spell out the logic of `token_findings`."
+    "pass": true,
+    "notes": "The `dapi` prefix, the 401/403 errors and the audit-log details are not in the lesson, but they are accurate and do not contradict it."
    }
   },
   "learn:stops": {

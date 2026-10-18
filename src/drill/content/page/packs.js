@@ -200,8 +200,10 @@ document.addEventListener("change", e => {
   const st = pxState(cur.id); st.picks = { ...(st.picks || {}), [e.target.dataset.pxMatch]: e.target.value }; st.checked = false; pxSave(cur.id);
 });
 // A renamed lesson keeps its old id in `aliases`, so progress saved under it carries over.
-function migrateAliases() {
-  for (const [id, L] of Object.entries(LESSONS)) for (const old of (L.pack && L.pack.aliases) || []) {
+function migrateAliases() {  // progress saved under a lesson's old id follows it to the new one
+  const moves = Object.entries(D.aliases || {});  // a renamed core lesson: old -> new
+  for (const [id, L] of Object.entries(LESSONS)) for (const old of (L.pack && L.pack.aliases) || []) moves.push([old, id]);
+  for (const [old, id] of moves) {
     if (progress.lessons[old] && !progress.lessons[id]) progress.lessons[id] = progress.lessons[old];
     if (progress.solved[old] && !progress.solved[id]) progress.solved[id] = progress.solved[old];
   }

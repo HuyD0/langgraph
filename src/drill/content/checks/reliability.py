@@ -47,4 +47,19 @@ CHECKS = {
             why="Alert on how fast the budget is being used up. A single error with a low burn rate "
                 "isn't worth waking anyone."),
     ],
+    "answer_incident": [
+        ask("The fix is ready, the SME says the answer is right, and the eval passes. Why send it to a "
+            "small share of traffic first?",
+            ["Real traffic shows what the eval missed", "A small share is cheaper to run for a week", "The eval is only a formality before launch"],
+            answer=0,
+            clue="Is the eval set the same as everything real users ask?",
+            why="The eval covers the cases you thought of. A canary on real traffic catches the ones "
+                "you didn't, while only a few people see them."),
+        ask("Who should be able to switch the AI feature off in an emergency?",
+            ["Someone named before launch", "Anyone who notices a bad answer", "Nobody: it must stay on no matter what"],
+            answer=0,
+            clue="In an incident, is there time to find out who can do it?",
+            why="Agree before launch who flips the switch and who decides, usually the platform engineer "
+                "and the product manager, so the harm stops in minutes."),
+    ],
 }

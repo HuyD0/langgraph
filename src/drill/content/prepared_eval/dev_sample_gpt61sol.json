@@ -1,6 +1,5 @@
 {
- "about": "Prepared answers, dev split, judged by gpt-6.1-sol (foundry, inline): written by MLflow run d47450161593418fab39ebf66daed2c8 in experiment 'daily-drill'. Endpoint and resource names are left out on purpose.",
- "run_id": "d47450161593418fab39ebf66daed2c8",
+ "about": "Prepared answers, dev split, judged by gpt-6.1-sol (foundry, inline): written by the MLflow run 'judge gpt-6.1-sol · foundry inline · prepared answers dev-sample-302' in experiment 'daily-drill'. Endpoint and resource names are left out on purpose.",
  "params": {
   "draft_models": "databricks-claude-opus-5-5",
   "judge_model": "gpt-6.1-sol",
@@ -22,7 +21,6 @@
   "deployment": "gpt-6.1-sol",
   "api_version": "2025-04-01-preview",
   "judge_max_tokens": "2000",
-  "dataset_id": "d-93f366c29ebc46228d4880baf12f0544",
   "dataset_digest": "1a1f088b",
   "served_model": "gpt-6.1-sol-2026-09-29"
  },
@@ -3882,5 +3880,6 @@
    "no_giveaway": true,
    "standalone": true
   }
- ]
+ ],
+ "run_name": "judge gpt-6.1-sol · foundry inline · prepared answers dev-sample-302"
 }

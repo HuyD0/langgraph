@@ -39,7 +39,7 @@ CHECKS = {
             "drowning in false alarms. Which way should the threshold move?",
             ["Lower, so more payments get flagged", "Higher, so fewer payments get flagged", "Nowhere: thresholds don't change alarms"],
             answer=1,
-            clue="A stricter bar lets through only the cases the model is most sure about.",
+            clue="A stricter threshold lets through only the cases the model is most sure about.",
             why="A higher threshold flags fewer payments, and those are more often fraud: precision goes "
                 "up. The cost is missing some real fraud, so recall goes down."),
         ask("You tried thresholds on the validation set and picked 0.7. What do you do with the test set now?",
@@ -48,37 +48,5 @@ CHECKS = {
             clue="The test set should stay untouched by your tuning, but it still has a job.",
             why="You tune on validation, then check the chosen threshold once on test. Tuning on test as "
                 "well would make its score look better than it really is."),
-    ],
-    "average_precision": [
-        ask("1 in 100 orders gets returned. Your return-spotting model has a PR-AUC of 0.01. "
-            "What does that tell you?",
-            ["It's close to perfect", "It must be a bug", "It's about as good as guessing"],
-            answer=2,
-            clue="For PR-AUC, random guessing doesn't score 0.5. It depends on how rare the positives are.",
-            why="PR-AUC's baseline is the share of positives. With 1 in 100, guessing scores about 0.01, "
-                "so this model has learned nothing useful."),
-        ask("A teammate reports only ROC-AUC 0.95 for a model that spots rare machine failures. "
-            "What should you ask for?",
-            ["Accuracy, to back up the 0.95", "PR-AUC for the same model", "Nothing: 0.95 is close to perfect"],
-            answer=1,
-            clue="When positives are rare, lots of easy negatives can make one of these scores look good.",
-            why="ROC-AUC flatters a model when positives are rare. PR-AUC shows how well it finds the "
-                "real failures near the top of the list."),
-    ],
-    "calibration_table": [
-        ask("You ask an LLM to rate how sure it is. It says 95% on most answers. Before you "
-            "auto-approve those answers, what should you do?",
-            ["Check how often its 95% answers are right", "Trust it: the model knows itself", "Raise the bar to 99% and ship"],
-            answer=0,
-            clue="LLMs that rate their own confidence are often too sure of themselves.",
-            why="Calibration means checking that 95% really comes true about 95 times in 100. LLMs are "
-                "often overconfident, so measure it before a rule depends on it."),
-        ask("Two models predict which customers will cancel. Model A's Brier score is close to 0. "
-            "Model B's is the same as always guessing 50%. Whose chances can you trust more?",
-            ["Model A, the one close to 0", "Model B, it plays it safe", "Neither: Brier can't compare them"],
-            answer=0,
-            clue="The Brier score measures the gaps between what was predicted and what happened.",
-            why="For a Brier score lower is better, and 0 is perfect. Scoring the same as a 50% guess "
-                "means model B's chances tell you almost nothing."),
     ],
 }

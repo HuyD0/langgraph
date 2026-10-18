@@ -1,7 +1,7 @@
 # The Daily Drill page
 
 The learning-path page published at https://claude.ai/artifact/G7841w2YuwNwEGjwEWiDMg:
-about 170 lessons in 25 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
+about 190 lessons in 25 modules (use cases and fit, AI & ML foundations through agents and agent teams, security,
 pricing and sizing, reliability, shipping and the Azure Databricks platform), each lesson
 going Learn, Check, Build, Explain. The same page is what `drill-server` serves on your Mac ([SERVER.md](SERVER.md)).
 
@@ -62,8 +62,8 @@ Home shows the path as a sticker book, with the six phases always in view:
   "Earlier" or "Coming up" label, and what you come out with. The page is printed on the phase's
   own paper, matched to its shape: dots, graph paper, a lattice, ruled lines, hatching, dashes.
 - **Lesson pictures**: every lesson has its own small line drawing on its sticker, faded until you
-  get there. A new lesson needs one: put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` in
-  the sprite at the top of `page.html`, drawn as strokes on a 24 grid centred on 0, and make it
+  get there. A new lesson needs one: put a `<symbol id="s-<lesson id>" viewBox="-12 -12 24 24">` on its own line in
+  `page/sprite.svg` (the sprite the build pastes into `page.html`), drawn as strokes on a 24 grid centred on 0, and make it
   look different from its neighbours. Until it has one, its sticker shows the module's icon and
   `tests/test_content.py` fails to remind you.
 - **Order**: each sticker carries its place, like 2.11 (phase 2, lesson 11), and a dotted trail
@@ -224,8 +224,8 @@ in card text (`text`, `after` and `note` all go through `withTrust`).
 Two kinds of thing are told apart by **shape**, never a new colour: `look="solid"` (a filled
 tile) and `look="dashed"` (a ruler-edged tile). Icons are names from the page's sprite (`i-...`);
 a test fails if a card names one the page doesn't have. Keep to one idea per card, two to seven
-cards, with the same example running through them (lesson 1.3 uses a food delivery app, then the
-HR assistant; 1.4 puts the HR assistant's non-functional requirements on the pillars). Use the real
+cards, with the same example running through them (`split_requirements` uses a food delivery app, then the
+HR assistant; `well_architected` puts the HR assistant's non-functional requirements on the pillars). Use the real
 terms on the cards themselves, never a made-up shorthand for them.
 
 **Cards or a diagram?** A [lesson diagram](#lesson-diagrams) adds one picture to Learn paragraphs,
@@ -287,6 +287,16 @@ Databricks as code, Spacelift), set in `TRACKS` in `src/drill/content/modules/__
   on only says "builds on N earlier in this module" when lessons before it *in that module* aren't
   done. Home's track box has no Continue button when the Today card already opens the same lesson.
 
+## The running example: the HR assistant
+
+One company runs through the lessons: staff ask an assistant about HR policy, an HR person
+answers the hard questions as tickets, and the same numbers follow it from the use case card to
+the production incident. They live in one place, `src/drill/content/running_example.py` (the story
+in plain words, then the `HR` dict), and `tests/test_running_example.py` fails when a lesson
+quotes a number that no longer matches, or when the sheet itself stops adding up. To change one:
+edit the dict, then every lesson `quotes()` lists for it, re-derive the exercise cases it feeds,
+and regenerate the prepared tutor answers.
+
 ## Your own use case
 
 The graded exercises in Use case and fit, and Total cost of ownership, use the HR assistant, so
@@ -302,12 +312,12 @@ idea, ungraded:
 - **Functional and non-functional requirements**: your requirements, one per line, sorted live.
 - **A well-architected review**: "Ask the model to draft the review" sends your card (or the HR
   card, until you write yours) with a review prompt like the one you built.
-- **Is it fit for purpose?**: your bars, and later your pilot's results, with the go, fix or
+- **Is it fit for purpose?**: your acceptance criteria, and later your pilot's results, with the go, fix or
   stop call worked out by the exercise's rule.
 - **Turn your vetting into a skill** (the last lesson of Frame): the repository's Claude skill,
   `.claude/skills/vet-ai-use-case` (a `SKILL.md`, reference files and `scripts/tco.py`), in an
   editor checked against the skill rules as you type. "Run my skill on my use case" sends your
-  version, with your card, requirements, bars and the cost table worked out from your worksheet,
+  version, with your card, requirements, acceptance criteria and the cost table worked out from your worksheet,
   to the model. In Claude Code the skill runs as `/vet-ai-use-case`.
 - **Total cost of ownership**: a worksheet laid out like the bill of a RAG pipeline on Azure: LLM
   calls (answers and embeddings, pay as you go or provisioned), retrieval (Azure AI Search or
@@ -612,13 +622,14 @@ from the lesson's own example, so picture and text tell one story.
 
 ## Sticker callbacks
 
-The course teaches some foundations once, early, and then uses them quietly: requirements (1.3),
-the well-architected pillars (1.4), the bars and must-pass cases (1.5), leakage, precision and
+The course teaches some foundations once, early, and then uses them quietly: gathering requirements,
+functional and non-functional requirements, the well-architected pillars, the
+acceptance criteria and must-pass cases (all in Frame), leakage, precision and
 recall, cost per finished task, tokens that grow every step, the baseline and its controls,
 deciding before the runs, a real win or luck, reading a trace, prompt injection, never trusting
 model output, least privilege, retries, idempotent writes, reading a Terraform plan. Where a later lesson uses one, the sticker
 the learner earned in the lesson that taught it sits right after the phrase. Tapping it opens a
-card under the paragraph: the idea in a few words, what it means here, and "Revisit 1.4". If that
+card under the paragraph: the idea in a few words, what it means here, and "Revisit" with that lesson's number (worked out from its id, never written in). If that
 lesson isn't done yet, the sticker is a dashed outline and the card offers it instead. Teachers
 call this a spiral curriculum.
 
@@ -700,8 +711,10 @@ lesson(MODULE, 'masked_columns',
 
 The page shows "Checked against the docs on 12 Oct 2026" under Learn, with the sources one tap
 away. Lessons with no date of their own show "Content as of 12 Oct 2026", the day dates were
-first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days either note
-turns amber and says names and steps may have changed.
+first tracked (`CONTENT_DATE` in `src/drill/content/freshness.py`). After 180 days a sourced
+lesson's note turns amber and says names and steps may have changed. A lesson with no sources
+never ages: nothing in it was checked against a page, and the facts that go out of date live in
+the sourced lessons, so `drill content stale` lists only those.
 
 **To find what needs a look:**
 

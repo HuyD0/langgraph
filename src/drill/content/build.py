@@ -180,6 +180,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
     data = json.loads(json.dumps({
         "modules": [{"id": m.id, "title": m.title, "blurb": m.blurb, "lessons": m.lesson_ids, "planned": m.planned, "setting": m.setting} for m in loaded],
         "lifecycle": [{"name": n, "text": t, "modules": ms} for n, t, ms in lifecycle],
+        "aliases": modules.ALIASES,  # old core lesson ids -> current, so saved progress carries over
         "tracks": [{"id": i, "name": n, "text": t, "modules": ms} for i, n, t, ms in tracks],
         "lessons": lessons,
         "bank": list(bank.values()),
@@ -197,7 +198,7 @@ def build_data(loaded: list[Module] | None = None, packs: list | None = None, as
     from drill import tutor_prepared
 
     # The tutor's answers to its standard questions, written ahead and checked, so Ask works with no model.
-    data["prepared"] = tutor_prepared.served(data)
+    data["prepared"] = tutor_prepared.served(data, packs=packs)  # a pack's own answers come from inside the pack
     return data
 
 

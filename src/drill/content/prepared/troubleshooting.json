@@ -238,20 +238,20 @@
   },
   "check:1:1": {
    "q": "Why not “The SP must be added by hand in Databricks”?",
-   "a": "**Why \"The SP must be added by hand in Databricks\" isn't the best answer**\n\nIt gets one thing right. The SP has to exist before the plan can find it. Terraform won't make it here.\n\nBut it skips the real point of the question. The teammate's mistake is about what the code does. The word `data` in the error path means a **lookup**: Terraform only searches for something that should already be there. It was never written to create anything. That is why \"Terraform should just create it\" is wrong.\n\nIt also guesses at a fix the lesson never gives. In the lesson, an SP becomes findable by passing stages in order:\n\n1. It exists in Microsoft Entra ID.\n2. It is declared in `service_principals.yml`.\n3. The Foundation stack is applied, which registers it in the Databricks account.\n4. The Service stack assigns it to the workspace.\n\nA lookup fails when one of these is not done. So you check them in order and stop at the first gap. In the lesson's example, that gap was a missing entry in `service_principals.yml`.\n\n**Why the other option is better:** \"`data` means it only looks up what exists\" names the actual reason the teammate is wrong, and it points you to the stages that come before the lookup.",
+   "a": "That option gets one thing right. The SP has to exist before the plan can find it, and Terraform is not going to make it here.\n\nBut it points to the wrong fix. In this platform, nobody adds SPs by hand in Databricks. Everything runs as code. The SP gets into Databricks by passing the stages in order:\n\n- It exists in Microsoft Entra ID.\n- It is declared in the team's `service_principals.yml`.\n- The Foundation stack is applied, which registers it in the Databricks account.\n- The Service stack assigns it to the workspace.\n\nAdding it by hand skips all of that. The config repo would no longer match what is really in Databricks. That mismatch is called **drift**. The next Foundation run might not know about the SP, or might clash with it. It also hides the real gap, such as a missing line in `service_principals.yml`.\n\nIt also doesn't answer the teammate. Their mistake is thinking Terraform should create the SP here.\n\n\"`data` means it only looks up what exists\" is the better answer. It explains exactly why Terraform won't create it: a `data` block only reads something an earlier stage should already have registered.",
    "step": "Check",
    "fingerprint": "37a76741ca8e0932",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
-    "no_giveaway": false,
+    "plain": true,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It runs to about 220 words, over the 200-word limit, and the numbered stage list plus 'check in order, stop at the first gap' lays out the ordered-check logic that next_check is meant to make the learner write."
+    "pass": true,
+    "notes": "No major problem. The drift and clash claims go beyond the lesson, though they are hedged and fit the setting, and the answer is right at the edge of the length limit."
    }
   },
   "check:2:0": {

@@ -21,13 +21,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Callable
 
+from drill import scrub
+
 DIR = Path(__file__).parent / "content" / "prepared"
-DRAFT_MODEL = "databricks-claude-opus-5-5"
-JUDGE_MODEL = "databricks-claude-sonnet-5-5"  # a different model from the drafter, so it isn't grading its own work
+PACK_DIR = "prepared"  # a content pack's own answers live inside the pack, <pack>/prepared/<module>.json
+# The serving endpoints that draft and judge. At work, where these names may not exist, point the two
+# variables at your gateway's services; the drafter and the judge should be different models.
+DRAFT_MODEL = os.getenv("DRILL_PREPARE_DRAFT_MODEL", "databricks-claude-opus-5-5")
+JUDGE_MODEL = os.getenv("DRILL_PREPARE_JUDGE_MODEL", "databricks-claude-sonnet-5-5")  # a different model from the drafter, so it isn't grading its own work
 
 LEARNER = ("The learner is new to coding and is learning AI engineering: Databricks for agents, LangGraph, LangChain and "
            "MLflow, plus Terraform for Azure Databricks. Explain any jargon in plain words. Never use Big-O notation; say "
@@ -80,8 +86,8 @@ def chips(data: dict) -> dict[str, list[dict]]:
     gotchas = _gotchas(data)
     out: dict[str, list[dict]] = {}
     for lid, lesson in data["lessons"].items():
-        if not lesson.get("learn") or lesson.get("pack"):  # a pack lesson's Ask asks live, from its own material
-            continue
+        if not lesson.get("learn"):
+            continue  # pack lessons are in: their answers are saved inside the pack (save), so a work copy can prepare them
         q, how = _learn_chip(lesson, gloss)
         items = [
             {"key": "learn:term", "step": "Learn", "q": q, "how": how},
@@ -219,26 +225,37 @@ def _module_of(data: dict) -> dict[str, str]:
     return {lid: m["id"] for m in data["modules"] for lid in m["lessons"]}
 
 
-def load(directory: Path = DIR) -> dict[str, dict[str, dict]]:
-    """Every prepared answer: ``{lesson_id: {key: record}}``."""
+def _pack_homes(packs: list | None) -> dict[str, Path]:
+    """Which pack each pack lesson belongs to: lesson id -> that pack's prepared/ folder."""
+    return {lid: pack.root / PACK_DIR for pack in packs or [] for m in pack.modules for lid in m.lesson_ids}
+
+
+def load(directory: Path = DIR, packs: list | None = None) -> dict[str, dict[str, dict]]:
+    """Every prepared answer, ``{lesson_id: {key: record}}``: the curriculum's, plus each loaded pack's own."""
     out: dict[str, dict] = {}
-    for path in sorted(directory.glob("*.json")):
-        out.update(json.loads(path.read_text()))
+    folders = [directory] + sorted({home for home in _pack_homes(packs).values()})
+    for folder in folders:
+        for path in sorted(folder.glob("*.json")):
+            out.update(json.loads(path.read_text()))
     return out
 
 
-def save(data: dict, answers: dict[str, dict[str, dict]], directory: Path = DIR) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    by_module: dict[str, dict] = {}
+def save(data: dict, answers: dict[str, dict[str, dict]], directory: Path = DIR, packs: list | None = None) -> None:
+    """One file per module. A pack lesson's answers go inside its pack (``<pack>/prepared/``), never in the
+    curriculum's folder, so a work copy's answers stay in its overlay."""
+    homes, module_of = _pack_homes(packs), _module_of(data)
+    by_file: dict[Path, dict] = {}
     for lid, records in answers.items():
-        by_module.setdefault(_module_of(data).get(lid, "other"), {})[lid] = dict(sorted(records.items()))
-    for mid, lessons in by_module.items():
-        (directory / f"{mid}.json").write_text(json.dumps(dict(sorted(lessons.items())), ensure_ascii=False, indent=1) + "\n")
+        folder = homes.get(lid, directory)
+        by_file.setdefault(folder / f"{module_of.get(lid, 'other')}.json", {})[lid] = dict(sorted(records.items()))
+    for path, lessons in by_file.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(dict(sorted(lessons.items())), ensure_ascii=False, indent=1) + "\n")
 
 
-def served(data: dict, answers: dict | None = None) -> dict[str, dict[str, dict]]:
+def served(data: dict, answers: dict | None = None, packs: list | None = None) -> dict[str, dict[str, dict]]:
     """What the page carries: answers that passed, weren't rejected, and still match their lesson."""
-    answers = load() if answers is None else answers
+    answers = load(packs=packs) if answers is None else answers
     out: dict[str, dict] = {}
     for lid, items in chips(data).items():
         for chip in items:
@@ -248,8 +265,8 @@ def served(data: dict, answers: dict | None = None) -> dict[str, dict[str, dict]
     return out
 
 
-def status(data: dict, answers: dict | None = None) -> dict[str, int]:
-    answers = load() if answers is None else answers
+def status(data: dict, answers: dict | None = None, packs: list | None = None) -> dict[str, int]:
+    answers = load(packs=packs) if answers is None else answers
     counts = {"questions": 0, "ready": 0, "missing": 0, "stale": 0, "failed": 0, "rejected": 0, "checked": 0}
     for lid, items in chips(data).items():
         for chip in items:
@@ -306,6 +323,11 @@ def prepare_one(data: dict, lid: str, chip: dict, draft: Callable[[str], str], j
     for attempt in range(2):
         note = f"\n\nA reviewer rejected your last draft: {verdict['notes']} Fix that." if attempt and verdict.get("notes") else ""
         answer = draft(ask + note).strip()
+        leaked = scrub.find(answer)  # the model quotes the lesson it was given; at work that may name real things
+        if leaked:
+            verdict = {"pass": False, "notes": "the answer holds " + ", ".join(leaked) + ": not saved as written"}
+            answer = ""
+            break
         quality = aq.quality_checks(answer, lesson_text + "\n" + chip["q"] + "\n" + chip["how"], terms, word_limit=200)
         if quality["blocking"]:
             verdict = {"pass": False, "notes": "The code checks failed: " + aq.why_blocked(quality) + "."}
@@ -355,6 +377,7 @@ def databricks_chat(model: str, profile: str | None) -> Callable[[str], str]:
         import openai
 
         t0 = time.monotonic()
+        reply = None
         for attempt in range(8):  # the workspace limits tokens per minute per model: wait and try again
             try:
                 reply = client.chat.completions.create(model=model, messages=[{"role": "user", "content": text}], max_tokens=8000)  # room to reason first: the newest models do
@@ -415,7 +438,8 @@ def traced_prepare_one(data: dict, lid: str, chip: dict, draft: Callable, judge:
 
 
 def run(data: dict, work: list[tuple[str, dict]], draft: Callable, judge: Callable, answers: dict,
-        workers: int = 6, on_done: Callable[[str, dict, dict], None] | None = None, traced: bool = False, **models: str) -> dict:
+        workers: int = 6, on_done: Callable[[str, dict, dict], None] | None = None, traced: bool = False, packs: list | None = None,
+        **models: str) -> dict:
     """Prepare ``work`` a few at a time, saving after each module's worth so a stop loses little."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -433,8 +457,8 @@ def run(data: dict, work: list[tuple[str, dict]], draft: Callable, judge: Callab
             if on_done:
                 on_done(lid, chip, rec)
             if n % 25 == 0:
-                save(data, answers)
-    save(data, answers)
+                save(data, answers, packs=packs)
+    save(data, answers, packs=packs)
     return answers
 
 

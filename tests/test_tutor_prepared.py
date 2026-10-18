@@ -71,3 +71,37 @@ def test_a_draft_the_judge_rejects_is_redrafted_once_with_its_note(data):
 
 def test_the_page_carries_the_served_answers(data):
     assert data["prepared"] == tp.served(data)
+
+
+def test_a_packs_answers_live_inside_the_pack(tmp_path):
+    """In the work copy the overlay is content-packs/internal/: a pack lesson's answers are saved there,
+    never in the curriculum's folder, and load/served see both together."""
+    import shutil
+    from pathlib import Path
+
+    from drill import tutor_prepared as tp
+    from drill.content import modules, packs
+    from drill.content.build import build_data
+
+    root = tmp_path / "example"
+    shutil.copytree(Path(__file__).resolve().parent / "fixtures" / "content-packs" / "example", root)
+    loaded = modules.load()
+    pack = packs.load_pack(root, drafts=False, taken={lesson["id"] for m in loaded for lesson in m.lessons})
+    data = build_data(loaded, [pack])
+    chips = tp.chips(data)
+    core_lid, pack_lid = loaded[0].lesson_ids[0], pack.modules[0].lesson_ids[0]
+
+    def record(lid):
+        chip = chips[lid][0]
+        return {chip["key"]: {"q": chip["q"], "a": "A checked answer.", "step": chip["step"], "fingerprint": tp.fingerprint(data, lid, chip),
+                              "status": "passed", "model": "m", "judge": {"model": "j", "pass": True, "notes": ""}}}
+
+    answers = {core_lid: record(core_lid), pack_lid: record(pack_lid)}
+    core_dir = tmp_path / "core"
+    tp.save(data, answers, directory=core_dir, packs=[pack])
+    assert list((root / "prepared").glob("*.json")), "the pack's answers are written inside the pack"
+    assert not any(pack_lid in f.read_text() for f in core_dir.glob("*.json")), "and not in the curriculum's folder"
+    assert tp.load(directory=core_dir, packs=[pack]) == answers
+    served = tp.served(data, tp.load(directory=core_dir, packs=[pack]))
+    assert core_lid in served and pack_lid in served
+

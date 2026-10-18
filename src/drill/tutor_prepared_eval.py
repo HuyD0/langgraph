@@ -28,6 +28,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import subprocess
 import threading
 import time
@@ -238,8 +239,22 @@ def link_judge(mlflow, run_id: str):
     return v
 
 
+def find_judge_run(mlflow, run: str) -> str:
+    """A judge eval run's id from its id or its readable name (recordings in the repo keep only the name)."""
+    if re.fullmatch(r"[0-9a-f]{32}", run):
+        return run
+    experiment = mlflow.get_experiment_by_name(mlflow_names.experiment())
+    found = mlflow.MlflowClient().search_runs(
+        [experiment.experiment_id] if experiment else [],
+        filter_string=f"tags.mlflow.runName = '{run}' and tags.kind = '{EXPERIMENT_KIND}'") if experiment else []
+    if len(found) != 1:
+        raise ValueError(f"{len(found)} judge eval runs are named {run!r} in {mlflow_names.experiment()!r}: pass the run's id instead")
+    return found[0].info.run_id
+
+
 def set_judge_alias(mlflow, alias: str, run_id: str, reason: str = "") -> str:
-    """Point ``alias`` at the judge version a run tested, and note on the run why. Returns "name/version"."""
+    """Point ``alias`` at the judge version a run tested (by its id or name), and note on the run why. Returns "name/version"."""
+    run_id = find_judge_run(mlflow, run_id)
     v = link_judge(mlflow, run_id)
     mlflow.genai.set_prompt_alias(v.name, alias, int(v.version))
     mlflow.genai.set_prompt_version_tag(v.name, v.version, f"{alias}_evidence", run_id)
@@ -590,12 +605,12 @@ def evaluate(profile: str | None, judge_model: str = JUDGE_MODEL, split: str = "
                           "reference_pass": [bool(x["reference"].get("reference_pass")) for x in seen],
                           "notes": [x["verdict"]["notes"] for x in seen]}, "answers.json")
     if record is not None:  # the run's own results, for a notebook to replay; the run stays the record
-        params = {k: v for k, v in mlflow.get_run(run.info.run_id).data.params.items() if k not in ("deployment",)}
+        params = {k: v for k, v in mlflow.get_run(run.info.run_id).data.params.items() if k not in ("deployment", "dataset_id")}   # ids stay in MLflow; the repo is public
         Path(record).parent.mkdir(parents=True, exist_ok=True)
         Path(record).write_text(json.dumps({
-            "about": f"Prepared answers, {split} split, judged by {judge_model} ({provider}, {mode}): written by MLflow run "
-                     f"{run.info.run_id} in experiment '{experiment.name}'. Endpoint and resource names are left out on purpose.",
-            "run_id": run.info.run_id, "run_name": run_name, "reproduce": command, "params": params, "metrics": numbers,
+            "about": f"Prepared answers, {split} split, judged by {judge_model} ({provider}, {mode}): written by the MLflow run "
+                     f"'{run_name}' in experiment '{experiment.name}' (find it by that name). Endpoint and resource names are left out on purpose.",
+            "run_name": run_name, "reproduce": command, "params": params, "metrics": numbers,
             "batch_jobs": [{k: v for k, v in j.items() if k != "batch_id"} for j in getattr(judge_chat["call"], "jobs", [])],
             "missing": missing,
             "answers": [{"lesson_id": x["lesson_id"], "key": x["key"], "passes": x["verdict"]["pass"],

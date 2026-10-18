@@ -251,8 +251,84 @@ CHECKS = {
         ask("Kappa is 0.2 and AC1 is 0.25 for your judge against people. What is the honest reading?",
             ["They really disagree; both are low", "AC1 rescues it, so trust the judge", "The rare verdict is causing it"],
             answer=0,
-            clue="Is one number low and the other high, or are both low?",
+            clue="When does AC1 change the reading, and when does it not?",
             why="AC1 helps only when kappa is low but AC1 is high. Both low means the judge and the people really do "
                 "disagree."),
+    ],
+    "judge_cost": [
+        ask("Your judge reads 2,000 tokens and writes 200 for each call. You add a long reason to every "
+            "verdict, and output grows to 800 tokens. At $2 in and $10 out per million, what happens?",
+            ["The cost per call doubles", "The cost per call barely moves", "The cost per call halves"],
+            answer=0,
+            clue="Output costs five times input here. Work out both parts before and after.",
+            why="Before: 2,000 times $2 plus 200 times $10, divided by a million = $0.006. After: 2,000 times "
+                "$2 plus 800 times $10 = $0.012. Output is the dear part, so long reasons cost."),
+        ask("Your team wants a judge a twentieth of the price. What do you do first?",
+            ["Check it agrees with people and itself", "Switch now: cheaper is always better", "Run it only on easy examples"],
+            answer=0,
+            clue="What did the last lessons check before trusting a judge?",
+            why="A cheap judge that disagrees with people gives verdicts you can't use. Check its "
+                "agreement first, then switch if it passes."),
+    ],
+    "eval_cost": [
+        ask("Labelling 200 examples takes 3 minutes each, and an hour of an expert's time costs $60. "
+            "What does the golden set cost to label?",
+            ["$600", "$60", "$36,000"],
+            answer=0,
+            clue="Minutes into hours first, then times the hourly cost.",
+            why="200 times 3 minutes is 600 minutes, which is 10 hours. 10 times $60 = $600."),
+        ask("Which change cuts the eval bill without making the eval less trustworthy?",
+            ["Batch the full runs, which can wait", "Score half of each answer", "Drop the must-pass cases"],
+            answer=0,
+            clue="Which one changes the price, not what gets checked?",
+            why="Batch processing halves the price of the same calls, so the verdicts are as good as "
+                "before. The other two check less."),
+    ],
+    "average_precision": [
+        ask("1 in 100 orders gets returned. Your return-spotting model has a PR-AUC of 0.01. "
+            "What does that tell you?",
+            ["It's close to perfect", "It must be a bug", "It's about as good as guessing"],
+            answer=2,
+            clue="For PR-AUC, random guessing doesn't score 0.5. It depends on how rare the positives are.",
+            why="PR-AUC's baseline is the share of positives. With 1 in 100, guessing scores about 0.01, "
+                "so this model has learned nothing useful."),
+        ask("A teammate reports only ROC-AUC 0.95 for a model that spots rare machine failures. "
+            "What should you ask for?",
+            ["Accuracy, to back up the 0.95", "PR-AUC for the same model", "Nothing: 0.95 is close to perfect"],
+            answer=1,
+            clue="When positives are rare, lots of easy negatives can make one of these scores look good.",
+            why="ROC-AUC flatters a model when positives are rare. PR-AUC shows how well it finds the "
+                "real failures near the top of the list."),
+    ],
+    "calibration_table": [
+        ask("You ask an LLM to rate how sure it is. It says 95% on most answers. Before you "
+            "auto-approve those answers, what should you do?",
+            ["Check how often its 95% answers are right", "Trust it: the model knows itself", "Raise the threshold to 99% and release it"],
+            answer=0,
+            clue="LLMs that rate their own confidence are often too sure of themselves.",
+            why="Calibration means checking that 95% really comes true about 95 times in 100. LLMs are "
+                "often overconfident, so measure it before a rule depends on it."),
+        ask("Two models predict which customers will cancel. Model A's Brier score is close to 0. "
+            "Model B's is the same as always guessing 50%. Whose chances can you trust more?",
+            ["Model A, the one close to 0", "Model B, it plays it safe", "Neither: Brier can't compare them"],
+            answer=0,
+            clue="The Brier score measures the gaps between what was predicted and what happened.",
+            why="For a Brier score lower is better, and 0 is perfect. Scoring the same as a 50% guess "
+                "means model B's chances tell you almost nothing."),
+    ],
+    "judge_biases": [
+        ask("Your judge scores 300 pairs in one order only, and version B wins 60 percent of them. "
+            "What should you do before believing it?",
+            ["Score them again in the other order", "Nothing: 60 percent is clear", "Add more pairs in the same order"],
+            answer=0,
+            clue="Could the order alone be giving B its wins?",
+            why="With one order, position bias and real quality look the same. Score the other order too, "
+                "count flips as ties, and see whether B still wins."),
+        ask("Your app runs on one model family. Which judge gives the fairest comparison with a rival app?",
+            ["A judge from a third family", "A judge from your app's family", "A judge from the rival's family"],
+            answer=0,
+            clue="Would a judge favour answers that sound like its own?",
+            why="A judge tends to favour its own family's style. One from neither family, or two judges "
+                "from different families, keeps the comparison fair."),
     ],
 }
