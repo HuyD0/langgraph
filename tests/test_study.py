@@ -89,5 +89,5 @@ def test_the_page_never_drops_study_list_changes_made_while_it_connects():
     root = Path(__file__).resolve().parent
     script = root.parent / "src" / "drill" / "content" / "page" / "study-list.js"
     result = subprocess.run([node, str(root / "fixtures" / "study_sync.js"), str(script)],
-                            capture_output=True, text=True, timeout=60)
+                            capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr[-800:]

@@ -48,7 +48,7 @@ def test_a_frozen_account_copy_is_cloned_so_lessons_stay_editable():
     if not node:
         pytest.skip("node is not installed")
     done = subprocess.run([node, "-e", '"use strict";\n' + merge_function() + CHECK],
-                          capture_output=True, text=True, timeout=30)
+                          capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert done.returncode == 0, done.stderr[-800:]  # strict mode: writing to a frozen object throws
     out = json.loads(done.stdout)
     assert out["at"] == 2, "moving on to the next check question was lost"

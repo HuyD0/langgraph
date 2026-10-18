@@ -184,9 +184,11 @@ class LakebaseLogin:
     @property
     def user(self) -> str:
         """The Lakebase role to sign in as: the person's Databricks user name (their work email)
-        on a laptop, or ``PGUSER`` (the app's service principal) in a Databricks App."""
+        on a laptop, or ``PGUSER`` (the app's service principal) in a Databricks App. Only in an
+        app: a laptop with PostgreSQL installed often sets ``PGUSER=postgres`` for its own server."""
         if not self._user:
-            self._user = os.getenv("PGUSER", "").strip() or self.client.current_user.me().user_name
+            pguser = os.getenv("PGUSER", "").strip() if in_databricks_app() else ""
+            self._user = pguser or self.client.current_user.me().user_name
         return self._user
 
     def password(self) -> str:

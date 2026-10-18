@@ -52,5 +52,5 @@ def test_the_course_script_parses(tmp_path):
     script = course[course.index("<script>\n(() => {") + len("<script>"):]
     script = script[: script.index("</script>")]
     (tmp_path / "course.js").write_text(script, encoding="utf-8")
-    result = subprocess.run([node, "--check", str(tmp_path / "course.js")], capture_output=True, text=True)
+    result = subprocess.run([node, "--check", str(tmp_path / "course.js")], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stderr[-800:]

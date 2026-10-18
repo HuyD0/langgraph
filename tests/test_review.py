@@ -138,7 +138,7 @@ def test_the_repo_skill_is_valid_and_its_cost_script_runs():
     for ref in re.findall(r"\]\((reference/[\w.-]+)\)", text):
         assert (skill / ref).exists(), f"SKILL.md links to a missing file: {ref}"
     example = re.search(r"```json\n(.*?)```", (skill / "reference/cost-inputs.md").read_text(encoding="utf-8"), re.S).group(1)
-    out = subprocess.run([sys.executable, str(skill / "scripts/tco.py")], input=example, capture_output=True, text=True, check=True).stdout
+    out = subprocess.run([sys.executable, str(skill / "scripts/tco.py")], input=example, capture_output=True, text=True, encoding="utf-8", check=True).stdout
     assert "Biggest item: checking answers" in out and "| Azure AI Search | $12,000 |" in out
     data = build_data()
     assert data["skill"]["files"]["SKILL.md"] == text and "scripts/tco.py" in data["skill"]["files"]

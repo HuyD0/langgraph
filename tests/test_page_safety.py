@@ -32,7 +32,7 @@ def run_js(js: str, extra: str = "") -> object:
     helpers = "\n".join(_line(page, s) for s in ("const esc = ", "const inline = ", "const md = "))
     helpers += "\n" + _line(study, "const emph = ") + "\n" + extra
     script = helpers + "\nconsole.log(JSON.stringify((() => { " + js + " })()));"
-    out = subprocess.run([node, "-e", script], capture_output=True, text=True)
+    out = subprocess.run([node, "-e", script], capture_output=True, text=True, encoding="utf-8")
     assert out.returncode == 0, out.stderr[-800:]
     return json.loads(out.stdout)
 

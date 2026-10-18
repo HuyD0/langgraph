@@ -303,7 +303,7 @@ console.log(JSON.stringify({
   face: [hzFace("answer").includes('class="h-eye-blue"'), hzFace("clue").includes('class="h-eye-blue"'), (hzCoach("answer", "x").match(/class="eye"/g) || []).length, hzTrackCurse(1).includes('class="body" d="M')],
 }));"""
     (tmp_path / "hz.js").write_text(probe, encoding="utf-8")
-    out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, check=True).stdout)
+    out = json.loads(subprocess.run([node, str(tmp_path / "hz.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout)
     assert out["phases"] == [len(modules.LIFECYCLE)] * 3, "one scene, one energy layer and one spirit place per phase"
     assert all(w == 9 for w in out["whole"])
     assert all(0 < e < 9 and crack for e, crack in out["half"])
@@ -561,7 +561,7 @@ def test_the_page_script_parses(data, tmp_path):
     html = build_page(data)
     script = max((part.split("</script>", 1)[0] for part in html.split("<script>")[1:]), key=len)  # the page's own code
     (tmp_path / "page.js").write_text(script, encoding="utf-8")
-    result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True)
+    result = subprocess.run([node, "--check", str(tmp_path / "page.js")], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stderr[-800:]
 
 

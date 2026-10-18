@@ -44,7 +44,7 @@ for (const id of Object.keys(LESSONS)) {{
 }}
 console.log(JSON.stringify(out));"""
     (tmp_path / "chips.js").write_text(probe, encoding="utf-8")
-    page = json.loads(subprocess.run([node, str(tmp_path / "chips.js")], capture_output=True, text=True, check=True).stdout)
+    page = json.loads(subprocess.run([node, str(tmp_path / "chips.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout)
     ours = {lid: [[c["key"], c["q"]] for c in items] for lid, items in tp.chips(data).items()}
     for lid, items in ours.items():
         assert sorted(map(tuple, page[lid])) == sorted(map(tuple, items)), lid
