@@ -1267,7 +1267,7 @@ Split `text` into words at the spaces, and look at each word:
 Return the words joined back together with single spaces.""",
         pattern='Split into words, check each one against a couple of clear rules, then join them back.',
         target='one pass over the words',
-        realworld='"Sensitive information disclosure" is #2 on the OWASP Top 10 for LLM apps. Real maskers also catch card numbers, addresses and names. On Databricks, AI Gateway can mask PII on an endpoint and `ai_mask()` does it in SQL; masking before data reaches logs and traces matters as much as masking prompts.',
+        realworld='"Sensitive information disclosure" is #2 on the OWASP Top 10 for LLM apps. Real maskers also catch card numbers, addresses and names. On Databricks, Unity Gateway guardrails can mask PII and `ai_mask()` does it in SQL; masking before data reaches logs and traces matters as much as masking prompts.',
         starter="""def redact_pii(text):
     # your code here
     pass
@@ -1698,7 +1698,7 @@ Keep a running total for each user. Every total starts at 0. For each call, in o
 Return a list with one result per call, in order, like `["ok", "refused"]`.""",
         pattern='A ledger: a dict of running totals, checked before each spend.',
         target='one pass over the calls',
-        realworld='"Unbounded consumption" is #10 on the OWASP Top 10 for LLM apps. One user, script or looping agent can burn a month\'s budget in a night. AI Gateway can rate-limit per user and per endpoint, and usage tracking shows who used what.',
+        realworld='"Unbounded consumption" is #10 on the OWASP Top 10 for LLM apps. One user, script or looping agent can burn a month\'s budget in a night. Unity Gateway can rate-limit per user and per endpoint, and its usage tracking shows who used what.',
         starter="""def budget_check(calls, daily_limit):
     # your code here
     pass

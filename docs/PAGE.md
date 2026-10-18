@@ -311,7 +311,7 @@ idea, ungraded:
   to the model. In Claude Code the skill runs as `/vet-ai-use-case`.
 - **Total cost of ownership**: a worksheet laid out like the bill of a RAG pipeline on Azure: LLM
   calls (answers and embeddings, pay as you go or provisioned), retrieval (Azure AI Search or
-  Databricks Vector Search), Databricks compute (the chunk-and-embed jobs, and serving), storage,
+  Databricks AI Search), Databricks compute (the chunk-and-embed jobs, and serving), storage,
   people and one-off costs. The page ships no prices; each group links to the Azure pricing page
   to take them from.
 
