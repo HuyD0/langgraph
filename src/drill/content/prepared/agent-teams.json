@@ -602,9 +602,9 @@
  "handoff_kept": {
   "check:0:0": {
    "q": "Why not “Add one more helper that looks up the order num…”?",
-   "a": "**Why \"add one more helper\" is not the best first try**\n\nLook at the clue in the question: the trace already shows the research helper *found* the order number. (A trace is the step-by-step record of what each agent did.) So finding it is not the problem. The number gets lost later, at the hand-off, when the main agent retells the helper's message in its own words.\n\nThe idea does get one thing right. It treats the order number as a fact that must reach the user.\n\nBut it misses where the problem is. A new helper would look up the number again, and then hand it back the same way. Its message also goes through the main agent's retelling, so the number can drop out just as before. You would add more steps, more cost, and more waiting, and the leak would still be there.\n\n**Why the other option is better**\n\n\"Have helpers report every finding, passed on word for word\" fixes the actual leak. The fact goes into the helper's final message, and the main agent passes it along unchanged, so nothing slips out during the retelling.",
+   "a": "The trace already shows the research helper found the order number. So finding it was never the problem. The number got lost later, in the **hand-off**, the moment the helper passed its work to the main agent.\n\n\"Add one more helper that looks up the order number again\" does get one thing right. It aims at the exact fact that keeps going missing.\n\nBut it fixes the wrong step. The new helper would also hand its work to the main agent. If the main agent still retells messages in its own words, the number can drop out again. You would have one more hand-off, so one more place to lose details. You would also pay for an extra agent run and wait longer for each answer.\n\nIt also only covers the order number. Next week it might be a date or a card ending, and you would need yet another helper.\n\n\"Have helpers report every finding, passed on word for word\" is better because it fixes the hand-off itself, so every fact the helpers find, not just the order number, reaches the final answer.",
    "step": "Check",
-   "fingerprint": "98d3679d5b10e11a",
+   "fingerprint": "5db9f20de6f5770e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -620,9 +620,9 @@
   },
   "check:0:1": {
    "q": "Why not “Give the main agent a bigger model, so it remem…”?",
-   "a": "A bigger model sounds reasonable. A stronger model might reword a little more carefully, so it could help slightly. But it aims at the wrong problem.\n\nThe trace shows the research helper found the order number. (A trace is the step-by-step record of what each agent did.) So nothing went wrong with finding it. The fact went missing during the **hand-off**, the moment the helper passes its work to the main agent.\n\nTwo things cause that loss:\n\n- The main agent sees only the helper's **final message**. If the order number isn't in that message, no model, big or small, can recover it.\n- The main agent retells the message in its own words. Rewording drops details like a game of telephone, and a bigger model still rewords.\n\n\"Remembering more\" doesn't fix either cause. It also costs more money and makes each answer slower.\n\n**\"Have helpers report every finding, passed on word for word\"** is better because it fixes the exact spot where the fact falls out, using only prompt changes. In LangChain's tests, passing answers on unchanged made them nearly 50 percent better.",
+   "a": "It sounds sensible, but it aims at the wrong problem.\n\n**What it gets partly right:** a stronger model might reword a bit more carefully. So it could help a little, sometimes.\n\n**What it misses:** the trace (the step-by-step record of what each agent did) shows the helper *found* the order number. So nothing was forgotten from lack of memory. The fact got lost at the **hand-off**, the moment the helper passed its work on.\n\nThat can happen in two ways:\n\n- The helper's final message left the fact out. The main agent sees only that final message. No model, however big, can keep a fact it was never shown.\n- The main agent retold the message in its own words and dropped the detail. Bigger models reword too, so the leak stays.\n\nA bigger model also costs more on every run, and it doesn't touch either cause.\n\n**Why the other option is better:** having helpers put every finding in their final message, and passing it on word for word, fixes the exact spot where the fact falls out, cheaply, through the prompts.",
    "step": "Check",
-   "fingerprint": "cbb4d97e3eaf3fc0",
+   "fingerprint": "3229c36fc4a8d928",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -633,14 +633,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real defects. The claims that a bigger model costs more and is slower, and that it still rewords, go beyond the lesson, but they are plausible and do not contradict it."
+    "notes": "Minor: the claims that bigger models reword too and that they cost more per run come from outside the lesson, but they do not contradict it."
    }
   },
   "check:1:0": {
    "q": "Why not “The helpers have to run all over again”?",
-   "a": "\"The helpers have to run all over again\" sounds reasonable, but it doesn't match what's happening.\n\nWhen the main agent retells a report, the helpers have already finished. Their work is done. The main agent is only rewording the **final message** each helper sent back. Nothing about rewording makes a helper start over. So this option describes a problem the setup doesn't create.\n\nIt does point at something real: if you later *notice* a missing fact, you might rerun a helper to get it back. But that's a cleanup step after the damage, not the risk itself.\n\nThe real risk is quieter. Rewording works like a game of telephone. Small details slip out, and the answer still reads smoothly. Nobody sees an error. A good-sounding answer can hide the one fact that mattered, like an order number or a date.\n\nThat's why the lesson suggests a **hand-off check**: list the facts a helper found, then see which ones reach the final answer word for word.\n\n\"A key fact, like a refund date, drops out\" is better because it names the actual danger: silent loss of detail during rewording.",
+   "a": "Rewording doesn't make the helpers run again. Each helper has already finished and sent its **final message** (the last thing it says when its work is done). The main agent just takes that message and retells it in its own words. Nothing in that step sends the work back to the helpers.\n\nThis option does get one thing right. It senses that something goes wrong at the **hand-off**, the moment one agent passes its work to another. That is the right place to look.\n\nBut it picks the wrong problem. A rerun would be easy to spot, since it costs time and you'd see extra helper steps in the trace (the record of every step a run took). The real risk is quiet. The answer still reads well, so nobody notices that a detail fell out during the retelling. That is why the lesson says to check which facts reach the final answer word for word.\n\n\"A key fact, like a refund date, drops out\" is better because it names the real danger: rewording silently loses a detail that mattered, even though the answer still sounds fine.",
    "step": "Check",
-   "fingerprint": "f82259c8176476d9",
+   "fingerprint": "2d88c6c4d1a0a3cc",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -651,14 +651,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The rerun-a-helper aside is not in the lesson, but it is hedged and does not contradict it, so no check fails."
+    "notes": "No real problems. The remark that a rerun would show up as extra helper steps in the trace goes beyond the lesson, but it does not contradict it."
    }
   },
   "check:1:2": {
    "q": "Why not “The answers become far too long to read”?",
-   "a": "\"The answers become far too long to read\" points the wrong way.\n\nWhen the main agent retells a helper's report in its own words, it usually **shortens** it. Retelling is a kind of summary. Summaries tend to drop things, not pile them on. So the bigger danger is that the answer has too little, not too much.\n\nLength is also something you can see at a glance. If an answer ran long, you'd notice right away. The question even tells you the answers \"read well.\" That rules out a readability problem.\n\nWhat this option gets right: it senses that rewording changes the message. That instinct is good. It just guesses the wrong kind of change.\n\nThe real risk is quiet. Think of the lesson's example. The final answer reads smoothly, but \"card ends 0099\" never made it through. Nothing looks broken, so a quick read won't catch it. That's why the lesson suggests checking the **hand-off**, the moment one agent passes its work to another. You look fact by fact to see what made it into the final answer.\n\n\"A key fact, like a refund date, drops out\" is better because rewording loses details silently, even when the answer still reads well.",
+   "a": "\"The answers become far too long to read\" points at the wrong problem. It worries about length, and length is easy to spot. You would notice a long, rambling answer just by reading it.\n\nThe question already tells you the answers read well. So readability is not where the danger lies.\n\nThe lesson's worry is quieter. When the main agent retells a helper's report in its own words, details can fall out. Think of a message passed from person to person, each time in new words. The answer still sounds smooth and complete, but one fact that mattered is gone. In the lesson's example, \"card ends 0099\" never reaches the final answer, and nothing about the answer looks wrong.\n\nThat is why the lesson suggests a **hand-off check** (testing the moment one agent passes its work to another). You list the helper's facts and see which ones appear word for word in the final answer.\n\n\"A key fact, like a refund date, drops out\" is better because it names the real, hidden risk: an answer that reads well but has silently lost information.",
    "step": "Check",
-   "fingerprint": "3392f45475f328f4",
+   "fingerprint": "62f92cf7417780cf",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -669,14 +669,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the claim that retelling 'usually shortens' is not in the lesson, and the answer runs right at the ~200-word limit, but nothing contradicts the lesson."
+    "notes": ""
    }
   },
   "check:2:0": {
    "q": "Why not “Allow longer final answers”?",
-   "a": "\"Allow longer final answers\" does have a fair point. If facts are going missing, more room seems like it could hold more of them. And sometimes a very short limit does squeeze details out.\n\nBut length isn't the real cause. Facts get lost in the **hand-off**, the moment a helper passes its work to the main agent. The main agent sees only the helper's final message, then retells it in its own words. A longer answer can still be reworded, and the order number can still fall out. It might just add more filler around the gap.\n\nIt also gives you no evidence. Your grader already scores these answers well, so the problem is invisible to it. Making answers longer won't tell you which facts were dropped, or how often. You would be guessing at a fix without knowing if it worked.\n\n\"Check which found facts reach the answer\" is better because it measures the hand-off directly: it shows you the share of facts kept and the exact facts lost, so you can fix the prompts and confirm the fix worked.",
+   "a": "\"Allow longer final answers\" has a fair instinct behind it. If facts are going missing, more room might seem to let more of them fit.\n\nBut length isn't what's losing them. The facts fall out at the **hand-off**, the moment a helper passes its work to the main agent. The main agent rewords the helper's message, and details drop out along the way. A longer answer can still be reworded. It can be padded with friendly filler while the order number or card digits still go missing.\n\nThere's a second problem. Your grader already says the answers look good. So making them longer gives you no new way to *see* the loss. You'd be guessing whether it helped. You still wouldn't know which facts vanish, or how often.\n\nThe real fix lives in the prompts. Helpers put every finding in their final message, and the main agent passes it on word for word. A check then tells you whether that fix worked.\n\n\"Check which found facts reach the answer\" is better because it measures the exact spot where information leaks. It also names what was lost, so you know what to fix.",
    "step": "Check",
-   "fingerprint": "6a6a139615bfc230",
+   "fingerprint": "837d7182a6b8402b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -687,14 +687,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The only small point is that the 'very short limit squeezes details out' concession comes from outside the lesson, though it does not contradict it."
+    "notes": ""
    }
   },
   "check:2:1": {
    "q": "Why not “Grade writing style more strictly”?",
-   "a": "\"Grade writing style more strictly\" aims at the wrong problem.\n\nThe users' complaint is not about how the answers read. It is that small facts the helpers found are missing. The lesson warns that an answer can still read well while the one fact that mattered, like an order number, is gone. A stricter style grader still only looks at how the answer reads. It never compares the answer to what the helpers found, so it cannot see which facts dropped out.\n\nThe real cause is the **hand-off**, the moment a helper passes its work to the main agent. The main agent sees only the helper's final message. If it retells that message in its own words, details can fall out, like a game of telephone. In the lesson's example, \"card ends 0099\" vanished. A style check would not notice that, because the answer still reads fine.\n\n\"Check which found facts reach the answer\" is better because it measures what users are missing: it gives the share of facts kept and a list of exactly which facts were lost.",
+   "a": "\"Grade writing style more strictly\" sounds sensible, but it aims at the wrong problem.\n\n**What it gets right:** grading the final answer is a good first step. The lesson says to do that first. Style also matters to users a little.\n\n**What it misses:** the answers already score well. They read smoothly. The complaint is that facts are missing, not that the writing is poor. A style grader looks at how the answer sounds, not at what the helpers found. So it can't notice that \"card ends 0099\" never arrived.\n\nIt could even make things worse. A stricter style grader may reward polished rewording. Rewording is exactly how details fall out during the hand-off (the moment one agent passes its work to another). And even if it lowered a score, it wouldn't tell you *which* fact was lost or *where* it went missing.\n\n**Why \"Check which found facts reach the answer\" is better:** it compares the helper's list of facts with the final answer word for word, so it measures what users are actually complaining about and names the exact facts that were dropped.",
    "step": "Check",
-   "fingerprint": "e49aefcb1605261e",
+   "fingerprint": "39245555f010bac9",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -705,14 +705,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Nothing contradicts the lesson, but the claim that a stricter style grader may reward polished rewording is the tutor's own speculation, and the lesson does not say it. It is also close to the length limit."
    }
   },
   "explain:gotcha": {
    "q": "Why does “Pass findings on word for word” matter?",
-   "a": "The main agent never sees what a helper actually did. It only sees the helper's final message. That message is the only bridge between them.\n\nWhen the main agent retells it in its own words, it keeps the general idea and drops specifics. Summaries feel complete, so nobody notices. The answer reads well, but the one detail the user needed is gone.\n\nHere is a small example. A helper looks up a refund and reports: \"Order 4412, refund approved, card ends 0099.\" The main agent rewrites it as \"Your refund was approved and is on its way.\" That is friendly and correct. But it is useless if the customer has two orders and two cards. They have to ask again, or someone has to dig through the record of what the agents did.\n\nIn real work, this shows up as answers that pass a quick read but fail the person. It is hard to catch because nothing crashes.\n\nTwo prompt rules fix most of it. First, helpers put every finding in their final message, not just a summary. Second, the main agent copies those findings into its answer unchanged. Then exact text like `4412` survives the trip.",
+   "a": "The main agent never sees the helper's work, only the helper's **final message**. So that message is the only copy of what the helper found. Each time the main agent rewords it, it can drop or blur a detail. Once a detail is gone, nothing later can bring it back.\n\nThe tricky part is that the answer still reads well. Rewording keeps the general meaning, so nobody notices the missing piece. Small exact details are what usually fall out: numbers, IDs, dates, names.\n\nA small example. A helper finds:\n\n- order 4412\n- refund approved\n- card ends 0099\n\nThe main agent retells it as: \"Your refund was approved and is on its way.\" It sounds friendly and correct. But the customer can't tell which order it was, or which card the money goes to. A support person now has to look it all up again.\n\nThe fix lives in the prompts, meaning the instructions you give each agent. Tell helpers to put every finding in their final message. Tell the main agent to pass those findings on unchanged. In LangChain's tests, that change alone made answers nearly 50 percent better.",
    "step": "Explain",
-   "fingerprint": "0b271fed7bf032b2",
+   "fingerprint": "53ca336839b7feb7",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -723,14 +723,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No real problems. The only slight stretch is saying 'that change alone' produced the ~50% gain, where the lesson credits passing answers on unchanged. It is about 190 words, just under the limit."
    }
   },
   "explain:interview": {
    "q": "How do I explain “Check each fact against the answer” in an interview?",
-   "a": "**Your 30-second answer**\n\n*The problem.* \"In an agent team, the main agent sees only each helper's final message. If it rewords that message, details drop out. The answer still reads well, but a key fact, like an order number, can vanish.\"\n\n*The idea.* \"So I check the hand-off, the moment one agent passes its work to another. I list the facts the helper found. Then I test whether each one appears in the final answer word for word. The share kept shows how much the hand-off loses. The missing list shows exactly what.\"\n\n*The trade-off.* \"Word-for-word matching is strict. If the answer says 'card ending in 0099' instead of 'card ends 0099', it counts as lost, even though the meaning survived. That's a false alarm. But the check is cheap, fast, and easy to trust.\"\n\n**Likely follow-up**\n\n\"Your hand-off score is low. How do you fix it?\"\n\n*Hint:* Point to the prompts. Helpers put every finding in their final message. The main agent passes that message on unchanged. In LangChain's tests, this made answers nearly 50 percent better. Also mention your order: grade the final answer first, then add hand-off checks.",
+   "a": "**A 30-second answer**\n\n*The problem.* In a team of agents, the main agent sees only each helper's final message. If it rewords that message, details can drop out. The answer still reads well, but a key fact, like an order number, is gone.\n\n*The idea.* So I check the hand-off, the moment one agent passes its work to another. I list the facts the helper found. Then I look for each one, word for word, in the final answer. The share kept tells me how much the hand-off loses. The missing facts tell me what.\n\n*The trade-off.* Word-for-word matching is strict. If the answer says \"card ending in 0099\" instead of \"card ends 0099\", it counts as lost. That's a false alarm, but the check is cheap and easy to trust. I grade the final answer first, then add this check.\n\n**Likely follow-up**\n\n\"How would you fix a low score?\"\n\nHint: point to the prompts. Helpers put every finding in their final message. The main agent passes those findings on unchanged instead of rewording them. In LangChain's tests, that made answers nearly 50 percent better.",
    "step": "Explain",
-   "fingerprint": "6f1c2937a92359db",
+   "fingerprint": "33be6c853cb36d6d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -746,9 +746,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Answers read well but miss specifics.** Users write back asking for the order number, the date or the amount. The reply sounded complete, yet the one fact they needed is gone.\n- **Your final-answer grade looks fine, but real use disappoints.** A grader that checks tone or overall correctness can pass a smooth answer that dropped a key detail.\n- **In the trace, the helper had it and the final answer doesn't.** A trace is the step-by-step record of one run. The researcher's span (its recorded step) lists the fact, but the main agent's reply doesn't.\n- **The hand-off score looks too perfect.** A steady 1.0 can mean the helper's `facts` list is empty, so there was nothing to lose. Check that the helper actually records its findings.\n- **The lost list keeps naming the same kind of fact,** like card digits or IDs. That points to the main agent rewording them away.\n\n**Quickest check**\n\nOpen five traces. For each one, put the researcher's facts next to the final answer. Look for each fact word for word. If facts keep vanishing, tighten the prompts. Helpers should report everything, and the main agent should pass it on unchanged.",
+   "a": "**Warning signs the hand-off is losing facts**\n\n- **The final-answer grade looks fine, but users complain.** Answers read smoothly, yet people ask \"which order?\" or \"what card?\" The polish hides the missing detail.\n- **Vague words replace exact ones.** The answer says \"your order\" or \"your card\" where the helper had \"order 4412\" or \"card ends 0099.\" That is the main agent rewording instead of passing facts on word for word.\n- **Your hand-off score is well below 1.0.** The lost list keeps naming the same kind of fact, such as numbers, dates or IDs.\n\n**Signs the check itself is broken**\n\n- **It always returns 1.0.** The helper's span (one recorded step in the trace) may have no `facts` in its outputs. So nothing gets checked.\n- **Facts show as lost when they are plainly there.** Small changes like \"#4412\" versus \"4412\" can cause a miss.\n\n**Quickest check**\n\nOpen one trace in MLflow. Put the `researcher` span's outputs beside the final answer. Tick off each fact by hand. Then compare your count with the score.",
    "step": "Learn",
-   "fingerprint": "e160be2f982c94a4",
+   "fingerprint": "e6c55f341646c50f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -764,9 +764,9 @@
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. The fact is right but worded differently.**\nThe check looks for the exact text. If the helper says \"card ends 0099\" and the answer says \"card ending in 0099,\" it counts as lost. Store facts as short core values, like `0099`, or use an LLM judge (a second model asked \"does this answer contain this fact?\") to check meaning instead of spelling.\n\n**2. Some facts should not reach the user.**\nA helper may find internal notes or private data that the final answer should leave out. Then a low \"kept\" score is good, not bad. Tag each fact as \"must pass on\" or \"keep internal,\" and score only the must-pass ones.\n\n**3. Many helpers, or helpers that pass to helpers.**\nIn a bigger team, a fact can drop out at any step along the chain. Checking only the first helper against the final answer tells you something was lost, but not where. Add a check at each hand-off, so you can see the exact step where the fact disappeared.",
+   "a": "Here are three situations where this check needs extra care.\n\n**1. The fact is reworded but still correct.** The check looks for the exact text. So \"card ending in 0099\" or \"fifty dollars\" would count as lost, even though nothing was lost. Keep exact matching for things like order numbers and IDs. For softer facts, use an LLM judge (a second model asked \"does this answer contain this fact?\").\n\n**2. Some facts should not reach the user.** A helper may find private or internal details, like a full card number, that the final answer should leave out. A low score there is good behavior, not a bug. Mark which facts must appear, and score only those.\n\n**3. The team gets bigger.** With many helpers, or helpers passing work to other helpers, one check from `researcher` to the final answer can't tell you where a fact fell out. Add a check at each hand-off along the way. Then the lost list points to the exact step that dropped it.\n\nAlso watch very short facts. \"44\" would match inside \"4412\" and count as kept when it wasn't.",
    "step": "Learn",
-   "fingerprint": "c1359ee9e3af2076",
+   "fingerprint": "660fc8be18231955",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -777,14 +777,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: the closing short-facts tip is a fourth situation, and several items run to four sentences, which is slightly over the 2-3 sentence limit."
    }
   },
   "learn:term": {
    "q": "What does “hand-off” mean here?",
-   "a": "A **hand-off** is the moment one agent passes its finished work to another agent.\n\nThink of a nurse finishing a shift. Before leaving, she tells the next nurse what she learned about each patient. The next nurse only knows what was said in that short talk. If she later retells it to a doctor in her own words, a small detail like \"allergic to penicillin\" can slip out. The summary still sounds fine, but the key fact is gone.\n\nAgents work the same way. A **helper** (a smaller agent given one job) does its work. Then it sends a **final message** to the **main agent** (the one in charge of the overall answer). That final message is all the main agent sees.\n\nIn the lesson's example, the researcher is the helper. It found three facts: `order 4412`, `refund approved`, and `card ends 0099`. The hand-off is when those facts go to the main agent. The final answer kept the first two but dropped the card number. So that hand-off kept 2 of 3 facts, about 0.67, and lost one.\n\nThat is why the lesson checks hand-offs: they are where details quietly disappear.",
+   "a": "A **hand-off** is the moment one agent passes its work to another.\n\nThink of a relay race. One runner finishes their leg and hands the baton to the next runner. If the baton slips during that pass, it doesn't matter how fast either runner was. Something got dropped in between.\n\nOr think of a shift change at a hospital. The night nurse tells the day nurse what happened overnight. If the night nurse sums it up loosely, one key detail can go missing, even though the summary sounds fine.\n\nIn this lesson, the runners are agents. A helper agent (here, the `researcher`) does some digging. Then it passes its **final message** to the main agent. That pass is the hand-off. The main agent only sees that message, nothing else the helper did.\n\nIn the example, the researcher found three facts: `order 4412`, `refund approved`, and `card ends 0099`. The final answer kept the first two but dropped the card number. So the hand-off kept 2 of 3 facts, about 0.67. The lost fact was `card ends 0099`.",
    "step": "Learn",
-   "fingerprint": "d6ea0beed7e06f45",
+   "fingerprint": "1cc48ffe6d7b2e06",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -795,7 +795,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "Minor: it opens with a one-line definition before the everyday comparison, but it still explains the term, uses analogies, and ties them to the lesson's example."
    }
   }
  },
@@ -1002,9 +1002,27 @@
  "one_writer": {
   "check:0:0": {
    "q": "Why not “Let both write, and keep whichever update lands…”?",
-   "a": "It's a tempting answer, because it does give you a clear rule. At the end, the tags have one definite value and nothing crashes. That part is real.\n\nThe problem is that \"keep whichever lands last\" doesn't stop the wipe-out. It *is* the wipe-out. Say `triage` adds the tag `urgent` and `billing` adds `refund`. Each one reads the old tags, adds its own, and saves. Whichever saves second replaces the whole list, so one tag vanishes. Nobody gets an error or a warning. That silent loss is exactly the **lost update** the lesson warns about.\n\nIt's also unpredictable. When two helpers run side by side, which one finishes last depends on timing. Run the same ticket twice and you might keep different tags each time. That makes bugs very hard to track down.\n\n\"Have both report back, and let one agent write the tags\" is better because the single writer sees both reports and combines them, so neither helper's work is ever thrown away.",
+   "a": "\"Keep whichever update lands last\" sounds fair, but it is really a description of the problem, not a fix.\n\n**What it gets right:** something always gets saved. Nothing crashes, and it is simple to set up.\n\n**What it misses:** the earlier change is thrown away without anyone noticing. Say one helper adds the tag `refund` and the other adds `urgent`. If the `urgent` save lands last, `refund` is gone. No error, no warning. That silent overwrite is exactly the **lost update** the lesson warns about.\n\nIt also leaves the outcome to timing. Which save lands last depends on which helper happens to finish second. So you can't tell in advance whose work will survive.\n\n**Why \"Have both report back, and let one agent write the tags\" is better:** with one writer (the **single-writer** rule), both reports reach a single agent. That agent can combine them into one set of tags. Then no helper's change gets quietly wiped out by another's.",
    "step": "Check",
-   "fingerprint": "9de8c0fdef3fbc7e",
+   "fingerprint": "f10aa8cc82f9d623",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "Minor: the 'better' explanation runs three sentences instead of the one requested, but the content is accurate and consistent with the lesson."
+   }
+  },
+  "check:0:1": {
+   "q": "Why not “Run them one after the other, so they never ove…”?",
+   "a": "**Why not \"Run them one after the other\"?**\n\nThis option gets one thing right. If the two helpers never run at the same time, they can't both be changing the tags at the same moment.\n\nBut it misses two things.\n\nFirst, it ignores the question. The question says the helpers *must* run side by side. Running them one after the other breaks that requirement instead of solving the problem.\n\nSecond, it only changes *when* they write, not *who* writes. There are still two writers of the tags. The second helper can still save its own tags and replace the first helper's work. That quiet replacing is the **lost update** the lesson warns about. Taking turns doesn't stop it. It only avoids a collision in time.\n\nThe lesson's fix is the **single-writer** rule: each thing that changes gets one writer. Helpers only read and report back.\n\n**Why \"Have both report back, and let one agent write the tags\" is better:** both helpers can still run side by side, and since only one agent ever saves the tags, nothing gets quietly overwritten.",
+   "step": "Check",
+   "fingerprint": "7687a24008f85425",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1018,29 +1036,11 @@
     "notes": ""
    }
   },
-  "check:0:1": {
-   "q": "Why not “Run them one after the other, so they never ove…”?",
-   "a": "That option has a fair point. If the two helpers take turns, they can't both change the tags at the exact same moment. That does remove one kind of clash.\n\nBut it misses two things.\n\nFirst, the question says the helpers **must run side by side**. Making them take turns breaks that rule. You lose the speed you wanted from running them at the same time.\n\nSecond, taking turns doesn't stop the overwrite. Say the first helper saves the tags `[\"refund\"]`. Then the second helper saves its own list, `[\"urgent\"]`. The second save replaces the first, and `\"refund\"` is gone. Nobody notices. This is the **lost update** the lesson warns about. It happens because two agents still own the same thing.\n\nThe fix needs to be about *who* writes, not *when* they write. With two writers, any future change to the timing can bring the bug back.\n\n\"Have both report back, and let one agent write the tags\" is better because one writer sees both reports and saves a single combined result, so nothing gets wiped out, even with the helpers running side by side.",
-   "step": "Check",
-   "fingerprint": "481092c44ecaf848",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No major problem. The claim that taking turns still loses updates is a mild stretch beyond the lesson, and the 'speed' motive is inferred, but both fit the lesson's single-writer idea."
-   }
-  },
   "check:1:1": {
    "q": "Why not “By adding a fourth agent to check”?",
-   "a": "Adding a checker sounds sensible. It does notice that something is wrong, and a checker might catch a few mistakes before they ship.\n\nBut it treats the symptom, not the cause. Details go missing because work is split by job title. Each hand-off from planner to coder to tester is a chance to drop something, like a game of telephone. A fourth agent adds one more hand-off, so there are more places to lose details, not fewer.\n\nThe checker also has a blind spot. It only sees what was passed to it. If the planner never told the coder about some detail, the checker never hears about it either. It cannot spot what was never there.\n\nIt also brings more cost and more waiting, since every run now goes through one more agent.\n\n\"By what each agent needs to know\" is better because it gives each agent the full context (the facts it needs for its piece) from the start, so nothing has to survive a long chain of hand-offs.",
+   "a": "Adding a checker agent sounds sensible. It gets one thing right: reviewing work can catch mistakes, and catching mistakes matters.\n\nBut it doesn't fix why details go missing. In a planner, coder and tester setup, details are lost at each **hand-off**, the moment one agent passes its work to the next. Each hand-off is a summary, and summaries drop things. It's like a message passed from person to person, changing a little each time.\n\nA fourth agent adds one more hand-off, not one fewer. The checker only sees what reached it. If a detail was dropped between the planner and the coder, the checker never had it, so it can't put it back. At best, it notices something looks wrong after the damage is done.\n\nSo the checker treats the symptom, the missing details, without touching the cause, which is the way the work was split.\n\n\"By what each agent needs to know\" is better because each agent gets the full context its piece needs from the start, so there's less to lose at each hand-off.",
    "step": "Check",
-   "fingerprint": "e2509ed98fd77954",
+   "fingerprint": "0968506392e2874b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1056,9 +1056,9 @@
   },
   "check:1:2": {
    "q": "Why not “By giving each agent more tools”?",
-   "a": "It's a natural guess. If details go missing, giving each agent more power sounds like it should help.\n\nIt does get one thing right. Each helper needs the right tools. A **tool** is a function the agent can call, like `read_invoices`. That's why a good brief names which tools to use.\n\nBut tools aren't the problem here. Details go missing at the **hand-offs**, the moments when one agent passes its work to the next. The planner knows something, and the coder never hears it. A new tool doesn't carry that knowledge across. It's still the same game of telephone, just with busier players.\n\nMore tools can even make things worse. Each agent now has more choices to sort through. Two agents might also end up able to change the same thing. That can cause a **lost update**, where one quietly overwrites the other.\n\nSplitting by what each agent needs to know is better because it draws the lines so each agent already holds the facts its piece depends on, and fewer details have to survive a hand-off.",
+   "a": "\"More tools\" sounds helpful, but it doesn't touch the real problem.\n\n**What it gets right:** tools do matter. A helper's brief (its short set of instructions) names which tools to use. A read-only tool like `read_invoices` is how the billing helper gets the facts it needs.\n\n**What it misses:** the details go missing at the hand-offs. A hand-off is the moment one agent passes its work to the next. In the planner → coder → tester setup, each agent passes a summary to the next one, and a little gets lost each time. Giving every agent extra tools keeps those same job-title boundaries. So the same hand-offs still happen, and details still slip through them. More tools also doesn't settle who writes what, so two agents could still change the same thing.\n\nThe fix is about *where you draw the lines* between agents, not how much each one is equipped with.\n\n**Why \"By what each agent needs to know\" is better:** it draws each agent's boundary around the context its piece of work needs, so fewer details have to survive a hand-off at all.",
    "step": "Check",
-   "fingerprint": "dadebe16f628437c",
+   "fingerprint": "b59343379cfb7fb8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1069,14 +1069,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "The claim that more tools means more choices to sort through is not in the lesson, but it doesn't contradict it, so I let it pass."
+    "notes": ""
    }
   },
   "check:2:0": {
    "q": "Why not “A bigger model for each helper”?",
-   "a": "A bigger model sounds like it should help. Bigger models do follow instructions better and reason more carefully. So the guess is not silly.\n\nBut the problem here is not how smart each helper is. It is what each helper was told. Both got the same vague brief: \"look into refunds.\" Neither knows the other exists. Neither knows which part of the job is theirs.\n\nA smarter helper with that brief still does the obvious thing: it searches for refunds. So does the other one. You now have two expensive helpers doing the same work twice. A bigger model only makes the duplicated work cost more.\n\nThink of hiring two brilliant experts and telling each, \"look into refunds.\" They would still both start in the same place. Talent can't make up for missing directions.\n\n\"A clear goal and what's out of scope\" is the right answer. It gives each helper its own piece and tells it what to leave alone. That way the two never cover the same ground, whatever model they use.",
+   "a": "A bigger model is a reasonable thought. A stronger model often follows instructions better and reasons more carefully. So it's not a silly guess.\n\nBut it misses the real problem. The brief just says \"look into refunds.\" That tells each helper almost nothing about where its job starts and stops. A smarter model still can't read your mind. It also can't see what the other helper was told. So both helpers sensibly decide \"look into refunds\" means \"run a search,\" and you get the same work done twice.\n\nA bigger model also costs more and runs slower. You'd pay extra and still get the overlap.\n\nThe fix belongs in the brief, not the model. Think of two new coworkers given the same vague sticky note. Hiring smarter coworkers doesn't help. Telling each one exactly what to cover does.\n\n\"A clear goal and what's out of scope\" is the right answer because it gives each helper a fenced-off piece of work, so no two helpers wander into the same search.",
    "step": "Check",
-   "fingerprint": "ae6d6dd2441463cc",
+   "fingerprint": "cb6c4ac1a1fb81ed",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1092,9 +1092,9 @@
   },
   "check:2:2": {
    "q": "Why not “More tools for each helper”?",
-   "a": "\"More tools for each helper\" is aimed at the wrong problem.\n\nLook at what went wrong. Both helpers ran the same search. So they could already search. A missing tool was not what stopped them. The trouble was that neither helper knew where its own job ended.\n\nThe brief, \"look into refunds,\" never said what the job was or where it stopped. Tools give a helper ways to act. They don't tell it what its piece of the work is, or what belongs to someone else. Adding tools leaves that gap open.\n\nThe lesson says a **brief** (the short set of instructions you give a helper) should cover four things:\n\n- the goal\n- what is out of scope (not this helper's job)\n- what its report should look like\n- which tools to use\n\nTools are only one of those four. The missing pieces here were the goal and the scope. The lesson says vague briefs are what lead helpers to do the same work twice.\n\n\"A clear goal and what's out of scope\" is the better answer because it tells each helper exactly which part of the refund work is theirs, so they don't duplicate each other.",
+   "a": "\"More tools for each helper\" sounds helpful, but it doesn't touch the cause.\n\nThe problem in the question is the brief. A **brief** is the short instruction a helper gets before it starts. \"Look into refunds\" is vague. It doesn't say what the helper should find, or where its job stops. So two helpers can each decide the same search is their job, and both run it. That's duplicated work.\n\nTools are the actions a helper can take, like reading invoices. Giving each helper more of them changes *what it can do*. It doesn't tell it *what it should do*. A vague brief plus extra tools still leaves the helpers guessing about their piece. It may even give them more room to drift into each other's work.\n\nThe lesson does say a brief should name which tools to use. But that's one part of a good brief, not a fix for a missing goal and scope.\n\nThe better answer is \"A clear goal and what's out of scope.\" It tells each helper exactly which piece is theirs and which piece belongs to someone else, so they stop repeating each other's work.",
    "step": "Check",
-   "fingerprint": "d3d59f6361b7246c",
+   "fingerprint": "20324fce004ddd50",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1110,9 +1110,9 @@
   },
   "explain:gotcha": {
    "q": "Why does “Keep one writer” matter?",
-   "a": "When two helpers save the same thing, they don't combine their work. The last one to save replaces whatever was there. Nothing crashes and no error appears. That's why it's called a **lost update**: work disappears quietly.\n\nHere's a small example. A support ticket arrives. The `triage` helper reads it and saves the tags `[\"urgent\", \"login\"]`. A moment later, the `billing` helper saves its own tags: `[\"refund\"]`. Billing never saw triage's tags, so it wiped them out. Now the ticket looks like a calm refund request. The `reply` helper reads those tags and drafts a routine answer to a customer who is actually locked out.\n\nIn real work, this is hard to track down. Each helper did its own job correctly. The problem only shows up in the final result, and only sometimes, depending on which helper finished last.\n\nThe fix is simple. `billing` reports its findings back instead of saving. Then one agent, such as `triage` or the main agent, merges both findings and saves the tags once. Helpers read and report. One writer saves.",
+   "a": "When two helpers save the same thing, neither knows about the other. Each reads the current value, makes its change, and saves its own full version. The last save wins. The earlier change disappears, with no error or warning. This is a **lost update**.\n\n**Example:** a ticket's tags start as `[\"new\"]`. The `triage` helper reads them and adds `\"urgent\"`. At the same time, the `billing` helper reads `[\"new\"]` and adds `\"refund\"`. Triage saves `[\"new\", \"urgent\"]`. Then billing saves `[\"new\", \"refund\"]`. The \"urgent\" tag is gone. The `reply` helper then drafts a slow, routine answer to an angry customer.\n\nIn real work, this hurts because nothing crashes. The logs look normal. The bug only appears when the timing lines up a certain way, so it is hard to reproduce and track down.\n\n**The fix:** `billing` doesn't save tags. It reports \"add a refund tag\" back instead. Only one node, the single writer, saves tags. It sees every suggestion and combines them. Sharing what you *read* is fine. Only saving needs one owner.",
    "step": "Explain",
-   "fingerprint": "577c08716e30be6c",
+   "fingerprint": "058f50950bf6d435",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1128,9 +1128,9 @@
   },
   "explain:interview": {
    "q": "How do I explain “Count the writers of each thing” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem:* When agents share work, two of them might change the same thing, like a table or a file. One quietly overwrites the other. That's called a **lost update**. It's hard to spot because nothing crashes.\n\n*The idea:* For each thing that changes, I count how many agents write to it. Reads don't count, since sharing what you read is safe. More than one writer means a clash. I fix it by picking one owner. The other agent becomes a helper that only reads and reports back. The owner does the writing.\n\n*A trade-off:* The single owner can become a **bottleneck**, a slow point that everything waits on. I accept that for shared data, because a correct answer beats a fast wrong one.\n\n**A likely follow-up**\n\n\"What if two agents truly need to change the same thing?\"\n\n*Hint at a strong answer:* There are two options. You can split the thing into separate parts, each with its own writer. Or both agents can send suggested changes to one owner, who combines them. Either way, each thing still has exactly one writer.",
+   "a": "**A 30-second answer**\n\n*The problem.* \"When two agents change the same thing, like a table or a file, one can quietly overwrite the other. That's called a lost update. Nobody sees an error. The data is just wrong.\"\n\n*The idea.* \"So I list what each agent reads and what it writes. Then I count the writers of each thing. Reads don't matter, because sharing what you read is safe. Anything with more than one writer is a clash. I fix it by giving that thing one owner. The other agents report to the owner instead of writing to it themselves.\"\n\n*A trade-off.* \"One writer can become a bottleneck, meaning the others wait on it. That's usually cheaper than chasing silent bugs.\"\n\n**A likely follow-up**\n\n\"What if two agents really do need to change the same thing?\"\n\n*Hint at a strong answer:* Still don't let both write. Have each one send its findings to the single writer. That's often the supervisor, the main agent that calls the helpers as tools. It combines the reports and writes once. You can add that a clear brief for each helper keeps its report in a shape that's easy to combine.",
    "step": "Explain",
-   "fingerprint": "9fcd409bc43d238b",
+   "fingerprint": "baef06ba53e5444d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1146,9 +1146,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- **Values that flip or vanish.** A ticket's `tags` are right one moment and different the next. Or a tag a helper clearly added is just gone. That is a lost update: a second writer saved over the first, with no error.\n- **Results depend on timing.** The same ticket gives different `tags` on different runs, depending on which helper finished last. Tests that run one helper at a time look clean. Real traffic, where helpers run side by side, does not.\n- **Traces show two writers.** A trace is the step-by-step record of what each agent did. If you see both `triage` and `billing` calling a save tool on the same thing, that is the clash.\n- **Repeated work.** Two helpers call the same read tool with the same question. That usually means their briefs were too vague.\n- **Lost details.** A helper's report mentions a fact, but the final answer drops it. That is the telephone effect from splitting by job title.\n\n**Quickest check**\n\nList every thing that changes: each table, file, or the final answer. Next to each one, write which agents can change it. Any item with more than one name needs fixing. Pick one writer and have the others report to it.",
+   "a": "**Warning signs the split went wrong**\n\n- **Things change for no clear reason.** A ticket's tags were right a moment ago, then they change or vanish. Usually two helpers wrote to the same thing, and the later one quietly replaced the earlier one. That is a **lost update**.\n- **It works in testing, then breaks in real use.** With one ticket at a time, writes rarely collide. Under real load, helpers run close together and start overwriting each other.\n- **Results differ between runs.** Same input, different final tags. Whichever helper finished last \"won.\"\n- **Repeated work in the traces.** A **trace** is the step-by-step record of what each agent did. If two helpers look up the same invoices, their briefs were too vague.\n- **Details fade at each hand-off.** A fact present early is missing or changed by the final answer. That points to splitting by job title instead of by what each agent needs to know.\n\n**Quickest check**\n\nOpen one trace. List every tool call that *changes* something, such as `save_tags`. Next to each, note which agent made it. Any resource with more than one agent writing to it is your problem.",
    "step": "Learn",
-   "fingerprint": "999f5fef50be30a6",
+   "fingerprint": "f568a086ab56d0ab",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1159,14 +1159,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problem. The timing and 'side by side' claims go slightly beyond the lesson, and the answer is right at the ~200-word limit."
+    "notes": ""
    }
   },
   "learn:stops": {
    "q": "When does this stop working?",
-   "a": "**1. One writer gets swamped.**\nIf hundreds of updates hit the same thing at once, a single writer becomes a bottleneck, meaning a slow point everything waits on. Split the thing itself instead. For example, give each ticket's tags their own owner. Or let helpers add entries to an append-only log (a list you only add to, never edit), which one agent merges later.\n\n**2. The plan says one writer, but runtime disagrees.**\nCounting `writes` lists only checks what you planned. A retry can run the same task twice at once. A tool can also write somewhere you forgot to list. Add a version check, so a write is refused if the data changed since the agent last read it.\n\n**3. The pieces need each other's context.**\nSome work is too tangled to split cleanly. Two helpers may keep needing details from each other mid-task. Then every hand-off loses something, like the telephone game. Keep that work inside one agent, and only split off parts that truly stand alone.",
+   "a": "Here are three places where this rule needs extra care.\n\n**The one writer gets overloaded.** If every helper reports to a single main agent, that agent's context (everything it has read so far) fills up and it slows down. Instead, split the shared thing into parts, like one writer per customer or per table. Each part still has exactly one writer.\n\n**Hidden writes.** Counting writers only works if the `writes` lists are honest. A \"read-only\" helper whose tool can still update a database is a second writer nobody counted. Check what each tool can actually do, and give helpers access keys that only allow reading.\n\n**Data changes while helpers work.** A helper reads invoices and reports back. Before the writer saves, someone edits an invoice, so the report is stale (out of date). Have the writer re-check key facts right before saving, or ask helpers to say when they read the data.",
    "step": "Learn",
-   "fingerprint": "9ad32910ce1988fa",
+   "fingerprint": "bf712d89a6e8a263",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1182,9 +1182,9 @@
   },
   "learn:term": {
    "q": "How is “one writer” different from “single-writer”?",
-   "a": "They're the same idea seen from two angles. \"Single-writer\" is the **name of the rule**. \"One writer\" describes **one thing that follows it**.\n\n- **One writer**: a single resource (the final answer, a table, a file) has exactly one agent allowed to change it.\n- **Single-writer rule**: the design habit of making that true for *every* resource in your system.\n\nSo you check the rule by asking, thing by thing, \"does this have one writer?\" If every answer is yes, the rule holds.\n\n**Everyday comparison:** a shared whiteboard in an office. \"Only Sam writes on the whiteboard\" is one writer for that board. \"Every board has exactly one person holding the marker\" is the single-writer rule. Anyone can still read the boards.\n\n**In the lesson's example**, `\"tags\"` breaks the rule. Both `triage` and `billing` write it, so one could quietly overwrite the other. That's a **lost update**: a change that vanishes without any error. The fix is for `billing` to report its findings to `triage`. Then `triage` is the one writer of `\"tags\"`. Reading `\"tags\"`, as `reply` does, is fine.",
+   "a": "They're the same idea, just phrased two ways. The lesson treats them as one concept.\n\n**\"One writer\"** is the plain description. Each thing that changes (the final answer, a table, a file) has exactly one agent allowed to change it.\n\n**\"Single-writer\"** is the name of the rule that requires this. You'll hear it as \"the single-writer rule\" in docs and interviews.\n\nSo the only difference is that one describes the setup and the other names the rule. They work together like this: the rule says \"keep it this way,\" and checking for one writer is how you confirm you followed it.\n\n**Everyday comparison:** a shared shopping list on the fridge. Everyone can read it, but only one person edits it. Others tell that person what to add. If two people edit at once, one person's change can quietly vanish. That's a **lost update**.\n\n**The lesson's example:** `\"tags\"` is written by both `triage` and `billing`. That breaks the rule. The fix is for `billing` to report to `triage`, so `triage` is the one writer of `\"tags\"`. Reading is still fine for anyone.",
    "step": "Learn",
-   "fingerprint": "1b32c3731f6c42ac",
+   "fingerprint": "9d9aa4f2f3ef46f8",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1195,16 +1195,16 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": ""
+    "notes": "No significant problems; the only small extra is that \"in docs\" goes slightly beyond the lesson, but it doesn't contradict it."
    }
   }
  },
  "team_experiment": {
   "check:0:0": {
    "q": "Why not “Twenty questions is too few to compare any two …”?",
-   "a": "That option has a grain of truth. More questions do give you more confidence, and a small set can be noisy. Noisy means results bounce around by chance.\n\nBut it blames the wrong thing. The lesson's own example uses 20 questions and still reaches a fair verdict. Twenty can work. What made that example trustworthy was running each question 3 times and counting a question as **passed every time** only if all its tries passed.\n\nThe option also says \"too few to compare *any* two designs.\" That is too sweeping. If one design passed 20 and the other passed 2, twenty questions would show a real difference.\n\nThe real problem in the scenario is **one run each**. Agents give different answers on different tries. So a single try per question can't tell a better design from a lucky one. Adding more questions, each still tried once, would not fix that.\n\nThe right answer, \"One run each: agents vary, so 2 more passes may be luck,\" is better because it names the actual flaw and points to the fix: repeat each question 3 to 5 times.",
+   "a": "\"Twenty questions is too few\" points at something real. With a small set, a gap of 2 passes is thin evidence. More questions would make the comparison steadier.\n\nBut it misses the main problem in this setup. Each design ran only **once**. Agents give different answers on different tries, so the same agent might pass 12 today and 14 tomorrow. A gap of 2 could be that wobble, not a real difference between the designs.\n\nIt also goes too far. \"Too few to compare **any** two designs\" says 20 questions can never be used. The lesson's own example still uses 20 questions. What it adds is 3 tries per question. A question counts as **passed every time** only if every try passed. Repeating each question like that is what deals with lucky single tries.\n\nSo more questions might help a bit. The bigger missing piece here is more tries per question.\n\n\"One run each: agents vary, so 2 more passes may be luck\" is better because it names the actual flaw, a single try per design, and points straight to the fix: run each question 3 to 5 times.",
    "step": "Check",
-   "fingerprint": "0cf59c5119aa697e",
+   "fingerprint": "f5e4d7be52fed98f",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1220,9 +1220,9 @@
   },
   "check:0:2": {
    "q": "Why not “The team should have been run on harder questio…”?",
-   "a": "\"Harder questions only\" has a small grain of truth. Hard questions can show a bigger gap between designs, because easy ones get passed by everyone. So the idea of choosing good test questions is fair.\n\nBut it misses the real problem. The issue isn't which questions were asked. It's how many times each design tried them. Agents give different answers on different tries. One run each is like flipping a coin once and calling it unfair. A gap of 2 passes out of 20 could easily flip if you ran it again.\n\nSwitching to hard questions wouldn't fix that. You'd still have one lucky or unlucky try per question. It also tilts the test. Real users ask easy questions too, and on those the team may just add cost for no gain. A fair experiment gives both designs the same everyday mix of questions.\n\nThe fix the lesson teaches is to run each question 3 to 5 times. Count a question as \"passed every time\" only if all its tries pass.\n\n\"One run each: agents vary, so 2 more passes may be luck\" is better because it names the actual flaw: a single try can't tell a real gain from chance.",
+   "a": "That option has a fair point. The questions you test on do matter. If every question is easy, both designs pass, and you learn little. So it's reasonable to want questions that can tell the designs apart.\n\nBut it misses the real problem. Each design ran **once** per question. Agents give different answers on different tries. So a gap of 2 passes in 20 could just be luck. Run again, and one agent might score 14 while the team scores 12.\n\nHarder questions don't fix that. With one try each, results on hard questions would be just as shaky. You still couldn't tell skill from luck.\n\nThere's a second catch. Testing only on hard questions skews the test away from the mix of questions the agent will really face. Swapping the question set after seeing results is also a quiet way to bend the experiment. That's the same thing a decision rule written ahead of time is meant to stop.\n\n\"One run each: agents vary, so 2 more passes may be luck\" is the better answer. It names the actual flaw: too few tries to trust a small gap. That's why the lesson runs each question 3 to 5 times.",
    "step": "Check",
-   "fingerprint": "3efb8a2fff10c9d3",
+   "fingerprint": "c8b22c5c614c3653",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1233,14 +1233,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problems. The claims about easy and hard questions and about real users go beyond the lesson but do not contradict it, and the length is just under 200 words."
+    "notes": "Passes all checks; the 'skews away from real questions' point goes beyond the lesson and the answer loosely links swapping questions to the decision rule, but neither contradicts it."
    }
   },
   "check:1:1": {
    "q": "Why not “A gain that small is too hard to measure”?",
-   "a": "That option has a grain of truth. Agents give different answers on different tries, so small differences can be noise, meaning random luck rather than a real gain. With only 20 questions, one lucky question shifts the score by 0.05.\n\nBut it doesn't answer what's wrong here. The problem isn't how hard the gain is to measure. The problem is *when* the rule is being changed. You wrote the rule before any run, on purpose. Lowering it now, after you've seen the team fall short, lets the result pick the rule. Then the experiment can't tell you anything.\n\nAlso, noise points the other way. If a small gain is hard to measure, that's a reason to be *more* careful about calling the team a winner. It's not a reason to lower the bar until it wins. The fix for noise is more questions or more tries, decided before the next run.\n\n\"It moves the goalposts after the result\" is better because it names the real mistake: changing the rule once you know the outcome, which lets a lucky or disappointing result decide what \"winning\" means.",
+   "a": "That option points at a real worry, but not the one in the question.\n\n**What it gets right:** small gains are hard to trust. Agents give different answers on different tries. With only 20 questions, one question is 0.05 of the score, so a bit of luck can move the result. That's why the lesson runs each question 3 to 5 times.\n\n**What it misses:** nobody in the question is saying the gain can't be measured. The team was measured and fell short. The problem is what happens next: someone wants to lower the bar *because they saw the result*. Also, if a small gain really were too noisy to trust, the fix would be more questions or more tries. Lowering the bar would make it easier to call a weak result a win.\n\nThe **decision rule** is written before any run so the result can't choose the rule. Changing it afterward undoes that protection.\n\n**Why \"It moves the goalposts after the result\" is better:** it names the actual mistake, which is changing the rule after seeing the outcome so that a loss gets relabeled as a win.",
    "step": "Check",
-   "fingerprint": "db3a954cc8bdff88",
+   "fingerprint": "3cdfc34765115931",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1256,9 +1256,9 @@
   },
   "check:1:2": {
    "q": "Why not “The rule should only be about cost”?",
-   "a": "**Why \"The rule should only be about cost\" isn't the best answer**\n\nIt does get one thing right. Cost matters. That's why the rule already has a cost limit of 50 cents per success.\n\nBut it misses two things.\n\nFirst, it doesn't answer the question. The problem here is *when* the rule changes, not *what* it measures. Dropping the quality part now, after the team fell short, is just another way of rewriting the rule to fit the result. That's the same mistake as lowering the gain.\n\nSecond, a rule about cost alone can't tell you whether the team is *better*. A team could be cheap and still fail more questions than one agent. The quality part, \"pass every time on at least 1 more question in 10,\" is what checks that the team actually does the job better.\n\n**Why \"It moves the goalposts after the result\" is right**\n\nMoving the goalposts means changing what counts as winning after you've seen the score. The rule was written before any run so it stays fixed. Changing it now lets a disappointing result look like a win.",
+   "a": "\"The rule should only be about cost\" is not the best answer, because it doesn't deal with what went wrong.\n\nIt gets one thing right. Cost matters, and the lesson's rule does include a cost limit of 50 cents per success. (Cost per success means total cost divided by the number of passed tries.)\n\nBut it misses two things.\n\nFirst, it drops quality. A cost-only rule asks \"is it cheap enough?\" and never asks \"does it pass more questions?\" In the example, the team's $0.35 is under the 50-cent limit. So a cost-only rule would accept the team even if it passed fewer questions than one agent. That defeats the point of the experiment, which is to find out whether the team does better.\n\nSecond, it skips the real problem. Someone saw the result and wants to change the rule to fit it. Swapping in a cost-only rule at that moment is still changing the rule after the fact. It is just a different change.\n\n\"It moves the goalposts after the result\" is better because it names the actual mistake: the rule was written before any run so that no result could rewrite it, and editing it now breaks that promise.",
    "step": "Check",
-   "fingerprint": "6366f759090d0e2b",
+   "fingerprint": "a1f6a93d94c5a456",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1269,14 +1269,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the closing explanation runs to three sentences where one was asked for, and 'gain' is used without being explained."
+    "notes": ""
    }
   },
   "check:2:0": {
    "q": "Why not “How many tries each question needs”?",
-   "a": "That option touches something real. Tries do matter in this experiment. Agents give different answers on different tries, so you run each question 3 to 5 times.\n\nBut you choose that number before the experiment starts. It's part of the setup, and it's the same for every design. Adding a third design doesn't tell you anything new about it.\n\nThe third design is an **ablation**. That means taking one part out to see what changes. Here, the part removed is the checker. The two teams are the same in every other way: same questions, same number of tries, same scoring. So comparing them points straight at the checker.\n\nIn the lesson's example, the team passed every time on 15 of 20 questions, and the team without its checker on 12 of 20. That 3-question gap is your best evidence for the checker's value. Some of it could still be luck, since tries vary. That's why you repeat tries and write the decision rule first.\n\n\"What the checker adds to the team\" is better because removing only the checker makes the gap between the two teams a measure of that one part.",
+   "a": "That option mixes up two different parts of the experiment.\n\n**What it gets right:** tries do matter here. Agents give different answers on different tries, so you run each question 3 to 5 times. A question counts as \"passed every time\" only if every try passed.\n\n**What it misses:** you pick the number of tries before any run, and every design gets the same number. In the example, all three designs get 3 tries per question. So the third design can't tell you how many tries to use. That choice is already made.\n\nThe third design is an **ablation**. That means taking one part out to see what changes. Here the part is the checker. The two team designs differ only in the checker, so any gap between them comes from it.\n\nLook at the example. The team passes every time on 15 of 20 questions. The team without its checker passes on 12 of 20, the same as one agent. The whole gain disappears when the checker goes.\n\n\"What the checker adds to the team\" is better because comparing the two teams isolates the checker's effect, and that is exactly what an ablation measures.",
    "step": "Check",
-   "fingerprint": "cd19eb5788ab4b14",
+   "fingerprint": "25e5e12a56438e07",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1292,9 +1292,9 @@
   },
   "check:2:1": {
    "q": "Why not “Whether the team beats one agent”?",
-   "a": "\"Whether the team beats one agent\" is a real question in this experiment. It just isn't the one the third design answers.\n\n**What it gets right:** the experiment does test whether the team beats one agent. That answer comes from comparing the full team against the **baseline** (the one agent, the design you compare against). In the example, the team passed every time on 15 of 20 questions and the one agent on 12. You don't need the third design for that.\n\n**What it misses:** the third design is the team with one part removed, its checker. That is an **ablation**: you take one piece out and see what changes. Its job is to show what that one piece does. So you compare it with the full team, not with the one agent. In the example, the full team passed every time on 15 of 20 and the team without its checker on 12. That gap is the checker's work. It also shows the team without a checker did no better than one agent.\n\n\"What the checker adds to the team\" is better because it names exactly what the third design measures: the difference made by removing one part.",
+   "a": "\"Whether the team beats one agent\" is a real question this experiment answers. But the third design isn't what answers it.\n\nThat question comes from comparing the full team to the **baseline** (the one agent, the design you compare against). In the example, the team passed every time on 15 of 20 questions and the one agent on 12 of 20. You would get that answer even without a third design.\n\nThe third design, the team without its checker, does a different job. It is an **ablation**: you take one part out and see what changes. Only one thing differs between the two teams, which is the checker. So any gap between them is down to the checker.\n\nIn the example, the team without its checker drops to 12 of 20. That is no better than the one agent. So the checker is what makes the team win. Without it, the extra agents add cost but no gain.\n\n\"What the checker adds to the team\" is the better answer because the third design differs from the full team only by its checker, so it measures that one part.",
    "step": "Check",
-   "fingerprint": "5383e82c6efa0f1a",
+   "fingerprint": "6c069e8e2c1806c1",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1310,9 +1310,9 @@
   },
   "explain:gotcha": {
    "q": "Why does “Run each design several times” matter?",
-   "a": "Agents don't give the same answer every time. The model picks its words with some randomness. So the same question can pass on one try and fail on the next.\n\nThat makes a single run like a single coin flip. If the team passes 2 more questions than the one agent on one run, the gap might be real. Or it might be luck.\n\n**What goes wrong in real work:** say you run each design once on 20 questions. The team passes 14 and the one agent passes 12. You ship the team, even though each success costs about nine times more. A week later, users hit the same failures as before. The team was never better. It just had a good run.\n\nRunning each question 3 to 5 times fixes this. A question counts as \"passed every time\" only if all its tries passed. A lucky pass no longer counts, because one failed try cancels it.\n\nNow the comparison asks \"which design is reliably right?\" instead of \"which design got lucky once?\" With a decision rule written before any run, that makes the test fair.",
+   "a": "Agents don't give the same answer every time. Ask the same question twice, and one try may pass while the next fails. So any single run is partly luck.\n\nHere's what goes wrong when you ignore that. Say you run each design once on 20 questions. The team passes 14 and one agent passes 12. That looks like a gain of 1 in 10, so you switch to the team. Later you find that the team's 2 extra passes were lucky tries. Now you pay more per success for a team that isn't actually more reliable.\n\nRunning each question 3 to 5 times helps. A question counts as \"passed every time\" only if every try passed. A question the team got right only by luck will often fail on a later try, so it stops counting as a pass. Repeats can't remove luck completely. A lucky question can still pass every try. But they make a lucky gain much less likely to look real.\n\nThis is separate from the decision rule. What keeps the rule honest is writing it down before any run.",
    "step": "Explain",
-   "fingerprint": "1ebbabfcda45ea04",
+   "fingerprint": "88a89e01e7b4205e",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1323,14 +1323,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No real problem. The 'nine times more' cost remark is a little distracting, since the lesson's rule would accept $0.35 per success, but it does not contradict the lesson."
+    "notes": ""
    }
   },
   "explain:interview": {
    "q": "How do I explain “Score both designs, then apply the rule” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* Agents give different answers on different tries. So one lucky run can make a team of agents look better than it really is.\n\n*The idea.* I run both designs on the same questions, 3 to 5 times each. One agent is the baseline, the design I compare against. A question counts only if every try passed. That gives each design a score. Then I apply a decision rule I wrote before any run. For example: the team must pass every time on at least 1 more question in 10, at 50 cents or less per success. Writing the rule first means I can't move the goalposts after I see results.\n\n*The trade-off.* Repeated tries cost time and money. Also, a team might win because of one part. So I test a third design: the team without its checker. That's an ablation, which means removing one part to see what changes.\n\n**A likely follow-up**\n\n\"Why not just average the pass rate across tries?\"\n\nHint: an average hides flaky questions. An agent that works 2 times in 3 still fails real users. Passing every time measures reliability.",
+   "a": "**Your 30-second answer**\n\n*The problem.* Agents give different answers on different tries. One lucky run can make a team look better than it really is.\n\n*The idea.* I run one agent, my baseline (the design I compare against), and the team on the same questions, 3 to 5 tries each. A question counts only if it passed every try. Before any run, I write a decision rule. For example: the team must pass every time on at least 1 more question in 10, at 50 cents or less per success. Then I score both designs and check the rule. The rule decides, not my feelings after seeing the results.\n\n*Trade-off.* Repeating every question costs more time and money. But it is how you see whether a design is steady, not just lucky.\n\n**Likely follow-up**\n\n\"If the team wins, how do you know which part made the difference?\"\n\nHint: talk about an ablation. That means taking one part out, like the checker, and running that version as a third design. If the team without its checker scores no better than one agent, the checker is what earns the gain.",
    "step": "Explain",
-   "fingerprint": "d40b2f959befc7a9",
+   "fingerprint": "cde58198689ea4c6",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1346,9 +1346,27 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs the experiment went wrong**\n\n- **The rule moved.** The gain or cost limit was set after the numbers came in. Watch for a limit that sits just below the team's result.\n- **One try per question.** A team \"wins\" by a little, then the win vanishes on a rerun. Agents vary from try to try, so a single try can be pure luck.\n- **Different questions per design.** One design got easier questions. The scores look far apart, but the comparison isn't fair.\n- **Cost per success looks oddly cheap.** Cost was split over all tries instead of only the passed ones. That hides waste.\n- **No ablation.** The team wins, but you can't say why. In real use, removing the checker to save money quietly drops quality. An ablation means taking one part out to see what changes.\n\n**Quickest check**\n\nOpen the traces for each design. A trace is MLflow's record of one run. Confirm that every question appears the same number of times, 3 to 5, in every design. Then check that the written rule is older than the first run.",
+   "a": "Here are the signs that the experiment was skipped or done badly.\n\n**The rule moved.** The required gain matches the result too neatly. For example, the rule asks for 0.15 and the team got exactly 0.15. That hints the rule was written after the numbers came in.\n\n**Only one try per question.** Each question has a single trace (one recorded run) per design. Scores look great, then drop in real use. That happens because one lucky try counted as \"passed every time.\"\n\n**Unequal questions.** One design answered 20 questions and another answered 18. Then the comparison isn't fair.\n\n**Rerun flips the winner.** You run it again and the team loses. The first win was probably luck.\n\n**No ablation.** You have no \"team, no checker\" design. So nobody can say which part earns the extra cost.\n\n**Cost looks oddly cheap.** Cost may have been divided by all tries, not just the passed ones.\n\n**Quickest check:** In MLflow, open each design's traces. Confirm three things:\n\n- Every design has the same questions.\n- Each question has 3 to 5 tries.\n- The written rule is dated before the first run.",
    "step": "Learn",
-   "fingerprint": "8996a7b1d291bd00",
+   "fingerprint": "67d41b4337f89b97",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": "No major problem. The 'rule moved' example (0.15 matching exactly) is a weak signal, and the rule's date would not be in the MLflow traces, but neither contradicts the lesson."
+   }
+  },
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where the rule needs extra care.\n\n**Very few questions.** With only 20 questions, one question that passes by luck moves the score by 0.05. That can tip the verdict all on its own. Use more questions, and treat a narrow win as \"no clear winner\" until a bigger run agrees.\n\n**Things change over time.** A model update, a price change, or new kinds of customer questions can flip last month's winner. Re-run the same experiment on a schedule with the rule unchanged, and recheck cost per success against your current price list.\n\n**No code check for the result.** Some tasks have no clear end state to look up, like \"write a helpful reply.\" Then you might grade with an LLM judge, which is a second model that scores the answers. Judges can be wrong or favor longer answers, so check a sample of their grades by hand before you trust the verdict.",
+   "step": "Learn",
+   "fingerprint": "d08a4efdefd06f7a",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1362,29 +1380,11 @@
     "notes": ""
    }
   },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "Here are three places where this method needs extra care.\n\n**Very few questions.** With only 20 questions, a gain of 3 can come from luck alone, even with 3 tries each. Collect more questions, ideally 100 or more, before trusting a small gain. If you can't, make your written rule demand a bigger gain.\n\n**Things change over time.** Model providers update their models and change their prices, so last month's winner may lose today. Rerun the same experiment on a schedule, with the same rule written down, and compare the new results to the old ones.\n\n**A much bigger system.** With five or six agents, taking out one part at a time (an ablation) means many designs, and each one runs 3 to 5 times. Start by removing the parts you suspect matter most. Set a spending limit for test runs before you begin.",
-   "step": "Learn",
-   "fingerprint": "b401f8ac1e2c129c",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "No real problems; the '100 or more' questions figure goes beyond the lesson, but it doesn't contradict it."
-   }
-  },
   "learn:term": {
    "q": "What does “baseline” mean here?",
-   "a": "A **baseline** is the starting point you measure a new idea against.\n\nThink of new running shoes. Before you buy them, you time a mile in your old shoes. Say it takes 9 minutes. That 9 minutes is your baseline. When you try the new shoes, you only care whether they beat 9 minutes. Without that number, a fast run tells you nothing.\n\nIn this lesson, the baseline is **one agent**. It's the simple, cheap design you already have. The team is the new idea, so the team has to prove it does better.\n\nLook at the example table. The baseline row is \"one agent: 12 of 20 passed every time, $0.04 per success.\" Every other row is compared to that.\n\n- The team passes 15 of 20. That's 3 more than the baseline. Over 20 questions, that is 1.5 in 10 (0.15). It clears the rule's 0.1 bar, at $0.35, which is under the $0.50 limit.\n- The team without its checker passes 12 of 20. That's no better than the baseline. So the checker is what makes the team worth it.",
+   "a": "A **baseline** is the thing you compare against. It's your \"normal\" before you try something new.\n\nThink of testing a new route to work. Your usual route is the baseline. You time both routes. The new one only counts as better if it beats your usual time. A time on its own, like \"22 minutes\", tells you nothing until you know what you normally get.\n\nIn this lesson, the baseline is **one agent**. It's the simpler, cheaper design. The team has to prove it's worth the extra effort.\n\nIn the example, one agent passed every time on 12 of 20 questions, at $0.04 per success. That's the bar. The team passed every time on 15 of 20. That's 3 more in 20, or 1.5 more in 10 (a gain of 0.15). You can only see that gain because you have the baseline to subtract from.\n\nThe baseline also shows the price of the team. It costs $0.35 per success against the baseline's $0.04.\n\nIn the code, the baseline is the `one-agent` design. It answers the same questions as the team designs.",
    "step": "Learn",
-   "fingerprint": "92bcdd24d518c2ea",
+   "fingerprint": "81ff4498350f66ec",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -1395,7 +1395,7 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: 'every other row is compared to that' skips the lesson's team vs team-without-checker comparison, but nothing is actually wrong."
+    "notes": "No real problems. The 'simpler, cheaper' description of one agent is a mild inference, but the example's $0.04 cost supports it. The answer is about 180 words."
    }
   }
  },

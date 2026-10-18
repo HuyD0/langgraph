@@ -2,9 +2,9 @@
  "backoff_delays": {
   "check:0:0": {
    "q": "Why not “401 Unauthorized”?",
-   "a": "\"401 Unauthorized\" means the server does not accept your credentials. Credentials are the proof of who you are, like an API key (a secret string your code sends with each request). In plain words: \"I don't know you, so I won't answer.\"\n\nIt gets one thing right. A 401 is a real failure, and your code should notice it and react.\n\nWhat it misses is the lesson's key rule: only retry errors that can fix themselves. A wrong key is still wrong one second later, and one minute later. Every retry fails the same way. You just wait longer before seeing the same error. The fix is to correct the key, not to try again.\n\nThis matters in the lesson's LangChain example. `with_retry` retries every error by default. With `stop_after_attempt=4`, a wrong key would be sent four times in total, which is the first try plus three retries. Passing `retry_if_exception_type=(...)` limits retries to the errors worth retrying.\n\n\"429 Too Many Requests\" is better because a rate limit is temporary: once you wait a bit, the limit resets, so a later try can succeed.",
+   "a": "\"401 Unauthorized\" means the server does not accept who you say you are. Usually your API key or token (the secret string that proves you're allowed in) is wrong, missing, or expired.\n\nWhat it gets right: it is a real failure, and the call did not work. So it's fair to wonder whether trying again would help.\n\nWhat it misses: a 401 will not fix itself. If you retry, you send the same bad key, and you get the same 401 every time. Waiting longer between tries changes nothing. You just waste time and delay the real fix, which is correcting the key.\n\nThis matters in your stack. LangChain's `with_retry` retries every error by default, so a wrong key would be retried until `stop_after_attempt` runs out. Passing `retry_if_exception_type=(...)` lets you retry only the temporary errors.\n\n\"429 Too Many Requests\" is the better answer because it means you hit a rate limit (a cap on requests per minute), and that clears up on its own once you wait.",
    "step": "Check",
-   "fingerprint": "d30e39765d17150e",
+   "fingerprint": "5d601e2bce6a652d",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -20,9 +20,9 @@
   },
   "check:0:2": {
    "q": "Why not “400 Bad Request”?",
-   "a": "\"400 Bad Request\" is a fair guess at first. It is a real error, and the call did fail. But it is the wrong kind of error to retry.\n\nA 400 is a status code (a number the server sends back to say how a request went). It means \"your request itself is broken.\" Maybe a field is missing, or the input has the wrong shape. The problem is in what you sent, not in the server's mood.\n\nSo if you send the same request again, it breaks the same way. Waiting 1 second, then 2, then 4 changes nothing. You just burn time and extra requests before failing anyway. The fix is to change the request, not to repeat it.\n\nThis is the lesson's key rule. Only retry errors that can fix themselves. A wrong key or a bad request fails the same way every time.\n\n\"429 Too Many Requests\" is better because it means you hit a rate limit (a cap on requests per minute), and that limit resets if you simply wait. That is exactly what backoff is built for.",
+   "a": "A \"400 Bad Request\" means the server looked at your request and rejected it. Something in the request itself is wrong. Maybe a field is missing, or the data is in the wrong shape.\n\nThe option does get one thing right: a 400 is a real failure, and your code should notice it and handle it. Ignoring it would be a mistake.\n\nWhat it misses is that retrying cannot fix it. If you send the exact same request again, the server rejects it the exact same way. Waiting 1 second, then 2, then 4 changes nothing, because the problem is in your request, not in the timing. Retrying a 400 just burns time and uses up requests for no gain. The right move is to stop, log the error, and fix the request.\n\nThis is why the lesson warns that `with_retry` retries every error by default. You can pass `retry_if_exception_type` to limit which errors it retries.\n\n\"429 Too Many Requests\" is better because it means you hit a rate limit, which clears on its own once you wait, so a retry with backoff can succeed.",
    "step": "Check",
-   "fingerprint": "d15b89c544cdc3c5",
+   "fingerprint": "ae262a982a3b3ed0",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -38,9 +38,9 @@
   },
   "check:1:1": {
    "q": "Why not “Five retries is not enough for a 401”?",
-   "a": "That option notices something real: the five retries all failed. But it draws the wrong lesson from that. It suggests the fix is *more* retries, as if attempt six or ten might finally work.\n\nA `401 Unauthorized` means the server checked your API key (the secret password your code sends to prove who it is) and rejected it. The key is still wrong on the next try, and the one after that. Retrying can't change it. Fifty retries would fail just like five, only slower, and each one wastes a request.\n\nRetries with backoff are for temporary problems that can clear up while you wait. Examples are a `429` rate limit, a timeout, or an overloaded server. A wrong key is a permanent problem. The fix is to correct the key, not to keep knocking.\n\nThis is why the LangChain note matters. `with_retry` retries every error by default. Passing `retry_if_exception_type` lets you limit retries to the temporary kinds.\n\n\"A wrong key fails the same way each time\" is better because it names the real problem: this error can never fix itself, so it shouldn't be retried at all.",
+   "a": "\"Five retries is not enough for a 401\" gets one thing right: the retries are failing. All five come back with the same error.\n\nBut it blames the number of retries. It suggests that six, or ten, might eventually work. They won't.\n\nA 401 Unauthorized means the server rejected your credentials. Here, the API key is wrong. That is not a temporary problem like a rate limit or a timeout. Nothing changes between attempts. The same wrong key goes out each time, so the same 401 comes back each time. Retry 5 times or 500 times, and the result is the same. Each retry only adds waiting before the real error shows up.\n\nThe fix is not more retries. The fix is to skip retries for this kind of error. In LangChain, `with_retry` retries every error by default. So you pass `retry_if_exception_type=(...)` to retry only the temporary ones. Then you fix the key.\n\n\"A wrong key fails the same way each time\" is better because it names the real problem: this error can't fix itself, so retrying never helps.",
    "step": "Check",
-   "fingerprint": "536a91b5718f794b",
+   "fingerprint": "48624e4562def1be",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -56,9 +56,9 @@
   },
   "check:1:2": {
    "q": "Why not “The waits between tries are too short”?",
-   "a": "\"The waits are too short\" assumes waiting could help. For some errors, it can. A 429 (rate limit) means \"slow down.\" Wait long enough and the next try may work. So this option is thinking about backoff correctly in general.\n\nBut a 401 Unauthorized is different. It means the server checked your key and rejected it. The key is wrong, and it stays wrong. Waiting 1 second or 1 hour changes nothing. Every retry sends the same bad key and gets the same 401.\n\nSo longer waits would just make the failure slower. You'd wait through 5 rounds of backoff before finding out what you could have known on the first try. The real fix is to not retry at all, and to show the error so someone can fix the key.\n\nThis is why the lesson says to retry only errors that can fix themselves. In LangChain, `with_retry` retries every error by default. Passing `retry_if_exception_type=(...)` lets you limit it to temporary ones.\n\n\"A wrong key fails the same way each time\" is better because it names the real problem: this error isn't temporary, so no amount of retrying or waiting will fix it.",
+   "a": "\"The waits between tries are too short\" assumes waiting longer would help. It wouldn't here.\n\nIt does get one thing right. Wait length matters for temporary errors. A 429 (rate limit) or a timeout can clear up if you give the server more time. That is the whole reason backoff exists.\n\nBut a 401 Unauthorized means \"I don't accept your key.\" The server checks the key the same way every time. Waiting 1 second or 10 minutes changes nothing, because the key is still wrong. So all 5 retries fail exactly like the first one. Longer waits would only make you wait longer for the same failure.\n\nThe real problem is that this error should never have been retried at all. Retries are for problems that can fix themselves. A wrong key needs a person to fix it. In LangChain, `with_retry` retries every error by default. You can pass `retry_if_exception_type=(...)` to limit it to errors that can fix themselves.\n\n\"A wrong key fails the same way each time\" is better because it names the actual issue: the error is permanent, so no amount of retrying or waiting can succeed.",
    "step": "Check",
-   "fingerprint": "53ed2a0db75a0417",
+   "fingerprint": "e4ea67ffa1f1bd26",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -74,9 +74,9 @@
   },
   "check:2:0": {
    "q": "Why not “A shorter first wait”?",
-   "a": "Starting with a shorter wait changes where the waits begin. It does not change where they end up.\n\nTry it. Start at 0.5 seconds instead of 1. You get 0.5, 1, 2, 4, 8, 16, 32, 64, and so on. Each wait still doubles. After a few more tries, you are waiting minutes, then hours. The real problem in the question is that the waits keep growing with no limit.\n\nTo be fair, a shorter first wait is not a bad idea. Many temporary errors clear up fast. A quick first retry can get you an answer sooner. But it is a small tune-up, not a fix.\n\nA **cap** is a maximum wait. Once the doubled wait would go past it, you use the cap instead. With a cap of 5, the waits become 1, 2, 4, 5, 5. They stop growing, so the user never sits stuck for an hour.\n\n\"A cap so waits stop growing\" is better because it fixes the actual flaw: it puts a ceiling on the waits, however many retries happen.",
+   "a": "A shorter first wait doesn't fix the real problem. The waits still double forever.\n\n**What it gets right:** It notices that the waits get too long. A small first wait is also a fine choice. A quick retry often works when the problem was a brief hiccup.\n\n**What it misses:** Doubling grows fast no matter where you start. Start at 0.5 seconds instead of 1, and you get 0.5, 1, 2, 4, 8, 16, 32, 64. That is the same list as before, just one step behind. A few retries later you are waiting minutes, then hours. A smaller start only delays that by one step.\n\nThe trouble is the growth itself, not the starting point. So the fix has to stop the growth. That is what a **cap** does. A cap is a top limit on how long any single wait can be. With a cap of 5, the waits go 1, 2, 4, 5, 5, and they never pass 5.\n\n**Why \"A cap so waits stop growing\" is better:** It puts a hard ceiling on every wait, so no single wait can ever become unreasonably long, however you set the start.",
    "step": "Check",
-   "fingerprint": "f2fbbc9333ce92fc",
+   "fingerprint": "f4acf75d98df89e5",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -92,9 +92,9 @@
   },
   "check:2:1": {
    "q": "Why not “Waits that stay the same”?",
-   "a": "**Why not \"Waits that stay the same\"?**\n\nIt does fix one thing. If every wait were, say, 2 seconds, the waits could never balloon to 64 seconds and beyond. So it stops the runaway growth.\n\nBut it throws away the useful part. Doubling exists for a reason. If a server is overloaded or rate limiting you (capping how many requests you may send per minute), the first short wait may not be enough. Each longer wait gives the server more time to recover. With fixed waits, your code keeps knocking at the same quick pace. That can keep the server busy and make the problem last longer.\n\nThe retries in the question are already doing the right thing early on: 1, 2, 4. The only flaw is that nothing stops the growth. You don't need to replace doubling. You just need to limit it.\n\n**Why \"A cap so waits stop growing\" is better:** it keeps the doubling that helps a struggling server recover, and it uses `min` to hold each wait at a sensible maximum (like 1, 2, 4, 5, 5 with a cap of 5).",
+   "a": "\"Waits that stay the same\" does get one thing right. It stops the waits from running away to 64 seconds and beyond. Your program would never sit idle for minutes.\n\nBut it fixes the problem by throwing away the good part. Doubling is useful. If an API (the service you are calling) is overloaded or rate limiting you, a short wait often isn't enough. Waiting longer each time gives it room to recover. With fixed waits, you keep knocking on the door at the same pace. That can keep the API busy and keep you blocked.\n\nThe question asks what is *missing*. Growth isn't the mistake. The mistake is growth with no limit. So the fix is to add something, not to remove the doubling.\n\nA cap keeps both benefits. With a cap of 5, the waits are 1, 2, 4, 5, 5. They grow at first, then level off.\n\n**\"A cap so waits stop growing\" is better because it keeps the helpful doubling early on and only stops the waits from getting too long.**",
    "step": "Check",
-   "fingerprint": "d0702e7a52198f71",
+   "fingerprint": "d40a3db847fd0fab",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -105,14 +105,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. The claim that fixed fast retries can keep a server busy goes slightly beyond the lesson, but it doesn't contradict it. The `min` mention and the 1, 2, 4, 5, 5 sequence come straight from the lesson's own example."
+    "notes": ""
    }
   },
   "explain:gotcha": {
    "q": "Why does “Retry only errors that can fix themselves” matter?",
-   "a": "A retry only helps if the next try could turn out differently. Some errors fix themselves. A rate limit (a cap on requests per minute) lifts after a short wait. A timeout may pass once the server is less busy.\n\nOther errors never fix themselves. A wrong API key is just as wrong one second later. A badly formed request is still badly formed. Retrying these goes wrong in a few ways:\n\n- **You wait for nothing.** Each failed try adds a longer pause before the same failure.\n- **The real error is hidden.** The useful message, like \"invalid key,\" shows up late or gets buried in retry noise.\n- **You waste requests.** Extra calls can eat into your rate limit and slow down other work.\n\n**Example:** your agent uses `ChatDatabricks(...).with_retry(stop_after_attempt=4, wait_exponential_jitter=True)`, and the key is wrong. By default, LangChain retries every error, so it tries four times with growing waits. You wait several seconds and still get the same \"unauthorized\" error you could have seen right away.\n\nThe fix is to pass `retry_if_exception_type=(...)` so only temporary errors, like a 429 rate limit, get retried.",
+   "a": "Retrying helps only when the next try could go differently. A rate limit (a cap on how many requests you may send per minute) or a timeout often clears up on its own. Wait a bit, try again, and it may work.\n\nA bad request or a wrong API key is different. Nothing changes between tries, so you get the same failure every time.\n\nSo what goes wrong if you retry everything? Your program waits, retries, waits longer, and still fails. The person using your app waits for nothing. The real error shows up late, so the problem takes longer to spot and fix. Each pointless retry also sends another request to the endpoint.\n\nA small example: in the lesson's LangChain code, `with_retry` retries every error by default. With a wrong key, it makes all 4 attempts, with growing waits between them, before it reports the bad key.\n\nPass `retry_if_exception_type=(...)` to list only the temporary errors, like a 429 rate limit. Then a wrong key fails right away, and you see the cause at once.",
    "step": "Explain",
-   "fingerprint": "71411f4925db6a5d",
+   "fingerprint": "8e56d5a206f9b3a2",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -123,14 +123,14 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "Minor: the 'hidden error' and 'eats your rate limit' points go slightly beyond the lesson, though they do not contradict it."
+    "notes": ""
    }
   },
   "explain:interview": {
    "q": "How do I explain “Double each wait, with a cap” in an interview?",
-   "a": "**A 30-second answer**\n\n*The problem.* Model APIs often fail for temporary reasons. Think of a rate limit (a cap on how many requests you may send per minute), a timeout, or an overloaded server. Retrying straight away usually fails again and adds even more load.\n\n*The idea.* So I retry with exponential backoff. Each wait is double the one before. That gives the service time to recover. I also set a cap, a longest allowed wait, so the waits stop growing once they reach it.\n\n*A trade-off.* I only retry errors that can fix themselves, like a 429 rate limit. A wrong key or a bad request fails the same way every time, so retrying just wastes time. In LangChain, `with_retry` retries every error by default. I'd narrow it with `retry_if_exception_type`.\n\n**A likely follow-up**\n\n\"What if many clients fail at the same moment?\"\n\nHint: they would all retry in lockstep and hit the server together again. Mention jitter. That means adding a small random amount to each wait so the clients spread out. That's what `wait_exponential_jitter=True` turns on.",
+   "a": "**A 30-second answer**\n\n*The problem:* Calls to a model API can fail for temporary reasons. I might hit a rate limit, which is a cap on requests per minute. Or the server might be overloaded. Retrying right away often fails again and adds even more load.\n\n*The idea:* So I retry with exponential backoff. Each wait is double the one before: 1 second, then 2, then 4. I also set a cap, so no wait goes past, say, 5 seconds. That stops one bad moment from turning into a very long stall.\n\n*The edge case:* I only retry errors that can fix themselves, like a timeout or a 429, the \"too many requests\" code. A wrong key or a bad request fails the same way every time, so retrying just wastes time. I also limit the total number of attempts.\n\n**A likely follow-up**\n\n\"What if many clients fail at the same moment?\"\n\nHint: they would all retry in step and hit the server together again. A strong answer mentions **jitter**, which means adding a small random amount to each wait so retries spread out. LangChain's `with_retry` turns this on with `wait_exponential_jitter=True`.",
    "step": "Explain",
-   "fingerprint": "0e626c9235b506e0",
+   "fingerprint": "c1d123242c68f3fb",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -146,27 +146,9 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs it's going wrong**\n\n- **No retries at all.** Runs crash now and then with a `429` (the \"too many requests\" error) or a timeout. A batch job dies halfway through, even though the same call works when you rerun it.\n- **Retries with no growing wait.** Your logs show several attempts only milliseconds apart, all failing with `429`. Retrying instantly just hits the rate limit again.\n- **No cap.** One request suddenly takes minutes. The gaps between attempts keep doubling: 32 seconds, 64, 128.\n- **Retrying errors that can't fix themselves.** A wrong key gives `401` or `403`, and a bad request gives `400`. If you see the same one of these repeated four times, your code is retrying things that will never work. It fails anyway, just slower. This is the default with `with_retry` unless you set `retry_if_exception_type`.\n\n**Quickest check**\n\nPick one failed request in your logs, or in an MLflow trace (the step-by-step record of a single call). Look at two things:\n\n1. **The timestamps of each attempt.** The gaps should roughly double, then level off at your cap.\n2. **The error type.** It should be a temporary one, like `429` or a timeout, and not a `400`, `401` or `403`.",
+   "a": "Here are the signs, in the places you would look.\n\n**Temporary errors are not being retried.** Your logs (the running record your code writes) show calls failing on a 429 or a timeout and giving up on the first try. A 429 is the code an endpoint sends back for a rate limit. If a second try a few seconds later would have worked, you are missing retries.\n\n**Permanent errors are being retried.** A wrong key or a bad request shows up four times in a row in your logs, with growing gaps between them. Every attempt fails the same way, and the user just waits longer for the same error. This is the trap in the lesson's LangChain example: `with_retry` retries every error unless you pass `retry_if_exception_type`.\n\n**The cap is missing.** The logged wait times keep doubling, such as 1, 2, 4, 8, 16, instead of levelling off at the cap.\n\n**Quickest check:** Point your code at the endpoint with a deliberately wrong key. It should fail once, right away. Then read the wait times your code logs on a real 429. They should double and then stop growing at the cap.",
    "step": "Learn",
-   "fingerprint": "83b1f37f46bca83b",
-   "status": "passed",
-   "model": "databricks-claude-opus-5-5",
-   "judge": {
-    "model": "databricks-claude-sonnet-5-5",
-    "correct": true,
-    "answers_it": true,
-    "plain": true,
-    "no_giveaway": true,
-    "standalone": true,
-    "pass": true,
-    "notes": "The answer passes all checks. It is right at the edge of the length limit (about 200 words), and the 400/401/403 codes go slightly beyond the lesson without contradicting it."
-   }
-  },
-  "learn:stops": {
-   "q": "When does this stop working?",
-   "a": "Here are three situations where simple doubling-with-a-cap needs extra care.\n\n**1. Many clients failing at the same moment.** In a bigger system, hundreds of callers might hit a rate limit together. If they all double their waits in step, they all knock again at the same instant and overload the endpoint again. Add **jitter**, a small random extra wait for each caller, so their retries spread out.\n\n**2. Errors that will never fix themselves.** A wrong key or a badly formed request fails the same way every time, so retrying just wastes time and your request allowance. LangChain's retry helper retries every error by default. Tell it to retry only temporary failures, such as a 429 (rate limit) or a timeout.\n\n**3. Agent steps that change things.** In an agent, a retried tool call might send an email or write a row of data twice. Only retry steps that are safe to repeat, or first check whether the earlier attempt already did the work.",
-   "step": "Learn",
-   "fingerprint": "9a73d78381081f3f",
+   "fingerprint": "45d3abd24146d68b",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -180,11 +162,11 @@
     "notes": ""
    }
   },
-  "learn:term": {
-   "q": "How is “retry” different from “exponential backoff”?",
-   "a": "They answer two different questions.\n\n**Retry** answers \"should I try again?\" When a call fails for a temporary reason, like a rate limit or a timeout, you send the same request again. That's all retry means. It says nothing about timing.\n\n**Exponential backoff** answers \"how long should I wait before trying again?\" Each wait is double the one before. A **cap** stops the waits from growing forever.\n\nThey work as a team. Retry is the decision to try again. Backoff is the waiting plan between tries. Retrying with no waits can hammer a busy server and keep it overloaded. Backoff gives it room to recover.\n\nThink of knocking on a door. Knocking again is the retry. Waiting a bit longer each time before you knock is the backoff.\n\nIn the lesson's example, the wait starts at 1 second and doubles, with a cap of 5. So the waits are 1, 2, 4, 5, 5. The cap kicks in once doubling would pass 5.\n\nOne more thing: only retry errors that can fix themselves. A wrong key fails the same way every time, so no amount of waiting will help.",
+  "learn:stops": {
+   "q": "When does this stop working?",
+   "a": "Here are three situations where simple doubling-with-a-cap needs extra care.\n\n**Many clients failing at once.** If hundreds of agents hit a rate limit together, they all wait 1, 2, 4 seconds in lockstep and hit the endpoint again at the same moment. Add **jitter**, a small random wiggle to each wait, so retries spread out. That is what `wait_exponential_jitter=True` turns on.\n\n**Actions that are not safe to repeat.** Some calls change the world, like a tool that sends an email or writes rows to a table. If the call actually worked but the reply timed out, a retry does it twice. Retry only read-only calls, or give each action a unique ID so the receiver can spot and ignore a duplicate.\n\n**Retries stacked in a big system.** In a LangGraph agent, the model call, the tool and the whole graph might each retry. Four tries at each of three layers can mean dozens of calls and long stalls. Retry at one layer, and set a total time budget. If a 429 means a quota is used up for the day, waiting won't help, so switch to a backup endpoint or stop with a clear error.",
    "step": "Learn",
-   "fingerprint": "faa260be53526393",
+   "fingerprint": "d4aabd9c68a1d890",
    "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
@@ -195,7 +177,25 @@
     "no_giveaway": true,
     "standalone": true,
     "pass": true,
-    "notes": "No major problems. Minor: 'rate limit' is mentioned without the lesson's definition, and the 1-second unit is an assumption, though sleep implies seconds."
+    "notes": "No blocking problem. The daily-quota 429 and LangGraph go beyond the lesson, and the answer is close to the 200-word limit, but neither contradicts the lesson."
+   }
+  },
+  "learn:term": {
+   "q": "How is “retry” different from “exponential backoff”?",
+   "a": "A **retry** is the *what*. After a request fails, you send it again. That's all it means. It says nothing about *when*.\n\n**Exponential backoff** is the *when*. It's a rule for how long to wait between retries. Each wait is double the one before. A **cap** (a maximum) stops the waits from growing forever.\n\nSo they work as a team. Retrying decides you'll try again. Backoff spaces out the tries.\n\nThink of knocking on a friend's door. Knocking again is the retry. Waiting 1 second, then 2, then 4 before each knock is the backoff. Hammering nonstop just makes things worse. The same goes for a busy API: instant retries add even more load.\n\nThe lesson's example shows the backoff part. With a start of 1 and a cap of 5, the waits are 1, 2, 4, 5, 5. Doubling would give 8, but `min(wait, 5)` holds it at 5.\n\nIn LangChain's `with_retry`, `stop_after_attempt=4` sets how many tries. `wait_exponential_jitter=True` turns on backoff, with a little random extra wait mixed in.\n\nRemember to retry only errors that can fix themselves, like a 429 rate limit. A wrong key fails every time.",
+   "step": "Learn",
+   "fingerprint": "22bfc6fbf5f5522e",
+   "status": "passed",
+   "model": "databricks-claude-opus-5-5",
+   "judge": {
+    "model": "databricks-claude-sonnet-5-5",
+    "correct": true,
+    "answers_it": true,
+    "plain": true,
+    "no_giveaway": true,
+    "standalone": true,
+    "pass": true,
+    "notes": ""
    }
   }
  },

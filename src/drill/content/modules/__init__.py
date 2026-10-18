@@ -59,6 +59,13 @@ TRACKS = [
 ORDER = PATH + [mid for _, _, _, ms in TRACKS for mid in ms]
 
 
+# A lesson's id is a contract: learners' progress is saved under it, and content packs name core
+# lessons by id in `prerequisites`. So an id is never reused or removed. A renamed lesson keeps its
+# old id here, old -> new: the page carries progress over and a pack naming the old id still loads.
+# tests/test_lesson_ids.py keeps every id ever shipped in tests/fixtures/lesson_ids.txt.
+ALIASES: dict[str, str] = {}
+
+
 def load(order: list[str] | None = None) -> list[Module]:
     """Import each module's file and return its MODULE, in path order."""
     loaded = []

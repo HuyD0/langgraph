@@ -9,7 +9,7 @@ learn:
     - Answer each question without help first, then compare with the expected answer and why.
 check:
   question: A plan finished. Has the change been applied?
-  options: [Yes, Not necessarily, Only on weekdays]
+  options: ["Yes", "Not necessarily", "Only on weekdays"]
   answer: 1
   why: A finished plan is a preview; applying is a separate step.
 practice:
