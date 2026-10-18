@@ -674,20 +674,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Signs the idea was skipped**\n\nYou spend days tuning one step, say retrieval, and the eval score barely moves. Each change gains a point or less. That often means you picked a step with little **headroom** (the most you could gain by making that step perfect). You were fixing the wrong leak in the bucket.\n\nAnother sign: when someone asks \"why work on this step first?\", the only answer is a hunch, not a number.\n\n**Signs it was done wrong**\n\n- The oracle runs were not planned in **Design**. So the eval set has no right answers per step, such as the correct document ids for each question. Without those, you cannot build a perfect version of that step.\n- The oracle run swaps more than one step at once. Then you cannot tell which step caused the gain.\n- You read the tuning variants in **Evaluate** before the oracle runs. Then you judge them without knowing how much room there was.\n\n**Quickest check**\n\nRun one oracle variant, for example \"right docs given.\" Compare it to your current score. A small gap means that step is not your bottleneck. A large gap means it is.",
+   "a": "**Warning signs**\n\n- **Lots of tuning, little gain.** You spent days improving one step, like retrieval, and the eval score barely moved. In the lesson's example, perfect documents only lift 78% to 80%. Tuning retrieval there is wasted effort.\n- **You chose what to fix by gut feel.** Nobody can show numbers for why that step was picked.\n- **The oracle runs can't happen.** Your eval set has no right answers for each step, such as the correct document ids for each question. That means the oracle runs were never planned in the **Design** stage.\n- **No side-by-side numbers.** The oracle wasn't logged as its own named variant, like `rag-oracle-retrieval`, so in **Evaluate** you can't put it next to the current system.\n\nNote that small or zero headroom is not a sign of a mistake. Headroom means the most you could gain by perfecting a step. If no oracle beats your current score, that is a real result: no single step is worth fixing.\n\n**Quickest check**\n\nRun one oracle variant. For example, hand the model the right documents. Compare its score to your current system. A big gap means that step deserves your effort. A small gap means stop tuning it.",
    "step": "Learn",
    "fingerprint": "718be9fcfae32461",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
     "correct": true,
     "answers_it": true,
-    "plain": false,
+    "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The key term \"oracle\" (a step swapped for a perfect version) is never explained, and \"eval set\" and the Design/Evaluate stages are left undefined. At about 190 words it also sits right at the length limit."
+    "pass": true,
+    "notes": "No blocking problem. Calling the 78%→80% case 'the lesson's example' is slightly loose, since the lesson's example table shows retrieval at 91%. The answer is also close to the 200-word limit."
    }
   },
   "learn:stops": {
@@ -1384,20 +1384,20 @@
   },
   "check:2:1": {
    "q": "Why not “Drop the new version for good”?",
-   "a": "\"Drop the new version for good\" gets one thing right. You don't ship it today. The baseline (the version already running) stays in place.\n\nBut it misreads what \"too close to call\" means. It does not say the new version is worse. It says your examples can't tell the two apart yet. The gap between wins and losses is too small to trust either way.\n\nIn this case, every gate has already passed. So the new version is fast enough, cheap enough, and passes every must-pass case. It might be just as good, or slightly better. You simply don't know yet.\n\nDropping it for good throws that away. The lesson gives two ways forward instead. You can gather more examples, so a real difference has a chance to show. Or you can choose on cost, if the new version is cheaper for the same quality.\n\n\"Drop for good\" treats \"unsure\" as if it were a clear loss. That is the mistake.\n\n\"Keep the baseline for now\" is better because it stays safe today while leaving room to test more or decide on cost.",
+   "a": "\"Drop the new version for good\" gets one thing right. You don't ship it today. The baseline (the version already in use) stays in place.\n\nWhat it misses is what \"too close to call\" means. It does not mean the new version lost. It means the gap between its wins and losses was too small to say either way. The new version might be a little better, a little worse, or the same. You just can't tell yet.\n\nDropping it for good treats \"we don't know\" as \"it's worse.\" Only the other result, where losses minus wins is big enough, earns that verdict. A close result leaves real options open. You can run more examples, since a bigger test can show a gap that a small one hides. Or, since every gate passed, you can choose on cost. If the new version is cheaper at about the same quality, that may be a good reason to pick it.\n\n\"Keep the baseline for now\" is better because it plays it safe today while leaving room to decide later, once you have more evidence.",
    "step": "Check",
    "fingerprint": "29db3a20885ddb83",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
     "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "It says the new version \"might be just as good, or slightly better\", but too close to call also allows it to be slightly worse, so the uncertainty is described as tilted in the new version's favour."
+    "pass": true,
+    "notes": ""
    }
   },
   "explain:interview": {

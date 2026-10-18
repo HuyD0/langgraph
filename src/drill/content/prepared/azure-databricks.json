@@ -128,20 +128,20 @@
   },
   "learn:spot": {
    "q": "How would I spot it going wrong?",
-   "a": "**Warning signs**\n\n- A Spacelift apply goes green, but `sp-sales-etl-dev` still fails to read `main.sales.orders` with a permission error. The `SELECT` landed, but a key higher up was missed.\n- It works in DEV and fails in UAT or PROD. The grants were only made for one environment's catalog.\n- One analyst can read and a new joiner in `grp-sales-dev-owners` can't. Someone granted to a person, not the group.\n- People can read more than you meant. A broad grant on the catalog counts for every schema and table below it.\n\n**Quickest check**\n\nList every grant held by the principal (the person or program) and by each group it is in. You can see these in the Permissions tab in Catalog Explorer. Then ask three questions in order:\n\n1. Catalog: is there `USE CATALOG` or `ALL PRIVILEGES` on it?\n2. Schema: is there `USE SCHEMA` on the schema or its catalog?\n3. Table: is there `SELECT` on the table, its schema or its catalog?\n\nThe first \"no\" is the break. A table with no grant of its own isn't the problem if `SELECT` on its schema already covers it.",
+   "a": "**Warning signs**\n\n- **Granted, but still blocked.** A Spacelift run as `sp-sales-etl-dev` fails with a permission error on `main.sales.orders`, even though the team was given `SELECT` on that table. A key on the way down is probably missing: `USE CATALOG` on `main`, or `USE SCHEMA` on `main.sales`.\n- **One person can read it, a new joiner can't.** The keys went to a person, not to a group like `grp-sales-dev-owners`.\n- **Works in DEV, fails in UAT or PROD.** The grants differ between stages.\n- **Someone reads more than they should.** A broad key higher up, like `SELECT` on the whole schema `main.sales` or `ALL PRIVILEGES`, opened every table below it, not just the one intended.\n\n**Quickest check**\n\nLook at the grants on all three levels: the catalog, the schema and the table. Catalog Explorer, the Databricks screen for browsing catalogs, shows them on each object's Permissions tab. Check the person or service principal (an identity for a program) and every group they are in.\n\nKeep two rules in mind while you look. A key found higher up still counts lower down. And all three keys must be there before the read works.",
    "step": "Learn",
    "fingerprint": "b87391940e1baf0e",
-   "status": "failed",
+   "status": "passed",
    "model": "databricks-claude-opus-5-5",
    "judge": {
     "model": "databricks-claude-sonnet-5-5",
-    "correct": false,
+    "correct": true,
     "answers_it": true,
     "plain": true,
-    "no_giveaway": false,
+    "no_giveaway": true,
     "standalone": true,
-    "pass": false,
-    "notes": "The three-question check spells out the can_read logic (USE CATALOG; USE SCHEMA on schema or catalog; SELECT on table, schema or catalog), which gives away the exercise; it also drops ALL PRIVILEGES from steps 2 and 3, and the Catalog Explorer tab and per-environment catalog claims are not in the le"
+    "pass": true,
+    "notes": "Minor: the 'works in DEV, fails in UAT or PROD' sign and the Catalog Explorer Permissions tab are not in the lesson, but neither contradicts it."
    }
   },
   "learn:stops": {
