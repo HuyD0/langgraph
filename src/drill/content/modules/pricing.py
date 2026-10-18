@@ -449,6 +449,512 @@ total += 5   # 5""",
     ),
 )
 
+OAI_PRICING = source('OpenAI API pricing', 'https://developers.openai.com/api/docs/pricing')
+AZURE_OPENAI_PRICING = source('Azure OpenAI pricing', 'https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/')
+DBX_MODEL_PRICING = source('Databricks Foundation Model Serving pricing', 'https://www.databricks.com/product/pricing/foundation-model-serving')
+
+lesson(MODULE, 'embedding_cost',
+    title='The cost of embeddings',
+    checked='2026-10-18',
+    sources=[OAI_PRICING, AZURE_OPENAI_PRICING, DBX_MODEL_PRICING],
+    learn=[
+        'An **embedding** is text turned into a list of numbers, a **vector**, so a search can find text with a similar meaning. A RAG app embeds every chunk of every document, and every question. Embedding models are billed per token like any model, but they are cheap: OpenAI\'s text-embedding-3-small costs $0.02 per million tokens and text-embedding-3-large $0.13, the same on Azure OpenAI\'s Global deployments. On Databricks, the GTE large model costs about $0.13 per million.',
+        'There are three embedding costs. **One-off**: embedding every document when you first build the index. **Every month**: new and changed documents, and every question, because a question has to become a vector before you can search with it. **Re-embedding**: if you change the embedding model, you embed everything again, because vectors from two models can\'t be compared.',
+        'The sum is the same each time: tokens times the price per million, divided by a million. 2,000 HR documents of 1,500 tokens are 3,000,000 tokens, and 3 times $0.02 = $0.06 to embed them all. Embeddings are rarely the big line. The search service that holds the vectors usually is, and that is the next lesson.',
+        'Prices come from each provider\'s pricing page, and they change, so write the date next to them. On Azure the same model can cost a little more in one region than in a Global deployment: $0.022 against $0.02 per million for text-embedding-3-small.',
+    ],
+    example=example('The HR assistant\'s embeddings', """price = 0.02 / 1000000   # $ a token
+first = 2000 * 1500 * price
+# 3,000,000 tokens: $0.06, once
+new = 100 * 1500          # new docs
+asks = 30000 * 25         # questions
+month = (new + asks) * price
+# 900,000 tokens: about $0.02 a month"""),
+    check=question(
+        'You move the HR assistant to a newer embedding model. What happens to the embedding bill?',
+        [
+            'Every document is embedded again, once',
+            'Only new documents use the new model',
+            'Nothing: the old vectors still work',
+        ],
+        answer=0,
+        why='Vectors from two models can\'t be compared, so every chunk is embedded again: a one-off cost as big as the first indexing. For the HR documents that is 3,000,000 tokens times $0.02 divided by 1,000,000 = $0.06.',
+    ),
+    angle=angle(
+        pattern='Tokens times the price, once and every month',
+        text='The big idea: embeddings cost tokens like any model, once for every document, then every month for new documents and every question, and again in full if you change the embedding model. Your code turns the price per million into a price per token. The one-off cost is the documents times their tokens times that price. The monthly cost adds the new documents\' tokens to the questions\' tokens and multiplies by the same price. It returns both, rounded to cents. It is like printing: the first print run of the whole book, then a few new pages every month.',
+        say='"I price embeddings in three parts: every document [[once|daily|never::When you first build the index.]], new documents and questions every [[month|year|run::They keep arriving.]], and everything again if I change the [[model|prompt|server::Vectors from two of these can\'t be compared.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Price the Embeddings',
+        topic='pricing',
+        difficulty='easy',
+        fn='embedding_cost',
+        prompt="""Your function gets `plan`, a dict:
+
+- `"docs"`: how many documents to embed at the start, and `"tokens_per_doc"`: tokens in each one.
+- `"new_docs"`: new documents a month, the same size.
+- `"questions"`: questions a month, and `"tokens_per_question"`.
+- `"price_per_million"`: dollars per million tokens.
+
+The one-off cost is every document's tokens times the price. The monthly cost is the new documents' tokens plus the questions' tokens, times the price.
+
+Return `[one_off, monthly]`, each rounded to 2 decimal places.""",
+        pattern='Count the tokens, then multiply by the price per token.',
+        target='a few multiplications',
+        realworld='When a RAG pipeline is priced, embeddings are a small line, but re-embedding a large document set after a model change is a real one-off cost. Put it in the plan before anyone swaps the model.',
+        starter="""def embedding_cost(plan):
+    # your code here
+    pass
+""",
+        solution="""def embedding_cost(plan):
+    price = plan["price_per_million"] / 1000000
+    first = plan["docs"] * plan["tokens_per_doc"] * price
+    new = plan["new_docs"] * plan["tokens_per_doc"]
+    asks = plan["questions"] * plan["tokens_per_question"]
+    monthly = (new + asks) * price
+    return [round(first, 2), round(monthly, 2)]
+""",
+        cases=[
+            case({"docs": 2000, "tokens_per_doc": 1500, "new_docs": 100, "questions": 30000, "tokens_per_question": 25, "price_per_million": 0.02},
+                 expected=[0.06, 0.02], sample=True),
+            case({"docs": 200000, "tokens_per_doc": 1500, "new_docs": 5000, "questions": 300000, "tokens_per_question": 25, "price_per_million": 0.13},
+                 expected=[39.0, 1.95]),
+            case({"docs": 0, "tokens_per_doc": 1500, "new_docs": 0, "questions": 0, "tokens_per_question": 25, "price_per_million": 0.02},
+                 expected=[0.0, 0.0]),
+        ],
+        guided="""def embedding_cost(plan):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: the price of one token.
+    price = plan["price_per_million"] / 1000000
+    # Step 2: every document, once.
+    first = ___
+    # Step 3: new documents and questions, each month.
+    new = plan["new_docs"] * plan["tokens_per_doc"]
+    asks = plan["questions"] * plan["tokens_per_question"]
+    monthly = ___
+    return [round(first, 2), round(monthly, 2)]
+""",
+        fills=['plan["docs"] * plan["tokens_per_doc"] * price', '(new + asks) * price'],
+        concepts=[
+            [
+                'Price per million',
+                'Prices are quoted per million tokens. Divide by 1,000,000 to get the price of one token, then multiply by the tokens.',
+                """price = 0.02 / 1000000
+3000000 * price   # 0.06""",
+            ],
+            [
+                'round',
+                '`round(x, 2)` keeps two decimal places, like cents.',
+                'round(1.9512, 2)   # 1.95',
+            ],
+        ],
+        byhand='The price of a token is 0.02 divided by 1,000,000. Every document: 2,000 times 1,500 = 3,000,000 tokens, times 0.02 divided by 1,000,000 = $0.06. Each month: new documents 100 times 1,500 = 150,000 tokens, questions 30,000 times 25 = 750,000 tokens, together 900,000 tokens times 0.02 divided by 1,000,000 = $0.018, which rounds to $0.02. Return [0.06, 0.02].',
+        why='A few multiplications, whatever the size of the plan.',
+        gotchas=[
+            [
+                'Forgetting the questions',
+                'Every question is embedded too, before the search. With many users, the questions can outgrow the new documents.',
+            ],
+            [
+                'Forgetting re-embedding',
+                'A new embedding model means embedding every document again. Price it as a one-off before you switch.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'vector_storage',
+    title='Storing and searching vectors',
+    checked='2026-10-18',
+    sources=[
+        source('OpenAI: Vector embeddings', 'https://developers.openai.com/api/docs/guides/embeddings'),
+        source('Azure AI Search pricing', 'https://azure.microsoft.com/en-us/pricing/details/search/'),
+        source('Azure AI Search service limits', 'https://learn.microsoft.com/en-us/azure/search/search-limits-quotas-capacity'),
+        source('Databricks AI Search pricing', 'https://www.databricks.com/product/pricing/ai-search'),
+        source('Databricks AI Search cost management', 'https://learn.microsoft.com/en-us/azure/databricks/ai-search/cost-management'),
+    ],
+    learn=[
+        'Each vector is a list of numbers, usually stored as 4 bytes each. So the space they take is: vectors times dimensions times 4 bytes. text-embedding-3-small gives 1,536 numbers per chunk, and text-embedding-3-large 3,072, twice the space. 2,000,000 chunks times 1,536 times 4 bytes is 12,288,000,000 bytes, about 12.3 GB.',
+        'Search services are not billed by the gigabyte. You pay for **capacity**: units of the service kept running every hour, used or not. **Azure AI Search** sells **search units**: the S1 tier costs about $245 a month per unit, and each partition holds 35 GB of vectors (Basic: about $74 a month, 5 GB). **Databricks AI Search** (formerly Vector Search) bills endpoint units by the hour: a Standard unit is $0.28 an hour, about $204 a month, and holds 2,000,000 vectors of 768 numbers.',
+        'So the bill moves in steps, not smoothly: 34 GB fits one 35 GB unit, 36 GB needs two. Shorter vectors help. OpenAI\'s newer models let you ask for fewer dimensions, and its docs say text-embedding-3-large cut to 256 numbers still beats the older ada-002 model at 1,536. Check the quality on your eval set before you shrink them.',
+        'An endpoint with no questions still costs money while it exists. Storing the documents themselves (files, chunks and traces) costs little by comparison: the search service running all month is the line to watch.',
+    ],
+    example=example('How many units do the vectors need?', """size = 2000000 * 1536 * 4   # bytes
+# 12,288,000,000 bytes: about 12.3 GB
+# one S1 partition holds 35 GB: 1 unit
+size = 6000000 * 3072 * 4
+# about 73.7 GB: 73.7 / 35 = 2.1,
+# so 3 units, about 3 x $245 a month"""),
+    check=question(
+        'Your vectors grow from 34 GB to 36 GB, and each unit holds 35 GB. What happens to the bill?',
+        [
+            'It doubles: you need a second unit',
+            'It grows by about 6 percent',
+            'Nothing until you reach 70 GB',
+        ],
+        answer=0,
+        why='36 GB no longer fits one 35 GB unit, so you pay for two: about 2 times $245 a month instead of 1 times $245. Capacity is bought in whole units, so the bill moves in steps.',
+    ),
+    angle=angle(
+        pattern='Work out the size, then round up to whole units',
+        text='The big idea: vector storage is vectors times dimensions times 4 bytes, but search services bill whole units of capacity kept running, so the bill jumps a step each time the vectors outgrow a unit. Your code works out the bytes and divides by a billion to get gigabytes. It divides by the gigabytes a unit holds, keeping the whole number, and adds one more unit if any space is left over. It never returns fewer than one unit. It returns the gigabytes, rounded to 2 places, and the units. It is like booking hotel rooms: 5 guests with 2 to a room need 3 rooms, not 2.5.',
+        say='"For vector search I work out the size: vectors times dimensions times [[4|8|1::The bytes in one stored number.]] bytes. Then I [[round up|round down|average::Half a unit can\'t be bought.]] to whole units, because the bill is for [[capacity|gigabytes|queries::Units kept running, used or not.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Count the Search Units',
+        topic='pricing',
+        difficulty='easy',
+        fn='search_units',
+        prompt="""Your function gets three numbers: `vectors` (how many), `dims` (numbers in each vector) and `gb_per_unit` (gigabytes of vectors one unit holds).
+
+Each number takes 4 bytes, and a gigabyte here is 1,000,000,000 bytes.
+
+Return `[gb, units]`: the size in gigabytes rounded to 2 decimal places, and how many whole units you need. Round the units up: any space left over needs another unit. Always return at least 1 unit.""",
+        pattern='Divide, keep the whole part, and add one if anything is left over.',
+        target='a few sums',
+        realworld='Search services bill whole units of capacity. Sizing vectors before you build tells you whether the index fits the tier you planned, and when growth will add a unit.',
+        starter="""def search_units(vectors, dims, gb_per_unit):
+    # your code here
+    pass
+""",
+        solution="""def search_units(vectors, dims, gb_per_unit):
+    gb = vectors * dims * 4 / 1000000000
+    units = int(gb // gb_per_unit)
+    if gb > units * gb_per_unit:
+        units = units + 1
+    if units < 1:
+        units = 1
+    return [round(gb, 2), units]
+""",
+        cases=[
+            case(2000000, 1536, 35, expected=[12.29, 1], sample=True),
+            case(6000000, 3072, 35, expected=[73.73, 3]),
+            case(8750000, 1000, 35, expected=[35.0, 1]),
+            case(8000, 1536, 5, expected=[0.05, 1]),
+        ],
+        guided="""def search_units(vectors, dims, gb_per_unit):
+    # Replace every ___ with real code, then run the tests.
+    # Step 1: 4 bytes a number, a billion bytes a gigabyte.
+    gb = ___
+    # Step 2: the whole units that fit.
+    units = int(gb // gb_per_unit)
+    # Step 3: anything left over needs one more.
+    if ___:
+        units = units + 1
+    if units < 1:
+        units = 1
+    return [round(gb, 2), units]
+""",
+        fills=['vectors * dims * 4 / 1000000000', 'gb > units * gb_per_unit'],
+        concepts=[
+            [
+                'Whole-number division',
+                '`a // b` divides and drops the part after the point, so `73.7 // 35` is `2.0`. `int(...)` makes it a whole number.',
+                'int(73.7 // 35)   # 2',
+            ],
+            [
+                'Rounding up by hand',
+                'If what fits in whole units is less than what you have, one more unit is needed.',
+                """units = 2
+if 73.7 > units * 35:
+    units = units + 1   # 3""",
+            ],
+        ],
+        byhand='2,000,000 times 1,536 times 4 = 12,288,000,000 bytes, divided by 1,000,000,000 = 12.288 GB. 12.288 // 35 is 0, and 12.288 is more than 0 times 35, so add one: 1 unit. Return [12.29, 1].',
+        why='A few sums, however many vectors there are.',
+        gotchas=[
+            [
+                'Pricing by the gigabyte',
+                'Search services bill units kept running, not gigabytes. A small index still pays for a whole unit, every hour.',
+            ],
+            [
+                'Rounding down',
+                '2.1 units means 3 units. Half a unit can\'t be bought.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'paid_tools',
+    title='Tools billed per call or per page',
+    checked='2026-10-18',
+    sources=[
+        source('Grounding with Bing Search pricing', 'https://www.microsoft.com/en-us/bing/apis/grounding-pricing'),
+        OAI_PRICING,
+        source('Claude API pricing', 'https://platform.claude.com/docs/en/about-claude/pricing'),
+        source('Azure AI Document Intelligence pricing', 'https://azure.microsoft.com/en-us/pricing/details/ai-document-intelligence/'),
+    ],
+    learn=[
+        'Some services charge for each use, not for tokens, and they can cost more than the model. **Web search** for an agent: Grounding with Bing Search in Azure AI Foundry costs $14 per 1,000 searches. OpenAI\'s and Anthropic\'s web search tools cost $10 per 1,000, plus the tokens of what they read. **Azure AI Document Intelligence**, which reads scanned documents, costs per page: $1.50 per 1,000 pages to read the text, $10 to pull out layout and tables, and $30 for a custom model trained on your own forms.',
+        'The sum: the uses, times the price, divided by 1,000. 30,000 questions a month where half search once: 15,000 times $14 divided by 1,000 = $210 a month. Reading 20,000 pages for their tables: 20,000 times $10 divided by 1,000 = $200, once.',
+        '**Agents multiply it.** An agent that searches 3 times per question pays 3 times: 30,000 times 3 times $14 divided by 1,000 = $1,260 a month. Cap the searches per task, keep results you can reuse, and use the cheapest service that does the job: read the text at $1.50 when you don\'t need the tables at $10.',
+        'Process documents once, when they arrive, not on every question. Then the page cost is paid once per document, however often people ask about it.',
+    ],
+    example=example('The HR assistant\'s paid tools', """# web search: half of 30,000 questions
+15000 * 14 / 1000     # $210 a month
+# an agent searching 3 times each
+30000 * 3 * 14 / 1000 # $1,260 a month
+# tables from 20,000 pages, once
+20000 * 10 / 1000     # $200
+20000 * 1.5 / 1000    # $30 for text only"""),
+    check=question(
+        'An agent answers 10,000 questions a month and searches the web 3 times for each, at $14 per 1,000 searches. What is the monthly search bill?',
+        ['$140', '$420', '$42'],
+        answer=1,
+        why='10,000 times 3 = 30,000 searches, and 30,000 times $14 divided by 1,000 = $420. The 3 searches per question is what multiplies it.',
+    ),
+    angle=angle(
+        pattern='Uses times the price per thousand',
+        text='The big idea: tools like web search and document reading charge per use, so the bill is uses times price divided by 1,000, and an agent that calls a tool several times per task multiplies it. Your code goes through the tools. For each it multiplies the tasks by the uses per task and the price per 1,000, then divides by 1,000. It adds that to the total and keeps the name of the tool with the biggest cost so far. It returns the total, rounded to cents, and that name. It is like a phone bill charged per call: count the calls, not the minutes.',
+        say='"Tools like web search bill per [[use|token|month::Each search or page counts.]]: uses times the price, divided by a [[thousand|million|hundred::Prices here are quoted per this many.]]. And an agent that calls a tool three times a task pays [[three|one|ten::It multiplies.]] times."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Add Up the Tool Bill',
+        topic='pricing',
+        difficulty='easy',
+        fn='tool_bill',
+        prompt="""Your function gets `tools`, a list of dicts, each with:
+
+- `"name"`: the tool, like `"web search"`
+- `"tasks"`: tasks a month that use it
+- `"per_task"`: how many times each of those tasks uses it (it can be a fraction, like `0.5`)
+- `"price_per_1000"`: dollars per 1,000 uses
+
+A tool's monthly cost is tasks times per_task times price_per_1000 divided by 1000.
+
+Return `[total, biggest]`: the total of all tools rounded to 2 decimal places, and the name of the tool that costs the most (on a tie, the first one). No tools gives `[0, None]`.""",
+        pattern='Work out each line, add it to the total, and keep the biggest so far.',
+        target='one pass over the tools',
+        realworld='Agent designs list their tools, but the bill comes from how often each one is called. Pricing each tool per use, with the calls per task taken from traces, shows which one to cap first.',
+        starter="""def tool_bill(tools):
+    # your code here
+    pass
+""",
+        solution="""def tool_bill(tools):
+    total = 0
+    biggest = None
+    biggest_cost = -1
+    for tool in tools:
+        uses = tool["tasks"] * tool["per_task"]
+        cost = uses * tool["price_per_1000"] / 1000
+        total = total + cost
+        if cost > biggest_cost:
+            biggest = tool["name"]
+            biggest_cost = cost
+    return [round(total, 2), biggest]
+""",
+        cases=[
+            case([{"name": "web search", "tasks": 30000, "per_task": 0.5, "price_per_1000": 14},
+                  {"name": "document layout", "tasks": 2000, "per_task": 10, "price_per_1000": 10}],
+                 expected=[410.0, "web search"], sample=True),
+            case([{"name": "agent search", "tasks": 10000, "per_task": 3, "price_per_1000": 14}], expected=[420.0, "agent search"]),
+            case([], expected=[0, None]),
+            case([{"name": "read text", "tasks": 20000, "per_task": 1, "price_per_1000": 1.5},
+                  {"name": "layout", "tasks": 20000, "per_task": 1, "price_per_1000": 10}],
+                 expected=[230.0, "layout"]),
+        ],
+        guided="""def tool_bill(tools):
+    # Replace every ___ with real code, then run the tests.
+    total = 0
+    biggest = None
+    biggest_cost = -1
+    for tool in tools:
+        # Step 1: how many times it is used in a month.
+        uses = ___
+        # Step 2: the price is per 1,000 uses.
+        cost = uses * tool["price_per_1000"] / 1000
+        total = total + cost
+        # Step 3: keep the biggest so far.
+        if ___:
+            biggest = tool["name"]
+            biggest_cost = cost
+    return [round(total, 2), biggest]
+""",
+        fills=['tool["tasks"] * tool["per_task"]', 'cost > biggest_cost'],
+        concepts=[
+            [
+                'Price per thousand',
+                'Divide the uses by 1,000 and multiply by the price, or multiply first and divide after: the answer is the same.',
+                '15000 * 14 / 1000   # 210.0',
+            ],
+            [
+                'Keeping the biggest so far',
+                'Start with a value below any real one, like -1, and replace it whenever you see a bigger one.',
+                """best = -1
+for x in [210, 200]:
+    if x > best:
+        best = x   # 210""",
+            ],
+        ],
+        byhand='Web search: 30,000 times 0.5 = 15,000 uses, times 14 divided by 1,000 = $210. Document layout: 2,000 times 10 = 20,000 pages, times 10 divided by 1,000 = $200. Total $410. Web search costs the most. Return [410.0, "web search"].',
+        why='Each tool is worked out once, so the work grows with the number of tools.',
+        gotchas=[
+            [
+                'Pricing one call per task',
+                'Agents often call a tool several times for one task. Take the calls per task from traces, not from the design.',
+            ],
+            [
+                'Paying per question for the same document',
+                'Read each document once, when it arrives, and store the result. Don\'t pay per page every time someone asks about it.',
+            ],
+        ],
+    ),
+)
+
+lesson(MODULE, 'find_the_price',
+    title='Where to find the real price',
+    checked='2026-10-18',
+    sources=[
+        source('Azure pricing calculator', 'https://azure.microsoft.com/en-us/pricing/calculator/'),
+        source('Databricks pricing', 'https://www.databricks.com/product/pricing'),
+        source('Databricks GenAI pricing calculator', 'https://www.databricks.com/product/pricing/genai-pricing-calculator'),
+        DBX_MODEL_PRICING,
+        source('Azure AI Document Intelligence pricing', 'https://azure.microsoft.com/en-us/pricing/details/ai-document-intelligence/'),
+    ],
+    learn=[
+        'Every price in these lessons comes from a provider\'s pricing page, and those pages change. For your own estimate, look them up: the model provider\'s pricing page; for Azure, each service\'s pricing page and the **Azure pricing calculator**; for Databricks, its pricing pages and its GenAI pricing calculator.',
+        'Read the **unit** before the number: per million tokens, per 1,000 searches or pages, per unit per hour, or per **DBU**. A DBU (Databricks Unit) is the measure Databricks bills by; for model serving it costs $0.07 in US East. Then turn it into your own unit: what one finished task uses.',
+        'The page shows a **list price**, a starting point. The real price changes with the **region**, the **tier** (Global or one region; standard, batch or reserved), the currency, and your company\'s **agreement** with the vendor, which may include a discount. Azure\'s pricing pages say so themselves. Ask whoever buys cloud services at your company for your rate.',
+        'Write the source and the date next to every price in your worksheet. After launch, swap the estimates for the real bill: Azure Cost Management, or on Databricks the `system.billing.usage` table. A line that is far off the estimate is the first thing to look into.',
+    ],
+    example=example('One task, priced from its pages', """# model: $2 in, $10 out per million
+1800 * 2 / 1000000      # $0.0036 in
+300 * 10 / 1000000      # $0.003 out
+# web search: $14 per 1,000, half a search
+0.5 * 14 / 1000         # $0.007
+# one task: $0.0136
+# source and date next to each line"""),
+    check=question(
+        'Your worksheet says "web search: $14 per 1,000". What else should that line have?',
+        [
+            'The page it came from, and the date',
+            'The name of the person who typed it',
+            'A note saying prices never change',
+        ],
+        answer=0,
+        why='Prices change, and they differ by region and agreement. With the page and the date, anyone can check the number and update it when the page changes.',
+    ),
+    angle=angle(
+        pattern='Price per unit, times the units one task uses',
+        text='The big idea: every price is a number per unit, so read the unit, turn it into what one task uses, and write down where and when you found it. Your code goes through the lines. For each it divides the price by the size of its unit, like 1,000,000 tokens or 1,000 searches, and multiplies by how much of it one task uses. It adds the lines up and returns the cost of one task, rounded to 4 decimal places. It is like a recipe\'s cost: flour by the kilo, eggs by the dozen, but you only use 200 grams and 2 eggs.',
+        say='"I take each price from the provider\'s [[pricing page|blog|forum::The official place prices are listed.]], read its unit, and turn it into the cost of one [[task|month|token::One finished piece of work.]]. Then I write down the source and the [[date|author|tier::Prices change, so note when you looked.]]."',
+        classic=None,
+    ),
+    exercise=exercise(
+        title='Price One Task',
+        topic='pricing',
+        difficulty='easy',
+        fn='cost_per_task',
+        prompt="""Your function gets `lines`, a list of dicts, one per thing a task uses:
+
+- `"price"`: the price from the pricing page, in dollars
+- `"per"`: the size of the unit that price is for, like `1000000` for per million tokens or `1000` for per 1,000 searches
+- `"used"`: how much of it one task uses, like `1800` tokens or `0.5` searches
+
+Each line costs price divided by per times used.
+
+Return the cost of one task, the sum of the lines, rounded to 4 decimal places. No lines gives `0`.""",
+        pattern='Turn each price into a price per unit, then multiply by what one task uses.',
+        target='one pass over the lines',
+        realworld='Pricing pages quote per million tokens, per 1,000 pages or per hour. Turning each into the cost of one finished task is how a business case compares AI with doing the work by hand.',
+        practice=practice(
+            intro='Use real pricing pages the way you will at work: read the unit, turn it into your numbers, and check what the page doesn\'t say.',
+            explain='The big idea: a price only means something with its unit, its source and its date. You turned "per 1,000 pages" into the cost of 20,000 pages, turned DBUs into dollars, spotted that a list price leaves out your region and your company\'s agreement, and went looking for the reason when the real bill came in at 3 times the estimate.',
+            pattern='Read the unit, then check the bill',
+            realworld='When you price a new AI feature, take each number from the provider\'s pricing page, note the page and the date, and ask whoever buys cloud services for your company\'s rate. After launch, compare every line with the real bill.',
+            gotchas=[
+                ['Reading the number before the unit', '$10 per 1,000 pages and $10 per million tokens are very different bills. Read what the price is per before you use it.'],
+                ['Treating the list price as your price', 'Region, tier, currency and your company\'s agreement all change it. The pricing page says so itself.'],
+                ['Never checking the estimate', 'An estimate is a guess until the bill arrives. Compare each line with the real bill in the first month.'],
+            ],
+            asks=[
+                ask('You need the tables from 20,000 pages. What does it cost?', ['$30', '$200', '$600'], answer=1,
+                    evidence=evidence('code', title='From the Document Intelligence pricing page', text="""Read             $1.50 per 1,000 pages
+Prebuilt, Layout $10 per 1,000 pages
+Custom           $30 per 1,000 pages"""),
+                    clue='Tables need layout, not just the text. Then pages times price divided by 1,000.',
+                    why='Layout gives the tables: 20,000 times $10 divided by 1,000 = $200. Read is $30 but gives only the text, and custom is $600, for forms you trained it on.',
+                    wrong=['$30 is Read, which gives the text but not the tables.', None, '$600 is a custom model trained on your own forms. Layout already gives tables.']),
+                ask('What does it cost in dollars per million tokens?', ['About $0.13', 'About $1.86', 'About $0.07'], answer=0,
+                    evidence=evidence('code', title='From the Databricks pricing page', text="""GTE large embeddings:
+  1.857 DBU per 1M input tokens
+Model serving: $0.07 per DBU"""),
+                    clue='DBUs times the dollars for one DBU.',
+                    why='1.857 times $0.07 = $0.13 per million tokens. The DBU is the unit Databricks bills by; the price per DBU turns it into dollars.',
+                    wrong=[None, '1.857 is DBUs, not dollars. Multiply by the price of one DBU.', '$0.07 is the price of one DBU, not of a million tokens.']),
+                ask('What is missing from this?', ['Nothing: the page is the price', 'Our region, tier and agreement', 'The cheapest rival\'s price'], answer=1,
+                    evidence=evidence('claim', who='A teammate said', text='"The pricing page says $0.13 per million tokens, so that is what we will pay."'),
+                    clue='Does the page know where you run it and what your company agreed with the vendor?',
+                    why='The page shows a list price. Your region, the tier and your company\'s agreement can all change it, and the page says so. Ask whoever buys cloud services for your rate.',
+                    wrong=['A list price is a starting point. Region, tier and your agreement change it.', None, 'A rival\'s price doesn\'t change what you will pay for this one.']),
+                ask('What do you do with the web search line?', ['Find out why it is 3 times the estimate', 'Keep the estimate: the first bill is odd', 'Drop the line: search is optional'], answer=0,
+                    evidence=evidence('code', title='Your worksheet, a month after launch', text="""line          estimate   real bill
+web search    $210       $630
+embeddings    $0.02      $0.02"""),
+                    clue='Three times the estimate: more searches than you thought, or a higher price?',
+                    why='The estimate was a guess. 3 times usually means the agent searches more per question than assumed. Check the traces, then fix the estimate or cap the searches.',
+                    wrong=[None, 'A first bill 3 times the estimate is the clearest sign the plan is wrong. Find out why.', 'The line is real money. Find out why it is high before you decide anything.']),
+            ],
+        ),
+        starter="""def cost_per_task(lines):
+    # your code here
+    pass
+""",
+        solution="""def cost_per_task(lines):
+    total = 0
+    for line in lines:
+        total = total + line["price"] / line["per"] * line["used"]
+    return round(total, 4)
+""",
+        cases=[
+            case([{"price": 2, "per": 1000000, "used": 1800},
+                  {"price": 10, "per": 1000000, "used": 300},
+                  {"price": 14, "per": 1000, "used": 0.5}], expected=0.0136, sample=True),
+            case([], expected=0),
+            case([{"price": 10, "per": 1000, "used": 12}], expected=0.12),
+        ],
+        guided="""def cost_per_task(lines):
+    # Replace every ___ with real code, then run the tests.
+    total = 0
+    for line in lines:
+        # the price of one unit, times what one task uses
+        total = total + ___
+    return ___
+""",
+        fills=['line["price"] / line["per"] * line["used"]', 'round(total, 4)'],
+        concepts=[
+            [
+                'Price per unit',
+                'Divide the price by the size of its unit: $14 per 1,000 searches is 14 / 1000, $0.014 a search.',
+                '14 / 1000   # 0.014',
+            ],
+            [
+                'Adding up in a loop',
+                'Start the total at 0 and add each line to it.',
+                """total = 0
+for x in [0.0036, 0.003, 0.007]:
+    total = total + x   # 0.0136""",
+            ],
+        ],
+        byhand='Input tokens: 2 divided by 1,000,000 times 1,800 = $0.0036. Output: 10 divided by 1,000,000 times 300 = $0.003. Web search: 14 divided by 1,000 times 0.5 = $0.007. Together $0.0136. Return 0.0136.',
+        why='Each line is worked out once, so the work grows with the number of lines.',
+        gotchas=[
+            [
+                'Mixing units',
+                'Per million tokens and per 1,000 searches need different divisions. Keep the unit size with each price.',
+            ],
+            [
+                'No source or date',
+                'A price with no page and no date can\'t be checked or updated. Write both next to it.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'payback_plan',
     title='Payback and break-even',
     learn=[
