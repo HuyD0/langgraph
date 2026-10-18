@@ -114,6 +114,24 @@ CHECKS = {
                 "self-preference bias. A judge from another family, or human labels on the same answers, "
                 "shows whether it is being soft."),
     ],
+    "vague_checks": [
+        ask("Your checklist has correct, no giveaway, plain and friendly tone. Which checks should be "
+            "must-pass gates, where one fail blocks the answer?",
+            ["Correct and no giveaway", "Plain and friendly tone", "All four, to be safe"],
+            answer=0,
+            clue="Ask which failures would hurt the person who got that answer, and which would just make "
+                 "it less nice to read.",
+            why="A wrong fact or a handed-out answer does real harm, so those two are gates. A stiff tone "
+                "or a long sentence just reads worse: those checks add up to a score instead."),
+        ask("Your checklist says an answer must use plain words, sound friendly and stay under 200 words. "
+            "Which part should code check instead of the judge?",
+            ["The word count", "Whether the words are plain", "Whether it sounds friendly"],
+            answer=0,
+            clue="Which part has one exact answer that a program gets the same way every time?",
+            why="Counting words is mechanical: code does it the same way every time and never argues. Code can "
+                "also score readability and spot unexplained terms, but whether the words are truly plain, or the "
+                "answer sounds friendly, still needs reading, so those stay with the judge, each with a definition."),
+    ],
     "cohen_kappa": [
         ask("You check two judges against the same human labels. Judge A has a kappa of 0.75 and "
             "judge B has 0.1. Which one would you trust more?",

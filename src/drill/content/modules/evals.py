@@ -914,6 +914,196 @@ not j   # True""",
     ),
 )
 
+lesson(MODULE, 'vague_checks',
+    title='Writing a judge checklist',
+    checked='2026-10-18',
+    sources=[source('MLflow: Guidelines judge', 'https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/guidelines/')],
+    learn=[
+        'A judge\'s **checklist** is its rubric, written as pass-or-fail checks. In this app\'s own tutor project, five AI judges graded the same 301 answers about lessons with the five checks below. On three checks they nearly always agreed with the **reference judge** (the one already checked against human labels, as in the last lesson). On "plain" they split wildly: one failed more than half the answers, another almost none. On "correct", every judge failed far more answers than the reference did.',
+        'Each judge writes a reason with its verdict, and those reasons showed why. "Plain" had no definition, so each judge drew its own line. "Correct" said both "nothing contradicts the lesson" and "use only the lesson as the truth": a true extra fact passed under the first and failed under the second. A check must **mean one thing**: when judges split on one check far more than the rest, blame the wording, not the judges.',
+        'A vague check does the most harm where one fail throws the whole answer away. So put only the checks whose wording is sharp and whose failure does real harm (correct, no giveaway) in the **must-pass checks**, like your must-pass set. The softer checks (plain, standalone) are **scored checks**: a wrong verdict there costs a point, not the answer.',
+        'Let plain code, not the judge, check the parts that have one exact answer: a word cap, a readability score (sentence and word length), any word from your jargon list that appears without an explanation, and repeated sentences. The judge keeps what needs reading. Rewording a check changes the judge\'s prompt, so it is a new judge: re-check it against your human labels, as in the last lesson.',
+    ],
+    example=example('The checklist, with one check read two ways', """correct      nothing contradicts the lesson
+             + use only the lesson as the truth
+answers it   answers the question asked
+plain        plain words, jargon explained, under about 200 words
+no giveaway  does not hand out the exercise's answer
+standalone   makes sense on its own
+a true extra fact: pass under line 1, fail under line 2
+→ rewrite "correct" to say one thing; give "plain" a definition"""),
+    check=question(
+        'Five judges grade the same answers with your checklist. They agree on four checks and split badly on "helpful". What is most likely wrong?',
+        ['The judges that disagree are faulty', 'The wording of "helpful" is vague', 'The answers got harder to judge'],
+        answer=1,
+        why='The same judges agree on the other four checks, so the judges are not the problem. One check they read differently is one check whose words leave room.',
+    ),
+    angle=angle(
+        pattern='Compare judges check by check',
+        text="The big idea: when judges disagree, line them up check by check, because the checks they split on are the ones whose words leave room. Your code takes the check names from the first answer's dict, A to Z. For each check it walks the two judges' lists side by side with `zip`, counts the answers where both gave the same verdict, and divides by the number of answers. A check under the floor goes on the list as an (agreement, name) pair, and sorting the pairs puts the lowest agreement first, with ties settled by name.",
+        say='"When two judges disagree on one [[check|answer|model::One line of the list, not the whole verdict.]] far more than on the rest, I blame the [[wording|judges|answers::The words on the list, not who read them.]] and rewrite that line so it means [[one thing|two things|nothing::A line read two ways gets two verdicts.]]."',
+        classic=None,
+    ),
+    stack=stack('MLflow: one Guidelines scorer per check', """from mlflow.genai.scorers import Guidelines
+
+# one scorer per check, so each verdict stands on its own
+correct = Guidelines(name="correct", guidelines=[
+    "Nothing in the answer contradicts the lesson. Extra true material is fine."])
+no_giveaway = Guidelines(name="no_giveaway", guidelines=[
+    "The answer does not hand out the exercise's answer."])
+# each gives yes or no, with its reasons"""),
+    exercise=exercise(
+        title='Find the Vague Checks',
+        topic='evals',
+        difficulty='medium',
+        fn='vague_checks',
+        prompt="""Two judges graded the same answers with the same checklist. Your function gets:
+
+- `judge_a`: one dict per answer, mapping each check's name to the judge's verdict, like `[{"correct": True, "plain": False}, ...]`. `True` means pass and `False` means fail.
+- `judge_b`: the other judge's dicts for the same answers, in the same order.
+- `floor`: the agreement a check must reach, like `0.9`.
+
+For each check, agreement is the share of answers where the two judges gave the same verdict. Return the names of the checks whose agreement is under the floor, lowest agreement first. A check exactly at the floor has reached it, so it is not vague. When two checks tie, put them in name order (A to Z). With no answers at all, return `[]`.""",
+        pattern='For each check, count the answers where the two judges match, then keep the low ones.',
+        target='one walk through the answers per check',
+        realworld="When your team's two judges disagree, line them up check by check before anyone buys a third judge. The checks they split on are the lines of the checklist to rewrite.",
+        starter="""def vague_checks(judge_a, judge_b, floor):
+    # your code here
+    pass
+""",
+        solution="""def vague_checks(judge_a, judge_b, floor):
+    if not judge_a:
+        return []
+    vague = []
+    for check in sorted(judge_a[0]):
+        same = 0
+        for a, b in zip(judge_a, judge_b):
+            if a[check] == b[check]:
+                same += 1
+        agreement = same / len(judge_a)
+        if agreement < floor:
+            vague.append((agreement, check))
+    vague.sort()
+    return [check for agreement, check in vague]
+""",
+        cases=[
+            case(
+                [
+                    {"correct": True, "answers_it": True, "plain": True, "no_giveaway": True, "standalone": True},
+                    {"correct": True, "answers_it": True, "plain": True, "no_giveaway": True, "standalone": True},
+                    {"correct": True, "answers_it": True, "plain": True, "no_giveaway": False, "standalone": True},
+                    {"correct": False, "answers_it": True, "plain": True, "no_giveaway": True, "standalone": True},
+                    {"correct": True, "answers_it": False, "plain": True, "no_giveaway": True, "standalone": False},
+                ],
+                [
+                    {"correct": False, "answers_it": True, "plain": False, "no_giveaway": True, "standalone": True},
+                    {"correct": True, "answers_it": True, "plain": False, "no_giveaway": True, "standalone": True},
+                    {"correct": False, "answers_it": True, "plain": True, "no_giveaway": False, "standalone": True},
+                    {"correct": False, "answers_it": True, "plain": False, "no_giveaway": True, "standalone": True},
+                    {"correct": True, "answers_it": False, "plain": True, "no_giveaway": True, "standalone": False},
+                ],
+                0.9,
+                expected=["plain", "correct"], sample=True),
+            case(
+                [{"correct": True, "plain": True}, {"correct": False, "plain": True}],
+                [{"correct": True, "plain": True}, {"correct": False, "plain": True}],
+                0.9,
+                expected=[]),
+            case([], [], 0.9, expected=[]),
+            case(
+                [
+                    {"correct": True, "tone": True, "concise": True},
+                    {"correct": True, "tone": True, "concise": True},
+                    {"correct": False, "tone": True, "concise": False},
+                    {"correct": True, "tone": False, "concise": True},
+                ],
+                [
+                    {"correct": True, "tone": False, "concise": False},
+                    {"correct": True, "tone": True, "concise": True},
+                    {"correct": False, "tone": False, "concise": True},
+                    {"correct": True, "tone": False, "concise": True},
+                ],
+                0.9,
+                expected=["concise", "tone"]),
+            case(
+                [
+                    {"correct": True, "plain": True},
+                    {"correct": True, "plain": True},
+                    {"correct": True, "plain": False},
+                    {"correct": False, "plain": True},
+                ],
+                [
+                    {"correct": False, "plain": True},
+                    {"correct": False, "plain": True},
+                    {"correct": True, "plain": True},
+                    {"correct": False, "plain": True},
+                ],
+                0.75,
+                expected=["correct"]),
+            case(
+                [{"correct": False}, {"correct": False}],
+                [{"correct": False}, {"correct": False}],
+                0.5,
+                expected=[]),
+        ],
+        guided="""def vague_checks(judge_a, judge_b, floor):
+    # Replace every ___ with real code, then run the tests.
+    if not judge_a:
+        return []
+    vague = []   # (agreement, check) pairs under the floor
+
+    # The check names come from the first answer's dict, A to Z.
+    for check in sorted(judge_a[0]):
+        same = 0
+        # a is judge A's dict for one answer, b is judge B's for the same answer.
+        for a, b in zip(judge_a, judge_b):
+            # Step 1: count it when both judges gave the same verdict on this check.
+            if ___:
+                same += 1
+        agreement = same / len(judge_a)
+        # Step 2: keep the check if its agreement is under the floor.
+        if ___:
+            vague.append((agreement, check))
+
+    # Sorting the pairs puts the lowest agreement first; ties fall back to the name.
+    vague.sort()
+    return [check for agreement, check in vague]
+""",
+        fills=['a[check] == b[check]', 'agreement < floor'],
+        concepts=[
+            [
+                'sorted on a dict',
+                "`sorted(d)` gives a dict's keys in A to Z order, so every run reads the checks in the same order.",
+                'sorted({"plain": True, "correct": False})   # ["correct", "plain"]',
+            ],
+            [
+                'Sorting pairs',
+                'A list of (number, name) pairs sorts by the number first; equal numbers fall back to the name.',
+                """sorted([(0.6, "correct"), (0.4, "plain"), (0.4, "concise")])
+# [(0.4, "concise"), (0.4, "plain"), (0.6, "correct")]""",
+            ],
+            [
+                'zip',
+                'Walks two lists side by side, giving you one item from each.',
+                """for a, b in zip([1, 2], [1, 5]):
+    print(a == b)   # True, then False""",
+            ],
+        ],
+        byhand='Take the checks A to Z: answers_it, correct, no_giveaway, plain, standalone. For answers_it, the two judges match on all 5 answers: 5 out of 5 is 1.0, not under 0.9. For correct, they match on answers 2, 4 and 5 only: 3 out of 5 is 0.6, under the floor. no_giveaway matches on all 5: 1.0. For plain, they match on answers 3 and 5 only: 2 out of 5 is 0.4, under the floor. standalone matches on all 5: 1.0. Two checks are under the floor, and the lowest agreement goes first, so return ["plain", "correct"].',
+        why='One walk through the answers for each check, then one sort of the pairs.',
+        gotchas=[
+            [
+                'Both failing is agreeing',
+                'Two judges that both fail an answer agree on it. Count matching verdicts, not passes, or a check that two strict judges both fail looks vague when they actually agree.',
+            ],
+            [
+                'Agreement is not correctness',
+                'Two judges can agree and both be wrong. Agreement points at vague wording; the human labels from Checking your LLM judge say who is right.',
+            ],
+        ],
+    ),
+)
+
 lesson(MODULE, 'cohen_kappa',
     title='Agreement beyond chance',
     learn=[
